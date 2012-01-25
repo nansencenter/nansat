@@ -14,6 +14,21 @@
 		<longname>northward_wind_velocity</longname>
 		<units>m s-1</units>
 	</wkv>
+	<wkv> 
+		<name>wind_speed</name> 
+		<longname>wind_speed</longname> 
+		<units>m s-1</units> 
+	</wkv> 
+	<wkv> 
+ 		<name>wind_to_direction</name> 
+		<longname>Direction towards which wind is blowing</longname> 
+		<units>degrees</units> 
+	</wkv> 
+	<wkv> 
+		<name>wind_from_direction</name> 
+		<longname>Direction from which wind is blowing</longname> 
+		<units>degrees</units> 
+	</wkv> 
 	<wkv>
 		<name>radiance</name>
 		<longname>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</longname>
