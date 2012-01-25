@@ -21,12 +21,12 @@
 	</wkv> 
 	<wkv> 
  		<name>wind_to_direction</name> 
-		<longname>Direction towards which wind is blowing</longname> 
+		<longname>wind_to_direction</longname> 
 		<units>degrees</units> 
 	</wkv> 
 	<wkv> 
 		<name>wind_from_direction</name> 
-		<longname>Direction from which wind is blowing</longname> 
+		<longname>wind_from_direction</longname> 
 		<units>degrees</units> 
 	</wkv> 
 	<wkv>

@@ -833,6 +833,81 @@ CPLErr UVToMagnitude(void **papoSources, int nSources, void *pData,
 return CE_None;
 }
 
+
+CPLErr UVToDirectionTo(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol;
+	double winddir_to;
+	double u, v;
+	#define PI 3.14159265;
+	#define offset 180.
+		
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+	
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			u = SRCVAL(papoSources[0], eSrcType, ii);
+			v = SRCVAL(papoSources[1], eSrcType, ii);
+			
+			winddir_to = atan2(-u,-v)*180/PI; /* Convention 0-360 degrees */
+			winddir_to = winddir_to + 180;    /* Convention 0-360 degrees */
+			
+			GDALCopyWords(&winddir_to, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+	
+	/* ---- Return success ---- */
+return CE_None;
+}
+
+CPLErr UVToDirectionFrom(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol;
+	double winddir_from;
+	double u, v;
+	#define PI 3.14159265;
+		
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+	
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			u = SRCVAL(papoSources[0], eSrcType, ii);
+			v = SRCVAL(papoSources[1], eSrcType, ii);
+			
+			winddir_from = atan2(u,v)*180/PI; 	/* Convention 0-360 degrees */
+			winddir_from = winddir_from + 180;  /* Convention 0-360 degrees */
+
+			GDALCopyWords(&winddir_from, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+	
+	/* ---- Return success ---- */
+return CE_None;
+}
+
+
 /************************************************************************/
 /*                     GDALRegisterDefaultPixelFunc()                   */
 /************************************************************************/
@@ -890,5 +965,8 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
 
     GDALAddDerivedBandPixelFunc("BetaSigmaToIncidence", BetaSigmaToIncidence);
     GDALAddDerivedBandPixelFunc("UVToMagnitude", UVToMagnitude);
+    GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
+    GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
+    
     return CE_None;
 }

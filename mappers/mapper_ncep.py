@@ -38,5 +38,6 @@ class Mapper(VRT):
         ##############################################################        
         self.addPixelFunction('UVToMagnitude', [8, 9], fileName, \
                               {'longname': 'wind_speed', 'height': '10 m', 'unit': 'm/s'})
-
+        self.addPixelFunction('UVToDirectionFrom', [8, 9], fileName, \
+                              {'longname': 'wind_from_direction', 'height': '10 m', 'unit': 'm/s'})
         return
