@@ -1,0 +1,77 @@
+<all_wkvs>
+	<wkv>
+		<name>sigma0</name>
+		<longname>normalized_radar_cross_section</longname>
+		<units>m/m</units>
+	</wkv>
+	<wkv>
+		<name>eastward_wind_velocity</name>
+		<longname>eastward_wind_velocity</longname>
+		<units>m s-1</units>
+	</wkv>
+	<wkv>
+		<name>northward_wind_velocity</name>
+		<longname>northward_wind_velocity</longname>
+		<units>m s-1</units>
+	</wkv>
+	<wkv>
+		<name>radiance</name>
+		<longname>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</longname>
+		<units>W m-2 m-1 sr-1</units>
+	</wkv>
+	<wkv>
+		<name>reflectance</name>
+		<longname>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</longname>
+		<units>sr-1</units>
+	</wkv>
+	<wkv>
+		<name>chlor_a</name>
+		<longname>mass_concentration_of_chlorophyll_a_in_sea_water</longname>
+		<units>kg m-3</units>
+	</wkv>
+	<wkv>
+		<name>sst</name>
+		<longname>sea_surface_temperature</longname>
+		<units>celsius</units>
+	</wkv>
+	<wkv>
+		<name>a_doc</name>
+		<longname>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</longname>
+		<units>m-1</units>
+	</wkv>
+	<wkv>
+		<name>spm</name>
+		<longname>mass_concentration_of_suspended_matter_in_sea_water</longname>
+		<units>kg m-3</units>
+	</wkv>
+	<wkv>
+		<name>senz</name>
+		<longname>sensor_zenith_angle</longname>
+		<units>degrees</units>
+	</wkv>
+	<wkv>
+		<name>sena</name>
+		<longname>sensor_azimuth_angle</longname>
+		<units>degrees</units>
+	</wkv>
+	<wkv>
+		<name>solz</name>
+		<longname>solar_zenith_angle</longname>
+		<units>degrees</units>
+	</wkv>
+	<wkv>
+		<name>sola</name>
+		<longname>solar_azimuth_angle</longname>
+		<units>degrees</units>
+	</wkv>
+	<wkv>
+		<name>flags</name>
+		<longname>quality_flags</longname>
+		<units></units>
+	</wkv>
+	<wkv>
+		<name>air_temperature</name>
+		<longname>air_temperature</longname>
+		<units>celsius</units>
+	</wkv>
+</all_wkvs>

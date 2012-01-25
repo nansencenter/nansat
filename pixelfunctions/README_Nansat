@@ -1,0 +1,24 @@
+These pixel functions are downloaded as a patch provided by Antonio Valentino:
+http://trac.osgeo.org/gdal/ticket/3367
+
+To use these in Nansat we have simply to:
+- compile contents in this folder with "make"
+- include the present folder in the environmental variable "GDAL_DRIVER_PATH"
+
+Note that this must be performed on each users machine, as compiled code is machine-specific!
+
+The file pixelfunctions.c contains all the functions listed in the ticket above
+We may add more pixel functions in this file as we need, and then use them as described on
+http://www.gdal.org/gdal_vrttut.html
+
+As the pixel functions are a bit awkward to implement, we probably dont want to use them
+for our scientific algorithms where we use trial-and-error approach. But it can be very useful for 
+common operations such as:
+- returning speed (sqrt(u*u+v*v)) when we have two bands with U and V
+- returning angle from North for the same input
+- returning a difference of two bands
+- ...
+
+I have tested it, and can confirm that it works like charm!
+
+Knut-Frode
