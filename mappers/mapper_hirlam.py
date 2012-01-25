@@ -30,4 +30,12 @@ class Mapper(VRT):
             
         self.createVRT_and_add_bands(ds, metaDict, vrtBandList);
 
+        ##############################################################
+        # Adding derived bands (wind speed and "wind_from_direction") 
+        # calculated with pixel functions 
+        ##############################################################        
+        self.addPixelFunction('UVToMagnitude', [2, 3], fileName, \
+                              {'longname': 'wind_speed', 'height': '10 m', 'unit': 'm/s'})
+        self.addPixelFunction('UVToDirectionFrom', [2, 3], fileName, \
+                              {'longname': 'wind_from_direction', 'height': '10 m', 'unit': 'degrees'})
         return
