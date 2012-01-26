@@ -326,7 +326,6 @@ class Domain():
 
             val = [minx, miny, maxx, maxy];
             extentDic["te"] = val;
-            print "(domain 312) lle --> te : ", val;
 
         return extentDic;
 
@@ -635,3 +634,27 @@ class Domain():
             return wkt;
         else:
             raise ProjectionError();
+
+    def __repr__(self):
+        '''Prints basic info about the Domain object to the terminal:
+        size
+        projection
+        corner coordinates;
+        '''
+        toPrettyWKT = osr.SpatialReference();
+        toPrettyWKT.ImportFromWkt(self.get_projection_ds(self.memDs))
+        prettyWKT  = toPrettyWKT.ExportToPrettyWkt(1)
+        corners = self.get_corners();
+        print '-'*40
+        print 'Size: %d x %d' % (self.memDs.RasterXSize, self.memDs.RasterYSize)
+        print '-'*40
+        print 'Projection:'
+        print prettyWKT;
+        print '-'*40
+        print 'Corners:'
+        print 'Lat: %5.2f %5.2f %5.2f %5.3f' % (corners[0][0],
+                corners[0][1], corners[0][2], corners[0][3])
+        print 'Lon: %5.2f %5.2f %5.2f %5.3f' % (corners[1][0],
+                corners[1][1], corners[1][2], corners[1][3])
+        
+        return ''

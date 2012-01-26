@@ -122,7 +122,6 @@ class Nansat():
             show serial number, longName, name and parameters
 
         '''
-        print self.fileName;
         for i in range(self.rawVrt.RasterCount):
             metadata = self.rawVrt.GetRasterBand(i+1).GetMetadata();
             print "Band :", i+1;
@@ -728,24 +727,10 @@ class Nansat():
     def __repr__(self):
         '''Prints basic info about the Nansat object to the terminal'''
         print '-'*40
-        print 'Nansat object:'
-        print 'Size : ' + str(self.vrt.RasterXSize) + ' x ' + str(self.vrt.RasterYSize)
-        print 'Projection: ' + self.vrt.GetProjection()
-        print 'GCP Projection: ' + self.vrt.GetGCPProjection()
-        if self.vrt.GetProjection():
-            print 'Corner Coordinates:'
-            from gdalinfo import GDALInfoReportCorner
-            hProj = osr.SpatialReference(self.vrt.GetProjection())
-            hLatLong = hProj.CloneGeogCS()
-            hTransform = osr.CoordinateTransformation(hProj, hLatLong)
-            GDALInfoReportCorner( self.vrt, hTransform, "Upper Left", 0.0, 0.0 )
-            GDALInfoReportCorner( self.vrt, hTransform, "Lower Left", 0.0, self.vrt.RasterYSize);
-            GDALInfoReportCorner( self.vrt, hTransform, "Upper Right", self.vrt.RasterXSize, 0.0 );
-            GDALInfoReportCorner( self.vrt, hTransform, "Lower Right", self.vrt.RasterXSize, \
-                          self.vrt.RasterYSize );
-        print '-'*20
-        self.list_bands()
+        print self.fileName;
         print '-'*40
+        self.list_bands()
+        print self.get_domain()
         return ''
 
     def __getitem__(self, bandNo):
