@@ -28,13 +28,9 @@ from scipy.stats import cumfreq
 from xml.etree.ElementTree import *
 
 try:
-    from osgeo import gdal
+    from osgeo import gdal, osr
 except ImportError:
     import gdal
-
-try:
-    from osgeo import osr
-except ImportError:
     import osr
 
 from domain import Domain
@@ -198,7 +194,7 @@ class Nansat():
 
         Raises
         ------
-            OptionError: occurs when method is neither "average" nor "subsample"
+            OptionError: occurs when method is not "average" or "subsample"
 
         '''
         if not (method == "average" or method == "subsample"):
