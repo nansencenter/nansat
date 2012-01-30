@@ -1,25 +1,29 @@
-#-------------------------------------------------------------------------------
-# Name:    nansat
-# Purpose: main of nansat module.
-#          Reference nansat_open, nansat_transform and nansat_write
+# Name:    nansat.py
+# Purpose: main file of the NANSAT module.
 #
-# Author:      asumak
+# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 #
 # Created:     29.06.2011
-# Copyright:   (c) asumak 2011
+# Copyright:   (c) NERSC 2012
 # Licence:
-#-------------------------------------------------------------------------------
-import os
-import os.path
-import re
-import string
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details:
+# http://www.gnu.org/licenses/
+
+from os import path, listdir
+from string import maketrans
 import sys
 import time
 
 import fnmatch
 import numpy as np
-from scipy.misc import toimage
-from scipy.misc import pilutil
+from scipy.misc import toimage, pilutil
 from scipy.stats import cumfreq
 from xml.etree.ElementTree import *
 
@@ -62,12 +66,8 @@ class Nansat():
 
     Construct Nansat object that consist of
         basic dataset information (fileName, dataset, metadata etc..),
-        well know variavles that are defined in NANSAT and
-        VRT format which is saved in an XML format.
-    Show information of the bands in a given object.
-    Give GDALRasterBand of the given band number.
-    Export in-memory VRT dataset to a physical file.
-
+        VRT file which points to orignal file with satellite data and 
+        is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName, mapperName='', bandList=None):
         '''Construct Nansat object
@@ -152,11 +152,7 @@ class Nansat():
 
     def __repr__(self):
         '''Prints basic info about the Nansat object to the terminal
-
-        Modifies
-        --------
-            Print fileName and Domain dataset.
-
+        
         '''
         print '-'*40
         print self.fileName;
@@ -272,11 +268,7 @@ class Nansat():
             GDAL.GDT_UInt32, GDAL.GDT_Int32, GDAL.GDT_Float32,
             GDAL.GDT_Float64, GDAL.GDT_CInt16, GDAL.GDT_CInt32,
             GDAL.GDT_CFloat32, GDAL.GDT_CFloat64
-
-        Modifies
-        -------
-        Create a Gtiff file which includes the specified raster bands
-
+            
         '''
         copyFileName = "/vsimem/vrtCopy"
         vrtDatasetCopy = self.vrtDriver.CreateCopy(copyFileName, self.vrt);
@@ -286,9 +278,11 @@ class Nansat():
 
         # create empty dataset with N bands
         vrtDriver = gdal.GetDriverByName("VRT");
-        vrtDataset = vrtDriver.Create("/vsimem/export_vrt.vrt", rasterXSize,
-                                rasterYSize, len(bandsList), dataType);
-        vrtDataset.SetGCPs(self.vrt.GetGCPs(), vrtDataset.GetGCPProjection());
+        vrtDataset = vrtDriver.Create("/vsimem/export_vrt.vrt",
+                                rasterXSize, rasterYSize,
+                                len(bandsList), dataType);
+        vrtDataset.SetGCPs(self.vrt.GetGCPs(),
+                           vrtDataset.GetGCPProjection());
         vrtDataset.SetGeoTransform(self.vrt.GetGeoTransform());
         vrtDataset.SetMetadata(self.vrt.GetMetadata());
         vrtDataset.SetProjection(self.vrt.GetProjection());
@@ -296,15 +290,15 @@ class Nansat():
     	# populate the bands with source metadata
         for iBand in range(len(bandsList)):
             metaItemKeys = self.rawVRT.GetRasterBand(bandsList[iBand]).\
-                            GetMetadata_Dict().keys();
+                                       GetMetadata_Dict().keys();
             for iItemKey in metaItemKeys:
                 vrtDataset.GetRasterBand(iBand+1).SetMetadataItem(
                     iItemKey,
                     self.rawVRT.GetRasterBand(bandsList[iBand]).\
-                    GetMetadataItem(iItemKey));
+                                GetMetadataItem(iItemKey));
 
             BlockSize = vrtDatasetCopy.GetRasterBand(bandsList[iBand]).\
-                        GetBlockSize();
+                                       GetBlockSize();
 
             bandSourceXML = '\
        	    <SimpleSource>\
@@ -320,12 +314,15 @@ class Nansat():
                rasterXSize, rasterYSize);
 
             vrtDataset.GetRasterBand(iBand+1).\
-                SetMetadataItem("source_0", bandSourceXML, "new_vrt_sources");
+                       SetMetadataItem("source_0",
+                                       bandSourceXML,
+                                       "new_vrt_sources");
 
         vrtDataset.FlushCache();
 
         tiffDriver = gdal.GetDriverByName("GTiff");
-        copyDataset = tiffDriver.CreateCopy(fileName + ".tif" , vrtDataset, 0);
+        copyDataset = tiffDriver.CreateCopy(fileName + ".tif" ,
+                                            vrtDataset, 0);
         copyDataset = None;
         vrtDatasetCopy = None;
 
@@ -340,11 +337,6 @@ class Nansat():
         ----------
             fileName: string, optional
                 location for an output VRT file
-
-        Modifies
-        --------
-            Create a physical VRT file and write down the data
-            from memory (VSI-file) to a physical file
 
         '''
         if fileName is None:
@@ -404,10 +396,6 @@ class Nansat():
 
         Show serial number, longName, name and all parameters
         for each band in the metadata of the given Nansat object.
-
-        Modifies
-        --------
-            show serial number, longName, name and parameters
 
         '''
         for iBand in range(self.rawVRT.RasterCount):
@@ -497,19 +485,19 @@ class Nansat():
                                extentString=extentOption);
 
             # warp the Raw VRT onto the coordinate stystem given by Domain
-            rawWarpedVRT = \
-                gdal.AutoCreateWarpedVRT(self.rawVRT, srcWKT,
-                                         dstDomain.memDataset.GetProjection(),
-                                         resamplingAlg);
+            rawWarpedVRT = gdal.AutoCreateWarpedVRT(
+                                self.rawVRT, srcWKT,
+                                dstDomain.memDataset.GetProjection(),
+                                resamplingAlg);
 
         elif (proj4string is None and extentOption is None and
               dstDomain is not None):
             print 'Reprojection with given Domain'
             # warp the Raw VRT onto the coordinate stystem given by input Domain
-            rawWarpedVRT = \
-                gdal.AutoCreateWarpedVRT(self.rawVRT, srcWKT,
-                                         dstDomain.memDataset.GetProjection(),
-                                         resamplingAlg);
+            rawWarpedVRT = gdal.AutoCreateWarpedVRT(
+                                   self.rawVRT, srcWKT,
+                                   dstDomain.memDataset.GetProjection(),
+                                   resamplingAlg);
 
         else:
             # Potentially erroneous input options
@@ -517,8 +505,8 @@ class Nansat():
                               "wrong combination of input options");
 
         # modify extent of the created Warped VRT
-        self.warpedVRT = \
-            self._modify_warpedVRT(rawWarpedVRT,
+        self.warpedVRT = self._modify_warpedVRT(
+                                   rawWarpedVRT,
                                    dstDomain.memDataset.RasterXSize,
                                    dstDomain.memDataset.RasterYSize,
                                    dstDomain.memDataset.GetGeoTransform())
@@ -565,8 +553,8 @@ class Nansat():
             srcWkt = self.vrt.GetGCPProjection()
 
         # the transformer converts lat/lon to pixel/line of SRC image
-        srcTransformer = \
-            gdal.Transformer(self.vrt, None,
+        srcTransformer = gdal.Transformer(
+                             self.vrt, None,
                              ['SRC_SRS='+srcWkt, 'DST_SRS='+latlongWkt])
 
         # get GCPs from DST image
@@ -622,13 +610,13 @@ class Nansat():
 
         # create warped vrt out of tmp vrt
         tmpVRT = gdal.Open(tmpVRTName)
-        rawWarpedVRT = \
-            gdal.AutoCreateWarpedVRT(tmpVRT, stereoSRSWKT,
-                                     stereoSRSWKT, resamplingAlg);
+        rawWarpedVRT = gdal.AutoCreateWarpedVRT(tmpVRT, stereoSRSWKT,
+                                                stereoSRSWKT,
+                                                resamplingAlg);
 
         # change size and geotransform to fit the DST image
-        self.warpedVRT = \
-            self._modify_warpedVRT(rawWarpedVRT,
+        self.warpedVRT = self._modify_warpedVRT(
+                                   rawWarpedVRT,
                                    gcpImage.vrt.RasterXSize,
                                    gcpImage.vrt.RasterYSize,
                                    (0, 1, 0, 0, 0, 1))
@@ -638,12 +626,11 @@ class Nansat():
                      pixelValMin=None, pixelValMax=None,
                      imageDatatype=None, thresholdRatio=1.0,
                      useFullMatrix=False, extension='png'):
-        '''Get proper pixel value range for writing a figure in PNG
-
-        Save a raster band to a figure in PNG format.
-        If bandName is used as the argument,
-        it is converted to the bandNo in get_GDALRasterBand().
-        The proper pixel value range is calculated by setting thresholdRatio.
+        '''Save a raster band to a figure in grapfical format.
+        
+        Get numpy array from the band specified either by given band
+        number or band id; adjust the array brightness and contrast
+        using the given min/max or histogram ratio; write to file.
 
         Parameters
         ----------
@@ -662,10 +649,6 @@ class Nansat():
         Raises
         ------
             DataError: occurs when the array of the band is empty
-
-        Modifies
-        --------
-            write a band in PNG file
 
         '''
         # fetch band from the object
@@ -697,8 +680,8 @@ class Nansat():
                 histArray = rawArray;
 
             # get minmax from histogram analysis
-            pixelValMin, pixelValMax = \
-                self._get_pixelValueRange(histArray, thresholdRatio);
+            pixelValMin, pixelValMax = self._get_pixelValueRange(
+                                        histArray, thresholdRatio);
         print "[%f %f]" % (pixelValMin, pixelValMax)
         toc = time.clock();
         print "(%3.1f sec) " % (toc-tic)
@@ -714,11 +697,11 @@ class Nansat():
         return Domain(self.vrt)
 
     def _get_mapper(self, mapperName, bandList):
-        '''write VSI-file
+        '''Creare VRT file in memory (VSI-file) with variable mapping
 
         Create a mapperList based on all mappers in the subdir 'mappers'.
-        If mapperName is given, it is located the first in the mapperList.
-        Loop over all availble drivers to get the corresponding one.
+        If mapperName is given, it is the first in the mapperList.
+        Loop over all availble mappers to get the matching one.
         In the loop:
             If the specific error appears the mapper is not used
             and the next mapper is tested.
@@ -738,11 +721,7 @@ class Nansat():
         Returns
         -------
             vsiDataset : VRT dataset
-                VRT dataset with mapping of variables
-
-        Modifies
-        --------
-            Create VSI-file
+                VRT dataset with mapping of variables keeped in memory)
 
         Raises
         --------
@@ -751,9 +730,9 @@ class Nansat():
 
         '''
         # create a mapper list based on the files in the folder "mappers"
-        nansatDir = os.path.dirname(os.path.realpath( __file__ ))
+        nansatDir = path.dirname(path.realpath( __file__ ))
 
-        allMapperFiles = os.listdir(os.path.join(nansatDir, "mappers"))
+        allMapperFiles = listdir(path.join(nansatDir, "mappers"))
         allMapperFiles = fnmatch.filter(allMapperFiles, 'mapper_*.py')
 
         # add the given mapper first
@@ -766,10 +745,10 @@ class Nansat():
 
         # try to add path for windows, add for linux otherwise
         try:
-            sys.path.append(os.path.join(unicode(nansatDir, "mbcs"),
+            sys.path.append(path.join(unicode(nansatDir, "mbcs"),
                             "mappers"));
         except:
-            sys.path.append(os.path.join(nansatDir, "mappers"));
+            sys.path.append(path.join(nansatDir, "mappers"));
 
         # try to import and get VRT datasaet from all mappers. Break on success
         # if none of the mappers worked - None is returned
@@ -777,10 +756,10 @@ class Nansat():
         for iMapper in mapperList:
             try:
                 mapper_module = __import__(iMapper);
-                vrtDataset = \
-                    mapper_module.Mapper(self.dataset, self.fileName,
-                                         self.metadata, vrtBandList=bandList,
-                                         rawVRTFileName=\
+                vrtDataset = mapper_module.Mapper(
+                                         self.dataset, self.fileName,
+                                         self.metadata,
+                                         bandList,
                                          self.rawVRTFileName).vsiDataset;
                 break;
             except:
@@ -802,7 +781,7 @@ class Nansat():
         the argument "ratio" is used to specify the threshold of a pixel value
         that should be counted.
 
-        Args
+        Parameters
         ----
             array : numpy array
                 array of a band
@@ -857,7 +836,7 @@ class Nansat():
                 edge_max = lowerreallimit + (len(hist_eq) - 0.5) * binsize;
             else:
                 edge_max = lowerreallimit + \
-                           (len(hist_eq) - len(hist_max) + 0.5) * binsize;
+                         (len(hist_eq) - len(hist_max) + 0.5) * binsize;
 
         return edge_min, edge_max;
 
@@ -880,8 +859,8 @@ class Nansat():
 
         '''
         # Write the warpedVRT to a VSI-file
-        vrtDatasetCopy = \
-            self.vrtDriver.CreateCopy(self.warpedVRTFileName, rawWarpedVRT);
+        vrtDatasetCopy = self.vrtDriver.CreateCopy(self.warpedVRTFileName,
+                                                   rawWarpedVRT);
         # Get XML content from VSI-file
         # open
         vsiFile = gdal.VSIFOpenL(self.warpedVRTFileName, "r")
@@ -903,13 +882,13 @@ class Nansat():
         elem = tree.find("GeoTransform");
         # convert proper string style and set to the GeoTransform element
         elem.text = str(geoTransform).\
-                        translate(string.maketrans("", ""), "()");
+                        translate(maketrans("", ""), "()");
 
         elem = tree.find("GDALWarpOptions/Transformer/",
                             "GenImgProjTransformer/DstGeoTransform");
         # convert proper string style and set to the DstGeoTransform element
         elem.text = str(geoTransform).\
-                        translate(string.maketrans("", ""), "()");
+                        translate(maketrans("", ""), "()");
 
         elem = tree.find("GDALWarpOptions/Transformer/"
                             "GenImgProjTransformer/DstInvGeoTransform");
@@ -917,7 +896,7 @@ class Nansat():
         invGeotransform = gdal.InvGeoTransform(geoTransform);
         # convert proper string style and set to the DstInvGeoTransform element
         elem.text = str(invGeotransform[1]).\
-                        translate(string.maketrans("", ""), "()");
+                        translate(maketrans("", ""), "()");
 
         # Overwrite element
         element = tree.getroot()
@@ -951,10 +930,6 @@ class Nansat():
         Returns
         -------
             candidate[0]+1 : a band number
-
-        Modifies
-        --------
-            Print the specified band number
 
         Raises
         ------
