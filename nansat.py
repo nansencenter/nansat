@@ -205,15 +205,7 @@ class Nansat():
                                                    self.vrt)
 
         # Get XML content from VSI-file
-        # open
-        vsiFile = gdal.VSIFOpenL(self.rawVRTFileName, "r")
-        # get file size
-        gdal.VSIFSeekL(vsiFile, 0, 2)
-        vsiFileSize = gdal.VSIFTellL(vsiFile)
-        gdal.VSIFSeekL(vsiFile, 0, 0) # fseek to start
-        # read
-        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        vsiFileContent = self._read_write_vsi_file(self.rawVRTFileName)
 
         # Get element from the XML content and modify some elements
         # using Domain object parameters
@@ -245,10 +237,7 @@ class Nansat():
 
         # Overwrite element
         # Write the modified elemements into VSI-file
-        vsiFile = gdal.VSIFOpenL(self.rawVRTFileName, 'w')
-        gdal.VSIFWriteL(tostring(element),
-                            len(tostring(element)), 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        self._read_write_vsi_file(self.rawVRTFileName, tostring(element))
 
         self.vrt = gdal.Open(self.rawVRTFileName)
 
@@ -591,15 +580,8 @@ class Nansat():
         tmpVRT = None
 
         # remove GeoTransfomr from SRC image
-        # open XML content from VSI-file
-        vsiFile = gdal.VSIFOpenL(tmpVRTName, "r")
-        # get file size
-        gdal.VSIFSeekL(vsiFile, 0, 2)
-        vsiFileSize = gdal.VSIFTellL(vsiFile)
-        gdal.VSIFSeekL(vsiFile, 0, 0) #fseek to start
-        # read
-        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        # read XML content from VSI-file
+        vsiFileContent = self._read_write_vsi_file(tmpVRTName)
 
         # find and remove GeoTransform
         tree = XML(vsiFileContent)
@@ -607,9 +589,7 @@ class Nansat():
         tree.remove(elemGT)
 
         # Write the modified elemements back into VSI-file
-        vsiFile = gdal.VSIFOpenL(tmpVRTName, 'w')
-        gdal.VSIFWriteL(tostring(tree), len(tostring(tree)), 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        self._read_write_vsi_file(tmpVRTName, tostring(tree))
 
         # create warped vrt out of tmp vrt
         tmpVRT = gdal.Open(tmpVRTName)
@@ -865,15 +845,7 @@ class Nansat():
         vrtDatasetCopy = self.vrtDriver.CreateCopy(self.warpedVRTFileName,
                                                    rawWarpedVRT)
         # Get XML content from VSI-file
-        # open
-        vsiFile = gdal.VSIFOpenL(self.warpedVRTFileName, "r")
-        # get file size
-        gdal.VSIFSeekL(vsiFile, 0, 2)
-        vsiFileSize = gdal.VSIFTellL(vsiFile)
-        gdal.VSIFSeekL(vsiFile, 0, 0) #fseek to start
-        # read
-        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        vsiFileContent = self._read_write_vsi_file(self.warpedVRTFileName)
 
         # Get element from the XML content and modify some elements
         # using Domain object parameters
@@ -905,11 +877,47 @@ class Nansat():
         element = tree.getroot()
 
         # Write the modified elemements into VSI-file
-        vsiFile = gdal.VSIFOpenL(self.warpedVRTFileName, 'w')
-        gdal.VSIFWriteL(tostring(element), len(tostring(element)), 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        self._read_write_vsi_file(self.warpedVRTFileName, tostring(element))
+
         newWarpedVRT = gdal.Open(self.warpedVRTFileName)
         return newWarpedVRT
+
+    def _read_write_vsi_file(self, vsiFileName, vsiFileContent=None):
+        '''Read or write content of a VSI-file
+
+        If only file name is given then content of the file is read and
+        returned, if content is provided then it is written to the file
+
+        Parameters:
+            vsiFileName: string
+                Name of the VSI file to read/create
+            vsiFileContent: string, optional
+                Content of the VSI file to write
+
+        Returns:
+            vsiFileContent: string
+                Content which is read from the VSI file
+        '''
+
+        if vsiFileContent is None:
+            #read from the vsi-file
+            # open
+            vsiFile = gdal.VSIFOpenL(vsiFileName, "r")
+            # get file size
+            gdal.VSIFSeekL(vsiFile, 0, 2)
+            vsiFileSize = gdal.VSIFTellL(vsiFile)
+            gdal.VSIFSeekL(vsiFile, 0, 0) # fseek to start
+            # read
+            vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
+            gdal.VSIFCloseL(vsiFile)
+            return vsiFileContent
+        else:
+            #write to the vsi-file
+            vsiFile = gdal.VSIFOpenL(vsiFileName, 'w')
+            gdal.VSIFWriteL(vsiFileContent,
+                            len(vsiFileContent), 1, vsiFile)
+            gdal.VSIFCloseL(vsiFile)
+            return 0
 
     def _specify_bandNo(self, bandID):
         '''Specify a band number based on bandID (shortName + parameters)
