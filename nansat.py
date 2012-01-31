@@ -331,7 +331,7 @@ class Nansat():
 
         '''
         if fileName is None:
-            fileName = "/vsistdout/" #  GDAL special name to flush output to console.
+            fileName = "/vsistdout/" # GDAL special name to flush output to console.
             # Unfortunately an error message about non-existing file
             # is still reported this must be a bug in GDAL.
         vrtDatasetCopy = self.vrtDriver.CreateCopy(fileName, self.vrt)

@@ -48,23 +48,23 @@ class Mapper(VRT):
         from string import Template
         
         options = ['subClass=VRTDerivedRasterBand', 'PixelFunctionType=BetaSigmaToIncidence']
-        self.vsiDs.AddBand(datatype=GDT_Float32, options=options)  
+        self.vsiDataset.AddBand(datatype=GDT_Float32, options=options)  
         
         md = {}
         BlockXSize, BlockYSize = ds.GetRasterBand(1).GetBlockSize()
-        md['source_0'] = self.SimpleSource.substitute(XSize=self.vsiDs.RasterXSize, YSize=self.vsiDs.RasterYSize, 
+        md['source_0'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize, YSize=self.vsiDataset.RasterYSize, 
                                     BlockXSize=BlockXSize, BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
                                     Dataset='RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml')
-        md['source_1'] = self.SimpleSource.substitute(XSize=self.vsiDs.RasterXSize, YSize=self.vsiDs.RasterYSize, 
+        md['source_1'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize, YSize=self.vsiDataset.RasterYSize, 
                                     BlockXSize=BlockXSize, BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
                                     Dataset='RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml')
-        self.vsiDs.GetRasterBand(self.vsiDs.RasterCount).SetMetadata(md, 'vrt_sources');
-        self.vsiDs.GetRasterBand(self.vsiDs.RasterCount).SetNoDataValue(0);
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadata(md, 'vrt_sources');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetNoDataValue(0);
         # Should ideally use WKV-class for setting the metadata below
-        self.vsiDs.GetRasterBand(self.vsiDs.RasterCount).SetMetadataItem('longname', 'incidence_angle');
-        self.vsiDs.GetRasterBand(self.vsiDs.RasterCount).SetMetadataItem('name', 'incidence_angle');
-        self.vsiDs.GetRasterBand(self.vsiDs.RasterCount).SetMetadataItem('unit', 'degrees');
-        self.vsiDs.GetRasterBand(self.vsiDs.RasterCount).SetMetadataItem('pixelfunction', 'BetaSigmaToIncidence');
-        self.vsiDs.FlushCache()
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('longname', 'incidence_angle');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('name', 'incidence_angle');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('unit', 'degrees');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('pixelfunction', 'BetaSigmaToIncidence');
+        self.vsiDataset.FlushCache()
         
         return

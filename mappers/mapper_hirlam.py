@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:        nansat_mapper_asar
+# Name:        mapper_hirlam.py
 # Purpose:     Mapping for Hirlam model data
 #
 # Author:      Knut-Frode

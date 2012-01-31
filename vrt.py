@@ -27,6 +27,7 @@ except ImportError:
     import gdal
     import osr
 
+
 class VRT():
     '''Top class of Nansat readers
 
@@ -79,13 +80,13 @@ class VRT():
         newBand = self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount)
         options = ['subClass=VRTDerivedRasterBand',
                    'PixelFunctionType='+pixelFunction]
-        self.vsiDataset.AddBand(datatype=GDT_Float32, options=options)
+        self.vsiDataset.AddBand(datatype=gdal.GDT_Float32, options=options)
         md = {}
         for i, bandNo in enumerate(bands):
             BlockXSize, BlockYSize = self.dataset.GetRasterBand(bandNo).\
                                                   GetBlockSize()
             DataType = self.dataset.GetRasterBand(bandNo).DataType
-            md['source_'+str(i)] = self.SimpleSource.substitute(\
+            md['source_'+str(i)] = self.SimpleSource.substitute(
                                         XSize=self.vsiDataset.RasterXSize,
                                         BlockXSize=BlockXSize,
                                         BlockYSize=BlockYSize,
@@ -181,7 +182,7 @@ class VRT():
             # because self.dataset means the first subdataset
             # if the data has subdatasets. should be fixed !!!
             ##xBlockSize, yBlockSize = self.dataset.\
-            ##                              GetRasterBand(bandNo).GetBlockSize()
+            ## 	GetRasterBand(bandNo).GetBlockSize()
             xBlockSize, yBlockSize = self.dataset.\
                                           GetRasterBand(1).GetBlockSize()
             ##srcDataType = self.dataset.GetRasterBand(bandNo).DataType
@@ -244,9 +245,9 @@ class VRT():
 
         # create VSI VRT dataset
         vrtDrv = gdal.GetDriverByName("VRT")
-        vsiDataset = vrtDrv.Create(self.rawVRTName,\
-                                   srcRasterXSize, srcRasterYSize,\
-                                   length, gdal.GDT_Float32 )
+        vsiDataset = vrtDrv.Create(self.rawVRTName,
+                                   srcRasterXSize, srcRasterYSize,
+                                   length, gdal.GDT_Float32)
 
         # set geo-metadata in the VSI VRT dataset
         vsiDataset.SetGCPs(srcGCPs, srcGCPProjection)
@@ -273,16 +274,15 @@ class VRT():
 
         '''
         # fetch band information corresponding to the fileType
-        fileName_wkv = os.path.join(os.path.dirname(\
-                                    os.path.realpath( __file__ )), "wkv.xml")
+        fileName_wkv = os.path.join(os.path.dirname(
+                                    os.path.realpath(__file__)), "wkv.xml")
         fd = file(fileName_wkv, "rb")
         element = ElementTree(file=fd).getroot()
 
         for e1 in list(element):
             if e1.find("name").text == wkv_name:
-                wkvDict = {"name" : wkv_name}
+                wkvDict = {"name": wkv_name}
                 for e2 in list(e1):
                     wkvDict[e2.tag] = e2.text
 
         return wkvDict
-
