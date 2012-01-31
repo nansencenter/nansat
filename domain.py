@@ -20,10 +20,8 @@
 import os.path
 import re
 import string
-import sys
 
 from numpy  import *
-from random import random
 from xml.etree.ElementTree import *
 
 try:
@@ -32,43 +30,55 @@ except ImportError:
     import gdal
     import osr
 
+
 class Error(Exception):
     '''Base class for exceptions in this module.'''
-    pass;
+    pass
+
 
 class OptionError(Error):
     '''Error for improper options (arguments) '''
-    pass;
+    pass
+
 
 class ProjectionError(Error):
     '''Cannot get the projection'''
     pass
 
+
 class Domain():
+    '''"Domain" is a grid with known dimentions and spatial reference'''
 
     def __init__(self, dataset=None, srsString=None, extentString=None,
                  domainName=''):
-        '''Construct Domain object
+        '''Create Domain from given GDAL Dataset or textual options
 
-        Arguments should be one of the following:
-            * inputDataset
-            * srsString, extentString
-                (in this case, "-te" or "-lle" and "-tr" or "-ts" are required)
-        rasterXsize, rasterYsize, GeoTransform and GeoPorjection
-        are fetched / computed based on the arguments.
-        Then create empty memDataset and set the these values.
+        The main attribute of Domain is memDataset which is a GDAL
+        Dataset of type MEM. It has such attributes as rasterXsize,
+        rasterYsize, GeoTransform and GeoPorjection which fully describe
+        dimentions and spatial reference of the grid. The MEM dataset is
+        empty - it has no bands.
+        If a GDAL dataset is given the Domain covers the same area and
+        has the same resolution as the input Dataset.
+        Textual options are srsString (proj4 syntax) and extentString
+        (some of the gdalwarp otpions).
 
         Parameters
         ----------
         dataset : GDAL dataset, optional
         srsString : string, optional
-            proj4string (e.g. "+proj=utm +zone=25 +datum=WGS84 +no_defs")
+            proj4 options [http://trac.osgeo.org/proj/]
+            (e.g."+proj=utm +zone=25 +datum=WGS84 +no_defs")
+            SPecifies spatial reference
         extentString: string, optional
-            Represent extent, resplution / size
-            Available options are "-te","-tr","-ts" and "-lle"
-            (e.g. "-lle -10 30 55 60 -ts 1000 1000")
+            some gdalwarp options [http://www.gdal.org/gdalwarp.html] +
+            additional options
+            Specifies extent, resolution / size
+            Available options: (("-te" or "-lle") and ("-tr" or "-ts"))
+            (e.g. "-lle -10 30 55 60 -ts 1000 1000" or
+            "-te 100 2000 300 10000 -tr 300 200")
         domainName: string, optional
-            Domain name
+            Name to be added to the Domain object
 
         Raises
         ------
@@ -83,7 +93,9 @@ class Domain():
 
         See Also
         --------
-        http://www.gdal.org/gdalwarp.html
+        Nansat.reproject()
+        [http://www.gdal.org/gdalwarp.html]
+        [http://trac.osgeo.org/proj/]
 
         '''
 
@@ -97,15 +109,13 @@ class Domain():
         if (dataset is not None and extentString is None):
             rasterXSize = dataset.RasterXSize
             rasterYSize = dataset.RasterYSize
-            transform = dataset.GetGeoTransform()
-            projection = dataset.GetProjection()
-            if projection == "":
-                projection = dataset.GetGCPProjection()
+            geoTransform = dataset.GetGeoTransform()
+            dstWKT = self._get_projection(dataset)
             gcps = dataset.GetGCPs()
 
         # test option when proj4 and extent string are given
         elif (srsString is not None and extentString is not None):
-            # if XML-file and domain name is given - get string from that file
+            # if XML-file and domain name is given - read that file
             if os.path.isfile(srsString):
                 srsString, extentString, self.name = self._from_xml(
                                                           srsString,
@@ -113,19 +123,22 @@ class Domain():
             # import srs from srsString and get the projection
             srs = osr.SpatialReference()
             srs.ImportFromProj4(srsString)
-            projection = srs.ExportToWkt()
+            dstWKT = srs.ExportToWkt()
+            if dstWKT == "":
+                raise ProjectionError("srsString (%s) is wrong" % (
+                                       srsString))
+
             # create full dictionary of parameters
             extentDic = self._create_extentDic(extentString)
+
+            # convert -lle to -te
             if "lle" in extentDic.keys():
-                WKT = srs.ExportToWkt()
-                if WKT == "":
-                    raise ProjectionError("Domain.__init__() : "
-                                           "WKT is empty. "
-                                           "Check 'srsString'!! ")
-                extentDic = self._convertExtentDic(WKT, extentDic)
-            transform, rasterSize= self._get_geotransform(extentDic)
-            rasterXSize = rasterSize[0]
-            rasterYSize = rasterSize[1]
+                extentDic = self._convert_extentDic(dstWKT, extentDic)
+
+            # get size/extent from the created extet dictionary
+            [geoTransform,
+             rasterXSize,
+             rasterYSize] = self._get_geotransform(extentDic)
 
         else:
             raise OptionError("'dataset' or 'srsString and extentString' "
@@ -134,16 +147,17 @@ class Domain():
         if rasterXSize != 0 or rasterYSize != 0:
             # If everything is fine so far
             # Create an empty memDataset and set rasterXSize, rasterYSize,
-            # GsoTransform and Projection
+            # GeoTransform and Projection (or GCPs)
             memDriver = gdal.GetDriverByName("MEM")
             self.memDataset = memDriver.Create("warped.mem",
-                                               rasterXSize, rasterYSize, 0)
-            self.memDataset.SetGeoTransform(transform)
+                                               rasterXSize,
+                                               rasterYSize, 0)
+            self.memDataset.SetGeoTransform(geoTransform)
             self.memDataset.Coordinates = None
             if len(gcps) > 0:
-                self.memDataset.SetGCPs(gcps, projection)
+                self.memDataset.SetGCPs(gcps, dstWKT)
             else:
-                self.memDataset.SetProjection(projection)
+                self.memDataset.SetProjection(dstWKT)
         else:
             #if rasterXSize or rasterYSize are bad create empty Domain Object
             self.memDataset = None
@@ -158,15 +172,15 @@ class Domain():
         '''
         toPrettyWKT = osr.SpatialReference()
         toPrettyWKT.ImportFromWkt(self._get_projection(self.memDataset))
-        prettyWKT  = toPrettyWKT.ExportToPrettyWkt(1)
+        prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
         corners = self._get_corners()
-        print '-'*40
+        print '-' * 40
         print 'Size: %d x %d' % (self.memDataset.RasterXSize,
                                  self.memDataset.RasterYSize)
-        print '-'*40
+        print '-' * 40
         print 'Projection:'
-        print prettyWKT;
-        print '-'*40
+        print prettyWKT
+        print '-' * 40
         print 'Corners:'
         print 'Lat: %5.2f %5.2f %5.2f %5.3f' % (corners[0][0],
                 corners[0][1], corners[0][2], corners[0][3])
@@ -184,16 +198,12 @@ class Domain():
 
         Parameters
         ----------
-        xmlFileName: string
+        xmlFileName: string, optional
             Name of the XML-file to convert. If only this value is given
             - kmlFileName=xmlFileName+'.kml'
 
-        kmlFileName: string
+        kmlFileName: string, optional
             Name of the KML-file to generate from the current Domain
-
-        Modifies
-        --------
-        Generates KML file
 
         '''
         # test input options
@@ -213,12 +223,14 @@ class Domain():
                 domains.append(Domain(None, xmlFileName, domainName))
 
         elif xmlFileName is None and kmlFileName is not None:
-            # if only output KML-file is given convert the current domain to KML
+            # if only output KML-file is given
+            # then convert the current domain to KML
             domains = [self]
 
         else:
             # otherwise it is potentially error
-            raise
+            raise OptionError('Either xmlFileName(%s)\
+             or kmlFileName(%s) are wrong' % (xmlFileName, kmlFileName))
 
         # open KML, write header
         kmlFile = file(kmlFileName, 'wt')
@@ -241,13 +253,13 @@ class Domain():
         kmlFile.write('        </Folder></Document></kml>\n')
         kmlFile.close()
 
-    def _convertExtentDic(self, dstWKT, extentDic):
-        ''' Convert values in degree of lat/lon to proper coordinate system
+    def _convert_extentDic(self, dstWKT, extentDic):
+        '''Convert -lle option (lat/lon) to -te (proper coordinate system)
 
-        Get source SRS from element XML and target SRS from dstWKT.
+        Source SRS from LAT/LON projection and target SRS from dstWKT.
         Create osr.CoordinateTransformation based on these SRSs and
-        convert given values in degree to the destination coordinate system
-        given by WKT.
+        convert given values in degrees to the destination coordinate
+        system given by WKT.
         Add key "te" and the converted values into the extentDic.
 
         Parameters
@@ -260,42 +272,31 @@ class Domain():
         Returns
         -------
         extentDic: dictionary
-            dictionary with "te" key and its values
-
-        Modifies
-        --------
-        Degree of lat/lon is converted to the given coordinate system.
-        The converted values are added to the extentDic with "-te" key.
+            input dictionary + "te" key and its values
 
         '''
-        # Set source SRS from XML element
-        srcSRS = osr.SpatialReference()
-        srcString = "+proj=latlong +datum=WGS84 +no_defs"
-        srcSRS.ImportFromProj4(srcString)
-
         # Set destination SRS from dstWKT
         dstSRS = osr.SpatialReference()
         dstSRS.ImportFromWkt(dstWKT)
 
-        CoorTrans = osr.CoordinateTransformation(srcSRS, dstSRS)
+        coorTrans = osr.CoordinateTransformation(self._latlong_srs(), dstSRS)
 
         # convert lat/lon given by "lle" to the target coordinate system and
         # add key "te" and the converted values to extentDic
-        x1, y1, z1 = CoorTrans.TransformPoint(extentDic["lle"][0],
+        x1, y1, z1 = coorTrans.TransformPoint(extentDic["lle"][0],
                                               extentDic["lle"][2])
-        x2, y2, z2 = CoorTrans.TransformPoint(extentDic["lle"][0],
+        x2, y2, z2 = coorTrans.TransformPoint(extentDic["lle"][0],
                                               extentDic["lle"][3])
-        x3, y3, z3 = CoorTrans.TransformPoint(extentDic["lle"][1],
+        x3, y3, z3 = coorTrans.TransformPoint(extentDic["lle"][1],
                                               extentDic["lle"][2])
-        x4, y4, z4 = CoorTrans.TransformPoint(extentDic["lle"][1],
+        x4, y4, z4 = coorTrans.TransformPoint(extentDic["lle"][1],
                                               extentDic["lle"][3])
         minX = min([x1, x2, x3, x4])
         maxX = max([x1, x2, x3, x4])
         minY = min([y1, y2, y3, y4])
         maxY = max([y1, y2, y3, y4])
 
-        val = [minX, minY, maxX, maxY]
-        extentDic["te"] = val
+        extentDic["te"] = [minX, minY, maxX, maxY]
 
         return extentDic
 
@@ -319,7 +320,7 @@ class Domain():
 
         Returns
         -------
-        optionDic: dictionary
+        extentDic: dictionary
             has key ("te" or "lle") and ("tr" or "ts") and their values.
 
         Raises
@@ -327,7 +328,7 @@ class Domain():
         OptionError: occurs when the extentString is improper
 
         '''
-        optionDic = {}
+        extentDic = {}
 
         # Find -re text
         str_tr = re.findall('-tr\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
@@ -340,17 +341,17 @@ class Domain():
                 raise OptionError("Domain._create_extentDic(): "
                                   "-tr is used as "
                                   "'-tr xResolution yResolution'")
-            # Add the key and value to optionDic
-            extentString = extentString.replace(str_tr[0],"")
+            # Add the key and value to extentDic
+            extentString = extentString.replace(str_tr[0], "")
             trElem = str(str_tr).split(None)
             trkey = trElem[0].translate(string.maketrans("", ""), "[]-'")
             if trkey != "":
                 elements = []
                 for i in range(2):
-                    elements.append(float(trElem[i+1].\
+                    elements.append(float(trElem[i + 1].\
                                           translate(string.maketrans("", ""),
                                           "[]'")))
-                optionDic[trkey] = elements
+                extentDic[trkey] = elements
 
         # Find -ts text
         str_ts = re.findall('-ts\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
@@ -362,17 +363,17 @@ class Domain():
             if len(elms_str) != 3 or elms_str[2] == "-":
                 raise OptionError("Domain._create_extentDic(): "
                                   "-ts is used as '-ts width height'")
-            # Add the key and value to optionDic
-            extentString = extentString.replace(str_ts[0],"")
+            # Add the key and value to extentDic
+            extentString = extentString.replace(str_ts[0], "")
             tsElem = str(str_ts).split(None)
             tskey = tsElem[0].translate(string.maketrans("", ""), "[]-'")
             if tskey != "":
                 elements = []
                 for i in range(2):
-                    elements.append(float(tsElem[i+1].\
+                    elements.append(float(tsElem[i + 1].\
                                           translate(string.maketrans("", ""),
                                           "[]'")))
-                optionDic[tskey] = elements
+                extentDic[tskey] = elements
 
         # Find -te text
         str_te = re.findall('-te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
@@ -385,17 +386,17 @@ class Domain():
             if len(elms_str) != 5:
                 raise OptionError("Domain._create_extentDic(): "
                                   "-te is used as '-te xMin yMin xMax yMax'")
-            # Add the key and value to optionDic
-            extentString = extentString.replace(str_te[0],"")
+            # Add the key and value to extentDic
+            extentString = extentString.replace(str_te[0], "")
             teElem = str(str_te).split(None)
             tekey = teElem[0].translate(string.maketrans("", ""), "[]-'")
-            if tekey!= "":
+            if tekey != "":
                 elements = []
                 for i in range(4):
-                    elements.append(float(teElem[i+1].\
+                    elements.append(float(teElem[i + 1].\
                                           translate(string.maketrans("", ""),
                                           "[]'")))
-                optionDic[tekey] = elements
+                extentDic[tekey] = elements
 
         # Find -lle text
         str_lle = re.findall('-lle\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
@@ -409,17 +410,17 @@ class Domain():
                 raise OptionError("Domain._create_extentDic(): "
                                   "-lle is used as "
                                   "'-lle lonWest lonEast latNorth latSouth'")
-            # Add the key and value to optionDic
+            # Add the key and value to extentDic
             extentString = extentString.replace(str_lle[0], "")
             lleElem = str(str_lle).split(None)
             llekey = lleElem[0].translate(string.maketrans("", ""), "[]-'")
             if llekey != "":
                 elements = []
                 for i in range(4):
-                    elements.append(float(lleElem[i+1].\
+                    elements.append(float(lleElem[i + 1].\
                                           translate(string.maketrans("", ""),
                                           "[]'")))
-                optionDic[llekey] = elements
+                extentDic[llekey] = elements
 
         result = re.search("\S", extentString)
 
@@ -429,21 +430,21 @@ class Domain():
                               "extentString is not redable : ", extentString)
 
         # check if one of "-te" and "-lle" is given
-        if ("lle" not in optionDic) and ("te" not in optionDic):
+        if ("lle" not in extentDic) and ("te" not in extentDic):
             raise OptionError("Domain._create_extentDic(): "
                               "'-lle' or '-te' is required.")
-        elif ("lle" in optionDic) and ("te" in optionDic):
+        elif ("lle" in extentDic) and ("te" in extentDic):
             raise OptionError("Domain._create_extentDic(): "
                               "'-lle' or '-te' should be chosen.")
 
         # check if one of "-ts" and "-tr" is given
-        if ("ts" not in optionDic) and ("tr" not in optionDic):
+        if ("ts" not in extentDic) and ("tr" not in extentDic):
             raise OptionError("Domain._create_extentDic(): "
                               "'-ts' or '-tr' is required.")
-        elif ("ts" in optionDic) and ("tr" in optionDic):
+        elif ("ts" in extentDic) and ("tr" in extentDic):
             raise OptionError("Domain._create_extentDic(): "
                               "'-ts' or '-tr' should be chosen.")
-        return optionDic
+        return extentDic
 
     def _from_xml(self, srsString, extentString):
         ''' Read strings from the given xml file
@@ -475,7 +476,6 @@ class Domain():
         # get root element
         domains = ElementTree(file=fd).getroot()
         # iterate over domains to find the required one
-        # for domain in domains.getchildren():
         for domain in list(domains):
             # if the domain name is the same as the given one
             if domain.attrib['name'] == extentString:
@@ -494,7 +494,7 @@ class Domain():
 
         Parameters
         ----------
-        nPoints: int
+        nPoints: int, optional
             Number of points on each border
 
         Returns
@@ -507,8 +507,8 @@ class Domain():
         # and right borders
         sizes = [self.memDataset.RasterXSize, self.memDataset.RasterYSize]
 
-        rcVector1 = [[],[]]
-        rcVector2 = [[],[]]
+        rcVector1 = [[], []]
+        rcVector2 = [[], []]
         # loop for pixels and lines
         for n in range(0, 2):
             step = sizes[n] / nPoints
@@ -538,7 +538,7 @@ class Domain():
 
         # convert Border coordinates into KML-like string
         coordinates = ''
-        for lon,lat in zip(domainLon, domainLat):
+        for lon, lat in zip(domainLon, domainLat):
             coordinates += '%f,%f,0 ' % (lon, lat)
 
         kmlEntry = ''
@@ -553,7 +553,7 @@ class Domain():
         kmlEntry += '                </Style>\n'
         kmlEntry += '                <Polygon><tessellate>1</tessellate>'\
                     '<outerBoundaryIs><LinearRing><coordinates>\n'
-        kmlEntry += coordinates+'\n'
+        kmlEntry += coordinates + '\n'
         kmlEntry += '            </coordinates></LinearRing>'\
                     '</outerBoundaryIs></Polygon></Placemark>\n'
 
@@ -570,13 +570,13 @@ class Domain():
 
         '''
         lonList, latList = self._get_border()
-        polyCont = ','.join(str(lon) + ' ' +str(lat) \
-                   for lon,lat in zip(lonList, latList))
-        WKTPolygon = 'PolygonFromText("POLYGON((%s))")' % polyCont
-        return WKTPolygon
+        polyCont = ','.join(str(lon) + ' ' + str(lat) \
+                   for lon, lat in zip(lonList, latList))
+        wktPolygon = 'PolygonFromText("POLYGON((%s))")' % polyCont
+        return wktPolygon
 
     def _get_corners(self):
-        '''Get coordinates of corners of the domain
+        '''Get coordinates of corners of the Domain
 
         Returns
         -------
@@ -626,7 +626,7 @@ class Domain():
         width = maxX - minX
         height = maxY - minY
         if width <= 0 or height <= 0:
-            raise OptionError("The extent is illigal. "
+            raise OptionError("The extent is illegal. "
                               "'-te xMin yMin xMax yMax' ")
 
         if "tr" in extentDic.keys():
@@ -634,7 +634,8 @@ class Domain():
             resolutionY = -(extentDic["tr"][1])
             if (width < resolutionX or height < resolutionY):
                 raise OptionError("'-tr' is too large. "
-                                  "width is " + width + "  height is "+ height)
+                                  "width is " + width +
+                                  "  height is " + height)
             rasterXSize = width / resolutionX
             rasterYSize = abs(height / resolutionY)
         else:
@@ -645,12 +646,11 @@ class Domain():
 
         # create a list for GeoTransform
         coordinates = [cornerX, resolutionX, 0.0, cornerY, 0.0, resolutionY]
-        rasterSize = [int(rasterXSize), int(rasterYSize)]
 
-        return coordinates, rasterSize
+        return coordinates, int(rasterXSize), int(rasterYSize)
 
     def _get_projection(self, dataset):
-        '''get projection form dataset
+        '''Get projection form dataset
 
         Get projection from GetProjection() or GetGCPProjection().
         If both are empty, raise error
@@ -664,15 +664,16 @@ class Domain():
         ProjectionError: occurrs when the projection is empty.
 
         '''
+        #get projection or GCPProjection
         projection = dataset.GetProjection()
-        if projection != "":
-            return projection
+        if projection == "":
+            projection = dataset.GetGCPProjection()
 
-        projection = dataset.GetGCPProjection()
-        if projection != "":
-            return projection
-        else:
-            raise ProjectionError()
+        #test projection
+        if projection == "":
+            raise ProjectionError('Empty projection in input dataset!')
+
+        return projection
 
     def _transfrom_points(self, colVector, rowVector):
         '''Transform given lists of X,Y coordinates into lat/lon
@@ -689,27 +690,35 @@ class Domain():
 
         '''
         # get source SRS (either Projection or GCPProjection)
-        srcWKT = self.memDataset.GetProjection()
-        if srcWKT == '':
-            srcWKT = self.memDataset.GetGCPProjection()
+        srcWKT = self._get_projection(self.memDataset)
 
         # prepare target WKT (pure lat/lon)
-        proj4string = "+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"
-        dstSRS = osr.SpatialReference()
-        dstSRS.ImportFromProj4(proj4string)
-        dstWKT = dstSRS.ExportToWkt()
+        dstWKT = self._latlong_srs().ExportToWkt()
 
         # create transformer
         transformer = gdal.Transformer(self.memDataset, None,
-                                       ['SRC_SRS='+srcWKT, 'DST_SRS='+dstWKT])
+                                       ['SRC_SRS=' + srcWKT,
+                                       'DST_SRS=' + dstWKT])
 
         # use the transformer to convert pixel/line into lat/lon
         latVector = []
         lonVector = []
         for pixel, line in zip(colVector, rowVector):
-            succ,point = transformer.TransformPoint(0, pixel, line)
+            succ, point = transformer.TransformPoint(0, pixel, line)
             lonVector.append(point[0])
             latVector.append(point[1])
 
         return lonVector, latVector
 
+    def _latlong_srs(self):
+        '''Create SRS for latlong projectiom, WGS84
+
+        Returns
+        -------
+            latlongSRS: osr.SpatialReference with projection for lat/long
+        '''
+        latlongSRS = osr.SpatialReference()
+        latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 \
+                                    +datum=WGS84 +no_defs")
+
+        return latlongSRS
