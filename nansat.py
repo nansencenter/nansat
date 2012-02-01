@@ -243,82 +243,6 @@ class Nansat():
 
         self.vrt = gdal.Open(self.rawVRTFileName)
 
-    def export(self, fileName, bandsList, dataType=gdal.GDT_Int16):
-        '''Save to raster bands to a Tiff file
-
-        Copy in-memory VRT dataset.
-        Arrange metadata of the specified raster bands.
-        Write down it to GTiff file.
-
-        Parameters
-        ----------
-        fileName : string
-            fileName to write down
-        bandsList : list
-            a list of band numbers to fetch
-        dataType : datatype of GDALRasterBand
-            GDAL.GDT_Byte, GDAL.GDT_UInt16, GDAL.GDT_Int16 (default),
-            GDAL.GDT_UInt32, GDAL.GDT_Int32, GDAL.GDT_Float32,
-            GDAL.GDT_Float64, GDAL.GDT_CInt16, GDAL.GDT_CInt32,
-            GDAL.GDT_CFloat32, GDAL.GDT_CFloat64
-
-        '''
-        copyFileName = "/vsimem/vrtCopy"
-        vrtDatasetCopy = self.vrtDriver.CreateCopy(copyFileName, self.vrt)
-
-        rasterXSize = self.vrt.RasterXSize
-        rasterYSize = self.vrt.RasterYSize
-
-        # create empty dataset with N bands
-        vrtDriver = gdal.GetDriverByName("VRT")
-        vrtDataset = vrtDriver.Create("/vsimem/export_vrt.vrt",
-                                rasterXSize, rasterYSize,
-                                len(bandsList), dataType)
-        vrtDataset.SetGCPs(self.vrt.GetGCPs(),
-                           vrtDataset.GetGCPProjection())
-        vrtDataset.SetGeoTransform(self.vrt.GetGeoTransform())
-        vrtDataset.SetMetadata(self.vrt.GetMetadata())
-        vrtDataset.SetProjection(self.vrt.GetProjection())
-
-        # populate the bands with source metadata
-        for iBand in range(len(bandsList)):
-            metaItemKeys = self.rawVRT.GetRasterBand(bandsList[iBand]).\
-                                       GetMetadata_Dict().keys()
-            for iItemKey in metaItemKeys:
-                vrtDataset.GetRasterBand(iBand + 1).SetMetadataItem(
-                    iItemKey,
-                    self.rawVRT.GetRasterBand(bandsList[iBand]).\
-                                GetMetadataItem(iItemKey))
-
-            BlockSize = vrtDatasetCopy.GetRasterBand(bandsList[iBand]).\
-                                       GetBlockSize()
-
-            bandSourceXML = '\
-            <SimpleSource>\
-              <SourceFilename relativeToVRT="0">%s</SourceFilename>\
-              <SourceBand>%d</SourceBand>\
-              <SourceProperties RasterXSize="%d" RasterYSize="%d" \
-               DataType="UInt16" BlockXSize="%d" BlockYSize="%d" />\
-              <SrcRect xOff="0" yOff="0" xSize="%d" ySize="%d" />\
-              <DstRect xOff="0" yOff="0" xSize="%d" ySize="%d" />\
-            </SimpleSource>' \
-            % (copyFileName, bandsList[iBand], rasterXSize, rasterYSize,\
-               BlockSize[0], BlockSize[1], rasterXSize, rasterYSize, \
-               rasterXSize, rasterYSize)
-
-            vrtDataset.GetRasterBand(iBand + 1).\
-                       SetMetadataItem("source_0",
-                                       bandSourceXML,
-                                       "new_vrt_sources")
-
-        vrtDataset.FlushCache()
-
-        tiffDriver = gdal.GetDriverByName("GTiff")
-        copyDataset = tiffDriver.CreateCopy(fileName + ".tif",
-                                            vrtDataset, 0)
-        copyDataset = None
-        vrtDatasetCopy = None
-
     def export_VRT(self, fileName=None):
         '''Export in-memory VRT dataset to a physical file
 
@@ -333,9 +257,10 @@ class Nansat():
 
         '''
         if fileName is None:
-            fileName = "/vsistdout/" # GDAL special name to flush output to console.
-            # Unfortunately an error message about non-existing file
-            # is still reported this must be a bug in GDAL.
+            # GDAL special name to flush output
+            fileName = "/vsistdout/"
+            # to console. Unfortunately an error message about
+            # non-existing file is reported this must be a bug in GDAL.
         vrtDatasetCopy = self.vrtDriver.CreateCopy(fileName, self.vrt)
         vrtDatasetCopy = None
 
@@ -486,7 +411,8 @@ class Nansat():
         elif (proj4string is None and extentOption is None and
               dstDomain is not None):
             print 'Reprojection with given Domain'
-            # warp the Raw VRT onto the coordinate stystem given by input Domain
+            # warp the Raw VRT onto the coordinate stystem given by
+            # input Domain
             rawWarpedVRT = gdal.AutoCreateWarpedVRT(
                                    self.rawVRT, srcWKT,
                                    dstDomain.memDataset.GetProjection(),
@@ -647,7 +573,7 @@ class Nansat():
         tic = time.clock()
         print "Writing figure (%d x %d) " % (band.XSize, band.YSize)
         rawArray = band.ReadAsArray()
-        
+
         if rawArray is None:
             raise DataError("Nansat.write_figure(): "
                             "array of the band is empty")
@@ -662,7 +588,8 @@ class Nansat():
         # if value > pixelValMax then replace as value = pixelValMax
         if pixelValMin is None:
 
-            # reduce input matrix to the size 100 x 100 for calculating histogram
+            # reduce input matrix to the size 100 x 100 for calculating
+            # histogram
             if not useFullMatrix:
                 step1 = max(rawArray.shape[0] / 100, 1)
                 step2 = max(rawArray.shape[1] / 100, 1)
@@ -746,7 +673,7 @@ class Nansat():
             try:
                 mapper_module = __import__(iMapper)
                 vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
-                                         self.fileName, self.dataset, 
+                                         self.fileName, self.dataset,
                                          self.metadata,
                                          bandList).vsiDataset
                 break
@@ -862,10 +789,12 @@ class Nansat():
         elem = tree.find("GeoTransform")
         elem.text = geoTransformString
         # replace DstGeoTranform
-        elem = tree.find("GDALWarpOptions/Transformer/GenImgProjTransformer/DstGeoTransform")
+        elem = tree.find("GDALWarpOptions/Transformer/"
+                         "GenImgProjTransformer/DstGeoTransform")
         elem.text = geoTransformString
 
-        elem = tree.find("GDALWarpOptions/Transformer/GenImgProjTransformer/DstInvGeoTransform")
+        elem = tree.find("GDALWarpOptions/Transformer/"
+                         "GenImgProjTransformer/DstInvGeoTransform")
         # get inverse geotransform
         invGeotransform = gdal.InvGeoTransform(geoTransform)
         # convert proper string style and set to the DstInvGeoTransform element
@@ -905,7 +834,8 @@ class Nansat():
             # get file size
             gdal.VSIFSeekL(vsiFile, 0, 2)
             vsiFileSize = gdal.VSIFTellL(vsiFile)
-            gdal.VSIFSeekL(vsiFile, 0, 0) # fseek to start
+             # fseek to start again
+            gdal.VSIFSeekL(vsiFile, 0, 0)
             # read
             vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
             gdal.VSIFCloseL(vsiFile)
@@ -925,7 +855,7 @@ class Nansat():
           are in metadata keys.
         Compare the key values of the bandID
             to the values of the metadata dictionary.
-        If they are matched, append the band number (iBand) into candidate list.
+        If matched, append the band number (iBand) into candidate list.
         If not, go to the next band.
         Iterate these steps until all bands are checked.
         If single band is specified at the end, return the band number.
