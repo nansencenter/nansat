@@ -13,9 +13,9 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, ds, fileName, metadata, vrtBandList, rawVRTFileName):
+    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
         ''' Create MER1 VRT '''
-        VRT.__init__(self, metadata, rawVRTFileName);
+        VRT.__init__(self, dataset, metadata, rawVRTFileName);
 
         product = metadata.get("MPH_PRODUCT", "Not_MERIS")
 
@@ -44,6 +44,6 @@ class Mapper(VRT):
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
             
-        self.createVRT_and_add_bands(ds, metaDict, vrtBandList);
-
+        self._createVRT(metaDict, vrtBandList);
+        
         return

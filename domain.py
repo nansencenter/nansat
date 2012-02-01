@@ -173,7 +173,7 @@ class Domain():
         toPrettyWKT = osr.SpatialReference()
         toPrettyWKT.ImportFromWkt(self._get_projection(self.memDataset))
         prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
-        corners = self._get_corners()
+        corners = self.get_corners()
         print '-' * 40
         print 'Size: %d x %d' % (self.memDataset.RasterXSize,
                                  self.memDataset.RasterYSize)
@@ -489,7 +489,7 @@ class Domain():
 
         return srsString, extentString, name
 
-    def _get_border(self, nPoints=10):
+    def get_border(self, nPoints=10):
         '''Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
@@ -534,7 +534,7 @@ class Domain():
             String with the Placemark entry
 
         '''
-        domainLon, domainLat = self._get_border()
+        domainLon, domainLat = self.get_border()
 
         # convert Border coordinates into KML-like string
         coordinates = ''
@@ -575,7 +575,7 @@ class Domain():
         wktPolygon = 'PolygonFromText("POLYGON((%s))")' % polyCont
         return wktPolygon
 
-    def _get_corners(self):
+    def get_corners(self):
         '''Get coordinates of corners of the Domain
 
         Returns

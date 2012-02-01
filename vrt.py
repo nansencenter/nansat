@@ -36,20 +36,24 @@ class VRT():
 
     '''
 
-    def __init__(self, metadata, rawVRTName):
+    def __init__(self, dataset, metadata, rawVRTName):
         ''' Set attributes common for all mappers
 
         Parameters
         ----------
-        metadata: metadata
-        rawVRTName: file name
-            '/vsimem/vsiFile.vrt'
-
+        datset: GDAL Dataset
+            dataset from Nansat
+        metadata: GDAL metadata
+            metadata from Nansat
+        rawVRTName: string
+            file name from Nansat ('/vsimem/vsiFile.vrt')
         '''
+
         self.metadata = metadata
         self.rawVRTName = rawVRTName
+        self.dataset = dataset
 
-    def addPixelFunction(self, pixelFunction, bands, dataset, parameters):
+    def _add_pixel_function(self, pixelFunction, bands, fileName, parameters):
         ''' Generic function for mappers to add PixelFunctions
         from bands in the same dataset
 
@@ -63,11 +67,12 @@ class VRT():
         Parameters
         ----------
         pixelFunction: string
-            value of 'pixelfunction' attribute for each band
+            value of 'pixelfunction' attribute for each band. Name of
+            the actual pixel function.
         bands: list
-            elements in the list represent band number
-        dataset: string
-            file name
+            input band numbers
+        fileName: string
+            name of the file with input bands
         parameters: dictionary
             "longname", "units" (+ some optional) keys and their values
 
@@ -75,24 +80,24 @@ class VRT():
         --------
         self.vsiDataset: VRT dataset
             add PixelFunctions from bands in the same dataset
-
         '''
+
         newBand = self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount)
         options = ['subClass=VRTDerivedRasterBand',
-                   'PixelFunctionType='+pixelFunction]
+                   'PixelFunctionType=' + pixelFunction]
         self.vsiDataset.AddBand(datatype=gdal.GDT_Float32, options=options)
         md = {}
         for i, bandNo in enumerate(bands):
-            BlockXSize, BlockYSize = self.dataset.GetRasterBand(bandNo).\
+            blockXSize, blockYSize = self.dataset.GetRasterBand(bandNo).\
                                                   GetBlockSize()
-            DataType = self.dataset.GetRasterBand(bandNo).DataType
-            md['source_'+str(i)] = self.SimpleSource.substitute(
+            dataType = self.dataset.GetRasterBand(bandNo).DataType
+            md['source_' + str(i)] = self.SimpleSource.substitute(
                                         XSize=self.vsiDataset.RasterXSize,
-                                        BlockXSize=BlockXSize,
-                                        BlockYSize=BlockYSize,
-                                        DataType=DataType,
+                                        BlockXSize=blockXSize,
+                                        BlockYSize=blockYSize,
+                                        DataType=dataType,
                                         YSize=self.vsiDataset.RasterYSize,
-                                        Dataset=dataset, SourceBand=bandNo)
+                                        Dataset=fileName, SourceBand=bandNo)
 
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).\
                         SetMetadata(md, 'vrt_sources')
@@ -116,44 +121,12 @@ class VRT():
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </SimpleSource> ''')
 
-    def createVRT_and_add_bands(self, dataset, metaDict, vrtBandList):
-        ''' Create VSI VRT dataset and set geo-metadata from source file
-
-        Parameters
-        -----------
-        dataset : dataset
-            dataset or subdataset if the data has subdataset.
-        metaDict: list
-            incldes some dictionaries.
-            The number of dictionaries is same as number of bands.
-            Each dictionary represents metadata for each band.
-        vrtBandList: list
-            band numbers to fetch.
-            If it is None, all bands in the file are fetched.
-
-        Modifies
-        --------
-        set attributes (vsiDataset, srcRasterXSize, srcRasterYSize,
-        dataset, vsiDataset)
-
-        '''
-        self.vsiDataset, srcRasterXSize, srcRasterYSize = \
-                self._createVRT(dataset, len(vrtBandList))
-        self.dataset = dataset
-        # To be able to access bands of dataset, to know Blocksize and DataType
-        # add bands with metadata and corresponding values
-        self.vsiDataset = self._addAllBands(self.vsiDataset, vrtBandList,
-                                            metaDict, srcRasterXSize,
-                                            srcRasterYSize)
-
-    def _addAllBands(self, vsiDataset, vrtBandList, metaDict,
+    def _add_all_bands(self, vrtBandList, metaDict,
                      srcRasterXSize, srcRasterYSize):
         '''Loop through all bands and add metadata and band XML source
 
         Parameters
         -----------
-        vsiDataset: VRT dataset
-            VSI VRT dataset with common parameters
         vrtBandList: list
             band numbers to fetch
         metaDict: list
@@ -163,101 +136,111 @@ class VRT():
         srcRasterXSize, srcRasterYSize: int
             raster XSize and rasterYSize
 
-        Returns
+        Returns 0
         --------
-        vsiDataset: VRT dataset
-            VSI VRT dataset added band metadata
 
+        Modifies
+        --------
+        self.vsiDataset: VRT dataset
+            VSI VRT dataset added band metadata
         '''
-        # for bandNo in vrtBandList:
+
         for iBand in range(len(vrtBandList)):
+        # beter to use: for iBand, bandNo in enumerate(vrtBandList):
             bandNo = vrtBandList[iBand]
-            # check if
+            # check if the band in the list exist
             if int(bandNo) > int(metaDict.__len__()):
                 print ("vrt.addAllBands(): "
                        "an element in the bandList is improper")
-                return
+                break
             # add metadata
             # !!! This (GetRasterBand(1)) is a just temporary solution
             # because self.dataset means the first subdataset
             # if the data has subdatasets. should be fixed !!!
-            ##xBlockSize, yBlockSize = self.dataset.\
-            ## 	GetRasterBand(bandNo).GetBlockSize()
-            xBlockSize, yBlockSize = self.dataset.\
-                                          GetRasterBand(1).GetBlockSize()
-            ##srcDataType = self.dataset.GetRasterBand(bandNo).DataType
-            srcDataType = self.dataset.GetRasterBand(1).DataType
-            wkv_name = metaDict[bandNo-1]["wkv"]
+            rasterBand = self.dataset.GetRasterBand(1)
+            xBlockSize, yBlockSize = rasterBand.GetBlockSize()
+            srcDataType = rasterBand.DataType
+            wkv_name = metaDict[bandNo - 1]["wkv"]
             wkvDict = self._get_wkv(wkv_name)
             for key in wkvDict:
-                vsiDataset.GetRasterBand(iBand+1).\
+                self.vsiDataset.GetRasterBand(iBand + 1).\
                            SetMetadataItem(key, wkvDict[key])
-            if "parameters" in metaDict[bandNo-1]:
+            if "parameters" in metaDict[bandNo - 1]:
                 # Warning: zero-indexing for medaDict,
                 # but 1-indexing for band numbers!
-                for metaName in metaDict[bandNo-1]["parameters"]:
-                    vsiDataset.GetRasterBand(iBand+1).\
+                for metaName in metaDict[bandNo - 1]["parameters"]:
+                    self.vsiDataset.GetRasterBand(iBand + 1).\
                                SetMetadataItem(metaName,
-                               metaDict[bandNo-1]["parameters"][metaName])
-            # add band
+                               metaDict[bandNo - 1]["parameters"][metaName])
+            # create band source
             bandSource = self.SimpleSource.\
                               substitute(XSize=srcRasterXSize,
                               YSize=srcRasterYSize,
-                              Dataset=metaDict[bandNo-1]['source'],
-                              SourceBand=metaDict[bandNo-1]['sourceBand'],
+                              Dataset=metaDict[bandNo - 1]['source'],
+                              SourceBand=metaDict[bandNo - 1]['sourceBand'],
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
                               DataType=srcDataType)
-            vsiDataset.GetRasterBand(iBand+1).\
+            #add band to the VRT file
+            self.vsiDataset.GetRasterBand(iBand + 1).\
                        SetMetadataItem("source_0", bandSource,
                        "new_vrt_sources")
-        vsiDataset.FlushCache()
 
-        return vsiDataset
+        self.vsiDataset.FlushCache()
 
-    def _createVRT(self, srcDataset, length):
-        ''' Create VRT with common parameters
+        return 0
+
+    def _createVRT(self, metaDict, vrtBandList):
+        ''' Create VSI VRT dataset, set geo-metadata, add all bands
 
         Parameters
-        ----------
-        srcDataset: dataset
-            GDAL dataset / subdataset
-        length: int
-            number of elements in vrtBandList
+        -----------
+        metaDict: list
+            includes some dictionaries for mapping bands in input Datset
+            and well-known-variables. The number of dictionaries is same
+            as number of bands. Each dictionary represents metadata for
+            each band.
+        vrtBandList: list
+            band numbers to fetch.
+            If it is None, all bands in the file are fetched.
 
-        Returns
-        -------
-        vsiDataset: dataset
-            VRT dataset which includes common information
-        srcRasterXSize, srcRasterYSize: int
-            raster Xsize and raster Ysize
-
+        Modifies
+        --------
+            Creates self.vsiDataset
+            Sets in vsiDataset: srcRasterXSize, srcRasterYSize,
+            GeoTransform, GCPS, ...
+            Add all bands to the vsiDataset
         '''
-        # get geo-metadata from source dataset (or subdataset)
-        srcGeoTransform = srcDataset.GetGeoTransform()
-        srcProjection = srcDataset.GetProjection()
-        srcProjectionRef = srcDataset.GetProjectionRef()
-        srcGCPCount = srcDataset.GetGCPCount()
-        srcGCPs = srcDataset.GetGCPs()
-        srcGCPProjection = srcDataset.GetGCPProjection()
 
-        srcRasterXSize = srcDataset.GetRasterBand(1).XSize
-        srcRasterYSize = srcDataset.GetRasterBand(1).YSize
+        # get geo-metadata from source dataset (or subdataset)
+        srcGeoTransform = self.dataset.GetGeoTransform()
+        srcProjection = self.dataset.GetProjection()
+        srcProjectionRef = self.dataset.GetProjectionRef()
+        srcGCPCount = self.dataset.GetGCPCount()
+        srcGCPs = self.dataset.GetGCPs()
+        srcGCPProjection = self.dataset.GetGCPProjection()
+
+        srcRasterXSize = self.dataset.GetRasterBand(1).XSize
+        srcRasterYSize = self.dataset.GetRasterBand(1).YSize
 
         # create VSI VRT dataset
         vrtDrv = gdal.GetDriverByName("VRT")
-        vsiDataset = vrtDrv.Create(self.rawVRTName,
+        self.vsiDataset = vrtDrv.Create(self.rawVRTName,
                                    srcRasterXSize, srcRasterYSize,
-                                   length, gdal.GDT_Float32)
+                                   len(vrtBandList), gdal.GDT_Float32)
 
         # set geo-metadata in the VSI VRT dataset
-        vsiDataset.SetGCPs(srcGCPs, srcGCPProjection)
-        vsiDataset.SetProjection(srcProjection)
-        vsiDataset.SetGeoTransform(srcGeoTransform)
+        self.vsiDataset.SetGCPs(srcGCPs, srcGCPProjection)
+        self.vsiDataset.SetProjection(srcProjection)
+        self.vsiDataset.SetGeoTransform(srcGeoTransform)
 
         # set metadata
-        vsiDataset.SetMetadata(self.metadata)
+        self.vsiDataset.SetMetadata(self.metadata)
 
-        return vsiDataset, srcRasterXSize, srcRasterYSize
+        # add bands with metadata and corresponding values
+        self._add_all_bands(vrtBandList, metaDict,
+                            srcRasterXSize, srcRasterYSize)
+
+        return 0
 
     def _get_wkv(self, wkv_name):
         ''' Get wkv from wkv.xml

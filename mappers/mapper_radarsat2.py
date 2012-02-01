@@ -19,10 +19,10 @@ from vrt import *
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, ds, fileName, metadata, vrtBandList, rawVRTName):
+    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):        
         ''' Create Radarsat2 VRT '''
-        VRT.__init__(self, metadata, rawVRTName);
-
+        VRT.__init__(self, dataset, metadata, rawVRTFileName);
+        
         if vrtBandList == None:
             vrtBandList = [1,2];
 
@@ -37,7 +37,7 @@ class Mapper(VRT):
         metaDict = [ {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 1, 'wkv': 'sigma0', 'parameters': {'polarization': 'HH'}},\
                      {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 2, 'wkv': 'sigma0', 'parameters': {'polarization': 'HV'}} ];
 
-        self.createVRT_and_add_bands(ds, metaDict, vrtBandList);
+        self._createVRT(metaDict, vrtBandList);
 
         ##############################################################
         # Adding derived band (incidence angle) calculated
@@ -51,7 +51,7 @@ class Mapper(VRT):
         self.vsiDataset.AddBand(datatype=GDT_Float32, options=options)  
         
         md = {}
-        BlockXSize, BlockYSize = ds.GetRasterBand(1).GetBlockSize()
+        BlockXSize, BlockYSize = dataset.GetRasterBand(1).GetBlockSize()
         md['source_0'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize, YSize=self.vsiDataset.RasterYSize, 
                                     BlockXSize=BlockXSize, BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
                                     Dataset='RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml')

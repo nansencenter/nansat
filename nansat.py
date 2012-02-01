@@ -27,6 +27,8 @@ from scipy.misc import toimage, pilutil
 from scipy.stats import cumfreq
 from xml.etree.ElementTree import *
 
+import matplotlib.pyplot as plt
+
 try:
     from osgeo import gdal, osr
 except ImportError:
@@ -160,7 +162,7 @@ class Nansat():
         print self.fileName
         print '-' * 40
         self.list_bands()
-        print self._get_domain()
+        print self.get_domain()
         return ''
 
     def dereproject(self):
@@ -608,7 +610,8 @@ class Nansat():
     def write_figure(self, fileName, bandNo=1, bandName=None,
                      pixelValMin=None, pixelValMax=None,
                      imageDatatype=None, thresholdRatio=1.0,
-                     useFullMatrix=False, extension='png'):
+                     useFullMatrix=False, extension='png',
+                     useImsave=False):
         '''Save a raster band to a figure in grapfical format.
 
         Get numpy array from the band specified either by given band
@@ -644,11 +647,16 @@ class Nansat():
         tic = time.clock()
         print "Writing figure (%d x %d) " % (band.XSize, band.YSize)
         rawArray = band.ReadAsArray()
+        
         if rawArray is None:
             raise DataError("Nansat.write_figure(): "
                             "array of the band is empty")
-        toc = time.clock()
-        print "(%3.1f sec) " % (toc - tic),
+
+        #if easy imsave operation is allowed
+        if useImsave:
+            plt.imsave(fileName + ".png", rawArray)
+            print "(%3.1f sec) " % (time.clock() - tic),
+            return
 
         # if value < pixelValMin then replace as value = pixelValMin
         # if value > pixelValMax then replace as value = pixelValMax
@@ -666,16 +674,14 @@ class Nansat():
             pixelValMin, pixelValMax = self._get_pixelValueRange(
                                         histArray, thresholdRatio)
         print "[%f %f]" % (pixelValMin, pixelValMax)
-        toc = time.clock()
-        print "(%3.1f sec) " % (toc - tic)
+        print "(%3.1f sec) " % (time.clock() - tic)
 
         # cut away values over limits and save to a PNG
         np.clip(rawArray, pixelValMin, pixelValMax, out=rawArray)
         toimage(rawArray).save(fileName + "." + extension)
-        toc = time.clock()
-        print "(%3.1f sec) " % (toc - tic)
+        print "(%3.1f sec) " % (time.clock() - tic)
 
-    def _get_domain(self):
+    def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
 
@@ -739,11 +745,10 @@ class Nansat():
         for iMapper in mapperList:
             try:
                 mapper_module = __import__(iMapper)
-                vrtDataset = mapper_module.Mapper(
-                                         self.dataset, self.fileName,
+                vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
+                                         self.fileName, self.dataset, 
                                          self.metadata,
-                                         bandList,
-                                         self.rawVRTFileName).vsiDataset
+                                         bandList).vsiDataset
                 break
             except:
                 pass
