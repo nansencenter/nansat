@@ -77,6 +77,10 @@ class Domain():
             Available options: (("-te" or "-lle") and ("-tr" or "-ts"))
             (e.g. "-lle -10 30 55 60 -ts 1000 1000" or
             "-te 100 2000 300 10000 -tr 300 200")
+            -tr resolutionx resolutiony
+            -ts sizex sizey
+            -te xmin ymin xmax ymax
+            -lle lonmin latmin lonmax latmax
         domainName: string, optional
             Name to be added to the Domain object
 
@@ -284,13 +288,14 @@ class Domain():
         # convert lat/lon given by "lle" to the target coordinate system and
         # add key "te" and the converted values to extentDic
         x1, y1, z1 = coorTrans.TransformPoint(extentDic["lle"][0],
-                                              extentDic["lle"][2])
-        x2, y2, z2 = coorTrans.TransformPoint(extentDic["lle"][0],
                                               extentDic["lle"][3])
-        x3, y3, z3 = coorTrans.TransformPoint(extentDic["lle"][1],
-                                              extentDic["lle"][2])
-        x4, y4, z4 = coorTrans.TransformPoint(extentDic["lle"][1],
+        x2, y2, z2 = coorTrans.TransformPoint(extentDic["lle"][2],
                                               extentDic["lle"][3])
+        x3, y3, z3 = coorTrans.TransformPoint(extentDic["lle"][2],
+                                              extentDic["lle"][1])
+        x4, y4, z4 = coorTrans.TransformPoint(extentDic["lle"][0],
+                                              extentDic["lle"][1])
+
         minX = min([x1, x2, x3, x4])
         maxX = max([x1, x2, x3, x4])
         minY = min([y1, y2, y3, y4])
@@ -642,7 +647,7 @@ class Domain():
             rasterXSize = extentDic["ts"][0]
             rasterYSize = extentDic["ts"][1]
             resolutionX = width / rasterXSize
-            resolutionY = abs(height / rasterYSize)
+            resolutionY = -abs(height / rasterYSize)
 
         # create a list for GeoTransform
         coordinates = [cornerX, resolutionX, 0.0, cornerY, 0.0, resolutionY]

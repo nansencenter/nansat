@@ -25,7 +25,7 @@ import fnmatch
 import numpy as np
 from scipy.misc import toimage, pilutil
 from scipy.stats import cumfreq
-from xml.etree.ElementTree import *
+from xml.etree.ElementTree import XML, ElementTree, tostring
 
 import matplotlib.pyplot as plt
 
@@ -396,7 +396,7 @@ class Nansat():
             print "Band :", iBand + 1
             for i in metadata:
                 if i != "units":
-                    print("    ", i, " : ",
+                    print "  %s: %s" % (i,
                           self.rawVRT.GetRasterBand(iBand + 1).\
                           GetMetadataItem(i))
 
@@ -802,12 +802,7 @@ class Nansat():
             edge_max = 1
         else:
             toc = time.clock()
-            #print "hist : ", hist
-            #print "lowerreallimit : ", lowerreallimit, "binsize : ", binsize
-            #print "array : ", np.histogram(array, bins=15)
-
             hist_eq = hist / max(hist)
-            #print "hist_eq : ", hist_eq
             hist_min = hist_eq[hist_eq < (1 - ratio)]
             hist_max = hist_eq[hist_eq > ratio]
 
@@ -859,19 +854,18 @@ class Nansat():
         element.set("rasterYSize", str(rasterYSize))
         tree = ElementTree(element)
 
-        elem = tree.find("GeoTransform")
         # convert proper string style and set to the GeoTransform element
-        elem.text = str(geoTransform).\
+        geoTransformString = str(geoTransform).\
                         translate(maketrans("", ""), "()")
 
-        elem = tree.find("GDALWarpOptions/Transformer/",
-                            "GenImgProjTransformer/DstGeoTransform")
-        # convert proper string style and set to the DstGeoTransform element
-        elem.text = str(geoTransform).\
-                        translate(maketrans("", ""), "()")
+        # replace GeoTranform
+        elem = tree.find("GeoTransform")
+        elem.text = geoTransformString
+        # replace DstGeoTranform
+        elem = tree.find("GDALWarpOptions/Transformer/GenImgProjTransformer/DstGeoTransform")
+        elem.text = geoTransformString
 
-        elem = tree.find("GDALWarpOptions/Transformer/"
-                            "GenImgProjTransformer/DstInvGeoTransform")
+        elem = tree.find("GDALWarpOptions/Transformer/GenImgProjTransformer/DstInvGeoTransform")
         # get inverse geotransform
         invGeotransform = gdal.InvGeoTransform(geoTransform)
         # convert proper string style and set to the DstInvGeoTransform element

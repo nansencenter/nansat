@@ -19,7 +19,7 @@
 import os
 from string import Template
 
-from xml.etree.ElementTree import *
+from xml.etree.ElementTree import ElementTree
 
 try:
     from osgeo import gdal, osr
