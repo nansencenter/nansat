@@ -185,12 +185,11 @@ class Domain():
         print 'Projection:'
         print prettyWKT
         print '-' * 40
-        print 'Corners:'
-        print 'Lat: %5.2f %5.2f %5.2f %5.3f' % (corners[0][0],
-                corners[0][1], corners[0][2], corners[0][3])
-        print 'Lon: %5.2f %5.2f %5.2f %5.3f' % (corners[1][0],
-                corners[1][1], corners[1][2], corners[1][3])
-
+        print 'Corners (lon, lat):'
+        print '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)' % (corners[0][0],
+                corners[1][0], corners[0][2], corners[1][2])
+        print '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)' % (corners[0][1],
+                corners[1][1], corners[0][3], corners[1][3])
         return ''
 
     def write_kml(self, xmlFileName=None, kmlFileName=None):
@@ -589,11 +588,10 @@ class Domain():
             vectors with lon/lat values for each corner
 
         '''
-        sizes = [self.memDataset.RasterXSize, self.memDataset.RasterYSize]
         colVector = [0, 0, self.memDataset.RasterXSize,
                      self.memDataset.RasterXSize]
         rowVector = [0, self.memDataset.RasterYSize, 0,
-                     self.memDataset.RasterXSize]
+                     self.memDataset.RasterYSize]
         return self._transfrom_points(colVector, rowVector)
 
     def _get_geotransform(self, extentDic):
