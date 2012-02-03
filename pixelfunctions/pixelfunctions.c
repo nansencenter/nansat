@@ -908,6 +908,45 @@ return CE_None;
 }
 
 
+CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol;
+	double sigma0VV, sigma0HH, incidence_angle, factor;
+	#define PI 3.14159265;
+		
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+	
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			sigma0HH = SRCVAL(papoSources[0], eSrcType, ii);
+			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii)*PI;
+			incidence_angle = incidence_angle/180;
+			
+			/* Polarisation ratio from Thompson et al. with alpha=0.6 */
+			factor = pow( (1+2* pow(tan(incidence_angle),2)) / (1+0.6*pow(tan(incidence_angle),2)), 2); 
+			sigma0VV = sigma0HH*factor;
+
+			GDALCopyWords(&sigma0VV, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+	
+	/* ---- Return success ---- */
+return CE_None;
+}
+
+
+
 /************************************************************************/
 /*                     GDALRegisterDefaultPixelFunc()                   */
 /************************************************************************/
@@ -967,6 +1006,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToMagnitude", UVToMagnitude);
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
+    GDALAddDerivedBandPixelFunc("Sigma0HHIncidenceToSigma0VV", Sigma0HHIncidenceToSigma0VV);
     
     return CE_None;
 }

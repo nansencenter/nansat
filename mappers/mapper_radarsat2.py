@@ -67,4 +67,40 @@ class Mapper(VRT):
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('pixelfunction', 'BetaSigmaToIncidence');
         self.vsiDataset.FlushCache()
         
+        # Experimental feature for the Radarsat2-mapper:
+        # Rationale:
+        # - to convert sigma0 from HH-pol to VV-pol we can use the pixelfunction 
+        #     Sigma0HHIncidenceToSigma0VV which takes as input sigma0HH and incidence_angle.
+        #     However, incidence_angle is itself a pixelfunction, so here we need a pixelfunction
+        #     of a pixelfunction!
+        # Issue:
+        # - this second pixelfunction cannot access the first pixelfunction though the regular VRT/VSI-file
+        #     because if we e.g. downscale the nansat object, then we end up with a double downscaling 
+        #     of the second pixelfunction band
+        # Solution:
+        # - to duplicate the vsiDataset in another vsimem-file to remain unchanged (under reprojection and downscaling)
+        vrtDriver = gdal.GetDriverByName("VRT")
+        # Write the vrt to a VSI-file
+        vrtDatasetCopy_temp = vrtDriver.CreateCopy('/vsimem/vsi_original.vrt',
+                                                   self.vsiDataset)
+        
+        options = ['subClass=VRTDerivedRasterBand', 'PixelFunctionType=Sigma0HHIncidenceToSigma0VV']
+        self.vsiDataset.AddBand(datatype=GDT_Float32, options=options)  
+        md = {}
+        BlockXSize, BlockYSize = dataset.GetRasterBand(1).GetBlockSize()
+        md['source_0'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize, YSize=self.vsiDataset.RasterYSize, 
+                                    BlockXSize=BlockXSize, BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
+                                    Dataset='RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml')
+        md['source_1'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize, YSize=self.vsiDataset.RasterYSize, 
+                                    BlockXSize=BlockXSize, BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=3,
+                                    Dataset='/vsimem/vsi_original.vrt')
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadata(md, 'vrt_sources');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetNoDataValue(0);
+        # Should ideally use WKV-class for setting the metadata below
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('longname', 'normalized_radar_cross_section');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('name', 'sigma0');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('polarisation', 'VV');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('pixelfunction', 'Sigma0HHIncidenceToSigma0VV');
+        self.vsiDataset.FlushCache()
+                        
         return
