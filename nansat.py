@@ -372,9 +372,12 @@ class Nansat():
             http://www.gdal.org/gdalwarp.html
 
         '''
-        # Generate source WKT
+        # Get source SRS (either Projection or GCPProjection)
         srcWKT = self.rawVRT.GetProjection()
-        if srcWKT is None:
+        if srcWKT == '':
+            srcWKT = self.rawVRT.GetGCPProjection()
+
+        if srcWKT == '':
             raise ProjectionError("Nansat.reproject(): "
                                   "rawVrt.GetProjection() is None")
 
@@ -464,18 +467,18 @@ class Nansat():
         proj4string = "+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"
         latlongSRS = osr.SpatialReference()
         latlongSRS.ImportFromProj4(proj4string)
-        latlongWkt = latlongSRS.ExportToWkt()
+        latlongWKT = latlongSRS.ExportToWkt()
 
         # get source SRS (either Projection or GCPProjection)
-        srcWkt = self.vrt.GetProjection()
-        if srcWkt == '':
-            srcWkt = self.vrt.GetGCPProjection()
+        srcWKT = self.vrt.GetProjection()
+        if srcWKT == '':
+            srcWKT = self.vrt.GetGCPProjection()
 
         # the transformer converts lat/lon to pixel/line of SRC image
         srcTransformer = gdal.Transformer(
                              self.vrt, None,
-                             ['SRC_SRS=' + srcWkt,
-                             'DST_SRS=' + latlongWkt])
+                             ['SRC_SRS=' + srcWKT,
+                             'DST_SRS=' + latlongWKT])
 
         # get GCPs from DST image
         gcps = gcpImage.vrt.GetGCPs()

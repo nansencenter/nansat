@@ -13,10 +13,11 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, ds, fileName, metadata, vrtBandList, rawVRTName):
+    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
         ''' Create MODIS_L1 VRT '''
-        VRT.__init__(self, metadata, rawVRTName);
-
+        #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
+        subDs = gdal.Open(dataset.GetSubDatasets()[0][0])
+        VRT.__init__(self, subDs, metadata, rawVRTFileName)
        
         #list of available modis names:resolutions
         modisResolutions = {'MYD02QKM':250, 'MOD02QKM':250,
@@ -99,9 +100,6 @@ class Mapper(VRT):
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
 
-        #open subdataset
-        subDs = gdal.Open(ds.GetSubDatasets()[0][0]);    
-        
-        self.createVRT_and_add_bands(subDs, metaDict, vrtBandList);
+        self._createVRT(metaDict, vrtBandList);
 
         return

@@ -87,10 +87,11 @@ class VRT():
                    'PixelFunctionType=' + pixelFunction]
         self.vsiDataset.AddBand(datatype=gdal.GDT_Float32, options=options)
         md = {}
+        srcDataset = gdal.Open(fileName)
         for i, bandNo in enumerate(bands):
-            blockXSize, blockYSize = self.dataset.GetRasterBand(bandNo).\
-                                                  GetBlockSize()
-            dataType = self.dataset.GetRasterBand(bandNo).DataType
+            srcRasterBand = srcDataset.GetRasterBand(bandNo)
+            blockXSize, blockYSize = srcRasterBand.GetBlockSize()
+            dataType = srcRasterBand.DataType
             md['source_' + str(i)] = self.SimpleSource.substitute(
                                         XSize=self.vsiDataset.RasterXSize,
                                         BlockXSize=blockXSize,
@@ -145,21 +146,15 @@ class VRT():
             VSI VRT dataset added band metadata
         '''
 
-        for iBand in range(len(vrtBandList)):
-        # beter to use: for iBand, bandNo in enumerate(vrtBandList):
-            bandNo = vrtBandList[iBand]
+        for iBand, bandNo in enumerate(vrtBandList):
             # check if the band in the list exist
             if int(bandNo) > int(metaDict.__len__()):
                 print ("vrt.addAllBands(): "
                        "an element in the bandList is improper")
                 break
-            # add metadata
-            # !!! This (GetRasterBand(1)) is a just temporary solution
-            # because self.dataset means the first subdataset
-            # if the data has subdatasets. should be fixed !!!
-            rasterBand = self.dataset.GetRasterBand(1)
-            xBlockSize, yBlockSize = rasterBand.GetBlockSize()
-            srcDataType = rasterBand.DataType
+            srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
+            xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
+            srcDataType = srcRasterBand.DataType
             wkv_name = metaDict[bandNo - 1]["wkv"]
             wkvDict = self._get_wkv(wkv_name)
             for key in wkvDict:
