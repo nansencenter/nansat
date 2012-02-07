@@ -49,8 +49,7 @@ class ProjectionError(Error):
 class Domain():
     '''"Domain" is a grid with known dimentions and spatial reference'''
 
-    def __init__(self, dataset=None, srsString=None, extentString=None,
-                 domainName=''):
+    def __init__(self, *args, **kwargs):
         '''Create Domain from given GDAL Dataset or textual options
 
         The main attribute of Domain is memDataset which is a GDAL
@@ -63,14 +62,14 @@ class Domain():
         Textual options are srsString (proj4 syntax) and extentString
         (some of the gdalwarp otpions).
 
-        Parameters
+        Parameters: Domain(dataset) or Domain(srsString, extentString)
         ----------
-        dataset : GDAL dataset, optional
+        dataset: GDAL dataset, optional
         srsString : string, optional
             proj4 options [http://trac.osgeo.org/proj/]
             (e.g."+proj=utm +zone=25 +datum=WGS84 +no_defs")
             SPecifies spatial reference
-        extentString: string, optional
+        extentString : string, optional
             some gdalwarp options [http://www.gdal.org/gdalwarp.html] +
             additional options
             Specifies extent, resolution / size
@@ -81,7 +80,7 @@ class Domain():
             -ts sizex sizey
             -te xmin ymin xmax ymax
             -lle lonmin latmin lonmax latmax
-        domainName: string, optional
+        name: string, optional
             Name to be added to the Domain object
 
         Raises
@@ -102,15 +101,18 @@ class Domain():
         [http://trac.osgeo.org/proj/]
 
         '''
-
         # defaults
         gcps = []
         rasterXSize = 0
         rasterYSize = 0
-        self.name = domainName
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        else:
+            self.name = ''
 
         # test option when only dataset is given
-        if (dataset is not None and extentString is None):
+        if isinstance(args[0], gdal.Dataset):
+            dataset = args[0]
             rasterXSize = dataset.RasterXSize
             rasterYSize = dataset.RasterYSize
             geoTransform = dataset.GetGeoTransform()
@@ -118,7 +120,9 @@ class Domain():
             gcps = dataset.GetGCPs()
 
         # test option when proj4 and extent string are given
-        elif (srsString is not None and extentString is not None):
+        elif isinstance(args[0], str) and isinstance(args[1], str):
+            srsString = args[0]
+            extentString = args[1]
             # if XML-file and domain name is given - read that file
             if os.path.isfile(srsString):
                 srsString, extentString, self.name = self._from_xml(

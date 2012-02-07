@@ -333,14 +333,9 @@ class Nansat():
                           self.rawVRT.GetRasterBand(iBand + 1).\
                           GetMetadataItem(i))
 
-    def reproject(self, proj4string="+proj=latlong +ellps=WGS84 +datum=WGS84 "
-                  "+no_defs", extentOption=None, dstDomain=None,
-                  resamplingAlg=0):
-        '''Reproject the object based on the given arguments proj4string
-        and extentString
+    def reproject(self, dstDomain=None, resamplingAlg=0):
+        '''Reproject the object based on the given Domain
 
-        Get srcWkt from the raw VRT
-        Create Domain object from pro4String and extentString.
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
         from the Domain.
         Modify XML content of the warped vrt using the Domain parameters.
@@ -348,16 +343,8 @@ class Nansat():
 
         Parameters
         ----------
-            proj4string: proj4string
-            extentOption: string, optional
-                Parameter to spacify extent, resolution and size.
-                ("-te", "-lle", "-ts", "-tr")
-                "-lle lonwest loneast latnorth latsouth"
-                "-te xmin ymin xmax ymax"
-                "-lle" and "-te" have to be used with either "-ts" or "-tr"
-                (i.e. extentString = "-lle 15 20 80 75 -ts 500 500")
             dstDomain: domain
-                destination Domain
+                destination Domain where projection and resolution are set
 
         Modifies
         --------
@@ -389,38 +376,7 @@ class Nansat():
             raise ProjectionError("Nansat.reproject(): "
                                   "rawVrt.GetProjection() is None")
 
-        # check input options
-        if (proj4string is not None and extentOption is None and
-            dstDomain is None):
-            # generate destination WKT
-            dstSRS = osr.SpatialReference()
-            dstSRS.ImportFromProj4(proj4string)
-            dstWKT = dstSRS.ExportToWkt()
-            if dstWKT == "":
-                raise ProjectionError("Nansat.reproject(): "
-                                      "Projection of the target data is empty."
-                                      "Is the 'proj4string' correct?")
-            # warp the Raw Vrt onto the coordinate stystem given by proj4string
-            rawWarpedVRT = gdal.AutoCreateWarpedVRT(self.rawVRT,
-                              srcWKT, dstWKT, resamplingAlg)
-
-            # generate Domain from the warped VRT
-            dstDomain = Domain(rawWarpedVRT)
-
-        elif (proj4string is not None and extentOption is not None and
-              dstDomain is None):
-            # Generate Domain from srs and extent strings
-            dstDomain = Domain(dataset=None, srsString=proj4string,
-                               extentString=extentOption)
-
-            # warp the Raw VRT onto the coordinate stystem given by Domain
-            rawWarpedVRT = gdal.AutoCreateWarpedVRT(
-                                self.rawVRT, srcWKT,
-                                dstDomain.memDataset.GetProjection(),
-                                resamplingAlg)
-
-        elif (proj4string is None and extentOption is None and
-              dstDomain is not None):
+        if dstDomain is not None:
             print 'Reprojection with given Domain'
             # warp the Raw VRT onto the coordinate stystem given by
             # input Domain
@@ -430,7 +386,7 @@ class Nansat():
                                    resamplingAlg)
 
         else:
-            # Potentially erroneous input options
+            # Erroneous input options
             raise OptionError("Nansat.reproject(): "
                               "wrong combination of input options")
 
@@ -441,7 +397,7 @@ class Nansat():
                                    dstDomain.memDataset.RasterYSize,
                                    dstDomain.memDataset.GetGeoTransform())
 
-        # test created Warped VRT
+        # check created Warped VRT
         if self.warpedVRT is None:
             raise AttributeError("Nansat.reproject():cannot get warpedVRT")
 
@@ -903,7 +859,7 @@ class Nansat():
 
             if allKeysAreGood:
                 candidate.append(iBand)
-        
+
         # if a band is specified, set it to bandNo.
         # if some bands are chosen, give an error message and stop.
         if len(candidate) == 1:
