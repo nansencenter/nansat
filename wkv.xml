@@ -1,92 +1,92 @@
 <all_wkvs>
 	<wkv>
-		<name>sigma0</name>
-		<longname>normalized_radar_cross_section</longname>
+		<standard_name>normalized_radar_cross_section</standard_name>
+		<long_name>normalized_radar_cross_section</long_name>
 		<units>m/m</units>
 	</wkv>
 	<wkv>
-		<name>eastward_wind_velocity</name>
-		<longname>eastward_wind_velocity</longname>
+		<standard_name>eastward_wind_velocity</standard_name>
+		<long_name>eastward_wind_velocity</long_name>
 		<units>m s-1</units>
 	</wkv>
 	<wkv>
-		<name>northward_wind_velocity</name>
-		<longname>northward_wind_velocity</longname>
+		<standard_name>northward_wind_velocity</standard_name>
+		<long_name>northward_wind_velocity</long_name>
 		<units>m s-1</units>
 	</wkv>
 	<wkv> 
-		<name>wind_speed</name> 
-		<longname>wind_speed</longname> 
+		<standard_name>wind_speed</standard_name> 
+		<long_name>wind_speed</long_name> 
 		<units>m s-1</units> 
 	</wkv> 
 	<wkv> 
- 		<name>wind_to_direction</name> 
-		<longname>wind_to_direction</longname> 
+		<standard_name>wind_to_direction</standard_name> 
+		<long_name>wind_to_direction</long_name> 
 		<units>degrees</units> 
 	</wkv> 
 	<wkv> 
-		<name>wind_from_direction</name> 
-		<longname>wind_from_direction</longname> 
+		<standard_name>wind_from_direction</standard_name> 
+		<long_name>wind_from_direction</long_name> 
 		<units>degrees</units> 
 	</wkv> 
 	<wkv>
-		<name>radiance</name>
-		<longname>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</longname>
+		<standard_name>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</standard_name>
+		<long_name>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</long_name>
 		<units>W m-2 m-1 sr-1</units>
 	</wkv>
 	<wkv>
-		<name>reflectance</name>
-		<longname>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</longname>
+		<standard_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</standard_name>
+		<long_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</long_name>
 		<units>sr-1</units>
 	</wkv>
 	<wkv>
-		<name>chlor_a</name>
-		<longname>mass_concentration_of_chlorophyll_a_in_sea_water</longname>
+		<standard_name>mass_concentration_of_chlorophyll_a_in_sea_water</standard_name>
+		<long_name>mass_concentration_of_chlorophyll_a_in_sea_water</long_name>
 		<units>kg m-3</units>
 	</wkv>
 	<wkv>
-		<name>sst</name>
-		<longname>sea_surface_temperature</longname>
+		<standard_name>sea_surface_temperature</standard_name>
+		<long_name>sea_surface_temperature</long_name>
 		<units>celsius</units>
 	</wkv>
 	<wkv>
-		<name>a_doc</name>
-		<longname>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</longname>
+		<standard_name>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</standard_name>
+		<long_name>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</long_name>
 		<units>m-1</units>
 	</wkv>
 	<wkv>
-		<name>spm</name>
-		<longname>mass_concentration_of_suspended_matter_in_sea_water</longname>
+		<standard_name>mass_concentration_of_suspended_matter_in_sea_water</standard_name>
+		<long_name>mass_concentration_of_suspended_matter_in_sea_water</long_name>
 		<units>kg m-3</units>
 	</wkv>
 	<wkv>
-		<name>senz</name>
-		<longname>sensor_zenith_angle</longname>
+		<standard_name>sensor_zenith_angle</standard_name>
+		<long_name>sensor_zenith_angle</long_name>
 		<units>degrees</units>
 	</wkv>
 	<wkv>
-		<name>sena</name>
-		<longname>sensor_azimuth_angle</longname>
+		<standard_name>sensor_azimuth_angle</standard_name>
+		<long_name>sensor_azimuth_angle</long_name>
 		<units>degrees</units>
 	</wkv>
 	<wkv>
-		<name>solz</name>
-		<longname>solar_zenith_angle</longname>
+		<standard_name>solar_zenith_angle</standard_name>
+		<long_name>solar_zenith_angle</long_name>
 		<units>degrees</units>
 	</wkv>
 	<wkv>
-		<name>sola</name>
-		<longname>solar_azimuth_angle</longname>
+		<standard_name>solar_azimuth_angle</standard_name>
+		<long_name>solar_azimuth_angle</long_name>
 		<units>degrees</units>
 	</wkv>
 	<wkv>
-		<name>flags</name>
-		<longname>quality_flags</longname>
+		<standard_name>quality_flags</standard_name>
+		<long_name>quality_flags</long_name>
 		<units></units>
 	</wkv>
 	<wkv>
-		<name>air_temperature</name>
-		<longname>air_temperature</longname>
+		<standard_name>air_temperature</standard_name>
+		<long_name>air_temperature</long_name>
 		<units>celsius</units>
 	</wkv>
 </all_wkvs>

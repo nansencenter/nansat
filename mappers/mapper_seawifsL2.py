@@ -24,7 +24,7 @@ class Mapper(VRT):
         
         # Trying to read band 21 = chlor_a The parameter height is added just to check that it does not crash due to no parameters
         metaDict = [\
-        {'source': subDsString % (fileName, '21'), 'sourceBand': 1, 'wkv': 'chlor_a'}\
+        {'source': subDsString % (fileName, '21'), 'sourceBand': 1, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'chlor_a'}}\
         ];
                 
         #set number of bands

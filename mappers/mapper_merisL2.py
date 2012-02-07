@@ -23,25 +23,30 @@ class Mapper(VRT):
             raise AttributeError("MERIS_L2 BAD MAPPER");
 
         metaDict = [\
-        {'source': fileName, 'sourceBand': 1,  'wkv': 'reflectance', 'parameters': {'wavelength': '412'} },\
-        {'source': fileName, 'sourceBand': 2, 'wkv': 'reflectance', 'parameters':{'wavelength': '443'}},\
-        {'source': fileName, 'sourceBand': 3, 'wkv': 'reflectance', 'parameters':{'wavelength': '490'}},\
-        {'source': fileName, 'sourceBand': 4, 'wkv': 'reflectance', 'parameters':{'wavelength': '510'}},\
-        {'source': fileName, 'sourceBand': 5, 'wkv': 'reflectance', 'parameters':{'wavelength': '560'}},\
-        {'source': fileName, 'sourceBand': 6, 'wkv': 'reflectance', 'parameters':{'wavelength': '620'}},\
-        {'source': fileName, 'sourceBand': 7, 'wkv': 'reflectance', 'parameters':{'wavelength': '665'}},\
-        {'source': fileName, 'sourceBand': 8, 'wkv': 'reflectance', 'parameters':{'wavelength': '680'}},\
-        {'source': fileName, 'sourceBand': 9, 'wkv': 'reflectance', 'parameters':{'wavelength': '708'}},\
-        {'source': fileName, 'sourceBand': 10, 'wkv': 'reflectance', 'parameters':{'wavelength': '753'}},\
-        {'source': fileName, 'sourceBand': 11, 'wkv': 'reflectance', 'parameters':{'wavelength': '761'}},\
-        {'source': fileName, 'sourceBand': 12, 'wkv': 'reflectance', 'parameters':{'wavelength': '778'}},\
-        {'source': fileName, 'sourceBand': 13, 'wkv': 'reflectance', 'parameters':{'wavelength': '864'}},\
-        {'source': fileName, 'sourceBand': 15,  'wkv': 'chlor_a', 'parameters': {'case': 'I'} },\
-        {'source': fileName, 'sourceBand': 16,  'wkv': 'a_doc', 'parameters': {'case': 'II'} },\
-        {'source': fileName, 'sourceBand': 17,  'wkv': 'spm', 'parameters': {'case': 'II'} },\
-        {'source': fileName, 'sourceBand': 18,  'wkv': 'chlor_a', 'parameters': {'case': 'II'} },\
-        {'source': fileName, 'sourceBand': 22, 'wkv': 'flags'},\
+        {'source': fileName, 'sourceBand':  1, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '412'} },\
+        {'source': fileName, 'sourceBand':  2, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '443'}},\
+        {'source': fileName, 'sourceBand':  3, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '490'}},\
+        {'source': fileName, 'sourceBand':  4, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '510'}},\
+        {'source': fileName, 'sourceBand':  5, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '560'}},\
+        {'source': fileName, 'sourceBand':  6, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '620'}},\
+        {'source': fileName, 'sourceBand':  7, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '665'}},\
+        {'source': fileName, 'sourceBand':  8, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '680'}},\
+        {'source': fileName, 'sourceBand':  9, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '708'}},\
+        {'source': fileName, 'sourceBand': 10, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '753'}},\
+        {'source': fileName, 'sourceBand': 11, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '761'}},\
+        {'source': fileName, 'sourceBand': 12, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '778'}},\
+        {'source': fileName, 'sourceBand': 13, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '864'}},\
+        {'source': fileName, 'sourceBand': 15, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_1', 'case': 'I'} },\
+        {'source': fileName, 'sourceBand': 16, 'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },\
+        {'source': fileName, 'sourceBand': 17, 'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'parameters': {'band_name': 'total_susp', 'case': 'II'} },\
+        {'source': fileName, 'sourceBand': 18, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_2', 'case': 'II'} },\
+        {'source': fileName, 'sourceBand': 22, 'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },\
         ];
+
+        # add 'band_name' to 'parameters'
+        for bandDict in metaDict:
+            if bandDict['parameters'].has_key('wavelength'):
+                bandDict['parameters']['band_name'] = 'reflectance_' + bandDict['parameters']['wavelength']
 
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);

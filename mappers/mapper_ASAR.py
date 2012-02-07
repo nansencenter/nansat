@@ -22,9 +22,14 @@ class Mapper(VRT):
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER");
 
-        metaDict = [{'source': fileName, 'sourceBand': 1, 'wkv': 'sigma0', \
-                     'parameters':{'polarisation': metadata['SPH_MDS1_TX_RX_POLAR'], \
-                    'pass': metadata['SPH_PASS'],'warning': 'fake sigma0, not yet calibrated'}}];
+        metaDict = [{'source': fileName,
+                     'sourceBand': 1,
+                     'wkv': 'normalized_radar_cross_section',
+                     'parameters':{
+                         'band_name': 'sigma0',
+                         'polarisation': metadata['SPH_MDS1_TX_RX_POLAR'],
+                         'pass': metadata['SPH_PASS'],
+                         'warning': 'fake sigma0, not yet calibrated'}}];
 
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);

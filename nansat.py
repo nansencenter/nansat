@@ -275,13 +275,10 @@ class Nansat():
 
         Parameters
         ----------
-            bandNo: a serial number, optional (default is 1)
-                a band number of the band to fetch
-            bandID: a dictionary
-                parameters to specify a band
-                    (example: bandIdList = {"ShortName":"radiance",
-                                             "Wavelength":"1240"})
-            bandID is prior to bandNo
+            bandNo: serial number or string, optional (default is 1)
+                if number - a band number of the band to fetch
+                if string bandID = {'band_name': bandNo}
+            bandID: a dictionary with metadata unique for one band
 
         Returns
         -------
@@ -290,6 +287,13 @@ class Nansat():
         Raises
         ------
             OptionError: occurs when the bandNo is not a proper number.
+        Example
+        -------
+            b = get_GDALRasterBand(1)
+            b = get_GDALRasterBand('sigma0')
+            b = get_GDALRasterBand({"short_name":"radiance",
+                                    "wavelength":"1240"})
+
 
         See Also
         --------
@@ -299,8 +303,12 @@ class Nansat():
         # If bandID is given, bandNo is specified here.
         if bandID is not None:
             bandNo = self._specify_bandNo(bandID)
+        # if bandNo is given and it is string fetch band which has
+        # band_name == bandNo
+        elif isinstance(bandNo, str):
+            bandNo = self._specify_bandNo({'band_name': bandNo})
         # if given bandNo is over the existing bands, give error message
-        elif (1 > bandNo or bandNo > self.rawVRT.RasterCount):
+        elif (bandNo < 1 or bandNo > self.rawVRT.RasterCount):
             raise OptionError("Nansat.get_GDALRasterBand(): "
                              "bandNo takes from 1 to",
                              self.rawVRT.RasterCount)
@@ -852,12 +860,10 @@ class Nansat():
             return 0
 
     def _specify_bandNo(self, bandID):
-        '''Specify a band number based on bandID (shortName + parameters)
+        '''Specify a band number based on bandID {'key_name': 'key_value'}
 
-        Check if the keys given by the argument(bandID)
-          are in metadata keys.
-        Compare the key values of the bandID
-            to the values of the metadata dictionary.
+        Compare the key values of the bandID to the values of the
+        metadata in each band.
         If matched, append the band number (iBand) into candidate list.
         If not, go to the next band.
         Iterate these steps until all bands are checked.
@@ -868,7 +874,7 @@ class Nansat():
         ----------
             bandID: a dictionary
                 Parameters to specify single band
-                (e.g. {"ShortName":"radiance", "Wavelength":"1234"})
+                (e.g. {"name":"radiance", "wavelength":"1234"})
 
         Returns
         -------
@@ -877,33 +883,27 @@ class Nansat():
         Raises
         ------
             OptionError: occurs when there is no band which satisfies
-            the condition (bandID) or when there are some bands chosen
+            the condition (bandID) or when there are several bands chosen
             by the condition.
 
         '''
-        metaItemKeys = self.rawVRT.GetRasterBand(1).GetMetadata_Dict().keys()
-        bandIDkeys = bandID.keys()
-        bandIDvalues = bandID.values()
-
-        # check if the keys in the bandID exist
-        for i in range(len(bandIDkeys)):
-            if (bandIDkeys[i] not in metaItemKeys):
-                raise KeyError("Nansat.specify_bandNo(): "
-                               "Cannot find a such key: ", bandIDkeys[i])
-
         # search for the specific band based on bandID
         candidate = []
-        for iBand in range(self.rawVRT.RasterCount):
-            counter = 0
-            for iItemKey in bandIDkeys:
-                counter += 1
-                if bandID[iItemKey] is not self.rawVRT.GetRasterBand(iBand + 1).\
-                                            GetMetadataItem(iItemKey):
-                    break
-                else:
-                    if counter == len(bandIDkeys):
-                        candidate.append(iBand)
+        # loop through all bands
+        for iBand in range(self.vrt.RasterCount):
+            # get metadata from band
+            bandMetadata = self.rawVRT.GetRasterBand(iBand + 1).GetMetadata()
+            allKeysAreGood = True
+            # loop through all input keys
+            for bandIDKey in bandID:
+                # if band doesn't have key from input or value doesn't match
+                if (bandIDKey not in bandMetadata or
+                        bandMetadata[bandIDKey] != bandID[bandIDKey]):
+                    allKeysAreGood = False
 
+            if allKeysAreGood:
+                candidate.append(iBand)
+        
         # if a band is specified, set it to bandNo.
         # if some bands are chosen, give an error message and stop.
         if len(candidate) == 1:

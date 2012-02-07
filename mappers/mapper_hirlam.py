@@ -21,8 +21,8 @@ class Mapper(VRT):
             raise AttributeError("HIRLAM BAD MAPPER");
 
         metaDict = [\
-                    {'source': fileName, 'sourceBand': 2, 'wkv': 'eastward_wind_velocity', 'parameters':{'height': '10 m'}}, \
-                    {'source': fileName, 'sourceBand': 3, 'wkv': 'northward_wind_velocity', 'parameters':{'height': '10 m'}} \
+                    {'source': fileName, 'sourceBand': 2, 'wkv': 'eastward_wind_velocity', 'parameters':{'band_name': 'east_wind', 'height': '10 m'}}, \
+                    {'source': fileName, 'sourceBand': 3, 'wkv': 'northward_wind_velocity', 'parameters':{'band_name': 'north_wind', 'height': '10 m'}} \
                     ];
 
         if vrtBandList == None:
@@ -35,7 +35,7 @@ class Mapper(VRT):
         # calculated with pixel functions 
         ##############################################################        
         self._add_pixel_function('UVToMagnitude', [2, 3], fileName, \
-                              {'longname': 'wind_speed', 'height': '10 m', 'unit': 'm/s'})
+                              {'wkv': 'wind_speed', 'parameters': {'band_name': 'speed', 'height': '10 m'}})
         self._add_pixel_function('UVToDirectionFrom', [2, 3], fileName, \
-                              {'longname': 'wind_from_direction', 'height': '10 m', 'unit': 'degrees'})
+                              {'wkv': 'wind_from_direction', 'parameters': {'band_name': 'direction', 'height': '10 m'}})
         return

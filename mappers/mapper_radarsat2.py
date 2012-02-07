@@ -34,8 +34,8 @@ class Mapper(VRT):
 
         #define dictionary of metadata and band specific parameters
         # NB: it should be checked dynamically what is the polarizations of band 1 and band2, it should not be hardcoded as it is now
-        metaDict = [ {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 1, 'wkv': 'sigma0', 'parameters': {'polarization': 'HH'}},\
-                     {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 2, 'wkv': 'sigma0', 'parameters': {'polarization': 'HV'}} ];
+        metaDict = [ {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 1, 'wkv': 'normalized_radar_cross_section', 'parameters': {'band_name': 'sigma0_HH', 'polarization': 'HH'}},\
+                     {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 2, 'wkv': 'normalized_radar_cross_section', 'parameters': {'band_name': 'sigma0_HV', 'polarization': 'HV'}} ];
 
         self._createVRT(metaDict, vrtBandList);
 
@@ -61,8 +61,9 @@ class Mapper(VRT):
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadata(md, 'vrt_sources');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetNoDataValue(0);
         # Should ideally use WKV-class for setting the metadata below
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('longname', 'incidence_angle');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('name', 'incidence_angle');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('long_name', 'incidence_angle');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('standard_name', 'incidence_angle');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('band_name', 'incidence_angle');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('unit', 'degrees');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('pixelfunction', 'BetaSigmaToIncidence');
         self.vsiDataset.FlushCache()
@@ -97,8 +98,9 @@ class Mapper(VRT):
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadata(md, 'vrt_sources');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetNoDataValue(0);
         # Should ideally use WKV-class for setting the metadata below
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('longname', 'normalized_radar_cross_section');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('name', 'sigma0');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('long_name', 'normalized_radar_cross_section');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('standard_name', 'normalized_radar_cross_section');
+        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('band_name', 'sigma0_VV');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('polarisation', 'VV');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('pixelfunction', 'Sigma0HHIncidenceToSigma0VV');
         self.vsiDataset.FlushCache()

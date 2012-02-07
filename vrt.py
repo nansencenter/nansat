@@ -53,7 +53,7 @@ class VRT():
         self.rawVRTName = rawVRTName
         self.dataset = dataset
 
-    def _add_pixel_function(self, pixelFunction, bands, fileName, parameters):
+    def _add_pixel_function(self, pixelFunction, bands, fileName, metaDict):
         ''' Generic function for mappers to add PixelFunctions
         from bands in the same dataset
 
@@ -73,8 +73,8 @@ class VRT():
             input band numbers
         fileName: string
             name of the file with input bands
-        parameters: dictionary
-            "longname", "units" (+ some optional) keys and their values
+        metaDict: dictionary
+            metadata to be included into a band
 
         Modifies
         --------
@@ -100,14 +100,22 @@ class VRT():
                                         YSize=self.vsiDataset.RasterYSize,
                                         Dataset=fileName, SourceBand=bandNo)
 
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).\
-                        SetMetadata(md, 'vrt_sources')
+        # set metadata for each destination raster band
+        dstRasterBand = self.vsiDataset.GetRasterBand(self.vsiDataset.\
+                                                        RasterCount)
 
-        for parameter, value in parameters.items():
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).\
-                            SetMetadataItem(parameter, value)
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).\
-                        SetMetadataItem('pixelfunction', pixelFunction)
+        dstRasterBand.SetMetadata(md, 'vrt_sources')
+
+        # set metadata from WKV
+        wkvName = metaDict["wkv"]
+        dstRasterBand = self._put_metadata(dstRasterBand,
+                                            self._get_wkv(wkvName))
+        # set metadata from parameters (if exist)
+        if "parameters" in metaDict:
+            dstRasterBand = self._put_metadata(dstRasterBand,
+                                               metaDict["parameters"])
+
+        dstRasterBand.SetMetadataItem('pixelfunction', pixelFunction)
         # Took 5 hours of debugging to find this one!!!
         self.vsiDataset.FlushCache()
 
@@ -152,22 +160,22 @@ class VRT():
                 print ("vrt.addAllBands(): "
                        "an element in the bandList is improper")
                 break
-            srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
+            srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
+                       GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
             srcDataType = srcRasterBand.DataType
-            wkv_name = metaDict[bandNo - 1]["wkv"]
-            wkvDict = self._get_wkv(wkv_name)
-            for key in wkvDict:
-                self.vsiDataset.GetRasterBand(iBand + 1).\
-                           SetMetadataItem(key, wkvDict[key])
+
+            # set metadata for each destination raster band
+            dstRasterBand = self.vsiDataset.GetRasterBand(iBand + 1)
+            # set metadata from WKV
+            wkvName = metaDict[bandNo - 1]["wkv"]
+            dstRasterBand = self._put_metadata(dstRasterBand,
+                                                self._get_wkv(wkvName))
+            # set metadata from parameters (if exist)
             if "parameters" in metaDict[bandNo - 1]:
-                # Warning: zero-indexing for medaDict,
-                # but 1-indexing for band numbers!
-                for metaName in metaDict[bandNo - 1]["parameters"]:
-                    self.vsiDataset.GetRasterBand(iBand + 1).\
-                               SetMetadataItem(metaName,
-                               metaDict[bandNo - 1]["parameters"][metaName])
-            # create band source
+                dstRasterBand = self._put_metadata(dstRasterBand,
+                                     metaDict[bandNo - 1]["parameters"])
+            # create band source metadata
             bandSource = self.SimpleSource.\
                               substitute(XSize=srcRasterXSize,
                               YSize=srcRasterYSize,
@@ -175,10 +183,9 @@ class VRT():
                               SourceBand=metaDict[bandNo - 1]['sourceBand'],
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
                               DataType=srcDataType)
-            #add band to the VRT file
-            self.vsiDataset.GetRasterBand(iBand + 1).\
-                       SetMetadataItem("source_0", bandSource,
-                       "new_vrt_sources")
+            # set band source metadata
+            dstRasterBand.SetMetadataItem("source_0", bandSource,
+                                          "new_vrt_sources")
 
         self.vsiDataset.FlushCache()
 
@@ -237,12 +244,12 @@ class VRT():
 
         return 0
 
-    def _get_wkv(self, wkv_name):
+    def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
 
         Parameters
         ----------
-        wkv_name: string
+        wkvName: string
             value of 'wkv' key in metaDict
 
         Returns
@@ -258,9 +265,32 @@ class VRT():
         element = ElementTree(file=fd).getroot()
 
         for e1 in list(element):
-            if e1.find("name").text == wkv_name:
-                wkvDict = {"name": wkv_name}
+            if e1.find("standard_name").text == wkvName:
+                wkvDict = {"standard_name": wkvName}
                 for e2 in list(e1):
                     wkvDict[e2.tag] = e2.text
 
         return wkvDict
+
+    def _put_metadata(self, rasterBand, metadataDict):
+        ''' Put all metadata into a raster band
+
+        Take metadata from metadataDict and put to the GDAL Raster Band
+
+        Parameters:
+        ----------
+        rasterBand: GDALRasterBand
+            destination band without metadata
+
+        metadataDict: dictionary
+            keys are names of metadata, values are values
+
+        Returns:
+        --------
+        rasterBand: GDALRasterBand
+            destination band with metadata
+        '''
+        for key in metadataDict:
+            rasterBand.SetMetadataItem(key, metadataDict[key])
+
+        return rasterBand
