@@ -122,13 +122,26 @@ class VRT():
     SimpleSource = Template('''
             <SimpleSource>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
-                <SourceBand>$SourceBand</SourceBand> \
-                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize" \
-                        DataType="$DataType" BlockXSize="$BlockXSize" \
-                        BlockYSize="$BlockYSize"/>\
+                <SourceBand>$SourceBand</SourceBand>
+                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
+                        DataType="$DataType" BlockXSize="$BlockXSize"
+                        BlockYSize="$BlockYSize"/>
                 <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </SimpleSource> ''')
+
+    ComplexSource = Template('''
+            <ComplexSource>
+                <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
+                <SourceBand>$SourceBand</SourceBand>
+                <ScaleOffset>$ScaleOffset</ScaleOffset>
+                <ScaleRatio>$ScaleRatio</ScaleRatio>
+                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
+                        DataType="$DataType" BlockXSize="$BlockXSize"
+                        BlockYSize="$BlockYSize"/>
+                <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
+                <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
+            </ComplexSource> ''')
 
     def _add_all_bands(self, vrtBandList, metaDict,
                      srcRasterXSize, srcRasterYSize):
@@ -175,14 +188,26 @@ class VRT():
             if "parameters" in metaDict[bandNo - 1]:
                 dstRasterBand = self._put_metadata(dstRasterBand,
                                      metaDict[bandNo - 1]["parameters"])
+
+            # get scale/offset from metaDict (or set default 1/0)
+            if 'scale' in metaDict[bandNo - 1]:
+                scaleRatio = metaDict[bandNo - 1]['scale']
+            else:
+                scaleRatio = 1
+            if 'offset' in metaDict[bandNo - 1]:
+                scaleOffset = metaDict[bandNo - 1]['offset']
+            else:
+                scaleOffset = 0
+
             # create band source metadata
-            bandSource = self.SimpleSource.\
+            bandSource = self.ComplexSource.\
                               substitute(XSize=srcRasterXSize,
                               YSize=srcRasterYSize,
                               Dataset=metaDict[bandNo - 1]['source'],
                               SourceBand=metaDict[bandNo - 1]['sourceBand'],
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
-                              DataType=srcDataType)
+                              DataType=srcDataType,
+                              ScaleOffset=scaleOffset, ScaleRatio=scaleRatio)
             # set band source metadata
             dstRasterBand.SetMetadataItem("source_0", bandSource,
                                           "new_vrt_sources")

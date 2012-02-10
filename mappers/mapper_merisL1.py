@@ -9,8 +9,9 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from vrt import *
+from meris import MERIS
 
-class Mapper(VRT):
+class Mapper(VRT, MERIS):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
     def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
@@ -46,6 +47,12 @@ class Mapper(VRT):
             if bandDict['parameters'].has_key('wavelength'):
                 bandDict['parameters']['band_name'] = 'radiance_' + bandDict['parameters']['wavelength']
 
+        # get GADS from header
+        scales = self.read_scaling_gads(fileName, range(7, 22));
+        # set scale factor to the band metadata (only radiances)
+        for i, bandDict in enumerate(metaDict[:-1]):
+            bandDict['scale'] = scales[i]
+        
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
             

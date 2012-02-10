@@ -9,8 +9,9 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from vrt import *
+from meris import MERIS
 
-class Mapper(VRT):
+class Mapper(VRT, MERIS):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR) '''
 
     def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
@@ -47,6 +48,14 @@ class Mapper(VRT):
         for bandDict in metaDict:
             if bandDict['parameters'].has_key('wavelength'):
                 bandDict['parameters']['band_name'] = 'reflectance_' + bandDict['parameters']['wavelength']
+
+        #get GADS from header
+        scales = self.read_scaling_gads(fileName, range(7, 20) + [20, 21, 22, 20])
+        offsets = self.read_scaling_gads(fileName, range(33, 46) + [46, 47, 48, 46])
+        # set scale/offset to the band metadata (only reflectance)
+        for i, bandDict in enumerate(metaDict[:-1]):
+            bandDict['scale'] = scales[i]
+            bandDict['offset'] = offsets[i]
 
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);

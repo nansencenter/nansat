@@ -500,7 +500,7 @@ class Nansat():
                                    (0, 1, 0, 0, 0, 1))
         self.vrt = self.warpedVRT
 
-    def write_figure(self, fileName, bandNo=1, bandName=None,
+    def write_figure(self, fileName, bandNo=1,
                      pixelValMin=None, pixelValMax=None,
                      imageDatatype=None, thresholdRatio=1.0,
                      useFullMatrix=False, extension='png',
@@ -530,16 +530,10 @@ class Nansat():
             DataError: occurs when the array of the band is empty
 
         '''
-        # fetch band from the object
-        if bandName is not None:
-            band = self.get_GDALRasterBand(bandID=bandName)
-        else:
-            band = self.get_GDALRasterBand(bandNo)
-
         # read NumPy array from band
         tic = time.clock()
-        print "Writing figure (%d x %d) " % (band.XSize, band.YSize)
-        rawArray = band.ReadAsArray()
+        print "Writing figure "
+        rawArray = self[bandNo]
 
         if rawArray is None:
             raise DataError("Nansat.write_figure(): "

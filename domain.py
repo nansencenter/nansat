@@ -253,7 +253,7 @@ class Domain():
 
         # get border of each domain and add to KML
         for domain in list(domains):
-            kmlEntry = domain._get_border_kml()
+            kmlEntry = domain.get_border_kml()
             kmlFile.write(kmlEntry)
 
         # write footer and close
@@ -577,7 +577,7 @@ class Domain():
             string with WKT representation of the border polygon
 
         '''
-        lonList, latList = self._get_border()
+        lonList, latList = self.get_border()
         polyCont = ','.join(str(lon) + ' ' + str(lat) \
                    for lon, lat in zip(lonList, latList))
         wktPolygon = 'PolygonFromText("POLYGON((%s))")' % polyCont
