@@ -9,6 +9,8 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
+from datetime import datetime
+
 try:
     from osgeo import gdal
 except ImportError:
@@ -38,6 +40,12 @@ class Mapper(VRT):
                      {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml', 'sourceBand': 2, 'wkv': 'normalized_radar_cross_section', 'parameters': {'band_name': 'sigma0_HV', 'polarization': 'HV'}} ];
 
         self._createVRT(metaDict, vrtBandList);
+
+        ##################################
+        # Add time to metadata domain
+        ##################################
+        validTime = dataset.GetMetadata()['ACQUISITION_START_TIME']
+        self.metadata['Valid Time'] = datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')
 
         ##############################################################
         # Adding derived band (incidence angle) calculated
@@ -104,5 +112,5 @@ class Mapper(VRT):
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('polarisation', 'VV');
         self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem('pixelfunction', 'Sigma0HHIncidenceToSigma0VV');
         self.vsiDataset.FlushCache()
-                        
+                  
         return
