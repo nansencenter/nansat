@@ -16,16 +16,24 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
+import cStringIO
 from os import path, listdir
 from string import maketrans
 import sys
 import time
 
 import fnmatch
+import Image
+import ImageDraw
+import ImageFont
+import ImageOps
+import matplotlib.cm as cm
 import numpy as np
 from scipy.misc import toimage, pilutil
+from scipy.misc import imsave
 from scipy.stats import cumfreq
 from xml.etree.ElementTree import XML, ElementTree, tostring
+from pylab import *
 
 import matplotlib.pyplot as plt
 
@@ -300,6 +308,8 @@ class Nansat():
             _specify_bandNo: specify a band number based on the bandID list
 
         '''
+
+        print "raster num" ,self.rawVRT.RasterCount
         # If bandID is given, bandNo is specified here.
         if bandID is not None:
             bandNo = self._specify_bandNo(bandID)
@@ -500,6 +510,284 @@ class Nansat():
                                    (0, 1, 0, 0, 0, 1))
         self.vrt = self.warpedVRT
 
+    def write_figure(self, fileName, bands=[1],
+                     cmin=[None, None, None], cmax=[None, None, None],
+                     ratio=[1.0, 1.0, 1.0],
+                     logarithm=False, gamma=2,
+                     numOfTicks=5, fontSize=10,
+                     margin=30, pad=60, textwidthMax=600,
+                     colorbar_height=10,
+                     legend=None,
+                     useFullMatrix=False, extension='png'):
+
+        '''Save a raster band to a figure in grapfical format.
+
+        Get numpy array from the band(s) and band information specified
+        either by given band number or band id.
+        -- If three bands are given, merge them and create PIL image.
+        -- If one band is given, adjust the array brightness and contrast
+         using the given min/max or histogram ratio.
+         If logarithm is True, the array is converted based on tone curve.
+         Create PIL images for the image and colorbar.
+        Create and output PIL image and paste the image and legend
+        (and the colorbar).
+        Save the PIL output image in PNG.
+
+        Parameters
+        ----------
+            fileName: string
+                Output file name
+            bands : list, optional, default = [1]
+                the size of the list has to be 1 or 3.
+            cmin, cmax : list, optional
+                minimum and maximum pixel values of each band
+            ratio : listimageDatatype
+                ratio of number of the pixels
+                used to compute cmin and cmax.
+            logarithm : boolean, optional
+                If True, tone curve is used to convert pixel values.
+                If False, linear.
+            gamma : float ( > 0.0), optional, default = 2.0
+                coefficient of the tone curve
+            numOfTicks : int, optional, default = 5
+                number of ticks
+            fontSize : int
+                size of font for the legend
+            margin: int
+                margin of the output file
+            pad : int
+                height for the legend
+            textwidthMax : int
+                width for the legend
+            colorbar_height : int
+                height for the colorbar
+            legend : text
+            useFullMatrix : boolean
+            extension : extension
+                extension of the outputfile
+
+
+            bandName: a list, optional
+                (e.g.: bandIdList = {"name":"radiance", "wavelength":"645"})
+            thresholdRatio: float (0.0 - 1.0), optional
+                e.g. : thresholdRatio = 0.95 means to round off 5%
+                        form the both sides (upper and lower sides).
+            useFullMatrix: boolean, optional
+                if true, the full matrix is used for estimating min/max,
+                otherwise only image scaled down to 100x100 (MUCH FASTER)
+
+        Raises
+        ------
+            DataError: occurs when the array of the band is empty
+
+        '''
+
+        rasterXSize = self.vrt.RasterXSize
+        rasterYSize = self.vrt.RasterYSize
+
+        print "Reading figure(s) "
+        array = np.array([])
+        for iBand in bands:
+            iArray = self[iBand]
+            if iArray is None:
+                raise DataError("Nansat.write_figure(): "
+                                "array of the band is empty")
+            array = np.append(array, iArray)
+        array = array.reshape(len(bands), rasterYSize, rasterXSize)
+
+        pixvalMinList = []
+        pixvalMaxList = []
+        pixvalHistBuckets = []
+        pixvalHistScale = []
+        pixvalHist = np.array([])
+
+        i = 0
+        for iBand in bands:
+            bandPixvalueInfo = self.vrt.GetRasterBand(iBand).GetDefaultHistogram()
+            pixvalMinList.append(float(bandPixvalueInfo[0]))
+            pixvalMaxList.append(float(bandPixvalueInfo[1]))
+            pixvalHistBuckets.append(float(bandPixvalueInfo[2]))
+            pixvalHistScale.append((pixvalMaxList[i] - pixvalMinList[i]) / pixvalHistBuckets[i])
+            pixvalHist = np.append(pixvalHist, (np.array(bandPixvalueInfo[3], dtype=float)))
+            i += 1
+
+        #------------------------------------------------------------------------------#
+        # <OPTION> Set minimum and maximum pixel values
+        # -- Get cmin and cmax and clip the pixel values
+        numOfPixels = rasterXSize*rasterYSize
+        for iBand in range(len(bands)):
+            if ratio[iBand] != 1.0:
+                accumulateHist = add.accumulate(pixvalHist) / numOfPixels
+                #accumulateHist = add.accumulate(pixvalHist[iBand, :, :]) / numOfPixels
+                if (accumulateHist[0] > (1-ratio[iBand])) and (accumulateHist[0] == accumulateHist[1]):
+                    accumulateHist = accumulateHist[accumulateHist != accumulateHist[0]]
+                    cmin[iBand] = pixvalMaxList[iBand] - pixvalHistScale[iBand] * len(accumulateHist)
+                    cmax[iBand] = pixvalMaxList[iBand]
+                elif accumulateHist[0] == accumulateHist[1]:
+                    accumulateHistMin = accumulateHist[accumulateHist != accumulateHist[0]]
+                    histMin = accumulateHist[accumulateHist < (accumulateHist[0] + (1 - (ratio[iBand] + accumulateHist[0])) / 2)]
+                    histMax = accumulateHist[accumulateHist > (1 - (1 - (ratio[iBand] + accumulateHist[0])) / 2)]
+                    cmin[iBand] = pixvalMinList[iBand] + pixvalHistScale[iBand] * len(histMin)
+                    cmax[iBand] = pixvalMinList[iBand] + pixvalHistScale[iBand] * (len(accumulateHist) - len(histMax))
+                else:
+                    histMin = accumulateHist[accumulateHist < ((1 - ratio[iBand]) / 2)]
+                    histMax = accumulateHist[accumulateHist > (1 - ((1 - ratio[iBand]) / 2))]
+                    print "577 : ", iBand, "  --  ", pixvalMinList[iBand]
+                    print len(histMin)
+                    print pixvalMinList[iBand]
+                    print pixvalHistScale[iBand]
+                    cmin[iBand] = pixvalMinList[iBand] + pixvalHistScale[iBand] * len(histMin)
+                    cmax[iBand] = pixvalMinList[iBand] + pixvalHistScale[iBand] * (len(accumulateHist) - len(histMax))
+
+            if (cmax[iBand] or cmin[iBand]) is not None:
+                if (cmax[iBand] is not None) and (cmax[iBand] < pixvalMaxList[iBand]):
+                    pixvalMax = cmax[iBand]
+                if (cmin[iBand] is not None) and (cmin[iBand] > pixvalMinList[iBand]):
+                    pixvalMin = cmin[iBand]
+                array[iBand, :, :] = clip(array[iBand, :, :], pixvalMin, pixvalMax)
+
+# If three bands are given, marge them and crate a PIL image
+        if len(bands)==3:
+# -- Normalize RGB arrays to the interval [0,255]
+            arrayR = (array[0, :, :] - array[0, :, :].min()) *255/ (array[0, :, :].max()- array[0, :, :].min())
+            arrayG = (array[1, :, :] - array[1, :, :].min()) *255/ (array[1, :, :].max()- array[1, :, :].min())
+            arrayB = (array[2, :, :] - array[2, :, :].min()) *255/ (array[2, :, :].max()- array[2, :, :].min())
+            pilImgR = Image.fromarray(np.uint8(arrayR))
+            pilImgG = Image.fromarray(np.uint8(arrayG))
+            pilImgB = Image.fromarray(np.uint8(arrayB))
+# -- Merge three bands
+            pilImgFig = Image.merge("RGB", (pilImgR, pilImgG, pilImgB))
+# If one band is given, create its PIL image and color bar PIL image
+        else:
+# <OPTION> Convart array based on logarithmic tone curve
+            if logarithm:
+                arrayMin, arrayMax = (array[0, :, :][array[0, :, :] > 0].min(), array[0, :, :].max())
+                array[0, :, :] = self._log_transform(array[0, :, :], arrayMin, arrayMax, gamma)
+# Save the array to StringIO object and Open it with PIL
+            f1 = cStringIO.StringIO()
+            imsave(f1, array[0, :, :], cmap=cm.jet, format="png")
+            f1.reset()
+            pilImgFig = Image.open(f1)
+
+# Create a color bar, save it to StringIO object and Opne it with PIL
+            f2 = cStringIO.StringIO()
+            bar = outer(np.ones(colorbar_height), np.arange(0, rasterXSize, 1))
+            imsave(f2, bar, cmap=cm.jet, format="png")
+            f2.reset()
+            pilImgCbar = Image.open(f2)
+
+# Create a new PIL canvas for the color bar
+            imgWidth = int(2*margin + rasterXSize)
+            imgHeight = colorbar_height*4
+            pilImgCbarfig = Image.new('RGB', (imgWidth, imgHeight), "white")
+# -- put the colorbar PILimage
+            box = (margin, 1)
+            pilImgCbarfig.paste(pilImgCbar, box)
+            draw = ImageDraw.Draw(pilImgCbarfig)
+
+# -- Add scales into the canvas
+# ---- create an array which shows the locations of the values in the colorbar
+            scaleTextLocation = np.linspace(pow(10.0, -10), 0.95, numOfTicks)
+
+# ---- Set values of the scale in the colorbar
+            if logarithm:
+                scaleArray = self._log_transformInv(scaleTextLocation, arrayMin, arrayMax, gamma)
+            else:
+                scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) + pixvalMin
+
+# ---- modify the number of digits of scaleArray for showing
+# ------ Get number of digits of the 2nd value in the scaleArray
+            scale_temp = scaleArray[1]
+            pixvalDecimals = 0
+            if abs(scale_temp) > 1:
+                while abs(scale_temp) > 1.0:
+                    pixvalDecimals += 1
+                    scale_temp /= 10
+            else:
+                while abs(scale_temp) < 1.0:
+                    pixvalDecimals -= 1
+                    scale_temp *= 10
+
+# ------ Get a number of digits of the scale
+            barScale = (pixvalMax - pixvalMin) / (numOfTicks - 1)
+            barDecimals = 0
+            if barScale > 1:
+                while barScale > 1.0:
+                    barDecimals += 1
+                    barScale /= 10
+            else:
+                while barScale < 0.1:
+                    barDecimals -= 1
+                    barScale *= 10
+
+# ------ Round values to proper style
+            scaleArray /= pow(10.0, pixvalDecimals)
+            if barDecimals < pixvalDecimals:
+                barDecimals = (pixvalDecimals - barDecimals) + 2
+            else:
+                barDecimals = 2
+            scaleArray = np.round(scaleArray, barDecimals)
+
+# ------ Convart the scale array to a string list
+            scaleText = list(map(str, scaleArray))
+
+# ----  check the scale
+            ##print "scaleText : ", scaleText
+# ---- draw lines on the color bar and the scales
+            for i in range(numOfTicks):
+                coordX = int(margin+scaleTextLocation[i]*rasterXSize)
+                box = (coordX, 1, coordX, colorbar_height)
+                draw.line(box, fill='rgb(0,0,0)')
+                box = (coordX-2, int(colorbar_height*1.3))
+                draw.text(box, scaleText[i], fill='rgb(0,0,0)')
+            if pixvalDecimals != 0:
+                    box = (coordX, int(colorbar_height*2.3))
+                    draw.text(box, "x10^%d" %pixvalDecimals, fill='rgb(0,0,0)')
+
+# create a new canvas for the output file
+        imgWidth = int(2*margin + rasterXSize)
+        if len(bands)==3:
+            imgHeight = int(2*margin + rasterYSize + pad)
+        else:
+            imgHeight = int(2*margin + rasterYSize + pad + pilImgCbarfig.size[1])
+        pilImg = Image.new('RGB', (imgWidth, imgHeight), "white")
+
+# paste the figure
+        box = (margin, margin)
+        pilImg.paste(pilImgFig, box)
+
+# paste the color bar
+        if len(bands)==1:
+            box = (0, margin + rasterYSize + pad)
+            pilImg.paste(pilImgCbarfig, box)
+
+# write text
+# -- set fonts
+        fileName_font = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'fonts/times.ttf')
+        font = ImageFont.truetype(fileName_font, fontSize)
+        # -- write text each line into pilImgTxt
+        if textwidthMax > rasterXSize:
+            textwidthMax = rasterXSize
+        pilImgTxt = Image.new('L', (textwidthMax, pad-10), "white")
+        pilImgDraw = ImageDraw.Draw(pilImgTxt)
+        textWidth = 0
+        textHeight = 0
+        for line in legend.splitlines():
+            ext = pilImgDraw.textsize(line, font)
+            pilImgDraw.text((0, textHeight), line, font=font, fill= 0)
+            textWidth = max(ext[0], textWidth)
+            textHeight += ext[1]
+        # paste pilImgTxt into pilImg
+        pilImg.paste(pilImgTxt, (margin, margin+rasterYSize+10))
+        # save the file
+        pilImg.save(fileName + "." + extension)
+
+        if len(bands)==1:
+            f1.close()
+            f2.close()
+
+
+    """
     def write_figure(self, fileName, bandNo=1,
                      pixelValMin=None, pixelValMax=None,
                      imageDatatype=None, thresholdRatio=1.0,
@@ -568,7 +856,7 @@ class Nansat():
         np.clip(rawArray, pixelValMin, pixelValMax, out=rawArray)
         toimage(rawArray).save(fileName + "." + extension)
         print "(%3.1f sec) " % (time.clock() - tic)
-
+    """
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
@@ -710,6 +998,24 @@ class Nansat():
                          (len(hist_eq) - len(hist_max) + 0.5) * binsize
 
         return edge_min, edge_max
+
+    def _log_transform(self, array, arrayMin, arrayMax, gamma):
+        '''Get pixelvalue array and returns log(image) scaled to the interval [0,1]'''
+        try:
+            if (arrayMax > arrayMin) and (arrayMax > 0):
+                return np.power((np.log(array.clip(arrayMin, arrayMax)) - np.log(arrayMin)) / (np.log(arrayMax) - np.log(arrayMin)), (1.0 / gamma))
+        except:
+            pass
+        return array
+
+    def _log_transformInv(self, array, arrayMin, arrayMax, gamma):
+        '''Get an array which represents the locations in a color bar (interval [0,1])
+            and returns the pixelvalue array'''
+        try:
+            return np.exp(np.power(array, gamma) * (np.log(arrayMax) - np.log(arrayMin)) + np.log(arrayMin))
+        except:
+            pass
+        return array
 
     def _modify_warpedVRT(self, rawWarpedVRT,
                           rasterXSize, rasterYSize, geoTransform):
