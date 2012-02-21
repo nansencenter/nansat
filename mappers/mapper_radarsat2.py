@@ -10,6 +10,7 @@
 #-------------------------------------------------------------------------------
 
 from datetime import datetime
+from numpy import mod
 
 try:
     from osgeo import gdal
@@ -17,6 +18,8 @@ except ImportError:
     import gdal
 
 from vrt import *
+from domain import Domain
+
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
@@ -46,6 +49,13 @@ class Mapper(VRT):
         ##################################
         validTime = dataset.GetMetadata()['ACQUISITION_START_TIME']
         self.metadata['Valid Time'] = datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+        ############################################
+        # Add SAR look direction to metadata domain
+        ############################################
+        self.metadata['SAR_look_direction'] = mod(
+            Domain(dataset).upwards_azimuth_direction()
+            + 90, 360)
 
         ##############################################################
         # Adding derived band (incidence angle) calculated

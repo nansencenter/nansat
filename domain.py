@@ -30,6 +30,7 @@ except ImportError:
     import gdal
     import osr
 
+from nansat_tools import initial_bearing
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -531,7 +532,7 @@ class Domain():
         rowVector = [0] * nPoints + rcVector1[1] + \
                     [sizes[1]] * nPoints + rcVector2[1]
 
-        return self._transfrom_points(colVector, rowVector)
+        return self._transform_points(colVector, rowVector)
 
     def _get_border_kml(self):
         '''Generate Placemark entry for KML
@@ -596,7 +597,7 @@ class Domain():
                      self.memDataset.RasterXSize]
         rowVector = [0, self.memDataset.RasterYSize, 0,
                      self.memDataset.RasterYSize]
-        return self._transfrom_points(colVector, rowVector)
+        return self._transform_points(colVector, rowVector)
 
     def _get_geotransform(self, extentDic):
         '''
@@ -682,7 +683,7 @@ class Domain():
 
         return projection
 
-    def _transfrom_points(self, colVector, rowVector):
+    def _transform_points(self, colVector, rowVector):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -729,3 +730,33 @@ class Domain():
                                     +datum=WGS84 +no_defs")
 
         return latlongSRS
+    
+    def upwards_azimuth_direction(self):
+        '''Caluculate and return upwards azimuth direction of domain.
+        
+        The upward azimuth direction will be the satellite flight 
+        direction (bearing) for unprojected satellite images.
+        
+        Returns
+        -------
+        bearing_center : float
+            The upwards azimuth direction (bearing) in the center of
+            the domain. 
+            NOTE: for longer domains especially at high latitudes 
+            the azimuth direction may vary a lot over the domain, 
+            and using the center angle will be a coarse approximation.
+            This function should be updated to return a matrix
+            of bearings interpolated to each pixel of the domain.
+            This method should probably also get a better name.
+        '''
+        
+        mid_x = self.memDataset.RasterXSize/2
+        mid_y1 = self.memDataset.RasterYSize/2*0.4
+        mid_y2 = self.memDataset.RasterYSize/2*0.6
+        startlon, startlat = self._transform_points([mid_x], [mid_y1])
+        endlon, endlat = self._transform_points([mid_x], [mid_y2])
+        bearing_center = initial_bearing(
+                    startlon[0], startlat[0], endlon[0], endlat[0])
+        return bearing_center
+    
+    
