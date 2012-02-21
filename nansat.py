@@ -511,8 +511,7 @@ class Nansat():
         self.vrt = self.warpedVRT
 
     def write_figure(self, fileName, bands=[1],
-                     cmin=[None, None, None], cmax=[None, None, None],
-                     ratio=[1.0, 1.0, 1.0],
+                     cmin=[None], cmax=[None], ratio=[1.0],
                      logarithm=False, gamma=2,
                      numOfTicks=5, fontSize=10,
                      margin=30, pad=60, textwidthMax=600,
@@ -539,6 +538,9 @@ class Nansat():
                 Output file name
             bands : list, optional, default = [1]
                 the size of the list has to be 1 or 3.
+                if the size is 3, RGB image is created based on the three bands.
+                Then the first element is Red, the second is Green,
+                and the third is Blue.
             cmin, cmax : list, optional
                 minimum and maximum pixel values of each band
             ratio : listimageDatatype
@@ -578,9 +580,56 @@ class Nansat():
 
         Raises
         ------
+            OptionError: occurs when number of elements of bands list is not
+                          1 or 3
+            OptionError: occurs when number of elements of ratio list is not
+                          1 or 3
+            OptionError: occurs when number of elements of bands list is
+                          different from that of ratio list
+                          and the element is not 1.0.
+            OptionError: occurs when number of elements of cmin list is not
+                          1 or 3
+            OptionError: occurs when number of elements of cmin list is
+                          different from that of cmin list
+                          and the element is not None.
+            OptionError: occurs when number of elements of cmax list is not
+                          1 or 3
+            OptionError: occurs when number of elements of cmax list is
+                          different from that of cmax list
+                          and the element is not None.
+            OptionError: occurs when gammma is 0 or negative
             DataError: occurs when the array of the band is empty
 
         '''
+        if not ((len(bands) == 3) or (len(bands) == 1)):
+            raise OptionError("number of elements of bands list must be 1 or 3")
+
+        if not ((len(ratio) == 3) or (len(ratio) == 1)):
+            raise OptionError("number of elements of ratio list must be 1 or 3")
+        elif len(bands) > len(ratio) and ratio[0] == 1.0:
+            ratio = [1.0, 1.0, 1.0]
+        elif (len(bands) != len(ratio)):
+            raise OptionError("number of elements of ratio list must"\
+                               " be same with that of bands list")
+
+        if not ((len(cmin) == 3) or (len(cmin) == 1)):
+            raise OptionError("number of elements of cmin list must be 1 or 3")
+        elif len(bands) > len(cmin) and cmin[0] == None:
+            cmin = [None, None, None]
+        elif (len(bands) != len(cmin)):
+            raise OptionError("number of elements of cmin list must"\
+                               " be same with that of bands list")
+
+        if not ((len(cmax) == 3) or (len(cmax) == 1)):
+            raise OptionError("number of elements of cmax list must be 1 or 3")
+        elif len(bands) > len(cmax) and cmax[0] == None:
+            cmax = [None, None, None]
+        elif (len(bands) != len(cmax)):
+            raise OptionError("number of elements of cmax list must"\
+                               " be same with that of bands list")
+
+        if gamma <= 0.0:
+            raise OptionError("gamma argument must be a positive float")
 
         rasterXSize = self.vrt.RasterXSize
         rasterYSize = self.vrt.RasterYSize
@@ -601,15 +650,17 @@ class Nansat():
         pixvalHistScale = []
         pixvalHist = np.array([])
 
-        i = 0
-        for iBand in bands:
+        for i, iBand in enumerate(bands):
             bandPixvalueInfo = self.vrt.GetRasterBand(iBand).GetDefaultHistogram()
             pixvalMinList.append(float(bandPixvalueInfo[0]))
             pixvalMaxList.append(float(bandPixvalueInfo[1]))
             pixvalHistBuckets.append(float(bandPixvalueInfo[2]))
             pixvalHistScale.append((pixvalMaxList[i] - pixvalMinList[i]) / pixvalHistBuckets[i])
             pixvalHist = np.append(pixvalHist, (np.array(bandPixvalueInfo[3], dtype=float)))
-            i += 1
+        pixvalHist = pixvalHist.reshape(len(bands), pixvalHistBuckets[0])
+
+        pixvalMin = pixvalMinList[0]
+        pixvalMax = pixvalMaxList[0]
 
         #------------------------------------------------------------------------------#
         # <OPTION> Set minimum and maximum pixel values
@@ -617,8 +668,7 @@ class Nansat():
         numOfPixels = rasterXSize*rasterYSize
         for iBand in range(len(bands)):
             if ratio[iBand] != 1.0:
-                accumulateHist = add.accumulate(pixvalHist) / numOfPixels
-                #accumulateHist = add.accumulate(pixvalHist[iBand, :, :]) / numOfPixels
+                accumulateHist = add.accumulate(pixvalHist[iBand, :]) / numOfPixels
                 if (accumulateHist[0] > (1-ratio[iBand])) and (accumulateHist[0] == accumulateHist[1]):
                     accumulateHist = accumulateHist[accumulateHist != accumulateHist[0]]
                     cmin[iBand] = pixvalMaxList[iBand] - pixvalHistScale[iBand] * len(accumulateHist)
@@ -632,10 +682,6 @@ class Nansat():
                 else:
                     histMin = accumulateHist[accumulateHist < ((1 - ratio[iBand]) / 2)]
                     histMax = accumulateHist[accumulateHist > (1 - ((1 - ratio[iBand]) / 2))]
-                    print "577 : ", iBand, "  --  ", pixvalMinList[iBand]
-                    print len(histMin)
-                    print pixvalMinList[iBand]
-                    print pixvalHistScale[iBand]
                     cmin[iBand] = pixvalMinList[iBand] + pixvalHistScale[iBand] * len(histMin)
                     cmax[iBand] = pixvalMinList[iBand] + pixvalHistScale[iBand] * (len(accumulateHist) - len(histMax))
 
@@ -661,8 +707,19 @@ class Nansat():
         else:
 # <OPTION> Convart array based on logarithmic tone curve
             if logarithm:
-                arrayMin, arrayMax = (array[0, :, :][array[0, :, :] > 0].min(), array[0, :, :].max())
-                array[0, :, :] = self._log_transform(array[0, :, :], arrayMin, arrayMax, gamma)
+                pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
+                #arrayMin, arrayMax = (array[0, :, :][array[0, :, :] > 0].min(), array[0, :, :].max())
+                #print pixvalMin, pixvalMax
+                #print arrayMin, arrayMax
+                try:
+                    pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
+                    if (arrayMax > pixvalPositiveMin) and (pixvalMax > 0):
+                        array[0, :, :] = np.power((np.log(array[0, :, :].clip(pixvalPositiveMin, pixvalMax))\
+                          - np.log(pixvalPositiveMin)) \
+                          / (np.log(pixvalMax) - np.log(pixvalPositiveMin)),
+                          (1.0 / gamma))
+                except:
+                    pass
 # Save the array to StringIO object and Open it with PIL
             f1 = cStringIO.StringIO()
             imsave(f1, array[0, :, :], cmap=cm.jet, format="png")
@@ -691,7 +748,9 @@ class Nansat():
 
 # ---- Set values of the scale in the colorbar
             if logarithm:
-                scaleArray = self._log_transformInv(scaleTextLocation, arrayMin, arrayMax, gamma)
+                scaleArray = np.exp(np.power(scaleTextLocation, gamma)\
+                             * (np.log(pixvalMax) - np.log(pixvalPositiveMin))\
+                             + np.log(pixvalPositiveMin))
             else:
                 scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) + pixvalMin
 
@@ -998,24 +1057,6 @@ class Nansat():
                          (len(hist_eq) - len(hist_max) + 0.5) * binsize
 
         return edge_min, edge_max
-
-    def _log_transform(self, array, arrayMin, arrayMax, gamma):
-        '''Get pixelvalue array and returns log(image) scaled to the interval [0,1]'''
-        try:
-            if (arrayMax > arrayMin) and (arrayMax > 0):
-                return np.power((np.log(array.clip(arrayMin, arrayMax)) - np.log(arrayMin)) / (np.log(arrayMax) - np.log(arrayMin)), (1.0 / gamma))
-        except:
-            pass
-        return array
-
-    def _log_transformInv(self, array, arrayMin, arrayMax, gamma):
-        '''Get an array which represents the locations in a color bar (interval [0,1])
-            and returns the pixelvalue array'''
-        try:
-            return np.exp(np.power(array, gamma) * (np.log(arrayMax) - np.log(arrayMin)) + np.log(arrayMin))
-        except:
-            pass
-        return array
 
     def _modify_warpedVRT(self, rawWarpedVRT,
                           rasterXSize, rasterYSize, geoTransform):
