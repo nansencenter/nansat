@@ -1,6 +1,6 @@
-# Name:    domain.py
-# Purpose: create domain based on either GDAL dataset or
-#          proj4string and extentString
+# Name:     domain.py
+# Purpose:  create domain based on either GDAL dataset or
+#           proj4string and extentString
 #
 # Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 #
