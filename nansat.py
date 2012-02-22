@@ -510,7 +510,7 @@ class Nansat():
                                    (0, 1, 0, 0, 0, 1))
         self.vrt = self.warpedVRT
 
-    def write_figure(self, fileName, bands=[1], bandID=None, colormap = cm.jet,
+    def write_figure(self, fileName, bands=[1], colormap = cm.jet,
                      cmin=[None], cmax=[None], ratio=[1.0],
                      logarithm=False, gamma=2,
                      numOfTicks=5, fontSize=10,
@@ -607,9 +607,6 @@ class Nansat():
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
-
-        if bandID is not None:
-            bands = [self._specify_bandNo(bandID)]
 
         if not ((len(bands) == 3) or (len(bands) == 1)):
             raise OptionError("number of elements of bands list must be 1 or 3")
@@ -978,7 +975,7 @@ class Nansat():
         # create a mapper list based on the files in the folder "mappers"
         nansatDir = path.dirname(path.realpath(__file__))
 
-        allMapperFiles = listdir(path.join(nansatDir, "winmappers"))
+        allMapperFiles = listdir(path.join(nansatDir, "mappers"))
         allMapperFiles = fnmatch.filter(allMapperFiles, 'mapper_*.py')
 
         # add the given mapper first
