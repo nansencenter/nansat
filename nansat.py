@@ -510,7 +510,7 @@ class Nansat():
                                    (0, 1, 0, 0, 0, 1))
         self.vrt = self.warpedVRT
 
-    def write_figure(self, fileName, bands=[1],
+    def write_figure(self, fileName, bands=[1], bandID=None, colormap = cm.jet,
                      cmin=[None], cmax=[None], ratio=[1.0],
                      logarithm=False, gamma=2,
                      numOfTicks=5, fontSize=10,
@@ -541,6 +541,8 @@ class Nansat():
                 if the size is 3, RGB image is created based on the three bands.
                 Then the first element is Red, the second is Green,
                 and the third is Blue.
+            colormap : colormap, optional, default = cm.jet
+
             cmin, cmax : list, optional
                 minimum and maximum pixel values of each band
             ratio : listimageDatatype
@@ -600,7 +602,15 @@ class Nansat():
             OptionError: occurs when gammma is 0 or negative
             DataError: occurs when the array of the band is empty
 
+        See also
+        ------
+        http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+
         '''
+
+        if bandID is not None:
+            bands = [self._specify_bandNo(bandID)]
+
         if not ((len(bands) == 3) or (len(bands) == 1)):
             raise OptionError("number of elements of bands list must be 1 or 3")
 
@@ -634,8 +644,10 @@ class Nansat():
         rasterXSize = self.vrt.RasterXSize
         rasterYSize = self.vrt.RasterYSize
 
-        print "Reading figure(s) "
+        print "Reading figure(s)  size = (", rasterXSize, "x", rasterYSize, ")"
         array = np.array([])
+
+        tic = time.clock()
         for iBand in bands:
             iArray = self[iBand]
             if iArray is None:
@@ -695,9 +707,21 @@ class Nansat():
 # If three bands are given, marge them and crate a PIL image
         if len(bands)==3:
 # -- Normalize RGB arrays to the interval [0,255]
-            arrayR = (array[0, :, :] - array[0, :, :].min()) *255/ (array[0, :, :].max()- array[0, :, :].min())
-            arrayG = (array[1, :, :] - array[1, :, :].min()) *255/ (array[1, :, :].max()- array[1, :, :].min())
-            arrayB = (array[2, :, :] - array[2, :, :].min()) *255/ (array[2, :, :].max()- array[2, :, :].min())
+            if array[0, :, :].max() == array[0, :, :].min():
+                raise OptionError("min. and max. pixel valuses in Red band are same. check ratio, cmin and cmax!!")
+            else:
+                arrayR = (array[0, :, :] - array[0, :, :].min()) *255/ (array[0, :, :].max()- array[0, :, :].min())
+
+            if array[1, :, :].max() == array[1, :, :].min():
+                raise OptionError("min. and max. pixel valuses in Green band are same. check ratio, cmin and cmax!!")
+            else:
+                arrayG = (array[1, :, :] - array[1, :, :].min()) *255/ (array[1, :, :].max()- array[1, :, :].min())
+
+            if array[2, :, :].max() == array[2, :, :].min():
+                raise OptionError("min. and max. pixel valuses in Blue band are same. check ratio, cmin and cmax!!")
+            else:
+                arrayB = (array[2, :, :] - array[2, :, :].min()) *255/ (array[2, :, :].max()- array[2, :, :].min())
+
             pilImgR = Image.fromarray(np.uint8(arrayR))
             pilImgG = Image.fromarray(np.uint8(arrayG))
             pilImgB = Image.fromarray(np.uint8(arrayB))
@@ -708,9 +732,6 @@ class Nansat():
 # <OPTION> Convart array based on logarithmic tone curve
             if logarithm:
                 pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
-                #arrayMin, arrayMax = (array[0, :, :][array[0, :, :] > 0].min(), array[0, :, :].max())
-                #print pixvalMin, pixvalMax
-                #print arrayMin, arrayMax
                 try:
                     pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
                     if (arrayMax > pixvalPositiveMin) and (pixvalMax > 0):
@@ -722,14 +743,15 @@ class Nansat():
                     pass
 # Save the array to StringIO object and Open it with PIL
             f1 = cStringIO.StringIO()
-            imsave(f1, array[0, :, :], cmap=cm.jet, format="png")
+            imsave(f1, array[0, :, :], cmap=colormap, format="png")
             f1.reset()
             pilImgFig = Image.open(f1)
+            print "(%3.1f sec) " % (time.clock() - tic)
 
 # Create a color bar, save it to StringIO object and Opne it with PIL
             f2 = cStringIO.StringIO()
             bar = outer(np.ones(colorbar_height), np.arange(0, rasterXSize, 1))
-            imsave(f2, bar, cmap=cm.jet, format="png")
+            imsave(f2, bar, cmap=colormap, format="png")
             f2.reset()
             pilImgCbar = Image.open(f2)
 
@@ -956,7 +978,7 @@ class Nansat():
         # create a mapper list based on the files in the folder "mappers"
         nansatDir = path.dirname(path.realpath(__file__))
 
-        allMapperFiles = listdir(path.join(nansatDir, "mappers"))
+        allMapperFiles = listdir(path.join(nansatDir, "winmappers"))
         allMapperFiles = fnmatch.filter(allMapperFiles, 'mapper_*.py')
 
         # add the given mapper first
@@ -995,7 +1017,7 @@ class Nansat():
                                                    self.dataset)
 
         return vrtDataset
-
+    """
     def _get_pixelValueRange(self, array, ratio):
         '''Get proper pixel value range for writing a figure in PNG
 
@@ -1057,7 +1079,7 @@ class Nansat():
                          (len(hist_eq) - len(hist_max) + 0.5) * binsize
 
         return edge_min, edge_max
-
+    """
     def _modify_warpedVRT(self, rawWarpedVRT,
                           rasterXSize, rasterYSize, geoTransform):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
