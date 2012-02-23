@@ -176,6 +176,7 @@ class VRT():
             srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
                        GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
+            ##xBlockSize, yBlockSize = self.dataset.GetRasterBand(1).GetBlockSize()
             srcDataType = srcRasterBand.DataType
 
             # set metadata for each destination raster band
@@ -212,6 +213,11 @@ class VRT():
             dstRasterBand.SetMetadataItem("source_0", bandSource,
                                           "new_vrt_sources")
 
+            # set histogram for each band
+            pixvalueMin, pixvalueMax, buckets, frequency = \
+                        self.dataset.GetRasterBand(bandNo).GetDefaultHistogram()
+            dstRasterBand.SetDefaultHistogram(pixvalueMin, pixvalueMax, buckets)
+
         self.vsiDataset.FlushCache()
 
         return 0
@@ -237,7 +243,6 @@ class VRT():
             GeoTransform, GCPS, ...
             Add all bands to the vsiDataset
         '''
-
         # get geo-metadata from source dataset (or subdataset)
         srcGeoTransform = self.dataset.GetGeoTransform()
         srcProjection = self.dataset.GetProjection()
