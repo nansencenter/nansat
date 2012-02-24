@@ -175,6 +175,7 @@ class VRT():
 
             srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
                        GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
+
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
             srcDataType = srcRasterBand.DataType
 
@@ -188,6 +189,13 @@ class VRT():
             if "parameters" in metaDict[bandNo - 1]:
                 dstRasterBand = self._put_metadata(dstRasterBand,
                                      metaDict[bandNo - 1]["parameters"])
+
+            # set statistics
+            vmin, vmax, vmean, vstd = self.dataset.GetRasterBand(\
+                                        metaDict[bandNo - 1]['sourceBand']).\
+                                        GetStatistics(True, True)
+            self.vsiDataset.GetRasterBand(iBand+1).\
+                            SetStatistics(vmin, vmax, vmean, vstd)
 
             # get scale/offset from metaDict (or set default 1/0)
             if 'scale' in metaDict[bandNo - 1]:
@@ -203,8 +211,8 @@ class VRT():
             bandSource = self.ComplexSource.\
                               substitute(XSize=srcRasterXSize,
                               YSize=srcRasterYSize,
-                              Dataset=metaDict[bandNo - 1]['source'],
-                              SourceBand=metaDict[bandNo - 1]['sourceBand'],
+                              Dataset=metaDict[bandNo-1]['source'],
+                              SourceBand=metaDict[bandNo-1]['sourceBand'],
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
                               DataType=srcDataType,
                               ScaleOffset=scaleOffset, ScaleRatio=scaleRatio)
@@ -214,6 +222,7 @@ class VRT():
                                           "new_vrt_sources")
 
         self.vsiDataset.FlushCache()
+
         return 0
 
     def _createVRT(self, metaDict, vrtBandList):
