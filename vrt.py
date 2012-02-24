@@ -214,11 +214,6 @@ class VRT():
                                           "new_vrt_sources")
 
         self.vsiDataset.FlushCache()
-        print "217: vrt"
-        for iBand in range(self.vsiDataset.RasterCount):
-            vmin, vmax, buckets, hist = self.vsiDataset.GetRasterBand(iBand+1).GetDefaultHistogram()
-            print iBand+1 ," : ", vmin, " -- ", vmax
-
         return 0
 
     def _createVRT(self, metaDict, vrtBandList):
