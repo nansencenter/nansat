@@ -102,18 +102,22 @@ class Nansat():
 
         Modifies
         --------
-        self.fileName : file name
-            set file name given by the argument
-        self.dataset : GDAL dataset
-            set GDAL dataset
-        self.metadata : metadata
-            set metadata of the dataset
+        self.mapperList: list of file names
+            list of available working mappers
+            
         self.rawVRTFileName : file name
             set '/vsimem/vsiFile.vrt'
         self.warpedVRTFileName : file name
             set '/vsimem/vsi_warped.vrt'
         self.vrtDriver : VRT driver
             set GDAL VRT driver
+
+        self.fileName : file name
+            set file name given by the argument
+        self.dataset : GDAL dataset
+            set GDAL dataset
+        self.metadata : metadata
+            set metadata of the dataset
         self.rawVRT : VRT dataset
             set VRT dataset with mapping of variables
         self.warpedVRT : VRT dataset
@@ -954,9 +958,8 @@ class Nansat():
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
 
-        Create a mapperList based on all mappers in the subdir 'mappers'.
-        If mapperName is given, it is the first in the mapperList.
-        Loop over all availble mappers to get the matching one.
+        If mapperName is given, it is added as the first in the self.mapperList.
+        Loop over all availble mappers in mapperList to get the matching one.
         In the loop:
             If the specific error appears the mapper is not used
             and the next mapper is tested.
