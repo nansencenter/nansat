@@ -127,26 +127,39 @@ class Nansat():
             GDALError: occurs when the metadata is None or "".
 
         '''
-        # location of the data
+        # SET SOME CONSTANTS
+        # all available mappers
+        self.mapperList = [
+              'mapper_ASAR.py',
+              'mapper_hirlam.py',
+              'mapper_merisL1.py',
+              'mapper_merisL2.py',
+              'mapper_modisL1.py',
+              'mapper_ncep.py',
+              'mapper_radarsat2.py',
+              'mapper_seawifsL2.py',
+              ]
+              
+        # names of raw and warped VRT files in memory, VRT driver
+        self.rawVRTFileName = '/vsimem/vsiFile.vrt'
+        self.warpedVRTFileName = '/vsimem/vsi_warped.vrt'
+        self.vrtDriver = gdal.GetDriverByName("VRT")
+
+        # set input file name 
         self.fileName = fileName
 
-        # dataset
+        # set input GDAL dataset
         self.dataset = gdal.Open(self.fileName)
         if (self.dataset is None) or (self.dataset == ""):
             raise GDALError("Nansat._init_(): Cannot get the dataset from "
                             + self.fileName)
 
-        # metadata
+        # set metadata from the input dataset
         self.metadata = self.dataset.GetMetadata()
         if (self.metadata is None) or (self.metadata == ""):
             raise GDALError("Nansat._init_(): Cannot get the metdadata")
 
-        # names of raw and warped VRT files in memory
-        self.rawVRTFileName = '/vsimem/vsiFile.vrt'
-        self.warpedVRTFileName = '/vsimem/vsi_warped.vrt'
-        self.vrtDriver = gdal.GetDriverByName("VRT")
-
-        # VRT with mapping of variables
+        # get VRT with mapping of variables
         self.rawVRT = self._get_mapper(mapperName, bandList)
         # Warped VRT
         self.warpedVRT = None
@@ -971,33 +984,20 @@ class Nansat():
                         in the mappers.
 
         '''
-        # create a mapper list based on the files in the folder "mappers"
-        nansatDir = path.dirname(path.realpath(__file__))
-
-        allMapperFiles = listdir(path.join(nansatDir, "mappers"))
-        allMapperFiles = fnmatch.filter(allMapperFiles, 'mapper_*.py')
 
         # add the given mapper first
-        mapperList = ['mapper_' + mapperName]
-
-        # loop through appropriate files and add to the list
-        for iFile in allMapperFiles:
-            iFile = iFile.replace(".py", "")
-            mapperList.append(iFile)
-
-        # try to add path for windows, add for linux otherwise
-        try:
-            sys.path.append(path.join(unicode(nansatDir, "mbcs"),
-                            "mappers"))
-        except:
-            sys.path.append(path.join(nansatDir, "mappers"))
+        self.mapperList = ['mapper_' + mapperName] + self.mapperList
 
         # try to import and get VRT datasaet from all mappers. Break on success
         # if none of the mappers worked - None is returned
         vrtDataset = None
-        for iMapper in mapperList:
+        for iMapper in self.mapperList:
             try:
+                #get rid of .py extension
+                iMapper = iMapper.replace('.py', '')
+                #import mapper
                 mapper_module = __import__(iMapper)
+                #create a Mapper object and get VRT dataset from it
                 vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
                                          self.fileName, self.dataset,
                                          self.metadata,
