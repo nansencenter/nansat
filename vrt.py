@@ -166,17 +166,16 @@ class VRT():
         self.vsiDataset: VRT dataset
             VSI VRT dataset added band metadata
         '''
-
         for iBand, bandNo in enumerate(vrtBandList):
             # check if the band in the list exist
             if int(bandNo) > int(metaDict.__len__()):
                 print ("vrt.addAllBands(): "
                        "an element in the bandList is improper")
                 break
+
             srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
                        GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
-            ##xBlockSize, yBlockSize = self.dataset.GetRasterBand(1).GetBlockSize()
             srcDataType = srcRasterBand.DataType
 
             # set metadata for each destination raster band
@@ -209,16 +208,16 @@ class VRT():
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
                               DataType=srcDataType,
                               ScaleOffset=scaleOffset, ScaleRatio=scaleRatio)
+
             # set band source metadata
             dstRasterBand.SetMetadataItem("source_0", bandSource,
                                           "new_vrt_sources")
 
-            # set histogram for each band
-            pixvalueMin, pixvalueMax, buckets, frequency = \
-                        self.dataset.GetRasterBand(bandNo).GetDefaultHistogram()
-            dstRasterBand.SetDefaultHistogram(pixvalueMin, pixvalueMax, buckets)
-
         self.vsiDataset.FlushCache()
+        print "217: vrt"
+        for iBand in range(self.vsiDataset.RasterCount):
+            vmin, vmax, buckets, hist = self.vsiDataset.GetRasterBand(iBand+1).GetDefaultHistogram()
+            print iBand+1 ," : ", vmin, " -- ", vmax
 
         return 0
 
