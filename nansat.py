@@ -29,6 +29,7 @@ import ImageFont
 import ImageOps
 import matplotlib.cm as cm
 import numpy as np
+from math import log10
 from scipy.misc import toimage, pilutil
 from scipy.misc import imsave
 from scipy.stats import cumfreq
@@ -104,7 +105,7 @@ class Nansat():
         --------
         self.mapperList: list of file names
             list of available working mappers
-            
+
         self.rawVRTFileName : file name
             set '/vsimem/vsiFile.vrt'
         self.warpedVRTFileName : file name
@@ -143,13 +144,13 @@ class Nansat():
               'mapper_radarsat2.py',
               'mapper_seawifsL2.py',
               ]
-              
+
         # names of raw and warped VRT files in memory, VRT driver
         self.rawVRTFileName = '/vsimem/vsiFile.vrt'
         self.warpedVRTFileName = '/vsimem/vsi_warped.vrt'
         self.vrtDriver = gdal.GetDriverByName("VRT")
 
-        # set input file name 
+        # set input file name
         self.fileName = fileName
 
         # set input GDAL dataset
@@ -157,8 +158,7 @@ class Nansat():
         if (self.dataset is None) or (self.dataset == ""):
             raise GDALError("Nansat._init_(): Cannot get the dataset from "
                             + self.fileName)
-
-        # set metadata from the input dataset
+        # metadata
         self.metadata = self.dataset.GetMetadata()
         if (self.metadata is None) or (self.metadata == ""):
             raise GDALError("Nansat._init_(): Cannot get the metdadata")
@@ -327,7 +327,6 @@ class Nansat():
 
         '''
 
-        print "raster num" ,self.rawVRT.RasterCount
         # If bandID is given, bandNo is specified here.
         if bandID is not None:
             bandNo = self._specify_bandNo(bandID)
@@ -533,7 +532,7 @@ class Nansat():
                      logarithm=False, gamma=2,
                      numOfTicks=5, fontSize=10,
                      margin=30, pad=60, textWidthMax=600,
-                     colorbarHeight=10,
+                     colorbarHeight=10, barFontSize=8,
                      legend=None,
                      useFullMatrix=False, extension='png'):
 
@@ -563,7 +562,7 @@ class Nansat():
 
             cmin, cmax : list, optional
                 minimum and maximum pixel values of each band
-            ratio : listimageDatatype
+            ratio : listimageDatatype, optional
                 ratio of number of the pixels
                 used to compute cmin and cmax.
             logarithm : boolean, optional
@@ -573,19 +572,20 @@ class Nansat():
                 coefficient of the tone curve
             numOfTicks : int, optional, default = 5
                 number of ticks
-            fontSize : int
+            fontSize : int, optional, default = 10
                 size of font for the legend
-            margin: int
+            margin: int, optional
                 margin of the output file
-            pad : int
+            pad : int, optional
                 height for the legend
-            textWidthMax : int
+            textWidthMax : int, optional
                 width for the legend
-            colorbarHeight : int
+            colorbarHeight : int, optional
                 height for the colorbar
-            legend : text
-            useFullMatrix : boolean
-            extension : extension
+            barFontSize : int, optional, default = 8
+                size of font for the colorbar
+            legend : text, optional
+            extension : extension, optional
                 extension of the outputfile
 
 
@@ -689,11 +689,11 @@ class Nansat():
             pixvalMinList.append(float(bandPixvalueInfo[0]))
             # maximum pixel value
             pixvalMaxList.append(float(bandPixvalueInfo[1]))
-            # number of widths of histogram (255?)
+            # number of widths of histogram (256?)
             pixvalHistBuckets.append(float(bandPixvalueInfo[2]))
             # average variation of pixel value for each width
-            pixvalHistScale.append((pixvalMaxList[i] - pixvalMinList[i])\
-                                    / pixvalHistBuckets[i])
+            pixvalHistScale.append((pixvalMaxList[i] - pixvalMinList[i]) / \
+                                    pixvalHistBuckets[i])
             # frequency of each interval (histogram)
             pixvalHist = np.append(pixvalHist, (np.array(bandPixvalueInfo[3],
                                                          dtype=float)))
@@ -702,6 +702,7 @@ class Nansat():
 
         pixvalMin = pixvalMinList[0]
         pixvalMax = pixvalMaxList[0]
+        ##print "690 PIXEL VALUE : ", pixvalMin, " -- ", pixvalMax
 
         # <OPTION> Get cmin and cmax and clip the pixel values
         numOfPixels = rasterXSize*rasterYSize
@@ -709,8 +710,8 @@ class Nansat():
             # if ratio is not 1.0, compute cmin and cmax based on the ratio
             if ratio[iBand] != 1.0:
                 # percentage of accumulated histogram of iBand
-                accumulateHist = np.add.accumulate(pixvalHist[iBand, :]) \
-                                 / numOfPixels
+                accumulateHist = np.add.accumulate(pixvalHist[iBand, :]) / \
+                                                   numOfPixels
                 # if the frequency (ratio) of the first inverval is
                 # larger than the given ratio (1-ratio) and
                 # the frequency of the second inverval of the histogram
@@ -718,12 +719,12 @@ class Nansat():
                 # cmin is replaced the second minimum pixel value.
                 # In short, if there are many black pixels (no value pixels),
                 # set the second minimum value to cmin.
-                if (accumulateHist[0] > (1-ratio[iBand])) \
-                   and (accumulateHist[0] == accumulateHist[1]):
-                    accumulateHist = accumulateHist[accumulateHist \
-                                                    != accumulateHist[0]]
-                    cmin[iBand] = pixvalMaxList[iBand] \
-                                  - pixvalHistScale[iBand] * len(accumulateHist)
+                if (accumulateHist[0] > (1-ratio[iBand])) and \
+                    (accumulateHist[0] == accumulateHist[1]):
+                    accumulateHist = accumulateHist[accumulateHist > \
+                                                    accumulateHist[0]]
+                    cmin[iBand] = pixvalMaxList[iBand] - \
+                                  pixvalHistScale[iBand] * len(accumulateHist)
                     cmax[iBand] = pixvalMaxList[iBand]
                 # if the frequency (ratio) of the first inverval is
                 # less than the given ratio (1-ratio) and
@@ -732,45 +733,72 @@ class Nansat():
                 # cmin and cmax from both sides (second minimum and
                 # maximum values) to satisfy the given ratio
                 elif accumulateHist[0] == accumulateHist[1]:
-                    accumulateHistMin = accumulateHist[accumulateHist \
-                                                       != accumulateHist[0]]
-                    histMin = accumulateHist[accumulateHist \
-                                             < (accumulateHist[0] \
-                                             + (1 - (ratio[iBand] \
-                                             + accumulateHist[0])) / 2)]
-                    histMax = accumulateHist[accumulateHist \
-                                             > (1 - (1 - (ratio[iBand] \
-                                             + accumulateHist[0])) / 2)]
-                    cmin[iBand] = pixvalMinList[iBand] \
-                                  + pixvalHistScale[iBand] * len(histMin)
-                    cmax[iBand] = pixvalMinList[iBand] \
-                                  + pixvalHistScale[iBand] \
-                                  * (len(accumulateHist) - len(histMax))
+                    histMin = accumulateHist[accumulateHist < \
+                                             (1 - ratio[iBand] + \
+                                             accumulateHist[0]) / 2]
+                    histMax = accumulateHist[accumulateHist < \
+                                             (1 + ratio[iBand] + \
+                                             accumulateHist[0]) / 2]
+                    cmin[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * len(histMin)
+                    cmax[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * len(histMax)
+                # if the frequency (ratio) of the last inverval is
+                # larger than the given ratio and
+                # the frequency of the second to last inverval of the histogram
+                # is zero (it means accumulateHist[-2] == accumulateHist[-3]),
+                # cmax is replaced the second maximum pixel value.
+                # In short, if there are many black pixels (no value pixels),
+                # set the second maximum value to cmax.
+                elif (accumulateHist[-2] < (ratio[iBand])) and \
+                    (accumulateHist[-2] == accumulateHist[-3]):
+                    accumulateHist = accumulateHist[accumulateHist < \
+                                                    accumulateHist[-2]]
+                    cmin[iBand] = pixvalMinList[iBand]
+                    cmax[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * len(accumulateHist)
+                # if the frequency (ratio) of the first inverval is
+                # less than the given ratio (1-ratio) and
+                # the frequency of the second inverval is zero,
+                # firstly remove the minimum value and secondly adjust
+                # cmin and cmax from both sides (second minimum and
+                # maximum values) to satisfy the given ratio
+                elif accumulateHist[-2] == accumulateHist[-3]:
+                    histMin = accumulateHist[accumulateHist < \
+                                             (accumulateHist[-2] - \
+                                             ratio[iBand]) / 2 ]
+                    histMax = accumulateHist[accumulateHist < \
+                                             (accumulateHist[-2] + \
+                                             ratio[iBand]) / 2 ]
+                    cmin[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * len(histMin)
+                    cmax[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * len(histMax)
                 # specify cmin and cmax by removing (1 - ratio) / 2 equally
                 # from both sides (minimum and maximum values)
                 # to satisfy the given ratio
                 else:
-                    histMin = accumulateHist[accumulateHist \
-                                             < ((1 - ratio[iBand]) / 2)]
-                    histMax = accumulateHist[accumulateHist \
-                                             > (1 - ((1 - ratio[iBand]) / 2))]
-                    cmin[iBand] = pixvalMinList[iBand] \
-                                  + pixvalHistScale[iBand] * len(histMin)
-                    cmax[iBand] = pixvalMinList[iBand] \
-                                  + pixvalHistScale[iBand] \
-                                  * (len(accumulateHist) - len(histMax))
+                    histMin = accumulateHist[accumulateHist < \
+                                             ((1 - ratio[iBand]) / 2)]
+                    histMax = accumulateHist[accumulateHist > \
+                                             (1 - ((1 - ratio[iBand]) / 2))]
+                    cmin[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * len(histMin)
+                    cmax[iBand] = pixvalMinList[iBand] + \
+                                  pixvalHistScale[iBand] * \
+                                  (len(accumulateHist) - len(histMax))
 
             # if cmin and cmax are given, clip the array
             if (cmax[iBand] or cmin[iBand]) is not None:
-                if (cmax[iBand] is not None) \
-                    and (cmax[iBand] < pixvalMaxList[iBand]):
+                if (cmax[iBand] is not None) and \
+                    (cmax[iBand] < pixvalMaxList[iBand]):
                     pixvalMax = cmax[iBand]
-                if (cmin[iBand] is not None) \
-                    and (cmin[iBand] > pixvalMinList[iBand]):
+                if (cmin[iBand] is not None) and \
+                    (cmin[iBand] > pixvalMinList[iBand]):
                     pixvalMin = cmin[iBand]
                 array[iBand, :, :] = np.clip(array[iBand, :, :],
                                              pixvalMin, pixvalMax)
-
+            ##print "769 cmin, cmax : ", cmin, " -- ", cmax
         # If three bands are given, marge them and crate a PIL image
         if len(bands)==3:
             # Normalize RGB arrays to the interval [0,255]
@@ -778,22 +806,22 @@ class Nansat():
                 raise OptionError("min. and max. pixel valuses in Red band" \
                                   " are same. check ratio, cmin and cmax!!")
             else:
-                arrayR = (array[0, :, :] - array[0, :, :].min()) \
-                         * 255 / (array[0, :, :].max()- array[0, :, :].min())
+                arrayR = (array[0, :, :] - array[0, :, :].min()) * 255 / \
+                         (array[0, :, :].max()- array[0, :, :].min())
 
             if array[1, :, :].max() == array[1, :, :].min():
                 raise OptionError("min. and max. pixel valuses in Green band" \
                                   " are same. check ratio, cmin and cmax!!")
             else:
-                arrayG = (array[1, :, :] - array[1, :, :].min()) \
-                        * 255 / (array[1, :, :].max()- array[1, :, :].min())
+                arrayG = (array[1, :, :] - array[1, :, :].min()) * 255 / \
+                         (array[1, :, :].max()- array[1, :, :].min())
 
             if array[2, :, :].max() == array[2, :, :].min():
                 raise OptionError("min. and max. pixel valuses in Blue band"\
                                   " are same. check ratio, cmin and cmax!!")
             else:
-                arrayB = (array[2, :, :] - array[2, :, :].min()) \
-                        * 255 / (array[2, :, :].max()- array[2, :, :].min())
+                arrayB = (array[2, :, :] - array[2, :, :].min()) * 255 / \
+                         (array[2, :, :].max()- array[2, :, :].min())
             # convert RGB arrays to PIL image
             pilImgR = Image.fromarray(np.uint8(arrayR))
             pilImgG = Image.fromarray(np.uint8(arrayG))
@@ -807,13 +835,13 @@ class Nansat():
                 try:
                     pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
                     if (pixvalMax > pixvalPositiveMin) and (pixvalMax > 0):
-                        array[0, :, :] = np.power((np.log(array[0, :, :]\
-                            .clip(pixvalPositiveMin, pixvalMax))\
-                            - np.log(pixvalPositiveMin)) \
-                            / (np.log(pixvalMax) - np.log(pixvalPositiveMin)),
+                        array[0, :, :] = np.power((np.log(array[0, :, :].\
+                            clip(pixvalPositiveMin, pixvalMax)) - \
+                            np.log(pixvalPositiveMin)) / \
+                            (np.log(pixvalMax) - np.log(pixvalPositiveMin)),
                             (1.0 / gamma))
                 except:
-                    pass
+                    print "!!! Non logarithm !!!"
             # save the array to StringIO object and Open it with PIL
             f1 = cStringIO.StringIO()
             imsave(f1, array[0, :, :], cmap=colormap, format="png")
@@ -846,63 +874,70 @@ class Nansat():
             # set values of the scale in the colorbar
             # if logarithm, the scale values are converted with tone carve
             if logarithm:
-                scaleArray = np.exp(np.power(scaleTextLocation, gamma)\
-                             * (np.log(pixvalMax) - np.log(pixvalPositiveMin))\
-                             + np.log(pixvalPositiveMin))
+                try:
+                    pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
+                    scaleArray = np.exp(np.power(scaleTextLocation, gamma) * \
+                                 (np.log(pixvalMax) - \
+                                 np.log(pixvalPositiveMin)) + \
+                                 np.log(pixvalPositiveMin))
+                except:
+                    scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) + \
+                             pixvalMin
             # if not, the scale values are computed linearly
             # based on the locatios
             else:
-                scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) \
-                             + pixvalMin
+                scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) + \
+                             pixvalMin
 
             # modify the number of digits of scaleArray for showing
             # get number of digits of the 2nd value in the scaleArray
-            scaleTemp = scaleArray[1]
-            pixvalDecimals = 0
-            if abs(scaleTemp) > 1:
-                while abs(scaleTemp) > 1.0:
-                    pixvalDecimals += 1
-                    scaleTemp /= 10
-            else:
-                while abs(scaleTemp) < 1.0:
-                    pixvalDecimals -= 1
-                    scaleTemp *= 10
+            scaleArrayDigit = map(self._get_digit, scaleArray)
 
             # get a number of digits of the scale for an interval
             barScale = (pixvalMax - pixvalMin) / (numOfTicks - 1)
-            barDecimals = 0
-            if barScale > 1:
-                while barScale > 1.0:
-                    barDecimals += 1
-                    barScale /= 10
-            else:
-                while barScale < 0.1:
-                    barDecimals -= 1
-                    barScale *= 10
+            barScaleDigit = self._get_digit(barScale)
 
-            # round values in scaleArray to proper style
-            # e.g. 123456  --> 0.12  (x 10^6)
-            #      0.000000123456 --> 0.12 (x 10^(-6))
-            scaleArray /= pow(10.0, pixvalDecimals)
-            if barDecimals < pixvalDecimals:
-                barDecimals = (pixvalDecimals - barDecimals) + 2
-            else:
-                barDecimals = 2
-            scaleArray = np.round(scaleArray, barDecimals)
-
-            # convart the scale array to a string list
-            scaleText = list(map(str, scaleArray))
+            formatList = []
+            for i in range(len(scaleArrayDigit)):
+                if all(abs(val) <=2 for val in scaleArrayDigit):
+                    practionalNum = max(2, abs(barScaleDigit)+1)
+                    if scaleArrayDigit[i] >= 1:
+                        decimalNum = practionalNum + 2
+                    else:
+                        decimalNum = practionalNum + 3 # for "- (minus)"
+                    writeFormat = "%"+str(decimalNum)+"."+str(practionalNum)+"f"
+                else:
+                    if barScaleDigit >= 0:
+                        practionalNum = max(2, scaleArrayDigit[i]-\
+                                            barScaleDigit+1)
+                        decimalNum = max(4, scaleArrayDigit[i]-barScaleDigit+3)
+                    elif scaleArrayDigit[i] > 0:
+                        practionalNum = max(2, -barScaleDigit+\
+                                            (scaleArrayDigit[i]-1)+1)
+                        decimalNum = practionalNum + 2
+                    elif array[i] > 0:
+                        practionalNum = max(2, -barScaleDigit)
+                        decimalNum = practionalNum + 2
+                    else:
+                        practionalNum = max(2, scaleArrayDigit[i]-\
+                                            barScaleDigit+1)
+                        decimalNum = practionalNum + 3 # for "- (minus)"
+                    writeFormat = "%"+str(decimalNum)+"."+str(practionalNum)+"e"
+                formatList.append(writeFormat)
+            scaleText = map(self._round_Scale, scaleArray, formatList)
 
             # draw lines on the color bar and the scales
+            # set fonts
+            fileName_font = os.path.join(os.path.dirname(\
+                                         os.path.realpath(__file__)),
+                                         'fonts/times.ttf')
+            font = ImageFont.truetype(fileName_font, barFontSize)
             for i in range(numOfTicks):
                 coordX = int(margin+scaleTextLocation[i]*rasterXSize)
                 box = (coordX, 1, coordX, colorbarHeight)
                 draw.line(box, fill='rgb(0,0,0)')
                 box = (coordX-2, int(colorbarHeight*1.3))
-                draw.text(box, scaleText[i], fill='rgb(0,0,0)')
-            if pixvalDecimals != 0:
-                    box = (coordX, int(colorbarHeight*2.3))
-                    draw.text(box, "x10^%d" %pixvalDecimals, fill='rgb(0,0,0)')
+                draw.text(box, scaleText[i], font=font, fill= 0)
 
         # create a new canvas for the output file
         imgWidth = int(2*margin + rasterXSize)
@@ -910,8 +945,8 @@ class Nansat():
         if len(bands)==3:
             imgHeight = int(2*margin + rasterYSize + pad)
         else:
-            imgHeight = int(2*margin + rasterYSize + pad \
-                            + pilImgCbarFig.size[1])
+            imgHeight = int(2*margin + rasterYSize + pad + \
+                            pilImgCbarFig.size[1])
         pilImg = Image.new('RGB', (imgWidth, imgHeight), "white")
 
         # paste the figure
@@ -924,25 +959,27 @@ class Nansat():
             pilImg.paste(pilImgCbarFig, box)
 
         # write text
-        # set fonts
-        fileName_font = os.path.join(os.path.dirname(\
-                                     os.path.realpath(__file__)),
-                                     'fonts/times.ttf')
-        font = ImageFont.truetype(fileName_font, fontSize)
-        # write text each line into pilImgTxt
-        if textWidthMax > rasterXSize:
-            textWidthMax = rasterXSize
-        pilImgTxt = Image.new('L', (textWidthMax, pad-10), "white")
-        pilImgDraw = ImageDraw.Draw(pilImgTxt)
-        textWidth = 0
-        textHeight = 0
-        for line in legend.splitlines():
-            ext = pilImgDraw.textsize(line, font)
-            pilImgDraw.text((0, textHeight), line, font=font, fill= 0)
-            textWidth = max(ext[0], textWidth)
-            textHeight += ext[1]
-        # paste pilImgTxt into pilImg
-        pilImg.paste(pilImgTxt, (margin, margin+rasterYSize+10))
+        if legend is not None:
+            # set fonts
+            fileName_font = os.path.join(os.path.dirname(\
+                                         os.path.realpath(__file__)),
+                                         'fonts/times.ttf')
+            font = ImageFont.truetype(fileName_font, fontSize)
+            # write text each line into pilImgTxt
+            if textWidthMax > rasterXSize:
+                textWidthMax = rasterXSize
+            pilImgTxt = Image.new('L', (textWidthMax, pad-10), "white")
+            pilImgDraw = ImageDraw.Draw(pilImgTxt)
+            textWidth = 0
+            textHeight = 0
+            for line in legend.splitlines():
+                ext = pilImgDraw.textsize(line, font)
+                pilImgDraw.text((0, textHeight), line, font=font, fill= 0)
+                textWidth = max(ext[0], textWidth)
+                textHeight += ext[1]
+            # paste pilImgTxt into pilImg
+            pilImg.paste(pilImgTxt, (margin, margin+rasterYSize+10))
+
         # save the file
         pilImg.save(fileName + "." + extension)
 
@@ -954,6 +991,15 @@ class Nansat():
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
+
+    def _get_digit(self, num):
+        if abs(num) > 1.0:
+            return int(log10(abs(num)))+1
+        elif num != 0:
+            num = 1/num
+            return -(int(log10(abs(num)))+1)
+        else:
+            return 0
 
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
@@ -988,8 +1034,25 @@ class Nansat():
 
         '''
 
+        allMapperFiles = listdir(path.join(nansatDir, "mappers"))
+        allMapperFiles = fnmatch.filter(allMapperFiles, 'mapper_*.py')
+        ##allMapperFiles = listdir(path.join(nansatDir, "winmappers"))
+        ##allMapperFiles = fnmatch.filter(allMapperFiles, 'winmapper_*.py')
+
         # add the given mapper first
         self.mapperList = ['mapper_' + mapperName] + self.mapperList
+
+        # loop through appropriate files and add to the list
+        for iFile in allMapperFiles:
+            iFile = iFile.replace(".py", "")
+            mapperList.append(iFile)
+
+        # try to add path for windows, add for linux otherwise
+        try:
+            sys.path.append(path.join(unicode(nansatDir, "mbcs"),
+                            "winmappers"))
+        except:
+            sys.path.append(path.join(nansatDir, "winmappers"))
 
         # try to import and get VRT datasaet from all mappers. Break on success
         # if none of the mappers worked - None is returned
@@ -1014,7 +1077,6 @@ class Nansat():
             print 'No mapper fits!'
             vrtDataset = self.vrtDriver.CreateCopy(self.rawVRTFileName,
                                                    self.dataset)
-
         return vrtDataset
 
     def _modify_warpedVRT(self, rawWarpedVRT,
@@ -1114,6 +1176,9 @@ class Nansat():
                             len(vsiFileContent), 1, vsiFile)
             gdal.VSIFCloseL(vsiFile)
             return 0
+
+    def _round_Scale(self, num, formatList):
+        return formatList %num
 
     def _specify_bandNo(self, bandID):
         '''Specify a band number based on bandID {'key_name': 'key_value'}
