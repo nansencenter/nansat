@@ -1034,25 +1034,8 @@ class Nansat():
 
         '''
 
-        allMapperFiles = listdir(path.join(nansatDir, "mappers"))
-        allMapperFiles = fnmatch.filter(allMapperFiles, 'mapper_*.py')
-        ##allMapperFiles = listdir(path.join(nansatDir, "winmappers"))
-        ##allMapperFiles = fnmatch.filter(allMapperFiles, 'winmapper_*.py')
-
         # add the given mapper first
         self.mapperList = ['mapper_' + mapperName] + self.mapperList
-
-        # loop through appropriate files and add to the list
-        for iFile in allMapperFiles:
-            iFile = iFile.replace(".py", "")
-            mapperList.append(iFile)
-
-        # try to add path for windows, add for linux otherwise
-        try:
-            sys.path.append(path.join(unicode(nansatDir, "mbcs"),
-                            "winmappers"))
-        except:
-            sys.path.append(path.join(nansatDir, "winmappers"))
 
         # try to import and get VRT datasaet from all mappers. Break on success
         # if none of the mappers worked - None is returned
