@@ -343,7 +343,7 @@ class Nansat():
         # Based on bandNo,
         # the GDAL RasterBand of the corresponding band is returned
         return self.vrt.GetRasterBand(bandNo)
-
+        
     def list_bands(self):
         '''Show band information of the given Nansat object
 
@@ -526,6 +526,64 @@ class Nansat():
                                    gcpImage.vrt.RasterYSize,
                                    (0, 1, 0, 0, 0, 1))
         self.vrt = self.warpedVRT
+
+    def watermask(self, mod44path=None):
+        '''Create numpy array with watermask (water=1, land=0)
+        
+        250 meters resolution watermask from MODIS 44W Product:
+        http://www.glcf.umd.edu/data/watermask/
+        
+        Watermask is stored as tiles in TIF(LZW) format and a VRT file
+        All files are stored in one directory.
+        A tarball with compressed TIF and VRT files should be additionally
+        downloaded from the Nansat wiki:
+        https://svn.nersc.no/nansat/wiki/Nansat/Data/Watermask
+        
+        The method:
+            Gets the directory either from input parameter or from environment
+            variable MOD44WPATH
+            Open Nansat object from the VRT file
+            Reprojects the watermask onto the current object using reproject()
+            or reproject_on_jcps()
+            Returns the reprojected Nansat object
+        
+        Parameters:
+        -----------
+            mod44path : string, optional, default=None
+                path with MOD44W Products and a VRT file
+        
+        Returns:
+        --------
+            watermask : Nansat object with water mask in current projection
+        
+        See also:
+        ---------
+            250 meters resolution watermask from MODIS 44W Product:
+            http://www.glcf.umd.edu/data/watermask/
+        '''
+        mod44DataExist = True
+        # check if path is given in input param or in environment
+        if mod44path is None:
+            mod44path = os.getenv('MOD44WPATH')
+        if mod44path is None:
+            mod44DataExist = False
+        # check if VRT file exist
+        elif not os.path.exists(mod44path+'/MOD44W.vrt'):
+            mod44DataExist = False
+
+        if not mod44DataExist:
+            # MOD44W data does not exist generate empty matrix            
+            watermask = np.zeros(self.vrt.RasterXSize, self.vrt.RasterYSize)
+        else:
+            # MOD44W data does exist: open the VRT file in Nansat
+            watermask = Nansat(mod44path+'/MOD44W.vrt');
+            # choose reprojection method
+            if self.vrt.GetGCPCount() == 0:
+                watermask.reproject(Domain(self.vrt))
+            else:
+                watermask.reproject_on_gcp(self)
+        
+        return watermask
 
     def write_figure(self, fileName, bands=[1], colormap = cm.jet,
                      cmin=[None], cmax=[None], ratio=[1.0],
