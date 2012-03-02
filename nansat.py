@@ -16,7 +16,6 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-import cStringIO
 from os import path, listdir
 
 from string import maketrans, ascii_uppercase, digits
@@ -33,11 +32,8 @@ import matplotlib.cm as cm
 import numpy as np
 from math import log10
 from scipy.misc import toimage, pilutil
-from scipy.misc import imsave
 from scipy.stats import cumfreq
 from xml.etree.ElementTree import XML, ElementTree, tostring
-from pylab import imsave
-
 
 import matplotlib.pyplot as plt
 
@@ -350,7 +346,7 @@ class Nansat():
         # Based on bandNo,
         # the GDAL RasterBand of the corresponding band is returned
         return self.vrt.GetRasterBand(bandNo)
-        
+
     def list_bands(self):
         '''Show band information of the given Nansat object
 
@@ -536,16 +532,16 @@ class Nansat():
 
     def watermask(self, mod44path=None):
         '''Create numpy array with watermask (water=1, land=0)
-        
+
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
-        
+
         Watermask is stored as tiles in TIF(LZW) format and a VRT file
         All files are stored in one directory.
         A tarball with compressed TIF and VRT files should be additionally
         downloaded from the Nansat wiki:
         https://svn.nersc.no/nansat/wiki/Nansat/Data/Watermask
-        
+
         The method:
             Gets the directory either from input parameter or from environment
             variable MOD44WPATH
@@ -553,16 +549,16 @@ class Nansat():
             Reprojects the watermask onto the current object using reproject()
             or reproject_on_jcps()
             Returns the reprojected Nansat object
-        
+
         Parameters:
         -----------
             mod44path : string, optional, default=None
                 path with MOD44W Products and a VRT file
-        
+
         Returns:
         --------
             watermask : Nansat object with water mask in current projection
-        
+
         See also:
         ---------
             250 meters resolution watermask from MODIS 44W Product:
@@ -579,7 +575,7 @@ class Nansat():
             mod44DataExist = False
 
         if not mod44DataExist:
-            # MOD44W data does not exist generate empty matrix            
+            # MOD44W data does not exist generate empty matrix
             watermask = np.zeros(self.vrt.RasterXSize, self.vrt.RasterYSize)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
@@ -589,10 +585,10 @@ class Nansat():
                 watermask.reproject(Domain(self.vrt))
             else:
                 watermask.reproject_on_gcp(self)
-        
+
         return watermask
 
-    def write_figure(self, fileName, bands=[1], colormap = cm.jet,
+    def write_figure(self, fileName, bands=[1], colormapName = "jet",
                      cmin=[None], cmax=[None], ratio=[1.0],
                      logarithm=False, gamma=2,
                      numOfTicks=5, fontSize=10,
@@ -742,32 +738,39 @@ class Nansat():
 
         pixvalMinList = []
         pixvalMaxList = []
-        pixvalHistBuckets = []
-        pixvalHistScale = []
-        pixvalHist = np.array([])
+        histMinList = []
+        histMaxList = []
+        histBuckets = []
+        histScale = []
+        histFreq = np.array([])
 
         # get band infomation
         for i, iBand in enumerate(bands):
             bandPixvalueInfo = self.vrt.GetRasterBand(iBand).\
                                GetDefaultHistogram()
             # minimum pixel value
-            pixvalMinList.append(float(bandPixvalueInfo[0]))
+            histMinList.append(float(bandPixvalueInfo[0]))
             # maximum pixel value
-            pixvalMaxList.append(float(bandPixvalueInfo[1]))
+            histMaxList.append(float(bandPixvalueInfo[1]))
             # number of widths of histogram (256?)
-            pixvalHistBuckets.append(float(bandPixvalueInfo[2]))
+            histBuckets.append(float(bandPixvalueInfo[2]))
             # average variation of pixel value for each width
-            pixvalHistScale.append((pixvalMaxList[i] - pixvalMinList[i]) / \
-                                    pixvalHistBuckets[i])
+            histScale.append((histMaxList[i] - histMinList[i]) /
+                                    histBuckets[i])
             # frequency of each interval (histogram)
-            pixvalHist = np.append(pixvalHist, (np.array(bandPixvalueInfo[3],
+            histFreq = np.append(histFreq, (np.array(bandPixvalueInfo[3],
                                                          dtype=float)))
+            bandStatistics = self.vrt.GetRasterBand(iBand).GetStatistics(True, True)
+            # minimum pixel value
+            pixvalMinList.append(float(bandStatistics[0]))
+            # maximum pixel value
+            pixvalMaxList.append(float(bandStatistics[1]))
+
         # reshape pixelHist array for each band
-        pixvalHist = pixvalHist.reshape(len(bands), pixvalHistBuckets[0])
+        histFreq = histFreq.reshape(len(bands), histBuckets[0])
 
         pixvalMin = pixvalMinList[0]
         pixvalMax = pixvalMaxList[0]
-        ##print "690 PIXEL VALUE : ", pixvalMin, " -- ", pixvalMax
 
         # <OPTION> Get cmin and cmax and clip the pixel values
         numOfPixels = rasterXSize*rasterYSize
@@ -775,7 +778,7 @@ class Nansat():
             # if ratio is not 1.0, compute cmin and cmax based on the ratio
             if ratio[iBand] != 1.0:
                 # percentage of accumulated histogram of iBand
-                accumulateHist = np.add.accumulate(pixvalHist[iBand, :]) / \
+                accumulateHist = np.add.accumulate(histFreq[iBand, :]) / \
                                                    numOfPixels
                 # if the frequency (ratio) of the first inverval is
                 # larger than the given ratio (1-ratio) and
@@ -786,10 +789,10 @@ class Nansat():
                 # set the second minimum value to cmin.
                 if (accumulateHist[0] > (1-ratio[iBand])) and \
                     (accumulateHist[0] == accumulateHist[1]):
-                    accumulateHist = accumulateHist[accumulateHist > \
+                    accumulateHist = accumulateHist[accumulateHist >
                                                     accumulateHist[0]]
-                    cmin[iBand] = pixvalMaxList[iBand] - \
-                                  pixvalHistScale[iBand] * len(accumulateHist)
+                    cmin[iBand] = histMaxList[iBand] - \
+                                  histScale[iBand] * len(accumulateHist)
                     cmax[iBand] = pixvalMaxList[iBand]
                 # if the frequency (ratio) of the first inverval is
                 # less than the given ratio (1-ratio) and
@@ -798,16 +801,16 @@ class Nansat():
                 # cmin and cmax from both sides (second minimum and
                 # maximum values) to satisfy the given ratio
                 elif accumulateHist[0] == accumulateHist[1]:
-                    histMin = accumulateHist[accumulateHist < \
-                                             (1 - ratio[iBand] + \
+                    histMin = accumulateHist[accumulateHist <
+                                             (1 - ratio[iBand] +
                                              accumulateHist[0]) / 2]
-                    histMax = accumulateHist[accumulateHist < \
-                                             (1 + ratio[iBand] + \
+                    histMax = accumulateHist[accumulateHist <
+                                             (1 + ratio[iBand] +
                                              accumulateHist[0]) / 2]
-                    cmin[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * len(histMin)
-                    cmax[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * len(histMax)
+                    cmin[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * len(histMin)
+                    cmax[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * len(histMax)
                 # if the frequency (ratio) of the last inverval is
                 # larger than the given ratio and
                 # the frequency of the second to last inverval of the histogram
@@ -817,11 +820,11 @@ class Nansat():
                 # set the second maximum value to cmax.
                 elif (accumulateHist[-2] < (ratio[iBand])) and \
                     (accumulateHist[-2] == accumulateHist[-3]):
-                    accumulateHist = accumulateHist[accumulateHist < \
+                    accumulateHist = accumulateHist[accumulateHist <
                                                     accumulateHist[-2]]
                     cmin[iBand] = pixvalMinList[iBand]
-                    cmax[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * len(accumulateHist)
+                    cmax[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * len(accumulateHist)
                 # if the frequency (ratio) of the first inverval is
                 # less than the given ratio (1-ratio) and
                 # the frequency of the second inverval is zero,
@@ -829,28 +832,28 @@ class Nansat():
                 # cmin and cmax from both sides (second minimum and
                 # maximum values) to satisfy the given ratio
                 elif accumulateHist[-2] == accumulateHist[-3]:
-                    histMin = accumulateHist[accumulateHist < \
-                                             (accumulateHist[-2] - \
+                    histMin = accumulateHist[accumulateHist <
+                                             (accumulateHist[-2] -
                                              ratio[iBand]) / 2 ]
-                    histMax = accumulateHist[accumulateHist < \
-                                             (accumulateHist[-2] + \
+                    histMax = accumulateHist[accumulateHist <
+                                             (accumulateHist[-2] +
                                              ratio[iBand]) / 2 ]
-                    cmin[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * len(histMin)
-                    cmax[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * len(histMax)
+                    cmin[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * len(histMin)
+                    cmax[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * len(histMax)
                 # specify cmin and cmax by removing (1 - ratio) / 2 equally
                 # from both sides (minimum and maximum values)
                 # to satisfy the given ratio
                 else:
-                    histMin = accumulateHist[accumulateHist < \
+                    histMin = accumulateHist[accumulateHist <
                                              ((1 - ratio[iBand]) / 2)]
-                    histMax = accumulateHist[accumulateHist > \
+                    histMax = accumulateHist[accumulateHist >
                                              (1 - ((1 - ratio[iBand]) / 2))]
-                    cmin[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * len(histMin)
-                    cmax[iBand] = pixvalMinList[iBand] + \
-                                  pixvalHistScale[iBand] * \
+                    cmin[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * len(histMin)
+                    cmax[iBand] = histMinList[iBand] + \
+                                  histScale[iBand] * \
                                   (len(accumulateHist) - len(histMax))
 
             # if cmin and cmax are given, clip the array
@@ -863,26 +866,25 @@ class Nansat():
                     pixvalMin = cmin[iBand]
                 array[iBand, :, :] = np.clip(array[iBand, :, :],
                                              pixvalMin, pixvalMax)
-            ##print "769 cmin, cmax : ", cmin, " -- ", cmax
         # If three bands are given, marge them and crate a PIL image
         if len(bands)==3:
             # Normalize RGB arrays to the interval [0,255]
             if array[0, :, :].max() == array[0, :, :].min():
-                raise OptionError("min. and max. pixel valuses in Red band" \
+                raise OptionError("min. and max. pixel valuses in Red band"
                                   " are same. check ratio, cmin and cmax!!")
             else:
                 arrayR = (array[0, :, :] - array[0, :, :].min()) * 255 / \
                          (array[0, :, :].max()- array[0, :, :].min())
 
             if array[1, :, :].max() == array[1, :, :].min():
-                raise OptionError("min. and max. pixel valuses in Green band" \
+                raise OptionError("min. and max. pixel valuses in Green band"
                                   " are same. check ratio, cmin and cmax!!")
             else:
                 arrayG = (array[1, :, :] - array[1, :, :].min()) * 255 / \
                          (array[1, :, :].max()- array[1, :, :].min())
 
             if array[2, :, :].max() == array[2, :, :].min():
-                raise OptionError("min. and max. pixel valuses in Blue band"\
+                raise OptionError("min. and max. pixel valuses in Blue band"
                                   " are same. check ratio, cmin and cmax!!")
             else:
                 arrayB = (array[2, :, :] - array[2, :, :].min()) * 255 / \
@@ -897,30 +899,22 @@ class Nansat():
         else:
             # <OPTION> Convart array based on logarithmic tone curve
             if logarithm:
-                try:
-                    pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
-                    if (pixvalMax > pixvalPositiveMin) and (pixvalMax > 0):
-                        array[0, :, :] = np.power((np.log(array[0, :, :].\
-                            clip(pixvalPositiveMin, pixvalMax)) - \
-                            np.log(pixvalPositiveMin)) / \
-                            (np.log(pixvalMax) - np.log(pixvalPositiveMin)),
-                            (1.0 / gamma))
-                except:
-                    print "!!! Non logarithm !!!"
-            # save the array to StringIO object and Open it with PIL
-            f1 = cStringIO.StringIO()
-            imsave(f1, array[0, :, :], cmap=colormap, format="png")
-            f1.reset()
-            pilImgFig = Image.open(f1)
-            print "(%3.1f sec) " % (time.clock() - tic)
+                array[0, :, :] = (np.power((array[0, :, :] - pixvalMin) /
+                                 (pixvalMax - pixvalMin), (1.0 / gamma)))* \
+                                 (pixvalMax - pixvalMin) + pixvalMin
 
-            # create a color bar, save it to StringIO object and Opne it with PIL
-            f2 = cStringIO.StringIO()
+            # create a color palette based on cmapName
+            myPalette = self._create_mypalette(colormapName)
+
+            # read array with PIL image and set the palette
+            pilImgFig = Image.fromarray(np.uint8(array[0, :, :]))
+            pilImgFig.putpalette(myPalette)
+
+            # create a color bar and set the palette
             bar = np.outer(np.ones(colorbarHeight),
                            np.arange(0, rasterXSize, 1))
-            imsave(f2, bar, cmap=colormap, format="png")
-            f2.reset()
-            pilImgCbar = Image.open(f2)
+            pilImgCbar = Image.fromarray(np.uint8(bar))
+            pilImgCbar.putpalette(myPalette)
 
             # create a new PIL canvas for the color bar
             imgWidth = int(2*margin + rasterXSize)
@@ -939,15 +933,8 @@ class Nansat():
             # set values of the scale in the colorbar
             # if logarithm, the scale values are converted with tone carve
             if logarithm:
-                try:
-                    pixvalPositiveMin = array[0, :, :][array[0, :, :] > 0].min()
-                    scaleArray = np.exp(np.power(scaleTextLocation, gamma) * \
-                                 (np.log(pixvalMax) - \
-                                 np.log(pixvalPositiveMin)) + \
-                                 np.log(pixvalPositiveMin))
-                except:
-                    scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) + \
-                             pixvalMin
+                scaleArray = np.power(scaleTextLocation, (1.0 / gamma)) * \
+                             (pixvalMax - pixvalMin) + pixvalMin
             # if not, the scale values are computed linearly
             # based on the locatios
             else:
@@ -973,18 +960,18 @@ class Nansat():
                     writeFormat = "%"+str(decimalNum)+"."+str(practionalNum)+"f"
                 else:
                     if barScaleDigit >= 0:
-                        practionalNum = max(2, scaleArrayDigit[i]-\
+                        practionalNum = max(2, scaleArrayDigit[i]-
                                             barScaleDigit+1)
                         decimalNum = max(4, scaleArrayDigit[i]-barScaleDigit+3)
                     elif scaleArrayDigit[i] > 0:
-                        practionalNum = max(2, -barScaleDigit+\
+                        practionalNum = max(2, -barScaleDigit+
                                             (scaleArrayDigit[i]-1)+1)
                         decimalNum = practionalNum + 2
                     elif array[i] > 0:
                         practionalNum = max(2, -barScaleDigit)
                         decimalNum = practionalNum + 2
                     else:
-                        practionalNum = max(2, scaleArrayDigit[i]-\
+                        practionalNum = max(2, scaleArrayDigit[i]-
                                             barScaleDigit+1)
                         decimalNum = practionalNum + 3 # for "- (minus)"
                     writeFormat = "%"+str(decimalNum)+"."+str(practionalNum)+"e"
@@ -993,7 +980,7 @@ class Nansat():
 
             # draw lines on the color bar and the scales
             # set fonts
-            fileName_font = os.path.join(os.path.dirname(\
+            fileName_font = os.path.join(os.path.dirname(
                                          os.path.realpath(__file__)),
                                          'fonts/times.ttf')
             font = ImageFont.truetype(fileName_font, barFontSize)
@@ -1010,7 +997,7 @@ class Nansat():
         if len(bands)==3:
             imgHeight = int(2*margin + rasterYSize + pad)
         else:
-            imgHeight = int(2*margin + rasterYSize + pad + \
+            imgHeight = int(2*margin + rasterYSize + pad +
                             pilImgCbarFig.size[1])
         pilImg = Image.new('RGB', (imgWidth, imgHeight), "white")
 
@@ -1026,7 +1013,7 @@ class Nansat():
         # write text
         if legend is not None:
             # set fonts
-            fileName_font = os.path.join(os.path.dirname(\
+            fileName_font = os.path.join(os.path.dirname(
                                          os.path.realpath(__file__)),
                                          'fonts/times.ttf')
             font = ImageFont.truetype(fileName_font, fontSize)
@@ -1038,26 +1025,109 @@ class Nansat():
             textWidth = 0
             textHeight = 0
             for line in legend.splitlines():
-                ext = pilImgDraw.textsize(line, font)
+                text = pilImgDraw.textsize(line, font)
                 pilImgDraw.text((0, textHeight), line, font=font, fill= 0)
-                textWidth = max(ext[0], textWidth)
-                textHeight += ext[1]
+                textWidth = max(text[0], textWidth)
+                textHeight += text[1]
             # paste pilImgTxt into pilImg
             pilImg.paste(pilImgTxt, (margin, margin+rasterYSize+10))
 
         # save the file
         pilImg.save(fileName + "." + extension)
 
-        # close f1 and f2 files
-        if len(bands)==1:
-            f1.close()
-            f2.close()
-
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
 
+    def _create_list(self, r, g, b):
+        '''Create a list from numbers
+
+        Parameters
+        ----------
+            r, g, b: float / int
+
+        Returns : list
+
+        '''
+        return [r, g, b]
+
+    def _create_mypalette(self, cmapName):
+        '''Create a palette based on colormap name.
+
+        Parameters
+        ----------
+        cmapName : string
+            matplotlib colormap name
+
+        Returns
+        -------
+            palette : a list
+                sequence of (256*3) integer
+
+        Raise
+        ------
+            OptionError : occures when cmapName is not in the matplotlib colormap
+
+        See Also
+        --------
+        http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+
+        '''
+        try:
+            colorDic = cm.datad[cmapName]
+        except:
+            raise OptionError("cmapName is not proper.")
+
+        colorList = [colorDic['red'], colorDic['green'], colorDic['blue']]
+        lut = []
+
+        for iColor in range(len(colorList)):
+            lut.append([])
+            for i in range(len(colorList[iColor])-1):
+                spaceNum = int (256 * (colorList[iColor][i+1][0] -
+                                       colorList[iColor][i][0]))
+                iColorArray = np.array(np.linspace(colorList[iColor][i][2],
+                                          colorList[iColor][i+1][1],
+                                          num=spaceNum) * 255, dtype = int)
+                lut[iColor].extend(iColorArray)
+
+            while len(lut[iColor]) < 256:
+                lut[iColor].append(lut[iColor][-1])
+            while len(lut[iColor]) > 256:
+                del lut[iColor][-1]
+
+        lut = map(self._create_list, lut[0], lut[1], lut[2])
+        return self._flatten(lut)
+
+    def _flatten(self, nestList):
+        '''Create a flat list
+        get rid of nests in the list
+
+        Parameters
+        ----------
+        nestList :  a list
+
+        Returns : abs list
+        '''
+        if isinstance(nestList, list):
+            if nestList == []:
+                return []
+            else:
+                return self._flatten(nestList[0]) + self._flatten(nestList[1:])
+        else:
+            return [nestList]
+
     def _get_digit(self, num):
+        '''Return a number of digits
+        get rid of nests in the list
+
+        Parameters
+        ----------
+        num :  int / float
+
+        Returns : int
+        '''
+
         if abs(num) > 1.0:
             return int(log10(abs(num)))+1
         elif num != 0:
