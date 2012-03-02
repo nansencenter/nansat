@@ -18,9 +18,11 @@
 
 import cStringIO
 from os import path, listdir
-from string import maketrans
+
+from string import maketrans, ascii_uppercase, digits
 import sys
 import time
+from random import choice
 
 import fnmatch
 import Image
@@ -143,11 +145,16 @@ class Nansat():
               'mapper_ncep.py',
               'mapper_radarsat2.py',
               'mapper_seawifsL2.py',
+              #'mapper_MOD44W.py',
               ]
 
-        # names of raw and warped VRT files in memory, VRT driver
-        self.rawVRTFileName = '/vsimem/vsiFile.vrt'
-        self.warpedVRTFileName = '/vsimem/vsi_warped.vrt'
+        # names of raw and warped VRT files in memory
+        # make random string and append to fileNames
+        allChars=ascii_uppercase + digits
+        randomChars = ''.join(choice(allChars) for x in range(6))
+        self.rawVRTFileName = '/vsimem/rawVRT_%s.vrt' % randomChars
+        self.warpedVRTFileName = '/vsimem/warpedVRT_%s.vrt' % randomChars
+        # VRT driver
         self.vrtDriver = gdal.GetDriverByName("VRT")
 
         # set input file name

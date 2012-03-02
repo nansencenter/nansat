@@ -227,8 +227,9 @@ class Domain():
             # open XML, get all domains
             xmlFile = file(xmlFileName, "rb")
             kmlFileName = xmlFileName + '.kml'
-
             xmlDomains = ElementTree(file=xmlFile).getroot()
+            xmlFile.close()
+            
             # convert domains in XML into list of domains
             domains = []
             for xmlDomain in list(xmlDomains):
@@ -579,6 +580,8 @@ class Domain():
         fd = file(srsString, "rb")
         # get root element
         domains = ElementTree(file=fd).getroot()
+        fd.close()
+        
         # iterate over domains to find the required one
         for domain in list(domains):
             # if the domain name is the same as the given one

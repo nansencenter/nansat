@@ -89,4 +89,9 @@
 		<long_name>Air Temperature</long_name>
 		<units>celsius</units>
 	</wkv>
+	<wkv>
+		<standard_name>land_binary_mask</standard_name>
+		<long_name>Land mask</long_name>
+		<units></units>
+	</wkv>
 </all_wkvs>
