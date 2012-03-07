@@ -957,7 +957,7 @@ class Nansat():
                 array255 = np.ones((legenHeight+colorbarHeight*3,
                                     rasterXSize)) * 255
                 pilImgFig = Image.fromarray(np.uint8(np.append(array[0, :, :],
-                                            array255,0)))
+                                            array255, 0)))
                 pilImgFig.putpalette(myPalette)
 
                 bar = np.outer(np.ones(colorbarHeight),
@@ -1032,7 +1032,7 @@ class Nansat():
                         practionalNum = max(1, abs(scaleArrayDigit[i] -
                                                    barScaleDigit)+1)
                         decimalNum = practionalNum + 2
-                        writeFormat = "%"+str(int(decimalNum))+"."+
+                        writeFormat = "%"+str(int(decimalNum))+"."+ \
                                               str(int(practionalNum))+"e"
                         formatList.append(writeFormat)
                 else:
@@ -1040,7 +1040,7 @@ class Nansat():
                         practionalNum = max(1, abs(scaleArrayDigit[i] -
                                                    barScaleDigit[i])+1)
                         decimalNum = practionalNum + 2
-                        writeFormat = "%"+str(int(decimalNum))+"."+
+                        writeFormat = "%"+str(int(decimalNum))+"."+ \
                                               str(int(practionalNum))+"e"
                         formatList.append(writeFormat)
                     formatList[0] = formatList[1]
