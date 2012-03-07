@@ -970,85 +970,32 @@ class Nansat():
                                    rasterYSize+legenHeight))
 
                 draw = ImageDraw.Draw(pilImgFig)
-                #pilImgCanvas.save(fileName + "." + extension)
 
                 # add scales into the colorbar canvas
                 # create an array which indicates the scale values
+
+                # compute the locations of scaleText
+                scaleTextLocation = np.linspace(0, 0.95, numOfTicks)
                 if logarithm:
-                    # compute the locations of scaleText
-                    scaleTextLocation = np.linspace(pow(10.0, -10), 0.95,
-                                                    numOfTicks)
                     # create an array for valuse on the colorbar
-                    scaleArray = np.power(scaleTextLocation, (1.0 / gamma)) *\
-                                 (pixvalMax - pixvalMin) + pixvalMin
-                    scaleArrayShift = np.roll(scaleArray, 1)
-                    # compute each interval
-                    tick = map(self._get_logtick, scaleArray, scaleArrayShift)
-                    barScaleDigit = map(self._get_digit, tick)
-                    interval = map(self._get_interval, tick, barScaleDigit)
-
+                    scaleArray = np.array([])
+                    for i in range(numOfTicks):
+                        if i == 0:
+                            scaleArray = np.append(scaleArray, [pixvalMin], 0)
+                        else:
+                            scaleArray = np.append(scaleArray,
+                            [np.power(scaleTextLocation[i], (1.0 / gamma)) *\
+                                 (pixvalMax - pixvalMin) + pixvalMin], 0)
                 else:
-                    # compute interval
                     tick = (pixvalMax - pixvalMin) / float(numOfTicks)
-                    barScaleDigit = self._get_digit(tick)
-                    interval = self._get_interval(tick, barScaleDigit)
-
-                    # create an array for valuse on the colorbar
-                    scaleArray = []
-                    for i  in range(int(abs(pixvalMax/interval))+1):
-                        scaleVal = i * interval
-                        if (scaleVal < pixvalMax) and (scaleVal >= pixvalMin):
-                            scaleArray.append(scaleVal)
-
-                    for i in range(int(abs(pixvalMin/interval))):
-                        scaleVal = -(i + 1) * interval
-                        if (scaleVal >= pixvalMin) and (scaleVal <= pixvalMax):
-                            scaleArray.insert(0, scaleVal)
-
-                    # adjust the number of ticks
-                    if len(scaleArray) > numOfTicks and \
-                        scaleArray[-1] == pixvalMax:
-                        del scaleArray[-1]
-                    if len(scaleArray) > numOfTicks and \
-                        scaleArray[0] == pixvalMin:
-                        del scaleArray[0]
-
-                    # compute the locations of scaleText
-                    scaleTextLocation = []
-                    for i in range(len(scaleArray)):
-                        scaleTextLocation.append((scaleArray[i]-pixvalMin)/
-                                                 (pixvalMax-pixvalMin))
+                    scaleArray = scaleTextLocation * tick + pixvalMin
 
                 # specify the description form
-                formatList = []
-                scaleArrayDigit = map(self._get_digit, scaleArray)
-                if not(isinstance(barScaleDigit, list)) and \
-                   (barScaleDigit == 0 or barScaleDigit == 1) and \
-                   all(val <=2 for val in scaleArrayDigit):
-                    for i in range(len(scaleArray)):
-                        formatList.append("%d")
-                elif not(isinstance(barScaleDigit, list)):
-                    for i in range(len(scaleArray)):
-                        practionalNum = max(1, abs(scaleArrayDigit[i] -
-                                                   barScaleDigit)+1)
-                        decimalNum = practionalNum + 2
-                        writeFormat = "%"+str(int(decimalNum))+"."+ \
-                                              str(int(practionalNum))+"e"
-                        formatList.append(writeFormat)
-                else:
-                    for i in range(len(scaleArray)):
-                        practionalNum = max(1, abs(scaleArrayDigit[i] -
-                                                   barScaleDigit[i])+1)
-                        decimalNum = practionalNum + 2
-                        writeFormat = "%"+str(int(decimalNum))+"."+ \
-                                              str(int(practionalNum))+"e"
-                        formatList.append(writeFormat)
-                    formatList[0] = formatList[1]
-
+                formatList = map(self._create_scaleFormat, scaleArray)
                 scaleText = map(self._round_Scale, scaleArray, formatList)
                 ##print "1014: ", scaleArrayDigit
                 ##print "1015 : ", barScaleDigit, scaleArray, formatList
-                ##print "1016 : ", scaleText
+                ##print "1023 : ", scaleText
 
                 # set fonts for colorbar
                 fileName_font = os.path.join(os.path.dirname(
@@ -1106,8 +1053,41 @@ class Nansat():
         '''
         return [r, g, b]
 
+
+    def _create_scaleFormat(self, value):
+        '''Return writing format for scale on the colorbar
+
+        Parameters
+        ----------
+            values: int / float / exponential
+
+        Returns
+        --------
+            string
+
+        '''
+        if value==0:
+            return "%d"
+        else:
+            digit = self._get_digit(value)
+            if digit==0:
+                return "%4.2f"
+            elif digit==1:
+                return "%4.1f"
+            elif digit==2:
+                return "%d"
+            elif digit==-1:
+                return "3.1f"
+            elif digit==-2:
+                return "%4.2f"
+            else:
+                return "%4.2e"
+
     def _create_mypalette(self, cmapName, text=False):
         '''Create a palette based on colormap name.
+
+        254 colors are created based on the given colormap name.
+        255th color is black and 256th is white.
 
         Parameters
         ----------
@@ -1143,19 +1123,19 @@ class Nansat():
                                        colorList[iColor][i][0]))
                 iColorArray = np.array(np.linspace(colorList[iColor][i][2],
                                           colorList[iColor][i+1][1],
-                                          num=spaceNum) * 255, dtype = int)
+                                          num=spaceNum) * 253, dtype = int)
                 lut[iColor].extend(iColorArray)
 
-            while len(lut[iColor]) < 256:
+            while len(lut[iColor]) < 254:
                 lut[iColor].append(lut[iColor][-1])
-            while len(lut[iColor]) > 256:
+            while len(lut[iColor]) > 254:
                 del lut[iColor][-1]
 
         lut = map(self._create_list, lut[0], lut[1], lut[2])
-        # 255 is white
-        lut[-1] = [255,255,255]
         # 254 is black
-        lut[-2] = [0,0,0]
+        lut.append([0,0,0])
+        # 255 is white
+        lut.append([255,255,255])
         return self._flatten(lut)
 
     def _flatten(self, nestList):
@@ -1190,25 +1170,6 @@ class Nansat():
             return 0
         else:
             return floor(log10(abs(num)))
-
-    def _get_interval(self, tick, barScaleDigit):
-        tick10 = tick / pow(10, barScaleDigit)
-
-        if tick10 < 2:
-            tick10 = 1
-        elif tick10 < 2.5:
-            tick10 = 2
-        elif tick10 < 5:
-            tick10 = 2.5
-        elif tick10 < 10:
-            tick10 = 5
-        else:
-            pass
-
-        return tick10 * pow(10, barScaleDigit)
-
-    def _get_logtick(self, x1, x2):
-        return x1-x2
 
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
@@ -1370,6 +1331,17 @@ class Nansat():
             return 0
 
     def _round_Scale(self, num, formatList):
+        ''' return round value
+
+        Parameters
+        ----------
+            num: int / float / exponential
+            formatList : string "%d", "%4.2e" etc...
+
+        Returns
+        -------
+            int / float / exponential
+        '''
         return formatList %num
 
     def _specify_bandNo(self, bandID):
