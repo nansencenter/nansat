@@ -942,32 +942,34 @@ class Nansat():
             myPalette = self._create_mypalette(colormapName)
 
             # read array with PIL image and set the palette
-            pilImgFig = Image.fromarray(np.uint8(array[0, :, :]))
-            pilImgFig.putpalette(myPalette)
+            array[0, :, :] = (array[0, :, :] -pixvalMin)*253 / \
+                             (pixvalMax - pixvalMin)
 
             if putLegend is False:
                 # save the file
+                pilImgFig = Image.fromarray(np.uint8(array[0, :, :]))
+                pilImgFig.putpalette(myPalette)
                 pilImgFig.save(fileName + "." + extension)
                 return
 
             else:
                 # create a color bar and set the palette
+                array255 = np.ones((legenHeight+colorbarHeight*3,
+                                    rasterXSize)) * 255
+                pilImgFig = Image.fromarray(np.uint8(np.append(array[0, :, :],
+                                            array255,0)))
+                pilImgFig.putpalette(myPalette)
+
                 bar = np.outer(np.ones(colorbarHeight),
-                           np.linspace(0, 255, int(rasterXSize*0.8)))
+                           np.linspace(0, 253, int(rasterXSize*0.8)))
                 pilImgCbar = Image.fromarray(np.uint8(bar))
                 pilImgCbar.putpalette(myPalette)
 
-                pilImgCanvas = Image.new('RGB', (rasterXSize,
-                                          rasterYSize+legenHeight+\
-                                          colorbarHeight*3), "white")
-
-                pilImgCanvas.paste(pilImgFig, (0,0))
-                pilImgCanvas.paste(pilImgCbar,
+                pilImgFig.paste(pilImgCbar,
                                    (int(rasterXSize*0.1),
                                    rasterYSize+legenHeight))
-                pilImgFig = None
-                pilImgCbar = None
-                draw = ImageDraw.Draw(pilImgCanvas)
+
+                draw = ImageDraw.Draw(pilImgFig)
                 #pilImgCanvas.save(fileName + "." + extension)
 
                 # add scales into the colorbar canvas
@@ -1004,33 +1006,42 @@ class Nansat():
                             scaleArray.insert(0, scaleVal)
 
                     # adjust the number of ticks
-                    if len(scaleArray) > numOfTicks and scaleArray[-1] == pixvalMax:
+                    if len(scaleArray) > numOfTicks and \
+                        scaleArray[-1] == pixvalMax:
                         del scaleArray[-1]
-                    if len(scaleArray) > numOfTicks and scaleArray[0] == pixvalMin:
+                    if len(scaleArray) > numOfTicks and \
+                        scaleArray[0] == pixvalMin:
                         del scaleArray[0]
 
                     # compute the locations of scaleText
                     scaleTextLocation = []
                     for i in range(len(scaleArray)):
-                        scaleTextLocation.append((scaleArray[i]-pixvalMin)/(pixvalMax-pixvalMin))
+                        scaleTextLocation.append((scaleArray[i]-pixvalMin)/
+                                                 (pixvalMax-pixvalMin))
 
                 # specify the description form
                 formatList = []
                 scaleArrayDigit = map(self._get_digit, scaleArray)
-                if not(isinstance(barScaleDigit, list)) and (barScaleDigit == 0 or barScaleDigit == 1) and all(val <=2 for val in scaleArrayDigit):
+                if not(isinstance(barScaleDigit, list)) and \
+                   (barScaleDigit == 0 or barScaleDigit == 1) and \
+                   all(val <=2 for val in scaleArrayDigit):
                     for i in range(len(scaleArray)):
                         formatList.append("%d")
                 elif not(isinstance(barScaleDigit, list)):
                     for i in range(len(scaleArray)):
-                        practionalNum = max(1, abs(scaleArrayDigit[i] - barScaleDigit)+1)
+                        practionalNum = max(1, abs(scaleArrayDigit[i] -
+                                                   barScaleDigit)+1)
                         decimalNum = practionalNum + 2
-                        writeFormat = "%"+str(int(decimalNum))+"."+str(int(practionalNum))+"e"
+                        writeFormat = "%"+str(int(decimalNum))+"."+
+                                              str(int(practionalNum))+"e"
                         formatList.append(writeFormat)
                 else:
                     for i in range(len(scaleArray)):
-                        practionalNum = max(1, abs(scaleArrayDigit[i] - barScaleDigit[i])+1)
+                        practionalNum = max(1, abs(scaleArrayDigit[i] -
+                                                   barScaleDigit[i])+1)
                         decimalNum = practionalNum + 2
-                        writeFormat = "%"+str(int(decimalNum))+"."+str(int(practionalNum))+"e"
+                        writeFormat = "%"+str(int(decimalNum))+"."+
+                                              str(int(practionalNum))+"e"
                         formatList.append(writeFormat)
                     formatList[0] = formatList[1]
 
@@ -1050,9 +1061,9 @@ class Nansat():
                                  rasterXSize*0.1)
                     box = (coordX, rasterYSize+legenHeight, coordX,
                            rasterYSize+legenHeight+colorbarHeight-1)
-                    draw.line(box, fill= "black")
+                    draw.line(box, fill= 254)
                     box = (coordX-5, rasterYSize+legenHeight+colorbarHeight)
-                    draw.text(box, scaleText[i], font=font, fill= "black")
+                    draw.text(box, scaleText[i], font=font, fill= 254)
 
                 # set font size for text
                 font = ImageFont.truetype(fileName_font, fontSize)
@@ -1064,7 +1075,7 @@ class Nansat():
                     units = "no units"
                 caption = longName + " / " + units
                 box = (5, rasterYSize+ int(legenHeight*0.7))
-                draw.text(box, str(caption), font=font, fill= "black")
+                draw.text(box, str(caption), font=font, fill= 254)
 
                 if titleString != "":
                     # write text each line onto pilImgCanvas
@@ -1077,7 +1088,7 @@ class Nansat():
                         draw.text((0, textHeight), line, font=font, fill= 0)
                         textWidth = max(text[0], textWidth)
                         textHeight += text[1]
-                pilImgCanvas.save(fileName + "." + extension)
+                pilImgFig.save(fileName + "." + extension)
 
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
@@ -1141,6 +1152,10 @@ class Nansat():
                 del lut[iColor][-1]
 
         lut = map(self._create_list, lut[0], lut[1], lut[2])
+        # 255 is white
+        lut[-1] = [255,255,255]
+        # 254 is black
+        lut[-2] = [0,0,0]
         return self._flatten(lut)
 
     def _flatten(self, nestList):
