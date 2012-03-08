@@ -900,6 +900,7 @@ class Nansat():
                     pixvalMin = cmin[iBand]
                 array[iBand, :, :] = np.clip(array[iBand, :, :],
                                              pixvalMin, pixvalMax)
+        print "903 : ", pixvalMin, " -- ",pixvalMax
 
         # If three bands are given, marge them and crate a PIL image
         if len(bands)==3:
@@ -987,8 +988,8 @@ class Nansat():
                             [np.power(scaleTextLocation[i], (1.0 / gamma)) *\
                                  (pixvalMax - pixvalMin) + pixvalMin], 0)
                 else:
-                    tick = (pixvalMax - pixvalMin) / float(numOfTicks)
-                    scaleArray = scaleTextLocation * tick + pixvalMin
+                    scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) \
+                                 + pixvalMin
 
                 # specify the description form
                 formatList = map(self._create_scaleFormat, scaleArray)
