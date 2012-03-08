@@ -589,8 +589,8 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName, bands=[1], colormapName = "jet",
-                     clim = [None, None], ratio=[1.0],
+    def write_figure(self, fileName, bands=1, colormapName = "jet",
+                     clim = [None, None], ratio=1.0,
                      logarithm=False, gamma=2,
                      numOfTicks=5, fontSize=10,
                      margin=30, pad=60, textWidthMax=600,
@@ -688,6 +688,12 @@ class Nansat():
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
+        
+        # convert band and ratio from a number to list
+        if not isinstance(band, list):
+            band = [band];
+        if not isinstance(ratio, list):
+            ratio = [ratio];
 
         # check if bands is proper (1 or 3)
         if not ((len(bands) == 3) or (len(bands) == 1)):
@@ -696,53 +702,51 @@ class Nansat():
         # check if ratio is proper (1 or 3)
         if not ((len(ratio) == 3) or (len(ratio) == 1)):
             raise OptionError("write_figure(): number of elements of ratio list must be 1 or 3")
-        elif len(bands) == len(ratio):
-            if any(val >1.0 for val in ratio) or any(val < 0.0 for val in ratio):
-                raise OptionError("write_figure(): elements of ratio list take [0.0 - 1.0]")
-            else:
-                pass
-        elif len(bands)==3 and len(ratio)==1 and ratio[0]==1.0:
-            ratio = [1.0, 1.0, 1.0]
-        else:
-            raise OptionError("write_figure(): ration is improper")
+        
+        #ANTON: TOO COMPLEX IF'S ARE REPLACED BY SIMPLE ONES
+        #       AFTER ERROR IS RAISED - NO NEED TO CHECK ELIF
+        #       TOO MANY ERRORS ARE RAISED - WE SHOULD GIVE WARNING AND REPLACE
+        #       BAD VALUES WITH REASONABLE ONES
+        
+        # populate list of ratios with the same value if necessary
+        if len(ratio) != len(bands):
+            ratio = [ratio[0]] * len(bands)
+                
+        # check if ratios are within possible values
+        if any(val > 1.0 for val in ratio) or any(val < 0.0 for val in ratio):
+            raise OptionError("write_figure(): elements of ratio list take [0.0 - 1.0]")
 
-        # check if clim is proper
+        # check if clim consists of two elements
         if len(clim) != 2:
-            raise OptionError("write_figure(): clim is given as [1.2, 3.5] or [(1.2, 2.1, 4.6), (3.5, 4.6, 10.2)]")
-        elif (isinstance(clim[0], tuple) and len(clim[0]) == 3) and \
-             (isinstance(clim[1], tuple) and len(clim[1]) == 3):
-            cmin = []
-            cmax = []
-            for i in range(3):
-                try:
-                    val = clim[1][i] - clim[0][i]
-                    if val>0:
-                        cmin.append(clim[0][i])
-                        cmax.append(clim[1][i])
-                    else:
-                        raise OptionError("write_figure(): clim is given as [cmin, cmax] or [(cmin1, cmin2, cmin3), (cmax1, cmax2, cmax3)]")
-                except:
+            raise OptionError("write_figure(): clim length should be 2")
+        
+        # check each element of clim
+        # convert [c1, c2] to [[c1], [c2]]
+        for i in [0:1]:
+            # convert a number to list
+            if not isinstance(clim[i], list):
+                clim[i] = [clim[i]]
+            # compare with length of bands and populate with same value (if not)
+            if len(clim[i]) != len(bands):
+                clim[i] = clim[i][0] * len(bands)
+        
+        #ANTON: THE BLOCK BELOW SHOULD BE REFINED
+        #       IT IS NOT OBVIOUS WHY cmin.append()... after exept        
+        
+        # generate vectors with limits of colors
+        cmin = []
+        cmax = []
+        for i in range(len(bands)):
+            try:
+                val = clim[1][i] - clim[0][i]
+                if val>0:
                     cmin.append(clim[0][i])
                     cmax.append(clim[1][i])
-        elif (isinstance(clim[0], tuple) and len(clim[0]) == 3) and \
-             clim[1] is None:
-            cmin = list(clim[0])
-            cmax = [None, None, None]
-        elif  clim[0] is None and (isinstance(clim[1], tuple) and
-                                   len(clim[1]) == 3):
-            cmin = [None, None, None]
-            cmax = list(clim[1])
-        elif len(bands) == 3 and (clim[0] is None) and (clim[1] is None):
-            cmin = [None, None, None]
-            cmax = [None, None, None]
-        elif (isinstance(clim[0], float) or isinstance(clim[0], int) or
-                clim[0] is None) and \
-                (isinstance(clim[1], float) or isinstance(clim[1], int) or
-                clim[1] is None):
-            cmin = [clim[0]]
-            cmax = [clim[1]]
-        else:
-            raise OptionError("clim is given as [1.2, 3.5] or [(1.2, 2.1, 4.6), (3.5, 4.6, 10.2)]")
+                else:
+                    raise OptionError("write_figure(): clim is given as [cmin, cmax] or [(cmin1, cmin2, cmin3), (cmax1, cmax2, cmax3)]")
+            except:
+                cmin.append(clim[0][i])
+                cmax.append(clim[1][i])
 
         if gamma <= 0.0:
             raise OptionError("gamma argument must be a positive float")
@@ -765,7 +769,9 @@ class Nansat():
             array = np.append(array, iArray)
         # reshape the array for each band
         array = array.reshape(len(bands), rasterYSize, rasterXSize)
-
+        
+        #ANTON: BELOW LINES UNTIL 891 ARE PREFOrmed ONLY IF CMIN OR CMAX ARE NONE
+        
         pixvalMinList = []
         pixvalMaxList = []
         histMinList = []
@@ -898,6 +904,10 @@ class Nansat():
                 if (cmin[iBand] is not None) and \
                     (cmin[iBand] > pixvalMin) and (cmin[iBand] < pixvalMax):
                     pixvalMin = cmin[iBand]
+        
+        #ANTON: IT SHOULD NOT BE CLIPPED BUT RATHER CONVERTED TO UINT8
+        #       (TO KEEP MEM LOW) AND NOT TO DUPLICATE CODE
+        
                 array[iBand, :, :] = np.clip(array[iBand, :, :],
                                              pixvalMin, pixvalMax)
         print "903 : ", pixvalMin, " -- ",pixvalMax
@@ -907,12 +917,7 @@ class Nansat():
             # Normalize RGB arrays to the interval [0,255]
             for iBand in range(3):
                 if array[iBand, :, :].max() == array[iBand, :, :].min():
-                    if iBand==0:
-                        bandColor = "red"
-                    elif iBand==1:
-                        bandColor = "green"
-                    else:
-                        bandColor = "blue"
+                    bandColor = {0: 'red', 1:'green', 2:'blue'}[iBand]
 
                     raise OptionError("min. and max. pixel valuses in " +
                                       bandColor + " band are same." +
@@ -922,7 +927,11 @@ class Nansat():
                                           array[iBand, :, :].min()) * 255 / \
                                          (array[iBand, :, :].max()-
                                           array[iBand, :, :].min())
-
+        
+        #ANTON: NOT A GOOD IDEA
+        #           1. RETURN SHOULD BE ONLY ONE
+        #           2. WE STILL MIGH WANT TO ADD LEGEND (WITHOUT COLORBAR BUT WITH TITLE)
+        
             # convert RGB arrays to PIL image
             # merge three bands and save it to the file
             Image.merge("RGB", (Image.fromarray(np.uint8(array[0, :, :])),
@@ -941,7 +950,10 @@ class Nansat():
 
             # create a color palette based on cmapName
             myPalette = self._create_mypalette(colormapName)
-
+        
+        #ANTON: 253 SHOULD NOT BE HARDCODED. WHAT HAPPENS WHEN WE WANT TO ADD 
+        #       LIGHT GRAY FOR CLOUDS AND DARK GRAY FOR LAND?
+        
             # read array with PIL image and set the palette
             array[0, :, :] = (array[0, :, :] -pixvalMin)*253 / \
                              (pixvalMax - pixvalMin)
@@ -1070,6 +1082,9 @@ class Nansat():
         if value==0:
             return "%d"
         else:
+            
+            #ANTON: _get_digit SHOULD NOT BE A METHOD IT IS CALLED ONLY ONCE AND VERY SIMPLE
+            
             digit = self._get_digit(value)
             if digit==0:
                 return "%4.2f"
@@ -1131,7 +1146,9 @@ class Nansat():
                 lut[iColor].append(lut[iColor][-1])
             while len(lut[iColor]) > 254:
                 del lut[iColor][-1]
-
+        
+        #ANTON: _create_list should not be a method. it is used only once and very small
+        
         lut = map(self._create_list, lut[0], lut[1], lut[2])
         # 254 is black
         lut.append([0,0,0])
@@ -1140,6 +1157,10 @@ class Nansat():
         return self._flatten(lut)
 
     def _flatten(self, nestList):
+
+        #ANTON: CAN THIS APPROACH REPLACE THIS METHOD:
+        #       sum(nestList, [])  ?
+        
         '''Create a flat list
         get rid of nests in the list
 
