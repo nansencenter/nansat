@@ -906,9 +906,9 @@ class Nansat():
             # Normalize RGB arrays to the interval [0,255]
             for iBand in range(3):
                 if array[iBand, :, :].max() == array[iBand, :, :].min():
-                    if iBand == 0:
+                    if iBand==0:
                         bandColor = "red"
-                    elif iBand == 1:
+                    elif iBand==1:
                         bandColor = "green"
                     else:
                         bandColor = "blue"
@@ -1077,7 +1077,7 @@ class Nansat():
             elif digit==2:
                 return "%d"
             elif digit==-1:
-                return "3.1f"
+                return "%3.1f"
             elif digit==-2:
                 return "%4.2f"
             else:
@@ -1119,7 +1119,7 @@ class Nansat():
         for iColor in range(len(colorList)):
             lut.append([])
             for i in range(len(colorList[iColor])-1):
-                spaceNum = int (256 * (colorList[iColor][i+1][0] -
+                spaceNum = int (254 * (colorList[iColor][i+1][0] -
                                        colorList[iColor][i][0]))
                 iColorArray = np.array(np.linspace(colorList[iColor][i][2],
                                           colorList[iColor][i+1][1],
