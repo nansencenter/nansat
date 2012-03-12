@@ -722,7 +722,7 @@ class Nansat():
         
         # check each element of clim
         # convert [c1, c2] to [[c1], [c2]]
-        for i in [0:1]:
+        for i in range(2):
             # convert a number to list
             if not isinstance(clim[i], list):
                 clim[i] = [clim[i]]
