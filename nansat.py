@@ -408,7 +408,7 @@ class Nansat():
                                   "rawVrt.GetProjection() is None")
 
         if dstDomain is not None:
-            print 'Reprojection with given Domain'
+            #print 'Reprojection with given Domain'
             # warp the Raw VRT onto the coordinate stystem given by
             # input Domain
             rawWarpedVRT = gdal.AutoCreateWarpedVRT(
@@ -531,7 +531,7 @@ class Nansat():
                                    (0, 1, 0, 0, 0, 1))
         self.vrt = self.warpedVRT
 
-    def watermask(self, mod44path=None):
+    def watermask(self, mod44path=None, dstDomain=None):
         '''Create numpy array with watermask (water=1, land=0)
 
         250 meters resolution watermask from MODIS 44W Product:
@@ -582,7 +582,9 @@ class Nansat():
             # MOD44W data does exist: open the VRT file in Nansat
             watermask = Nansat(mod44path+'/MOD44W.vrt');
             # choose reprojection method
-            if self.vrt.GetGCPCount() == 0:
+            if dstDomain is not None:
+                watermask.reproject(dstDomain)
+            elif self.vrt.GetGCPCount() == 0:
                 watermask.reproject(Domain(self.vrt))
             else:
                 watermask.reproject_on_gcp(self)
