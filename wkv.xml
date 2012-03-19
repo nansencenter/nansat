@@ -3,95 +3,114 @@
 		<standard_name>normalized_radar_cross_section</standard_name>
 		<long_name>Normalized Radar Cross Section</long_name>
 		<units>m/m</units>
+        <minmax>200.0 3000.0</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>eastward_wind_velocity</standard_name>
 		<long_name>Eastward wind velocity</long_name>
 		<units>m s-1</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>northward_wind_velocity</standard_name>
 		<long_name>Northward wind velocity</long_name>
 		<units>m s-1</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
-	<wkv> 
-		<standard_name>wind_speed</standard_name> 
-		<long_name>Windspeed</long_name> 
-		<units>m s-1</units> 
-	</wkv> 
-	<wkv> 
-		<standard_name>wind_to_direction</standard_name> 
-		<long_name>Wind direction (towards)</long_name> 
-		<units>degrees</units> 
-	</wkv> 
-	<wkv> 
-		<standard_name>wind_from_direction</standard_name> 
-		<long_name>Wind direction (from)</long_name> 
-		<units>degrees</units> 
-	</wkv> 
+	<wkv>
+		<standard_name>wind_speed</standard_name>
+		<long_name>Windspeed</long_name>
+		<units>m s-1</units>
+        <minmax>0.000 1.000</minmax>
+	</wkv>
+	<wkv>
+		<standard_name>wind_to_direction</standard_name>
+		<long_name>Wind direction (towards)</long_name>
+		<units>degrees</units>
+        <minmax>0.000 1.000</minmax>
+	</wkv>
+	<wkv>
+		<standard_name>wind_from_direction</standard_name>
+		<long_name>Wind direction (from)</long_name>
+		<units>degrees</units>
+        <minmax>0.000 1.000</minmax>
+	</wkv>
 	<wkv>
 		<standard_name>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</standard_name>
 		<long_name>Upward spectral radiance</long_name>
 		<units>W m-2 m-1 sr-1</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</standard_name>
 		<long_name>Reflectance</long_name>
 		<units>sr-1</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>mass_concentration_of_chlorophyll_a_in_sea_water</standard_name>
 		<long_name>Chlorophyll-a</long_name>
 		<units>kg m-3</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>sea_surface_temperature</standard_name>
 		<long_name>Sea Surface Temperature</long_name>
 		<units>celsius</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</standard_name>
 		<long_name>Yellow Substance Absorption</long_name>
 		<units>m-1</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>mass_concentration_of_suspended_matter_in_sea_water</standard_name>
 		<long_name>Inorganic Suspended Matter</long_name>
 		<units>kg m-3</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>sensor_zenith_angle</standard_name>
 		<long_name>Sensor Zenith Angle</long_name>
 		<units>degrees</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>sensor_azimuth_angle</standard_name>
 		<long_name>Sensor Azimuth Angle</long_name>
 		<units>degrees</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>solar_zenith_angle</standard_name>
 		<long_name>Solar Zenith Angle</long_name>
 		<units>degrees</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>solar_azimuth_angle</standard_name>
 		<long_name>Solar Azimuth Angle</long_name>
 		<units>degrees</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>quality_flags</standard_name>
 		<long_name>Quality Flags</long_name>
 		<units></units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>air_temperature</standard_name>
 		<long_name>Air Temperature</long_name>
 		<units>celsius</units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 	<wkv>
 		<standard_name>land_binary_mask</standard_name>
 		<long_name>Land mask</long_name>
 		<units></units>
+        <minmax>0.000 1.000</minmax>
 	</wkv>
 </all_wkvs>

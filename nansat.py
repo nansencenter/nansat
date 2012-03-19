@@ -46,6 +46,7 @@ except ImportError:
 
 from domain import Domain
 from vrt import *
+from figure import *
 
 
 class Error(Exception):
@@ -166,7 +167,6 @@ class Nansat():
         self.metadata = self.dataset.GetMetadata()
         if (self.metadata is None) or (self.metadata == ""):
             raise GDALError("Nansat._init_(): Cannot get the metdadata")
-
         # get VRT with mapping of variables
         self.rawVRT = self._get_mapper(mapperName, bandList)
         # Warped VRT
@@ -591,16 +591,10 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName, bands=1, colormapName = "jet",
-                     clim = [None, None], ratio=1.0,
-                     logarithm=False, gamma=2,
-                     numOfTicks=5, fontSize=10,
-                     margin=30, pad=60, textWidthMax=600,
-                     colorbarHeight=10, barFontSize=8,
-                     putLegend = False,
-                     titleString = "",
-                     legenHeight = 50,
-                     extension='png'):
+    def write_figure(self, fileName, bands=1, clim=["",""], ratio=1.0,
+                     logarithm=False, gamma=2.0, numOfColor=250,
+                     cmapName="jet", legend= False, title=None, fontSize=10,
+                     numOfTicks=5, barFontSize=10, titleString=""):
 
         '''Save a raster band to a figure in grapfical format.
 
@@ -618,582 +612,132 @@ class Nansat():
         Parameters
         ----------
             fileName: string
-                Output file name
-            bands : list, optional, default = [1]
+                Output file name. if one of extensions "png", "PNG", "tif",
+                "TIF", "bmp", "BMP", "jpg", "JPG", "jpeg", "JPEG" is included,
+                specified file is crated. otherwise, "png" file is created.
+            bands : int or list, default = 1
                 the size of the list has to be 1 or 3.
                 if the size is 3, RGB image is created based on the three bands.
                 Then the first element is Red, the second is Green,
                 and the third is Blue.
-            colormap : colormap, optional, default = cm.jet
-
-            cmin, cmax : list, optional
-                minimum and maximum pixel values of each band
-            ratio : listimageDatatype, optional
-                ratio of number of the pixels
-                used to compute cmin and cmax.
-            logarithm : boolean, optional
+            clim : list with two elements, default = ["",""]
+                the first element fix the minumum pixel value and
+                the second value fix the maximum pixel value
+                each element is int or list with 3 elements (for three bands)
+                or "" or None.
+                if None is given, clim is fetched from WKV.
+                if "" is given, clim is computed based on ratio.
+            ratio : float (0.0<ratio<1.0) or a list, default=1.0
+                if list is given, it has three elements in [0.0, 1.0].
+            logarithm : boolean, defult = False
                 If True, tone curve is used to convert pixel values.
                 If False, linear.
-            gamma : float ( > 0.0), optional, default = 2.0
-                coefficient of the tone curve
-            numOfTicks : int, optional, default = 5
-                number of ticks
-            fontSize : int, optional, default = 10
-                size of font for the legend
-            margin: int, optional
-                margin of the output file
-            pad : int, optional
-                height for the legend
-            textWidthMax : int, optional
-                width for the legend
-            colorbarHeight : int, optional
-                height for the colorbar
-            barFontSize : int, optional, default = 8
-                size of font for the colorbar
-            titleString : text, optional
-            extension : extension, optional
-                extension of the outputfile
-
-            bandName: a list, optional
-                (e.g.: bandIdList = {"name":"radiance", "wavelength":"645"})
-            thresholdRatio: float (0.0 - 1.0), optional
-                e.g. : thresholdRatio = 0.95 means to round off 5%
-                        form the both sides (upper and lower sides).
-            useFullMatrix: boolean, optional
-                if true, the full matrix is used for estimating min/max,
-                otherwise only image scaled down to 100x100 (MUCH FASTER)
-
-        Raises
-        ------
-            OptionError: occurs when number of elements of bands list is not
-                          1 or 3
-            OptionError: occurs when number of elements of ratio list is not
-                          1 or 3
-            OptionError: occurs when number of elements of bands list is
-                          different from that of ratio list
-                          and the element is not 1.0.
-            OptionError: occurs when number of elements of cmin list is not
-                          1 or 3
-            OptionError: occurs when number of elements of cmin list is
-                          different from that of cmin list
-                          and the element is not None.
-            OptionError: occurs when number of elements of cmax list is not
-                          1 or 3
-            OptionError: occurs when number of elements of cmax list is
-                          different from that of cmax list
-                          and the element is not None.
-            OptionError: occurs when gammma is 0 or negative
-            DataError: occurs when the array of the band is empty
+            gamma : float ( > 0.0), default = 2.0
+                If logarithm is True,
+                gamma is abs coefficient of the tone curve
+            numOfColo : int, default = 250
+                number of color palette used for the figure.
+            cmapName : string, default = "jet"
+                colormap name. it is same as matplotlib colormaps.
+            legend: boolean, default = False
+                if True, information as textString, colorbar, longName and
+                units are added in the figure.
+            title : string, default = ""
+                if legend is True and title is given, it is drawn in the figure.
+            fontSize : int, defualt =10
+                if legend is True and title is given, it fix the size of title.
+            numOfTicks: int, default=5
+                if legend is True, numOfTicks is the number of scale of
+                the color bar.
+            barFontSize : int, default = 10
+                if legend is True, it fix the size of scale of the color bar.
 
         See also
         ------
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
-        
-        # convert band and ratio from a number to list
-        if not isinstance(band, list):
-            band = [band];
-        if not isinstance(ratio, list):
-            ratio = [ratio];
-
-        # check if bands is proper (1 or 3)
-        if not ((len(bands) == 3) or (len(bands) == 1)):
-            raise OptionError("write_figure(): number of elements of bands list must be 1 or 3")
-
-        # check if ratio is proper (1 or 3)
-        if not ((len(ratio) == 3) or (len(ratio) == 1)):
-            raise OptionError("write_figure(): number of elements of ratio list must be 1 or 3")
-        
-        #ANTON: TOO COMPLEX IF'S ARE REPLACED BY SIMPLE ONES
-        #       AFTER ERROR IS RAISED - NO NEED TO CHECK ELIF
-        #       TOO MANY ERRORS ARE RAISED - WE SHOULD GIVE WARNING AND REPLACE
-        #       BAD VALUES WITH REASONABLE ONES
-        
-        # populate list of ratios with the same value if necessary
-        if len(ratio) != len(bands):
-            ratio = [ratio[0]] * len(bands)
-                
-        # check if ratios are within possible values
-        if any(val > 1.0 for val in ratio) or any(val < 0.0 for val in ratio):
-            raise OptionError("write_figure(): elements of ratio list take [0.0 - 1.0]")
-
-        # check if clim consists of two elements
-        if len(clim) != 2:
-            raise OptionError("write_figure(): clim length should be 2")
-        
-        # check each element of clim
-        # convert [c1, c2] to [[c1], [c2]]
-        for i in range(2):
-            # convert a number to list
-            if not isinstance(clim[i], list):
-                clim[i] = [clim[i]]
-            # compare with length of bands and populate with same value (if not)
-            if len(clim[i]) != len(bands):
-                clim[i] = clim[i][0] * len(bands)
-        
-        #ANTON: THE BLOCK BELOW SHOULD BE REFINED
-        #       IT IS NOT OBVIOUS WHY cmin.append()... after exept        
-        
-        # generate vectors with limits of colors
-        cmin = []
-        cmax = []
-        for i in range(len(bands)):
-            try:
-                val = clim[1][i] - clim[0][i]
-                if val>0:
-                    cmin.append(clim[0][i])
-                    cmax.append(clim[1][i])
-                else:
-                    raise OptionError("write_figure(): clim is given as [cmin, cmax] or [(cmin1, cmin2, cmin3), (cmax1, cmax2, cmax3)]")
-            except:
-                cmin.append(clim[0][i])
-                cmax.append(clim[1][i])
-
-        if gamma <= 0.0:
-            raise OptionError("gamma argument must be a positive float")
-
-        rasterXSize = self.vrt.RasterXSize
-        rasterYSize = self.vrt.RasterYSize
-
-        print "Reading figure(s)  size = (", rasterXSize, "x", rasterYSize, ")"
-        array = np.array([])
-
-        # read array from the data
-        tic = time.clock()
-        for iBand in bands:
-            iArray = self[iBand]
-            if iArray is None:
-                raise DataError("Nansat.write_figure(): "
-                                "array of the band is empty")
-            # if three bands are given,
-            # append the second and third arrays to the previous array.
-            array = np.append(array, iArray)
-        # reshape the array for each band
-        array = array.reshape(len(bands), rasterYSize, rasterXSize)
-        
-        #ANTON: BELOW LINES UNTIL 891 ARE PREFOrmed ONLY IF CMIN OR CMAX ARE NONE
-        
-        pixvalMinList = []
-        pixvalMaxList = []
-        histMinList = []
-        histMaxList = []
-        histBuckets = []
-        histScale = []
-        histFreq = np.array([])
-
-        # get band infomation
-        for i, iBand in enumerate(bands):
-            bandPixvalueInfo = self.vrt.GetRasterBand(iBand).\
-                               GetDefaultHistogram()
-            # minimum pixel value
-            histMinList.append(float(bandPixvalueInfo[0]))
-            # maximum pixel value
-            histMaxList.append(float(bandPixvalueInfo[1]))
-            # number of widths of histogram (256?)
-            histBuckets.append(float(bandPixvalueInfo[2]))
-            # average variation of pixel value for each width
-            histScale.append((histMaxList[i] - histMinList[i]) /
-                                    histBuckets[i])
-            # frequency of each interval (histogram)
-            histFreq = np.append(histFreq, (np.array(bandPixvalueInfo[3],
-                                                         dtype=float)))
-            bandStatistics = self.vrt.GetRasterBand(iBand).GetStatistics(True, True)
-            # minimum pixel value
-            pixvalMinList.append(float(bandStatistics[0]))
-            # maximum pixel value
-            pixvalMaxList.append(float(bandStatistics[1]))
-
-        # reshape pixelHist array for each band
-        histFreq = histFreq.reshape(len(bands), histBuckets[0])
-
-        # <OPTION> Get cmin and cmax and clip the pixel values
-        numOfPixels = rasterXSize*rasterYSize
-        for iBand in range(len(bands)):
-            pixvalMin = pixvalMinList[iBand]
-            pixvalMax = pixvalMaxList[iBand]
-            # if ratio is not 1.0, compute cmin and cmax based on the ratio
-            if ratio[iBand] != 1.0:
-                # percentage of accumulated histogram of iBand
-                accumulateHist = np.add.accumulate(histFreq[iBand, :]) / \
-                                                   numOfPixels
-                # if the frequency (ratio) of the first inverval is
-                # larger than the given ratio (1-ratio) and
-                # the frequency of the second inverval of the histogram
-                # is zero (it means accumulateHist[0] == accumulateHist[1]),
-                # cmin is replaced the second minimum pixel value.
-                # In short, if there are many black pixels (no value pixels),
-                # set the second minimum value to cmin.
-                if (accumulateHist[0] > (1-ratio[iBand])) and \
-                    (accumulateHist[0] == accumulateHist[1]):
-                    accumulateHist = accumulateHist[accumulateHist >
-                                                    accumulateHist[0]]
-                    cminRatio = histMaxList[iBand] - \
-                                  histScale[iBand] * len(accumulateHist)
-                    cmaxRatio = pixvalMaxList[iBand]
-                # if the frequency (ratio) of the first inverval is
-                # less than the given ratio (1-ratio) and
-                # the frequency of the second inverval is zero,
-                # firstly remove the minimum value and secondly adjust
-                # cmin and cmax from both sides (second minimum and
-                # maximum values) to satisfy the given ratio
-                elif accumulateHist[0] == accumulateHist[1]:
-                    histMin = accumulateHist[accumulateHist <
-                                             (1 - ratio[iBand] +
-                                             accumulateHist[0]) / 2]
-                    histMax = accumulateHist[accumulateHist <
-                                             (1 + ratio[iBand] +
-                                             accumulateHist[0]) / 2]
-                    cminRatio = histMinList[iBand] + \
-                                  histScale[iBand] * len(histMin)
-                    cmaxRatio = histMinList[iBand] + \
-                                  histScale[iBand] * len(histMax)
-                # if the frequency (ratio) of the last inverval is
-                # larger than the given ratio and
-                # the frequency of the second to last inverval of the histogram
-                # is zero (it means accumulateHist[-2] == accumulateHist[-3]),
-                # cmax is replaced the second maximum pixel value.
-                # In short, if there are many black pixels (no value pixels),
-                # set the second maximum value to cmax.
-                elif (accumulateHist[-2] < (ratio[iBand])) and \
-                    (accumulateHist[-2] == accumulateHist[-3]):
-                    accumulateHist = accumulateHist[accumulateHist <
-                                                    accumulateHist[-2]]
-                    cminRatio = pixvalMinList[iBand]
-                    cmaxRatio = histMinList[iBand] + \
-                                  histScale[iBand] * len(accumulateHist)
-                # if the frequency (ratio) of the first inverval is
-                # less than the given ratio (1-ratio) and
-                # the frequency of the second inverval is zero,
-                # firstly remove the minimum value and secondly adjust
-                # cmin and cmax from both sides (second minimum and
-                # maximum values) to satisfy the given ratio
-                elif accumulateHist[-2] == accumulateHist[-3]:
-                    histMin = accumulateHist[accumulateHist <
-                                             (accumulateHist[-2] -
-                                             ratio[iBand]) / 2 ]
-                    histMax = accumulateHist[accumulateHist <
-                                             (accumulateHist[-2] +
-                                             ratio[iBand]) / 2 ]
-                    cminRatio = histMinList[iBand] + \
-                                  histScale[iBand] * len(histMin)
-                    cmaxRatio = histMinList[iBand] + \
-                                  histScale[iBand] * len(histMax)
-                # specify cmin and cmax by removing (1 - ratio) / 2 equally
-                # from both sides (minimum and maximum values)
-                # to satisfy the given ratio
-                else:
-                    histMin = accumulateHist[accumulateHist <
-                                             ((1 - ratio[iBand]) / 2)]
-                    histMax = accumulateHist[accumulateHist >
-                                             (1 - ((1 - ratio[iBand]) / 2))]
-                    cminRatio = histMinList[iBand] + \
-                                  histScale[iBand] * len(histMin)
-                    cmaxRatio = histMinList[iBand] + \
-                                  histScale[iBand] * \
-                                  (len(accumulateHist) - len(histMax))
-                if cmin[iBand] is None or cmin[iBand] < cminRatio:
-                    cmin[iBand] = cminRatio
-
-                if cmax[iBand] is None or cmax[iBand] > cmaxRatio:
-                    cmax[iBand] = cmaxRatio
-
-            # if cmin and cmax are given, clip the array
-            if (cmax[iBand] or cmin[iBand]) is not None:
-                if (cmax[iBand] is not None) and \
-                    (cmax[iBand] < pixvalMax) and (cmax[iBand] > pixvalMin):
-                    pixvalMax = cmax[iBand]
-                if (cmin[iBand] is not None) and \
-                    (cmin[iBand] > pixvalMin) and (cmin[iBand] < pixvalMax):
-                    pixvalMin = cmin[iBand]
-        
-        #ANTON: IT SHOULD NOT BE CLIPPED BUT RATHER CONVERTED TO UINT8
-        #       (TO KEEP MEM LOW) AND NOT TO DUPLICATE CODE
-        
-                array[iBand, :, :] = np.clip(array[iBand, :, :],
-                                             pixvalMin, pixvalMax)
-        print "903 : ", pixvalMin, " -- ",pixvalMax
-
-        # If three bands are given, marge them and crate a PIL image
-        if len(bands)==3:
-            # Normalize RGB arrays to the interval [0,255]
-            for iBand in range(3):
-                if array[iBand, :, :].max() == array[iBand, :, :].min():
-                    bandColor = {0: 'red', 1:'green', 2:'blue'}[iBand]
-
-                    raise OptionError("min. and max. pixel valuses in " +
-                                      bandColor + " band are same." +
-                                      " check ratio, cmin and cmax!!")
-                else:
-                    array[iBand, :, :] = (array[iBand, :, :] -
-                                          array[iBand, :, :].min()) * 255 / \
-                                         (array[iBand, :, :].max()-
-                                          array[iBand, :, :].min())
-        
-        #ANTON: NOT A GOOD IDEA
-        #           1. RETURN SHOULD BE ONLY ONE
-        #           2. WE STILL MIGH WANT TO ADD LEGEND (WITHOUT COLORBAR BUT WITH TITLE)
-        
-            # convert RGB arrays to PIL image
-            # merge three bands and save it to the file
-            Image.merge("RGB", (Image.fromarray(np.uint8(array[0, :, :])),
-                                Image.fromarray(np.uint8(array[1, :, :])),
-                                Image.fromarray(np.uint8(array[2, :, :])))).\
-                                save(fileName + "." + extension)
-            return
-
-        # If one band is given, create its PIL image and color bar PIL image
+        # create 3D array
+        if isinstance(bands, list):
+            array = np.array([])
+            for iBand in bands:
+                iArray = self.__getitem__(iBand)
+                array = np.append(array, iArray)
+            array = array.reshape(len(bands), int(self.vrt.RasterYSize), int(self.vrt.RasterXSize))
         else:
-            # <OPTION> Convart array based on logarithmic tone curve
-            if logarithm:
-                array[0, :, :] = (np.power((array[0, :, :] - pixvalMin) /
-                                 (pixvalMax - pixvalMin), (1.0 / gamma)))* \
-                                 (pixvalMax - pixvalMin) + pixvalMin
+            array = self.__getitem__(bands)
+            bands = [bands]
 
-            # create a color palette based on cmapName
-            myPalette = self._create_mypalette(colormapName)
-        
-        #ANTON: 253 SHOULD NOT BE HARDCODED. WHAT HAPPENS WHEN WE WANT TO ADD 
-        #       LIGHT GRAY FOR CLOUDS AND DARK GRAY FOR LAND?
-        
-            # read array with PIL image and set the palette
-            array[0, :, :] = (array[0, :, :] -pixvalMin)*253 / \
-                             (pixvalMax - pixvalMin)
+        # create a fig object
+        fig = Figure(array)
 
-            if putLegend is False:
-                # save the file
-                pilImgFig = Image.fromarray(np.uint8(array[0, :, :]))
-                pilImgFig.putpalette(myPalette)
-                pilImgFig.save(fileName + "." + extension)
-                return
+        # create a climMtx matrix
+        # get clim from arguments
+        if  (isinstance(clim[0], list)) and (isinstance(clim[1], list)):
+            climMtx = np.zeros([fig.array.shape[0],2])
+            for iVal in range(fig.array.shape[0]):
+                try:
+                    climMtx[iVal][0] = clim[0][iVal]
+                except:
+                    climMtx[iVal][0] = clim[0][0]
+                try:
+                    climMtx[iVal][1] = clim[1][iVal]
+                except:
+                    climMtx[iVal][1] = clim[1][0]
+        elif ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and \
+             ((isinstance(clim[1], float)) or (isinstance(clim[1], int))):
+            climMtx = np.ones([fig.array.shape[0],2])
+            climMtx[:, 0] *= clim[0]
+            climMtx[:, 1] *= clim[1]
+        # get clim from WKV
+        elif clim[0] is None and clim[1] is None:
+            climMtx = np.zeros([fig.array.shape[0],2])
+            for i, iBand in enumerate(bands):
+                try:
+                    defValue = (self.vrt.GetRasterBand(iBand).GetMetadataItem("minmax").split(" "))
+                    climMtx[i][0] = (float(defValue[0]))
+                    climMtx[i][1] = (float(defValue[1]))
+                except:
+                    print "WARNING : cannot get clim from WKV. it was computed by histogram."
+                    climMtx = fig.clim_from_histogram(ratio)
+        # get clim by computing the histogram
+        else:
+            climMtx = fig.clim_from_histogram(ratio)
 
-            else:
-                # create a color bar and set the palette
-                array255 = np.ones((legenHeight+colorbarHeight*3,
-                                    rasterXSize)) * 255
-                pilImgFig = Image.fromarray(np.uint8(np.append(array[0, :, :],
-                                            array255, 0)))
-                pilImgFig.putpalette(myPalette)
+        # set cmin and cmax attributes
+        fig.set_clim(climMtx)
 
-                bar = np.outer(np.ones(colorbarHeight),
-                           np.linspace(0, 253, int(rasterXSize*0.8)))
-                pilImgCbar = Image.fromarray(np.uint8(bar))
-                pilImgCbar.putpalette(myPalette)
+        # !!! necessary for apply_logarithm and convert_palettesize !!!
+        fig.clip()
 
-                pilImgFig.paste(pilImgCbar,
-                                   (int(rasterXSize*0.1),
-                                   rasterYSize+legenHeight))
+        # apply logarithm
+        if logarithm:
+            fig.apply_logarithm(gamma = gamma)
 
-                draw = ImageDraw.Draw(pilImgFig)
+        # convert int [0-numOfColor]
+        fig.convert_palettesize(numOfColor)
 
-                # add scales into the colorbar canvas
-                # create an array which indicates the scale values
+        #ANTON: BELOW LINES UNTIL 891 ARE PREFOrmed ONLY IF CMIN OR CMAX ARE NONE
 
-                # compute the locations of scaleText
-                scaleTextLocation = np.linspace(0, 0.95, numOfTicks)
-                if logarithm:
-                    # create an array for valuse on the colorbar
-                    scaleArray = np.array([])
-                    for i in range(numOfTicks):
-                        if i == 0:
-                            scaleArray = np.append(scaleArray, [pixvalMin], 0)
-                        else:
-                            scaleArray = np.append(scaleArray,
-                            [np.power(scaleTextLocation[i], (1.0 / gamma)) *\
-                                 (pixvalMax - pixvalMin) + pixvalMin], 0)
-                else:
-                    scaleArray = scaleTextLocation * (pixvalMax - pixvalMin) \
-                                 + pixvalMin
+        # add legend array
+        if legend:
+            # get longName and units from vrt
+            longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
+            units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
 
-                # specify the description form
-                formatList = map(self._create_scaleFormat, scaleArray)
-                scaleText = map(self._round_Scale, scaleArray, formatList)
-                ##print "1014: ", scaleArrayDigit
-                ##print "1015 : ", barScaleDigit, scaleArray, formatList
-                ##print "1023 : ", scaleText
+            fig.create_legend(numOfTicks=numOfTicks, barFontSize=barFontSize,
+                              titleString=titleString, fontSize=fontSize,
+                              longName=longName, units=units)
 
-                # set fonts for colorbar
-                fileName_font = os.path.join(os.path.dirname(
-                                             os.path.realpath(__file__)),
-                                             'fonts/times.ttf')
-                font = ImageFont.truetype(fileName_font, barFontSize)
-                # draw lines on the color bar and write the scales
-                for i in range(len(scaleArray)):
-                    coordX = int(scaleTextLocation[i]*rasterXSize*0.8 +
-                                 rasterXSize*0.1)
-                    box = (coordX, rasterYSize+legenHeight, coordX,
-                           rasterYSize+legenHeight+colorbarHeight-1)
-                    draw.line(box, fill= 254)
-                    box = (coordX-5, rasterYSize+legenHeight+colorbarHeight)
-                    draw.text(box, scaleText[i], font=font, fill= 254)
+        # add legend array
+        fig.create_pilImage(cmapName=cmapName)
 
-                # set font size for text
-                font = ImageFont.truetype(fileName_font, fontSize)
-                longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
-                if longName is None:
-                    longName = "no longName"
-                units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
-                if units is None:
-                    units = "no units"
-                caption = longName + " / " + units
-                box = (5, rasterYSize+ int(legenHeight*0.7))
-                draw.text(box, str(caption), font=font, fill= 254)
-
-                if titleString != "":
-                    # write text each line onto pilImgCanvas
-                    if textWidthMax > rasterXSize:
-                        textWidthMax = rasterXSize
-                    textWidth = 0
-                    textHeight = rasterYSize + 5
-                    for line in titleString.splitlines():
-                        text = draw.textsize(line, font)
-                        draw.text((0, textHeight), line, font=font, fill= 0)
-                        textWidth = max(text[0], textWidth)
-                        textHeight += text[1]
-                pilImgFig.save(fileName + "." + extension)
+        # finally create PIL, merge with legend, save
+        fig.save(fileName)
 
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
-
-    def _create_list(self, r, g, b):
-        '''Create a list from numbers
-
-        Parameters
-        ----------
-            r, g, b: float / int
-
-        Returns : list
-
-        '''
-        return [r, g, b]
-
-
-    def _create_scaleFormat(self, value):
-        '''Return writing format for scale on the colorbar
-
-        Parameters
-        ----------
-            values: int / float / exponential
-
-        Returns
-        --------
-            string
-
-        '''
-        if value==0:
-            return "%d"
-        else:
-            
-            #ANTON: _get_digit SHOULD NOT BE A METHOD IT IS CALLED ONLY ONCE AND VERY SIMPLE
-            
-            digit = self._get_digit(value)
-            if digit==0:
-                return "%4.2f"
-            elif digit==1:
-                return "%4.1f"
-            elif digit==2:
-                return "%d"
-            elif digit==-1:
-                return "%3.1f"
-            elif digit==-2:
-                return "%4.2f"
-            else:
-                return "%4.2e"
-
-    def _create_mypalette(self, cmapName, text=False):
-        '''Create a palette based on colormap name.
-
-        254 colors are created based on the given colormap name.
-        255th color is black and 256th is white.
-
-        Parameters
-        ----------
-        cmapName : string
-            matplotlib colormap name
-
-        Returns
-        -------
-            palette : a list
-                sequence of (256*3) integer
-
-        Raise
-        ------
-            OptionError : occures when cmapName is not in the matplotlib colormap
-
-        See Also
-        --------
-        http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-
-        '''
-        try:
-            colorDic = cm.datad[cmapName]
-        except:
-            raise OptionError("cmapName is not proper.")
-
-        colorList = [colorDic['red'], colorDic['green'], colorDic['blue']]
-        lut = []
-
-        for iColor in range(len(colorList)):
-            lut.append([])
-            for i in range(len(colorList[iColor])-1):
-                spaceNum = int (254 * (colorList[iColor][i+1][0] -
-                                       colorList[iColor][i][0]))
-                iColorArray = np.array(np.linspace(colorList[iColor][i][2],
-                                          colorList[iColor][i+1][1],
-                                          num=spaceNum) * 253, dtype = int)
-                lut[iColor].extend(iColorArray)
-
-            while len(lut[iColor]) < 254:
-                lut[iColor].append(lut[iColor][-1])
-            while len(lut[iColor]) > 254:
-                del lut[iColor][-1]
-        
-        #ANTON: _create_list should not be a method. it is used only once and very small
-        
-        lut = map(self._create_list, lut[0], lut[1], lut[2])
-        # 254 is black
-        lut.append([0,0,0])
-        # 255 is white
-        lut.append([255,255,255])
-        return self._flatten(lut)
-
-    def _flatten(self, nestList):
-
-        #ANTON: CAN THIS APPROACH REPLACE THIS METHOD:
-        #       sum(nestList, [])  ?
-        
-        '''Create a flat list
-        get rid of nests in the list
-
-        Parameters
-        ----------
-        nestList :  a list
-
-        Returns : abs list
-        '''
-        if isinstance(nestList, list):
-            if nestList == []:
-                return []
-            else:
-                return self._flatten(nestList[0]) + self._flatten(nestList[1:])
-        else:
-            return [nestList]
-
-    def _get_digit(self, num):
-        '''Return a number of digits
-        get rid of nests in the list
-
-        Parameters
-        ----------
-        num :  int / float
-
-        Returns : int
-        '''
-        if num == 0:
-            return 0
-        else:
-            return floor(log10(abs(num)))
 
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
@@ -1248,13 +792,18 @@ class Nansat():
                 break
             except:
                 pass
-
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if vrtDataset is None:
             print 'No mapper fits!'
             vrtDataset = self.vrtDriver.CreateCopy(self.rawVRTFileName,
                                                    self.dataset)
         return vrtDataset
+
+    def _get_pixelValue(self, val, defVal):
+        if val == "":
+            return defVal
+        else:
+            return val
 
     def _modify_warpedVRT(self, rawWarpedVRT,
                           rasterXSize, rasterYSize, geoTransform):
@@ -1353,20 +902,6 @@ class Nansat():
                             len(vsiFileContent), 1, vsiFile)
             gdal.VSIFCloseL(vsiFile)
             return 0
-
-    def _round_Scale(self, num, formatList):
-        ''' return round value
-
-        Parameters
-        ----------
-            num: int / float / exponential
-            formatList : string "%d", "%4.2e" etc...
-
-        Returns
-        -------
-            int / float / exponential
-        '''
-        return formatList %num
 
     def _specify_bandNo(self, bandID):
         '''Specify a band number based on bandID {'key_name': 'key_value'}
