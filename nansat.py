@@ -591,9 +591,9 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName, bands=1, clim=["",""], ratio=1.0,
+    def write_figure(self, fileName, bands=1, clim=[], ratio=1.0,
                      logarithm=False, gamma=2.0, numOfColor=250,
-                     cmapName="jet", legend= False, title=None, fontSize=10,
+                     cmapName=None, legend= False, title=None, fontSize=10,
                      numOfTicks=5, barFontSize=10, titleString=""):
 
         '''Save a raster band to a figure in grapfical format.
@@ -671,43 +671,46 @@ class Nansat():
         # create a fig object
         fig = Figure(array)
 
-        # create a climMtx matrix
-        # get clim from arguments
-        if  (isinstance(clim[0], list)) and (isinstance(clim[1], list)):
-            climMtx = np.zeros([fig.array.shape[0],2])
-            for iVal in range(fig.array.shape[0]):
+        # modify clim to the proper shape
+        if len(clim) == 2 and \
+           ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and \
+           ((isinstance(clim[1], float)) or (isinstance(clim[1], int))):
+            clim = [[clim[0]], [clim[1]]]
+
+        # create an empty climMtx
+        climMtx = np.array([[],[]]).reshape(0,2)
+
+        # if clim=[list list], Replace the elements of climMtx from clim.
+        # if the len(clim) is not enough, the 1st element is used.
+        if len(clim) == 2 and \
+           (isinstance(clim[0], list)) and (isinstance(clim[1], list)):
+            for i in range(fig.array.shape[0]):
                 try:
-                    climMtx[iVal][0] = clim[0][iVal]
+                    climVct = np.array([[clim[0][i]], [clim[1][i]]]).reshape(1,2)
                 except:
-                    climMtx[iVal][0] = clim[0][0]
-                try:
-                    climMtx[iVal][1] = clim[1][iVal]
-                except:
-                    climMtx[iVal][1] = clim[1][0]
-        elif ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and \
-             ((isinstance(clim[1], float)) or (isinstance(clim[1], int))):
-            climMtx = np.ones([fig.array.shape[0],2])
-            climMtx[:, 0] *= clim[0]
-            climMtx[:, 1] *= clim[1]
-        # get clim from WKV
-        elif clim[0] is None and clim[1] is None:
-            climMtx = np.zeros([fig.array.shape[0],2])
+                    climVct = np.array([[clim[0][0]], [clim[1][0]]]).reshape(1,2)
+                climMtx = np.append(climMtx, climVct, axis=0)
+
+        # if clim =[None, None], get the values from WKV.
+        # if cannot them get from WKV, climMtx is empty
+        if len(clim) == 2 and clim[0] is None and clim[1] is None:
             for i, iBand in enumerate(bands):
                 try:
                     defValue = (self.vrt.GetRasterBand(iBand).GetMetadataItem("minmax").split(" "))
-                    climMtx[i][0] = (float(defValue[0]))
-                    climMtx[i][1] = (float(defValue[1]))
+                    climVct = np.array([[float(defValue[0])], [float(defValue[1])]]).reshape(1,2)
+                    climMtx = np.append(climMtx, climVct, axis=0)
                 except:
-                    print "WARNING : cannot get clim from WKV. it was computed by histogram."
-                    climMtx = fig.clim_from_histogram(ratio)
-        # get clim by computing the histogram
-        else:
+                    climMtx = np.array([[],[]]).reshape(0,2)
+                    break
+
+        # if climMtx is empty, get values from the histogram
+        if climMtx.shape[0] == 0:
             climMtx = fig.clim_from_histogram(ratio)
 
         # set cmin and cmax attributes
         fig.set_clim(climMtx)
 
-        # !!! necessary for apply_logarithm and convert_palettesize !!!
+        # Clip array with cmin and cmax
         fig.clip()
 
         # apply logarithm
