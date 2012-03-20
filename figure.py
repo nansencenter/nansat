@@ -92,7 +92,7 @@ class Figure():
         if numOfColor is not None:
             self.numOfColor = numOfColor
         for iBand in range(self.array.shape[0]):
-            self.array[iBand, :, :] = ((self.array[iBand, :, :] - self.cmin[iBand]) * self.numOfColor / (self.cmax[iBand] - self.cmin[iBand]))
+            self.array[iBand, :, :] = ((self.array[iBand, :, :] - self.cmin[iBand]) * (self.numOfColor-1) / (self.cmax[iBand] - self.cmin[iBand]))
         self.array = self.array.astype(np.uint8)
 
     def create_legend(self, numOfTicks=5, barFontSize = 10, longName=None, units=None, titleString="", fontSize=10):
