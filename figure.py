@@ -45,6 +45,7 @@ class Figure():
 
         self.subsetArraySize = 100000
         self.numOfColor = 250
+        self.cmap = "jet"
 
         self.extensionList = ["png", "PNG", "tif", "TIF", "bmp",
                               "BMP", "jpg", "JPG", "jpeg", "JPEG"]
@@ -59,26 +60,27 @@ class Figure():
                                   (1.0 / self.gamma))) * ((self.cmax[iBand] - self.cmin[iBand])) + self.cmin[iBand]
 
     def clim_from_histogram(self, ratio):
-        ratioList = np.ones(3)
-        if isinstance(ratio, float) and self.array.shape[0] == 3:
-            ratioList *= ratio
-        elif isinstance(ratio, list):
-            for iRatio in range(min(3, len(ratio))):
-                ratioList[iRatio] = ratio[iRatio]
+        if isinstance(ratio, float):
+            ratioList = np.ones(self.array.shape[0])*ratio
         else:
-            ratioList[0] = ratio
+            ratioList = []
+            for iRatio in range(self.array.shape[0]):
+                try:
+                    ratioList.append(ratio[iRatio])
+                except:
+                    ratioList.append(ratio[0])
 
         clim = np.zeros([self.array.shape[0],2])
         for iBand in range(self.array.shape[0]):
-            if ratioList[iBand] != 1.0:
+            if ratioList[iBand] == 1.0:
+                clim[iBand] = (self.array[iBand, :, :].min(), self.array[iBand, :, :].max())
+            else:
                 hist, bins = self._get_histogram(iBand)
                 cumhist = hist.cumsum()
                 cumhist /= cumhist[-1]
                 if ratioList[iBand] < 0.0 or ratioList[iBand] > 1.0:
                     ratioList[iBand] = 1.0
                 clim[iBand] = (bins[len(cumhist[cumhist<(1-ratioList[iBand])/2])], bins[len(cumhist[cumhist<1-((1-ratioList[iBand])/2)])])
-            else:
-                clim[iBand] = (self.array[iBand, :, :].min(), self.array[iBand, :, :].max())
         return clim
 
     def clip(self):
@@ -94,43 +96,66 @@ class Figure():
         self.array = self.array.astype(np.uint8)
 
     def create_legend(self, numOfTicks=5, barFontSize = 10, longName=None, units=None, titleString="", fontSize=10):
+        LEGEND_HEIGHT = 0.1 # percentage of the image height
+        CBAR_HEIGHTMIN = 5
+        CBAR_HEIGHT = 0.15 # percentage of the image height
+        CBAR_WIDTH = 0.8 # percentage of the image width
+        CBAR_LOCATION_X = 0.1 # percentage of the legend (=image) width
+        CBAR_LOCATION_Y = 0.5 # percentage of the legend height
+        CBAR_LOCATION_ADJUST_X = 5 # pixel
+        CBAR_LOCATION_ADJUST_Y = 3 # pixel
+        TEXT_LOCATION_X = 0.1 # percentage of the legend (=image) width
+        TEXT_LOCATION_Y = 0.1 # percentage of the legend height
+        NAME_LOCATION_X = 0.1 # percentage of the legend (=image) width
+        NAME_LOCATION_Y = 0.3 # percentage of the legend height
+
         '''Extend self.array and Create PIL image with legend'''
         # create a pilImage for the legend
         self.pilImgLegend = Image.new("P", (self.sizeX,
-                                        int(self.sizeY * 0.1)), 255)
-        # make an array for color bar
-        bar = np.outer(np.ones(max(int(self.pilImgLegend.size[1]*0.15),
-                       5)), np.linspace(0, self.numOfColor,
-                       int(self.pilImgLegend.size[0]*0.8)))
-        # create a colorbar pil Image
-        pilImgCbar = Image.fromarray(np.uint8(bar))
-        # paste the colorbar pilImage on Legend pilImage
-        self.pilImgLegend.paste(pilImgCbar,
-                           (int(self.pilImgLegend.size[0]*0.1),
-                            int(self.pilImgLegend.size[1]*0.5)))
-        # create a scale for the colorbar
-        scaleLocation = np.linspace(0, 1, numOfTicks)
-        scaleArray = scaleLocation
-        if self.gamma is not None:
-            scaleArray = (np.power(scaleArray, (1.0/self.gamma)))
-        scaleArray = scaleArray * (self.cmax[0] - self.cmin[0]) + self.cmin[0]
-        scaleArray = map(self._round_number, scaleArray)
-        # set fonts for colorbar
+                                        int(self.sizeY * LEGEND_HEIGHT)), 255)
+        draw = ImageDraw.Draw(self.pilImgLegend)
+
+        # set fonts for Legend
         fileName_font = os.path.join(os.path.dirname(
                                      os.path.realpath(__file__)),
                                      'fonts/times.ttf')
-        font = ImageFont.truetype(fileName_font, barFontSize)
-        # draw scales and lines on the legend pilImage
-        draw = ImageDraw.Draw(self.pilImgLegend)
-        for iTick in range(numOfTicks):
-            coordX = int(scaleLocation[iTick]*
-                         self.pilImgLegend.size[0]*0.8 +
-                         self.pilImgLegend.size[0]*0.1)
-            box = (coordX, int(self.pilImgLegend.size[1]*0.5),
-                   coordX, int(self.pilImgLegend.size[1]*0.65)-1)
-            draw.line(box, fill= 254)
-            box = (coordX-5, int(self.pilImgLegend.size[1]*0.65)+3)
-            draw.text(box, scaleArray[iTick], fill= 254, font=font)
+        if self.array.shape[0] == 1:
+            black = 254
+        else:
+            black = (0,0,0)
+
+        if self.array.shape[0] == 1:
+            # make an array for color bar
+            bar = np.outer(np.ones(max(int(self.pilImgLegend.size[1]*CBAR_HEIGHT),
+                           CBAR_HEIGHTMIN)), np.linspace(0, self.numOfColor,
+                           int(self.pilImgLegend.size[0]*CBAR_WIDTH)))
+            # create a colorbar pil Image
+            pilImgCbar = Image.fromarray(np.uint8(bar))
+            # paste the colorbar pilImage on Legend pilImage
+            self.pilImgLegend.paste(pilImgCbar,
+                               (int(self.pilImgLegend.size[0]*CBAR_LOCATION_X),
+                                int(self.pilImgLegend.size[1]*CBAR_LOCATION_Y)))
+            # create a scale for the colorbar
+            scaleLocation = np.linspace(0, 1, numOfTicks)
+            scaleArray = scaleLocation
+            if self.gamma is not None:
+                scaleArray = (np.power(scaleArray, (1.0/self.gamma)))
+            scaleArray = scaleArray * (self.cmax[0] - self.cmin[0]) + self.cmin[0]
+            scaleArray = map(self._round_number, scaleArray)
+            # set fonts size for colorbar
+            font = ImageFont.truetype(fileName_font, barFontSize)
+            # draw scales and lines on the legend pilImage
+            ##draw = ImageDraw.Draw(self.pilImgLegend)
+            for iTick in range(numOfTicks):
+                coordX = int(scaleLocation[iTick]*
+                             self.pilImgLegend.size[0]*CBAR_WIDTH +
+                             self.pilImgLegend.size[0]*((1-CBAR_WIDTH)/2))
+                box = (coordX, int(self.pilImgLegend.size[1]*CBAR_LOCATION_Y),
+                       coordX, int(self.pilImgLegend.size[1]*(CBAR_LOCATION_Y + CBAR_HEIGHT))-1)
+                draw.line(box, fill= black)
+                box = (coordX-CBAR_LOCATION_ADJUST_X,
+                       int(self.pilImgLegend.size[1]*(CBAR_LOCATION_Y + CBAR_HEIGHT))+CBAR_LOCATION_ADJUST_Y)
+                draw.text(box, scaleArray[iTick], fill= black, font=font)
 
         # set font size for text
         font = ImageFont.truetype(fileName_font, fontSize)
@@ -139,25 +164,32 @@ class Figure():
         if units is None:
             units = "no units"
         caption = longName + " / " + units
-        box = (int(self.pilImgLegend.size[0]*0.1),
-               int(self.pilImgLegend.size[1]*0.3))
-        draw.text(box, str(caption), fill= 254, font=font)
+        box = (int(self.pilImgLegend.size[0]*NAME_LOCATION_X),
+               int(self.pilImgLegend.size[1]*NAME_LOCATION_Y))
+        draw.text(box, str(caption), fill= black, font=font)
 
         if titleString != "":
             # write text each line onto pilImgCanvas
-            textHeight = int(self.pilImgLegend.size[1]*0.1)
+            textHeight = int(self.pilImgLegend.size[1]*TEXT_LOCATION_Y)
             for line in titleString.splitlines():
-                draw.text((int(self.pilImgLegend.size[0]*0.1), textHeight),
-                           line, fill= 254, font=font)
+                draw.text((int(self.pilImgLegend.size[0]*TEXT_LOCATION_X),
+                           textHeight), line, fill= black, font=font)
                 text = draw.textsize(line, font=font)
                 textHeight += text[1]
 
-    def create_pilImage(self, cmapName="jet"):
+    def create_pilImage(self, cmapName):
         if self.array.shape[0] == 3:
-            self.pilImg = Image.merge("RGB",
-                                     (Image.fromarray(self.array[0, :, :]),
-                                      Image.fromarray(self.array[1, :, :]),
-                                      Image.fromarray(self.array[2, :, :])))
+            if self.pilImgLegend is None:
+                self.pilImg = Image.new("RGB", (self.sizeX, self.sizeY))
+            else:
+                self.pilImg = Image.new("RGB", (self.sizeX, self.sizeY+self.pilImgLegend.size[1]))
+                self.pilImg.paste(self.pilImgLegend, (0, self.sizeY))
+
+            self.pilImg.paste(Image.merge("RGB",
+                             (Image.fromarray(self.array[0, :, :]),
+                              Image.fromarray(self.array[1, :, :]),
+                              Image.fromarray(self.array[2, :, :]))), (0, 0))
+
         else:
             myPalette = self._create_palette(cmapName)
             if self.pilImgLegend is not None:
@@ -189,7 +221,7 @@ class Figure():
         try:
             colorDic = cm.datad[cmapName]
         except:
-            colorDic = cm.datad["jet"]
+            colorDic = cm.datad[self.cmap]
 
         colorList = [colorDic['red'], colorDic['green'], colorDic['blue']]
 
