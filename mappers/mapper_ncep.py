@@ -44,5 +44,5 @@ class Mapper(VRT):
         
         # Adding velid time from the GRIB file to metadata dictionary 
         validTime = dataset.GetRasterBand(8).GetMetadata()['GRIB_VALID_TIME']
-        self.metadata['Valid Time'] = datetime.utcfromtimestamp(int(validTime.split(' ')[0]))
+        self.metadata['Valid Time'] = datetime.utcfromtimestamp(int(validTime.strip().split(' ')[0]))
         return
