@@ -206,10 +206,14 @@ class Figure():
         self.array = None
 
     def save(self, fileName):
-        if fileName.split(".")[-1] in self.extensionList:
-            self.pilImg.save(fileName)
-        else:
-            self.pilImg.save(fileName + ".png")
+        if (fileName.split(".")[-1]=="jpg") or \
+           (fileName.split(".")[-1]=="JPG") or \
+           (fileName.split(".")[-1]=="jpeg") or \
+           (fileName.split(".")[-1]=="JPEG"):
+            self.pilImg = self.pilImg.convert("RGB")
+        if not((fileName.split(".")[-1] in self.extensionList)):
+            fileName = fileName + ".png"
+        self.pilImg.save(fileName)
         self.pilImg = None
 
     def set_clim(self, clim):
