@@ -166,7 +166,7 @@ class Nansat():
         # metadata
         self.metadata = self.dataset.GetMetadata()
         if (self.metadata is None) or (self.metadata == ""):
-            raise GDALError("Nansat._init_(): Cannot get the metdadata")
+            raise GDALError("Nansat._init_(): Cannot get the metadata")
         # get VRT with mapping of variables
         self.rawVRT = self._get_mapper(mapperName, bandList)
         # Warped VRT
@@ -794,6 +794,13 @@ class Nansat():
         # try to import and get VRT datasaet from all mappers. Break on success
         # if none of the mappers worked - None is returned
         vrtDataset = None
+        # For debugging:
+        #mapper_module = __import__('mapper_radarsat2')
+        #vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
+        #                        self.fileName, self.dataset,
+        #                        self.metadata,
+        #                        bandList).vsiDataset
+        # Otherwise
         for iMapper in self.mapperList:
             try:
                 #get rid of .py extension
@@ -802,9 +809,9 @@ class Nansat():
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
                 vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
-                                         self.fileName, self.dataset,
-                                         self.metadata,
-                                         bandList).vsiDataset
+                                        self.fileName, self.dataset,
+                                        self.metadata,
+                                        bandList).vsiDataset
                 break
             except:
                 pass
