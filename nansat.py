@@ -593,8 +593,8 @@ class Nansat():
 
     def write_figure(self, fileName=None, bands=1, clim=[], ratio=1.0,
                      logarithm=False, gamma=2.0, numOfColor=250,
-                     cmapName="jet", legend= False, title=None, fontSize=10,
-                     numOfTicks=5, barFontSize=10, titleString=""):
+                     cmapName="jet", legend=False, titleString="", fontSize=10,
+                     numOfTicks=5):
 
         '''Save a raster band to a figure in grapfical format.
         If fileName is None, the Figure object image is returned
@@ -644,22 +644,20 @@ class Nansat():
             legend: boolean, default = False
                 if True, information as textString, colorbar, longName and
                 units are added in the figure.
-            title : string, default = ""
+            titleString : string, default = ""
                 if legend is True and title is given, it is drawn in the figure.
             fontSize : int, defualt =10
                 if legend is True and title is given, it fix the size of title.
             numOfTicks: int, default=5
                 if legend is True, numOfTicks is the number of scale of
                 the color bar.
-            barFontSize : int, default = 10
-                if legend is True, it fix the size of scale of the color bar.
 
-        Modified
+        Modifies
         --------
             if fileName is specified, save a raster band
             to a Figure in grapfical format
 
-        Return
+        Returns
         ------
             if fileName is None, a Figure object
 
@@ -684,6 +682,7 @@ class Nansat():
 
         # create a fig object
         fig = Figure(array)
+        array = None
 
         # modify clim to the proper shape
         if len(clim) == 2 and \
@@ -731,10 +730,8 @@ class Nansat():
         if logarithm:
             fig.apply_logarithm(gamma = gamma)
 
-        # convert int [0-numOfColor]
+        # convert to uint8 [0-numOfColor]
         fig.convert_palettesize(numOfColor)
-
-        #ANTON: BELOW LINES UNTIL 891 ARE PREFOrmed ONLY IF CMIN OR CMAX ARE NONE
 
         # add legend array
         if legend:
@@ -742,9 +739,8 @@ class Nansat():
             longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
             units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
 
-            fig.create_legend(numOfTicks=numOfTicks, barFontSize=barFontSize,
-                              titleString=titleString, fontSize=fontSize,
-                              longName=longName, units=units)
+            fig.create_legend(numOfTicks=numOfTicks, titleString=titleString,
+                              fontSize=fontSize, longName=longName, units=units)
 
         # add legend array
         fig.create_pilImage(cmapName=cmapName)

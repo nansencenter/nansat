@@ -28,6 +28,14 @@ class OptionError(Error):
     pass
 
 class Figure():
+    '''Perform opeartions with graphical files: create, append legend, modify...
+    
+    Figure instance is created in the Nansat.write_figure method
+    The methods below are applied consequently in order to generate a figure
+    from one or three bands, estimate min/max, apply logarithmic scaling,
+    convert to uint8, append legend, save to a file    
+    '''
+    
     def __init__(self, array):
         ''' Set attributes
 
@@ -90,7 +98,7 @@ class Figure():
         Parameters
         ----------
         self.gamma: positive float, default is 2.0, optional
-            a coefficient of tone curve. (the coeffecient is 1/gamma)
+            a coefficient of tone curve. (the coefficient is 1/gamma)
             if 0 < gamma < 1.0, tone curve is convex downward.
             if gamma = 1.0, it is linear.
             if 1.0 < gamma, tone curve is convex upward.
@@ -108,7 +116,7 @@ class Figure():
                                   (1.0 / self.gamma))) * ((self.cmax[iBand] -
                                   self.cmin[iBand])) + self.cmin[iBand]
 
-    def clim_from_histogram(self, ratio):
+    def clim_from_histogram(self, ratio=1.0):
         '''Get min and max pixel values.
 
         if ratio=1.0, simply the minimum and maximum values are returned.
@@ -164,7 +172,7 @@ class Figure():
 
         Modifies
         --------
-        self.array : numpy array
+            self.array : numpy array
 
         '''
         for iBand in range(self.array.shape[0]):
@@ -182,7 +190,7 @@ class Figure():
 
         Modifies
         --------
-        self.array : numpy array (uint8)
+            self.array : numpy array (=>uint8)
 
         '''
         if numOfColor is not None:
@@ -193,10 +201,9 @@ class Figure():
                                        (self.cmax[iBand] - self.cmin[iBand]))
         self.array = self.array.astype(np.uint8)
 
-    def create_legend(self, numOfTicks=5, barFontSize = 10,
-                      longName=None, units=None,
+    def create_legend(self, numOfTicks=5, longName=None, units=None,
                       titleString="", fontSize=10):
-        ''' self.legend is replced from None to PIL image
+        ''' self.legend is replaced from None to PIL image
 
         PIL image includes colorbar, longname, units and titelString.
 
@@ -204,8 +211,6 @@ class Figure():
         ----------
         numOfTicks : int, optional
             number of ticks for the colorbar
-        barFontSize : int, optional
-            font size for the clolrbar scale
         longName, units : string, optional
             given from nansat WKV
         titleString : string, optional
@@ -263,11 +268,11 @@ class Figure():
             scaleArray = scaleLocation
             if self.gamma is not None:
                 scaleArray = (np.power(scaleArray, (1.0/self.gamma)))
-            scaleArray = scaleArray * (self.cmax[0] - self.cmin[0]) + \
-                         self.cmin[0]
+            scaleArray = (scaleArray * (self.cmax[0] - self.cmin[0]) + 
+                        self.cmin[0])
             scaleArray = map(self._round_number, scaleArray)
             # set fonts size for colorbar
-            font = ImageFont.truetype(fileName_font, barFontSize)
+            font = ImageFont.truetype(fileName_font, fontSize)
             # draw scales and lines on the legend pilImage
             for iTick in range(numOfTicks):
                 coordX = int(scaleLocation[iTick]*
@@ -287,9 +292,9 @@ class Figure():
 
         # draw longname and units
         if longName is None:
-            longName = "no longName"
+            longName = ""
         if units is None:
-            units = "no units"
+            units = ""
         caption = longName + " / " + units
         box = (int(self.pilImgLegend.size[0]*NAME_LOCATION_X),
                int(self.pilImgLegend.size[1]*NAME_LOCATION_Y))
@@ -306,7 +311,7 @@ class Figure():
                 textHeight += text[1]
 
     def create_pilImage(self, cmapName=None):
-        ''' self.create_pilImage is replced from None to PIL image
+        ''' self.create_pilImage is replaced from None to PIL image
 
         If three images are given, create a image with RGB mode.
             if self.pilImgLegend is not None, it is pasted.
@@ -382,15 +387,19 @@ class Figure():
         self.pilImg : None
 
         '''
+        # set defaults
+        DEFAULT_EXTENSION = ".png"
+        
         if (fileName.split(".")[-1]=="jpg") or \
            (fileName.split(".")[-1]=="JPG") or \
            (fileName.split(".")[-1]=="jpeg") or \
            (fileName.split(".")[-1]=="JPEG"):
             self.pilImg = self.pilImg.convert("RGB")
+            
         if not((fileName.split(".")[-1] in self.extensionList)):
-            fileName = fileName + ".png"
-        self.pilImg.save(fileName)
-        self.pilImg = None
+            fileName = fileName + DEFAULT_EXTENSION
+        
+        self.pilImg.save(fileName)        
 
     def set_clim(self, clim):
         '''set self.cmin and self.max
