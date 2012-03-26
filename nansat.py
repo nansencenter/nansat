@@ -591,12 +591,13 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName, bands=1, clim=[], ratio=1.0,
+    def write_figure(self, fileName=None, bands=1, clim=[], ratio=1.0,
                      logarithm=False, gamma=2.0, numOfColor=250,
-                     cmapName=None, legend= False, title=None, fontSize=10,
+                     cmapName="jet", legend= False, title=None, fontSize=10,
                      numOfTicks=5, barFontSize=10, titleString=""):
 
         '''Save a raster band to a figure in grapfical format.
+        If fileName is None, the Figure object image is returned
 
         Get numpy array from the band(s) and band information specified
         either by given band number or band id.
@@ -611,10 +612,11 @@ class Nansat():
 
         Parameters
         ----------
-            fileName: string
+            fileName: string, optional
                 Output file name. if one of extensions "png", "PNG", "tif",
                 "TIF", "bmp", "BMP", "jpg", "JPG", "jpeg", "JPEG" is included,
                 specified file is crated. otherwise, "png" file is created.
+                if None, the figure object is returned.
             bands : int or list, default = 1
                 the size of the list has to be 1 or 3.
                 if the size is 3, RGB image is created based on the three bands.
@@ -652,6 +654,16 @@ class Nansat():
             barFontSize : int, default = 10
                 if legend is True, it fix the size of scale of the color bar.
 
+        Modified
+        --------
+            if fileName is specified, save a raster band
+            to a Figure in grapfical format
+
+        Return
+        ------
+            if fileName is None, a Figure object
+
+
         See also
         ------
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
@@ -667,6 +679,8 @@ class Nansat():
         else:
             array = self.__getitem__(bands)
             bands = [bands]
+
+        print array.min(), array.max()
 
         # create a fig object
         fig = Figure(array)
@@ -736,7 +750,10 @@ class Nansat():
         fig.create_pilImage(cmapName=cmapName)
 
         # finally create PIL, merge with legend, save
-        fig.save(fileName)
+        if fileName is None:
+            return fig
+        else:
+            fig.save(fileName)
 
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
