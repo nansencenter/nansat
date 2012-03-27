@@ -196,7 +196,7 @@ class Nansat():
         '''
         self.vrt = self.rawVRT
 
-    def     downscale(self, factor=1, method="average"):
+    def downscale(self, factor=1, method="average"):
         '''Downscale the size of the data.
 
         The size of data is downscaled as (xSize/factor, ySize/factor).
@@ -587,7 +587,7 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName=None, bands=1, clim=[None, None], ratio=1.0,
+    def write_figure(self, fileName=None, bands=1, clim=None, ratio=1.0,
                      logarithm=False, gamma=2.0, numOfColor=250,
                      cmapName="jet", legend=False, titleString="", fontSize=10,
                      numOfTicks=5):
@@ -618,13 +618,10 @@ class Nansat():
                 if the size is 3, RGB image is created based on the three bands.
                 Then the first element is Red, the second is Green,
                 and the third is Blue.
-            clim : list with two elements, default = [None, None]
-                the first element fix the minumum pixel value and
-                the second value fix the maximum pixel value
-                each element is int or list with 3 elements (for three bands)
-                or "" or None.
-                if None is given (default), clim is fetched from WKV.
-                if "" is given, clim is computed based on ratio.
+            clim : list with two elements or 'hist' to specify range of colormap
+                [min, max] : min and max are numbers, or lists with 3 elements in the case of three bands
+                'hist' : a histogram is used to calculate corresponding min and max values
+                if clim is None (default), min and max values are fetched from WKV, with 'hist' as fallback
             ratio : float (0.0<ratio<1.0) or a list, default=1.0
                 if list is given, it has three elements in [0.0, 1.0].
             logarithm : boolean, defult = False
@@ -669,7 +666,8 @@ class Nansat():
             for iBand in bands:
                 iArray = self.__getitem__(iBand)
                 array = np.append(array, iArray)
-            array = array.reshape(len(bands), int(self.vrt.RasterYSize), int(self.vrt.RasterXSize))
+            array = array.reshape(len(bands), int(self.vrt.RasterYSize), 
+                int(self.vrt.RasterXSize))
         else:
             array = self.__getitem__(bands)
             bands = [bands]
@@ -680,14 +678,35 @@ class Nansat():
         fig = Figure(array)
         array = None
 
+        climMtx = None
+        if clim is None:
+            for i, iBand in enumerate(bands):
+                try:
+                    climMtx = np.array([[],[]]).reshape(0,2)
+                    defValue = (self.vrt.GetRasterBand(iBand).
+                        GetMetadataItem("minmax").split(" "))
+                    climVct = np.array([[float(defValue[0])], 
+                        [float(defValue[1])]]).reshape(1,2)
+                    climMtx = np.append(climMtx, climVct, axis=0)
+                    print climMtx
+                except:
+                    pass
+            clim = climMtx
+
+        print clim
+        print climMtx
+
+        if clim == 'hist' or (clim is None and climMtx is None):
+            # Use histogram if requested, or if not available from WKV
+            climMtx = fig.clim_from_histogram(ratio)
+
         # modify clim to the proper shape
         if len(clim) == 2 and \
            ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and \
            ((isinstance(clim[1], float)) or (isinstance(clim[1], int))):
             clim = [[clim[0]], [clim[1]]]
-
-        # create an empty climMtx
-        climMtx = np.array([[],[]]).reshape(0,2)
+            # create an empty climMtx
+            climMtx = np.array([[],[]]).reshape(0,2)
 
         # if clim=[list list], Replace the elements of climMtx from clim.
         # if the len(clim) is not enough, the 1st element is used.
@@ -699,22 +718,6 @@ class Nansat():
                 except:
                     climVct = np.array([[clim[0][0]], [clim[1][0]]]).reshape(1,2)
                 climMtx = np.append(climMtx, climVct, axis=0)
-
-        # if clim =[None, None], get the values from WKV.
-        # if cannot them get from WKV, climMtx is empty
-        if len(clim) == 2 and clim[0] is None and clim[1] is None:
-            for i, iBand in enumerate(bands):
-                try:
-                    defValue = (self.vrt.GetRasterBand(iBand).GetMetadataItem("minmax").split(" "))
-                    climVct = np.array([[float(defValue[0])], [float(defValue[1])]]).reshape(1,2)
-                    climMtx = np.append(climMtx, climVct, axis=0)
-                except:
-                    climMtx = np.array([[],[]]).reshape(0,2)
-                    break
-
-        # if climMtx is empty, get values from the histogram
-        if climMtx.shape[0] == 0:
-            climMtx = fig.clim_from_histogram(ratio)
 
         # set cmin and cmax attributes
         fig.set_clim(climMtx)
