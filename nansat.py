@@ -205,7 +205,7 @@ class Nansat():
         '''
         self.vrt = self.rawVRT
 
-    def downscale(self, factor=1, method="average"):
+    def     downscale(self, factor=1, method="average"):
         '''Downscale the size of the data.
 
         The size of data is downscaled as (xSize/factor, ySize/factor).
@@ -254,6 +254,11 @@ class Nansat():
         # if method = "average", overwrite "SimpleSource" to "AveragedSource"
         if method == "average":
             for elem in element.iter("SimpleSource"):
+                elem.tag = "AveragedSource"
+            for elem in element.iter("ComplexSource"):
+                # NB: replacing ComplexSource with AveragedSource may 
+                # lead to loss of Look-Up-Table elements. 
+                # Should check this in the future if LUT should be used
                 elem.tag = "AveragedSource"
 
         # Edit GCPs to correspond to the downscaled size
@@ -591,7 +596,7 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName=None, bands=1, clim=[], ratio=1.0,
+    def write_figure(self, fileName=None, bands=1, clim=[None, None], ratio=1.0,
                      logarithm=False, gamma=2.0, numOfColor=250,
                      cmapName="jet", legend=False, titleString="", fontSize=10,
                      numOfTicks=5):
@@ -622,12 +627,12 @@ class Nansat():
                 if the size is 3, RGB image is created based on the three bands.
                 Then the first element is Red, the second is Green,
                 and the third is Blue.
-            clim : list with two elements, default = ["",""]
+            clim : list with two elements, default = [None, None]
                 the first element fix the minumum pixel value and
                 the second value fix the maximum pixel value
                 each element is int or list with 3 elements (for three bands)
                 or "" or None.
-                if None is given, clim is fetched from WKV.
+                if None is given (default), clim is fetched from WKV.
                 if "" is given, clim is computed based on ratio.
             ratio : float (0.0<ratio<1.0) or a list, default=1.0
                 if list is given, it has three elements in [0.0, 1.0].
