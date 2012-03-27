@@ -688,13 +688,9 @@ class Nansat():
                     climVct = np.array([[float(defValue[0])], 
                         [float(defValue[1])]]).reshape(1,2)
                     climMtx = np.append(climMtx, climVct, axis=0)
-                    print climMtx
                 except:
                     pass
             clim = climMtx
-
-        print clim
-        print climMtx
 
         if clim == 'hist' or (clim is None and climMtx is None):
             # Use histogram if requested, or if not available from WKV
