@@ -23,17 +23,8 @@ import sys
 import time
 from random import choice
 
-import fnmatch
-import Image
-import ImageDraw
-import ImageFont
-import ImageOps
-import matplotlib.cm as cm
 import numpy as np
-from math import log10
 from math import floor
-from scipy.misc import toimage, pilutil
-from scipy.stats import cumfreq
 from xml.etree.ElementTree import XML, ElementTree, tostring
 
 import matplotlib.pyplot as plt
