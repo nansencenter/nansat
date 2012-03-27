@@ -47,7 +47,7 @@ class Figure():
         Modifies
         --------
         self.sizeX, self.sizeY : int
-            X and Y sizes of the image
+            width and height of the image
         self.cmin, self.cmax : float
             minimum and maximum pixel values of the image
         self.gamma : float
@@ -73,9 +73,10 @@ class Figure():
             self.array = array.reshape(1, array.shape[0], array.shape[1])
         else:
             self.array = array
-
-        self.sizeX = self.array.shape[2]
-        self.sizeY = self.array.shape[1]
+        
+        # note swaping of axis by PIL
+        self.width = self.array.shape[2]
+        self.height = self.array.shape[1]
 
         self.cmin = None
         self.cmax = None
@@ -136,8 +137,8 @@ class Figure():
 
         '''
         # create a ratio list for each band
-        if isinstance(ratio, float):
-            ratioList = np.ones(self.array.shape[0])*ratio
+        if isinstance(ratio, float) or isinstance(ratio, int):
+            ratioList = np.ones(self.array.shape[0])*float(ratio)
         else:
             ratioList = []
             for iRatio in range(self.array.shape[0]):
@@ -201,7 +202,7 @@ class Figure():
                                        (self.cmax[iBand] - self.cmin[iBand]))
         self.array = self.array.astype(np.uint8)
 
-    def create_legend(self, numOfTicks=5, longName=None, units=None,
+    def create_legend(self, numOfTicks=5, longName="", units="",
                       titleString="", fontSize=10):
         ''' self.legend is replaced from None to PIL image
 
@@ -236,8 +237,8 @@ class Figure():
         NAME_LOCATION_Y = 0.3 # percentage of the legend height
 
         # create a pilImage for the legend
-        self.pilImgLegend = Image.new("P", (self.sizeX,
-                                      int(self.sizeY * LEGEND_HEIGHT)), 255)
+        self.pilImgLegend = Image.new("P", (self.width,
+                                      int(self.height * LEGEND_HEIGHT)), 255)
         draw = ImageDraw.Draw(self.pilImgLegend)
 
         # set fonts for Legend
@@ -291,10 +292,6 @@ class Figure():
         font = ImageFont.truetype(fileName_font, fontSize)
 
         # draw longname and units
-        if longName is None:
-            longName = ""
-        if units is None:
-            units = ""
         caption = longName + " / " + units
         box = (int(self.pilImgLegend.size[0]*NAME_LOCATION_X),
                int(self.pilImgLegend.size[1]*NAME_LOCATION_Y))
@@ -332,44 +329,30 @@ class Figure():
         self.array : replace to None
 
         '''
-        # if three bands are given, create a new PIL image with RGB mode
+        
+        # if legend is created, expand array with empty space below the data
+        if self.pilImgLegend is not None:
+            appendArray = 255*np.ones((self.array.shape[0],
+                                       self.pilImgLegend.size[1],
+                                       self.width), 'uint8')
+            self.array = np.append(self.array, appendArray, 1)
+        
+        # create a new PIL image from three bands (RGB) or from one (palette)
         if self.array.shape[0] == 3:
-            # if self.pilImgLegend is None,
-            # create a PILimage whose size is same as image.
-            if self.pilImgLegend is None:
-                self.pilImg = Image.new("RGB", (self.sizeX, self.sizeY))
-            # if self.pilImgLegend is given,
-            # create a PILimage whose size is (image + legend).
-            else:
-                self.pilImg = Image.new("RGB", (self.sizeX,
-                                        self.sizeY+self.pilImgLegend.size[1]))
-                self.pilImg.paste(self.pilImgLegend, (0, self.sizeY))
-            # paste RGB image onto the empty self.pilImgLegend
-            self.pilImg.paste(Image.merge("RGB",
-                             (Image.fromarray(self.array[0, :, :]),
-                              Image.fromarray(self.array[1, :, :]),
-                              Image.fromarray(self.array[2, :, :]))), (0, 0))
-
+            self.pilImg = Image.merge("RGB",(
+                            Image.fromarray(self.array[0, :, :]),
+                            Image.fromarray(self.array[1, :, :]),
+                            Image.fromarray(self.array[2, :, :])))
         else:
-            # create a palette
             myPalette = self._create_palette(cmapName)
-            if self.pilImgLegend is not None:
-                # if self.pilImgLegend is given, self.array is extended
-                extentArray = np.append(self.array[0, :, :],
-                              np.ones((self.pilImgLegend.size[1],
-                              self.pilImgLegend.size[0]), np.uint8), 0)
-                self.array = extentArray.reshape(1, extentArray.shape[0],
-                                                 extentArray.shape[1])
-                extentArray = None
-            # create a pilImg from self.array and put color with the palette
             self.pilImg = Image.fromarray(self.array[0, :, :])
             self.pilImg.putpalette(myPalette)
-            if self.pilImgLegend is not None:
-                # paste the legend on the pilImg
-                self.pilImg.paste(self.pilImgLegend, (0, self.sizeY))
-                # replace self.sizeX and self.sizeY
-                self.sizeX = self.array.shape[2]
-                self.sizeY = self.array.shape[1]
+        
+        # append legend
+        if self.pilImgLegend is not None:
+            self.pilImg.paste(self.pilImgLegend, (0, self.height))
+        
+        # remove array from memory
         self.array = None
 
     def save(self, fileName):
