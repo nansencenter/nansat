@@ -247,8 +247,8 @@ class Nansat():
             for elem in element.iter("SimpleSource"):
                 elem.tag = "AveragedSource"
             for elem in element.iter("ComplexSource"):
-                # NB: replacing ComplexSource with AveragedSource may 
-                # lead to loss of Look-Up-Table elements. 
+                # NB: replacing ComplexSource with AveragedSource may
+                # lead to loss of Look-Up-Table elements.
                 # Should check this in the future if LUT should be used
                 elem.tag = "AveragedSource"
 
@@ -666,7 +666,7 @@ class Nansat():
             for iBand in bands:
                 iArray = self.__getitem__(iBand)
                 array = np.append(array, iArray)
-            array = array.reshape(len(bands), int(self.vrt.RasterYSize), 
+            array = array.reshape(len(bands), int(self.vrt.RasterYSize),
                 int(self.vrt.RasterXSize))
         else:
             array = self.__getitem__(bands)
@@ -678,21 +678,22 @@ class Nansat():
         fig = Figure(array)
         array = None
 
-        climMtx = None
+        # create an empty climMtx
+        climMtx = np.array([[],[]]).reshape(0,2)
+
         if clim is None:
             for i, iBand in enumerate(bands):
                 try:
-                    climMtx = np.array([[],[]]).reshape(0,2)
                     defValue = (self.vrt.GetRasterBand(iBand).
                         GetMetadataItem("minmax").split(" "))
-                    climVct = np.array([[float(defValue[0])], 
+                    climVct = np.array([[float(defValue[0])],
                         [float(defValue[1])]]).reshape(1,2)
                     climMtx = np.append(climMtx, climVct, axis=0)
                 except:
-                    pass
-            clim = climMtx
+                    clim = 'hist'
+                    break
 
-        if clim == 'hist' or (clim is None and climMtx is None):
+        if clim == 'hist':
             # Use histogram if requested, or if not available from WKV
             climMtx = fig.clim_from_histogram(ratio)
 
