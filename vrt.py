@@ -190,13 +190,6 @@ class VRT():
                 dstRasterBand = self._put_metadata(dstRasterBand,
                                      metaDict[bandNo - 1]["parameters"])
 
-            # set statistics
-            vmin, vmax, vmean, vstd = self.dataset.GetRasterBand(\
-                                        metaDict[bandNo - 1]['sourceBand']).\
-                                        GetStatistics(True, True)
-            self.vsiDataset.GetRasterBand(iBand+1).\
-                            SetStatistics(vmin, vmax, vmean, vstd)
-
             # get scale/offset from metaDict (or set default 1/0)
             if 'scale' in metaDict[bandNo - 1]:
                 scaleRatio = metaDict[bandNo - 1]['scale']

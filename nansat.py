@@ -326,7 +326,6 @@ class Nansat():
             _specify_bandNo: specify a band number based on the bandID list
 
         '''
-
         # If bandID is given, bandNo is specified here.
         if bandID is not None:
             bandNo = self._specify_bandNo(bandID)
@@ -587,24 +586,21 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName=None, bands=1, clim=None, ratio=1.0,
-                     logarithm=False, gamma=2.0, numOfColor=250,
-                     cmapName="jet", legend=False, titleString="", fontSize=10,
-                     numOfTicks=5):
+    def write_figure(self, fileName=None, bands=1, clim=None, logarithm=False, 
+                    legend=False, **kwargs):
 
         '''Save a raster band to a figure in grapfical format.
-        If fileName is None, the Figure object image is returned
 
         Get numpy array from the band(s) and band information specified
         either by given band number or band id.
         -- If three bands are given, merge them and create PIL image.
-        -- If one band is given, adjust the array brightness and contrast
-         using the given min/max or histogram ratio.
-         If logarithm is True, the array is converted based on tone curve.
-         Create PIL images for the image and colorbar.
-        Create and output PIL image and paste the image and legend
-        (and the colorbar).
-        Save the PIL output image in PNG.
+        -- If one band is given, create indexed image 
+        Create Figure object and:
+        Adjust the array brightness and contrast using the given min/max or
+        histogram.
+        Apply logarithmic scaling of color tone.
+        Generate and append legend.
+        Save the PIL output image in PNG or any other graphical fornat.
 
         Parameters
         ----------
@@ -623,28 +619,13 @@ class Nansat():
                 [min, max] : min and max are numbers, or
                 [[min, min, min], [max, max, max]]: three bands used
                 'hist' : a histogram is used to calculate min and max values
-            ratio : float (0.0<ratio<1.0) or a list, default=1.0
-                if list is given, it has three elements in [0.0, 1.0].
             logarithm : boolean, defult = False
                 If True, tone curve is used to convert pixel values.
                 If False, linear.
-            gamma : float ( > 0.0), default = 2.0
-                If logarithm is True,
-                gamma is abs coefficient of the tone curve
-            numOfColor : int, default = 250
-                number of color palette used for the figure.
-            cmapName : string, default = "jet"
-                colormap name. it is same as matplotlib colormaps.
             legend: boolean, default = False
                 if True, information as textString, colorbar, longName and
                 units are added in the figure.
-            titleString : string, default = ""
-                if legend is True and title is given, it is drawn in the figure.
-            fontSize : int, defualt =10
-                if legend is True and title is given, it fix the size of title.
-            numOfTicks: int, default=5
-                if legend is True, numOfTicks is the number of scale of
-                the color bar.
+            **kwargs : parameters for Figure(). See figure.Figure() for details.
 
         Modifies
         --------
@@ -652,11 +633,22 @@ class Nansat():
 
         Returns
         ------
-            if fileName is None, a Figure object
-
+            Figure object
+        
+        Example:
+        --------
+        #write only indexed image, color limits from WKV or from histogram
+        n.write_figure('test.jpg')
+        #write only RGB image, color limits from histogram
+        n.write_figure('test_rgb_hist.jpg', clim='hist', bands=[1, 2, 3])
+        #write indexed image, apply log scaling and gamma correction, 
+        #add legend and type in title 'Title', increase font size and put 15 tics
+        n.write_figure('r09_log3_leg.jpg', logarithm=True, legend=True, gamma=3,
+                                titleString='Title', fontSize=30, numOfTicks=15)
 
         See also
         ------
+        Figure()
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
@@ -672,8 +664,8 @@ class Nansat():
             array = self.__getitem__(bands)
             bands = [bands]
 
-        # create a fig object
-        fig = Figure(array)
+        # create a fig object and parse input parameters
+        fig = Figure(array, **kwargs)
         array = None
 
         # try to get clim from WKV if it is not given
@@ -690,57 +682,54 @@ class Nansat():
                 clim[0].append(float(defValue[0]))
                 clim[1].append(float(defValue[1]))
         
+        # Estimate color min/max from histogram
         if clim == 'hist':
-            # Use histogram if requested, or if not available from WKV
-            clim = fig.clim_from_histogram(ratio)
+            clim = fig.clim_from_histogram()
         
         # modify clim to the proper shape [[min], [max]]
         # or [[min, min, min], [max, max, max]]
-        if len(clim) == 2 and \
-           ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and \
-           ((isinstance(clim[1], float)) or (isinstance(clim[1], int))):
+        if (len(clim) == 2 and
+           ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and
+           ((isinstance(clim[1], float)) or (isinstance(clim[1], int)))):
             clim = [[clim[0]], [clim[1]]]
 
         # if the len(clim) is not same as len(bands), the 1st element is used.
         for i in range(2):
             if len(clim[i]) != len(bands):
                 clim[i] = [clim[i][0]]*len(bands)
-                
-        # set cmin and cmax attributes
-        fig.set_clim(clim)
 
         # Clip array with cmin and cmax
-        fig.clip()
+        fig.clip(cmin=clim[0], cmax=clim[1])
 
         # apply logarithm
         if logarithm:
-            fig.apply_logarithm(gamma = gamma)
+            fig.apply_logarithm()
 
-        # convert to uint8 [0-numOfColor]
-        fig.convert_palettesize(numOfColor)
+        # convert to uint8
+        fig.convert_palettesize()
 
-        # add legend array
+        # add legend
         if legend:
             # get longName and units from vrt
             longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
             units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
-            # if thy doen;t exist make empty strings
+            # if they don't exist make empty strings
             if longName is None:
                 longName = ''
             if units is None:
                 units = ''
 
-            fig.create_legend(numOfTicks=numOfTicks, titleString=titleString,
-                              fontSize=fontSize, longName=longName, units=units)
+            fig.create_legend(caption=longName+' / '+units)
 
-        # add legend array
-        fig.create_pilImage(cmapName=cmapName)
+        # create PIL image
+        fig.create_pilImage()
 
-        # finally create PIL, merge with legend, save
-        if fileName is None:
-            return fig
-        else:
+        # finally save to a image file
+        if fileName is not None:
             fig.save(fileName)
+
+        return fig
+            
 
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
@@ -786,11 +775,13 @@ class Nansat():
         # if none of the mappers worked - None is returned
         vrtDataset = None
         # For debugging:
-        #mapper_module = __import__('mapper_radarsat2')
-        #vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
-        #                        self.fileName, self.dataset,
-        #                        self.metadata,
-        #                        bandList).vsiDataset
+        """
+        mapper_module = __import__('mapper_modisL1')
+        vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
+                                self.fileName, self.dataset,
+                                self.metadata,
+                                bandList).vsiDataset
+        """
         # Otherwise
         for iMapper in self.mapperList:
             try:
