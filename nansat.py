@@ -619,9 +619,10 @@ class Nansat():
                 Then the first element is Red, the second is Green,
                 and the third is Blue.
             clim : list with two elements or 'hist' to specify range of colormap
-                [min, max] : min and max are numbers, or lists with 3 elements in the case of three bands
-                'hist' : a histogram is used to calculate corresponding min and max values
-                if clim is None (default), min and max values are fetched from WKV, with 'hist' as fallback
+                None (default): min/max values are fetched from WKV, fallback-'hist'
+                [min, max] : min and max are numbers, or
+                [[min, min, min], [max, max, max]]: three bands used
+                'hist' : a histogram is used to calculate min and max values
             ratio : float (0.0<ratio<1.0) or a list, default=1.0
                 if list is given, it has three elements in [0.0, 1.0].
             logarithm : boolean, defult = False
@@ -630,7 +631,7 @@ class Nansat():
             gamma : float ( > 0.0), default = 2.0
                 If logarithm is True,
                 gamma is abs coefficient of the tone curve
-            numOfColo : int, default = 250
+            numOfColor : int, default = 250
                 number of color palette used for the figure.
             cmapName : string, default = "jet"
                 colormap name. it is same as matplotlib colormaps.
@@ -647,8 +648,7 @@ class Nansat():
 
         Modifies
         --------
-            if fileName is specified, save a raster band
-            to a Figure in grapfical format
+            if fileName is specified, creates image file
 
         Returns
         ------
@@ -672,52 +672,42 @@ class Nansat():
             array = self.__getitem__(bands)
             bands = [bands]
 
-        print array.min(), array.max()
-
         # create a fig object
         fig = Figure(array)
         array = None
 
-        # create an empty climMtx
-        climMtx = np.array([[],[]]).reshape(0,2)
-
+        # try to get clim from WKV if it is not given
+        # if failed clim will be evaluated from histogram
         if clim is None:
+            clim = [[], []]
             for i, iBand in enumerate(bands):
                 try:
                     defValue = (self.vrt.GetRasterBand(iBand).
-                        GetMetadataItem("minmax").split(" "))
-                    climVct = np.array([[float(defValue[0])],
-                        [float(defValue[1])]]).reshape(1,2)
-                    climMtx = np.append(climMtx, climVct, axis=0)
+                                GetMetadataItem("minmax").split(" "))
                 except:
                     clim = 'hist'
                     break
-
+                clim[0].append(float(defValue[0]))
+                clim[1].append(float(defValue[1]))
+        
         if clim == 'hist':
             # Use histogram if requested, or if not available from WKV
-            climMtx = fig.clim_from_histogram(ratio)
-
-        # modify clim to the proper shape
+            clim = fig.clim_from_histogram(ratio)
+        
+        # modify clim to the proper shape [[min], [max]]
+        # or [[min, min, min], [max, max, max]]
         if len(clim) == 2 and \
            ((isinstance(clim[0], float)) or (isinstance(clim[0], int))) and \
            ((isinstance(clim[1], float)) or (isinstance(clim[1], int))):
             clim = [[clim[0]], [clim[1]]]
-            # create an empty climMtx
-            climMtx = np.array([[],[]]).reshape(0,2)
 
-        # if clim=[list list], Replace the elements of climMtx from clim.
-        # if the len(clim) is not enough, the 1st element is used.
-        if len(clim) == 2 and \
-           (isinstance(clim[0], list)) and (isinstance(clim[1], list)):
-            for i in range(fig.array.shape[0]):
-                try:
-                    climVct = np.array([[clim[0][i]], [clim[1][i]]]).reshape(1,2)
-                except:
-                    climVct = np.array([[clim[0][0]], [clim[1][0]]]).reshape(1,2)
-                climMtx = np.append(climMtx, climVct, axis=0)
-
+        # if the len(clim) is not same as len(bands), the 1st element is used.
+        for i in range(2):
+            if len(clim[i]) != len(bands):
+                clim[i] = [clim[i][0]]*len(bands)
+                
         # set cmin and cmax attributes
-        fig.set_clim(climMtx)
+        fig.set_clim(clim)
 
         # Clip array with cmin and cmax
         fig.clip()
@@ -734,6 +724,11 @@ class Nansat():
             # get longName and units from vrt
             longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
             units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
+            # if thy doen;t exist make empty strings
+            if longName is None:
+                longName = ''
+            if units is None:
+                units = ''
 
             fig.create_legend(numOfTicks=numOfTicks, titleString=titleString,
                               fontSize=fontSize, longName=longName, units=units)

@@ -148,21 +148,20 @@ class Figure():
                     ratioList.append(ratio[0])
 
         # create a 2D array and set min and max values
-        clim = np.zeros([self.array.shape[0],2])
+        clim = [[], []]
         for iBand in range(self.array.shape[0]):
-            if ratioList[iBand] == 1.0:
-                clim[iBand] = (self.array[iBand, :, :].min(),
-                               self.array[iBand, :, :].max())
+            if (ratioList[iBand] >= 1.0 or
+                ratioList[iBand] <= 0.0):
+                clim[0] = [self.array[iBand, :, :].min()]
+                clim[1] = [self.array[iBand, :, :].max()]
             else:
                 hist, bins = self._get_histogram(iBand)
                 cumhist = hist.cumsum()
                 cumhist /= cumhist[-1]
-                if ratioList[iBand] < 0.0 or ratioList[iBand] > 1.0:
-                    ratioList[iBand] = 1.0
-                clim[iBand] = (bins[len(cumhist[cumhist<
-                               (1-ratioList[iBand])/2])],
-                               bins[len(cumhist[cumhist<
-                               1-((1-ratioList[iBand])/2)])])
+                clim[0].append(bins[len(cumhist[cumhist <
+                               (1 - ratioList[iBand]) / 2])])
+                clim[1].append(bins[len(cumhist[cumhist <
+                               1 - ((1 - ratioList[iBand]) / 2)])])
         return clim
 
     def clip(self):
@@ -395,8 +394,8 @@ class Figure():
             maximum values for each image
 
         '''
-        self.cmin = clim[:, 0]
-        self.cmax = clim[:, 1]
+        self.cmin = clim[0]
+        self.cmax = clim[1]
 
     def _create_palette(self, cmapName):
         '''Create a palette based on Matplotlib colormap name

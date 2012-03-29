@@ -45,7 +45,7 @@
 		<standard_name>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</standard_name>
 		<long_name>Upward spectral radiance</long_name>
 		<units>W m-2 m-1 sr-1</units>
-        <minmax>0.000 1.000</minmax>
+        <minmax>0.000 500</minmax>
         <colormap>jet</colormap>
 	</wkv>
 	<wkv>
