@@ -82,7 +82,7 @@ class Figure():
         caption, string
             '', caption of the legend (2nd line, usually long name and units)
         fontSize, int
-            10, size of the font of title, caption and ticks
+            12, size of the font of title, caption and ticks
 
         Advanced parameters:
         --------------------
@@ -150,7 +150,7 @@ class Figure():
         self.d['numOfTicks'] = 5
         self.d['titleString'] = ''
         self.d['caption'] = ''
-        self.d['fontSize'] = 10
+        self.d['fontSize'] = 12
 
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5

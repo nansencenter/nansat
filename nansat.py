@@ -719,7 +719,7 @@ class Nansat():
             if units is None:
                 units = ''
 
-            fig.create_legend(caption=longName+' / '+units)
+            fig.create_legend(caption=longName + ' [' + units + ']')
 
         # create PIL image
         fig.create_pilImage()
