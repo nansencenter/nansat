@@ -236,14 +236,14 @@ class Figure():
                     ratioList.append(ratio[iRatio])
                 except:
                     ratioList.append(ratio[0])
-
+        
         # create a 2D array and set min and max values
         clim = [[], []]
         for iBand in range(self.array.shape[0]):
             if (ratioList[iBand] >= 1.0 or
                 ratioList[iBand] <= 0.0):
-                clim[0] = [self.array[iBand, :, :].min()]
-                clim[1] = [self.array[iBand, :, :].max()]
+                clim[0].append(self.array[iBand, :, :].min())
+                clim[1].append(self.array[iBand, :, :].max())
             else:
                 hist, bins = self._get_histogram(iBand)
                 cumhist = hist.cumsum()
