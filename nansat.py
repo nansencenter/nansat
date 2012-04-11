@@ -29,6 +29,8 @@ from xml.etree.ElementTree import XML, ElementTree, tostring
 
 import matplotlib.pyplot as plt
 
+import logging
+
 try:
     from osgeo import gdal, osr
 except ImportError:
@@ -74,12 +76,13 @@ class Nansat():
         VRT file which points to orignal file with satellite data and
         is saved in an XML format in memory (GDAL VSI).
     '''
-    def __init__(self, fileName, mapperName='', bandList=None):
+    def __init__(self, fileName, mapperName='', bandList=None, logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
         Read metadata,
         Generate GDAL VRT file with mapping of variables in memory
+        Create logger
 
         Parameters
         ----------
@@ -91,6 +94,8 @@ class Nansat():
         bandList : list, optional
             band numbers to fetch.
             If it is None, all bands in the file are fetched.
+        logLevel: int, optional, default: logging.DEBUG (30)
+            Level of logging. See: http://docs.python.org/howto/logging.html
 
         Modifies
         --------
@@ -124,6 +129,8 @@ class Nansat():
 
         '''
         # SET SOME CONSTANTS
+        self.logger = self._add_logger(logLevel=logLevel)
+        
         # all available mappers
         self.mapperList = [
               'mapper_ASAR.py',
@@ -136,6 +143,8 @@ class Nansat():
               'mapper_seawifsL2.py',
               #'mapper_MOD44W.py',
               ]
+        
+        self.logger.info('Mappers: '+str(self.mapperList))
 
         # names of raw and warped VRT files in memory
         # make random string and append to fileNames
@@ -148,6 +157,9 @@ class Nansat():
 
         # set input file name
         self.fileName = fileName
+        self.logger.info('fileNames: %s, %s, %s' % (self.rawVRTFileName,
+                                                    self.warpedVRTFileName,
+                                                    self.fileName))
 
         # set input GDAL dataset
         self.dataset = gdal.Open(self.fileName)
@@ -164,7 +176,9 @@ class Nansat():
         self.warpedVRT = None
         # Current VRT
         self.vrt = self.rawVRT
-
+        
+        self.logger.debug('__init__(): done')
+        
     def __getitem__(self, bandNo):
         ''' Returns the band as a NumPy array, by overloading []
 
@@ -735,6 +749,32 @@ class Nansat():
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
 
+    def _add_logger(self, logLevel=30):
+        ''' Creates and returns logger with default formatting for Nansat '''
+
+        # create (or take already existing) logger
+        # with default logging level WARNING
+        logger = logging.getLogger('Nansat')
+        logger.setLevel(logLevel)
+        
+        # if logger already exits, default stream handler was already added
+        # otherwise create and add a new handler
+        if len(logger.handlers) == 0:
+            # create console handler and set level to debug
+            ch = logging.StreamHandler()
+            ch.setLevel(logLevel)
+    
+            # create formatter
+            formatter = logging.Formatter('%(asctime)s|%(name)s|%(levelname)s|%(message)s', datefmt='%I:%M:%S')
+    
+            # add formatter to ch
+            ch.setFormatter(formatter)
+    
+            # add ch to logger
+            logger.addHandler(ch)
+        
+        return logger
+
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
 
@@ -787,6 +827,7 @@ class Nansat():
             try:
                 #get rid of .py extension
                 iMapper = iMapper.replace('.py', '')
+                self.logger.debug('Trying %s...' % iMapper)
                 #import mapper
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
@@ -797,9 +838,10 @@ class Nansat():
                 break
             except:
                 pass
+        
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if vrtDataset is None:
-            print 'No mapper fits!'
+            self.logger.info('No mapper fits!')
             vrtDataset = self.vrtDriver.CreateCopy(self.rawVRTFileName,
                                                    self.dataset)
         return vrtDataset

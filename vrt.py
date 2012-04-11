@@ -18,6 +18,7 @@
 
 import os
 from string import Template
+import logging
 
 from xml.etree.ElementTree import ElementTree
 
@@ -52,6 +53,7 @@ class VRT():
         self.metadata = metadata
         self.rawVRTName = rawVRTName
         self.dataset = dataset
+        self.logger = logging.getLogger('Nansat')
 
     def _add_pixel_function(self, pixelFunction, bands, fileName, metaDict):
         ''' Generic function for mappers to add PixelFunctions

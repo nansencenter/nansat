@@ -8,7 +8,7 @@
 # Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import *
+from vrt import VRT, gdal
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
@@ -26,9 +26,10 @@ class Mapper(VRT):
         
         #should raise error in case of not MODIS_L1
         mResolution = modisResolutions[metadata["SHORTNAME"]];
+        self.logger.info('resolution: %s' % mResolution)
         
         subDsString = 'HDF4_EOS:EOS_SWATH:"%s":MODIS_SWATH_Type_L1B:%s'
-        
+                
         #provide all mappings
         metaDict250 = [
         {'source': subDsString % (fileName, 'EV_250_RefSB'), 'sourceBand': 1, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters':{'wavelength': '645'}},
@@ -103,7 +104,8 @@ class Mapper(VRT):
         #set number of bands
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
-
+        
+        self.logger.debug('metaDict: %s' % metaDict)
         self._createVRT(metaDict, vrtBandList);
 
         return
