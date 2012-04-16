@@ -240,17 +240,20 @@ class Figure():
         # create a 2D array and set min and max values
         clim = [[], []]
         for iBand in range(self.array.shape[0]):
-            if (ratioList[iBand] >= 1.0 or
-                ratioList[iBand] <= 0.0):
-                clim[0].append(self.array[iBand, :, :].min())
-                clim[1].append(self.array[iBand, :, :].max())
-            else:
-                hist, bins = self._get_histogram(iBand)
-                cumhist = hist.cumsum()
-                cumhist /= cumhist[-1]
-                clim[0].append(bins[len(cumhist[cumhist <
+            clim[0].append(self.array[iBand, :, :].min())
+            clim[1].append(self.array[iBand, :, :].max())
+            # if 0<ratio<1 try to compute histogram
+            if (ratioList[iBand] > 0 or ratioList[iBand] < 1):
+                try:
+                    hist, bins = self._get_histogram(iBand)
+                except:
+                    print 'Unable to compute histogram'
+                else:
+                    cumhist = hist.cumsum()
+                    cumhist /= cumhist[-1]
+                    clim[0].append(bins[len(cumhist[cumhist <
                                (1 - ratioList[iBand]) / 2])])
-                clim[1].append(bins[len(cumhist[cumhist <
+                    clim[1].append(bins[len(cumhist[cumhist <
                                1 - ((1 - ratioList[iBand]) / 2)])])
         return clim
 

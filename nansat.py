@@ -141,7 +141,8 @@ class Nansat():
               'mapper_ncep.py',
               'mapper_radarsat2.py',
               'mapper_seawifsL2.py',
-              #'mapper_MOD44W.py',
+              'mapper_MOD44W.py',
+              'mapper_modisL2NRT.py'
               ]
         
         self.logger.info('Mappers: '+str(self.mapperList))
@@ -276,7 +277,7 @@ class Nansat():
                 lin = rasterYSize
             elem.set("Pixel", str(pxl))
             elem.set("Line", str(lin))
-
+        
         # Overwrite element
         # Write the modified elemements into VSI-file
         self._read_write_vsi_file(self.rawVRTFileName, tostring(element))
@@ -424,7 +425,6 @@ class Nansat():
                                    self.rawVRT, srcWKT,
                                    dstDomain.memDataset.GetProjection(),
                                    resamplingAlg)
-
         else:
             # Erroneous input options
             raise OptionError("Nansat.reproject(): "
@@ -671,6 +671,7 @@ class Nansat():
             array = np.array([])
             for iBand in bands:
                 iArray = self.__getitem__(iBand)
+                self.logger.debug(iArray.shape)
                 array = np.append(array, iArray)
             array = array.reshape(len(bands), int(self.vrt.RasterYSize),
                 int(self.vrt.RasterXSize))
@@ -816,7 +817,7 @@ class Nansat():
         vrtDataset = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL1')
+        mapper_module = __import__('mapper_modisL2NRT')
         vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
                                 self.fileName, self.dataset,
                                 self.metadata,
@@ -838,7 +839,7 @@ class Nansat():
                 break
             except:
                 pass
-        
+        # """
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if vrtDataset is None:
             self.logger.info('No mapper fits!')
@@ -891,13 +892,16 @@ class Nansat():
         elem = tree.find("GeoTransform")
         elem.text = geoTransformString
         # replace DstGeoTranform
+        #elem = tree.find("GDALWarpOptions/Transformer/ApproxTransformer/BaseTransformer/GenImgProjTransformer/DstGeoTransform")
         elem = tree.find("GDALWarpOptions/Transformer/"
                          "GenImgProjTransformer/DstGeoTransform")
         elem.text = geoTransformString
 
+        # get inverse geotransform
+        #elem = tree.find("GDALWarpOptions/Transformer/ApproxTransformer/BaseTransformer/GenImgProjTransformer/DstInvGeoTransform")
         elem = tree.find("GDALWarpOptions/Transformer/"
                          "GenImgProjTransformer/DstInvGeoTransform")
-        # get inverse geotransform
+
         invGeotransform = gdal.InvGeoTransform(geoTransform)
         # convert proper string style and set to the DstInvGeoTransform element
         elem.text = str(invGeotransform[1]).\

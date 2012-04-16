@@ -84,6 +84,13 @@
         <colormap>jet</colormap>
 	</wkv>
 	<wkv>
+		<standard_name>volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water</standard_name>
+		<long_name>Kd_490</long_name>
+		<units>m-1</units>
+        <minmax>0.000 2.000</minmax>
+        <colormap>jet</colormap>
+	</wkv>
+	<wkv>
 		<standard_name>sensor_zenith_angle</standard_name>
 		<long_name>Sensor Zenith Angle</long_name>
 		<units>degrees</units>
