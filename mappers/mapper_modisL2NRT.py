@@ -37,7 +37,7 @@ class Mapper(VRT):
         'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'parameters': {'wavelength': '490'} },
         'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_1', 'case': 'I'} },
         'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },
-        'l2_flags': {'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },
+        'l2_flags': {'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags', 'band_data_type': '5', 'source': 'simple'} },
         }
         
         # loop through available bands and generate metaDict (non fixed)

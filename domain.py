@@ -618,7 +618,8 @@ class Domain():
         rcVector2 = [[], []]
         # loop for pixels and lines
         for n in range(0, 2):
-            step = sizes[n] / nPoints
+            step = max(1, sizes[n] / nPoints)
+            print step
             rcVector1[n] = range(0, sizes[n], step)[0:nPoints]
             rcVector1[n].append(sizes[n])
             rcVector2[n] = rcVector1[n][:]
@@ -856,3 +857,13 @@ class Domain():
         bearing_center = initial_bearing(
                     startlon[0], startlat[0], endlon[0], endlat[0])
         return bearing_center
+
+    def shape(self):
+        '''Return Numpy-like shape of Domain object (ySize, xSize)
+        
+        Returns
+        -------
+        shape: tuple of two INT
+            Numpy-like shape of Domain object (ySize, xSize)
+        '''
+        return self.memDataset.RasterYSize, self.memDataset.RasterXSize

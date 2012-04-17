@@ -180,17 +180,28 @@ class VRT():
 
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
             srcDataType = srcRasterBand.DataType
-
+            
+            if 'parameters' in metaDict[bandNo - 1]:
+                bandMetaParameters = metaDict[bandNo - 1]['parameters']
+            else:
+                bandMetaParameters = {}
+            
+            # get band data type (default or from metaDict)
+            if 'band_data_type' in bandMetaParameters:
+                bandDataType = int(bandMetaParameters['band_data_type'])
+            else:
+                bandDataType = gdal.GDT_Float32
+            
+            # add a band to the VRT dataset
+            self.vsiDataset.AddBand(bandDataType)
             # set metadata for each destination raster band
             dstRasterBand = self.vsiDataset.GetRasterBand(iBand + 1)
             # set metadata from WKV
             wkvName = metaDict[bandNo - 1]["wkv"]
             dstRasterBand = self._put_metadata(dstRasterBand,
                                                 self._get_wkv(wkvName))
-            # set metadata from parameters (if exist)
-            if "parameters" in metaDict[bandNo - 1]:
-                dstRasterBand = self._put_metadata(dstRasterBand,
-                                     metaDict[bandNo - 1]["parameters"])
+            # set metadata from 'parameters'
+            dstRasterBand = self._put_metadata(dstRasterBand, bandMetaParameters)
 
             # get scale/offset from metaDict (or set default 1/0)
             if 'scale' in metaDict[bandNo - 1]:
@@ -211,6 +222,18 @@ class VRT():
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
                               DataType=srcDataType,
                               ScaleOffset=scaleOffset, ScaleRatio=scaleRatio)
+            
+            if 'source' in bandMetaParameters:
+                if bandMetaParameters['source'] == 'simple':
+                    # create band source metadata
+                    bandSource = self.SimpleSource.\
+                              substitute(XSize=srcRasterXSize,
+                              YSize=srcRasterYSize,
+                              Dataset=metaDict[bandNo-1]['source'],
+                              SourceBand=metaDict[bandNo-1]['sourceBand'],
+                              BlockXSize=xBlockSize, BlockYSize=yBlockSize,
+                              DataType=srcDataType)
+                    
 
             # set band source metadata
             dstRasterBand.SetMetadataItem("source_0", bandSource,
@@ -255,8 +278,7 @@ class VRT():
         # create VSI VRT dataset
         vrtDrv = gdal.GetDriverByName("VRT")
         self.vsiDataset = vrtDrv.Create(self.rawVRTName,
-                                   srcRasterXSize, srcRasterYSize,
-                                   len(vrtBandList), gdal.GDT_Float32)
+                                        srcRasterXSize, srcRasterYSize, bands=0)
 
         # set geo-metadata in the VSI VRT dataset
         self.vsiDataset.SetGCPs(srcGCPs, srcGCPProjection)
