@@ -357,6 +357,18 @@ class Domain():
                                     pad_inches=padding)
         plt.close('all')
 
+    def get_geolocation_grids(self):
+        '''Get longitude and latitude grids representing the full data grid'''
+        longitude = []
+        latitude = []
+        for i in range(self.memDataset.RasterXSize):
+            [lo,la] = self._transform_points( [i]*self.memDataset.RasterYSize, 
+                    range(self.memDataset.RasterYSize) )
+            longitude.append(lo)
+            latitude.append(la)
+        return [longitude,latitude]
+
+
     def _convert_extentDic(self, dstWKT, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
 
