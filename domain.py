@@ -631,7 +631,6 @@ class Domain():
         # loop for pixels and lines
         for n in range(0, 2):
             step = max(1, sizes[n] / nPoints)
-            print step
             rcVector1[n] = range(0, sizes[n], step)[0:nPoints]
             rcVector1[n].append(sizes[n])
             rcVector2[n] = rcVector1[n][:]

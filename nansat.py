@@ -906,6 +906,15 @@ class Nansat():
         # convert proper string style and set to the DstInvGeoTransform element
         elem.text = str(invGeotransform[1]).\
                         translate(maketrans("", ""), "()")
+        
+        # if geolocation arrays were used also modify the Block Size
+        elem = tree.find("GDALWarpOptions/Transformer/"
+                         "GenImgProjTransformer/SrcGeoLocTransformer")
+        if elem is not None:
+            elem = tree.find('BlockXSize')
+            elem.text = str(rasterXSize)
+            elem = tree.find('BlockYSize')
+            elem.text = str(rasterYSize)
 
         # Overwrite element
         element = tree.getroot()

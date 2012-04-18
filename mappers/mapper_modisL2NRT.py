@@ -87,7 +87,7 @@ class Mapper(VRT):
         
         self.logger.debug('metaDict: %s' % metaDict)
         self._createVRT(metaDict, vrtBandList);
-        
+
         # add GCPs and Pojection
         for subDataset in subDatasets:
             # read longitude matrix
@@ -129,9 +129,8 @@ class Mapper(VRT):
         latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
         self.vsiDataset.SetGCPs(gcps, latlongSRSWKT)
-        """
-        # append GCPs and lat/lon projection to the vsiDataset
-        # add GCPs and Pojection
+
+        # add GEOLOCATION
         for subDataset in subDatasets:
             if 'longitude' in subDataset[1]:
                 xSubDatasetName = subDataset[0]
@@ -151,6 +150,5 @@ class Mapper(VRT):
         self.vsiDataset.SetMetadataItem('X_DATASET', xSubDatasetName, 'GEOLOCATION')
         self.vsiDataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
         self.vsiDataset.SetMetadataItem('Y_DATASET', ySubDatasetName, 'GEOLOCATION')
-        """
         
         return
