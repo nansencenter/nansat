@@ -89,7 +89,19 @@ class Figure():
         legend: boolean, default = False
             if True, information as textString, colorbar, longName and
             units are added in the figure.
-
+        mask_array: 2D numpy array, int, the shape should be equal array.shape
+            If given this array is used for masking land, clouds, etc on the
+            output image. Value of the array are indeces. LUT from mask_lut is
+            used for coloring upon this indeces.
+        mask_lut: dictionary
+            Look-Up-Table with colors for masking land, clouds etc. Used tgether
+            with mask_array:
+            {0, [0, 0, 0, ]1, [100, 100, 100], 2: [150, 150, 150], 3: [0, 0, 255]}
+            index 0 - will have black color
+                1 - dark gray
+                2 - light gray
+                3 - blue
+            
         Advanced parameters:
         --------------------
         LEGEND_HEIGHT: float, [0 1]
@@ -160,6 +172,8 @@ class Figure():
         self.d['fontSize'] = 12
         self.d['logarithm'] = False
         self.d['legend'] = False
+        self.d['mask_array'] = None
+        self.d['mask_lut'] = None
 
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
@@ -181,6 +195,7 @@ class Figure():
         # modify the default values using input values
         self._set_defaults(kwargs)
 
+        self.palette = None
         self.pilImg = None
         self.pilImgLegend = None
 
@@ -198,7 +213,7 @@ class Figure():
 
         Modifies
         --------
-        self.d : numpy array
+        self.array : numpy array
 
         '''
         # modify default parameters
@@ -213,6 +228,47 @@ class Figure():
                         ((self.d['cmax'][iBand] - self.d['cmin'][iBand])) +
                                       self.d['cmin'][iBand])
 
+    def apply_mask(self, **kwargs):
+        '''Apply mask for coloring land, clouds, etc
+        
+        If mask_array and mask_lut are provided as input parameters
+        The pixels in self.array which have index equal to mask_lut kay
+        in mask_array will have color equal to mask_lut value
+        
+        apply_mask should be called only after convert_palettesize
+        (i.e. to uint8 data)
+        
+        Parameters
+        ----------
+        Any of Figure__init__() parameters
+
+        Modifies
+        --------
+        self.array : numpy array
+        
+        '''
+        # modify default parameters
+        self._set_defaults(kwargs)
+        # get values of free indeces in the palette
+        availIndeces = range(self.d['numOfColor'], 255 - 1)
+        # for all lut color indeces
+        for i, maskValue in enumerate(self.d['mask_lut']):
+            if i < len(availIndeces):
+                # get color for that index
+                maskColor = self.d['mask_lut'][maskValue]
+                # exchange colors
+                if self.array.shape[0] == 1:
+                    # in a indexed image
+                    self.array[0][self.d['mask_array'] == maskValue] = availIndeces[i]
+                elif self.array.shape[0] == 3:
+                    # in RGB image
+                    for c in range(0, 3):
+                        self.array[c][self.d['mask_array'] == maskValue] = maskColor[c]
+                
+                # exchage palette
+                self.palette[availIndeces[i]*3:availIndeces[i]*3+3] = maskColor
+
+        
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
 
@@ -450,9 +506,8 @@ class Figure():
                             Image.fromarray(self.array[1, :, :]),
                             Image.fromarray(self.array[2, :, :])))
         else:
-            myPalette = self._create_palette()
             self.pilImg = Image.fromarray(self.array[0, :, :])
-            self.pilImg.putpalette(myPalette)
+            self.pilImg.putpalette(self.palette)
 
         # append legend
         if self.pilImgLegend is not None:
@@ -462,20 +517,54 @@ class Figure():
         self.array = None
 
     def process(self, **kwargs):
-        '''Do all common operations for preparation of a figure for saving'''
+        '''Do all common operations for preparation of a figure for saving
+        
+        #. Modify default values of parameters by the provided ones (if any)
+        #. Clip to min/max
+        #. Apply logarithm if required
+        #. Convert data to uint8
+        #. Create palette
+        #. Apply mask for colouring land, clouds, etc if required
+        #. Create legend if required
+        #. Create PIL image
+        
+        Parameters
+        ----------
+        Any of Figure.__init__() parameters
+
+        Modifies
+        --------
+        self.d
+        self.array
+        self.palette
+        self.pilImgLegend
+        self.pilImg
+                
+        '''
         # modify default parameters
         self._set_defaults(kwargs)
         
         # clip values to min/max
         self.clip()
+
         # apply logarithm
         if self.d['logarithm']:
             self.apply_logarithm()
+
         # convert to uint8
         self.convert_palettesize()
+        
+        # create the paletter
+        self._create_palette()
+
+        # apply colored mask (land mask, cloud mask and something else)
+        if self.d['mask_array'] is not None and self.d['mask_lut'] is not None:
+            self.apply_mask()
+
         # append legend
         if self.d['legend']:
             self.create_legend()
+
         # create PIL image ready for saving
         self.create_pilImage()
         
@@ -511,9 +600,9 @@ class Figure():
         it means 6 colors are possible to use for other purposes.
         the last palette (255) is white and the second last (254) is black.
 
-        Returns
+        Modifies
         -------
-        color palette : numpy array (uint8)
+        self.palette : numpy array (uint8)
 
         '''
         # create a colorList from matplotlib colormap name
@@ -539,8 +628,7 @@ class Figure():
                                                 np.linspace(
                                                 colorList[iColor][i][2],
                                                 colorList[iColor][i + 1][1],
-                                                num=spaceNum) *
-                                                (self.d['numOfColor'] - 1),
+                                                num=spaceNum)*255,
                                                 dtype=np.uint8)
                 iPalette += (spaceNum)
             # adjust the number of colors on the palette
@@ -553,8 +641,9 @@ class Figure():
         # the last palette color is replaced to white
         for iColor in range(3):
             lut[iColor][-1] = 255
-        # return the palette
-        return lut.T.flatten().astype(np.uint8)
+        
+        # set palette
+        self.palette = lut.T.flatten().astype(np.uint8)
 
     def _get_histogram(self, iBand):
         '''Create a subset array and return the histogram.
