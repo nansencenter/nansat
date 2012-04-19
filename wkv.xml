@@ -52,7 +52,7 @@
 		<standard_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</standard_name>
 		<long_name>Reflectance</long_name>
 		<units>sr-1</units>
-        <minmax>0.000 1.000</minmax>
+        <minmax>0.000 0.05</minmax>
         <colormap>jet</colormap>
 	</wkv>
 	<wkv>

@@ -600,8 +600,7 @@ class Nansat():
 
         return watermask
 
-    def write_figure(self, fileName=None, bands=1, clim=None, logarithm=False, 
-                    legend=False, **kwargs):
+    def write_figure(self, fileName=None, bands=1, clim=None, **kwargs):
 
         '''Save a raster band to a figure in grapfical format.
 
@@ -633,12 +632,6 @@ class Nansat():
                 [min, max] : min and max are numbers, or
                 [[min, min, min], [max, max, max]]: three bands used
                 'hist' : a histogram is used to calculate min and max values
-            logarithm : boolean, defult = False
-                If True, tone curve is used to convert pixel values.
-                If False, linear.
-            legend: boolean, default = False
-                if True, information as textString, colorbar, longName and
-                units are added in the figure.
             **kwargs : parameters for Figure(). See figure.Figure() for details.
 
         Modifies
@@ -666,7 +659,7 @@ class Nansat():
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
-        # create 3D array
+        # == create 3D ARRAY ==
         if isinstance(bands, list):
             array = np.array([])
             for iBand in bands:
@@ -679,10 +672,11 @@ class Nansat():
             array = self.__getitem__(bands)
             bands = [bands]
 
-        # create a fig object and parse input parameters
+        # == CREATE FIGURE object and parse input parameters ==
         fig = Figure(array, **kwargs)
         array = None
-
+        
+        # == PREPARE cmin/cmax ==
         # try to get clim from WKV if it is not given
         # if failed clim will be evaluated from histogram
         if clim is None:
@@ -712,34 +706,24 @@ class Nansat():
         for i in range(2):
             if len(clim[i]) != len(bands):
                 clim[i] = [clim[i][0]]*len(bands)
+        
+        self.logger.info('clim: %s ' % clim)
+        
+        # == PREPARE caption ==
+        # get longName and units from vrt
+        longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
+        units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
+        # if they don't exist make empty strings
+        if longName is None:
+            longName = ''
+        if units is None:
+            units = ''
+        caption=longName + ' [' + units + ']'
 
-        # Clip array with cmin and cmax
-        fig.clip(cmin=clim[0], cmax=clim[1])
+        # == PROCESS figure ==
+        fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
 
-        # apply logarithm
-        if logarithm:
-            fig.apply_logarithm()
-
-        # convert to uint8
-        fig.convert_palettesize()
-
-        # add legend
-        if legend:
-            # get longName and units from vrt
-            longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
-            units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
-            # if they don't exist make empty strings
-            if longName is None:
-                longName = ''
-            if units is None:
-                units = ''
-
-            fig.create_legend(caption=longName + ' [' + units + ']')
-
-        # create PIL image
-        fig.create_pilImage()
-
-        # finally save to a image file
+        # == finally SAVE to a image file ==
         if fileName is not None:
             fig.save(fileName)
 

@@ -42,7 +42,7 @@ class OptionError(Error):
 
 
 class Figure():
-    '''Perform opeartions with graphical files: create, append legend, modify..
+    '''Perform opeartions with graphical files: create, append legend, save.
 
     Figure instance is created in the Nansat.write_figure method
     The methods below are applied consequently in order to generate a figure
@@ -83,6 +83,12 @@ class Figure():
             '', caption of the legend (2nd line, usually long name and units)
         fontSize, int
             12, size of the font of title, caption and ticks
+        logarithm : boolean, defult = False
+            If True, tone curve is used to convert pixel values.
+            If False, linear.
+        legend: boolean, default = False
+            if True, information as textString, colorbar, longName and
+            units are added in the figure.
 
         Advanced parameters:
         --------------------
@@ -128,6 +134,7 @@ class Figure():
             longName and units.
 
         '''
+        
         # if 2D array is given, reshape to 3D
         if array.ndim == 2:
             self.array = array.reshape(1, array.shape[0], array.shape[1])
@@ -151,6 +158,8 @@ class Figure():
         self.d['titleString'] = ''
         self.d['caption'] = ''
         self.d['fontSize'] = 12
+        self.d['logarithm'] = False
+        self.d['legend'] = False
 
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
@@ -238,10 +247,10 @@ class Figure():
                     ratioList.append(ratio[0])
         
         # create a 2D array and set min and max values
-        clim = [[], []]
+        clim = [[0]*self.array.shape[0], [0]*self.array.shape[0]]
         for iBand in range(self.array.shape[0]):
-            clim[0].append(self.array[iBand, :, :].min())
-            clim[1].append(self.array[iBand, :, :].max())
+            clim[0][iBand] = self.array[iBand, :, :].min()
+            clim[1][iBand] = self.array[iBand, :, :].max()
             # if 0<ratio<1 try to compute histogram
             if (ratioList[iBand] > 0 or ratioList[iBand] < 1):
                 try:
@@ -251,10 +260,10 @@ class Figure():
                 else:
                     cumhist = hist.cumsum()
                     cumhist /= cumhist[-1]
-                    clim[0].append(bins[len(cumhist[cumhist <
-                               (1 - ratioList[iBand]) / 2])])
-                    clim[1].append(bins[len(cumhist[cumhist <
-                               1 - ((1 - ratioList[iBand]) / 2)])])
+                    clim[0][iBand] = bins[len(cumhist[cumhist <
+                               (1 - ratioList[iBand]) / 2])]
+                    clim[1][iBand] = bins[len(cumhist[cumhist <
+                               1 - ((1 - ratioList[iBand]) / 2)])]
         return clim
 
     def clip(self, **kwargs):
@@ -452,6 +461,25 @@ class Figure():
         # remove array from memory
         self.array = None
 
+    def process(self, **kwargs):
+        '''Do all common operations for preparation of a figure for saving'''
+        # modify default parameters
+        self._set_defaults(kwargs)
+        
+        # clip values to min/max
+        self.clip()
+        # apply logarithm
+        if self.d['logarithm']:
+            self.apply_logarithm()
+        # convert to uint8
+        self.convert_palettesize()
+        # append legend
+        if self.d['legend']:
+            self.create_legend()
+        # create PIL image ready for saving
+        self.create_pilImage()
+        
+
     def save(self, fileName):
         ''' Save self.pilImg to a physical file
 
@@ -467,12 +495,12 @@ class Figure():
         self.pilImg : None
 
         '''
+        if not((fileName.split(".")[-1] in self.extensionList)):
+            fileName = fileName + self.d['DEFAULT_EXTENSION']
+
         fileExtension = fileName.split(".")[-1]
         if fileExtension in ["jpg", "JPG", "jpeg", "JPEG"]:
             self.pilImg = self.pilImg.convert("RGB")
-
-        if not((fileName.split(".")[-1] in self.extensionList)):
-            fileName = fileName + self.d['DEFAULT_EXTENSION']
 
         self.pilImg.save(fileName)        
 
@@ -589,7 +617,6 @@ class Figure():
         Modifies:
         ---------
             self.d
-
         '''
         for key in kwargs:
             if key in self.d:
