@@ -496,8 +496,9 @@ class Figure():
             for iTick in range(self.d['numOfTicks']):
                 coordX = int(scaleLocation[iTick] *
                              self.pilImgLegend.size[0] * self.d['CBAR_WIDTH'] +
-                             self.pilImgLegend.size[0] *
-                             ((1 - self.d['CBAR_WIDTH']) / 2))
+                             int(self.pilImgLegend.size[0] *
+                               self.d['CBAR_LOCATION_X']))
+                             
                 box = (coordX, int(self.pilImgLegend.size[1] *
                         self.d['CBAR_LOCATION_Y']),
                        coordX, int(self.pilImgLegend.size[1] *
