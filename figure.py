@@ -268,7 +268,58 @@ class Figure():
                 # exchage palette
                 self.palette[availIndeces[i]*3:availIndeces[i]*3+3] = maskColor
 
+    def add_logo(self, logoFileName='', logoLocation=[0,0], logoSize=None):
+        '''Insert logo into the PIL image
         
+        Read logo from file as PIL
+        Resize to the given size
+        Pan using the given location
+        Paste into pilImg
+        
+        Parameters:
+        ----------
+        logoFileName: string
+            name of the file with logo
+        logoLocation: list, default = [0,0]
+            X and Y offset of the image
+            If positive - offset is from left, upper edge
+            If Negative - from right, lower edge
+            Offset is calculated from the entire image legend inclusive
+        logoSize: list, default=None:
+            desired X,Y size of logo. If None - oroginal size is used
+        
+        Modifies:
+            self.pilImg
+        '''
+        
+        # check if pilImg was created already
+        if self.pilImg is None:
+            print 'Create PIL image first'
+            return
+        # check if file is available
+        try:
+            logoImg = Image.open(logoFileName)
+        except:
+            print 'No logo file %s' % logoFileName
+            return
+        # resize if required
+        if logoSize is None:
+            logoSize = logoImg.size
+        else:
+            logoImg = logoImg.resize(logoSize)
+        # get location of the logo w.r.t. sign of logoLocation
+        box = [0, 0, logoSize[0], logoSize[1]]
+        for dim in range(2):
+            if logoLocation[dim] >= 0:
+                box[dim+0] = box[dim+0] + logoLocation[dim+0]
+                box[dim+2] = box[dim+2] + logoLocation[dim+0]
+            else:
+                box[dim+0] = (self.pilImg.size[dim+0] + logoLocation[dim+0] - 
+                                logoSize[dim+0])
+                box[dim+2] = self.pilImg.size[dim+0] + logoLocation[dim+0]
+        
+        self.pilImg.paste(logoImg, tuple(box))
+            
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
 
