@@ -101,6 +101,15 @@ class Figure():
                 1 - dark gray
                 2 - light gray
                 3 - blue
+        logoFileName: string
+            name of the file with logo
+        logoLocation: list of two int, default = [0,0]
+            X and Y offset of the image
+            If positive - offset is from left, upper edge
+            If Negative - from right, lower edge
+            Offset is calculated from the entire image legend inclusive
+        logoSize: list of two int
+            desired X,Y size of logo. If None - original size is used
             
         Advanced parameters:
         --------------------
@@ -174,6 +183,9 @@ class Figure():
         self.d['legend'] = False
         self.d['mask_array'] = None
         self.d['mask_lut'] = None
+        self.d['logoFileName'] = None
+        self.d['logoLocation'] = [0,0]
+        self.d['logoSize'] = None
 
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
@@ -268,7 +280,7 @@ class Figure():
                 # exchage palette
                 self.palette[availIndeces[i]*3:availIndeces[i]*3+3] = maskColor
 
-    def add_logo(self, logoFileName='', logoLocation=[0,0], logoSize=None):
+    def add_logo(self, **kwargs):
         '''Insert logo into the PIL image
         
         Read logo from file as PIL
@@ -278,19 +290,18 @@ class Figure():
         
         Parameters:
         ----------
-        logoFileName: string
-            name of the file with logo
-        logoLocation: list, default = [0,0]
-            X and Y offset of the image
-            If positive - offset is from left, upper edge
-            If Negative - from right, lower edge
-            Offset is calculated from the entire image legend inclusive
-        logoSize: list, default=None:
-            desired X,Y size of logo. If None - oroginal size is used
+        Any of Figure__init__() parameters
         
         Modifies:
+        ---------
             self.pilImg
         '''
+
+        # set/get default parameters
+        self._set_defaults(kwargs)
+        logoFileName = self.d['logoFileName']
+        logoLocation = self.d['logoLocation']
+        logoSize = self.d['logoSize']
         
         # check if pilImg was created already
         if self.pilImg is None:
@@ -318,6 +329,7 @@ class Figure():
                                 logoSize[dim+0])
                 box[dim+2] = self.pilImg.size[dim+0] + logoLocation[dim+0]
         
+        self.pilImg = self.pilImg.convert("RGB")
         self.pilImg.paste(logoImg, tuple(box))
             
     def clim_from_histogram(self, **kwargs):
@@ -578,7 +590,8 @@ class Figure():
         #. Apply mask for colouring land, clouds, etc if required
         #. Create legend if required
         #. Create PIL image
-        
+        #. Add logo if required
+                
         Parameters
         ----------
         Any of Figure.__init__() parameters
@@ -615,9 +628,13 @@ class Figure():
         # append legend
         if self.d['legend']:
             self.create_legend()
-
+        
         # create PIL image ready for saving
         self.create_pilImage()
+
+        # add logo
+        if self.d['logoFileName'] is not None:
+            self.add_logo()
         
 
     def save(self, fileName):
