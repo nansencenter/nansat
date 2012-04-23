@@ -194,12 +194,12 @@ class Nansat():
         '''Prints basic info about the Nansat object to the terminal
 
         '''
-        print '-' * 40
-        print self.fileName
-        print '-' * 40
-        self.list_bands()
-        print self.get_domain()
-        return ''
+        outString = self.fileName + '\n'
+        outString += '-' * 40 + '\n'
+        outString += self.list_bands(False)
+        outString += '-' * 40 + '\n'
+        outString += str(self.get_domain())
+        return outString
 
     def dereproject(self):
         '''Cancel reprojection
@@ -358,21 +358,33 @@ class Nansat():
         # the GDAL RasterBand of the corresponding band is returned
         return self.vrt.GetRasterBand(bandNo)
 
-    def list_bands(self):
+    def list_bands(self, doPrint=True):
         '''Show band information of the given Nansat object
 
         Show serial number, longName, name and all parameters
         for each band in the metadata of the given Nansat object.
-
+        
+        Parameters:
+        -----------
+            doPrint: boolean, optional, default=True
+                do print, otherwise it is returned as string
+        Returns:
+        --------
+            outString: String
+                formatted string with bands info
         '''
+        outString = ''
         for iBand in range(self.rawVRT.RasterCount):
             metadata = self.rawVRT.GetRasterBand(iBand + 1).GetMetadata()
-            print "Band :", iBand + 1
+            outString += "Band : %d\n" % (iBand + 1)
             for i in metadata:
-                if i != "units":
-                    print "  %s: %s" % (i,
-                          self.rawVRT.GetRasterBand(iBand + 1).\
-                          GetMetadataItem(i))
+                outString += "  %s: %s\n" % (i,
+                      self.rawVRT.GetRasterBand(iBand + 1).\
+                      GetMetadataItem(i))
+        if doPrint:
+            print outString
+        else:
+            return outString
 
     def reproject(self, dstDomain=None, resamplingAlg=0):
         '''Reproject the object based on the given Domain

@@ -212,19 +212,18 @@ class Domain():
         toPrettyWKT.ImportFromWkt(self._get_projection(self.memDataset))
         prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
         corners = self.get_corners()
-        print '-' * 40
-        print 'Size: %d x %d' % (self.memDataset.RasterXSize,
+        outStr = 'Domain:[%d x %d]\n' % (self.memDataset.RasterXSize,
                                  self.memDataset.RasterYSize)
-        print '-' * 40
-        print 'Projection:'
-        print prettyWKT
-        print '-' * 40
-        print 'Corners (lon, lat):'
-        print '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)' % (corners[0][0],
+        outStr += '-' * 40 + '\n'
+        outStr += 'Projection:\n'
+        outStr += prettyWKT + '\n'
+        outStr += '-' * 40 + '\n'
+        outStr += 'Corners (lon, lat):\n'
+        outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
                 corners[1][0], corners[0][2], corners[1][2])
-        print '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)' % (corners[0][1],
+        outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
                 corners[1][1], corners[0][3], corners[1][3])
-        return ''
+        return outStr
 
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         '''Write KML file with domains
