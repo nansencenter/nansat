@@ -211,16 +211,21 @@ class Nansat():
         '''
         self.vrt = self.rawVRT
 
-    def downscale(self, factor=1, method="average"):
-        '''Downscale the size of the data.
+    def resize(self, factor=1, width=None, height=None, method="average"):
+        '''Proportional resize of the dataset.
 
-        The size of data is downscaled as (xSize/factor, ySize/factor).
+        The dataset is resized as (xSize/factor, ySize/factor) or
+        (width, calulated height) or (calculated width, height).
         self.vrt is rewritten to the the downscaled sizes.
         If GCPs are given, they are also rewritten.
+        
 
         Parameters
         ----------
-            factor: int, optional
+        Either factor, or width, or height should be given:
+            factor: float, optional, default=1
+            width: int, optional
+            height: int, optional
             method: "average" (default) or "subsample" (= nearest neighbor),
                     optional
 
@@ -235,6 +240,12 @@ class Nansat():
             OptionError: occurs when method is not "average" or "subsample"
 
         '''
+        # estimate factor if width or height is given
+        if width is not None:
+            factor = float(width) / float(self.vrt.RasterXSize)
+        if height is not None:
+            factor = float(height) / float(self.vrt.RasterYSize)
+
         if not (method == "average" or method == "subsample"):
             raise OptionError("method should be 'average' or 'subsample'")
 
@@ -248,8 +259,9 @@ class Nansat():
         # Get element from the XML content and modify some elements
         # using Domain object parameters
         element = XML(vsiFileContent)
-        rasterXSize = int(float(element.get("rasterXSize")) / factor)
-        rasterYSize = int(float(element.get("rasterYSize")) / factor)
+        rasterXSize = int(float(element.get("rasterXSize")) * factor)
+        rasterYSize = int(float(element.get("rasterYSize")) * factor)
+        self.logger.debug('New size/factor: (%f, %f)/%f' % (rasterXSize, rasterYSize, factor))
         element.set("rasterXSize", str(rasterXSize))
         element.set("rasterYSize", str(rasterYSize))
 
@@ -269,10 +281,10 @@ class Nansat():
 
         # Edit GCPs to correspond to the downscaled size
         for elem in element.iter("GCP"):
-            pxl = float(elem.get("Pixel")) / factor
+            pxl = float(elem.get("Pixel")) * factor
             if pxl > float(rasterXSize):
                 pxl = rasterXSize
-            lin = float(elem.get("Line")) / factor
+            lin = float(elem.get("Line")) * factor
             if lin > float(rasterYSize):
                 lin = rasterYSize
             elem.set("Pixel", str(pxl))
