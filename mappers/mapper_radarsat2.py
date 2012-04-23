@@ -59,7 +59,7 @@ class Mapper(VRT):
         # Add time to metadata domain
         ##################################
         validTime = dataset.GetMetadata()['ACQUISITION_START_TIME']
-        self.metadata['Valid Time'] = datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')
+        self.metadata['time'] = datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')
 
         ############################################
         # Add SAR look direction to metadata domain
