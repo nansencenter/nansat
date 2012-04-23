@@ -127,7 +127,7 @@ class Domain():
         # Domain(srsString, extentString)
         srsString = None
         extentString = None
-        if 'srsString' in kwargs and extentString in kwargs:
+        if 'srsString' in kwargs and 'extentString' in kwargs:
             srsString = kwargs['srsString']
             extentString = kwargs['extentString']
         elif (len(args) > 1 and isinstance(args[0], str) and isinstance(args[1], str)):
@@ -136,13 +136,14 @@ class Domain():
         
         # add logger
         self.logger = add_logger('Domain', logLevel=logLevel)
-
+        self.logger.debug(kwargs)
+        
+        # init dataset parameters
         gcps = []
         rasterXSize = 0
         rasterYSize = 0
         
         # test option when only dataset is given
-        self.logger.debug(kwargs)
         if dataset is not None:
             rasterXSize = dataset.RasterXSize
             rasterYSize = dataset.RasterYSize
