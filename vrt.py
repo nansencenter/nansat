@@ -49,11 +49,10 @@ class VRT():
         rawVRTName: string
             file name from Nansat ('/vsimem/vsiFile.vrt')
         '''
-
+        self.logger = logging.getLogger('Nansat')
         self.metadata = metadata
         self.rawVRTName = rawVRTName
         self.dataset = dataset
-        self.logger = logging.getLogger('Nansat')
 
     def _add_pixel_function(self, pixelFunction, bands, fileName, metaDict):
         ''' Generic function for mappers to add PixelFunctions
@@ -171,7 +170,7 @@ class VRT():
         for iBand, bandNo in enumerate(vrtBandList):
             # check if the band in the list exist
             if int(bandNo) > int(metaDict.__len__()):
-                print ("vrt.addAllBands(): "
+                self.logger.warning("vrt.addAllBands(): "
                        "an element in the bandList is improper")
                 break
 

@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from numpy import outer
 from math import floor, log10
+import logging
 
 
 class Error(Exception):
@@ -155,6 +156,7 @@ class Figure():
             longName and units.
 
         '''
+        self.logger = logging.getLogger('Nansat')
         
         # if 2D array is given, reshape to 3D
         if array.ndim == 2:
@@ -200,7 +202,7 @@ class Figure():
         self.d['NAME_LOCATION_X'] = 0.1
         self.d['NAME_LOCATION_Y'] = 0.3
         self.d['DEFAULT_EXTENSION'] = ".png"
-
+        
         # default values which are set when input values are not correct
         self._cmapName = 'jet'
 
@@ -305,13 +307,13 @@ class Figure():
         
         # check if pilImg was created already
         if self.pilImg is None:
-            print 'Create PIL image first'
+            self.logger.warning('Create PIL image first')
             return
         # check if file is available
         try:
             logoImg = Image.open(logoFileName)
         except:
-            print 'No logo file %s' % logoFileName
+            self.logger.warning('No logo file %s' % logoFileName)
             return
         # resize if required
         if logoSize is None:
@@ -375,7 +377,7 @@ class Figure():
                 try:
                     hist, bins = self._get_histogram(iBand)
                 except:
-                    print 'Unable to compute histogram'
+                    self.logger.warning('Unable to compute histogram')
                 else:
                     cumhist = hist.cumsum()
                     cumhist /= cumhist[-1]

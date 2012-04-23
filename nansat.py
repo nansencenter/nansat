@@ -39,7 +39,7 @@ from domain import Domain
 from vrt import *
 from figure import *
 
-from nansat_tools import add_logger
+import logging
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -129,7 +129,7 @@ class Nansat():
         '''
         # SET SOME CONSTANTS
         # create logger
-        self.logger = add_logger(logName='Nansat', logLevel=logLevel)
+        self.logger = self._add_logger(logName='Nansat', logLevel=logLevel)
         
         # all available mappers
         self.mapperList = [
@@ -145,7 +145,7 @@ class Nansat():
               'mapper_modisL2NRT.py'
               ]
         
-        self.logger.info('Mappers: '+str(self.mapperList))
+        self.logger.debug('Mappers: '+str(self.mapperList))
 
         # names of raw and warped VRT files in memory
         # make random string and append to fileNames
@@ -158,7 +158,7 @@ class Nansat():
 
         # set input file name
         self.fileName = fileName
-        self.logger.info('fileNames: %s, %s, %s' % (self.rawVRTFileName,
+        self.logger.debug('fileNames: %s, %s, %s' % (self.rawVRTFileName,
                                                     self.warpedVRTFileName,
                                                     self.fileName))
 
@@ -315,7 +315,6 @@ class Nansat():
             # to console. Unfortunately an error message about
             # non-existing file is reported this must be a bug in GDAL.
         vrtDatasetCopy = self.vrtDriver.CreateCopy(fileName, self.vrt)
-        vrtDatasetCopy = None
 
     def get_GDALRasterBand(self, bandNo=1, bandID=None):
         '''Get a GDALRasterBand of a given Nansat object.
@@ -442,7 +441,6 @@ class Nansat():
                                   "rawVrt.GetProjection() is None")
 
         if dstDomain is not None:
-            #print 'Reprojection with given Domain'
             # warp the Raw VRT onto the coordinate stystem given by
             # input Domain
             rawWarpedVRT = gdal.AutoCreateWarpedVRT(
@@ -743,7 +741,8 @@ class Nansat():
         if units is None:
             units = ''
         caption=longName + ' [' + units + ']'
-
+        self.logger.info('caption: %s ' % caption)
+        
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
 
@@ -753,10 +752,46 @@ class Nansat():
 
         return fig
             
-
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
-        return Domain(self.vrt)
+        return Domain(self.vrt, logLevel=self.logger.level)
+
+    def _add_logger(self, logName='', logLevel=30):
+        ''' Creates and returns logger with default formatting for Nansat
+        
+        Parameters:
+        -----------
+            logName: string, optional
+                Name of the logger
+            logLevel: int, option, default=30
+                level at which logging is performed
+        
+        Returns:
+        --------
+            logging.logger
+            See also: http://docs.python.org/howto/logging.html
+        '''
+    
+        # create (or take already existing) logger
+        # with default logging level WARNING
+        logger = logging.getLogger(logName)
+        logger.setLevel(logLevel)
+        
+        # if logger already exits, default stream handler was already added
+        # otherwise create and add a new handler
+        if len(logger.handlers) == 0:
+            # create console handler and set level to debug
+            ch = logging.StreamHandler()
+            # create formatter
+            formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|%(funcName)s|%(message)s', datefmt='%I:%M:%S')
+            # add formatter to ch
+            ch.setFormatter(formatter)
+            # add ch to logger
+            logger.addHandler(ch)
+    
+        logger.handlers[0].setLevel(logLevel)    
+        
+        return logger
 
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
@@ -818,6 +853,7 @@ class Nansat():
                                         self.fileName, self.dataset,
                                         self.metadata,
                                         bandList).vsiDataset
+                self.logger.info('Mapper %s - success!' % iMapper)
                 break
             except:
                 pass
@@ -993,7 +1029,7 @@ class Nansat():
         # if a band is specified, set it to bandNo.
         # if some bands are chosen, give an error message and stop.
         if len(candidate) == 1:
-            print "You chose bandNo:", candidate[0] + 1
+            self.logger.info("You chose bandNo: %d" % (candidate[0] + 1))
             return candidate[0] + 1
         elif len(candidate) >= 2:
             raise OptionError("Nansat._specify_bandNo(): "

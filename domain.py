@@ -31,7 +31,6 @@ except ImportError:
 else:
     useDomain2 = True
     
-
 import numpy as np
 from xml.etree.ElementTree import ElementTree
 
@@ -41,7 +40,9 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import initial_bearing, add_logger
+import logging
+
+from nansat_tools import initial_bearing
 
 
 class Error(Exception):
@@ -116,6 +117,7 @@ class Domain():
         [http://trac.osgeo.org/proj/]
 
         '''
+        self.logger = loggin.getLogger('Nansat')
         # test input options
         self.name = ''
         if 'name' in kwargs:
@@ -140,10 +142,6 @@ class Domain():
         elif (len(args) > 1 and isinstance(args[0], str) and isinstance(args[1], str)):
             srsString = args[0]
             extentString = args[1]
-        
-        # add logger
-        self.logger = add_logger('Domain', logLevel=logLevel)
-        self.logger.debug(kwargs)
         
         # init dataset parameters
         gcps = []
