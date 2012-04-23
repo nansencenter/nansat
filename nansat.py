@@ -29,8 +29,6 @@ from xml.etree.ElementTree import XML, ElementTree, tostring
 
 import matplotlib.pyplot as plt
 
-import logging
-
 try:
     from osgeo import gdal, osr
 except ImportError:
@@ -41,6 +39,7 @@ from domain import Domain
 from vrt import *
 from figure import *
 
+from nansat_tools import add_logger
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -129,7 +128,8 @@ class Nansat():
 
         '''
         # SET SOME CONSTANTS
-        self.logger = self._add_logger(logLevel=logLevel)
+        # create logger
+        self.logger = add_logger(logName='Nansat', logLevel=logLevel)
         
         # all available mappers
         self.mapperList = [
@@ -733,32 +733,6 @@ class Nansat():
     def get_domain(self):
         ''' Returns: Domain of the Nansat object '''
         return Domain(self.vrt)
-
-    def _add_logger(self, logLevel=30):
-        ''' Creates and returns logger with default formatting for Nansat '''
-
-        # create (or take already existing) logger
-        # with default logging level WARNING
-        logger = logging.getLogger('Nansat')
-        logger.setLevel(logLevel)
-        
-        # if logger already exits, default stream handler was already added
-        # otherwise create and add a new handler
-        if len(logger.handlers) == 0:
-            # create console handler and set level to debug
-            ch = logging.StreamHandler()
-            ch.setLevel(logLevel)
-    
-            # create formatter
-            formatter = logging.Formatter('%(asctime)s|%(name)s|%(levelname)s|%(message)s', datefmt='%I:%M:%S')
-    
-            # add formatter to ch
-            ch.setFormatter(formatter)
-    
-            # add ch to logger
-            logger.addHandler(ch)
-        
-        return logger
 
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping

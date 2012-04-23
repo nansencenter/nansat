@@ -34,7 +34,7 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import initial_bearing
+from nansat_tools import initial_bearing, add_logger
 
 
 class Error(Exception):
@@ -88,6 +88,8 @@ class Domain():
             -lle lonmin latmin lonmax latmax
         name: string, optional
             Name to be added to the Domain object
+        logLevel: int, optional, default=30
+            level of logging
 
         Raises
         ------
@@ -107,18 +109,41 @@ class Domain():
         [http://trac.osgeo.org/proj/]
 
         '''
-        # defaults
+        # test input options
+        self.name = ''
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+        logLevel = 30
+        if 'logLevel' in kwargs:
+            logLevel = kwargs['logLevel']
+        # Domain(dataset=...) or Domain(dataset)
+        dataset = None
+        if 'dataset' in kwargs:
+            dataset = kwargs['dataset']
+        elif (len(args) > 0 and isinstance(args[0], gdal.Dataset)):
+            dataset = args[0]
+
+        # Domain(srsString='...', extentString='...') or
+        # Domain(srsString, extentString)
+        srsString = None
+        extentString = None
+        if 'srsString' in kwargs and extentString in kwargs:
+            srsString = kwargs['srsString']
+            extentString = kwargs['extentString']
+        elif (len(args) > 1 and isinstance(args[0], str) and isinstance(args[1], str)):
+            srsString = args[0]
+            extentString = args[1]
+        
+        # add logger
+        self.logger = add_logger('Domain', logLevel=logLevel)
+
         gcps = []
         rasterXSize = 0
         rasterYSize = 0
-        if 'name' in kwargs:
-            self.name = kwargs['name']
-        else:
-            self.name = ''
-
+        
         # test option when only dataset is given
-        if len(args) == 1 and isinstance(args[0], gdal.Dataset):
-            dataset = args[0]
+        self.logger.debug(kwargs)
+        if dataset is not None:
             rasterXSize = dataset.RasterXSize
             rasterYSize = dataset.RasterYSize
             geoTransform = dataset.GetGeoTransform()
@@ -126,10 +151,7 @@ class Domain():
             gcps = dataset.GetGCPs()
 
         # test option when proj4 and extent string are given
-        elif (len(args) == 2 and isinstance(args[0], str) and
-                                isinstance(args[1], str)):
-            srsString = args[0]
-            extentString = args[1]
+        elif (srsString is not None and extentString is not None):
             # if XML-file and domain name is given - read that file
             if os.path.isfile(srsString):
                 srsString, extentString, self.name = self._from_xml(

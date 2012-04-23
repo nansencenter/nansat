@@ -1,4 +1,4 @@
-<all_wkvs>
+<all_wkvs multiple="true">
 	<wkv>
 		<standard_name>normalized_radar_cross_section</standard_name>
 		<long_name>Normalized Radar Cross Section</long_name>
