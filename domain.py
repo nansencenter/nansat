@@ -117,7 +117,7 @@ class Domain():
         [http://trac.osgeo.org/proj/]
 
         '''
-        self.logger = loggin.getLogger('Nansat')
+        self.logger = logging.getLogger('Nansat')
         # test input options
         self.name = ''
         if 'name' in kwargs:
