@@ -21,13 +21,10 @@ from os import path, listdir
 from string import maketrans, ascii_uppercase, digits
 import sys
 import time
-from random import choice
 
 import numpy as np
 from math import floor
 from xml.etree.ElementTree import XML, ElementTree, tostring
-
-import matplotlib.pyplot as plt
 
 try:
     from osgeo import gdal, osr
@@ -39,7 +36,7 @@ from domain import Domain
 from vrt import *
 from figure import *
 
-import logging
+from nansat_tools import add_logger
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -67,7 +64,7 @@ class OptionError(Error):
     pass
 
 
-class Nansat():
+class Nansat(Domain):
     '''Main of Nansat
 
     Construct Nansat object that consist of
@@ -96,40 +93,33 @@ class Nansat():
         logLevel: int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
 
-        Modifies
+        Creates
         --------
         self.mapperList: list of file names
             list of available working mappers
-
-        self.rawVRTFileName : file name
-            set '/vsimem/vsiFile.vrt'
-        self.warpedVRTFileName : file name
-            set '/vsimem/vsi_warped.vrt'
-        self.vrtDriver : VRT driver
-            set GDAL VRT driver
-
         self.fileName : file name
             set file name given by the argument
-        self.dataset : GDAL dataset
+        self.gdalDataset : GDAL dataset
             set GDAL dataset
         self.metadata : metadata
             set metadata of the dataset
-        self.rawVRT : VRT dataset
-            set VRT dataset with mapping of variables
-        self.warpedVRT : VRT dataset
-            None
-        self.vrt : VRT dataset
-            Copy of self.rawVRT
+        self.raw : VRT object
+            set VRT object with VRT dataset with mapping of variables
+        self.vrt : VRT object
+            Copy of self.raw
+        self.logger: logging.Logger
+            logger for output debugging info
+        self.name: string
+            name of object (for writing KML)
 
         Raises
         ------
             GDALError: occurs when the dataset is None or "".
-            GDALError: occurs when the metadata is None or "".
 
         '''
-        # SET SOME CONSTANTS
+        # SET CONSTANTS
         # create logger
-        self.logger = self._add_logger(logName='Nansat', logLevel=logLevel)
+        self.logger = add_logger(logName='Nansat', logLevel=logLevel)
         
         # all available mappers
         self.mapperList = [
@@ -140,49 +130,39 @@ class Nansat():
               'mapper_modisL1.py',
               'mapper_ncep.py',
               'mapper_radarsat2.py',
-              'mapper_seawifsL2.py',
               'mapper_MOD44W.py',
               'mapper_modisL2NRT.py'
               ]
         
         self.logger.debug('Mappers: '+str(self.mapperList))
 
-        # names of raw and warped VRT files in memory
-        # make random string and append to fileNames
-        allChars=ascii_uppercase + digits
-        randomChars = ''.join(choice(allChars) for x in range(6))
-        self.rawVRTFileName = '/vsimem/rawVRT_%s.vrt' % randomChars
-        self.warpedVRTFileName = '/vsimem/warpedVRT_%s.vrt' % randomChars
-        # VRT driver
-        self.vrtDriver = gdal.GetDriverByName("VRT")
-
         # set input file name
         self.fileName = fileName
-        self.logger.debug('fileNames: %s, %s, %s' % (self.rawVRTFileName,
-                                                    self.warpedVRTFileName,
-                                                    self.fileName))
 
         # set input GDAL dataset
-        self.dataset = gdal.Open(self.fileName)
-        if (self.dataset is None) or (self.dataset == ""):
+        self.gdalDataset = gdal.Open(self.fileName)
+        if (self.gdalDataset is None) or (self.gdalDataset == ""):
             raise GDALError("Nansat._init_(): Cannot get the dataset from "
                             + self.fileName)
         # metadata
-        self.metadata = self.dataset.GetMetadata()
-        if (self.metadata is None) or (self.metadata == ""):
-            raise GDALError("Nansat._init_(): Cannot get the metadata")
-        # get VRT with mapping of variables
-        self.rawVRT = self._get_mapper(mapperName, bandList)
-        # Warped VRT
-        self.warpedVRT = None
-        # Current VRT
-        self.vrt = self.rawVRT
+        self.metadata = self.gdalDataset.GetMetadata()
+        # Get oroginal VRT object with mapping of variables
+        self.raw = self._get_mapper(mapperName, bandList)
+        # Set current VRT object
+        self.vrt = self.raw.copy()
+        # name, for compatibility with some Domain methods
+        self.name = self.fileName
         
-        self.logger.debug('__init__(): done')
+        self.logger.debug('Object created from %s ' % self.fileName)
         
     def __getitem__(self, bandNo):
         ''' Returns the band as a NumPy array, by overloading []
-
+        Parameters:
+        -----------
+            bandNo: int or string
+                If int, array from band with number <bandNo> is returned
+                If string, array from band with metadata 'band_name' equal to
+                <bandNo> is returned
         Returns
         -------
             self.get_GDALRasterBand(bandNo).ReadAsArray(): NumPy array
@@ -191,25 +171,15 @@ class Nansat():
         return self.get_GDALRasterBand(bandNo).ReadAsArray()
 
     def __repr__(self):
-        '''Prints basic info about the Nansat object to the terminal
+        '''Creates string basic info about the Nansat object
 
         '''
         outString = self.fileName + '\n'
         outString += '-' * 40 + '\n'
         outString += self.list_bands(False)
         outString += '-' * 40 + '\n'
-        outString += str(self.get_domain())
+        outString += Domain.__repr__(self)
         return outString
-
-    def dereproject(self):
-        '''Cancel reprojection
-
-        Modifies
-        --------
-            self.vrt : VRT dataset
-                replaced the raw/underlaying dataset
-        '''
-        self.vrt = self.rawVRT
 
     def resize(self, factor=1, width=None, height=None, method="average"):
         '''Proportional resize of the dataset.
@@ -228,37 +198,35 @@ class Nansat():
             height: int, optional
             method: "average" (default) or "subsample" (= nearest neighbor),
                     optional
-
         Modifies
         --------
-            self.vrt : VRT dataset
+            self.vrt.dataset : VRT dataset of VRT object
                 raster size are modified to downscaled size.
                 If GCPs are given in the dataset, they are also overwritten.
-
         Raises
         ------
             OptionError: occurs when method is not "average" or "subsample"
 
         '''
+        # resize back to original size/setting
+        if factor == 1:
+            self.vrt = self.raw.copy()
+            return
+        
         # estimate factor if width or height is given
         if width is not None:
-            factor = float(width) / float(self.vrt.RasterXSize)
+            factor = float(width) / float(self.vrt.dataset.RasterXSize)
         if height is not None:
-            factor = float(height) / float(self.vrt.RasterYSize)
+            factor = float(height) / float(self.vrt.dataset.RasterYSize)
 
         if not (method == "average" or method == "subsample"):
             raise OptionError("method should be 'average' or 'subsample'")
 
-        # Write the vrt to a VSI-file
-        vrtDatasetCopy = self.vrtDriver.CreateCopy(self.rawVRTFileName,
-                                                   self.vrt)
-
-        # Get XML content from VSI-file
-        vsiFileContent = self._read_write_vsi_file(self.rawVRTFileName)
+        # Get XML content from VRT-file
+        vrtXML = self.vrt.read_xml()
 
         # Get element from the XML content and modify some elements
-        # using Domain object parameters
-        element = XML(vsiFileContent)
+        element = XML(vrtXML)
         rasterXSize = int(float(element.get("rasterXSize")) * factor)
         rasterYSize = int(float(element.get("rasterYSize")) * factor)
         self.logger.debug('New size/factor: (%f, %f)/%f' % (rasterXSize, rasterYSize, factor))
@@ -274,8 +242,8 @@ class Nansat():
             for elem in element.iter("SimpleSource"):
                 elem.tag = "AveragedSource"
             for elem in element.iter("ComplexSource"):
-                # NB: replacing ComplexSource with AveragedSource may
-                # lead to loss of Look-Up-Table elements.
+                # NB: replacing ComplexSource with AveragedSource
+                # leads to loss of Look-Up-Table elements.
                 # Should check this in the future if LUT should be used
                 elem.tag = "AveragedSource"
 
@@ -290,31 +258,8 @@ class Nansat():
             elem.set("Pixel", str(pxl))
             elem.set("Line", str(lin))
         
-        # Overwrite element
-        # Write the modified elemements into VSI-file
-        self._read_write_vsi_file(self.rawVRTFileName, tostring(element))
-
-        self.vrt = gdal.Open(self.rawVRTFileName)
-
-    def export_VRT(self, fileName=None):
-        '''Export in-memory VRT dataset to a physical file
-
-        If fileName is None, this method is skipped.
-        Otherwise, open VSI-file and copy it to a physical file
-        whose location is given by the argument.
-
-        Parameters
-        ----------
-            fileName: string, optional
-                location for an output VRT file
-
-        '''
-        if fileName is None:
-            # GDAL special name to flush output
-            fileName = "/vsistdout/"
-            # to console. Unfortunately an error message about
-            # non-existing file is reported this must be a bug in GDAL.
-        vrtDatasetCopy = self.vrtDriver.CreateCopy(fileName, self.vrt)
+        # Write the modified elemements into VRT
+        self.vrt.write_xml(tostring(element))
 
     def get_GDALRasterBand(self, bandNo=1, bandID=None):
         '''Get a GDALRasterBand of a given Nansat object.
@@ -334,19 +279,18 @@ class Nansat():
 
         Returns
         -------
-            self.vrt.GetRasterBand: a GDAL RasterBand
+            self.vrt.dataset.GetRasterBand: a GDAL RasterBand
 
         Raises
         ------
             OptionError: occurs when the bandNo is not a proper number.
+
         Example
         -------
             b = get_GDALRasterBand(1)
             b = get_GDALRasterBand('sigma0')
             b = get_GDALRasterBand({"short_name":"radiance",
                                     "wavelength":"1240"})
-
-
         See Also
         --------
             _specify_bandNo: specify a band number based on the bandID list
@@ -360,14 +304,14 @@ class Nansat():
         elif isinstance(bandNo, str):
             bandNo = self._specify_bandNo({'band_name': bandNo})
         # if given bandNo is over the existing bands, give error message
-        elif (bandNo < 1 or bandNo > self.rawVRT.RasterCount):
+        elif (bandNo < 1 or bandNo > self.raw.dataset.RasterCount):
             raise OptionError("Nansat.get_GDALRasterBand(): "
                              "bandNo takes from 1 to",
-                             self.rawVRT.RasterCount)
+                             self.raw.dataset.RasterCount)
 
         # Based on bandNo,
         # the GDAL RasterBand of the corresponding band is returned
-        return self.vrt.GetRasterBand(bandNo)
+        return self.vrt.dataset.GetRasterBand(bandNo)
 
     def list_bands(self, doPrint=True):
         '''Show band information of the given Nansat object
@@ -385,13 +329,12 @@ class Nansat():
                 formatted string with bands info
         '''
         outString = ''
-        for iBand in range(self.rawVRT.RasterCount):
-            metadata = self.rawVRT.GetRasterBand(iBand + 1).GetMetadata()
+        for iBand in range(self.raw.dataset.RasterCount):
+            band = self.raw.dataset.GetRasterBand(iBand + 1)
+            metadata = band.GetMetadata()
             outString += "Band : %d\n" % (iBand + 1)
             for i in metadata:
-                outString += "  %s: %s\n" % (i,
-                      self.rawVRT.GetRasterBand(iBand + 1).\
-                      GetMetadataItem(i))
+                outString += "  %s: %s\n" % (i, band.GetMetadataItem(i))
         if doPrint:
             print outString
         else:
@@ -403,7 +346,7 @@ class Nansat():
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
         from the Domain.
         Modify XML content of the warped vrt using the Domain parameters.
-        Generate self.warpedVRT and replace self.vrt to warpedVRT.
+        Generate warpedVRT and replace self.vrt with warpedVRT.
 
         Parameters
         ----------
@@ -412,18 +355,13 @@ class Nansat():
 
         Modifies
         --------
-            self.warpedVRT: VRT dataset
-                warped vrt dataset
-            self.vrt: VRT dataset
-                replaced to warped VRT dataset
+            self.vrt: VRT object with VRT dataset
+                replaced to warpedVRT dataset
 
         Raises
         ------
-            ProjectionError: occurs when the projection of the source data
-            is None.
             ProjectionError: occurs when the projection of the target data
             is None.
-            OptionError: occures when the option combination is not proper.
             AttributeError: occurs when it is impossible to get warpedVRT.
 
         See Also
@@ -432,9 +370,9 @@ class Nansat():
 
         '''
         # Get source SRS (either Projection or GCPProjection)
-        srcWKT = self.rawVRT.GetProjection()
+        srcWKT = self.raw.dataset.GetProjection()
         if srcWKT == '':
-            srcWKT = self.rawVRT.GetGCPProjection()
+            srcWKT = self.raw.dataset.GetGCPProjection()
 
         if srcWKT == '':
             raise ProjectionError("Nansat.reproject(): "
@@ -443,28 +381,29 @@ class Nansat():
         if dstDomain is not None:
             # warp the Raw VRT onto the coordinate stystem given by
             # input Domain
-            rawWarpedVRT = gdal.AutoCreateWarpedVRT(
-                                   self.rawVRT, srcWKT,
-                                   dstDomain.memDataset.GetProjection(),
+            warpedVRT = gdal.AutoCreateWarpedVRT(
+                                   self.raw.dataset, srcWKT,
+                                   dstDomain.vrt.dataset.GetProjection(),
                                    resamplingAlg)
         else:
-            # Erroneous input options
-            raise OptionError("Nansat.reproject(): "
-                              "wrong combination of input options")
-
-        # modify extent of the created Warped VRT
-        self.warpedVRT = self._modify_warpedVRT(
-                                   rawWarpedVRT,
-                                   dstDomain.memDataset.RasterXSize,
-                                   dstDomain.memDataset.RasterYSize,
-                                   dstDomain.memDataset.GetGeoTransform())
-
-        # check created Warped VRT
-        if self.warpedVRT is None:
-            raise AttributeError("Nansat.reproject():cannot get warpedVRT")
-
+            # dereproject
+            self.vrt = self.raw.copy()
+            
         # set default vrt to be the warped one
-        self.vrt = self.warpedVRT
+        warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
+        # modify extent of the created Warped VRT
+        warpedVRTXML = warpedVRT.read_xml()
+        warpedVRTXML = self._modify_warped_VRT_XML(warpedVRTXML,
+                                   dstDomain.vrt.dataset.RasterXSize,
+                                   dstDomain.vrt.dataset.RasterYSize,
+                                   dstDomain.vrt.dataset.GetGeoTransform())
+        warpedVRT.write_xml(warpedVRTXML)
+        
+        # check created Warped VRT
+        if warpedVRT.dataset is None:
+            raise AttributeError("Nansat.reproject():cannot get warpedVRT")
+        
+        self.vrt = warpedVRT
 
     def reproject_on_gcp(self, gcpImage, resamplingAlg=0):
         ''' Reproject the object onto the input object with gcps
@@ -480,34 +419,26 @@ class Nansat():
 
         Modifies
         --------
-            self.warpedVRT: VRT dataset
-                new warped vrt
-            self.vrt: VRT dataset
-                replaced warped VRT
+            self.vrt: VRT object with VRT dataset
+                replaced with warpedVRT
 
         '''
-        #name of VRT with 'fake' GCPs
-        tmpVRTName = '/vsimem/vsiFileFakeGCP.vrt'
-
         # prepare pure lat/lon WKT
-        proj4string = "+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"
-        latlongSRS = osr.SpatialReference()
-        latlongSRS.ImportFromProj4(proj4string)
-        latlongWKT = latlongSRS.ExportToWkt()
+        latlongWKT = self._latlong_srs().ExportToWkt()
 
         # get source SRS (either Projection or GCPProjection)
-        srcWKT = self.vrt.GetProjection()
+        srcWKT = self.vrt.dataset.GetProjection()
         if srcWKT == '':
-            srcWKT = self.vrt.GetGCPProjection()
+            srcWKT = self.vrt.dataset.GetGCPProjection()
 
         # the transformer converts lat/lon to pixel/line of SRC image
         srcTransformer = gdal.Transformer(
-                             self.vrt, None,
+                             self.vrt.dataset, None,
                              ['SRC_SRS=' + srcWKT,
                              'DST_SRS=' + latlongWKT])
 
         # get GCPs from DST image
-        gcps = gcpImage.vrt.GetGCPs()
+        gcps = gcpImage.vrt.dataset.GetGCPs()
 
         # create 'fake' GCPs
         for g in gcps:
@@ -524,43 +455,45 @@ class Nansat():
             g.GCPLine = srcLine
 
         # make copy of the RAW VRT file and replace GCPs
-        tmpVRT = self.vrtDriver.CreateCopy(tmpVRTName, self.rawVRT)
-
+        tmpVRT = self.raw.copy()
+        
         # create 'fake' STEREO projection for 'fake' GCPs of SRC image
         srsString = ("+proj=stere +lon_0=0 +lat_0=0 +k=1 "
                      "+ellps=WGS84 +datum=WGS84 +no_defs ")
         stereoSRS = osr.SpatialReference()
         stereoSRS.ImportFromProj4(srsString)
         stereoSRSWKT = stereoSRS.ExportToWkt()
-        tmpVRT.SetGCPs(gcps, stereoSRSWKT)
-        tmpVRT.SetProjection('')
-        tmpVRT = None
-
+        tmpVRT.dataset.SetGCPs(gcps, stereoSRSWKT)
+        tmpVRT.dataset.SetProjection('')
+        
         # remove GeoTransfomr from SRC image
-        # read XML content from VSI-file
-        vsiFileContent = self._read_write_vsi_file(tmpVRTName)
-
+        # read XML content from VRT
+        tmpVRTXML = tmpVRT.read_xml()
         # find and remove GeoTransform
-        tree = XML(vsiFileContent)
+        tree = XML(tmpVRTXML)
         elemGT = tree.find("GeoTransform")
         tree.remove(elemGT)
 
-        # Write the modified elemements back into VSI-file
-        self._read_write_vsi_file(tmpVRTName, tostring(tree))
-
+        # Write the modified elemements back into temporary VRT
+        tmpVRT.write_xml(tostring(tree))
+        
         # create warped vrt out of tmp vrt
-        tmpVRT = gdal.Open(tmpVRTName)
-        rawWarpedVRT = gdal.AutoCreateWarpedVRT(tmpVRT, stereoSRSWKT,
+        rawWarpedVRT = gdal.AutoCreateWarpedVRT(tmpVRT.dataset, stereoSRSWKT,
                                                 stereoSRSWKT,
                                                 resamplingAlg)
+        self.logger.debug('rawWarpedVRT: %s' % str(rawWarpedVRT))
+        warpedVRT = VRT(vrtDataset=rawWarpedVRT, logLevel=self.logger.level)
+        warpeVRTXML = warpedVRT.read_xml()
 
         # change size and geotransform to fit the DST image
-        self.warpedVRT = self._modify_warpedVRT(
-                                   rawWarpedVRT,
-                                   gcpImage.vrt.RasterXSize,
-                                   gcpImage.vrt.RasterYSize,
+        warpeVRTXML = self._modify_warped_VRT_XML(warpeVRTXML,
+                                   gcpImage.vrt.dataset.RasterXSize,
+                                   gcpImage.vrt.dataset.RasterYSize,
                                    (0, 1, 0, 0, 0, 1))
-        self.vrt = self.warpedVRT
+        # update warped VRT with new XML
+        warpedVRT.write_xml(warpeVRTXML)
+        # set current VRT to be warped
+        self.vrt = warpedVRT
 
     def watermask(self, mod44path=None, dstDomain=None):
         '''Create numpy array with watermask (water=1, land=0)
@@ -605,18 +538,19 @@ class Nansat():
         # check if VRT file exist
         elif not os.path.exists(mod44path+'/MOD44W.vrt'):
             mod44DataExist = False
+        self.logger.debug('MODPATH: %s' % mod44path)
 
         if not mod44DataExist:
             # MOD44W data does not exist generate empty matrix
-            watermask = np.zeros(self.vrt.RasterXSize, self.vrt.RasterYSize)
+            watermask = np.zeros(self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path+'/MOD44W.vrt');
+            watermask = Nansat(mod44path+'/MOD44W.vrt', logLevel=self.logger.level);
             # choose reprojection method
             if dstDomain is not None:
                 watermask.reproject(dstDomain)
-            elif self.vrt.GetGCPCount() == 0:
-                watermask.reproject(Domain(self.vrt))
+            elif self.vrt.dataset.GetGCPCount() == 0:
+                watermask.reproject(Domain(self.vrt.dataset, logLevel=self.logger.level))
             else:
                 watermask.reproject_on_gcp(self)
 
@@ -688,8 +622,8 @@ class Nansat():
                 iArray = self.__getitem__(iBand)
                 self.logger.debug(iArray.shape)
                 array = np.append(array, iArray)
-            array = array.reshape(len(bands), int(self.vrt.RasterYSize),
-                int(self.vrt.RasterXSize))
+            array = array.reshape(len(bands), int(self.vrt.dataset.RasterYSize),
+                int(self.vrt.dataset.RasterXSize))
         else:
             array = self.__getitem__(bands)
             bands = [bands]
@@ -705,7 +639,7 @@ class Nansat():
             clim = [[], []]
             for i, iBand in enumerate(bands):
                 try:
-                    defValue = (self.vrt.GetRasterBand(iBand).
+                    defValue = (self.vrt.dataset.GetRasterBand(iBand).
                                 GetMetadataItem("minmax").split(" "))
                 except:
                     clim = 'hist'
@@ -733,8 +667,14 @@ class Nansat():
         
         # == PREPARE caption ==
         # get longName and units from vrt
-        longName = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("long_name")
-        units = self.vrt.GetRasterBand(bands[0]).GetMetadataItem("units")
+        bandNo = 1
+        if isinstance(bands[0], int):
+            bandNo = bands[0]
+        elif isinstance(bands[0], str):
+            bandNo = self._specify_bandNo({'band_name': bands[0]})
+            
+        longName = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("long_name")
+        units = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("units")
         # if they don't exist make empty strings
         if longName is None:
             longName = ''
@@ -752,47 +692,6 @@ class Nansat():
 
         return fig
             
-    def get_domain(self):
-        ''' Returns: Domain of the Nansat object '''
-        return Domain(self.vrt, logLevel=self.logger.level)
-
-    def _add_logger(self, logName='', logLevel=30):
-        ''' Creates and returns logger with default formatting for Nansat
-        
-        Parameters:
-        -----------
-            logName: string, optional
-                Name of the logger
-            logLevel: int, option, default=30
-                level at which logging is performed
-        
-        Returns:
-        --------
-            logging.logger
-            See also: http://docs.python.org/howto/logging.html
-        '''
-    
-        # create (or take already existing) logger
-        # with default logging level WARNING
-        logger = logging.getLogger(logName)
-        logger.setLevel(logLevel)
-        
-        # if logger already exits, default stream handler was already added
-        # otherwise create and add a new handler
-        if len(logger.handlers) == 0:
-            # create console handler and set level to debug
-            ch = logging.StreamHandler()
-            # create formatter
-            formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|%(funcName)s|%(message)s', datefmt='%I:%M:%S')
-            # add formatter to ch
-            ch.setFormatter(formatter)
-            # add ch to logger
-            logger.addHandler(ch)
-    
-        logger.handlers[0].setLevel(logLevel)    
-        
-        return logger
-
     def _get_mapper(self, mapperName, bandList):
         '''Creare VRT file in memory (VSI-file) with variable mapping
 
@@ -816,8 +715,8 @@ class Nansat():
 
         Returns
         -------
-            vsiDataset : VRT dataset
-                VRT dataset with mapping of variables keeped in memory)
+            tmpVRT : VRT object
+                tmpVRT.dataset is a GDAL VRT dataset
 
         Raises
         --------
@@ -831,14 +730,12 @@ class Nansat():
 
         # try to import and get VRT datasaet from all mappers. Break on success
         # if none of the mappers worked - None is returned
-        vrtDataset = None
+        tmpVRT = None
         # For debugging:
         """
         mapper_module = __import__('mapper_modisL2NRT')
-        vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
-                                self.fileName, self.dataset,
-                                self.metadata,
-                                bandList).vsiDataset
+        tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
+                                      self.metadata, bandList, logLevel=self.logger.level)
         """
         # Otherwise
         for iMapper in self.mapperList:
@@ -849,21 +746,20 @@ class Nansat():
                 #import mapper
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
-                vrtDataset = mapper_module.Mapper(self.rawVRTFileName,
-                                        self.fileName, self.dataset,
-                                        self.metadata,
-                                        bandList).vsiDataset
+                tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
+                                              self.metadata, bandList,
+                                              logLevel=self.logger.level)
                 self.logger.info('Mapper %s - success!' % iMapper)
                 break
             except:
                 pass
         # """
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
-        if vrtDataset is None:
+        if tmpVRT is None:
             self.logger.info('No mapper fits!')
-            vrtDataset = self.vrtDriver.CreateCopy(self.rawVRTFileName,
-                                                   self.dataset)
-        return vrtDataset
+            tmpVRT = VRT(vrtDataset=self.gdalDataset, logLevel=self.logger.level)
+            
+        return tmpVRT
 
     def _get_pixelValue(self, val, defVal):
         if val == "":
@@ -871,12 +767,14 @@ class Nansat():
         else:
             return val
 
-    def _modify_warpedVRT(self, rawWarpedVRT,
+    def _modify_warped_VRT_XML(self, vrtXML,
                           rasterXSize, rasterYSize, geoTransform):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
 
         Parameters
         ----------
+            vrtXML: string with XML
+                original content of the original VRT file
             rasterXSize: integer
                 desired X size of warped image
             rasterYSize: integer
@@ -884,20 +782,15 @@ class Nansat():
             rasterYSize: tuple of 6 integers
                 desired GeoTransform size of the warped image
 
-        Modifies
+        Returns
         --------
-            the VRT file which keepes warped vrt is modified
+            vrtXML : string with XML
+                modified content of the original VRT file
 
         '''
-        # Write the warpedVRT to a VSI-file
-        vrtDatasetCopy = self.vrtDriver.CreateCopy(self.warpedVRTFileName,
-                                                   rawWarpedVRT)
-        # Get XML content from VSI-file
-        vsiFileContent = self._read_write_vsi_file(self.warpedVRTFileName)
-
         # Get element from the XML content and modify some elements
         # using Domain object parameters
-        element = XML(vsiFileContent)
+        element = XML(vrtXML)
         element.set("rasterXSize", str(rasterXSize))
         element.set("rasterYSize", str(rasterYSize))
         tree = ElementTree(element)
@@ -936,50 +829,8 @@ class Nansat():
 
         # Overwrite element
         element = tree.getroot()
-
-        # Write the modified elemements into VSI-file
-        self._read_write_vsi_file(self.warpedVRTFileName, tostring(element))
-
-        newWarpedVRT = gdal.Open(self.warpedVRTFileName)
-        return newWarpedVRT
-
-    def _read_write_vsi_file(self, vsiFileName, vsiFileContent=None):
-        '''Read or write content of a VSI-file
-
-        If only file name is given then content of the file is read and
-        returned, if content is provided then it is written to the file
-
-        Parameters:
-            vsiFileName: string
-                Name of the VSI file to read/create
-            vsiFileContent: string, optional
-                Content of the VSI file to write
-
-        Returns:
-            vsiFileContent: string
-                Content which is read from the VSI file
-        '''
-
-        if vsiFileContent is None:
-            #read from the vsi-file
-            # open
-            vsiFile = gdal.VSIFOpenL(vsiFileName, "r")
-            # get file size
-            gdal.VSIFSeekL(vsiFile, 0, 2)
-            vsiFileSize = gdal.VSIFTellL(vsiFile)
-             # fseek to start again
-            gdal.VSIFSeekL(vsiFile, 0, 0)
-            # read
-            vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
-            gdal.VSIFCloseL(vsiFile)
-            return vsiFileContent
-        else:
-            #write to the vsi-file
-            vsiFile = gdal.VSIFOpenL(vsiFileName, 'w')
-            gdal.VSIFWriteL(vsiFileContent,
-                            len(vsiFileContent), 1, vsiFile)
-            gdal.VSIFCloseL(vsiFile)
-            return 0
+        # return XML content
+        return tostring(element)
 
     def _specify_bandNo(self, bandID):
         '''Specify a band number based on bandID {'key_name': 'key_value'}
@@ -1012,9 +863,9 @@ class Nansat():
         # search for the specific band based on bandID
         candidate = []
         # loop through all bands
-        for iBand in range(self.vrt.RasterCount):
+        for iBand in range(self.vrt.dataset.RasterCount):
             # get metadata from band
-            bandMetadata = self.rawVRT.GetRasterBand(iBand + 1).GetMetadata()
+            bandMetadata = self.raw.dataset.GetRasterBand(iBand + 1).GetMetadata()
             allKeysAreGood = True
             # loop through all input keys
             for bandIDKey in bandID:

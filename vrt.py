@@ -17,7 +17,9 @@
 # http://www.gnu.org/licenses/
 
 import os
-from string import Template
+from string import Template, ascii_uppercase, digits
+from random import choice
+
 import logging
 
 from xml.etree.ElementTree import ElementTree
@@ -28,31 +30,113 @@ except ImportError:
     import gdal
     import osr
 
+from nansat_tools import add_logger
 
 class VRT():
-    '''Top class of Nansat readers
+    '''VRT dataset management
 
-    Set attributes to VRT.
-    self.vsiDataset include all band information specified in each mapper.
-
+    Used in Domain and Nansat
+    Perfroms all peration on VRT datasets: creation, copying, modification,
+    writing, etc.
+    All mapper inherit from VRT
     '''
 
-    def __init__(self, dataset, metadata, rawVRTName):
-        ''' Set attributes common for all mappers
-
+    def __init__(self, gdalDataset=None, vrtDataset=None,
+                                         srcGeoTransform=None,
+                                         srcProjection=None,
+                                         srcRasterXSize=None,
+                                         srcRasterYSize=None,
+                                         srcMetadata=None,
+                                         logLevel=30):
+        ''' Create VRT dataset from GDAL dataset, or from given parameters
+        
+        If vrtDataset is given, creates full copy of VRT content
+        Otherwise takes reprojection parameters (geotransform, projection, etc)
+        either from given GDAL dataset or from seperate parameters.
+        Create VRT dataset (self.dataset) based on these parameters
+        Adds logger
+        
         Parameters
         ----------
-        datset: GDAL Dataset
-            dataset from Nansat
-        metadata: GDAL metadata
-            metadata from Nansat
-        rawVRTName: string
-            file name from Nansat ('/vsimem/vsiFile.vrt')
+            gdalDataset: GDAL Dataset
+                source dataset of geo-reference
+            vrtDataset: GDAL VRT Dataset
+                source dataset of all content (geo-reference and bands)
+            srcGeoTransform: GDALGeoTransform
+                parameter of geo-reference
+            srcProjection, GDALProjection
+                parameter of geo-reference
+            srcRasterXSize, INT
+                parameter of geo-reference
+            srcRasterYSize, INT
+                parameter of geo-reference
+            srcMetadata: GDAL Metadata
+                additional parameter
+            logLevel: int
+        
+        Modifies:
+        ---------
+            self.dataset: GDAL VRT dataset
+            self.logger: logging logger
+            self.vrtDriver: GDAL Driver
+        
         '''
-        self.logger = logging.getLogger('Nansat')
-        self.metadata = metadata
-        self.rawVRTName = rawVRTName
-        self.dataset = dataset
+        # essential attributes
+        self.logger = add_logger('Nansat', logLevel=logLevel)
+        self.fileName = self._make_filename()
+        self.vrtDriver = gdal.GetDriverByName("VRT")
+        self.logger.debug('input vrtDataset: %s' % str(vrtDataset))
+        # copy content of the provided VRT dataset
+        if vrtDataset is not None:
+            self.logger.debug('Making copy of %s ' % str(vrtDataset))
+            self.dataset = self.vrtDriver.CreateCopy(self.fileName, vrtDataset)
+        else:
+            # get geo-metadata from given GDAL dataset
+            if gdalDataset is not None:
+                srcGeoTransform = gdalDataset.GetGeoTransform()
+                srcProjection = gdalDataset.GetProjection()
+                srcProjectionRef = gdalDataset.GetProjectionRef()
+                srcGCPCount = gdalDataset.GetGCPCount()
+                srcGCPs = gdalDataset.GetGCPs()
+                srcGCPProjection = gdalDataset.GetGCPProjection()
+        
+                srcRasterXSize = gdalDataset.RasterXSize
+                srcRasterYSize = gdalDataset.RasterYSize
+                
+                srcMetadata = gdalDataset.GetMetadata()
+                self.logger.debug('RasterXSize %d' % gdalDataset.RasterXSize)
+                self.logger.debug('RasterYSize %d' % gdalDataset.RasterYSize)
+            else:
+                srcGCPs=[]
+                srcGCPProjection=None
+    
+            # create VRT dataset
+            self.dataset = self.vrtDriver.Create(self.fileName,
+                                            srcRasterXSize, srcRasterYSize, bands=0)
+    
+            # set geo-metadata in the VRT dataset
+            self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
+            self.dataset.SetProjection(srcProjection)
+            self.dataset.SetGeoTransform(srcGeoTransform)
+    
+            # set metadata
+            self.dataset.SetMetadata(srcMetadata)
+            # write file contents
+            self.dataset.FlushCache()
+
+        self.logger.debug('VRT self.dataset: %s' % self.dataset)
+        self.logger.debug('VRT description: %s ' % self.dataset.GetDescription())
+        self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
+        self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
+        self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)        
+    
+    def _make_filename(self):
+        '''Create random VSI file name'''
+        allChars=ascii_uppercase + digits
+        randomChars = ''.join(choice(allChars) for x in range(10))
+        
+        return '/vsimem/%s.vrt' % randomChars
+
 
     def _add_pixel_function(self, pixelFunction, bands, fileName, metaDict):
         ''' Generic function for mappers to add PixelFunctions
@@ -79,14 +163,14 @@ class VRT():
 
         Modifies
         --------
-        self.vsiDataset: VRT dataset
+        self.dataset: VRT dataset
             add PixelFunctions from bands in the same dataset
         '''
 
-        newBand = self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount)
+        newBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
         options = ['subClass=VRTDerivedRasterBand',
                    'PixelFunctionType=' + pixelFunction]
-        self.vsiDataset.AddBand(datatype=gdal.GDT_Float32, options=options)
+        self.dataset.AddBand(datatype=gdal.GDT_Float32, options=options)
         md = {}
         srcDataset = gdal.Open(fileName)
         for i, bandNo in enumerate(bands):
@@ -94,15 +178,15 @@ class VRT():
             blockXSize, blockYSize = srcRasterBand.GetBlockSize()
             dataType = srcRasterBand.DataType
             md['source_' + str(i)] = self.SimpleSource.substitute(
-                                        XSize=self.vsiDataset.RasterXSize,
+                                        XSize=self.dataset.RasterXSize,
                                         BlockXSize=blockXSize,
                                         BlockYSize=blockYSize,
                                         DataType=dataType,
-                                        YSize=self.vsiDataset.RasterYSize,
+                                        YSize=self.dataset.RasterYSize,
                                         Dataset=fileName, SourceBand=bandNo)
 
         # set metadata for each destination raster band
-        dstRasterBand = self.vsiDataset.GetRasterBand(self.vsiDataset.\
+        dstRasterBand = self.dataset.GetRasterBand(self.dataset.\
                                                         RasterCount)
 
         dstRasterBand.SetMetadata(md, 'vrt_sources')
@@ -118,7 +202,7 @@ class VRT():
 
         dstRasterBand.SetMetadataItem('pixelfunction', pixelFunction)
         # Took 5 hours of debugging to find this one!!!
-        self.vsiDataset.FlushCache()
+        self.dataset.FlushCache()
 
     SimpleSource = Template('''
             <SimpleSource>
@@ -144,8 +228,7 @@ class VRT():
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </ComplexSource> ''')
 
-    def _add_all_bands(self, vrtBandList, metaDict,
-                     srcRasterXSize, srcRasterYSize):
+    def _add_all_bands(self, vrtBandList, metaDict):
         '''Loop through all bands and add metadata and band XML source
 
         Parameters
@@ -156,17 +239,14 @@ class VRT():
             incldes some dictionaries.
             The number of dictionaries is same as number of bands.
             Each dictionary represents metadata for each band.
-        srcRasterXSize, srcRasterYSize: int
-            raster XSize and rasterYSize
-
-        Returns 0
-        --------
 
         Modifies
         --------
-        self.vsiDataset: VRT dataset
-            VSI VRT dataset added band metadata
+        self.dataset: VRT dataset
+            Band data and metadata is added to the VRT dataset
         '''
+        self.logger.debug('self.dataset: %s' % str(self.dataset))
+        self.logger.debug('vrtBandList %s' % str(vrtBandList))
         for iBand, bandNo in enumerate(vrtBandList):
             # check if the band in the list exist
             if int(bandNo) > int(metaDict.__len__()):
@@ -192,9 +272,9 @@ class VRT():
                 bandDataType = gdal.GDT_Float32
             
             # add a band to the VRT dataset
-            self.vsiDataset.AddBand(bandDataType)
+            self.dataset.AddBand(bandDataType)
             # set metadata for each destination raster band
-            dstRasterBand = self.vsiDataset.GetRasterBand(iBand + 1)
+            dstRasterBand = self.dataset.GetRasterBand(iBand + 1)
             # set metadata from WKV
             wkvName = metaDict[bandNo - 1]["wkv"]
             dstRasterBand = self._put_metadata(dstRasterBand,
@@ -214,8 +294,8 @@ class VRT():
 
             # create band source metadata
             bandSource = self.ComplexSource.\
-                              substitute(XSize=srcRasterXSize,
-                              YSize=srcRasterYSize,
+                              substitute(XSize=self.dataset.RasterXSize,
+                              YSize=self.dataset.RasterYSize,
                               Dataset=metaDict[bandNo-1]['source'],
                               SourceBand=metaDict[bandNo-1]['sourceBand'],
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
@@ -226,8 +306,8 @@ class VRT():
                 if bandMetaParameters['source'] == 'simple':
                     # create band source metadata
                     bandSource = self.SimpleSource.\
-                              substitute(XSize=srcRasterXSize,
-                              YSize=srcRasterYSize,
+                              substitute(XSize=self.dataset.RasterXSize,
+                              YSize=self.dataset.RasterYSize,
                               Dataset=metaDict[bandNo-1]['source'],
                               SourceBand=metaDict[bandNo-1]['sourceBand'],
                               BlockXSize=xBlockSize, BlockYSize=yBlockSize,
@@ -237,61 +317,7 @@ class VRT():
             # set band source metadata
             dstRasterBand.SetMetadataItem("source_0", bandSource,
                                           "new_vrt_sources")
-
-        self.vsiDataset.FlushCache()
-
-        return 0
-
-    def _createVRT(self, metaDict, vrtBandList):
-        ''' Create VSI VRT dataset, set geo-metadata, add all bands
-
-        Parameters
-        -----------
-        metaDict: list
-            includes some dictionaries for mapping bands in input Datset
-            and well-known-variables. The number of dictionaries is same
-            as number of bands. Each dictionary represents metadata for
-            each band.
-        vrtBandList: list
-            band numbers to fetch.
-            If it is None, all bands in the file are fetched.
-
-        Modifies
-        --------
-            Creates self.vsiDataset
-            Sets in vsiDataset: srcRasterXSize, srcRasterYSize,
-            GeoTransform, GCPS, ...
-            Add all bands to the vsiDataset
-        '''
-        # get geo-metadata from source dataset (or subdataset)
-        srcGeoTransform = self.dataset.GetGeoTransform()
-        srcProjection = self.dataset.GetProjection()
-        srcProjectionRef = self.dataset.GetProjectionRef()
-        srcGCPCount = self.dataset.GetGCPCount()
-        srcGCPs = self.dataset.GetGCPs()
-        srcGCPProjection = self.dataset.GetGCPProjection()
-
-        srcRasterXSize = self.dataset.GetRasterBand(1).XSize
-        srcRasterYSize = self.dataset.GetRasterBand(1).YSize
-
-        # create VSI VRT dataset
-        vrtDrv = gdal.GetDriverByName("VRT")
-        self.vsiDataset = vrtDrv.Create(self.rawVRTName,
-                                        srcRasterXSize, srcRasterYSize, bands=0)
-
-        # set geo-metadata in the VSI VRT dataset
-        self.vsiDataset.SetGCPs(srcGCPs, srcGCPProjection)
-        self.vsiDataset.SetProjection(srcProjection)
-        self.vsiDataset.SetGeoTransform(srcGeoTransform)
-
-        # set metadata
-        self.vsiDataset.SetMetadata(self.metadata)
-
-        # add bands with metadata and corresponding values
-        self._add_all_bands(vrtBandList, metaDict,
-                            srcRasterXSize, srcRasterYSize)
-
-        return 0
+        self.dataset.FlushCache()
 
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
@@ -343,3 +369,59 @@ class VRT():
             rasterBand.SetMetadataItem(key, metadataDict[key])
 
         return rasterBand
+
+    def read_xml(self):
+        '''Read XML content of the VRT dataset
+
+        Returns:
+            vsiFileContent: string
+                XMl Content which is read from the VSI file
+        '''
+
+        # write dataset content into VRT-file
+        self.dataset.FlushCache()
+        #read from the vsi-file
+        # open
+        vsiFile = gdal.VSIFOpenL(self.fileName, "r")
+        # get file size
+        gdal.VSIFSeekL(vsiFile, 0, 2)
+        vsiFileSize = gdal.VSIFTellL(vsiFile)
+         # fseek to start again
+        gdal.VSIFSeekL(vsiFile, 0, 0)
+        # read
+        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
+        gdal.VSIFCloseL(vsiFile)
+        return vsiFileContent
+
+    def write_xml(self, vsiFileContent=None):
+        '''Write XML content into a VRT dataset
+
+        Parameters:
+            vsiFileContent: string, optional
+                XML Content of the VSI file to write
+        Modifies:
+            self.dataset
+                If XML content was written, self.dataset is re-opened
+        '''
+        #write to the vsi-file
+        vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
+        gdal.VSIFWriteL(vsiFileContent,
+                        len(vsiFileContent), 1, vsiFile)
+        gdal.VSIFCloseL(vsiFile)
+        # re-open self.dataset with new content
+        self.dataset = gdal.Open(self.fileName)
+                
+    def export(self, fileName):
+        '''Export VRT file as XML into <fileName>'''
+        self.vrtDriver.CreateCopy(fileName, self.dataset)
+
+    def copy(self):
+        '''Creates full copy of VRT dataset'''
+        try:
+            # deep copy (everything including bands)
+            vrt = VRT(vrtDataset=self.dataset, logLevel=self.logger.level)
+        except:
+            # shallow copy (only geometadata)
+            vrt = VRT(gdalDataset=self.dataset, logLevel=self.logger.level)
+        
+        return vrt

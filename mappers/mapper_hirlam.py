@@ -13,11 +13,9 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for HIRLAM '''
 
-    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
-        ''' Create HIRLAM VRT '''
-        VRT.__init__(self, dataset, metadata, rawVRTFileName);
+    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
 
-        if dataset.GetGeoTransform()[0:5] != (-12.1, 0.2, 0.0, 81.95, 0.0):
+        if gdalDataset.GetGeoTransform()[0:5] != (-12.1, 0.2, 0.0, 81.95, 0.0):
             raise AttributeError("HIRLAM BAD MAPPER");
 
         metaDict = [\
@@ -28,7 +26,12 @@ class Mapper(VRT):
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
             
-        self._createVRT(metaDict, vrtBandList);
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+
+        # add bands with metadata and corresponding values to the empty VRT
+        self._add_all_bands(vrtBandList, metaDict)
+
 
         ##############################################################
         # Adding derived bands (wind speed and "wind_from_direction") 

@@ -13,11 +13,9 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for ASAR Level 1 '''
 
-    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
-        ''' Create ASAR VRT '''
-        VRT.__init__(self, dataset, metadata, rawVRTFileName);
+    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
         
-        product = metadata.get("MPH_PRODUCT", "Not_ASAR")
+        product = gdalMetadata.get("MPH_PRODUCT", "Not_ASAR")
 
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER");
@@ -27,11 +25,15 @@ class Mapper(VRT):
                      'wkv': 'normalized_radar_cross_section',
                      'parameters':{
                          'band_name': 'sigma0',
-                         'polarisation': metadata['SPH_MDS1_TX_RX_POLAR'],
-                         'pass': metadata['SPH_PASS'],
+                         'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
+                         'pass': gdalMetadata['SPH_PASS'],
                          'warning': 'fake sigma0, not yet calibrated'}}];
 
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
             
-        self._createVRT(metaDict, vrtBandList);
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+
+        # add bands with metadata and corresponding values to the empty VRT
+        self._add_all_bands(vrtBandList, metaDict)

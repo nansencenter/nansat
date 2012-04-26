@@ -14,11 +14,9 @@ from meris import MERIS
 class Mapper(VRT, MERIS):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
         ''' Create MER1 VRT '''
-        VRT.__init__(self, dataset, metadata, rawVRTFileName);
-
-        product = metadata.get("MPH_PRODUCT", "Not_MERIS")
+        product = gdalMetadata.get("MPH_PRODUCT", "Not_MERIS")
 
         if product[0:9] != "MER_FRS_1" and product[0:9] != "MER_RR__1":
             raise AttributeError("MERIS_L1 BAD MAPPER");
@@ -55,7 +53,9 @@ class Mapper(VRT, MERIS):
         
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
-            
-        self._createVRT(metaDict, vrtBandList);
         
-        return
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+
+        # add bands with metadata and corresponding values to the empty VRT
+        self._add_all_bands(vrtBandList, metaDict)

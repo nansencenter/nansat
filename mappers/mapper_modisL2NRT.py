@@ -16,19 +16,20 @@ import numpy as np
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
         ''' Create MODIS_L1 VRT '''
         GCP_COUNT = 1000
         # get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
-        subDatasets = dataset.GetSubDatasets()
-        subDs = gdal.Open(subDatasets[0][0])
-        VRT.__init__(self, subDs, metadata, rawVRTFileName)
+        subDatasets = gdalDataset.GetSubDatasets()
        
         # should raise error in case of not MODIS_L2_NRT
-        mTitle = metadata["Title"];
-        self.logger.info('resolution: %s' % mTitle)
+        mTitle = gdalMetadata["Title"];
         if mTitle is not 'HMODISA Level-2 Data':
             AttributeError("MODIS_L2_NRT BAD MAPPER");
+
+        # create empty VRT dataset with geolocation only
+        gdalSubDataset = gdal.Open(subDatasets[0][0])
+        VRT.__init__(self, gdalSubDataset, logLevel=logLevel);
         
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '412'} }
@@ -86,9 +87,11 @@ class Mapper(VRT):
             vrtBandList = range(1,len(metaDict)+1);
         
         self.logger.debug('metaDict: %s' % metaDict)
-        self._createVRT(metaDict, vrtBandList);
+        
+        # add bands with metadata and corresponding values to the empty VRT
+        self._add_all_bands(vrtBandList, metaDict)
 
-        # add GCPs and Pojection
+        # ==== add GCPs and Pojection ====
         for subDataset in subDatasets:
             # read longitude matrix
             if 'longitude' in subDataset[1]:
@@ -128,7 +131,7 @@ class Mapper(VRT):
         latlongSRS = osr.SpatialReference()
         latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
-        self.vsiDataset.SetGCPs(gcps, latlongSRSWKT)
+        self.dataset.SetGCPs(gcps, latlongSRSWKT)
 
         # add GEOLOCATION
         for subDataset in subDatasets:
@@ -140,15 +143,15 @@ class Mapper(VRT):
         latlongSRS = osr.SpatialReference()
         latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
-        self.vsiDataset.SetProjection(latlongSRSWKT)
-        self.vsiDataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('SRS', latlongSRSWKT, 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('X_BAND', '1', 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('X_DATASET', xSubDatasetName, 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
-        self.vsiDataset.SetMetadataItem('Y_DATASET', ySubDatasetName, 'GEOLOCATION')
+        self.dataset.SetProjection(latlongSRSWKT)
+        self.dataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('SRS', latlongSRSWKT, 'GEOLOCATION')
+        self.dataset.SetMetadataItem('X_BAND', '1', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('X_DATASET', xSubDatasetName, 'GEOLOCATION')
+        self.dataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('Y_DATASET', ySubDatasetName, 'GEOLOCATION')
         
         return

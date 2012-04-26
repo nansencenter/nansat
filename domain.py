@@ -40,10 +40,9 @@ except ImportError:
     import gdal
     import osr
 
-import logging
+from nansat_tools import initial_bearing, add_logger
 
-from nansat_tools import initial_bearing
-
+from vrt import VRT
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -66,7 +65,7 @@ class Domain():
     def __init__(self, *args, **kwargs):
         '''Create Domain from given GDAL Dataset or textual options
 
-        The main attribute of Domain is memDataset which is a GDAL
+        The main attribute of Domain is vrtDataset which is a GDAL
         Dataset of type MEM. It has such attributes as rasterXsize,
         rasterYsize, GeoTransform and GeoPorjection which fully describe
         dimentions and spatial reference of the grid. The MEM dataset is
@@ -107,7 +106,7 @@ class Domain():
 
         Modifies
         --------
-        self.memDatasetset: dataset in memory
+        self.vrt.datasetset: dataset in memory
             dataset created based on the arguments
 
         See Also
@@ -117,20 +116,23 @@ class Domain():
         [http://trac.osgeo.org/proj/]
 
         '''
-        self.logger = logging.getLogger('Nansat')
+        
         # test input options
-        self.name = ''
-        if 'name' in kwargs:
-            self.name = kwargs['name']
         logLevel = 30
         if 'logLevel' in kwargs:
             logLevel = kwargs['logLevel']
+        self.logger = add_logger('Nansat', logLevel=logLevel)
+
+        self.name = ''
+        if 'name' in kwargs:
+            self.name = kwargs['name']
+
         # Domain(dataset=...) or Domain(dataset)
-        dataset = None
+        gdalDataset = None
         if 'dataset' in kwargs:
-            dataset = kwargs['dataset']
+            gdalDataset = kwargs['dataset']
         elif (len(args) > 0 and isinstance(args[0], gdal.Dataset)):
-            dataset = args[0]
+            gdalDataset = args[0]
 
         # Domain(srsString='...', extentString='...') or
         # Domain(srsString, extentString)
@@ -143,18 +145,13 @@ class Domain():
             srsString = args[0]
             extentString = args[1]
         
-        # init dataset parameters
-        gcps = []
-        rasterXSize = 0
-        rasterYSize = 0
-        
+        self.logger.debug('ds: %s' % str(gdalDataset))
+        self.logger.debug('srs: %s' % srsString)
+        self.logger.debug('ext: %s' % extentString)
+
         # test option when only dataset is given
-        if dataset is not None:
-            rasterXSize = dataset.RasterXSize
-            rasterYSize = dataset.RasterYSize
-            geoTransform = dataset.GetGeoTransform()
-            dstWKT = self._get_projection(dataset)
-            gcps = dataset.GetGCPs()
+        if gdalDataset is not None:
+            self.vrt = VRT(gdalDataset=gdalDataset, logLevel=logLevel)
 
         # test option when proj4 and extent string are given
         elif (srsString is not None and extentString is not None):
@@ -179,34 +176,22 @@ class Domain():
                 extentDic = self._convert_extentDic(dstWKT, extentDic)
 
             # get size/extent from the created extet dictionary
-            [geoTransform,
-             rasterXSize,
-             rasterYSize] = self._get_geotransform(extentDic)
+            [geoTransform, rasterXSize,
+                           rasterYSize] = self._get_geotransform(extentDic)
+            # create VRT object with given geo-reference parameters
+            self.vrt = VRT(srcGeoTransform=geoTransform, srcProjection=dstWKT,
+                                           srcRasterXSize=rasterXSize,
+                                           srcRasterYSize=rasterYSize,
+                                           logLevel=logLevel)
 
         else:
             raise OptionError("'dataset' or 'srsString and extentString' "
                               "are required")
 
-        if rasterXSize != 0 or rasterYSize != 0:
-            # If everything is fine so far
-            # Create an empty memDataset and set rasterXSize, rasterYSize,
-            # GeoTransform and Projection (or GCPs)
-            memDriver = gdal.GetDriverByName("MEM")
-            self.memDataset = memDriver.Create("warped.mem",
-                                               rasterXSize,
-                                               rasterYSize, 0)
-            self.memDataset.SetGeoTransform(geoTransform)
-            self.memDataset.Coordinates = None
-            if len(gcps) > 0:
-                self.memDataset.SetGCPs(gcps, dstWKT)
-            else:
-                self.memDataset.SetProjection(dstWKT)
-        else:
-            #if rasterXSize or rasterYSize are bad create empty Domain Object
-            self.memDataset = None
-
+        self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
+        
     def __repr__(self):
-        '''Prints basic info about the Domain object to the terminal
+        '''Creates string with basic info about the Domain object
 
         Modifies
         --------
@@ -214,11 +199,11 @@ class Domain():
 
         '''
         toPrettyWKT = osr.SpatialReference()
-        toPrettyWKT.ImportFromWkt(self._get_projection(self.memDataset))
+        toPrettyWKT.ImportFromWkt(self._get_projection(self.vrt.dataset))
         prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
         corners = self.get_corners()
-        outStr = 'Domain:[%d x %d]\n' % (self.memDataset.RasterXSize,
-                                 self.memDataset.RasterYSize)
+        outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
+                                 self.vrt.dataset.RasterYSize)
         outStr += '-' * 40 + '\n'
         outStr += 'Projection:\n'
         outStr += prettyWKT + '\n'
@@ -299,9 +284,9 @@ class Domain():
         '''Get longitude and latitude grids representing the full data grid'''
         longitude = []
         latitude = []
-        for i in range(self.memDataset.RasterXSize):
-            [lo,la] = self._transform_points( [i]*self.memDataset.RasterYSize, 
-                    range(self.memDataset.RasterYSize) )
+        for i in range(self.vrt.dataset.RasterXSize):
+            [lo,la] = self._transform_points( [i]*self.vrt.dataset.RasterYSize, 
+                    range(self.vrt.dataset.RasterYSize) )
             longitude.append(lo)
             latitude.append(la)
         return [longitude,latitude]
@@ -562,7 +547,7 @@ class Domain():
         '''
         # prepare vectors with pixels and lines for upper, left, lower
         # and right borders
-        sizes = [self.memDataset.RasterXSize, self.memDataset.RasterYSize]
+        sizes = [self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize]
 
         rcVector1 = [[], []]
         rcVector2 = [[], []]
@@ -641,10 +626,10 @@ class Domain():
             vectors with lon/lat values for each corner
 
         '''
-        colVector = [0, 0, self.memDataset.RasterXSize,
-                     self.memDataset.RasterXSize]
-        rowVector = [0, self.memDataset.RasterYSize, 0,
-                     self.memDataset.RasterYSize]
+        colVector = [0, 0, self.vrt.dataset.RasterXSize,
+                     self.vrt.dataset.RasterXSize]
+        rowVector = [0, self.vrt.dataset.RasterYSize, 0,
+                     self.vrt.dataset.RasterYSize]
         return self._transform_points(colVector, rowVector)
 
     def _get_geotransform(self, extentDic):
@@ -746,13 +731,13 @@ class Domain():
 
         '''
         # get source SRS (either Projection or GCPProjection)
-        srcWKT = self._get_projection(self.memDataset)
+        srcWKT = self._get_projection(self.vrt.dataset)
 
         # prepare target WKT (pure lat/lon)
         dstWKT = self._latlong_srs().ExportToWkt()
 
         # create transformer
-        transformer = gdal.Transformer(self.memDataset, None,
+        transformer = gdal.Transformer(self.vrt.dataset, None,
                                        ['SRC_SRS=' + srcWKT,
                                        'DST_SRS=' + dstWKT])
 
@@ -798,9 +783,9 @@ class Domain():
             This method should probably also get a better name.
         '''
 
-        mid_x = self.memDataset.RasterXSize / 2
-        mid_y1 = self.memDataset.RasterYSize / 2 * 0.4
-        mid_y2 = self.memDataset.RasterYSize / 2 * 0.6
+        mid_x = self.vrt.dataset.RasterXSize / 2
+        mid_y1 = self.vrt.dataset.RasterYSize / 2 * 0.4
+        mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
         startlon, startlat = self._transform_points([mid_x], [mid_y1])
         endlon, endlat = self._transform_points([mid_x], [mid_y2])
         bearing_center = initial_bearing(
@@ -815,7 +800,7 @@ class Domain():
         shape: tuple of two INT
             Numpy-like shape of Domain object (ySize, xSize)
         '''
-        return self.memDataset.RasterYSize, self.memDataset.RasterXSize
+        return self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
 
 # import methods which use advanced libraries
 if useDomain2:

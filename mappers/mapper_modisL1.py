@@ -13,11 +13,10 @@ from vrt import VRT, gdal
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
         ''' Create MODIS_L1 VRT '''
         #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
-        subDs = gdal.Open(dataset.GetSubDatasets()[0][0])
-        VRT.__init__(self, subDs, metadata, rawVRTFileName)
+        gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
        
         #list of available modis names:resolutions
         modisResolutions = {'MYD02QKM':250, 'MOD02QKM':250,
@@ -25,8 +24,7 @@ class Mapper(VRT):
                             'MYD021KM':1000, 'MOD021KM':1000};
         
         #should raise error in case of not MODIS_L1
-        mResolution = modisResolutions[metadata["SHORTNAME"]];
-        self.logger.info('resolution: %s' % mResolution)
+        mResolution = modisResolutions[gdalMetadata["SHORTNAME"]];
         
         subDsString = 'HDF4_EOS:EOS_SWATH:"%s":MODIS_SWATH_Type_L1B:%s'
                 
@@ -104,8 +102,11 @@ class Mapper(VRT):
         #set number of bands
         if vrtBandList == None:
             vrtBandList = range(1,len(metaDict)+1);
+
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, gdalSubDataset, logLevel=logLevel);
         
-        self.logger.debug('metaDict: %s' % metaDict)
-        self._createVRT(metaDict, vrtBandList);
+        # add bands with metadata and corresponding values to the empty VRT
+        self._add_all_bands(vrtBandList, metaDict)
 
         return

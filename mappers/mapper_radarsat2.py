@@ -25,48 +25,47 @@ from domain import Domain
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, rawVRTFileName, fileName, dataset, metadata, vrtBandList):        
+    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
         ''' Create Radarsat2 VRT '''
-        VRT.__init__(self, dataset, metadata, rawVRTFileName);
-        
-        product = metadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
-        metaDict = []
-
+        product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
+        print product
         #if it is not RADARSAT-2, return
         if product!= 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER");
 
-        #define dictionary of metadata and band specific parameters
-        pol = []
+        # get list of bands
         if vrtBandList == None:
-            vrtBandList = []
-            for i in range(dataset.RasterCount):
-                vrtBandList.append(i+1)
+            vrtBandList = range(1, gdalDataset.RasterCount+1)
 
-        for i in range(dataset.RasterCount):
-            if i+1 not in vrtBandList:
-                continue
-            pol.append(dataset.GetRasterBand(i+1).GetMetadata()['POLARIMETRIC_INTERP'])
+        #define dictionary of metadata and band specific parameters
+        pol = []        
+        metaDict = []
+        for i in vrtBandList:
+            polString = gdalDataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP'] 
+            pol.append(polString)
             metaDict.append( {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName +
-                '/product.xml', 'sourceBand': i+1, 'wkv':
+                '/product.xml', 'sourceBand': i, 'wkv':
                 'normalized_radar_cross_section', 'parameters':
-                {'band_name':'sigma0_'+pol[i], 'polarization': pol[i]}} );
+                {'band_name':'sigma0_'+polString, 'polarization': polString}} );
 
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
-        self._createVRT(metaDict, vrtBandList);
+        # add bands with metadata and corresponding values to the empty VRT
+        self._add_all_bands(vrtBandList, metaDict)
 
         ##################################
         # Add time to metadata domain
         ##################################
-        validTime = dataset.GetMetadata()['ACQUISITION_START_TIME']
-        self.metadata['time'] = datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')
+        validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
+        self.dataset.SetMetadataItem('time', str(datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')))
 
         ############################################
         # Add SAR look direction to metadata domain
         ############################################
-        self.metadata['SAR_look_direction'] = mod(
-            Domain(dataset).upwards_azimuth_direction()
-            + 90, 360)
+        self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
+            Domain(gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
+            + 90, 360)))
 
         ##############################################################
         # Adding derived band (incidence angle) calculated
@@ -77,32 +76,33 @@ class Mapper(VRT):
         from string import Template
         
         options = ['subClass=VRTDerivedRasterBand', 'PixelFunctionType=BetaSigmaToIncidence']
-        self.vsiDataset.AddBand(datatype=GDT_Float32, options=options)  
+        self.dataset.AddBand(datatype=GDT_Float32, options=options)  
         
         md = {}
-        BlockXSize, BlockYSize = dataset.GetRasterBand(1).GetBlockSize()
-        md['source_0'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize,
-                            YSize=self.vsiDataset.RasterYSize, BlockXSize=BlockXSize, 
+        BlockXSize, BlockYSize = gdalDataset.GetRasterBand(1).GetBlockSize()
+        md['source_0'] = self.SimpleSource.substitute(XSize=self.dataset.RasterXSize,
+                            YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
                             BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
                             Dataset='RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml')
-        md['source_1'] = self.SimpleSource.substitute(XSize=self.vsiDataset.RasterXSize,
-                            YSize=self.vsiDataset.RasterYSize, BlockXSize=BlockXSize, 
+        md['source_1'] = self.SimpleSource.substitute(XSize=self.dataset.RasterXSize,
+                            YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
                             BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
                             Dataset='RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml')
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadata(md, 'vrt_sources');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetNoDataValue(0);
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources');
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0);
         # Should ideally use WKV-class for setting the metadata below
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+        # antonk: there is a method VRT._put_metadata() for that        
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                 'long_name','incidence_angle');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                 'standard_name', 'incidence_angle');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                 'band_name', 'incidence_angle');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                 'unit', 'degrees');
-        self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                 'pixelfunction', 'BetaSigmaToIncidence');
-        self.vsiDataset.FlushCache()
+        self.dataset.FlushCache()
         
         # Experimental feature for the Radarsat2-mapper:
         # Rationale:
@@ -119,45 +119,45 @@ class Mapper(VRT):
         # - to copy the vsiDataset into another vsimem-file which remains
         #   unchanged under reprojection and downscaling
         if 'VV' not in pol and 'HH' in pol:
-            vrtDriver = gdal.GetDriverByName("VRT")
             # Write the vrt to a VSI-file
-            vrtDatasetCopy_temp = vrtDriver.CreateCopy(
-                    '/vsimem/vsi_original.vrt', self.vsiDataset)
+            vrtDatasetCopy_temp = self.vrtDriver.CreateCopy(
+                    '/vsimem/vsi_original.vrt', self.dataset)
             options = ['subClass=VRTDerivedRasterBand', 
                     'PixelFunctionType=Sigma0HHIncidenceToSigma0VV']
-            self.vsiDataset.AddBand(datatype=GDT_Float32, options=options)
+            self.dataset.AddBand(datatype=GDT_Float32, options=options)
             md = {}
             for i in range(len(pol)):
                 if pol[i]=='HH':
                     sourceBandHH = i+1
             sourceBandInci = len(pol)+1
 
-            BlockXSize, BlockYSize = dataset.GetRasterBand(1).GetBlockSize()
+            BlockXSize, BlockYSize = gdalDataset.GetRasterBand(1).GetBlockSize()
             md['source_0'] = self.SimpleSource.substitute(
-                    XSize=self.vsiDataset.RasterXSize,
-                    YSize=self.vsiDataset.RasterYSize, BlockXSize=BlockXSize, 
+                    XSize=self.dataset.RasterXSize,
+                    YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
                     BlockYSize=BlockYSize, DataType=GDT_Float32,
                     SourceBand=sourceBandHH,
                     Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
             md['source_1'] = self.SimpleSource.substitute(
-                    XSize=self.vsiDataset.RasterXSize,
-                    YSize=self.vsiDataset.RasterYSize, BlockXSize=BlockXSize,
+                    XSize=self.dataset.RasterXSize,
+                    YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=GDT_Float32, 
                     SourceBand=sourceBandInci, 
                     Dataset='/vsimem/vsi_original.vrt')
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadata(md, 'vrt_sources')
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetNoDataValue(0)
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0)
             # Should ideally use WKV-class for setting the metadata below
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+            # antonk: there is a method VRT._put_metadata() for that
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                     'long_name', 'normalized_radar_cross_section')
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                     'standard_name', 'normalized_radar_cross_section')
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                     'band_name', 'sigma0_VV')
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                     'polarisation', 'VV')
-            self.vsiDataset.GetRasterBand(self.vsiDataset.RasterCount).SetMetadataItem(
+            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
                     'pixelfunction', 'Sigma0HHIncidenceToSigma0VV')
-            self.vsiDataset.FlushCache()
+            self.dataset.FlushCache()
                   
         return
