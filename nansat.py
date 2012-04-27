@@ -16,26 +16,14 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-from os import path, listdir
 
 from string import maketrans, ascii_uppercase, digits
-import sys
-import time
 
-import numpy as np
-from math import floor
 from xml.etree.ElementTree import XML, ElementTree, tostring
-
-try:
-    from osgeo import gdal, osr
-except ImportError:
-    import gdal
-    import osr
 
 from domain import Domain
 from vrt import *
 from figure import *
-
 from nansat_tools import add_logger
 
 class GDALError(Error):
