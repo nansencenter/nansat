@@ -181,7 +181,7 @@ class Nansat(Domain):
 
         '''
         # resize back to original size/setting
-        if factor == 1:
+        if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
             return
         
@@ -201,7 +201,7 @@ class Nansat(Domain):
         element = XML(vrtXML)
         rasterXSize = int(float(element.get("rasterXSize")) * factor)
         rasterYSize = int(float(element.get("rasterYSize")) * factor)
-        self.logger.debug('New size/factor: (%f, %f)/%f' % (rasterXSize, rasterYSize, factor))
+        self.logger.info('New size/factor: (%f, %f)/%f' % (rasterXSize, rasterYSize, factor))
         element.set("rasterXSize", str(rasterXSize))
         element.set("rasterYSize", str(rasterYSize))
 
