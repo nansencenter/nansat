@@ -378,32 +378,32 @@ class Nansat(Domain):
             raise ProjectionError("Nansat.reproject(): "
                                   "rawVrt.GetProjection() is None")
 
-        if dstDomain is not None:
+        if dstDomain is None:
+            # dereproject
+            self.vrt = self.raw.copy()
+        else:
             # warp the Raw VRT onto the coordinate stystem given by
             # input Domain
             warpedVRT = gdal.AutoCreateWarpedVRT(
                                    self.raw.dataset, srcWKT,
                                    dstDomain.vrt.dataset.GetProjection(),
                                    resamplingAlg)
-        else:
-            # dereproject
-            self.vrt = self.raw.copy()
             
-        # set default vrt to be the warped one
-        warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
-        # modify extent of the created Warped VRT
-        warpedVRTXML = warpedVRT.read_xml()
-        warpedVRTXML = self._modify_warped_VRT_XML(warpedVRTXML,
-                                   dstDomain.vrt.dataset.RasterXSize,
-                                   dstDomain.vrt.dataset.RasterYSize,
-                                   dstDomain.vrt.dataset.GetGeoTransform())
-        warpedVRT.write_xml(warpedVRTXML)
-        
-        # check created Warped VRT
-        if warpedVRT.dataset is None:
-            raise AttributeError("Nansat.reproject():cannot get warpedVRT")
-        
-        self.vrt = warpedVRT
+            # set default vrt to be the warped one
+            warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
+            # modify extent of the created Warped VRT
+            warpedVRTXML = warpedVRT.read_xml()
+            warpedVRTXML = self._modify_warped_VRT_XML(warpedVRTXML,
+                                       dstDomain.vrt.dataset.RasterXSize,
+                                       dstDomain.vrt.dataset.RasterYSize,
+                                       dstDomain.vrt.dataset.GetGeoTransform())
+            warpedVRT.write_xml(warpedVRTXML)
+            
+            # check created Warped VRT
+            if warpedVRT.dataset is None:
+                raise AttributeError("Nansat.reproject():cannot get warpedVRT")
+            
+            self.vrt = warpedVRT
 
     def reproject_on_gcp(self, gcpImage, resamplingAlg=0):
         ''' Reproject the object onto the input object with gcps
