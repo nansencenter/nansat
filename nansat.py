@@ -38,29 +38,13 @@ from figure import *
 
 from nansat_tools import add_logger
 
-class Error(Exception):
-    '''Base class for exceptions in this module.'''
-    pass
-
-
 class GDALError(Error):
     '''Error from GDAL '''
     pass
 
-
-class ProjectionError(Error):
-    '''Cannot get the projection'''
-    pass
-
-
 class DataError(Error):
     '''Error for data.
         e.g. : empty pixel value array in get_pixelValueRange()'''
-    pass
-
-
-class OptionError(Error):
-    '''Error for improper options (arguments) '''
     pass
 
 
