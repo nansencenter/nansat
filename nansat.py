@@ -719,7 +719,7 @@ class Nansat(Domain):
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
                 tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
-                                              self.metadata, bandList,
+                                              self.metadata,
                                               logLevel=self.logger.level)
                 self.logger.info('Mapper %s - success!' % iMapper)
                 break

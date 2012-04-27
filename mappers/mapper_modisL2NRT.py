@@ -16,7 +16,7 @@ import numpy as np
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create MODIS_L1 VRT '''
         GCP_COUNT = 1000
         # get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
@@ -81,15 +81,11 @@ class Mapper(VRT):
             if metaEntry is not None:
                 metaDict.append(metaEntry)
         self.logger.debug(metaDict)
-
-        # set number of bands
-        if vrtBandList == None:
-            vrtBandList = range(1,len(metaDict)+1);
         
         self.logger.debug('metaDict: %s' % metaDict)
         
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(vrtBandList, metaDict)
+        self._add_all_bands(metaDict)
 
         # ==== add GCPs and Pojection ====
         for subDataset in subDatasets:

@@ -228,13 +228,11 @@ class VRT():
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </ComplexSource> ''')
 
-    def _add_all_bands(self, vrtBandList, metaDict):
+    def _add_all_bands(self, metaDict):
         '''Loop through all bands and add metadata and band XML source
 
         Parameters
         -----------
-        vrtBandList: list
-            band numbers to fetch
         metaDict: list
             incldes some dictionaries.
             The number of dictionaries is same as number of bands.
@@ -246,14 +244,13 @@ class VRT():
             Band data and metadata is added to the VRT dataset
         '''
         self.logger.debug('self.dataset: %s' % str(self.dataset))
-        self.logger.debug('vrtBandList %s' % str(vrtBandList))
-        for iBand, bandNo in enumerate(vrtBandList):
+        for bandNo in range(int(metaDict.__len__())):
             # check if the band in the list exist
             if int(bandNo) > int(metaDict.__len__()):
                 self.logger.warning("vrt.addAllBands(): "
                        "an element in the bandList is improper")
                 break
-
+            
             srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
                        GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
 
@@ -274,14 +271,13 @@ class VRT():
             # add a band to the VRT dataset
             self.dataset.AddBand(bandDataType)
             # set metadata for each destination raster band
-            dstRasterBand = self.dataset.GetRasterBand(iBand + 1)
+            dstRasterBand = self.dataset.GetRasterBand(bandNo + 1)
             # set metadata from WKV
             wkvName = metaDict[bandNo - 1]["wkv"]
             dstRasterBand = self._put_metadata(dstRasterBand,
                                                 self._get_wkv(wkvName))
             # set metadata from 'parameters'
             dstRasterBand = self._put_metadata(dstRasterBand, bandMetaParameters)
-
             # get scale/offset from metaDict (or set default 1/0)
             if 'scale' in metaDict[bandNo - 1]:
                 scaleRatio = metaDict[bandNo - 1]['scale']

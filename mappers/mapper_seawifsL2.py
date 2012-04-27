@@ -13,7 +13,7 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for SeaWifs Level2        '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create SeaWifs_L2 VRT '''
         if gdalMetadata['Sensor Name'] != 'SeaWiFS':
             raise AttributeError("SeaWiFS BAD MAPPER");
@@ -25,10 +25,6 @@ class Mapper(VRT):
         {'source': subDsString % (fileName, '21'), 'sourceBand': 1, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'chlor_a'}}
         ]
                 
-        #set number of bands
-        if vrtBandList == None:
-            vrtBandList = range(1,len(metaDict)+1);
-
         #open subdataset
         gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0]);    
 
@@ -36,7 +32,6 @@ class Mapper(VRT):
         VRT.__init__(self, gdalSubDataset, logLevel=logLevel);
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(vrtBandList, metaDict)
-
+        self._add_all_bands(metaDict)
 
         return

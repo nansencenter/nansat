@@ -13,7 +13,7 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for ASAR Level 1 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         
         product = gdalMetadata.get("MPH_PRODUCT", "Not_ASAR")
 
@@ -29,11 +29,9 @@ class Mapper(VRT):
                          'pass': gdalMetadata['SPH_PASS'],
                          'warning': 'fake sigma0, not yet calibrated'}}];
 
-        if vrtBandList == None:
-            vrtBandList = range(1,len(metaDict)+1);
             
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(vrtBandList, metaDict)
+        self._add_all_bands(metaDict)

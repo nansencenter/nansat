@@ -15,7 +15,7 @@ from datetime import datetime
 class Mapper(VRT):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create NCEP VRT '''
 
         if gdalDataset.GetGeoTransform() != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or gdalDataset.RasterCount != 9: # Not water proof
@@ -27,14 +27,11 @@ class Mapper(VRT):
                     {'source': fileName, 'sourceBand': 6, 'wkv': 'air_temperature', 'parameters':{'band_name': 'air_t', 'height': '2 m'}}
                     ];
 
-        if vrtBandList == None:
-            vrtBandList = range(1,len(metaDict)+1);
-
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
             
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(vrtBandList, metaDict)
+        self._add_all_bands(metaDict)
         
         ##############################################################
         # Adding derived bands (wind speed and "wind_from_direction") 

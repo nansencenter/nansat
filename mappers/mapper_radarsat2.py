@@ -25,7 +25,7 @@ from domain import Domain
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create Radarsat2 VRT '''
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
         print product
@@ -33,14 +33,12 @@ class Mapper(VRT):
         if product!= 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER");
 
-        # get list of bands
-        if vrtBandList == None:
-            vrtBandList = range(1, gdalDataset.RasterCount+1)
 
         #define dictionary of metadata and band specific parameters
         pol = []        
         metaDict = []
-        for i in vrtBandList:
+
+        for i in range(1, gdalDataset.RasterCount+1):
             polString = gdalDataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP'] 
             pol.append(polString)
             metaDict.append( {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName +
@@ -52,7 +50,7 @@ class Mapper(VRT):
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(vrtBandList, metaDict)
+        self._add_all_bands(metaDict)
 
         ##################################
         # Add time to metadata domain

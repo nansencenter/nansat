@@ -14,7 +14,7 @@ from meris import MERIS
 class Mapper(VRT, MERIS):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, vrtBandList=None, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create MER1 VRT '''
         product = gdalMetadata.get("MPH_PRODUCT", "Not_MERIS")
 
@@ -51,11 +51,8 @@ class Mapper(VRT, MERIS):
         for i, bandDict in enumerate(metaDict[:-1]):
             bandDict['scale'] = scales[i]
         
-        if vrtBandList == None:
-            vrtBandList = range(1,len(metaDict)+1);
-        
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(vrtBandList, metaDict)
+        self._add_all_bands(metaDict)
