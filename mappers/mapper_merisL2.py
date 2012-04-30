@@ -52,8 +52,8 @@ class Mapper(VRT, MERIS):
         offsets = self.read_scaling_gads(fileName, range(33, 46) + [46, 47, 48, 46])
         # set scale/offset to the band metadata (only reflectance)
         for i, bandDict in enumerate(metaDict[:-1]):
-            bandDict['scale'] = scales[i]
-            bandDict['offset'] = offsets[i]
+            bandDict['parameters']['scale'] = str(scales[i])
+            bandDict['parameters']['offset'] = str(offsets[i])
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);

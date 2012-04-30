@@ -215,19 +215,6 @@ class VRT():
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </SimpleSource> ''')
 
-    ComplexSource = Template('''
-            <ComplexSource>
-                <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
-                <SourceBand>$SourceBand</SourceBand>
-                <ScaleOffset>$ScaleOffset</ScaleOffset>
-                <ScaleRatio>$ScaleRatio</ScaleRatio>
-                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
-                        DataType="$DataType" BlockXSize="$BlockXSize"
-                        BlockYSize="$BlockYSize"/>
-                <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-            </ComplexSource> ''')
-
     def _add_all_bands(self, metaDict):
         '''Loop through all bands and add metadata and band XML source
 
@@ -250,20 +237,10 @@ class VRT():
 
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
             srcDataType = srcRasterBand.DataType
-            
-            if 'parameters' in metaDict[bandNo - 1]:
-                bandMetaParameters = metaDict[bandNo - 1]['parameters']
-            else:
-                bandMetaParameters = {}
-            
-            # get band data type (default or from metaDict)
-            if 'band_data_type' in bandMetaParameters:
-                bandDataType = int(bandMetaParameters['band_data_type'])
-            else:
-                bandDataType = gdal.GDT_Float32
+            bandMetaParameters = metaDict[bandNo - 1].get('parameters', {})
             
             # add a band to the VRT dataset
-            self.dataset.AddBand(bandDataType)
+            self.dataset.AddBand(srcDataType)
             # set metadata for each destination raster band
             dstRasterBand = self.dataset.GetRasterBand(bandNo + 1)
             # set metadata from WKV
@@ -272,36 +249,15 @@ class VRT():
                                                 self._get_wkv(wkvName))
             # set metadata from 'parameters'
             dstRasterBand = self._put_metadata(dstRasterBand, bandMetaParameters)
-            # get scale/offset from metaDict (or set default 1/0)
-            if 'scale' in metaDict[bandNo - 1]:
-                scaleRatio = metaDict[bandNo - 1]['scale']
-            else:
-                scaleRatio = 1
-            if 'offset' in metaDict[bandNo - 1]:
-                scaleOffset = metaDict[bandNo - 1]['offset']
-            else:
-                scaleOffset = 0
 
             # create band source metadata
-            bandSource = self.ComplexSource.\
-                              substitute(XSize=self.dataset.RasterXSize,
-                              YSize=self.dataset.RasterYSize,
-                              Dataset=metaDict[bandNo-1]['source'],
-                              SourceBand=metaDict[bandNo-1]['sourceBand'],
-                              BlockXSize=xBlockSize, BlockYSize=yBlockSize,
-                              DataType=srcDataType,
-                              ScaleOffset=scaleOffset, ScaleRatio=scaleRatio)
-            
-            if 'source' in bandMetaParameters:
-                if bandMetaParameters['source'] == 'simple':
-                    # create band source metadata
-                    bandSource = self.SimpleSource.\
-                              substitute(XSize=self.dataset.RasterXSize,
-                              YSize=self.dataset.RasterYSize,
-                              Dataset=metaDict[bandNo-1]['source'],
-                              SourceBand=metaDict[bandNo-1]['sourceBand'],
-                              BlockXSize=xBlockSize, BlockYSize=yBlockSize,
-                              DataType=srcDataType)
+            bandSource = self.SimpleSource.\
+                      substitute(XSize=self.dataset.RasterXSize,
+                      YSize=self.dataset.RasterYSize,
+                      Dataset=metaDict[bandNo-1]['source'],
+                      SourceBand=metaDict[bandNo-1]['sourceBand'],
+                      BlockXSize=xBlockSize, BlockYSize=yBlockSize,
+                      DataType=srcDataType)
                     
 
             # set band source metadata
@@ -355,6 +311,7 @@ class VRT():
         rasterBand: GDALRasterBand
             destination band with metadata
         '''
+        self.logger.debug('Put: %s ' % str(metadataDict))
         for key in metadataDict:
             rasterBand.SetMetadataItem(key, metadataDict[key])
 

@@ -38,7 +38,7 @@ class Mapper(VRT):
         'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'parameters': {'wavelength': '490'} },
         'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_1', 'case': 'I'} },
         'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },
-        'l2_flags': {'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags', 'band_data_type': '5', 'source': 'simple'} },
+        'l2_flags': {'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },
         }
         
         # loop through available bands and generate metaDict (non fixed)
@@ -56,10 +56,10 @@ class Mapper(VRT):
                 metaEntry = {'source': subDataset[0],
                                  'sourceBand':  1,
                                  'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                                 'scale': slope,
-                                 'offset': intercept,
                                  'parameters': {'band_name': rrsBandName[0],
-                                                'wavelength': rrsBandName[0][-3:]
+                                                'wavelength': rrsBandName[0][-3:],
+                                                'scale': slope,
+                                                'offset': intercept,
                                                 }
                                 }
             else:
@@ -77,6 +77,8 @@ class Mapper(VRT):
                                  'offset': intercept,
                                  'parameters': allBandsDict[bandName]['parameters']
                                 }
+                        metaEntry['parameters']['scale'] = slope
+                        metaEntry['parameters']['offset'] = intercept
             self.logger.debug(metaEntry)
             if metaEntry is not None:
                 metaDict.append(metaEntry)

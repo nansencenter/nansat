@@ -49,7 +49,7 @@ class Mapper(VRT, MERIS):
         scales = self.read_scaling_gads(fileName, range(7, 22));
         # set scale factor to the band metadata (only radiances)
         for i, bandDict in enumerate(metaDict[:-1]):
-            bandDict['scale'] = scales[i]
+            bandDict['parameters']['scale'] = str(scales[i])
         
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);

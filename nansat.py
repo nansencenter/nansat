@@ -44,7 +44,7 @@ class Nansat(Domain):
         VRT file which points to orignal file with satellite data and
         is saved in an XML format in memory (GDAL VSI).
     '''
-    def __init__(self, fileName, mapperName='', bandList=None, logLevel=30):
+    def __init__(self, fileName, mapperName='', logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -59,9 +59,6 @@ class Nansat(Domain):
         mapperName : string, optional
             "ASAR", "hurlam", "merisL1", "merisL2", "ncep", "radarsat2",
             "seawifsL2" are currently available.  (27.01.2012)
-        bandList : list, optional
-            band numbers to fetch.
-            If it is None, all bands in the file are fetched.
         logLevel: int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
 
@@ -119,7 +116,7 @@ class Nansat(Domain):
         # metadata
         self.metadata = self.gdalDataset.GetMetadata()
         # Get oroginal VRT object with mapping of variables
-        self.raw = self._get_mapper(mapperName, bandList)
+        self.raw = self._get_mapper(mapperName)
         # Set current VRT object
         self.vrt = self.raw.copy()
         # name, for compatibility with some Domain methods
@@ -140,7 +137,18 @@ class Nansat(Domain):
             self.get_GDALRasterBand(bandNo).ReadAsArray(): NumPy array
 
         '''
-        return self.get_GDALRasterBand(bandNo).ReadAsArray()
+        # get band
+        band = self.get_GDALRasterBand(bandNo)
+        # get scale and offset
+        scale = float(band.GetMetadata().get('scale', '1'))
+        offset = float(band.GetMetadata().get('offset', '0'))
+        # get data
+        bandData = band.ReadAsArray()
+        # perform scaling if necessary
+        if scale != 1 or offset != 0:
+            bandData = bandData * scale + offset
+        
+        return bandData
 
     def __repr__(self):
         '''Creates string basic info about the Nansat object
@@ -212,11 +220,6 @@ class Nansat(Domain):
         # if method = "average", overwrite "SimpleSource" to "AveragedSource"
         if method == "average":
             for elem in element.iter("SimpleSource"):
-                elem.tag = "AveragedSource"
-            for elem in element.iter("ComplexSource"):
-                # NB: replacing ComplexSource with AveragedSource
-                # leads to loss of Look-Up-Table elements.
-                # Should check this in the future if LUT should be used
                 elem.tag = "AveragedSource"
 
         # Edit GCPs to correspond to the downscaled size
@@ -664,7 +667,7 @@ class Nansat(Domain):
 
         return fig
             
-    def _get_mapper(self, mapperName, bandList):
+    def _get_mapper(self, mapperName):
         '''Creare VRT file in memory (VSI-file) with variable mapping
 
         If mapperName is given, it is added as the first in the self.mapperList.
@@ -681,9 +684,6 @@ class Nansat(Domain):
         mapperName : string, optional
             "ASAR", "hurlam", "merisL1", "merisL2", "ncep", "radarsat2",
             "seawifsL2" are currently available.  (27.01.2012)
-        bandList : list, optional
-            band numbers to fetch.
-            If None is given, all bands in the file are fetched.
 
         Returns
         -------
@@ -705,9 +705,9 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL2NRT')
+        mapper_module = __import__('mapper_merisL1')
         tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
-                                      self.metadata, bandList, logLevel=self.logger.level)
+                                      self.metadata, logLevel=self.logger.level)
         """
         # Otherwise
         for iMapper in self.mapperList:
