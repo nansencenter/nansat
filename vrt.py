@@ -245,12 +245,6 @@ class VRT():
         '''
         self.logger.debug('self.dataset: %s' % str(self.dataset))
         for bandNo in range(int(metaDict.__len__())):
-            # check if the band in the list exist
-            if int(bandNo) > int(metaDict.__len__()):
-                self.logger.warning("vrt.addAllBands(): "
-                       "an element in the bandList is improper")
-                break
-            
             srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
                        GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
 
