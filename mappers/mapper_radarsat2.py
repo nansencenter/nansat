@@ -88,18 +88,12 @@ class Mapper(VRT):
                             Dataset='RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml')
         self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources');
         self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0);
-        # Should ideally use WKV-class for setting the metadata below
-        # antonk: there is a method VRT._put_metadata() for that        
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                'long_name','incidence_angle');
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                'standard_name', 'incidence_angle');
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                'band_name', 'incidence_angle');
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                'unit', 'degrees');
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                'pixelfunction', 'BetaSigmaToIncidence');
+
+        self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
+                           self._get_wkv('sensor_zenith_angle'))
+        self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
+                {'band_name': 'incidence_angle',
+                'pixelfunction': 'BetaSigmaToIncidence'})
         self.dataset.FlushCache()
         
         # Experimental feature for the Radarsat2-mapper:
@@ -144,18 +138,13 @@ class Mapper(VRT):
                     Dataset='/vsimem/vsi_original.vrt')
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0)
-            # Should ideally use WKV-class for setting the metadata below
-            # antonk: there is a method VRT._put_metadata() for that
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                    'long_name', 'normalized_radar_cross_section')
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                    'standard_name', 'normalized_radar_cross_section')
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                    'band_name', 'sigma0_VV')
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                    'polarisation', 'VV')
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadataItem(
-                    'pixelfunction', 'Sigma0HHIncidenceToSigma0VV')
+            
+            self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
+                           self._get_wkv('normalized_radar_cross_section'))
+            self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
+                {'band_name': 'sigma0_VV',
+                 'polarisation': 'VV',
+                'pixelfunction': 'Sigma0HHIncidenceToSigma0VV'})
             self.dataset.FlushCache()
                   
         return
