@@ -231,34 +231,33 @@ class VRT():
             Band data and metadata is added to the VRT dataset
         '''
         self.logger.debug('self.dataset: %s' % str(self.dataset))
-        for bandNo in range(int(metaDict.__len__())):
-            srcRasterBand = gdal.Open(metaDict[bandNo - 1]['source']).\
-                       GetRasterBand(metaDict[bandNo - 1]['sourceBand'])
+        for bandNo in range(metaDict.__len__()):
+            srcRasterBand = gdal.Open(metaDict[bandNo]['source']).\
+                       GetRasterBand(metaDict[bandNo]['sourceBand'])
 
             xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
             srcDataType = srcRasterBand.DataType
-            bandMetaParameters = metaDict[bandNo - 1].get('parameters', {})
+            bandMetaParameters = metaDict[bandNo].get('parameters', {})
             
             # add a band to the VRT dataset
             self.dataset.AddBand(srcDataType)
             # set metadata for each destination raster band
-            dstRasterBand = self.dataset.GetRasterBand(bandNo + 1)
+            dstRasterBand = self.dataset.GetRasterBand(bandNo+1)
             # set metadata from WKV
-            wkvName = metaDict[bandNo - 1]["wkv"]
+            wkvName = metaDict[bandNo]["wkv"]
             dstRasterBand = self._put_metadata(dstRasterBand,
                                                 self._get_wkv(wkvName))
             # set metadata from 'parameters'
             dstRasterBand = self._put_metadata(dstRasterBand, bandMetaParameters)
 
             # create band source metadata
-            bandSource = self.SimpleSource.\
-                      substitute(XSize=self.dataset.RasterXSize,
-                      YSize=self.dataset.RasterYSize,
-                      Dataset=metaDict[bandNo-1]['source'],
-                      SourceBand=metaDict[bandNo-1]['sourceBand'],
-                      BlockXSize=xBlockSize, BlockYSize=yBlockSize,
-                      DataType=srcDataType)
-                    
+            bandSource = self.SimpleSource.substitute(
+                    XSize=self.dataset.RasterXSize,
+                    YSize=self.dataset.RasterYSize,
+                    Dataset=metaDict[bandNo]['source'],
+                    SourceBand=metaDict[bandNo]['sourceBand'],
+                    BlockXSize=xBlockSize, BlockYSize=yBlockSize,
+                    DataType=srcDataType)
 
             # set band source metadata
             dstRasterBand.SetMetadataItem("source_0", bandSource,
