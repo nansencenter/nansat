@@ -560,11 +560,11 @@ class Domain():
             rcVector2[n].reverse()
 
         # coumpund vectors of pixels (col) and lines (row)
-        colVector = rcVector1[0] + [sizes[0]] * nPoints + \
-                    rcVector2[0] + [0] * nPoints
-        rowVector = [0] * nPoints + rcVector1[1] + \
-                    [sizes[1]] * nPoints + rcVector2[1]
-
+        colVector = (rcVector1[0] + [sizes[0]] * len(rcVector1[1]) + 
+                    rcVector2[0] + [0] * len(rcVector1[1]))
+        rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] + 
+                    [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
+        
         return self._transform_points(colVector, rowVector)
 
     def _get_border_kml(self):

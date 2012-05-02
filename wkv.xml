@@ -139,4 +139,18 @@
         <minmax>0 1</minmax>
         <colormap>jet</colormap>
 	</wkv>
+	<wkv>
+		<standard_name>latitude</standard_name>
+		<long_name>Latitude</long_name>
+		<units>deg N</units>
+        <minmax>-90 90</minmax>
+        <colormap>jet</colormap>
+	</wkv>
+	<wkv>
+		<standard_name>longitude</standard_name>
+		<long_name>Longitude</long_name>
+		<units>deg E</units>
+        <minmax>-180 180</minmax>
+        <colormap>jet</colormap>
+	</wkv>
 </all_wkvs>
