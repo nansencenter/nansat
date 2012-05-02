@@ -186,18 +186,11 @@ class Nansat(Domain):
         for e in element.getiterator("VRTRasterBand"):
             """ !!! Consider the flexible solution !!! """
             dataType = e.get("dataType")
-            if dataType == "UInt16" :
-                e.set("dataType", "Int16")
-            elif dataType == "UInt32" :
-                e.set("dataType", "Int32")
-            elif dataType == "CInt16" :
-                e.set("dataType", "Int16")
-            elif dataType == "CInt32" :
-                e.set("dataType", "Int32")
-            elif dataType == "CFloat32" :
-                e.set("dataType", "Float32")
-            elif dataType == "CFloat64" :
-                e.set("dataType", "Float64")
+            dataType = {
+                        "UInt16": "Int16", "UInt32": "Int32", "CInt16": "Int16",
+                        "CFloat32" : "Float32", "CFloat64" : "Float64"
+                        }.get(dataType, dataType)
+            e.set("dataType", dataType)
 
             # Add Offset and Scale under VRTRasterBand
             # if it is the default (Offset = 0.0, Scale = 1.0), it is not shown
@@ -221,7 +214,7 @@ class Nansat(Domain):
                 band.SetMetadataItem('NETCDF_VARNAME',
                                      str(band.GetMetadata_Dict()["band_name"]))
             except:
-                pass
+                self.logger.warning('Unable to set NETCDF_VARNAME for band %d' % iBand)
 
         # create a netCDF file
         dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
