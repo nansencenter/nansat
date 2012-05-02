@@ -40,6 +40,16 @@ class VRT():
     writing, etc.
     All mapper inherit from VRT
     '''
+    SimpleSource = Template('''
+            <SimpleSource>
+                <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
+                <SourceBand>$SourceBand</SourceBand>
+                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
+                        DataType="$DataType" BlockXSize="$BlockXSize"
+                        BlockYSize="$BlockYSize"/>
+                <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
+                <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
+            </SimpleSource> ''')
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                                          srcGeoTransform=None,
@@ -226,132 +236,6 @@ class VRT():
 
         return
     
-    def _add_pixel_function(self, pixelFunction, bands, fileName, metaDict):
-        ''' Generic function for mappers to add PixelFunctions
-        from bands in the same dataset
-
-        Warning: so far input parameter dataset refers to the original
-        file on disk and not the Nansat dataset. Correspondingly,
-        bands refers to bands of the original gdal dataset.
-        This will however soon be changed, as it is more convenient to refer
-        to band numbers of the current Nansat object.
-        Then dataset-name may also be omitted
-
-        Parameters
-        ----------
-        pixelFunction: string
-            value of 'pixelfunction' attribute for each band. Name of
-            the actual pixel function.
-        bands: list
-            input band numbers
-        fileName: string
-            name of the file with input bands
-        metaDict: dictionary
-            metadata to be included into a band
-
-        Modifies
-        --------
-        self.dataset: VRT dataset
-            add PixelFunctions from bands in the same dataset
-        '''
-
-        newBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
-        options = ['subClass=VRTDerivedRasterBand',
-                   'PixelFunctionType=' + pixelFunction]
-        self.dataset.AddBand(datatype=gdal.GDT_Float32, options=options)
-        md = {}
-        srcDataset = gdal.Open(fileName)
-        for i, bandNo in enumerate(bands):
-            srcRasterBand = srcDataset.GetRasterBand(bandNo)
-            blockXSize, blockYSize = srcRasterBand.GetBlockSize()
-            dataType = srcRasterBand.DataType
-            md['source_' + str(i)] = self.SimpleSource.substitute(
-                                        XSize=self.dataset.RasterXSize,
-                                        BlockXSize=blockXSize,
-                                        BlockYSize=blockYSize,
-                                        DataType=dataType,
-                                        YSize=self.dataset.RasterYSize,
-                                        Dataset=fileName, SourceBand=bandNo)
-
-        # set metadata for each destination raster band
-        dstRasterBand = self.dataset.GetRasterBand(self.dataset.\
-                                                        RasterCount)
-
-        dstRasterBand.SetMetadata(md, 'vrt_sources')
-
-        # set metadata from WKV
-        wkvName = metaDict["wkv"]
-        dstRasterBand = self._put_metadata(dstRasterBand,
-                                            self._get_wkv(wkvName))
-        # set metadata from parameters (if exist)
-        if "parameters" in metaDict:
-            dstRasterBand = self._put_metadata(dstRasterBand,
-                                               metaDict["parameters"])
-
-        dstRasterBand.SetMetadataItem('pixelfunction', pixelFunction)
-        # Took 5 hours of debugging to find this one!!!
-        self.dataset.FlushCache()
-
-    SimpleSource = Template('''
-            <SimpleSource>
-                <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
-                <SourceBand>$SourceBand</SourceBand>
-                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
-                        DataType="$DataType" BlockXSize="$BlockXSize"
-                        BlockYSize="$BlockYSize"/>
-                <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-            </SimpleSource> ''')
-
-    def _add_all_bands(self, metaDict):
-        '''Loop through all bands and add metadata and band XML source
-
-        Parameters
-        -----------
-        metaDict: list
-            incldes some dictionaries.
-            The number of dictionaries is same as number of bands.
-            Each dictionary represents metadata for each band.
-
-        Modifies
-        --------
-        self.dataset: VRT dataset
-            Band data and metadata is added to the VRT dataset
-        '''
-        self.logger.debug('self.dataset: %s' % str(self.dataset))
-        for bandNo in range(metaDict.__len__()):
-            srcRasterBand = gdal.Open(metaDict[bandNo]['source']).\
-                       GetRasterBand(metaDict[bandNo]['sourceBand'])
-
-            xBlockSize, yBlockSize = srcRasterBand.GetBlockSize()
-            srcDataType = srcRasterBand.DataType
-            bandMetaParameters = metaDict[bandNo].get('parameters', {})
-            
-            # add a band to the VRT dataset
-            self.dataset.AddBand(srcDataType)
-            # set metadata for each destination raster band
-            dstRasterBand = self.dataset.GetRasterBand(bandNo+1)
-            # set metadata from WKV
-            wkvName = metaDict[bandNo]["wkv"]
-            dstRasterBand = self._put_metadata(dstRasterBand,
-                                                self._get_wkv(wkvName))
-            # set metadata from 'parameters'
-            dstRasterBand = self._put_metadata(dstRasterBand, bandMetaParameters)
-
-            # create band source metadata
-            bandSource = self.SimpleSource.substitute(
-                    XSize=self.dataset.RasterXSize,
-                    YSize=self.dataset.RasterYSize,
-                    Dataset=metaDict[bandNo]['source'],
-                    SourceBand=metaDict[bandNo]['sourceBand'],
-                    BlockXSize=xBlockSize, BlockYSize=yBlockSize,
-                    DataType=srcDataType)
-
-            # set band source metadata
-            dstRasterBand.SetMetadataItem("source_0", bandSource,
-                                          "new_vrt_sources")
-        self.dataset.FlushCache()
-
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
 

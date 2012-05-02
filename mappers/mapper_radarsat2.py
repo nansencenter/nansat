@@ -23,10 +23,10 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create Radarsat2 VRT '''
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
+
         #if it is not RADARSAT-2, return
         if product!= 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER");
-
 
         #define dictionary of metadata and band specific parameters
         pol = []        
@@ -52,7 +52,6 @@ class Mapper(VRT):
             {'source': incidence_angle_source, 'sourceBand': [1, 1], 'wkv': 'sensor_zenith_angle',
                 'parameters': {'pixel_function': 'BetaSigmaToIncidence', 'band_name': 'incidence_angle'}})
         
-        
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
@@ -72,7 +71,6 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
             Domain(gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
             + 90, 360)))
-
 
         # Experimental feature for the Radarsat2-mapper:
         # Rationale:
