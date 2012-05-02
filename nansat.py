@@ -89,7 +89,7 @@ class Nansat(Domain):
         # SET CONSTANTS
         # create logger
         self.logger = add_logger(logName='Nansat', logLevel=logLevel)
-        
+
         # all available mappers
         self.mapperList = [
               'mapper_ASAR.py',
@@ -102,7 +102,7 @@ class Nansat(Domain):
               'mapper_MOD44W.py',
               'mapper_modisL2NRT.py'
               ]
-        
+
         self.logger.debug('Mappers: '+str(self.mapperList))
 
         # set input file name
@@ -121,9 +121,9 @@ class Nansat(Domain):
         self.vrt = self.raw.copy()
         # name, for compatibility with some Domain methods
         self.name = self.fileName
-        
+
         self.logger.debug('Object created from %s ' % self.fileName)
-        
+
     def __getitem__(self, bandNo):
         ''' Returns the band as a NumPy array, by overloading []
         Parameters:
@@ -147,7 +147,7 @@ class Nansat(Domain):
         # perform scaling if necessary
         if scale != 1 or offset != 0:
             bandData = bandData * scale + offset
-        
+
         return bandData
 
     def __repr__(self):
@@ -161,6 +161,73 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
+    def export(self, fileName):
+        '''Create a netCDF file
+
+        Parameters
+        ----------
+            fileName: output file name
+
+        Modifies
+        --------
+            Create a netCDF file
+
+            self.vrt.dataset : VRT dataset of VRT object
+                dataType in each VRTRasterBand is modified from GDAL dataType
+                to netCDF dataType. The subelements "Offset" and "Scale"
+                are added for each VRTRasterBand if need be.
+
+        '''
+        #-- Get element from the XML content and add some elements
+        vsiFileContent = self.vrt.read_xml()
+        tree = ElementTree(XML(vsiFileContent))
+        element = tree.getroot()
+
+        for e in element.getiterator("VRTRasterBand"):
+            """ !!! Consider the flexible solution !!! """
+            dataType = e.get("dataType")
+            if dataType == "UInt16" :
+                e.set("dataType", "Int16")
+            elif dataType == "UInt32" :
+                e.set("dataType", "Int32")
+            elif dataType == "CInt16" :
+                e.set("dataType", "Int16")
+            elif dataType == "CInt32" :
+                e.set("dataType", "Int32")
+            elif dataType == "CFloat32" :
+                e.set("dataType", "Float32")
+            elif dataType == "CFloat64" :
+                e.set("dataType", "Float64")
+
+            # Add Offset and Scale under VRTRasterBand
+            # if it is the default (Offset = 0.0, Scale = 1.0), it is not shown
+            for e1 in e.find("Metadata").getiterator("MDI"):
+                if e1.get("key") == "offset":
+                    new_element = Element(u'Offset')
+                    new_element.text = str(e1.text)
+                    e.append(new_element)
+                elif e1.get("key") == "scale":
+                    new_element = Element(u'Scale')
+                    new_element.text = str(e1.text)
+                    e.append(new_element)
+
+        # Overwrite element
+        self.vrt.write_xml(tostring(tree.getroot()))
+
+        # Replace the band names
+        for iBand in range(self.vrt.dataset.RasterCount):
+            band =self.vrt.dataset.GetRasterBand(iBand+1)
+            try:
+                band.SetMetadataItem('NETCDF_VARNAME',
+                                     str(band.GetMetadata_Dict()["band_name"]))
+            except:
+                pass
+
+        # create a netCDF file
+        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
+                                                              self.vrt.dataset)
+        dataset = None
+
     def resize(self, factor=1, width=None, height=None, method="average"):
         '''Proportional resize of the dataset.
 
@@ -168,7 +235,7 @@ class Nansat(Domain):
         (width, calulated height) or (calculated width, height).
         self.vrt is rewritten to the the downscaled sizes.
         If GCPs are given, they are also rewritten.
-        
+
 
         Parameters
         ----------
@@ -192,7 +259,7 @@ class Nansat(Domain):
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
             return
-        
+
         # estimate factor if width or height is given
         if width is not None:
             factor = float(width) / float(self.vrt.dataset.RasterXSize)
@@ -232,7 +299,7 @@ class Nansat(Domain):
                 lin = rasterYSize
             elem.set("Pixel", str(pxl))
             elem.set("Line", str(lin))
-        
+
         # Write the modified elemements into VRT
         self.vrt.write_xml(tostring(element))
 
@@ -293,7 +360,7 @@ class Nansat(Domain):
 
         Show serial number, longName, name and all parameters
         for each band in the metadata of the given Nansat object.
-        
+
         Parameters:
         -----------
             doPrint: boolean, optional, default=True
@@ -363,7 +430,7 @@ class Nansat(Domain):
                                    self.raw.dataset, srcWKT,
                                    dstDomain.vrt.dataset.GetProjection(),
                                    resamplingAlg)
-            
+
             # set default vrt to be the warped one
             warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
             # modify extent of the created Warped VRT
@@ -373,11 +440,11 @@ class Nansat(Domain):
                                        dstDomain.vrt.dataset.RasterYSize,
                                        dstDomain.vrt.dataset.GetGeoTransform())
             warpedVRT.write_xml(warpedVRTXML)
-            
+
             # check created Warped VRT
             if warpedVRT.dataset is None:
                 raise AttributeError("Nansat.reproject():cannot get warpedVRT")
-            
+
             self.vrt = warpedVRT
 
     def reproject_on_gcp(self, gcpImage, resamplingAlg=0):
@@ -431,7 +498,7 @@ class Nansat(Domain):
 
         # make copy of the RAW VRT file and replace GCPs
         tmpVRT = self.raw.copy()
-        
+
         # create 'fake' STEREO projection for 'fake' GCPs of SRC image
         srsString = ("+proj=stere +lon_0=0 +lat_0=0 +k=1 "
                      "+ellps=WGS84 +datum=WGS84 +no_defs ")
@@ -440,7 +507,7 @@ class Nansat(Domain):
         stereoSRSWKT = stereoSRS.ExportToWkt()
         tmpVRT.dataset.SetGCPs(gcps, stereoSRSWKT)
         tmpVRT.dataset.SetProjection('')
-        
+
         # remove GeoTransfomr from SRC image
         # read XML content from VRT
         tmpVRTXML = tmpVRT.read_xml()
@@ -451,7 +518,7 @@ class Nansat(Domain):
 
         # Write the modified elemements back into temporary VRT
         tmpVRT.write_xml(tostring(tree))
-        
+
         # create warped vrt out of tmp vrt
         rawWarpedVRT = gdal.AutoCreateWarpedVRT(tmpVRT.dataset, stereoSRSWKT,
                                                 stereoSRSWKT,
@@ -538,7 +605,7 @@ class Nansat(Domain):
         Get numpy array from the band(s) and band information specified
         either by given band number or band id.
         -- If three bands are given, merge them and create PIL image.
-        -- If one band is given, create indexed image 
+        -- If one band is given, create indexed image
         Create Figure object and:
         Adjust the array brightness and contrast using the given min/max or
         histogram.
@@ -572,14 +639,14 @@ class Nansat(Domain):
         Returns
         ------
             Figure object
-        
+
         Example:
         --------
         #write only indexed image, color limits from WKV or from histogram
         n.write_figure('test.jpg')
         #write only RGB image, color limits from histogram
         n.write_figure('test_rgb_hist.jpg', clim='hist', bands=[1, 2, 3])
-        #write indexed image, apply log scaling and gamma correction, 
+        #write indexed image, apply log scaling and gamma correction,
         #add legend and type in title 'Title', increase font size and put 15 tics
         n.write_figure('r09_log3_leg.jpg', logarithm=True, legend=True, gamma=3,
                                 titleString='Title', fontSize=30, numOfTicks=15)
@@ -606,7 +673,7 @@ class Nansat(Domain):
         # == CREATE FIGURE object and parse input parameters ==
         fig = Figure(array, **kwargs)
         array = None
-        
+
         # == PREPARE cmin/cmax ==
         # try to get clim from WKV if it is not given
         # if failed clim will be evaluated from histogram
@@ -621,11 +688,11 @@ class Nansat(Domain):
                     break
                 clim[0].append(float(defValue[0]))
                 clim[1].append(float(defValue[1]))
-        
+
         # Estimate color min/max from histogram
         if clim == 'hist':
             clim = fig.clim_from_histogram()
-        
+
         # modify clim to the proper shape [[min], [max]]
         # or [[min, min, min], [max, max, max]]
         if (len(clim) == 2 and
@@ -637,9 +704,9 @@ class Nansat(Domain):
         for i in range(2):
             if len(clim[i]) != len(bands):
                 clim[i] = [clim[i][0]]*len(bands)
-        
+
         self.logger.info('clim: %s ' % clim)
-        
+
         # == PREPARE caption ==
         # get longName and units from vrt
         bandNo = 1
@@ -647,7 +714,7 @@ class Nansat(Domain):
             bandNo = bands[0]
         elif isinstance(bands[0], str):
             bandNo = self._specify_bandNo({'band_name': bands[0]})
-            
+
         longName = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("long_name")
         units = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("units")
         # if they don't exist make empty strings
@@ -657,7 +724,7 @@ class Nansat(Domain):
             units = ''
         caption=longName + ' [' + units + ']'
         self.logger.info('caption: %s ' % caption)
-        
+
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
 
@@ -666,7 +733,7 @@ class Nansat(Domain):
             fig.save(fileName)
 
         return fig
-            
+
     def _get_mapper(self, mapperName):
         '''Creare VRT file in memory (VSI-file) with variable mapping
 
@@ -730,7 +797,7 @@ class Nansat(Domain):
         if tmpVRT is None:
             self.logger.info('No mapper fits!')
             tmpVRT = VRT(vrtDataset=self.gdalDataset, logLevel=self.logger.level)
-            
+
         return tmpVRT
 
     def _get_pixelValue(self, val, defVal):
@@ -789,7 +856,7 @@ class Nansat(Domain):
         # convert proper string style and set to the DstInvGeoTransform element
         elem.text = str(invGeotransform[1]).\
                         translate(maketrans("", ""), "()")
-        
+
         # if geolocation arrays were used also modify the Block Size
         elem = tree.find("GDALWarpOptions/Transformer/"
                          "GenImgProjTransformer/SrcGeoLocTransformer")
