@@ -19,23 +19,20 @@ class Mapper(VRT):
             raise AttributeError("HIRLAM BAD MAPPER");
 
         metaDict = [\
-                    {'source': fileName, 'sourceBand': 2, 'wkv': 'eastward_wind_velocity', 'parameters':{'band_name': 'east_wind', 'height': '10 m'}}, \
-                    {'source': fileName, 'sourceBand': 3, 'wkv': 'northward_wind_velocity', 'parameters':{'band_name': 'north_wind', 'height': '10 m'}} \
+                    {'source': fileName, 'sourceBand': 2, 'wkv': 'eastward_wind_velocity', 
+                        'parameters':{'band_name': 'east_wind', 'height': '10 m'}},
+                    {'source': fileName, 'sourceBand': 3, 'wkv': 'northward_wind_velocity',
+                        'parameters':{'band_name': 'north_wind', 'height': '10 m'}},
+                    {'source': fileName, 'sourceBand': [2,3], 'wkv': 'wind_speed', 
+                        'parameters':{'band_name': 'windspeed', 'height': '10 m', 'pixel_function': 'UVToMagnitude'}},
+                    {'source': fileName, 'sourceBand': [2,3], 'wkv': 'wind_from_direction', 
+                        'parameters':{'band_name': 'winddirection', 'height': '10 m', 'pixel_function': 'UVToDirectionFrom'}}                    
                     ];
   
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
-        # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(metaDict)
+        # Create bands
+        self._create_bands(metaDict)
 
-
-        ##############################################################
-        # Adding derived bands (wind speed and "wind_from_direction") 
-        # calculated with pixel functions 
-        ##############################################################        
-        self._add_pixel_function('UVToMagnitude', [2, 3], fileName, \
-                              {'wkv': 'wind_speed', 'parameters': {'band_name': 'speed', 'height': '10 m'}})
-        self._add_pixel_function('UVToDirectionFrom', [2, 3], fileName, \
-                              {'wkv': 'wind_from_direction', 'parameters': {'band_name': 'direction', 'height': '10 m'}})
         return

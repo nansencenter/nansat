@@ -87,7 +87,7 @@ class Mapper(VRT):
         self.logger.debug('metaDict: %s' % metaDict)
         
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(metaDict)
+        self._create_bands(metaDict)
 
         # ==== add GCPs and Pojection ====
         for subDataset in subDatasets:

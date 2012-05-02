@@ -22,8 +22,10 @@ class Mapper(VRT):
             raise AttributeError("NCEP BAD MAPPER");
 
         metaDict = [\
-                    {'source': fileName, 'sourceBand': 8, 'wkv': 'eastward_wind_velocity', 'parameters':{'band_name': 'east_wind', 'height': '10 m'}}, \
-                    {'source': fileName, 'sourceBand': 9, 'wkv': 'northward_wind_velocity', 'parameters':{'band_name': 'north_wind', 'height': '10 m'}}, \
+                    {'source': fileName, 'sourceBand': 8, 'wkv': 'eastward_wind_velocity', 'parameters':{'band_name': 'east_wind', 'height': '10 m'}},
+                    {'source': fileName, 'sourceBand': 9, 'wkv': 'northward_wind_velocity', 'parameters':{'band_name': 'north_wind', 'height': '10 m'}},
+                    {'source': fileName, 'sourceBand': [8, 9], 'wkv': 'wind_speed', 'parameters':{'pixel_function': 'UVToMagnitude', 'band_name': 'windspeed', 'height': '2 m'}},
+                    {'source': fileName, 'sourceBand': [8, 9], 'wkv': 'wind_from_direction', 'parameters':{'pixel_function': 'UVToDirectionFrom', 'band_name': 'winddirection', 'height': '2 m'}},
                     {'source': fileName, 'sourceBand': 6, 'wkv': 'air_temperature', 'parameters':{'band_name': 'air_t', 'height': '2 m'}}
                     ];
 
@@ -31,19 +33,11 @@ class Mapper(VRT):
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
             
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(metaDict)
+        self._create_bands(metaDict)
         
-        ##############################################################
-        # Adding derived bands (wind speed and "wind_from_direction") 
-        # calculated with pixel functions 
-        ##############################################################        
-        self._add_pixel_function('UVToMagnitude', [8, 9], fileName, \
-                              {'wkv': 'wind_speed', 'parameters': {'band_name': 'speed', 'height': '10 m'}})
-        self._add_pixel_function('UVToDirectionFrom', [8, 9], fileName, \
-                              {'wkv': 'wind_from_direction', 'parameters': {'band_name': 'direction','height': '10 m'}})
-        
-        # Adding velid time from the GRIB file to metadata dictionary 
+        # Adding valid time from the GRIB file to metadata dictionary 
         validTime = gdalDataset.GetRasterBand(8).GetMetadata()['GRIB_VALID_TIME']
         timeString = str(datetime.utcfromtimestamp(int(validTime.strip().split(' ')[0])))
         self.dataset.SetMetadataItem('time', timeString)
+
         return

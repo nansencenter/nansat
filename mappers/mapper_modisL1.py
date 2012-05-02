@@ -103,6 +103,6 @@ class Mapper(VRT):
         VRT.__init__(self, gdalSubDataset, logLevel=logLevel);
         
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(metaDict)
+        self._create_bands(metaDict)
 
         return

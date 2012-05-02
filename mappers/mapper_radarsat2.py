@@ -2,21 +2,16 @@
 # Name:        nansat_mapper_radarsat2
 # Purpose:     Mapping for Radarsat2 data
 #
-# Author:      asumak
+# Author:      knutfd
 # Modified:    mortenwh
 #
 # Created:     29.11.2011
-# Copyright:   (c) asumak 2011
+# Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
 from datetime import datetime
 from numpy import mod
-
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
 
 from vrt import *
 from domain import Domain
@@ -28,7 +23,6 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create Radarsat2 VRT '''
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
-        print product
         #if it is not RADARSAT-2, return
         if product!= 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER");
@@ -46,11 +40,25 @@ class Mapper(VRT):
                 'normalized_radar_cross_section', 'parameters':
                 {'band_name':'sigma0_'+polString, 'polarization': polString}} );
 
+        ##############################################################
+        # Adding derived band (incidence angle) calculated
+        # using pixel function "BetaSigmaToIncidence":
+        #      incidence = arcsin(sigma0/beta0)*180/pi 
+        ##############################################################
+        incidence_angle_source = [
+            'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
+            'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml']
+        metaDict.append(
+            {'source': incidence_angle_source, 'sourceBand': [1, 1], 'wkv': 'sensor_zenith_angle',
+                'parameters': {'pixel_function': 'BetaSigmaToIncidence', 'band_name': 'incidence_angle'}})
+        
+        
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(metaDict)
+        self._create_bands(metaDict)
+
 
         ##################################
         # Add time to metadata domain
@@ -65,37 +73,7 @@ class Mapper(VRT):
             Domain(gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
             + 90, 360)))
 
-        ##############################################################
-        # Adding derived band (incidence angle) calculated
-        # using pixel function "BetaSigmaToIncidence":
-        #      incidence = arcsin(sigma0/beta0)*180/pi 
-        ##############################################################
-        from gdal import GDT_Float32
-        from string import Template
-        
-        options = ['subClass=VRTDerivedRasterBand', 'PixelFunctionType=BetaSigmaToIncidence']
-        self.dataset.AddBand(datatype=GDT_Float32, options=options)  
-        
-        md = {}
-        BlockXSize, BlockYSize = gdalDataset.GetRasterBand(1).GetBlockSize()
-        md['source_0'] = self.SimpleSource.substitute(XSize=self.dataset.RasterXSize,
-                            YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
-                            BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
-                            Dataset='RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml')
-        md['source_1'] = self.SimpleSource.substitute(XSize=self.dataset.RasterXSize,
-                            YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
-                            BlockYSize=BlockYSize, DataType=GDT_Float32, SourceBand=1,
-                            Dataset='RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml')
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources');
-        self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0);
 
-        self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
-                           self._get_wkv('sensor_zenith_angle'))
-        self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
-                {'band_name': 'incidence_angle',
-                'pixelfunction': 'BetaSigmaToIncidence'})
-        self.dataset.FlushCache()
-        
         # Experimental feature for the Radarsat2-mapper:
         # Rationale:
         # - to convert sigma0 from HH-pol to VV-pol we can use the
@@ -116,7 +94,7 @@ class Mapper(VRT):
                     '/vsimem/vsi_original.vrt', self.dataset)
             options = ['subClass=VRTDerivedRasterBand', 
                     'PixelFunctionType=Sigma0HHIncidenceToSigma0VV']
-            self.dataset.AddBand(datatype=GDT_Float32, options=options)
+            self.dataset.AddBand(datatype=gdal.GDT_Float32, options=options)
             md = {}
             for i in range(len(pol)):
                 if pol[i]=='HH':
@@ -127,13 +105,13 @@ class Mapper(VRT):
             md['source_0'] = self.SimpleSource.substitute(
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
-                    BlockYSize=BlockYSize, DataType=GDT_Float32,
+                    BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
                     SourceBand=sourceBandHH,
                     Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
             md['source_1'] = self.SimpleSource.substitute(
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
-                    BlockYSize=BlockYSize, DataType=GDT_Float32, 
+                    BlockYSize=BlockYSize, DataType=gdal.GDT_Float32, 
                     SourceBand=sourceBandInci, 
                     Dataset='/vsimem/vsi_original.vrt')
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')

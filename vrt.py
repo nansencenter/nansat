@@ -137,7 +137,95 @@ class VRT():
         
         return '/vsimem/%s.vrt' % randomChars
 
+    def _create_bands(self, metaDict):
+        ''' Generic function called from the mappers to create bands
+        in the VRT dataset from an input dictionary of metadata
+        
+        Keys and values in the metaDict dictionary:
+        -------------------------------------------
+        source: string
+            name of the source dataset (e.g. filename)
+        sourceBand: integer
+            band number of the source band in the given source dataset
+        wkv: string
+            refers to the "standard_name" of some of the 
+            "well known variables" listed in wkv.xml
+            The corresponding parameters are added as metadata to the band
+        parameters: dictionary
+            metadata to be added to the band: {key: value}
+        
+        If one of the latter parameter keys is "pixel_function", this 
+        band will be a pixel function defined by the corresponding name/value.
+        In this case sourceBands and source may be lists of integers/strings 
+        (i.e. possibly several bands and several sources as input).
+        If source is a single string, this source will 
+        be used for all source bands.
+         
+        '''
+        for bandDict in metaDict:
+            self._create_band(bandDict["source"], bandDict["sourceBand"],
+                              bandDict["wkv"], bandDict["parameters"])
+        return
 
+    def _create_band(self, source, sourceBands, wkv, parameters):
+        ''' Function to add a band to the VRT from a source.
+        See function _create_bands() for explanation of the input parameters
+        
+        ''' 
+        # Make sure sourceBands and source are lists, ready for loop
+        # There will be a single sourceBand for regular bands, 
+        # but several for bands which are pixel functions 
+        if isinstance(sourceBands, int):
+            sourceBands = [sourceBands]
+        if isinstance(source, str):
+            source = [source]*len(sourceBands)
+
+        # Find datatype and blocksizes
+        srcDataset = gdal.Open(source[0])
+        srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
+        blockXSize, blockYSize = srcRasterBand.GetBlockSize()
+        dataType = srcRasterBand.DataType
+        
+        # Create band
+        if parameters.has_key("pixel_function"):
+            options = ['subClass=VRTDerivedRasterBand',
+                       'PixelFunctionType=' + parameters["pixel_function"]]
+        else:
+            options = []
+        self.dataset.AddBand(dataType, options=options)
+        dstRasterBand = self.dataset.GetRasterBand(
+                                        self.dataset.RasterCount)
+        
+        # Prepare sources 
+        # (only one item for regular bands, several for pixelfunctions) 
+        md = {}
+        for i in range(len(sourceBands)):
+            bandSource = self.SimpleSource.substitute(
+                                XSize=self.dataset.RasterXSize,
+                                YSize=self.dataset.RasterYSize,
+                                BlockXSize=blockXSize,
+                                BlockYSize=blockYSize,
+                                DataType=dataType,
+                                Dataset=source[i], SourceBand=sourceBands[i])
+            
+            if parameters.has_key("pixel_function"):
+                md['source_' + str(i)] = bandSource
+        
+        # Append sources to destination dataset
+        if parameters.has_key("pixel_function"):
+            dstRasterBand.SetMetadata(md, 'vrt_sources')
+        else:
+            dstRasterBand.SetMetadataItem("source_0", bandSource,
+                                "new_vrt_sources")
+ 
+        # set metadata from WKV and from provided parameters
+        dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
+        dstRasterBand = self._put_metadata(dstRasterBand, parameters)
+
+        self.dataset.FlushCache()
+
+        return
+    
     def _add_pixel_function(self, pixelFunction, bands, fileName, metaDict):
         ''' Generic function for mappers to add PixelFunctions
         from bands in the same dataset
