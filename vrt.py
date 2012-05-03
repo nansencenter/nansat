@@ -19,6 +19,8 @@
 import os
 from string import Template, ascii_uppercase, digits
 from random import choice
+import datetime
+import dateutil.parser
 
 import logging
 
@@ -236,6 +238,37 @@ class VRT():
 
         return
     
+    def _set_time(self, time):
+        ''' Set time of dataset and/or its bands
+        
+        Parameters
+        ----------
+        time: datetime
+        
+        If a single datetime is given, this is stored in 
+        all bands of the dataset as a metadata item "time".
+        If a list of datetime objects is given, different 
+        time can be given to each band.  
+        
+        '''
+        # Make sure time is a list with one datetime element per band
+        numBands = self.dataset.RasterCount
+        if isinstance(time, datetime.datetime):
+            time = [time]
+        if len(time) == 1:
+            time = time*numBands
+        if len(time) != numBands:
+            self.logger.error("Dataset has " + str(numBands) + 
+                    " elements, but given time has " 
+                    + str(len(time)) + " elements.")
+        
+        # Store time as metadata key "time" in each band
+        for i in range(numBands):
+            self.dataset.GetRasterBand(i+1).SetMetadataItem(
+                    'time', str(time[i].isoformat(" ")))
+            
+        return
+    
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
 
@@ -304,7 +337,7 @@ class VRT():
         # get file size
         gdal.VSIFSeekL(vsiFile, 0, 2)
         vsiFileSize = gdal.VSIFTellL(vsiFile)
-         # fseek to start again
+        # fseek to start again
         gdal.VSIFSeekL(vsiFile, 0, 0)
         # read
         vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)

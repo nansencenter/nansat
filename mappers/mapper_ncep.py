@@ -9,8 +9,7 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
-from vrt import *
-from datetime import datetime
+from vrt import VRT, datetime
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for NCEP GFS '''
@@ -21,7 +20,7 @@ class Mapper(VRT):
         if gdalDataset.GetGeoTransform() != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or gdalDataset.RasterCount != 9: # Not water proof
             raise AttributeError("NCEP BAD MAPPER");
 
-        metaDict = [\
+        metaDict = [
                     {'source': fileName, 'sourceBand': 8, 'wkv': 'eastward_wind_velocity', 'parameters':{'band_name': 'east_wind', 'height': '10 m'}},
                     {'source': fileName, 'sourceBand': 9, 'wkv': 'northward_wind_velocity', 'parameters':{'band_name': 'north_wind', 'height': '10 m'}},
                     {'source': fileName, 'sourceBand': [8, 9], 'wkv': 'wind_speed', 'parameters':{'pixel_function': 'UVToMagnitude', 'band_name': 'windspeed', 'height': '2 m'}},
@@ -35,9 +34,9 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
         
-        # Adding valid time from the GRIB file to metadata dictionary 
+        # Adding valid time from the GRIB file to dataset
         validTime = gdalDataset.GetRasterBand(8).GetMetadata()['GRIB_VALID_TIME']
-        timeString = str(datetime.utcfromtimestamp(int(validTime.strip().split(' ')[0])))
-        self.dataset.SetMetadataItem('time', timeString)
-
+        self._set_time(datetime.datetime.utcfromtimestamp(
+                                int(validTime.strip().split(' ')[0])))
+        
         return

@@ -56,3 +56,7 @@ class Mapper(VRT, MERIS):
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+        
+        # set time
+        productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
+        self._set_time(dateutil.parser.parse(productTime))

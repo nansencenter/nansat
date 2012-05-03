@@ -10,7 +10,6 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 
-from datetime import datetime
 from numpy import mod
 
 from vrt import *
@@ -58,12 +57,6 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-
-        ##################################
-        # Add time to metadata domain
-        ##################################
-        validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
-        self.dataset.SetMetadataItem('time', str(datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ')))
 
         ############################################
         # Add SAR look direction to metadata domain
@@ -122,5 +115,11 @@ class Mapper(VRT):
                  'polarisation': 'VV',
                 'pixelfunction': 'Sigma0HHIncidenceToSigma0VV'})
             self.dataset.FlushCache()
+
+
+        # Set time 
+        validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
+        self._set_time(
+            datetime.datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ'))
                   
         return

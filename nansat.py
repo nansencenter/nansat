@@ -17,6 +17,7 @@
 # http://www.gnu.org/licenses/
 
 from xml.etree.ElementTree import XML, ElementTree, tostring, Element
+import dateutil.parser
 
 from domain import Domain
 from vrt import *
@@ -280,7 +281,7 @@ class Nansat(Domain):
         self.vrt.write_xml(tostring(element))
 
     def get_GDALRasterBand(self, bandNo=1, bandID=None):
-        '''Get a GDALRasterBand of a given Nansat object.
+        ''' Get a GDALRasterBand of a given Nansat object.
 
         Get a GDALRasterBand specified by the argument.
 
@@ -332,7 +333,7 @@ class Nansat(Domain):
         return self.vrt.dataset.GetRasterBand(bandNo)
 
     def list_bands(self, doPrint=True):
-        '''Show band information of the given Nansat object
+        ''' Show band information of the given Nansat object
 
         Show serial number, longName, name and all parameters
         for each band in the metadata of the given Nansat object.
@@ -359,7 +360,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, resamplingAlg=0):
-        '''Reproject the object based on the given Domain
+        ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
         from the Domain.
@@ -514,7 +515,7 @@ class Nansat(Domain):
         self.vrt = warpedVRT
 
     def watermask(self, mod44path=None, dstDomain=None):
-        '''Create numpy array with watermask (water=1, land=0)
+        ''' Create numpy array with watermask (water=1, land=0)
 
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
@@ -576,7 +577,7 @@ class Nansat(Domain):
 
     def write_figure(self, fileName=None, bands=1, clim=None, **kwargs):
 
-        '''Save a raster band to a figure in grapfical format.
+        ''' Save a raster band to a figure in grapfical format.
 
         Get numpy array from the band(s) and band information specified
         either by given band number or band id.
@@ -710,8 +711,39 @@ class Nansat(Domain):
 
         return fig
 
+    def get_time(self, bandNo=None):
+        ''' Get time for dataset and/or its bands
+        
+        Parameters
+        ----------
+            bandNo: integer (default = None)
+        
+        If bandNo is given, or if all bands have the same time,
+        a single datetime object is returned.
+        Othwerwise a list of datetime objects for each band is returned.
+         
+        '''
+        time = []
+        for i in range(self.vrt.dataset.RasterCount):
+            band = self.vrt.dataset.GetRasterBand(i+1)
+            try:
+                time.append(dateutil.parser.parse(
+                                band.GetMetadataItem("time")))
+            except:
+                self.logger.debug("Band " + str(i+1) + " has no time")
+                time.append(None)
+        
+        if bandNo is not None:
+            return time[bandNo-1]
+        else:
+            if len(set(time)) == 1:
+                return time[0]
+            else:
+                return time
+            
+
     def _get_mapper(self, mapperName):
-        '''Creare VRT file in memory (VSI-file) with variable mapping
+        ''' Create VRT file in memory (VSI-file) with variable mapping
 
         If mapperName is given, it is added as the first in the self.mapperList.
         Loop over all availble mappers in mapperList to get the matching one.
