@@ -16,9 +16,6 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-
-from string import maketrans, ascii_uppercase, digits
-
 from xml.etree.ElementTree import XML, ElementTree, tostring, Element
 
 from domain import Domain
@@ -190,37 +187,13 @@ class Nansat(Domain):
                         "CFloat32" : "Float32", "CFloat64" : "Float64"
                         }.get(dataType, dataType)
             e.set("dataType", dataType)
-
-            # Add Offset and Scale under VRTRasterBand
-            # if it is the default (Offset = 0.0, Scale = 1.0), it is not shown
-            band = self.vrt.dataset.GetRasterBand(iBand+1)
-
-            try:
-                new_element = Element(u'Offset')
-                new_element.text = str(band.GetOffset())
-                e.append(new_element)
-            except:
-                self.logger.warning('Unable to set Offset for band %d' % (iBand+1))
-            try:
-                new_element = Element(u'Scale')
-                new_element.text = str(band.GetScale())
-                e.append(new_element)
-            except:
-                self.logger.warning('Unable to set scale for band %d' % (iBand+1))
-
-        #write vsiFileContent to a temporary vsi-file
-        tmpFileName = '/vsimem/tmp.vrt'
-        vsiFileContent = tostring(tree.getroot())
-        vsiFile = gdal.VSIFOpenL(tmpFileName, 'w')
-        gdal.VSIFWriteL(vsiFileContent, len(vsiFileContent), 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
-
-        # get dataset from the temporary vsi-file
-        dataset = gdal.Open(tmpFileName)
+        
+        tmpVRT = self.vrt.copy()
+        tmpVRT.write_xml(tostring(tree.getroot()))
 
         # Replace the band names
-        for iBand in range(dataset.RasterCount):
-            band =dataset.GetRasterBand(iBand+1)
+        for iBand in range(tmpVRT.dataset.RasterCount):
+            band = tmpVRT.dataset.GetRasterBand(iBand+1)
             try:
                 band.SetMetadataItem('NETCDF_VARNAME',
                                      str(band.GetMetadata_Dict()["band_name"]))
@@ -228,7 +201,7 @@ class Nansat(Domain):
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d' % (iBand+1))
 
         # create a netCDF file
-        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName, dataset)
+        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName, tmpVRT.dataset)
         dataset = None
 
     def resize(self, factor=1, width=None, height=None, method="average"):
@@ -838,9 +811,10 @@ class Nansat(Domain):
         tree = ElementTree(element)
 
         # convert proper string style and set to the GeoTransform element
-        geoTransformString = str(geoTransform).\
-                        translate(maketrans("", ""), "()")
-
+        geoTransformString = str(geoTransform).strip("()")
+        print 'Geotransform:', geoTransform
+        print geoTransformString
+        
         # replace GeoTranform
         elem = tree.find("GeoTransform")
         elem.text = geoTransformString
@@ -857,8 +831,7 @@ class Nansat(Domain):
 
         invGeotransform = gdal.InvGeoTransform(geoTransform)
         # convert proper string style and set to the DstInvGeoTransform element
-        elem.text = str(invGeotransform[1]).\
-                        translate(maketrans("", ""), "()")
+        elem.text = str(invGeotransform[1]).strip("()")
 
         # if geolocation arrays were used also modify the Block Size
         elem = tree.find("GDALWarpOptions/Transformer/"
