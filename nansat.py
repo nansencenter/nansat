@@ -812,8 +812,6 @@ class Nansat(Domain):
 
         # convert proper string style and set to the GeoTransform element
         geoTransformString = str(geoTransform).strip("()")
-        print 'Geotransform:', geoTransform
-        print geoTransformString
         
         # replace GeoTranform
         elem = tree.find("GeoTransform")
