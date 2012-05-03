@@ -19,7 +19,7 @@
 
 from string import maketrans, ascii_uppercase, digits
 
-from xml.etree.ElementTree import XML, ElementTree, tostring
+from xml.etree.ElementTree import XML, ElementTree, tostring, Element
 
 from domain import Domain
 from vrt import *
@@ -179,11 +179,10 @@ class Nansat(Domain):
 
         '''
         #-- Get element from the XML content and add some elements
-        vsiFileContent = self.vrt.read_xml()
-        tree = ElementTree(XML(vsiFileContent))
+        tree = ElementTree(XML(self.vrt.read_xml()))
         element = tree.getroot()
 
-        for e in element.getiterator("VRTRasterBand"):
+        for iBand, e in enumerate(element.getiterator("VRTRasterBand")):
             """ !!! Consider the flexible solution !!! """
             dataType = e.get("dataType")
             dataType = {
@@ -194,31 +193,42 @@ class Nansat(Domain):
 
             # Add Offset and Scale under VRTRasterBand
             # if it is the default (Offset = 0.0, Scale = 1.0), it is not shown
-            for e1 in e.find("Metadata").getiterator("MDI"):
-                if e1.get("key") == "offset":
-                    new_element = Element(u'Offset')
-                    new_element.text = str(e1.text)
-                    e.append(new_element)
-                elif e1.get("key") == "scale":
-                    new_element = Element(u'Scale')
-                    new_element.text = str(e1.text)
-                    e.append(new_element)
+            band = self.vrt.dataset.GetRasterBand(iBand+1)
 
-        # Overwrite element
-        self.vrt.write_xml(tostring(tree.getroot()))
+            try:
+                new_element = Element(u'Offset')
+                new_element.text = str(band.GetOffset())
+                e.append(new_element)
+            except:
+                self.logger.warning('Unable to set Offset for band %d' % (iBand+1))
+            try:
+                new_element = Element(u'Scale')
+                new_element.text = str(band.GetScale())
+                e.append(new_element)
+            except:
+                self.logger.warning('Unable to set scale for band %d' % (iBand+1))
+
+        #write vsiFileContent to a temporary vsi-file
+        tmpFileName = '/vsimem/tmp.vrt'
+        vsiFileContent = tostring(tree.getroot())
+        vsiFile = gdal.VSIFOpenL(tmpFileName, 'w')
+        gdal.VSIFWriteL(vsiFileContent, len(vsiFileContent), 1, vsiFile)
+        gdal.VSIFCloseL(vsiFile)
+
+        # get dataset from the temporary vsi-file
+        dataset = gdal.Open(tmpFileName)
 
         # Replace the band names
-        for iBand in range(self.vrt.dataset.RasterCount):
-            band =self.vrt.dataset.GetRasterBand(iBand+1)
+        for iBand in range(dataset.RasterCount):
+            band =dataset.GetRasterBand(iBand+1)
             try:
                 band.SetMetadataItem('NETCDF_VARNAME',
                                      str(band.GetMetadata_Dict()["band_name"]))
             except:
-                self.logger.warning('Unable to set NETCDF_VARNAME for band %d' % iBand)
+                self.logger.warning('Unable to set NETCDF_VARNAME for band %d' % (iBand+1))
 
         # create a netCDF file
-        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
-                                                              self.vrt.dataset)
+        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName, dataset)
         dataset = None
 
     def resize(self, factor=1, width=None, height=None, method="average"):
