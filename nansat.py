@@ -780,7 +780,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_merisL1')
+        mapper_module = __import__('mapper_modisL2NRT')
         tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
                                       self.metadata, logLevel=self.logger.level)
         """

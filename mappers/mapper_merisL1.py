@@ -8,10 +8,10 @@
 # Copyright:   (c) asumak 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import *
-from meris import MERIS
+from vrt import VRT
+from envisat import Envisat
 
-class Mapper(VRT, MERIS):
+class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
@@ -58,5 +58,4 @@ class Mapper(VRT, MERIS):
         self._create_bands(metaDict)
         
         # set time
-        productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
-        self._set_time(dateutil.parser.parse(productTime))
+        self._set_envisat_time(gdalMetadata)

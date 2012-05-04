@@ -8,9 +8,10 @@
 # Copyright:   
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import *
+from vrt import VRT
+from envisat import Envisat
 
-class Mapper(VRT):
+class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1 '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
@@ -37,5 +38,4 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # set time
-        productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
-        self._set_time(dateutil.parser.parse(productTime))
+        self._set_envisat_time(gdalMetadata)

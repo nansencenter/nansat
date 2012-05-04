@@ -1,9 +1,14 @@
-import array
+import dateutil.parser
 from struct import unpack
 
-class MERIS():
-    '''Methods shared between MERIS mappers'''
-    
+class Envisat():
+    '''Methods shared between Envisat mappers'''
+    def _set_envisat_time(self, gdalMetadata):
+        ''' Get time from metadata, set time to VRT'''
+        # set time
+        productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
+        self._set_time(dateutil.parser.parse(productTime))
+
     def read_scaling_gads(self, fileName, indeces):
         ''' Read Scaling Factor GADS to get scalings of MERIS L1/L2'''
         

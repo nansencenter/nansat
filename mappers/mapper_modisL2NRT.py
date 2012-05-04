@@ -12,6 +12,7 @@ from vrt import VRT, gdal, osr
 import re
 from matplotlib import pyplot as plt
 import numpy as np
+from datetime import datetime, timedelta
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
@@ -154,4 +155,9 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
         self.dataset.SetMetadataItem('Y_DATASET', ySubDatasetName, 'GEOLOCATION')
         
-        return
+        #set time
+        startYear = int(gdalMetadata['Start Year'])
+        startDay =  int(gdalMetadata['Start Day'])
+        startMillisec =  int(gdalMetadata['Start Millisec'])
+        startDate = datetime(startYear, 1, 1) + timedelta(startDay, 0, 0, startMillisec)
+        self._set_time(startDate)

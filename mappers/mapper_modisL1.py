@@ -9,6 +9,7 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from vrt import VRT, gdal
+import dateutil.parser
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
@@ -105,4 +106,6 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        return
+        productDate = gdalMetadata["RANGEBEGINNINGDATE"]
+        productTime = gdalMetadata["RANGEENDINGTIME"]
+        self._set_time(dateutil.parser.parse(productDate+' '+productTime))
