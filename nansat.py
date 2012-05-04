@@ -200,6 +200,8 @@ class Nansat(Domain):
                                      str(band.GetMetadata_Dict()["band_name"]))
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d' % (iBand+1))
+        tmpVRT.dataset.SetMetadataItem('gcpProjection', self.vrt.dataset.GetGCPProjection())
+        tmpVRT.export('/data/temp.vrt')
 
         # create a netCDF file
         dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName, tmpVRT.dataset)
@@ -208,10 +210,11 @@ class Nansat(Domain):
     def resize(self, factor=1, width=None, height=None, method="average"):
         '''Proportional resize of the dataset.
 
-        The dataset is resized as (xSize/factor, ySize/factor) or
+        The dataset is resized as (xSize*factor, ySize*factor) or
         (width, calulated height) or (calculated width, height).
         self.vrt is rewritten to the the downscaled sizes.
-        If GCPs are given, they are also rewritten.
+        If GCPs are given in a dataset, they are also rewritten.
+        If resize() is called without any parameters resizing/reprojection is cancelled.
 
 
         Parameters
@@ -442,6 +445,8 @@ class Nansat(Domain):
                 replaced with warpedVRT
 
         '''
+        dstDataset = gcpImage.vrt.dataset
+        
         # prepare pure lat/lon WKT
         latlongWKT = self._latlong_srs().ExportToWkt()
 
@@ -457,7 +462,7 @@ class Nansat(Domain):
                              'DST_SRS=' + latlongWKT])
 
         # get GCPs from DST image
-        gcps = gcpImage.vrt.dataset.GetGCPs()
+        gcps = dstDataset.GetGCPs()
 
         # create 'fake' GCPs
         for g in gcps:
@@ -506,11 +511,15 @@ class Nansat(Domain):
 
         # change size and geotransform to fit the DST image
         warpeVRTXML = self._modify_warped_VRT_XML(warpeVRTXML,
-                                   gcpImage.vrt.dataset.RasterXSize,
-                                   gcpImage.vrt.dataset.RasterYSize,
+                                   dstDataset.RasterXSize,
+                                   dstDataset.RasterYSize,
                                    (0, 1, 0, 0, 0, 1))
         # update warped VRT with new XML
         warpedVRT.write_xml(warpeVRTXML)
+
+        #append GCPs and Projection from the dstImage
+        warpedVRT.dataset.SetGCPs(dstDataset.GetGCPs(), dstDataset.GetGCPProjection())
+        warpedVRT.dataset.SetProjection('')
         # set current VRT to be warped
         self.vrt = warpedVRT
 
