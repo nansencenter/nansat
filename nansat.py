@@ -66,10 +66,6 @@ class Nansat(Domain):
             list of available working mappers
         self.fileName : file name
             set file name given by the argument
-        self.gdalDataset : GDAL dataset
-            set GDAL dataset
-        self.metadata : metadata
-            set metadata of the dataset
         self.raw : VRT object
             set VRT object with VRT dataset with mapping of variables
         self.vrt : VRT object
@@ -106,13 +102,6 @@ class Nansat(Domain):
         # set input file name
         self.fileName = fileName
 
-        # set input GDAL dataset
-        self.gdalDataset = gdal.Open(self.fileName)
-        if (self.gdalDataset is None) or (self.gdalDataset == ""):
-            raise GDALError("Nansat._init_(): Cannot get the dataset from "
-                            + self.fileName)
-        # metadata
-        self.metadata = self.gdalDataset.GetMetadata()
         # Get oroginal VRT object with mapping of variables
         self.raw = self._get_mapper(mapperName)
         # Set current VRT object
@@ -749,7 +738,70 @@ class Nansat(Domain):
                 return time[0]
             else:
                 return time
-            
+
+    def get_metadata(self, key=None, bandNo=None):
+        ''' Get metadata from self.vrt.dataset
+        
+        Parameters:
+        -----------
+        key: string, optional
+            name of the metadata key. If not givem all metadata is returned
+        bandNo: int, optional
+            number of band to get metadata from. If not given, global metadata
+            is returned
+        
+        Returns:
+            a string with metadata if key is given and found
+            an empty string if key is given and not found
+            a dictionary with all metadata if key is not given
+        '''
+
+        # get all metadata from dataset or from band
+        if bandNo is None:
+            metadata = self.vrt.dataset.GetMetadata()
+        else:
+            metadata = self.vrt.dataset.GetRasterBand(bandNo).GetMetadata()
+
+        # get all metadata or from a key
+        if key is not None:
+            metadata = metadata.get(key, '')
+
+        return metadata
+
+    def set_metadata(self, key='', value='', bandNo=None):
+        ''' Set metadata to self.raw.dataset and self.vrt.dataset 
+
+        Parameters:
+        -----------
+        key: string or dictionary with strings
+            name of the metadata, or dictionary with metadata names, values
+        value: string
+            value of metadata
+        bandNo: int
+            number of band to set metadata to. If omitted global metadata is set
+        
+        Modifies:
+        ---------
+            self.raw.dataset: sets metadata in GDAL raw dataset
+            self.vrt.dataset: sets metadata in GDAL current dataset
+            '''
+
+        # set all metadata from dataset or from band
+        if bandNo is None:
+            metaReceiverRAW = self.raw.dataset
+            metaReceiverVRT = self.vrt.dataset
+        else:
+            metaReceiverRAW = self.raw.dataset.GetRasterBand(bandNo)
+            metaReceiverVRT = self.vrt.dataset.GetRasterBand(bandNo)
+
+        # set metadata from dictionary or from single pair key,value
+        if isinstance(key, dict):
+            for k in key:
+               metaReceiverRAW.SetMetadataItem(k, key[k])
+               metaReceiverVRT.SetMetadataItem(k, key[k])
+        else:
+            metaReceiverRAW.SetMetadataItem(key, value)
+            metaReceiverVRT.SetMetadataItem(key, value)
 
     def _get_mapper(self, mapperName):
         ''' Create VRT file in memory (VSI-file) with variable mapping
@@ -776,10 +828,18 @@ class Nansat(Domain):
 
         Raises
         --------
+            GDALError: occures if the given file cannot be opened with GDAL
             TypeError: occurs when the given driver type is not registarated
                         in the mappers.
 
         '''
+        # open GDAL dataset. It will be parsed to all mappers for testing
+        gdalDataset = gdal.Open(self.fileName)
+        if (gdalDataset is None) or (gdalDataset == ""):
+            raise GDALError("Nansat._get_,apper(): Cannot get the dataset from "
+                            + self.fileName)
+        # gete metadata from the GDAL dataset
+        metadata = gdalDataset.GetMetadata()
 
         # add the given mapper first
         self.mapperList = ['mapper_' + mapperName] + self.mapperList
@@ -790,8 +850,8 @@ class Nansat(Domain):
         # For debugging:
         """
         mapper_module = __import__('mapper_modisL2NRT')
-        tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
-                                      self.metadata, logLevel=self.logger.level)
+        tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
+                                      metadata, logLevel=self.logger.level)
         """
         # Otherwise
         for iMapper in self.mapperList:
@@ -802,8 +862,8 @@ class Nansat(Domain):
                 #import mapper
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
-                tmpVRT = mapper_module.Mapper(self.fileName, self.gdalDataset,
-                                              self.metadata,
+                tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
+                                              metadata,
                                               logLevel=self.logger.level)
                 self.logger.info('Mapper %s - success!' % iMapper)
                 break
@@ -813,7 +873,7 @@ class Nansat(Domain):
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None:
             self.logger.info('No mapper fits!')
-            tmpVRT = VRT(vrtDataset=self.gdalDataset, logLevel=self.logger.level)
+            tmpVRT = VRT(vrtDataset=gdalDataset, logLevel=self.logger.level)
 
         return tmpVRT
 
