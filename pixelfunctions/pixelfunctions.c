@@ -931,8 +931,8 @@ CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData
 			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii)*PI;
 			incidence_angle = incidence_angle/180;
 			
-			/* Polarisation ratio from Thompson et al. with alpha=0.6 */
-			factor = pow( (1+2* pow(tan(incidence_angle),2)) / (1+0.6*pow(tan(incidence_angle),2)), 2); 
+			/* Polarisation ratio from Thompson et al. with alpha=1 */
+			factor = pow( (1+2* pow(tan(incidence_angle),2)) / (1+1*pow(tan(incidence_angle),2)), 2); 
 			sigma0VV = sigma0HH*factor;
 
 			GDALCopyWords(&sigma0VV, GDT_Float64, 0,
