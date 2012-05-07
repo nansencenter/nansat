@@ -164,12 +164,25 @@ class Nansat(Domain):
                 to netCDF dataType. The subelements "Offset" and "Scale"
                 are added for each VRTRasterBand if need be.
 
+        !! NB !!
+        --------
+            If number of bands is more than one,
+            serial numbers are added at the end of each band name.
+
+            It is possible to fix it by changing
+            line.4605 in GDAL/frmts/netcdf/netcdfdataset.cpp :
+
+            "if( nBands > 1 ) sprintf(szBandName,"%s%d",tmpMetadata,iBand);"
+            --> "if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);"
+
         '''
-        #-- Get element from the XML content and add some elements
+
+        # Get the element from the XML content
         tree = ElementTree(XML(self.vrt.read_xml()))
         element = tree.getroot()
 
-        for iBand, e in enumerate(element.getiterator("VRTRasterBand")):
+        # Change the element from GDAL datatype to NetCDF data type
+        for e in element.getiterator("VRTRasterBand"):
             """ !!! Consider the flexible solution !!! """
             dataType = e.get("dataType")
             dataType = {
@@ -181,20 +194,33 @@ class Nansat(Domain):
         tmpVRT = self.vrt.copy()
         tmpVRT.write_xml(tostring(tree.getroot()))
 
+        # Copy the vrt and overwrite the modified element
+        tmpVrt= self.vrt.copy()
+        tmpVrt.write_xml(tostring(tree.getroot()))
+
+        # Get projection and GCPs from XML and add them in the global metadata
+        try:
+            projection = element.find("GCPList").get("Projection")
+            tmpVrt.dataset.SetMetadataItem("gcpProjection",
+                                            projection.replace(",", "&quot;"))
+        except:
+            self.logger.warning("Unable to get projection for netcdf")
+
         # Replace the band names
-        for iBand in range(tmpVRT.dataset.RasterCount):
-            band = tmpVRT.dataset.GetRasterBand(iBand+1)
+        for iBand in range(tmpVrt.dataset.RasterCount):
+            band =tmpVrt.dataset.GetRasterBand(iBand+1)
             try:
                 band.SetMetadataItem('NETCDF_VARNAME',
                                      str(band.GetMetadata_Dict()["band_name"]))
             except:
-                self.logger.warning('Unable to set NETCDF_VARNAME for band %d' % (iBand+1))
+                self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
+                                    % iBand)
         tmpVRT.dataset.SetMetadataItem('gcpProjection', self.vrt.dataset.GetGCPProjection())
         tmpVRT.export('/data/temp.vrt')
 
         # create a netCDF file
-        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName, tmpVRT.dataset)
-        dataset = None
+        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
+                                                            tmpVrt.dataset)
 
     def resize(self, factor=1, width=None, height=None, method="average"):
         '''Proportional resize of the dataset.
