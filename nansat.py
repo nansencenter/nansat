@@ -190,35 +190,31 @@ class Nansat(Domain):
                         "CFloat32" : "Float32", "CFloat64" : "Float64"
                         }.get(dataType, dataType)
             e.set("dataType", dataType)
-        
-        tmpVRT = self.vrt.copy()
-        tmpVRT.write_xml(tostring(tree.getroot()))
 
         # Copy the vrt and overwrite the modified element
         tmpVrt= self.vrt.copy()
         tmpVrt.write_xml(tostring(tree.getroot()))
 
-        # Get projection and GCPs from XML and add them in the global metadata
+        # Get projection and add it in the global metadata
         try:
-            projection = element.find("GCPList").get("Projection")
             tmpVrt.dataset.SetMetadataItem("gcpProjection",
-                                            projection.replace(",", "&quot;"))
+                                            self.vrt.dataset.
+                                            GetGCPProjection().
+                                            replace('"', "&quot;"))
         except:
             self.logger.warning("Unable to get projection for netcdf")
 
         # Replace the band names
         for iBand in range(tmpVrt.dataset.RasterCount):
-            band =tmpVrt.dataset.GetRasterBand(iBand+1)
+            band = tmpVrt.dataset.GetRasterBand(iBand+1)
             try:
                 band.SetMetadataItem('NETCDF_VARNAME',
                                      str(band.GetMetadata_Dict()["band_name"]))
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
                                     % iBand)
-        tmpVRT.dataset.SetMetadataItem('gcpProjection', self.vrt.dataset.GetGCPProjection())
-        tmpVRT.export('/data/temp.vrt')
 
-        # create a netCDF file
+        # Create a netCDF file
         dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
                                                             tmpVrt.dataset)
 
@@ -461,7 +457,7 @@ class Nansat(Domain):
 
         '''
         dstDataset = gcpImage.vrt.dataset
-        
+
         # prepare pure lat/lon WKT
         latlongWKT = self._latlong_srs().ExportToWkt()
 
@@ -737,15 +733,15 @@ class Nansat(Domain):
 
     def get_time(self, bandNo=None):
         ''' Get time for dataset and/or its bands
-        
+
         Parameters
         ----------
             bandNo: integer (default = None)
-        
+
         If bandNo is given, or if all bands have the same time,
         a single datetime object is returned.
         Othwerwise a list of datetime objects for each band is returned.
-         
+
         '''
         time = []
         for i in range(self.vrt.dataset.RasterCount):
@@ -756,7 +752,7 @@ class Nansat(Domain):
             except:
                 self.logger.debug("Band " + str(i+1) + " has no time")
                 time.append(None)
-        
+
         if bandNo is not None:
             return time[bandNo-1]
         else:
@@ -767,7 +763,7 @@ class Nansat(Domain):
 
     def get_metadata(self, key=None, bandNo=None):
         ''' Get metadata from self.vrt.dataset
-        
+
         Parameters:
         -----------
         key: string, optional
@@ -775,7 +771,7 @@ class Nansat(Domain):
         bandNo: int, optional
             number of band to get metadata from. If not given, global metadata
             is returned
-        
+
         Returns:
             a string with metadata if key is given and found
             an empty string if key is given and not found
@@ -795,7 +791,7 @@ class Nansat(Domain):
         return metadata
 
     def set_metadata(self, key='', value='', bandNo=None):
-        ''' Set metadata to self.raw.dataset and self.vrt.dataset 
+        ''' Set metadata to self.raw.dataset and self.vrt.dataset
 
         Parameters:
         -----------
@@ -805,7 +801,7 @@ class Nansat(Domain):
             value of metadata
         bandNo: int
             number of band to set metadata to. If omitted global metadata is set
-        
+
         Modifies:
         ---------
             self.raw.dataset: sets metadata in GDAL raw dataset
@@ -880,6 +876,12 @@ class Nansat(Domain):
                                       metadata, logLevel=self.logger.level)
         """
         # Otherwise
+        from os import path
+        import sys
+        nansatDir = path.dirname(path.realpath(__file__))
+        sys.path.append(path.join(nansatDir, "mappers"))
+
+
         for iMapper in self.mapperList:
             try:
                 #get rid of .py extension
@@ -939,7 +941,7 @@ class Nansat(Domain):
 
         # convert proper string style and set to the GeoTransform element
         geoTransformString = str(geoTransform).strip("()")
-        
+
         # replace GeoTranform
         elem = tree.find("GeoTransform")
         elem.text = geoTransformString
