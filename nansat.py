@@ -16,13 +16,13 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-from xml.etree.ElementTree import XML, ElementTree, tostring, Element
+#from xml.etree.ElementTree import XML, ElementTree, tostring, Element
 import dateutil.parser
 
 from domain import Domain
 from vrt import *
 from figure import *
-from nansat_tools import add_logger
+from nansat_tools import add_logger, Node
 
 class GDALError(Error):
     '''Error from GDAL '''
@@ -176,24 +176,21 @@ class Nansat(Domain):
             --> "if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);"
 
         '''
-
-        # Get the element from the XML content
-        tree = ElementTree(XML(self.vrt.read_xml()))
-        element = tree.getroot()
+        # Get the node from the XML content
+        node0 = Node.create(self.vrt.read_xml())
 
         # Change the element from GDAL datatype to NetCDF data type
-        for e in element.getiterator("VRTRasterBand"):
-            """ !!! Consider the flexible solution !!! """
-            dataType = e.get("dataType")
+        for iBand in node0.nodeList("VRTRasterBand"):
+            dataType = iBand.getAttribute("dataType")
             dataType = {
                         "UInt16": "Int16", "UInt32": "Int32", "CInt16": "Int16",
                         "CFloat32" : "Float32", "CFloat64" : "Float64"
                         }.get(dataType, dataType)
-            e.set("dataType", dataType)
+            iBand.replaceAttribute("dataType", dataType)
 
         # Copy the vrt and overwrite the modified element
         tmpVrt= self.vrt.copy()
-        tmpVrt.write_xml(tostring(tree.getroot()))
+        tmpVrt.write_xml(str(node0.rawxml()))
 
         # Get projection and add it in the global metadata
         try:
@@ -263,36 +260,33 @@ class Nansat(Domain):
         # Get XML content from VRT-file
         vrtXML = self.vrt.read_xml()
 
-        # Get element from the XML content and modify some elements
-        element = XML(vrtXML)
-        rasterXSize = int(float(element.get("rasterXSize")) * factor)
-        rasterYSize = int(float(element.get("rasterYSize")) * factor)
+        node0 = Node.create(vrtXML)
+        rasterXSize = int(float(node0.getAttribute("rasterXSize")) * factor)
+        rasterYSize = int(float(node0.getAttribute("rasterYSize")) * factor)
         self.logger.info('New size/factor: (%f, %f)/%f' % (rasterXSize, rasterYSize, factor))
-        element.set("rasterXSize", str(rasterXSize))
-        element.set("rasterYSize", str(rasterYSize))
+        node0.replaceAttribute("rasterXSize", str(rasterXSize))
+        node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
-        for elem in element.iter("DstRect"):
-            elem.set("xSize", str(rasterXSize))
-            elem.set("ySize", str(rasterYSize))
-
-        # if method = "average", overwrite "SimpleSource" to "AveragedSource"
-        if method == "average":
-            for elem in element.iter("SimpleSource"):
-                elem.tag = "AveragedSource"
+        for iNode in node0.nodeList("VRTRasterBand"):
+            iNode.node("SimpleSource").node("DstRect").replaceAttribute("xSize", str(rasterXSize))
+            iNode.node("SimpleSource").node("DstRect").replaceAttribute("ySize", str(rasterYSize))
+            # if method = "average", overwrite "SimpleSource" to "AveragedSource"
+            if method == "average":
+                iNode.replaceTag("SimpleSource", "AveragedSource")
 
         # Edit GCPs to correspond to the downscaled size
-        for elem in element.iter("GCP"):
-            pxl = float(elem.get("Pixel")) * factor
+        for iNode in node0.node("GCPList").nodeList("GCP"):
+            pxl = float(iNode.getAttribute("Pixel")) * factor
             if pxl > float(rasterXSize):
                 pxl = rasterXSize
-            lin = float(elem.get("Line")) * factor
+            iNode.replaceAttribute("Pixel", str(pxl))
+            lin = float(iNode.getAttribute("Line")) * factor
             if lin > float(rasterYSize):
                 lin = rasterYSize
-            elem.set("Pixel", str(pxl))
-            elem.set("Line", str(lin))
+            iNode.replaceAttribute("Line", str(lin))
 
         # Write the modified elemements into VRT
-        self.vrt.write_xml(tostring(element))
+        self.vrt.write_xml(str(node0.rawxml()))
 
     def get_GDALRasterBand(self, bandNo=1, bandID=None):
         ''' Get a GDALRasterBand of a given Nansat object.
@@ -876,12 +870,6 @@ class Nansat(Domain):
                                       metadata, logLevel=self.logger.level)
         """
         # Otherwise
-        from os import path
-        import sys
-        nansatDir = path.dirname(path.realpath(__file__))
-        sys.path.append(path.join(nansatDir, "mappers"))
-
-
         for iMapper in self.mapperList:
             try:
                 #get rid of .py extension
@@ -932,47 +920,28 @@ class Nansat(Domain):
                 modified content of the original VRT file
 
         '''
-        # Get element from the XML content and modify some elements
-        # using Domain object parameters
-        element = XML(vrtXML)
-        element.set("rasterXSize", str(rasterXSize))
-        element.set("rasterYSize", str(rasterYSize))
-        tree = ElementTree(element)
+        node0 = Node.create(vrtXML)
+
+        node0.replaceAttribute("rasterXSize", str(rasterXSize))
+        node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
         # convert proper string style and set to the GeoTransform element
-        geoTransformString = str(geoTransform).strip("()")
-
-        # replace GeoTranform
-        elem = tree.find("GeoTransform")
-        elem.text = geoTransformString
-        # replace DstGeoTranform
-        #elem = tree.find("GDALWarpOptions/Transformer/ApproxTransformer/BaseTransformer/GenImgProjTransformer/DstGeoTransform")
-        elem = tree.find("GDALWarpOptions/Transformer/"
-                         "GenImgProjTransformer/DstGeoTransform")
-        elem.text = geoTransformString
-
-        # get inverse geotransform
-        #elem = tree.find("GDALWarpOptions/Transformer/ApproxTransformer/BaseTransformer/GenImgProjTransformer/DstInvGeoTransform")
-        elem = tree.find("GDALWarpOptions/Transformer/"
-                         "GenImgProjTransformer/DstInvGeoTransform")
+        node0.node("GeoTransform").value = str(geoTransform).strip("()")
+        node0.node("GDALWarpOptions").node("Transformer").\
+              node("GenImgProjTransformer").node("DstGeoTransform").value = \
+              str(geoTransform).strip("()")
 
         invGeotransform = gdal.InvGeoTransform(geoTransform)
-        # convert proper string style and set to the DstInvGeoTransform element
-        elem.text = str(invGeotransform[1]).strip("()")
+        node0.node("GDALWarpOptions").node("Transformer").\
+              node("GenImgProjTransformer").node("DstInvGeoTransform").value = \
+              str(invGeotransform[1]).strip("()")
 
-        # if geolocation arrays were used also modify the Block Size
-        elem = tree.find("GDALWarpOptions/Transformer/"
-                         "GenImgProjTransformer/SrcGeoLocTransformer")
-        if elem is not None:
-            elem = tree.find('BlockXSize')
-            elem.text = str(rasterXSize)
-            elem = tree.find('BlockYSize')
-            elem.text = str(rasterYSize)
+        if node0.node("GDALWarpOptions").node("Transformer").\
+            node("GenImgProjTransformer").node("SrcGeoLocTransformer") != False:
+            node0.node("BlockXSize").value = str(rasterXSize)
+            node0.node("BlockYSize").value = str(rasterYSize)
 
-        # Overwrite element
-        element = tree.getroot()
-        # return XML content
-        return tostring(element)
+        return str(node0.rawxml())
 
     def _specify_bandNo(self, bandID):
         '''Specify a band number based on bandID {'key_name': 'key_value'}

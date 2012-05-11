@@ -23,8 +23,7 @@ import datetime
 import dateutil.parser
 
 import logging
-
-from xml.etree.ElementTree import ElementTree
+from nansat_tools import Node, openXML
 
 try:
     from osgeo import gdal, osr
@@ -32,7 +31,7 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import add_logger
+from nansat_tools import add_logger, Node
 
 class VRT():
     '''VRT dataset management
@@ -61,13 +60,13 @@ class VRT():
                                          srcMetadata=None,
                                          logLevel=30):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
-        
+
         If vrtDataset is given, creates full copy of VRT content
         Otherwise takes reprojection parameters (geotransform, projection, etc)
         either from given GDAL dataset or from seperate parameters.
         Create VRT dataset (self.dataset) based on these parameters
         Adds logger
-        
+
         Parameters
         ----------
             gdalDataset: GDAL Dataset
@@ -85,13 +84,13 @@ class VRT():
             srcMetadata: GDAL Metadata
                 additional parameter
             logLevel: int
-        
+
         Modifies:
         ---------
             self.dataset: GDAL VRT dataset
             self.logger: logging logger
             self.vrtDriver: GDAL Driver
-        
+
         '''
         # essential attributes
         self.logger = add_logger('Nansat', logLevel=logLevel)
@@ -111,26 +110,26 @@ class VRT():
                 srcGCPCount = gdalDataset.GetGCPCount()
                 srcGCPs = gdalDataset.GetGCPs()
                 srcGCPProjection = gdalDataset.GetGCPProjection()
-        
+
                 srcRasterXSize = gdalDataset.RasterXSize
                 srcRasterYSize = gdalDataset.RasterYSize
-                
+
                 srcMetadata = gdalDataset.GetMetadata()
                 self.logger.debug('RasterXSize %d' % gdalDataset.RasterXSize)
                 self.logger.debug('RasterYSize %d' % gdalDataset.RasterYSize)
             else:
                 srcGCPs=[]
                 srcGCPProjection=None
-    
+
             # create VRT dataset
             self.dataset = self.vrtDriver.Create(self.fileName,
                                             srcRasterXSize, srcRasterYSize, bands=0)
-    
+
             # set geo-metadata in the VRT dataset
             self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
             self.dataset.SetProjection(srcProjection)
             self.dataset.SetGeoTransform(srcGeoTransform)
-    
+
             # set metadata
             self.dataset.SetMetadata(srcMetadata)
             # write file contents
@@ -140,19 +139,19 @@ class VRT():
         self.logger.debug('VRT description: %s ' % self.dataset.GetDescription())
         self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
-        self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)        
-    
+        self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
+
     def _make_filename(self):
         '''Create random VSI file name'''
         allChars=ascii_uppercase + digits
         randomChars = ''.join(choice(allChars) for x in range(10))
-        
+
         return '/vsimem/%s.vrt' % randomChars
 
     def _create_bands(self, metaDict):
         ''' Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
-        
+
         Keys and values in the metaDict dictionary:
         -------------------------------------------
         source: string
@@ -160,19 +159,19 @@ class VRT():
         sourceBand: integer
             band number of the source band in the given source dataset
         wkv: string
-            refers to the "standard_name" of some of the 
+            refers to the "standard_name" of some of the
             "well known variables" listed in wkv.xml
             The corresponding parameters are added as metadata to the band
         parameters: dictionary
             metadata to be added to the band: {key: value}
-        
-        If one of the latter parameter keys is "pixel_function", this 
+
+        If one of the latter parameter keys is "pixel_function", this
         band will be a pixel function defined by the corresponding name/value.
-        In this case sourceBands and source may be lists of integers/strings 
+        In this case sourceBands and source may be lists of integers/strings
         (i.e. possibly several bands and several sources as input).
-        If source is a single string, this source will 
+        If source is a single string, this source will
         be used for all source bands.
-         
+
         '''
         for bandDict in metaDict:
             self._create_band(bandDict["source"], bandDict["sourceBand"],
@@ -182,11 +181,11 @@ class VRT():
     def _create_band(self, source, sourceBands, wkv, parameters):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
-        
-        ''' 
+
+        '''
         # Make sure sourceBands and source are lists, ready for loop
-        # There will be a single sourceBand for regular bands, 
-        # but several for bands which are pixel functions 
+        # There will be a single sourceBand for regular bands,
+        # but several for bands which are pixel functions
         if isinstance(sourceBands, int):
             sourceBands = [sourceBands]
         if isinstance(source, str):
@@ -197,7 +196,7 @@ class VRT():
         srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
         blockXSize, blockYSize = srcRasterBand.GetBlockSize()
         dataType = srcRasterBand.DataType
-        
+
         # Create band
         if parameters.has_key("pixel_function"):
             options = ['subClass=VRTDerivedRasterBand',
@@ -207,9 +206,9 @@ class VRT():
         self.dataset.AddBand(dataType, options=options)
         dstRasterBand = self.dataset.GetRasterBand(
                                         self.dataset.RasterCount)
-        
-        # Prepare sources 
-        # (only one item for regular bands, several for pixelfunctions) 
+
+        # Prepare sources
+        # (only one item for regular bands, several for pixelfunctions)
         md = {}
         for i in range(len(sourceBands)):
             bandSource = self.SimpleSource.substitute(
@@ -219,17 +218,17 @@ class VRT():
                                 BlockYSize=blockYSize,
                                 DataType=dataType,
                                 Dataset=source[i], SourceBand=sourceBands[i])
-            
+
             if parameters.has_key("pixel_function"):
                 md['source_' + str(i)] = bandSource
-        
+
         # Append sources to destination dataset
         if parameters.has_key("pixel_function"):
             dstRasterBand.SetMetadata(md, 'vrt_sources')
         else:
             dstRasterBand.SetMetadataItem("source_0", bandSource,
                                 "new_vrt_sources")
- 
+
         # set metadata from WKV and from provided parameters
         dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
         dstRasterBand = self._put_metadata(dstRasterBand, parameters)
@@ -237,19 +236,19 @@ class VRT():
         self.dataset.FlushCache()
 
         return
-    
+
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands
-        
+
         Parameters
         ----------
         time: datetime
-        
-        If a single datetime is given, this is stored in 
+
+        If a single datetime is given, this is stored in
         all bands of the dataset as a metadata item "time".
-        If a list of datetime objects is given, different 
-        time can be given to each band.  
-        
+        If a list of datetime objects is given, different
+        time can be given to each band.
+
         '''
         # Make sure time is a list with one datetime element per band
         numBands = self.dataset.RasterCount
@@ -258,17 +257,17 @@ class VRT():
         if len(time) == 1:
             time = time*numBands
         if len(time) != numBands:
-            self.logger.error("Dataset has " + str(numBands) + 
-                    " elements, but given time has " 
+            self.logger.error("Dataset has " + str(numBands) +
+                    " elements, but given time has "
                     + str(len(time)) + " elements.")
-        
+
         # Store time as metadata key "time" in each band
         for i in range(numBands):
             self.dataset.GetRasterBand(i+1).SetMetadataItem(
                     'time', str(time[i].isoformat(" ")))
-            
+
         return
-    
+
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
 
@@ -286,15 +285,13 @@ class VRT():
         # fetch band information corresponding to the fileType
         fileName_wkv = os.path.join(os.path.dirname(
                                     os.path.realpath(__file__)), "wkv.xml")
-        fd = file(fileName_wkv, "rb")
-        element = ElementTree(file=fd).getroot()
-
-        for e1 in list(element):
-            if e1.find("standard_name").text == wkvName:
+        node0 = Node.create(openXML(fileName_wkv))
+        for iNode in node0.nodeList("wkv"):
+            tagsList = iNode.tagList()
+            if iNode.node("standard_name").value == wkvName:
                 wkvDict = {"standard_name": wkvName}
-                for e2 in list(e1):
-                    wkvDict[e2.tag] = e2.text
-
+                for iTag in tagsList:
+                    wkvDict[iTag] = str(iNode.node(iTag).value)
         return wkvDict
 
     def _put_metadata(self, rasterBand, metadataDict):
@@ -361,7 +358,7 @@ class VRT():
         gdal.VSIFCloseL(vsiFile)
         # re-open self.dataset with new content
         self.dataset = gdal.Open(self.fileName)
-                
+
     def export(self, fileName):
         '''Export VRT file as XML into <fileName>'''
         self.vrtDriver.CreateCopy(fileName, self.dataset)
@@ -374,5 +371,5 @@ class VRT():
         except:
             # shallow copy (only geometadata)
             vrt = VRT(gdalDataset=self.dataset, logLevel=self.logger.level)
-        
+
         return vrt
