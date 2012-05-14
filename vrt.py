@@ -100,7 +100,8 @@ class VRT():
         # copy content of the provided VRT dataset
         if vrtDataset is not None:
             self.logger.debug('Making copy of %s ' % str(vrtDataset))
-            self.dataset = self.vrtDriver.CreateCopy(self.fileName, vrtDataset)
+            self.dataset = self.vrtDriver.CreateCopy(self.fileName,
+                                                     vrtDataset)
         else:
             # get geo-metadata from given GDAL dataset
             if gdalDataset is not None:
@@ -118,12 +119,14 @@ class VRT():
                 self.logger.debug('RasterXSize %d' % gdalDataset.RasterXSize)
                 self.logger.debug('RasterYSize %d' % gdalDataset.RasterYSize)
             else:
-                srcGCPs=[]
-                srcGCPProjection=None
+                srcGCPs = []
+                srcGCPProjection = None
 
             # create VRT dataset
             self.dataset = self.vrtDriver.Create(self.fileName,
-                                            srcRasterXSize, srcRasterYSize, bands=0)
+                                                 srcRasterXSize,
+                                                 srcRasterYSize,
+                                                 bands=0)
 
             # set geo-metadata in the VRT dataset
             self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
@@ -136,14 +139,15 @@ class VRT():
             self.dataset.FlushCache()
 
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
-        self.logger.debug('VRT description: %s ' % self.dataset.GetDescription())
+        self.logger.debug('VRT description: %s ' %
+                                             self.dataset.GetDescription())
         self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
     def _make_filename(self):
         '''Create random VSI file name'''
-        allChars=ascii_uppercase + digits
+        allChars = ascii_uppercase + digits
         randomChars = ''.join(choice(allChars) for x in range(10))
 
         return '/vsimem/%s.vrt' % randomChars
@@ -189,7 +193,7 @@ class VRT():
         if isinstance(sourceBands, int):
             sourceBands = [sourceBands]
         if isinstance(source, str):
-            source = [source]*len(sourceBands)
+            source = [source] * len(sourceBands)
 
         # Find datatype and blocksizes
         srcDataset = gdal.Open(source[0])
@@ -198,7 +202,7 @@ class VRT():
         dataType = srcRasterBand.DataType
 
         # Create band
-        if parameters.has_key("pixel_function"):
+        if "pixel_function" in parameters:
             options = ['subClass=VRTDerivedRasterBand',
                        'PixelFunctionType=' + parameters["pixel_function"]]
         else:
@@ -219,11 +223,11 @@ class VRT():
                                 DataType=dataType,
                                 Dataset=source[i], SourceBand=sourceBands[i])
 
-            if parameters.has_key("pixel_function"):
+            if "pixel_function" in parameters:
                 md['source_' + str(i)] = bandSource
 
         # Append sources to destination dataset
-        if parameters.has_key("pixel_function"):
+        if "pixel_function" in parameters:
             dstRasterBand.SetMetadata(md, 'vrt_sources')
         else:
             dstRasterBand.SetMetadataItem("source_0", bandSource,
@@ -255,7 +259,7 @@ class VRT():
         if isinstance(time, datetime.datetime):
             time = [time]
         if len(time) == 1:
-            time = time*numBands
+            time = time * numBands
         if len(time) != numBands:
             self.logger.error("Dataset has " + str(numBands) +
                     " elements, but given time has "
@@ -263,7 +267,7 @@ class VRT():
 
         # Store time as metadata key "time" in each band
         for i in range(numBands):
-            self.dataset.GetRasterBand(i+1).SetMetadataItem(
+            self.dataset.GetRasterBand(i + 1).SetMetadataItem(
                     'time', str(time[i].isoformat(" ")))
 
         return

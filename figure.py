@@ -48,7 +48,7 @@ class Figure():
     Figure instance is created in the Nansat.write_figure method
     The methods below are applied consequently in order to generate a figure
     from one or three bands, estimate min/max, apply logarithmic scaling,
-    convert to uint8, append legend, save to a file    
+    convert to uint8, append legend, save to a file
     '''
 
     def __init__(self, array, **kwargs):
@@ -67,7 +67,7 @@ class Figure():
         gamma, float, >0
             2, coefficient for tone curve udjustment
         subsetArraySize, int
-            100000, size of the subset array which is used to get the histogram.
+            100000, size of the subset array which is used to get histogram.
         numOfColor, int
             250, number of colors for use of the palette.
             254th is black and 255th is white.
@@ -95,9 +95,9 @@ class Figure():
             output image. Value of the array are indeces. LUT from mask_lut is
             used for coloring upon this indeces.
         mask_lut: dictionary
-            Look-Up-Table with colors for masking land, clouds etc. Used tgether
-            with mask_array:
-            {0, [0, 0, 0, ]1, [100, 100, 100], 2: [150, 150, 150], 3: [0, 0, 255]}
+            Look-Up-Table with colors for masking land, clouds etc. Used
+            tgether            with mask_array:
+            {0, [0, 0, 0, ]1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
             index 0 - will have black color
                 1 - dark gray
                 2 - light gray
@@ -111,7 +111,7 @@ class Figure():
             Offset is calculated from the entire image legend inclusive
         logoSize: list of two int
             desired X,Y size of logo. If None - original size is used
-            
+
         Advanced parameters:
         --------------------
         LEGEND_HEIGHT: float, [0 1]
@@ -157,7 +157,7 @@ class Figure():
 
         '''
         self.logger = logging.getLogger('Nansat')
-        
+
         # if 2D array is given, reshape to 3D
         if array.ndim == 2:
             self.array = array.reshape(1, array.shape[0], array.shape[1])
@@ -186,7 +186,7 @@ class Figure():
         self.d['mask_array'] = None
         self.d['mask_lut'] = None
         self.d['logoFileName'] = None
-        self.d['logoLocation'] = [0,0]
+        self.d['logoLocation'] = [0, 0]
         self.d['logoSize'] = None
 
         self.d['LEGEND_HEIGHT'] = 0.1
@@ -202,7 +202,7 @@ class Figure():
         self.d['NAME_LOCATION_X'] = 0.1
         self.d['NAME_LOCATION_Y'] = 0.3
         self.d['DEFAULT_EXTENSION'] = ".png"
-        
+
         # default values which are set when input values are not correct
         self._cmapName = 'jet'
 
@@ -244,14 +244,14 @@ class Figure():
 
     def apply_mask(self, **kwargs):
         '''Apply mask for coloring land, clouds, etc
-        
+
         If mask_array and mask_lut are provided as input parameters
         The pixels in self.array which have index equal to mask_lut kay
         in mask_array will have color equal to mask_lut value
-        
+
         apply_mask should be called only after convert_palettesize
         (i.e. to uint8 data)
-        
+
         Parameters
         ----------
         Any of Figure__init__() parameters
@@ -259,7 +259,7 @@ class Figure():
         Modifies
         --------
         self.array : numpy array
-        
+
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -270,30 +270,33 @@ class Figure():
             if i < len(availIndeces):
                 # get color for that index
                 maskColor = self.d['mask_lut'][maskValue]
+                # get indeces for that index
+                maskIndeces = self.d['mask_array'] == maskValue
                 # exchange colors
                 if self.array.shape[0] == 1:
                     # in a indexed image
-                    self.array[0][self.d['mask_array'] == maskValue] = availIndeces[i]
+                    self.array[0][maskIndeces] = availIndeces[i]
                 elif self.array.shape[0] == 3:
                     # in RGB image
                     for c in range(0, 3):
-                        self.array[c][self.d['mask_array'] == maskValue] = maskColor[c]
-                
+                        self.array[c][maskIndeces] = maskColor[c]
+
                 # exchage palette
-                self.palette[availIndeces[i]*3:availIndeces[i]*3+3] = maskColor
+                self.palette[(availIndeces[i] * 3):
+                             (availIndeces[i] * 3 + 3)] = maskColor
 
     def add_logo(self, **kwargs):
         '''Insert logo into the PIL image
-        
+
         Read logo from file as PIL
         Resize to the given size
         Pan using the given location
         Paste into pilImg
-        
+
         Parameters:
         ----------
         Any of Figure__init__() parameters
-        
+
         Modifies:
         ---------
             self.pilImg
@@ -304,7 +307,7 @@ class Figure():
         logoFileName = self.d['logoFileName']
         logoLocation = self.d['logoLocation']
         logoSize = self.d['logoSize']
-        
+
         # check if pilImg was created already
         if self.pilImg is None:
             self.logger.warning('Create PIL image first')
@@ -324,16 +327,18 @@ class Figure():
         box = [0, 0, logoSize[0], logoSize[1]]
         for dim in range(2):
             if logoLocation[dim] >= 0:
-                box[dim+0] = box[dim+0] + logoLocation[dim+0]
-                box[dim+2] = box[dim+2] + logoLocation[dim+0]
+                box[dim + 0] = box[dim + 0] + logoLocation[dim + 0]
+                box[dim + 2] = box[dim + 2] + logoLocation[dim + 0]
             else:
-                box[dim+0] = (self.pilImg.size[dim+0] + logoLocation[dim+0] - 
-                                logoSize[dim+0])
-                box[dim+2] = self.pilImg.size[dim+0] + logoLocation[dim+0]
-        
+                box[dim + 0] = (self.pilImg.size[dim + 0] +
+                                logoLocation[dim + 0] -
+                                logoSize[dim + 0])
+                box[dim + 2] = (self.pilImg.size[dim + 0] +
+                               logoLocation[dim + 0])
+
         self.pilImg = self.pilImg.convert("RGB")
         self.pilImg.paste(logoImg, tuple(box))
-            
+
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
 
@@ -366,9 +371,9 @@ class Figure():
                     ratioList.append(ratio[iRatio])
                 except:
                     ratioList.append(ratio[0])
-        
+
         # create a 2D array and set min and max values
-        clim = [[0]*self.array.shape[0], [0]*self.array.shape[0]]
+        clim = [[0] * self.array.shape[0], [0] * self.array.shape[0]]
         for iBand in range(self.array.shape[0]):
             clim[0][iBand] = self.array[iBand, :, :].min()
             clim[1][iBand] = self.array[iBand, :, :].max()
@@ -428,7 +433,8 @@ class Figure():
 
         for iBand in range(self.array.shape[0]):
             self.array[iBand, :, :] = (
-                    (self.array[iBand, :, :].astype('float32') - self.d['cmin'][iBand]) *
+                    (self.array[iBand, :, :].astype('float32') -
+                     self.d['cmin'][iBand]) *
                     (self.d['numOfColor'] - 1) /
                     (self.d['cmax'][iBand] - self.d['cmin'][iBand]))
 
@@ -489,8 +495,8 @@ class Figure():
             scaleArray = scaleLocation
             if self.d['gamma'] is not None:
                 scaleArray = (np.power(scaleArray, (1.0 / self.d['gamma'])))
-            scaleArray = (scaleArray * (self.d['cmax'][0] - self.d['cmin'][0]) + 
-                        self.d['cmin'][0])
+            scaleArray = (scaleArray * (self.d['cmax'][0] -
+                        self.d['cmin'][0]) + self.d['cmin'][0])
             scaleArray = map(self._round_number, scaleArray)
             # set fonts size for colorbar
             font = ImageFont.truetype(fileName_font, self.d['fontSize'])
@@ -500,7 +506,7 @@ class Figure():
                              self.pilImgLegend.size[0] * self.d['CBAR_WIDTH'] +
                              int(self.pilImgLegend.size[0] *
                                self.d['CBAR_LOCATION_X']))
-                             
+
                 box = (coordX, int(self.pilImgLegend.size[1] *
                         self.d['CBAR_LOCATION_Y']),
                        coordX, int(self.pilImgLegend.size[1] *
@@ -584,7 +590,7 @@ class Figure():
 
     def process(self, **kwargs):
         '''Do all common operations for preparation of a figure for saving
-        
+
         #. Modify default values of parameters by the provided ones (if any)
         #. Clip to min/max
         #. Apply logarithm if required
@@ -594,7 +600,7 @@ class Figure():
         #. Create legend if required
         #. Create PIL image
         #. Add logo if required
-                
+
         Parameters
         ----------
         Any of Figure.__init__() parameters
@@ -606,11 +612,11 @@ class Figure():
         self.palette
         self.pilImgLegend
         self.pilImg
-                
+
         '''
         # modify default parameters
         self._set_defaults(kwargs)
-        
+
         # clip values to min/max
         self.clip()
 
@@ -620,7 +626,7 @@ class Figure():
 
         # convert to uint8
         self.convert_palettesize()
-        
+
         # create the paletter
         self._create_palette()
 
@@ -631,14 +637,13 @@ class Figure():
         # append legend
         if self.d['legend']:
             self.create_legend()
-        
+
         # create PIL image ready for saving
         self.create_pilImage()
 
         # add logo
         if self.d['logoFileName'] is not None:
             self.add_logo()
-        
 
     def save(self, fileName):
         ''' Save self.pilImg to a physical file
@@ -662,7 +667,7 @@ class Figure():
         if fileExtension in ["jpg", "JPG", "jpeg", "JPEG"]:
             self.pilImg = self.pilImg.convert("RGB")
 
-        self.pilImg.save(fileName)        
+        self.pilImg.save(fileName)
 
     def _create_palette(self):
         '''Create a palette based on Matplotlib colormap name
@@ -699,7 +704,7 @@ class Figure():
                                                 np.linspace(
                                                 colorList[iColor][i][2],
                                                 colorList[iColor][i + 1][1],
-                                                num=spaceNum)*255,
+                                                num=spaceNum) * 255,
                                                 dtype=np.uint8)
                 iPalette += (spaceNum)
             # adjust the number of colors on the palette
@@ -712,7 +717,7 @@ class Figure():
         # the last palette color is replaced to white
         for iColor in range(3):
             lut[iColor][-1] = 255
-        
+
         # set palette
         self.palette = lut.T.flatten().astype(np.uint8)
 
@@ -730,8 +735,8 @@ class Figure():
 
         '''
         array = self.array[iBand, :, :].flatten()
-        array = array[array>array.min()]
-        array = array[array<array.max()]
+        array = array[array > array.min()]
+        array = array[array < array.max()]
         step = max(int(round(float(len(array)) /
                 float(self.d['subsetArraySize']))), 1.0)
         arraySubset = array[::step]
@@ -750,7 +755,8 @@ class Figure():
         string
 
         '''
-        frmts = {-2: "%.2f", -1: "%.1f", 0: "%.2f", 1: "%.1f", 2: "%d", 3: "%d"}
+        frmts = {-2: "%.2f", -1: "%.1f", 0: "%.2f",
+                  1: "%.1f", 2: "%d", 3: "%d"}
         if val == 0:
             frmt = "%d"
         else:
@@ -759,12 +765,11 @@ class Figure():
                 frmt = frmts[digit]
             else:
                 frmt = "%4.2e"
-        
+
         return str(frmt % val)
 
-
     def _set_defaults(self, kwargs):
-        '''Check input params and set defaut values 
+        '''Check input params and set defaut values
 
         Look throught default parameters (self.d) and given parameters (kwargs)
         and paste value from input if the key matches

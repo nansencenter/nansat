@@ -23,9 +23,11 @@ from vrt import *
 from figure import *
 from nansat_tools import add_logger, Node
 
+
 class GDALError(Error):
     '''Error from GDAL '''
     pass
+
 
 class DataError(Error):
     '''Error for data.
@@ -96,7 +98,7 @@ class Nansat(Domain):
               'mapper_modisL2NRT.py'
               ]
 
-        self.logger.debug('Mappers: '+str(self.mapperList))
+        self.logger.debug('Mappers: ' + str(self.mapperList))
 
         # set input file name
         self.fileName = fileName
@@ -181,13 +183,14 @@ class Nansat(Domain):
         # Change the element from GDAL datatype to NetCDF data type
         for iBand in node0.nodeList("VRTRasterBand"):
             dataType = iBand.getAttribute("dataType")
-            dataType = {"UInt16": "Int16", "UInt32": "Int32", "CInt16": "Int16",
-                        "CFloat32" : "Float32", "CFloat64" : "Float64"
+            dataType = {"UInt16": "Int16", "CInt16": "Int16",
+                        "UInt32": "Int32",
+                        "CFloat32": "Float32", "CFloat64": "Float64"
                         }.get(dataType, dataType)
             iBand.replaceAttribute("dataType", dataType)
 
         # Copy the vrt and overwrite the modified element
-        tmpVrt= self.vrt.copy()
+        tmpVrt = self.vrt.copy()
         tmpVrt.write_xml(str(node0.rawxml()))
 
         # Get projection and add it in the global metadata
@@ -201,7 +204,7 @@ class Nansat(Domain):
 
         # Replace the band names
         for iBand in range(tmpVrt.dataset.RasterCount):
-            band = tmpVrt.dataset.GetRasterBand(iBand+1)
+            band = tmpVrt.dataset.GetRasterBand(iBand + 1)
             try:
                 band.SetMetadataItem('NETCDF_VARNAME',
                                      str(band.GetMetadata_Dict()["band_name"]))
@@ -220,7 +223,8 @@ class Nansat(Domain):
         (width, calulated height) or (calculated width, height).
         self.vrt is rewritten to the the downscaled sizes.
         If GCPs are given in a dataset, they are also rewritten.
-        If resize() is called without any parameters resizing/reprojection is cancelled.
+        If resize() is called without any parameters resizing/reprojection is
+        cancelled.
 
 
         Parameters
@@ -261,14 +265,15 @@ class Nansat(Domain):
         node0 = Node.create(vrtXML)
         rasterXSize = int(float(node0.getAttribute("rasterXSize")) * factor)
         rasterYSize = int(float(node0.getAttribute("rasterYSize")) * factor)
-        self.logger.info('New size/factor: (%f, %f)/%f' % (rasterXSize, rasterYSize, factor))
+        self.logger.info('New size/factor: (%f, %f)/%f' %
+                        (rasterXSize, rasterYSize, factor))
         node0.replaceAttribute("rasterXSize", str(rasterXSize))
         node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
         for iNode in node0.nodeList("VRTRasterBand"):
             iNode.node("DstRect").replaceAttribute("xSize", str(rasterXSize))
             iNode.node("DstRect").replaceAttribute("ySize", str(rasterYSize))
-            # if method = "average", overwrite "SimpleSource" to "AveragedSource"
+            # if method="average", overwrite "SimpleSource" to "AveragedSource"
             if method == "average":
                 iNode.replaceTag("SimpleSource", "AveragedSource")
 
@@ -521,7 +526,8 @@ class Nansat(Domain):
         warpedVRT.write_xml(warpeVRTXML)
 
         #append GCPs and Projection from the dstImage
-        warpedVRT.dataset.SetGCPs(dstDataset.GetGCPs(), dstDataset.GetGCPProjection())
+        warpedVRT.dataset.SetGCPs(dstDataset.GetGCPs(),
+                                  dstDataset.GetGCPProjection())
         warpedVRT.dataset.SetProjection('')
         # set current VRT to be warped
         self.vrt = warpedVRT
@@ -567,21 +573,24 @@ class Nansat(Domain):
         if mod44path is None:
             mod44DataExist = False
         # check if VRT file exist
-        elif not os.path.exists(mod44path+'/MOD44W.vrt'):
+        elif not os.path.exists(mod44path + '/MOD44W.vrt'):
             mod44DataExist = False
         self.logger.debug('MODPATH: %s' % mod44path)
 
         if not mod44DataExist:
             # MOD44W data does not exist generate empty matrix
-            watermask = np.zeros(self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize)
+            watermask = np.zeros(self.vrt.dataset.RasterXSize,
+                                 self.vrt.dataset.RasterYSize)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path+'/MOD44W.vrt', logLevel=self.logger.level);
+            watermask = Nansat(mod44path + '/MOD44W.vrt',
+                               logLevel=self.logger.level)
             # choose reprojection method
             if dstDomain is not None:
                 watermask.reproject(dstDomain)
             elif self.vrt.dataset.GetGCPCount() == 0:
-                watermask.reproject(Domain(self.vrt.dataset, logLevel=self.logger.level))
+                watermask.reproject(Domain(self.vrt.dataset,
+                                    logLevel=self.logger.level))
             else:
                 watermask.reproject_on_gcp(self)
 
@@ -611,15 +620,18 @@ class Nansat(Domain):
                 if None, the figure object is returned.
             bands : int or list, default = 1
                 the size of the list has to be 1 or 3.
-                if the size is 3, RGB image is created based on the three bands.
+                if the size is 3, RGB image is created based on the
+                three bands.
                 Then the first element is Red, the second is Green,
                 and the third is Blue.
-            clim : list with two elements or 'hist' to specify range of colormap
-                None (default): min/max values are fetched from WKV, fallback-'hist'
+            clim : list with two elements or 'hist' to specify range of
+                colormap
+                None (default): min/max values are fetched from WKV,
+                fallback-'hist'
                 [min, max] : min and max are numbers, or
                 [[min, min, min], [max, max, max]]: three bands used
                 'hist' : a histogram is used to calculate min and max values
-            **kwargs : parameters for Figure(). See figure.Figure() for details.
+            **kwargs : parameters for Figure(). See figure.Figure()
 
         Modifies
         --------
@@ -636,9 +648,11 @@ class Nansat(Domain):
         #write only RGB image, color limits from histogram
         n.write_figure('test_rgb_hist.jpg', clim='hist', bands=[1, 2, 3])
         #write indexed image, apply log scaling and gamma correction,
-        #add legend and type in title 'Title', increase font size and put 15 tics
-        n.write_figure('r09_log3_leg.jpg', logarithm=True, legend=True, gamma=3,
-                                titleString='Title', fontSize=30, numOfTicks=15)
+        #add legend and type in title 'Title', increase font size and put 15
+        tics
+        n.write_figure('r09_log3_leg.jpg', logarithm=True, legend=True,
+                                gamma=3, titleString='Title', fontSize=30,
+                                numOfTicks=15)
 
         See also
         ------
@@ -653,8 +667,9 @@ class Nansat(Domain):
                 iArray = self.__getitem__(iBand)
                 self.logger.debug(iArray.shape)
                 array = np.append(array, iArray)
-            array = array.reshape(len(bands), int(self.vrt.dataset.RasterYSize),
-                int(self.vrt.dataset.RasterXSize))
+            array = array.reshape(len(bands),
+                                 int(self.vrt.dataset.RasterYSize),
+                                 int(self.vrt.dataset.RasterXSize))
         else:
             array = self.__getitem__(bands)
             bands = [bands]
@@ -692,7 +707,7 @@ class Nansat(Domain):
         # if the len(clim) is not same as len(bands), the 1st element is used.
         for i in range(2):
             if len(clim[i]) != len(bands):
-                clim[i] = [clim[i][0]]*len(bands)
+                clim[i] = [clim[i][0]] * len(bands)
 
         self.logger.info('clim: %s ' % clim)
 
@@ -704,14 +719,15 @@ class Nansat(Domain):
         elif isinstance(bands[0], str):
             bandNo = self._specify_bandNo({'band_name': bands[0]})
 
-        longName = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("long_name")
+        longName = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem(
+                                                                   "long_name")
         units = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("units")
         # if they don't exist make empty strings
         if longName is None:
             longName = ''
         if units is None:
             units = ''
-        caption=longName + ' [' + units + ']'
+        caption = longName + ' [' + units + ']'
         self.logger.info('caption: %s ' % caption)
 
         # == PROCESS figure ==
@@ -737,16 +753,16 @@ class Nansat(Domain):
         '''
         time = []
         for i in range(self.vrt.dataset.RasterCount):
-            band = self.vrt.dataset.GetRasterBand(i+1)
+            band = self.vrt.dataset.GetRasterBand(i + 1)
             try:
                 time.append(dateutil.parser.parse(
                                 band.GetMetadataItem("time")))
             except:
-                self.logger.debug("Band " + str(i+1) + " has no time")
+                self.logger.debug("Band " + str(i + 1) + " has no time")
                 time.append(None)
 
         if bandNo is not None:
-            return time[bandNo-1]
+            return time[bandNo - 1]
         else:
             if len(set(time)) == 1:
                 return time[0]
@@ -792,7 +808,7 @@ class Nansat(Domain):
         value: string
             value of metadata
         bandNo: int
-            number of band to set metadata to. If omitted global metadata is set
+            number of band to set metadata to. Without: global metadata is set
 
         Modifies:
         ---------
@@ -811,8 +827,8 @@ class Nansat(Domain):
         # set metadata from dictionary or from single pair key,value
         if isinstance(key, dict):
             for k in key:
-               metaReceiverRAW.SetMetadataItem(k, key[k])
-               metaReceiverVRT.SetMetadataItem(k, key[k])
+                metaReceiverRAW.SetMetadataItem(k, key[k])
+                metaReceiverVRT.SetMetadataItem(k, key[k])
         else:
             metaReceiverRAW.SetMetadataItem(key, value)
             metaReceiverVRT.SetMetadataItem(key, value)
@@ -820,7 +836,7 @@ class Nansat(Domain):
     def _get_mapper(self, mapperName):
         ''' Create VRT file in memory (VSI-file) with variable mapping
 
-        If mapperName is given, it is added as the first in the self.mapperList.
+        If mapperName is given, it is added as the first in the self.mapperList
         Loop over all availble mappers in mapperList to get the matching one.
         In the loop:
             If the specific error appears the mapper is not used
@@ -850,7 +866,7 @@ class Nansat(Domain):
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = gdal.Open(self.fileName)
         if (gdalDataset is None) or (gdalDataset == ""):
-            raise GDALError("Nansat._get_,apper(): Cannot get the dataset from "
+            raise GDALError("Nansat._get_,apper(): Cannot get the dataset from"
                             + self.fileName)
         # gete metadata from the GDAL dataset
         metadata = gdalDataset.GetMetadata()
@@ -927,7 +943,8 @@ class Nansat(Domain):
         # convert proper string style and set to the GeoTransform element
         node0.node("GeoTransform").value = str(geoTransform).strip("()")
         node0.node("DstGeoTransform").value = str(geoTransform).strip("()")
-        node0.node("DstInvGeoTransform").value = str(invGeotransform[1]).strip("()")
+        node0.node("DstInvGeoTransform").value = str(
+                                                invGeotransform[1]).strip("()")
 
         if node0.node("SrcGeoLocTransformer"):
             node0.node("BlockXSize").value = str(rasterXSize)
@@ -968,7 +985,8 @@ class Nansat(Domain):
         # loop through all bands
         for iBand in range(self.vrt.dataset.RasterCount):
             # get metadata from band
-            bandMetadata = self.raw.dataset.GetRasterBand(iBand + 1).GetMetadata()
+            bandMetadata = self.raw.dataset.GetRasterBand(
+                                                    iBand + 1).GetMetadata()
             allKeysAreGood = True
             # loop through all input keys
             for bandIDKey in bandID:

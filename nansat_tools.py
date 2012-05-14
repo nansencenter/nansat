@@ -21,14 +21,16 @@ from scipy import mod
 from xml.dom.minidom import getDOMImplementation, parseString, parse
 
 import logging
-import copy, re
+import copy
+import re
+
 
 class Node(object):
     '''
     Everything is a Node. The XML is maintained as (very efficient)
     Python objects until an XML representation is needed.
     '''
-    def __init__(self, tag, value = None, **attributes):
+    def __init__(self, tag, value=None, **attributes):
         self.tag = tag.strip()
         self.attributes = attributes
         self.children = []
@@ -99,7 +101,7 @@ class Node(object):
 
     def getAttributeNameList(self):
         ''' get attributes and valuse from the node and return their lists '''
-        nameList= []
+        nameList = []
         valList = []
         for key, val in self.attributes.items():
             nameList.append(key)
@@ -123,7 +125,8 @@ class Node(object):
         Replace the value of the first subnode containing "tag"
         with a new value, using operator[].
         '''
-        assert isinstance(newValue, str), "Value " + str(newValue) + " must be a string"
+        assert isinstance(newValue, str), ("Value %s must be a string" %
+                                            str(newValue))
         subnode = self.node(tag)
         if not subnode:
             raise KeyError
@@ -164,14 +167,15 @@ class Node(object):
         for key, val in self.attributes.items():
             element.setAttribute(key, val)
         if self.value:
-            assert not self.children, "cannot have value and children: " + str(self)
+            assert not self.children, ("cannot have value and children: %s" %
+                                                                    str(self))
             element.appendChild(Node.doc.createTextNode(self.value))
         else:
             for child in self.children:
-                element.appendChild(child.dom()) # Generate children as well
+                element.appendChild(child.dom())  # Generate children as well
         return element
 
-    def xml(self, separator = '  '):
+    def xml(self, separator='  '):
         return self.dom().toprettyxml(separator)
 
     def rawxml(self):
@@ -207,6 +211,7 @@ class Node(object):
                     node += subnode
         return node
 
+
 def openXML(fileName):
     '''Open file '''
     return parse(fileName)
@@ -235,11 +240,12 @@ def initial_bearing(lon1, lat1, lon2, lat2):
         rlat1 = radians(lat1)
         rlon2 = radians(lon2)
         rlat2 = radians(lat2)
-        deltalon = rlon2-rlon1
-        bearing = atan2(sin(rlon2-rlon1)*cos(rlat2),
-                        cos(rlat1)*sin(rlat2) -
-                        sin(rlat1)*cos(rlat2)*cos(rlon2-rlon1))
-        return mod(degrees(bearing)+360, 360)
+        deltalon = rlon2 - rlon1
+        bearing = atan2(sin(rlon2 - rlon1) * cos(rlat2),
+                        cos(rlat1) * sin(rlat2) -
+                        sin(rlat1) * cos(rlat2) * cos(rlon2 - rlon1))
+        return mod(degrees(bearing) + 360, 360)
+
 
 def add_logger(logName='', logLevel=30):
     ''' Creates and returns logger with default formatting for Nansat
@@ -268,7 +274,8 @@ def add_logger(logName='', logLevel=30):
         # create console handler and set level to debug
         ch = logging.StreamHandler()
         # create formatter
-        formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|%(funcName)s|%(message)s', datefmt='%I:%M:%S')
+        formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|%(funcName)s|%(message)s',
+                                      datefmt='%I:%M:%S')
         # add formatter to ch
         ch.setFormatter(formatter)
         # add ch to logger

@@ -30,7 +30,7 @@ except ImportError:
              No advanced operations'''
 else:
     useDomain2 = True
-    
+
 import numpy as np
 from xml.etree.ElementTree import ElementTree
 
@@ -43,6 +43,7 @@ except ImportError:
 from nansat_tools import initial_bearing, add_logger
 
 from vrt import VRT
+
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -116,7 +117,7 @@ class Domain():
         [http://trac.osgeo.org/proj/]
 
         '''
-        
+
         # test input options
         logLevel = 30
         if 'logLevel' in kwargs:
@@ -141,10 +142,12 @@ class Domain():
         if 'srsString' in kwargs and 'extentString' in kwargs:
             srsString = kwargs['srsString']
             extentString = kwargs['extentString']
-        elif (len(args) > 1 and isinstance(args[0], str) and isinstance(args[1], str)):
+        elif (len(args) > 1 and
+              isinstance(args[0], str) and
+              isinstance(args[1], str)):
             srsString = args[0]
             extentString = args[1]
-        
+
         self.logger.debug('ds: %s' % str(gdalDataset))
         self.logger.debug('srs: %s' % srsString)
         self.logger.debug('ext: %s' % extentString)
@@ -189,7 +192,7 @@ class Domain():
                               "are required")
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
-        
+
     def __repr__(self):
         '''Creates string with basic info about the Domain object
 
@@ -241,7 +244,7 @@ class Domain():
             kmlFileName = xmlFileName + '.kml'
             xmlDomains = ElementTree(file=xmlFile).getroot()
             xmlFile.close()
-            
+
             # convert domains in XML into list of domains
             domains = []
             for xmlDomain in list(xmlDomains):
@@ -285,12 +288,12 @@ class Domain():
         longitude = []
         latitude = []
         for i in range(self.vrt.dataset.RasterXSize):
-            [lo,la] = self._transform_points( [i]*self.vrt.dataset.RasterYSize, 
-                    range(self.vrt.dataset.RasterYSize) )
+            [lo, la] = self._transform_points(
+                                [i] * self.vrt.dataset.RasterYSize,
+                                range(self.vrt.dataset.RasterYSize))
             longitude.append(lo)
             latitude.append(la)
-        return [longitude,latitude]
-
+        return [longitude, latitude]
 
     def _convert_extentDic(self, dstWKT, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
@@ -516,7 +519,7 @@ class Domain():
         # get root element
         domains = ElementTree(file=fd).getroot()
         fd.close()
-        
+
         # iterate over domains to find the required one
         for domain in list(domains):
             # if the domain name is the same as the given one
@@ -560,11 +563,11 @@ class Domain():
             rcVector2[n].reverse()
 
         # coumpund vectors of pixels (col) and lines (row)
-        colVector = (rcVector1[0] + [sizes[0]] * len(rcVector1[1]) + 
+        colVector = (rcVector1[0] + [sizes[0]] * len(rcVector1[1]) +
                     rcVector2[0] + [0] * len(rcVector1[1]))
-        rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] + 
+        rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] +
                     [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
-        
+
         return self._transform_points(colVector, rowVector)
 
     def _get_border_kml(self):
@@ -794,7 +797,7 @@ class Domain():
 
     def shape(self):
         '''Return Numpy-like shape of Domain object (ySize, xSize)
-        
+
         Returns
         -------
         shape: tuple of two INT

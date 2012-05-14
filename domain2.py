@@ -1,10 +1,9 @@
-# Name:     domain.py
-# Purpose:  create domain based on either GDAL dataset or
-#           proj4string and extentString
+# Name:     domain2.py
+# Purpose:  Optional methods for Domain. Depend on Basemap, Polygon, Matplotlib
 #
 # Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 #
-# Created:     15.09.2011
+# Created:     01.05.2012
 # Copyright:   (c) NERSC 2012
 # Licence:
 # This program is free software: you can redistribute it and/or modify
@@ -21,6 +20,7 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 def write_map(self, outputFileName, lonBorder=10., latBorder=10.,
                                     figureSize=(6, 6), dpi=50,
@@ -110,4 +110,3 @@ def write_map(self, outputFileName, lonBorder=10., latBorder=10.,
                                 dpi=dpi,
                                 pad_inches=padding)
     plt.close('all')
-
