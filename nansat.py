@@ -16,7 +16,6 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-#from xml.etree.ElementTree import XML, ElementTree, tostring, Element
 import dateutil.parser
 
 from domain import Domain
@@ -182,8 +181,7 @@ class Nansat(Domain):
         # Change the element from GDAL datatype to NetCDF data type
         for iBand in node0.nodeList("VRTRasterBand"):
             dataType = iBand.getAttribute("dataType")
-            dataType = {
-                        "UInt16": "Int16", "UInt32": "Int32", "CInt16": "Int16",
+            dataType = {"UInt16": "Int16", "UInt32": "Int32", "CInt16": "Int16",
                         "CFloat32" : "Float32", "CFloat64" : "Float64"
                         }.get(dataType, dataType)
             iBand.replaceAttribute("dataType", dataType)
@@ -499,12 +497,11 @@ class Nansat(Domain):
         # read XML content from VRT
         tmpVRTXML = tmpVRT.read_xml()
         # find and remove GeoTransform
-        tree = XML(tmpVRTXML)
-        elemGT = tree.find("GeoTransform")
-        tree.remove(elemGT)
+        node0 = Node.create(tmpVRTXML)
+        node1 = node0.delNode("GeoTransform")
 
         # Write the modified elemements back into temporary VRT
-        tmpVRT.write_xml(tostring(tree))
+        tmpVRT.write_xml(str(node0.rawxml()))
 
         # create warped vrt out of tmp vrt
         rawWarpedVRT = gdal.AutoCreateWarpedVRT(tmpVRT.dataset, stereoSRSWKT,
@@ -865,7 +862,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL2NRT')
+        mapper_module = __import__('mapper_ASAR')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata, logLevel=self.logger.level)
         """
@@ -920,6 +917,7 @@ class Nansat(Domain):
                 modified content of the original VRT file
 
         '''
+        invGeotransform = gdal.InvGeoTransform(geoTransform)
         node0 = Node.create(vrtXML)
 
         node0.replaceAttribute("rasterXSize", str(rasterXSize))
@@ -927,17 +925,10 @@ class Nansat(Domain):
 
         # convert proper string style and set to the GeoTransform element
         node0.node("GeoTransform").value = str(geoTransform).strip("()")
-        node0.node("GDALWarpOptions").node("Transformer").\
-              node("GenImgProjTransformer").node("DstGeoTransform").value = \
-              str(geoTransform).strip("()")
+        node0.node("DstGeoTransform").value = str(geoTransform).strip("()")
+        node0.node("DstInvGeoTransform").value = str(invGeotransform[1]).strip("()")
 
-        invGeotransform = gdal.InvGeoTransform(geoTransform)
-        node0.node("GDALWarpOptions").node("Transformer").\
-              node("GenImgProjTransformer").node("DstInvGeoTransform").value = \
-              str(invGeotransform[1]).strip("()")
-
-        if node0.node("GDALWarpOptions").node("Transformer").\
-            node("GenImgProjTransformer").node("SrcGeoLocTransformer") != False:
+        if node0.node("SrcGeoLocTransformer"):
             node0.node("BlockXSize").value = str(rasterXSize)
             node0.node("BlockYSize").value = str(rasterYSize)
 

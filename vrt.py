@@ -23,7 +23,6 @@ import datetime
 import dateutil.parser
 
 import logging
-from nansat_tools import Node, openXML
 
 try:
     from osgeo import gdal, osr
@@ -31,7 +30,8 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import add_logger, Node
+from nansat_tools import add_logger, Node, openXML
+
 
 class VRT():
     '''VRT dataset management

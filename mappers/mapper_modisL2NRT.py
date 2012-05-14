@@ -19,7 +19,7 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create MODIS_L1 VRT '''
-        GCP_COUNT = 1000
+        GCP_COUNT = 200
         # get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
         subDatasets = gdalDataset.GetSubDatasets()
        
@@ -39,6 +39,7 @@ class Mapper(VRT):
         'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'parameters': {'wavelength': '490'} },
         'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_1', 'case': 'I'} },
         'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },
+        'sst': {'wkv': 'sea_surface_temperature', 'parameters': {'band_name': 'sst'} },        
         'l2_flags': {'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },
         'latitude': {'wkv': 'latitude', 'parameters': {'band_name': 'latitude'} },
         'longitude': {'wkv': 'longitude', 'parameters': {'band_name': 'longitude'} },        
@@ -47,10 +48,12 @@ class Mapper(VRT):
         # loop through available bands and generate metaDict (non fixed)
         metaDict = []
         for subDataset in subDatasets:
+            subDatasetName = subDataset[1].split(' ')[1]
             self.logger.debug('Subdataset: %s' % subDataset[1])
+            self.logger.debug('Subdataset name: %s' % subDatasetName)
             # try to get Rrs_412 or similar from subdataset name
             # if success - append Reflectance with respective parameters to meta
-            rrsBandName = re.findall('Rrs_\d*', subDataset[1])
+            rrsBandName = re.findall('Rrs_\d*', subDatasetName)
             metaEntry = None
             if len(rrsBandName) > 0:
                 tmpSubDataset = gdal.Open(subDataset[0])
@@ -69,7 +72,7 @@ class Mapper(VRT):
                 # if the band is not Rrs_NNN
                 # try to find it (and metadata) in dict of known bands (allBandsDict)
                 for bandName in allBandsDict:
-                    if bandName in subDataset[1]:
+                    if bandName == subDatasetName:
                         tmpSubDataset = gdal.Open(subDataset[0])
                         slope = tmpSubDataset.GetMetadataItem('slope')
                         intercept = tmpSubDataset.GetMetadataItem('intercept')

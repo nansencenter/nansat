@@ -63,6 +63,15 @@ class Node(object):
                 return result
         return False
 
+    def delNode(self, tag):
+        ''' Recursively find the all subnodes with this tag and remove from
+        self.children. '''
+        for i, child in enumerate(self.children):
+            if child.node(tag):
+                self.children.pop(i)
+            else:
+                child.delNode(tag)
+
     def nodeList(self, tag):
         '''
         Produce a list of subnodes with the same tag.
