@@ -266,22 +266,23 @@ class Nansat(Domain):
         node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
         for iNode in node0.nodeList("VRTRasterBand"):
-            iNode.node("SimpleSource").node("DstRect").replaceAttribute("xSize", str(rasterXSize))
-            iNode.node("SimpleSource").node("DstRect").replaceAttribute("ySize", str(rasterYSize))
+            iNode.node("DstRect").replaceAttribute("xSize", str(rasterXSize))
+            iNode.node("DstRect").replaceAttribute("ySize", str(rasterYSize))
             # if method = "average", overwrite "SimpleSource" to "AveragedSource"
             if method == "average":
                 iNode.replaceTag("SimpleSource", "AveragedSource")
 
         # Edit GCPs to correspond to the downscaled size
-        for iNode in node0.node("GCPList").nodeList("GCP"):
-            pxl = float(iNode.getAttribute("Pixel")) * factor
-            if pxl > float(rasterXSize):
-                pxl = rasterXSize
-            iNode.replaceAttribute("Pixel", str(pxl))
-            lin = float(iNode.getAttribute("Line")) * factor
-            if lin > float(rasterYSize):
-                lin = rasterYSize
-            iNode.replaceAttribute("Line", str(lin))
+        if node0.node("GCPList"):
+            for iNode in node0.node("GCPList").nodeList("GCP"):
+                pxl = float(iNode.getAttribute("Pixel")) * factor
+                if pxl > float(rasterXSize):
+                    pxl = rasterXSize
+                iNode.replaceAttribute("Pixel", str(pxl))
+                lin = float(iNode.getAttribute("Line")) * factor
+                if lin > float(rasterYSize):
+                    lin = rasterYSize
+                iNode.replaceAttribute("Line", str(lin))
 
         # Write the modified elemements into VRT
         self.vrt.write_xml(str(node0.rawxml()))
