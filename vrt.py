@@ -312,8 +312,8 @@ class VRT():
             tagsList = iNode.tagList()
             if iNode.node("standard_name").value == wkvName:
                 wkvDict = {"standard_name": wkvName}
-                for itag in tagsList:
-                    wkvDict[itag] = str(iWkv.node(itag).value)
+                for iTag in tagsList:
+                    wkvDict[iTag] = str(iNode.node(iTag).value)
 
         return wkvDict
 
