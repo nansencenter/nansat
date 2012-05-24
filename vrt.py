@@ -41,6 +41,16 @@ class VRT():
     writing, etc.
     All mapper inherit from VRT
     '''
+    DatasetSource = Template('''
+            <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
+              <SRS>$SRS</SRS>
+              <GeoTransform>$GeoTransform</GeoTransform>
+            </VRTDataset> ''')
+
+    RasterBandSource = Template('''
+            <VRTRasterBand dataType="$DataType" band="$BandNum">
+            </VRTRasterBand> ''')
+
     SimpleSource = Template('''
             <SimpleSource>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
@@ -51,6 +61,14 @@ class VRT():
                 <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </SimpleSource> ''')
+
+    RawRasterBandSource = Template('''
+            <VRTRasterBand dataType="$DataType" band="$BandNum" subClass="VRTRawRasterBand">
+              <SourceFilename relativeToVRT="0">$SrcFileName</SourceFilename>
+              <ImageOffset>0</ImageOffset>
+              <PixelOffset>$PixelOffset</PixelOffset>
+              <LineOffset>$LineOffset</LineOffset>
+            </VRTRasterBand> ''')
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                                          srcGeoTransform=None,
@@ -294,8 +312,9 @@ class VRT():
             tagsList = iNode.tagList()
             if iNode.node("standard_name").value == wkvName:
                 wkvDict = {"standard_name": wkvName}
-                for iTag in tagsList:
-                    wkvDict[iTag] = str(iNode.node(iTag).value)
+                for itag in tagsList:
+                    wkvDict[itag] = str(iWkv.node(itag).value)
+
         return wkvDict
 
     def _put_metadata(self, rasterBand, metadataDict):
@@ -321,6 +340,136 @@ class VRT():
             rasterBand.SetMetadataItem(key, metadataDict[key])
 
         return rasterBand
+
+    def create_band_from_array(self, array):
+        '''Create a band from an array
+
+        Parameters:
+        -----------
+            array: numpy arrayvrt
+
+        Modifies:
+        ---------
+            a new band which is created from the array is added to vrt.
+        '''
+
+        """ HOW to set file name???"""
+        binaryTestFile = "c:/Users/asumak/Data/output/binaryTest.raw"
+
+        ofile = open(binaryTestFile, 'wb')
+        ofile.write(array.tostring())
+        ofile.close()
+
+        dataType = {"uint8": "Byte", "int8": "Byte",
+                    "uint16": "UInt16", "int16": "Int16",
+                    "uint32": "UInt32", "int32": "Int32",
+                    "float32": "Float32","float64": "Float64",
+                    "complex64": "CFloat64"}.get(str(array.dtype))
+
+        pixelOffset = {"Byte": "1",
+                    "UInt16": "2", "Int16": "2",
+                    "UInt32": "4", "Int32": "4",
+                    "Float32": "4","Float64": "8",
+                    "CFloat64": "8"}.get(dataType)
+
+        lineOffset = str(int(pixelOffset)*array.shape[1])
+
+        datasetContents = self.read_xml()
+        rasterBandSource = self.RawRasterBandSource.substitute(
+                                        DataType=dataType,
+                                        BandNum=1,
+                                        SrcFileName=binaryTestFile,
+                                        PixelOffset=pixelOffset,
+                                        LineOffset=lineOffset)
+
+        contents = Node.create(datasetContents).insert(rasterBandSource)
+
+        self.write_xml(contents)
+
+    def merge_vrt(self, vrt2):
+        '''Merge two vrts
+
+        If band size and projections are same, the bands are merged.
+        If vrt has 'subClass' or 'simpleSource', they are copied.
+        Otherwise 'simpleSource' is created and added for each band.
+
+        Parameters:
+        -----------
+            vrt2: vrt
+
+        Modifies:
+        ---------
+            self.vrt has "VRTDataset", "SRS", "GeoTransform", and each band info.
+            it does not include global metadata.
+
+        '''
+        vrt1 = self.copy()
+
+        projection1 = vrt1.dataset.GetProjection()
+        if projection1 =="":
+            projection1 = vrt1.dataset.GetGCPProjection()
+
+        projection2 = vrt2.dataset.GetProjection()
+        if projection2 =="":
+            projection2 = vrt2.dataset.GetGCPProjection()
+        '''
+        print vrt1.dataset.RasterXSize ," : ",vrt2.dataset.RasterXSize
+        print vrt1.dataset.RasterYSize ," : ",vrt2.dataset.RasterYSize
+        print geotrans1," : ",geotrans2
+        print projection1
+        print projection2
+        '''
+        if vrt1.dataset.RasterXSize==vrt2.dataset.RasterXSize and \
+           vrt1.dataset.RasterYSize==vrt2.dataset.RasterYSize and \
+           projection1 == projection2 : ## and vrt1.dataset.GetGeoTransform() == vrt2.dataset.GetGeoTransform():
+
+            datasetContents = self.DatasetSource.substitute(
+                                    XSize=vrt1.dataset.RasterXSize,
+                                    YSize=vrt1.dataset.RasterYSize,
+                                    SRS= projection1,
+                                    GeoTransform= str(vrt1.dataset.GetGeoTransform()).strip("()"))
+
+            for iVrt in range(2):
+                if iVrt == 0:
+                    tmpVrt = vrt1
+                else:
+                    tmpVrt = vrt2
+
+                for iBandNum, iBand in enumerate (Node.create(tmpVrt.read_xml()).nodeList('VRTRasterBand')):
+                    nameList, valList = iBand.getAttributeList()
+                    if 'subClass' in nameList and valList[nameList.index('subClass')] == "VRTRawRasterBand":
+                        iBand.replaceAttribute("band", str(iVrt*vrt1.dataset.RasterCount+iBandNum+1))
+                        bandContents = iBand.rawxml()
+                    else:
+                        if "SimpleSource" in iBand.tagList():
+                            iBand.replaceAttribute("band", str(iVrt*vrt1.dataset.RasterCount+iBandNum+1))
+                            bandContents = iBand.rawxml()
+                        else:
+                            band = tmpVrt.dataset.GetRasterBand(iBandNum + 1)
+                            dataType = {1: "Byte",
+                                        2: "UInt16", 3: "Int16",
+                                        4: "UInt32", 5: "Int32",
+                                        6: "Float32",7: "Float64",
+                                        8: "CFloat64"}.get(band.DataType)
+
+                            rasterBandSource = self.RasterBandSource.substitute(
+                                               DataType=dataType,
+                                               BandNum= iVrt*vrt1.dataset.RasterCount+iBandNum+1)
+
+                            simpleSource = self.SimpleSource.substitute(
+                                                XSize=band.XSize,
+                                                YSize=band.YSize,
+                                                BlockXSize=band.GetBlockSize()[0],
+                                                BlockYSize=band.GetBlockSize()[1],
+                                                DataType=dataType,
+                                                Dataset=tmpVrt.fileName,
+                                                SourceBand=band.GetBand())
+
+                            bandContents = Node.create(rasterBandSource).insert(simpleSource)
+                    datasetContents = Node.create(datasetContents).insert(bandContents)
+            self.write_xml(datasetContents)
+        else:
+            self.logger.warning("Unable to merge vrt files")
 
     def read_xml(self):
         '''Read XML content of the VRT dataset
@@ -356,10 +505,12 @@ class VRT():
                 If XML content was written, self.dataset is re-opened
         '''
         #write to the vsi-file
+
         vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
         gdal.VSIFWriteL(vsiFileContent,
                         len(vsiFileContent), 1, vsiFile)
         gdal.VSIFCloseL(vsiFile)
+
         # re-open self.dataset with new content
         self.dataset = gdal.Open(self.fileName)
 

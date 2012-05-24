@@ -99,7 +99,7 @@ class Node(object):
             if itagName == oldTag:
                 self.node(self.tag).children[itag].tag = newTag
 
-    def getAttributeNameList(self):
+    def getAttributeList(self):
         ''' get attributes and valuse from the node and return their lists '''
         nameList = []
         valList = []
@@ -107,6 +107,15 @@ class Node(object):
             nameList.append(key)
             valList.append(val)
         return nameList, valList
+
+    def insert(self, contents):
+        dom2 = parseString(contents)
+        dom1 = parseString(self.dom().toxml())
+        dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0], True))
+        contents = str(dom1.toxml())
+        if contents.find("<?") != -1 and contents.find("?>"):
+            contents = contents[contents.find("?>")+2:]
+        return contents
 
     def __getitem__(self, tag):
         '''
@@ -211,11 +220,9 @@ class Node(object):
                     node += subnode
         return node
 
-
 def openXML(fileName):
     '''Open file '''
     return parse(fileName)
-
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
