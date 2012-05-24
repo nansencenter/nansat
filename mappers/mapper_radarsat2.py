@@ -116,10 +116,9 @@ class Mapper(VRT):
                 'pixelfunction': 'Sigma0HHIncidenceToSigma0VV'})
             self.dataset.FlushCache()
 
-
         # Set time 
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
-        self._set_time(
-            datetime.datetime.strptime(validTime, '%Y-%m-%dT%H:%M:%S.%fZ'))
+        self.logger.info('Valid time: %s', str(validTime))
+        self._set_time(parse(validTime))
                   
         return

@@ -8,8 +8,7 @@
 # Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import VRT, gdal
-import dateutil.parser
+from vrt import VRT, gdal, parse
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
@@ -108,4 +107,4 @@ class Mapper(VRT):
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
         productTime = gdalMetadata["RANGEENDINGTIME"]
-        self._set_time(dateutil.parser.parse(productDate+' '+productTime))
+        self._set_time(parse(productDate+' '+productTime))

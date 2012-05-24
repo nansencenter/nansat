@@ -1,4 +1,4 @@
-import dateutil.parser
+from dateutil.parser import parse
 from struct import unpack
 
 class Envisat():
@@ -7,7 +7,7 @@ class Envisat():
         ''' Get time from metadata, set time to VRT'''
         # set time
         productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
-        self._set_time(dateutil.parser.parse(productTime))
+        self._set_time(parse(productTime))
 
     def read_scaling_gads(self, fileName, indeces):
         ''' Read Scaling Factor GADS to get scalings of MERIS L1/L2'''

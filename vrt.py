@@ -20,7 +20,7 @@ import os
 from string import Template, ascii_uppercase, digits
 from random import choice
 import datetime
-import dateutil.parser
+from dateutil.parser import parse
 
 import logging
 

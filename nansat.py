@@ -383,6 +383,8 @@ class Nansat(Domain):
         ----------
             dstDomain: domain
                 destination Domain where projection and resolution are set
+            resamplingAlg: int
+                0, 1 or 2 stand for NearestNeigbour, Bilinear, Cubic
 
         Modifies
         --------
@@ -879,7 +881,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_ASAR')
+        mapper_module = __import__('mapper_radarsat2')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata, logLevel=self.logger.level)
         """
