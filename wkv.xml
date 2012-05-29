@@ -1,20 +1,20 @@
 <all_wkvs multiple="true">
 	<wkv>
-		<standard_name>normalized_radar_cross_section</standard_name>
+		<standard_name>surface_backwards_scattering_coefficient_of_radar_wave</standard_name>
 		<long_name>Normalized Radar Cross Section</long_name>
 		<units>m/m</units>
         <minmax>0 0.1</minmax>
         <colormap>gray</colormap>
 	</wkv>
 	<wkv>
-		<standard_name>eastward_wind_velocity</standard_name>
+		<standard_name>eastward_wind</standard_name>
 		<long_name>Eastward wind velocity</long_name>
 		<units>m s-1</units>
         <minmax>-10 10</minmax>
         <colormap>jet</colormap>
 	</wkv>
 	<wkv>
-		<standard_name>northward_wind_velocity</standard_name>
+		<standard_name>northward_wind</standard_name>
 		<long_name>Northward wind velocity</long_name>
 		<units>m s-1</units>
         <minmax>-10 10</minmax>
@@ -121,7 +121,7 @@
 	<wkv>
 		<standard_name>quality_flags</standard_name>
 		<long_name>Quality Flags</long_name>
-		<units></units>
+		<units>1</units>
         <minmax>0 1</minmax>
         <colormap>jet</colormap>
 	</wkv>
