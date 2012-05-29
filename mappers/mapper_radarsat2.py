@@ -36,7 +36,7 @@ class Mapper(VRT):
             pol.append(polString)
             metaDict.append( {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName +
                 '/product.xml', 'sourceBand': i, 'wkv':
-                'normalized_radar_cross_section', 'parameters':
+                'surface_backwards_scattering_coefficient_of_radar_wave', 'parameters':
                 {'band_name':'sigma0_'+polString, 'polarization': polString}} );
 
         ##############################################################
@@ -109,7 +109,7 @@ class Mapper(VRT):
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0)
             
             self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
-                           self._get_wkv('normalized_radar_cross_section'))
+                           self._get_wkv('surface_backwards_scattering_coefficient_of_radar_wave'))
             self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
                 {'band_name': 'sigma0_VV',
                  'polarisation': 'VV',

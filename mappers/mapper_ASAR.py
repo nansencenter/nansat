@@ -23,7 +23,7 @@ class Mapper(VRT, Envisat):
 
         metaDict = [{'source': fileName,
                      'sourceBand': 1,
-                     'wkv': 'normalized_radar_cross_section',
+                     'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                      'parameters':{
                          'band_name': 'sigma0',
                          'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
