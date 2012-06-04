@@ -34,6 +34,9 @@ class DataError(Error):
         e.g. : empty pixel value array in get_pixelValueRange()'''
     pass
 
+class ProjectionError(Error):
+    '''Error for reprojection.'''
+    pass
 
 class Nansat(Domain):
     '''Main of Nansat
@@ -43,7 +46,7 @@ class Nansat(Domain):
         VRT file which points to orignal file with satellite data and
         is saved in an XML format in memory (GDAL VSI).
     '''
-    def __init__(self, fileName, mapperName='', logLevel=30):
+    def __init__(self, fileName='', mapperName='', domain=None, array=None, logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -81,6 +84,10 @@ class Nansat(Domain):
             GDALError: occurs when the dataset is None or "".
 
         '''
+        # checkt the arguments
+        if fileName=="" and domain is None and array is None:
+            raise OptionError("Either fileName or (domain and array) is required.")
+
         # SET CONSTANTS
         # create logger
         self.logger = add_logger(logName='Nansat', logLevel=logLevel)
@@ -100,11 +107,19 @@ class Nansat(Domain):
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
-        # set input file name
-        self.fileName = fileName
+        if fileName != "":
+            # set input file name
+            self.fileName = fileName
+            # Get oroginal VRT object with mapping of variables
+            self.raw = self._get_mapper(mapperName)
+        else:
+            self.fileName = ""
+            # Get vrt from domain
+            self.raw = domain.vrt
+            # SRS and GeoTransform are copied from domain.vrt
+            # create and add a band from array
+            self.raw.create_band_from_array(array)
 
-        # Get oroginal VRT object with mapping of variables
-        self.raw = self._get_mapper(mapperName)
         # Set current VRT object
         self.vrt = self.raw.copy()
         # name, for compatibility with some Domain methods
@@ -148,6 +163,25 @@ class Nansat(Domain):
         outString += '-' * 40 + '\n'
         outString += Domain.__repr__(self)
         return outString
+
+    def add_bands(self, obj):
+        '''Add bands in obj.vrt to self.vrt
+
+        Parameters
+        ----------
+            obj : Nansat object
+
+        Modifies
+        --------
+            If band size and projections of the two vrts are same,
+            the bands in obj.vrt are merged into self.vrt.
+
+        See Also
+        --------
+            vrt.merge_vrt in vrt.py
+
+        '''
+        self.vrt.merge_vrt(obj.vrt)
 
     def export(self, fileName):
         '''Create a netCDF file
@@ -335,11 +369,10 @@ class Nansat(Domain):
         elif isinstance(bandNo, str):
             bandNo = self._specify_bandNo({'band_name': bandNo})
         # if given bandNo is over the existing bands, give error message
-        elif (bandNo < 1 or bandNo > self.raw.dataset.RasterCount):
+        elif (bandNo < 1 or bandNo > self.vrt.dataset.RasterCount):
             raise OptionError("Nansat.get_GDALRasterBand(): "
                              "bandNo takes from 1 to",
-                             self.raw.dataset.RasterCount)
-
+                             self.vrt.dataset.RasterCount)
         # Based on bandNo,
         # the GDAL RasterBand of the corresponding band is returned
         return self.vrt.dataset.GetRasterBand(bandNo)
@@ -424,6 +457,7 @@ class Nansat(Domain):
 
             # set default vrt to be the warped one
             warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
+
             # modify extent of the created Warped VRT
             warpedVRTXML = warpedVRT.read_xml()
             warpedVRTXML = self._modify_warped_VRT_XML(warpedVRTXML,
@@ -901,7 +935,6 @@ class Nansat(Domain):
                 break
             except:
                 pass
-        # """
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None:
             self.logger.info('No mapper fits!')
@@ -927,7 +960,7 @@ class Nansat(Domain):
                 desired X size of warped image
             rasterYSize: integer
                 desired Y size of warped image
-            rasterYSize: tuple of 6 integers
+            geoTransform: tuple of 6 integers
                 desired GeoTransform size of the warped image
 
         Returns

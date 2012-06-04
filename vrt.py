@@ -163,12 +163,11 @@ class VRT():
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
-    def _make_filename(self):
+    def _make_filename(self, extention = "vrt"):
         '''Create random VSI file name'''
         allChars = ascii_uppercase + digits
         randomChars = ''.join(choice(allChars) for x in range(10))
-
-        return '/vsimem/%s.vrt' % randomChars
+        return '/vsimem/%s.%s' % (randomChars, extention)
 
     def _create_bands(self, metaDict):
         ''' Generic function called from the mappers to create bands
@@ -353,12 +352,11 @@ class VRT():
             a new band which is created from the array is added to vrt.
         '''
 
-        """ HOW to set file name???"""
-        binaryTestFile = "c:/Users/asumak/Data/output/binaryTest.raw"
+        binaryFile = self._make_filename(extention="raw")
 
-        ofile = open(binaryTestFile, 'wb')
-        ofile.write(array.tostring())
-        ofile.close()
+        ofile = gdal.VSIFOpenL(binaryFile, "wb")
+        gdal.VSIFWriteL(array.tostring(),len(array.tostring()), 1, ofile)
+        gdal.VSIFCloseL(ofile)
 
         dataType = {"uint8": "Byte", "int8": "Byte",
                     "uint16": "UInt16", "int16": "Int16",
@@ -378,7 +376,7 @@ class VRT():
         rasterBandSource = self.RawRasterBandSource.substitute(
                                         DataType=dataType,
                                         BandNum=1,
-                                        SrcFileName=binaryTestFile,
+                                        SrcFileName=binaryFile,
                                         PixelOffset=pixelOffset,
                                         LineOffset=lineOffset)
 
@@ -403,30 +401,25 @@ class VRT():
             it does not include global metadata.
 
         '''
-        vrt1 = self.copy()
+        metadata = self.dataset.GetMetadata()
+        gcps = self.dataset.GetGCPs()
+        projection = self.dataset.GetProjection()
+        if projection =="":
+            projection = self.dataset.GetGCPProjection()
 
-        projection1 = vrt1.dataset.GetProjection()
-        if projection1 =="":
-            projection1 = vrt1.dataset.GetGCPProjection()
-
-        projection2 = vrt2.dataset.GetProjection()
-        if projection2 =="":
-            projection2 = vrt2.dataset.GetGCPProjection()
         '''
+        print "vrt 420"
         print vrt1.dataset.RasterXSize ," : ",vrt2.dataset.RasterXSize
         print vrt1.dataset.RasterYSize ," : ",vrt2.dataset.RasterYSize
-        print geotrans1," : ",geotrans2
-        print projection1
-        print projection2
         '''
+        vrt1 = self.copy()
         if vrt1.dataset.RasterXSize==vrt2.dataset.RasterXSize and \
-           vrt1.dataset.RasterYSize==vrt2.dataset.RasterYSize and \
-           projection1 == projection2 : ## and vrt1.dataset.GetGeoTransform() == vrt2.dataset.GetGeoTransform():
+           vrt1.dataset.RasterYSize==vrt2.dataset.RasterYSize:
 
             datasetContents = self.DatasetSource.substitute(
                                     XSize=vrt1.dataset.RasterXSize,
                                     YSize=vrt1.dataset.RasterYSize,
-                                    SRS= projection1,
+                                    SRS=projection,
                                     GeoTransform= str(vrt1.dataset.GetGeoTransform()).strip("()"))
 
             for iVrt in range(2):
@@ -468,6 +461,9 @@ class VRT():
                             bandContents = Node.create(rasterBandSource).insert(simpleSource)
                     datasetContents = Node.create(datasetContents).insert(bandContents)
             self.write_xml(datasetContents)
+            self.dataset.SetMetadata(metadata)
+            self.dataset.SetGCPs(gcps, projection)
+
         else:
             self.logger.warning("Unable to merge vrt files")
 

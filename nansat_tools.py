@@ -99,7 +99,7 @@ class Node(object):
             if itagName == oldTag:
                 self.node(self.tag).children[itag].tag = newTag
 
-    def getAttributeNameList(self):
+    def getAttributeList(self):
         ''' get attributes and valuse from the node and return their lists '''
         nameList = []
         valList = []
