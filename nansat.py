@@ -46,7 +46,8 @@ class Nansat(Domain):
         VRT file which points to orignal file with satellite data and
         is saved in an XML format in memory (GDAL VSI).
     '''
-    def __init__(self, fileName='', mapperName='', domain=None, array=None, logLevel=30):
+    def __init__(self, fileName="", mapperName="", domain=None,
+                 array=None, parameters="", logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -61,6 +62,10 @@ class Nansat(Domain):
         mapperName : string, optional
             "ASAR", "hurlam", "merisL1", "merisL2", "ncep", "radarsat2",
             "seawifsL2" are currently available.  (27.01.2012)
+        domain : domain object
+        array : numpy array
+        parameters: dictionary
+            metadata for array band
         logLevel: int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
 
@@ -85,7 +90,7 @@ class Nansat(Domain):
 
         '''
         # checkt the arguments
-        if fileName=="" and domain is None and array is None:
+        if fileName=="" and (domain is None or array is None):
             raise OptionError("Either fileName or (domain and array) is required.")
 
         # SET CONSTANTS
@@ -112,16 +117,17 @@ class Nansat(Domain):
             self.fileName = fileName
             # Get oroginal VRT object with mapping of variables
             self.raw = self._get_mapper(mapperName)
+            # Set current VRT object
+            self.vrt = self.raw.copy()
         else:
             self.fileName = ""
             # Get vrt from domain
-            self.raw = domain.vrt
-            # SRS and GeoTransform are copied from domain.vrt
-            # create and add a band from array
-            self.raw.create_band_from_array(array)
+            self.vrt = VRT(gdalDataset=domain.vrt.dataset)
+            # add a band from array
+            self.add_band(array, parameters)
+            # Set raw VRT object
+            self.raw = self.vrt.copy()
 
-        # Set current VRT object
-        self.vrt = self.raw.copy()
         # name, for compatibility with some Domain methods
         self.name = self.fileName
 
@@ -164,24 +170,21 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_bands(self, obj):
+    def add_band(self, array, parameters=""):
         '''Add bands in obj.vrt to self.vrt
 
         Parameters
         ----------
-            obj : Nansat object
+            array : Numpy array
+            parameters: dictionary
 
         Modifies
         --------
-            If band size and projections of the two vrts are same,
-            the bands in obj.vrt are merged into self.vrt.
-
-        See Also
-        --------
-            vrt.merge_vrt in vrt.py
+            add a band created by an array.
 
         '''
-        self.vrt.merge_vrt(obj.vrt)
+        arrayVrt = VRT(array=array, parameters=parameters)
+        self.vrt._create_band(arrayVrt.fileName, 1, "", parameters)
 
     def export(self, fileName):
         '''Create a netCDF file

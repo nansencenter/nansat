@@ -41,16 +41,6 @@ class VRT():
     writing, etc.
     All mapper inherit from VRT
     '''
-    DatasetSource = Template('''
-            <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
-              <SRS>$SRS</SRS>
-              <GeoTransform>$GeoTransform</GeoTransform>
-            </VRTDataset> ''')
-
-    RasterBandSource = Template('''
-            <VRTRasterBand dataType="$DataType" band="$BandNum">
-            </VRTRasterBand> ''')
-
     SimpleSource = Template('''
             <SimpleSource>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
@@ -63,14 +53,18 @@ class VRT():
             </SimpleSource> ''')
 
     RawRasterBandSource = Template('''
-            <VRTRasterBand dataType="$DataType" band="$BandNum" subClass="VRTRawRasterBand">
-              <SourceFilename relativeToVRT="0">$SrcFileName</SourceFilename>
-              <ImageOffset>0</ImageOffset>
-              <PixelOffset>$PixelOffset</PixelOffset>
-              <LineOffset>$LineOffset</LineOffset>
-            </VRTRasterBand> ''')
+            <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
+              <VRTRasterBand dataType="$DataType" band="$BandNum" subClass="VRTRawRasterBand">
+                <SourceFilename relativeToVRT="0">$SrcFileName</SourceFilename>
+                <ImageOffset>0</ImageOffset>
+                <PixelOffset>$PixelOffset</PixelOffset>
+                <LineOffset>$LineOffset</LineOffset>
+              </VRTRasterBand>
+            </VRTDataset> ''')
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
+                                         array=None,
+                                         parameters="",
                                          srcGeoTransform=None,
                                          srcProjection=None,
                                          srcRasterXSize=None,
@@ -141,10 +135,15 @@ class VRT():
                 srcGCPProjection = None
 
             # create VRT dataset
-            self.dataset = self.vrtDriver.Create(self.fileName,
-                                                 srcRasterXSize,
-                                                 srcRasterYSize,
-                                                 bands=0)
+            if array is None:
+                self.dataset = self.vrtDriver.Create(self.fileName,
+                                                     srcRasterXSize,
+                                                     srcRasterYSize,
+                                                     bands=0)
+            else:
+                self.create_dataset_from_array(array, parameters)
+                srcProjection = ""
+                srcGeoTransform = (0,1,0,0,0,1)
 
             # set geo-metadata in the VRT dataset
             self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
@@ -251,8 +250,10 @@ class VRT():
                                 "new_vrt_sources")
 
         # set metadata from WKV and from provided parameters
-        dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
-        dstRasterBand = self._put_metadata(dstRasterBand, parameters)
+        if wkv != "":
+            dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
+        if parameters != "":
+            dstRasterBand = self._put_metadata(dstRasterBand, parameters)
 
         self.dataset.FlushCache()
 
@@ -313,7 +314,6 @@ class VRT():
                 wkvDict = {"standard_name": wkvName}
                 for iTag in tagsList:
                     wkvDict[iTag] = str(iNode.node(iTag).value)
-
         return wkvDict
 
     def _put_metadata(self, rasterBand, metadataDict):
@@ -340,8 +340,8 @@ class VRT():
 
         return rasterBand
 
-    def create_band_from_array(self, array):
-        '''Create a band from an array
+    def create_dataset_from_array(self, array, parameters):
+        '''Create a dataset with a band by an array
 
         Parameters:
         -----------
@@ -351,9 +351,7 @@ class VRT():
         ---------
             a new band which is created from the array is added to vrt.
         '''
-
-        binaryFile = self._make_filename(extention="raw")
-
+        binaryFile = self.fileName.replace(".vrt", ".raw")
         ofile = gdal.VSIFOpenL(binaryFile, "wb")
         gdal.VSIFWriteL(array.tostring(),len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
@@ -372,100 +370,17 @@ class VRT():
 
         lineOffset = str(int(pixelOffset)*array.shape[1])
 
-        datasetContents = self.read_xml()
-        rasterBandSource = self.RawRasterBandSource.substitute(
+        contents = self.RawRasterBandSource.substitute(
+                                        XSize=array.shape[1],
+                                        YSize=array.shape[0],
                                         DataType=dataType,
                                         BandNum=1,
                                         SrcFileName=binaryFile,
                                         PixelOffset=pixelOffset,
                                         LineOffset=lineOffset)
 
-        contents = Node.create(datasetContents).insert(rasterBandSource)
-
         self.write_xml(contents)
-
-    def merge_vrt(self, vrt2):
-        '''Merge two vrts
-
-        If band size and projections are same, the bands are merged.
-        If vrt has 'subClass' or 'simpleSource', they are copied.
-        Otherwise 'simpleSource' is created and added for each band.
-
-        Parameters:
-        -----------
-            vrt2: vrt
-
-        Modifies:
-        ---------
-            self.vrt has "VRTDataset", "SRS", "GeoTransform", and each band info.
-            it does not include global metadata.
-
-        '''
-        metadata = self.dataset.GetMetadata()
-        gcps = self.dataset.GetGCPs()
-        projection = self.dataset.GetProjection()
-        if projection =="":
-            projection = self.dataset.GetGCPProjection()
-
-        '''
-        print "vrt 420"
-        print vrt1.dataset.RasterXSize ," : ",vrt2.dataset.RasterXSize
-        print vrt1.dataset.RasterYSize ," : ",vrt2.dataset.RasterYSize
-        '''
-        vrt1 = self.copy()
-        if vrt1.dataset.RasterXSize==vrt2.dataset.RasterXSize and \
-           vrt1.dataset.RasterYSize==vrt2.dataset.RasterYSize:
-
-            datasetContents = self.DatasetSource.substitute(
-                                    XSize=vrt1.dataset.RasterXSize,
-                                    YSize=vrt1.dataset.RasterYSize,
-                                    SRS=projection,
-                                    GeoTransform= str(vrt1.dataset.GetGeoTransform()).strip("()"))
-
-            for iVrt in range(2):
-                if iVrt == 0:
-                    tmpVrt = vrt1
-                else:
-                    tmpVrt = vrt2
-
-                for iBandNum, iBand in enumerate (Node.create(tmpVrt.read_xml()).nodeList('VRTRasterBand')):
-                    nameList, valList = iBand.getAttributeList()
-                    if 'subClass' in nameList and valList[nameList.index('subClass')] == "VRTRawRasterBand":
-                        iBand.replaceAttribute("band", str(iVrt*vrt1.dataset.RasterCount+iBandNum+1))
-                        bandContents = iBand.rawxml()
-                    else:
-                        if "SimpleSource" in iBand.tagList():
-                            iBand.replaceAttribute("band", str(iVrt*vrt1.dataset.RasterCount+iBandNum+1))
-                            bandContents = iBand.rawxml()
-                        else:
-                            band = tmpVrt.dataset.GetRasterBand(iBandNum + 1)
-                            dataType = {1: "Byte",
-                                        2: "UInt16", 3: "Int16",
-                                        4: "UInt32", 5: "Int32",
-                                        6: "Float32",7: "Float64",
-                                        8: "CFloat64"}.get(band.DataType)
-
-                            rasterBandSource = self.RasterBandSource.substitute(
-                                               DataType=dataType,
-                                               BandNum= iVrt*vrt1.dataset.RasterCount+iBandNum+1)
-
-                            simpleSource = self.SimpleSource.substitute(
-                                                XSize=band.XSize,
-                                                YSize=band.YSize,
-                                                BlockXSize=band.GetBlockSize()[0],
-                                                BlockYSize=band.GetBlockSize()[1],
-                                                DataType=dataType,
-                                                Dataset=tmpVrt.fileName,
-                                                SourceBand=band.GetBand())
-
-                            bandContents = Node.create(rasterBandSource).insert(simpleSource)
-                    datasetContents = Node.create(datasetContents).insert(bandContents)
-            self.write_xml(datasetContents)
-            self.dataset.SetMetadata(metadata)
-            self.dataset.SetGCPs(gcps, projection)
-
-        else:
-            self.logger.warning("Unable to merge vrt files")
+        self._put_metadata(self.dataset.GetRasterBand(1), parameters)
 
     def read_xml(self):
         '''Read XML content of the VRT dataset
