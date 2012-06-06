@@ -64,12 +64,11 @@ class VRT():
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                                          array=None,
-                                         parameters="",
-                                         srcGeoTransform=None,
-                                         srcProjection=None,
+                                         srcGeoTransform=(0,1,0,0,0,1),
+                                         srcProjection="",
                                          srcRasterXSize=None,
                                          srcRasterYSize=None,
-                                         srcMetadata=None,
+                                         srcMetadata="",
                                          logLevel=30):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
@@ -85,6 +84,8 @@ class VRT():
                 source dataset of geo-reference
             vrtDataset: GDAL VRT Dataset
                 source dataset of all content (geo-reference and bands)
+            array: Numpy array
+                source matrix with data
             srcGeoTransform: GDALGeoTransform
                 parameter of geo-reference
             srcProjection, GDALProjection
@@ -134,16 +135,14 @@ class VRT():
                 srcGCPs = []
                 srcGCPProjection = None
 
-            # create VRT dataset
+            # create VRT dataset (empty or with a band from array)
             if array is None:
                 self.dataset = self.vrtDriver.Create(self.fileName,
                                                      srcRasterXSize,
                                                      srcRasterYSize,
                                                      bands=0)
             else:
-                self.create_dataset_from_array(array, parameters)
-                srcProjection = ""
-                srcGeoTransform = (0,1,0,0,0,1)
+                self.create_dataset_from_array(array)
 
             # set geo-metadata in the VRT dataset
             self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
@@ -340,47 +339,55 @@ class VRT():
 
         return rasterBand
 
-    def create_dataset_from_array(self, array, parameters):
-        '''Create a dataset with a band by an array
+    def create_dataset_from_array(self, array):
+        '''Create a dataset with a band from an array
+        
+        Writes contents of the array into flat binary file (VSI)
+        Writes VRT file with RawRastesrBand, which points to the binary file
+        Opens the VRT file as self.dataset with GDAL
 
         Parameters:
         -----------
-            array: numpy arrayvrt
+            array: numpy array
 
         Modifies:
         ---------
-            a new band which is created from the array is added to vrt.
+            binary file is written (VSI)
+            VRT file is written (VSI)
+            self.dataset is opened
         '''
+        arrayDType = array.dtype
+        arrayShape = array.shape
+        # create flat binary file from array (in VSI)
         binaryFile = self.fileName.replace(".vrt", ".raw")
         ofile = gdal.VSIFOpenL(binaryFile, "wb")
         gdal.VSIFWriteL(array.tostring(),len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
+        array = None
 
+        #create conents of VRT-file pointing to the binary file
         dataType = {"uint8": "Byte", "int8": "Byte",
                     "uint16": "UInt16", "int16": "Int16",
                     "uint32": "UInt32", "int32": "Int32",
                     "float32": "Float32","float64": "Float64",
-                    "complex64": "CFloat64"}.get(str(array.dtype))
-
+                    "complex64": "CFloat64"}.get(str(arrayDType))
         pixelOffset = {"Byte": "1",
                     "UInt16": "2", "Int16": "2",
                     "UInt32": "4", "Int32": "4",
                     "Float32": "4","Float64": "8",
                     "CFloat64": "8"}.get(dataType)
 
-        lineOffset = str(int(pixelOffset)*array.shape[1])
-
+        lineOffset = str(int(pixelOffset)*arrayShape[1])
         contents = self.RawRasterBandSource.substitute(
-                                        XSize=array.shape[1],
-                                        YSize=array.shape[0],
+                                        XSize=arrayShape[1],
+                                        YSize=arrayShape[0],
                                         DataType=dataType,
                                         BandNum=1,
                                         SrcFileName=binaryFile,
                                         PixelOffset=pixelOffset,
                                         LineOffset=lineOffset)
-
+        #write XML contents to 
         self.write_xml(contents)
-        self._put_metadata(self.dataset.GetRasterBand(1), parameters)
 
     def read_xml(self):
         '''Read XML content of the VRT dataset

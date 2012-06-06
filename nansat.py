@@ -47,7 +47,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, parameters="", logLevel=30):
+                 array=None, wkv="", parameters="", logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -112,19 +112,21 @@ class Nansat(Domain):
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
+        # set input file name
+        self.fileName = fileName
+
+        # create self from a file using mapper or...
         if fileName != "":
-            # set input file name
-            self.fileName = fileName
             # Get oroginal VRT object with mapping of variables
             self.raw = self._get_mapper(mapperName)
             # Set current VRT object
             self.vrt = self.raw.copy()
+        # create using array, domain, and parameters
         else:
-            self.fileName = ""
             # Get vrt from domain
-            self.vrt = VRT(gdalDataset=domain.vrt.dataset)
+            self.vrt = domain.vrt.copy()
             # add a band from array
-            self.add_band(array, parameters)
+            self.add_band(array, wkv, parameters)
             # Set raw VRT object
             self.raw = self.vrt.copy()
 
@@ -170,7 +172,7 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, array, parameters=""):
+    def add_band(self, array, wkv="", parameters=""):
         '''Add bands in obj.vrt to self.vrt
 
         Parameters
@@ -183,8 +185,8 @@ class Nansat(Domain):
             add a band created by an array.
 
         '''
-        arrayVrt = VRT(array=array, parameters=parameters)
-        self.vrt._create_band(arrayVrt.fileName, 1, "", parameters)
+        arrayVrt = VRT(array=array)
+        self.vrt._create_band(arrayVrt.fileName, 1, wkv, parameters)
 
     def export(self, fileName):
         '''Create a netCDF file
@@ -396,8 +398,8 @@ class Nansat(Domain):
                 formatted string with bands info
         '''
         outString = ''
-        for iBand in range(self.raw.dataset.RasterCount):
-            band = self.raw.dataset.GetRasterBand(iBand + 1)
+        for iBand in range(self.vrt.dataset.RasterCount):
+            band = self.vrt.dataset.GetRasterBand(iBand + 1)
             metadata = band.GetMetadata()
             outString += "Band : %d\n" % (iBand + 1)
             for i in metadata:
