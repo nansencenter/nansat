@@ -920,7 +920,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_radarsat2')
+        mapper_module = __import__('mapper_modisL2NRT')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata, logLevel=self.logger.level)
         """
@@ -940,6 +940,7 @@ class Nansat(Domain):
                 break
             except:
                 pass
+        # """
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None:
             self.logger.info('No mapper fits!')

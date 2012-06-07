@@ -12,25 +12,30 @@ from vrt import VRT, gdal, osr
 import re
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy import ndimage
 from datetime import datetime, timedelta
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
-        ''' Create MODIS_L1 VRT '''
+        ''' Create MODIS_L2 VRT '''
         GCP_COUNT = 200
-        # get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
-        subDatasets = gdalDataset.GetSubDatasets()
        
         # should raise error in case of not MODIS_L2_NRT
         mTitle = gdalMetadata["Title"];
         if mTitle is not 'HMODISA Level-2 Data':
             AttributeError("MODIS_L2_NRT BAD MAPPER");
 
+        # get subdataset and parse to VRT.__init__() for retrieving geo-metadata
+        # but NOT from longitude or latitude because it can be smaller!
+        subDatasets = gdalDataset.GetSubDatasets()
+        for subDataset in subDatasets:
+            if 'longitude' not in subDataset[1] and 'latitude' not in subDataset[1]:
+                gdalSubDataset = gdal.Open(subDataset[0])
+                break
         # create empty VRT dataset with geolocation only
-        gdalSubDataset = gdal.Open(subDatasets[0][0])
-        VRT.__init__(self, gdalSubDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalSubDataset, logLevel=logLevel)
         
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '412'} }
@@ -41,8 +46,6 @@ class Mapper(VRT):
         'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },
         'sst': {'wkv': 'sea_surface_temperature', 'parameters': {'band_name': 'sst'} },        
         'l2_flags': {'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },
-        'latitude': {'wkv': 'latitude', 'parameters': {'band_name': 'latitude'} },
-        'longitude': {'wkv': 'longitude', 'parameters': {'band_name': 'longitude'} },        
         }
         
         # loop through available bands and generate metaDict (non fixed)
@@ -95,7 +98,7 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # ==== add GCPs and Pojection ====
+        # === READ lat/lon grids ===
         for subDataset in subDatasets:
             # read longitude matrix
             if 'longitude' in subDataset[1]:
@@ -107,8 +110,37 @@ class Mapper(VRT):
                 ds = gdal.Open(subDataset[0])
                 b = ds.GetRasterBand(1)
                 latitude = b.ReadAsArray()
-        self.logger.debug('Lat/Lon grids read')
-        
+        self.logger.debug('Lat/Lon grids [%f, %f] read', latitude.shape[0], latitude.shape[1])
+
+        # === ADD lat/lon bands ====
+        # if shape of lat/lon is different from other bands
+        dsShape = (self.dataset.RasterYSize, self.dataset.RasterXSize)
+        if longitude.shape != dsShape:
+            zoomFactor = (float(dsShape[0]) / float(longitude.shape[0]),
+                          float(dsShape[1]) / float(longitude.shape[1]))
+            # create RAW/VRT files with full size lat/lon
+            longitude = ndimage.zoom(longitude, zoomFactor)
+            latitude = ndimage.zoom(latitude, zoomFactor)
+            self.logger.debug('Lat/Lon grids [%f, %f] read', latitude.shape[0], latitude.shape[1])
+            self.lonVrt = VRT(array=longitude, logLevel=logLevel)
+            self.latVrt = VRT(array=latitude, logLevel=logLevel)
+            # set geolocation name
+            xDatasetGeolocation = self.lonVrt.fileName
+            yDatasetGeolocation = self.latVrt.fileName
+            # add bands pointing to RAW/VRT
+            self._create_band(self.lonVrt.fileName, 1, 'longitude', {'band_name': 'longitude'})
+            self._create_band(self.latVrt.fileName, 1, 'latitude',  {'band_name': 'latitude'})            
+        else:
+            # else just take lat/lons from original file
+            for subDataset in subDatasets:
+                if 'longitude' in subDataset[1]:
+                    xDatasetGeolocation = subDataset[0]
+                    self._create_band(subDataset[0], 1, 'longitude', {'band_name': 'longitude'})
+                if 'latitude' in subDataset[1]:
+                    yDatasetGeolocation = subDataset[0]
+                    self._create_band(subDataset[0], 1, 'latitude',  {'band_name': 'latitude'})            
+
+        # ==== ADD GCPs and Pojection ====        
         # estimate step of GCPs
         gcpSize = np.sqrt(GCP_COUNT)
         step0 = max(1, int(float(latitude.shape[0]) / gcpSize))
@@ -124,9 +156,7 @@ class Mapper(VRT):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
                 gcp = gdal.GCP(float(longitude[i0, i1]),
                                float(latitude[i0, i1]),
-                               0,
-                               i1,
-                               i0)
+                               0, i1, i0)
                 self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
                 gcps.append(gcp)
                 k += 1
@@ -136,14 +166,9 @@ class Mapper(VRT):
         latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
         self.dataset.SetGCPs(gcps, latlongSRSWKT)
-
-        # add GEOLOCATION
-        for subDataset in subDatasets:
-            if 'longitude' in subDataset[1]:
-                xSubDatasetName = subDataset[0]
-            if 'latitude' in subDataset[1]:
-                ySubDatasetName = subDataset[0]
         
+        # === ADD GEOLOCATION  ===
+        self.logger.debug('x/y datasets: %s %s', xDatasetGeolocation, yDatasetGeolocation)
         latlongSRS = osr.SpatialReference()
         latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
@@ -154,11 +179,11 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
         self.dataset.SetMetadataItem('SRS', latlongSRSWKT, 'GEOLOCATION')
         self.dataset.SetMetadataItem('X_BAND', '1', 'GEOLOCATION')
-        self.dataset.SetMetadataItem('X_DATASET', xSubDatasetName, 'GEOLOCATION')
+        self.dataset.SetMetadataItem('X_DATASET', xDatasetGeolocation, 'GEOLOCATION')
         self.dataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
-        self.dataset.SetMetadataItem('Y_DATASET', ySubDatasetName, 'GEOLOCATION')
+        self.dataset.SetMetadataItem('Y_DATASET', yDatasetGeolocation, 'GEOLOCATION')
         
-        #set time
+        # set TIME
         startYear = int(gdalMetadata['Start Year'])
         startDay =  int(gdalMetadata['Start Day'])
         startMillisec =  int(gdalMetadata['Start Millisec'])

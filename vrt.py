@@ -376,7 +376,9 @@ class VRT():
                     "UInt32": "4", "Int32": "4",
                     "Float32": "4","Float64": "8",
                     "CFloat64": "8"}.get(dataType)
-
+        
+        self.logger.debug('DataType: %s', dataType)
+        
         lineOffset = str(int(pixelOffset)*arrayShape[1])
         contents = self.RawRasterBandSource.substitute(
                                         XSize=arrayShape[1],
