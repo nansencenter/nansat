@@ -191,8 +191,8 @@ class Nansat(Domain):
         # add the array band into self.vrt
         self.vrt._create_band(arrayVrt.fileName, 1, wkv, parameters)
         # delete arrayVrt and unnecessary files
-        delFileList = [arrayVrt.fileName, arrayVrt.fileName.replace(".vrt", ".raw")]
-        arrayVrt._del_gdalMemoryFile(delFileList)
+        #delFileList = [arrayVrt.fileName, arrayVrt.fileName.replace(".vrt", ".raw")]
+        #arrayVrt._del_gdalMemoryFile(delFileList)
 
     def export(self, fileName):
         '''Create a netCDF file

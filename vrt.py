@@ -217,19 +217,26 @@ class VRT():
         # add source and sourceBand parameters for Band metadata
         parameters["sourceBands"] = str(sourceBands[0])
         parameters["source"] = source[0]
-        # check the given band name. if it is used already,
-        # add a serial number to the name
-        bandNameList = []
+
+        # create list of available bands (to prevent duplicate names)
+        bandNames = []
         for iBand in range(self.dataset.RasterCount):
-            bandNameList.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("band_name"))
-        serialNum = 0
-        while not("band_name" in parameters) \
-              or (parameters["band_name"] in bandNameList):
-            serialNum += 1
-            if "band_name" in parameters:
-                parameters["band_name"] = parameters["band_name"]+"_"+"%03d" % serialNum
-            else:
-                parameters["band_name"] = "band_"+"%03d" % serialNum
+            bandNames.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("band_name"))
+
+        # if band_name is not given add 'band_00N'
+        if "band_name" not in parameters:
+            for n in range(999):
+                bandName = 'band_%03d' % n
+                if bandName not in bandNames:
+                    parameters['band_name'] = bandName
+                    break
+        # if band_name already exist add '_00N'
+        elif parameters["band_name"] in bandNames:
+            for n in range(999):
+                bandName = parameters["band_name"] + '_%03d' % n
+                if bandName not in bandNames:
+                    parameters['band_name'] = bandName
+                    break
 
         # Find datatype and blocksizes
         srcDataset = gdal.Open(source[0])
