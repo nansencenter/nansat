@@ -161,7 +161,11 @@ class VRT():
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
-    def _make_filename(self, extention = "vrt"):
+    def _del_gdalMemoryFile(self, delFileList):
+        for fileName in delFileList:
+            gdal.Unlink(fileName)
+
+    def _make_filename(self, extention="vrt"):
         '''Create random VSI file name'''
         allChars = ascii_uppercase + digits
         randomChars = ''.join(choice(allChars) for x in range(10))
@@ -210,6 +214,23 @@ class VRT():
         if isinstance(source, str):
             source = [source] * len(sourceBands)
 
+        # add source and sourceBand parameters for Band metadata
+        parameters["sourceBands"] = str(sourceBands[0])
+        parameters["source"] = source[0]
+        # check the given band name. if it is used already,
+        # add a serial number to the name
+        bandNameList = []
+        for iBand in range(self.dataset.RasterCount):
+            bandNameList.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("band_name"))
+        serialNum = 0
+        while not("band_name" in parameters) \
+              or (parameters["band_name"] in bandNameList):
+            serialNum += 1
+            if "band_name" in parameters:
+                parameters["band_name"] = parameters["band_name"]+"_"+"%03d" % serialNum
+            else:
+                parameters["band_name"] = "band_"+"%03d" % serialNum
+
         # Find datatype and blocksizes
         srcDataset = gdal.Open(source[0])
         srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
@@ -249,11 +270,8 @@ class VRT():
                                 "new_vrt_sources")
 
         # set metadata from WKV and from provided parameters
-        if wkv != "":
-            dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
-        if parameters != "":
-            dstRasterBand = self._put_metadata(dstRasterBand, parameters)
-
+        dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
+        dstRasterBand = self._put_metadata(dstRasterBand, parameters)
         self.dataset.FlushCache()
 
         return
@@ -307,6 +325,7 @@ class VRT():
         fileName_wkv = os.path.join(os.path.dirname(
                                     os.path.realpath(__file__)), "wkv.xml")
         node0 = Node.create(openXML(fileName_wkv))
+        wkvDict = {}
         for iNode in node0.nodeList("wkv"):
             tagsList = iNode.tagList()
             if iNode.node("standard_name").value == wkvName:
@@ -341,7 +360,7 @@ class VRT():
 
     def create_dataset_from_array(self, array):
         '''Create a dataset with a band from an array
-        
+
         Writes contents of the array into flat binary file (VSI)
         Writes VRT file with RawRastesrBand, which points to the binary file
         Opens the VRT file as self.dataset with GDAL
@@ -388,7 +407,7 @@ class VRT():
                                         SrcFileName=binaryFile,
                                         PixelOffset=pixelOffset,
                                         LineOffset=lineOffset)
-        #write XML contents to 
+        #write XML contents to
         self.write_xml(contents)
 
     def read_xml(self):

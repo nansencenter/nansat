@@ -47,7 +47,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, wkv="", parameters="", logLevel=30):
+                 array=None, wkv="", parameters={}, logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -124,7 +124,7 @@ class Nansat(Domain):
         # create using array, domain, and parameters
         else:
             # Get vrt from domain
-            self.vrt = domain.vrt.copy()
+            self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             # add a band from array
             self.add_band(array, wkv, parameters)
             # Set raw VRT object
@@ -172,12 +172,13 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, array, wkv="", parameters=""):
+    def add_band(self, array, wkv="", parameters={}):
         '''Add bands in obj.vrt to self.vrt
 
         Parameters
         ----------
             array : Numpy array
+            wkv : string
             parameters: dictionary
 
         Modifies
@@ -185,8 +186,13 @@ class Nansat(Domain):
             add a band created by an array.
 
         '''
+        # create a band from array
         arrayVrt = VRT(array=array)
+        # add the array band into self.vrt
         self.vrt._create_band(arrayVrt.fileName, 1, wkv, parameters)
+        # delete arrayVrt and unnecessary files
+        delFileList = [arrayVrt.fileName, arrayVrt.fileName.replace(".vrt", ".raw")]
+        arrayVrt._del_gdalMemoryFile(delFileList)
 
     def export(self, fileName):
         '''Create a netCDF file
