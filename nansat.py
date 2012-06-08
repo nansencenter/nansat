@@ -134,7 +134,9 @@ class Nansat(Domain):
         self.name = self.fileName
 
         self.logger.debug('Object created from %s ' % self.fileName)
-
+        
+        self.addedBands = []
+    
     def __getitem__(self, bandNo):
         ''' Returns the band as a NumPy array, by overloading []
         Parameters:
@@ -195,9 +197,10 @@ class Nansat(Domain):
         if p is None:
             p = {}
         # create a band from array
-        arrayVrt = VRT(array=array)
+        self.addedBands.append(VRT(array=array))
+        #arrayVrt = VRT(array=array)
         # add the array band into self.vrt
-        self.vrt._create_band(arrayVrt.fileName, 1, wkv, p)
+        self.vrt._create_band(self.addedBands[-1].fileName, 1, wkv, p)
         # delete arrayVrt and unnecessary files
         #delFileList = [arrayVrt.fileName, arrayVrt.fileName.replace(".vrt", ".raw")]
         #arrayVrt._del_gdalMemoryFile(delFileList)

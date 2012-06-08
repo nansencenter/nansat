@@ -161,9 +161,13 @@ class VRT():
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
-    def _del_gdalMemoryFile(self, delFileList):
-        for fileName in delFileList:
-            gdal.Unlink(fileName)
+    def __del__(self):
+        ''' Destructor deletes VRT and RAW files'''
+        try:
+            gdal.Unlink(self.fileName)
+            gdal.Unlink(self.fileName.replace('vrt', 'raw'))
+        except:
+            pass
 
     def _make_filename(self, extention="vrt"):
         '''Create random VSI file name'''
