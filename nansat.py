@@ -172,24 +172,32 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, array, wkv="", parameters={}):
-        '''Add bands in obj.vrt to self.vrt
+    def add_band(self, array, wkv="", p=None):
+        '''Add band from the array to self.vrt
+        
+        Create VRT object which contains VRT and RAW binary file
+        Create new band in self.vrt whci points to this vrt
 
         Parameters
         ----------
-            array : Numpy array
-            wkv : string
-            parameters: dictionary
+            array : Numpy array with band data
+            wkv : string with name of WKV
+            p: dictionary for defining parameters of the band, name, etc.
 
         Modifies
         --------
-            add a band created by an array.
+            Creates VRT object with VRT-file and RAW-file
+            Adds band to the self.vrt
 
         '''
+        # if p is not given it is empty dictionary
+        # NB: default value p={} remembers the value from the last assigment
+        if p is None:
+            p = {}
         # create a band from array
         arrayVrt = VRT(array=array)
         # add the array band into self.vrt
-        self.vrt._create_band(arrayVrt.fileName, 1, wkv, parameters)
+        self.vrt._create_band(arrayVrt.fileName, 1, wkv, p)
         # delete arrayVrt and unnecessary files
         #delFileList = [arrayVrt.fileName, arrayVrt.fileName.replace(".vrt", ".raw")]
         #arrayVrt._del_gdalMemoryFile(delFileList)
