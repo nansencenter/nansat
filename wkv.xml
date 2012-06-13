@@ -153,4 +153,18 @@
         <minmax>-180 180</minmax>
         <colormap>jet</colormap>
 	</wkv>
+	<wkv>
+		<standard_name>surface_geostrophic_eastward_sea_water_velocity</standard_name>
+		<long_name>U</long_name>
+		<units>m s-1</units>
+        <minmax>-20 20</minmax>
+        <colormap>jet</colormap>
+	</wkv>
+	<wkv>
+		<standard_name>surface_geostrophic_northward_sea_water_velocity</standard_name>
+		<long_name>V</long_name>
+		<units>m s-1</units>
+        <minmax>-20 20</minmax>
+        <colormap>jet</colormap>
+	</wkv>
 </all_wkvs>

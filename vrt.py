@@ -71,6 +71,7 @@ class VRT():
                                          srcGCPs=[],
                                          srcGCPProjection="",
                                          srcMetadata="",
+                                         srcGeoMetadata="",
                                          logLevel=30):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
@@ -131,6 +132,7 @@ class VRT():
                 srcRasterYSize = gdalDataset.RasterYSize
 
                 srcMetadata = gdalDataset.GetMetadata()
+                srcGeoMetadata = gdalDataset.GetMetadata('GEOLOCATION')
                 self.logger.debug('RasterXSize %d' % gdalDataset.RasterXSize)
                 self.logger.debug('RasterYSize %d' % gdalDataset.RasterYSize)
 
@@ -150,6 +152,7 @@ class VRT():
 
             # set metadata
             self.dataset.SetMetadata(srcMetadata)
+            self.dataset.SetMetadata(srcGeoMetadata, 'GEOLOCATION')
             # write file contents
             self.dataset.FlushCache()
 
@@ -385,15 +388,17 @@ class VRT():
             VRT file is written (VSI)
             self.dataset is opened
         '''
-        arrayDType = array.dtype
+        arrayDType = array.dtype.name
         arrayShape = array.shape
         # create flat binary file from array (in VSI)
         binaryFile = self.fileName.replace(".vrt", ".raw")
         ofile = gdal.VSIFOpenL(binaryFile, "wb")
-        gdal.VSIFWriteL(array.tostring(),len(array.tostring()), 1, ofile)
+        gdal.VSIFWriteL(array.tostring(), len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
         array = None
-
+        
+        self.logger.debug('arrayDType: %s', arrayDType)
+        
         #create conents of VRT-file pointing to the binary file
         dataType = {"uint8": "Byte", "int8": "Byte",
                     "uint16": "UInt16", "int16": "Int16",

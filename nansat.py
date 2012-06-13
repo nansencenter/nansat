@@ -93,9 +93,11 @@ class Nansat(Domain):
         if fileName=="" and (domain is None or array is None):
             raise OptionError("Either fileName or (domain and array) is required.")
 
-        # SET CONSTANTS
+        # set attributes
         # create logger
         self.logger = add_logger(logName='Nansat', logLevel=logLevel)
+        # create list of added bands
+        self.addedBands = []
 
         # all available mappers
         self.mapperList = [
@@ -134,8 +136,6 @@ class Nansat(Domain):
         self.name = self.fileName
 
         self.logger.debug('Object created from %s ' % self.fileName)
-        
-        self.addedBands = []
     
     def __getitem__(self, bandNo):
         ''' Returns the band as a NumPy array, by overloading []

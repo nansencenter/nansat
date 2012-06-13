@@ -213,7 +213,7 @@ class Domain():
             self.latVRT = VRT(array=lat)
             self.lonVRT = VRT(array=lon)
             # create self.vrt
-            self.vrt = VRT( srcProjection='',
+            self.vrt = VRT( srcProjection=srcGCPProjection,
                             srcRasterXSize=self.latVRT.dataset.RasterXSize,
                             srcRasterYSize=self.latVRT.dataset.RasterYSize,
                             srcGCPs=srcGCPs,

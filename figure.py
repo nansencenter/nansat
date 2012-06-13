@@ -493,7 +493,7 @@ class Figure():
             # create a scale for the colorbar
             scaleLocation = np.linspace(0, 1, self.d['numOfTicks'])
             scaleArray = scaleLocation
-            if self.d['gamma'] is not None:
+            if self.d['logarithm']:
                 scaleArray = (np.power(scaleArray, (1.0 / self.d['gamma'])))
             scaleArray = (scaleArray * (self.d['cmax'][0] -
                         self.d['cmin'][0]) + self.d['cmin'][0])
