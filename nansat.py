@@ -47,7 +47,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, wkv="", parameters={}, logLevel=30):
+                 array=None, wkv="", parameters=None, logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -126,11 +126,9 @@ class Nansat(Domain):
         # create using array, domain, and parameters
         else:
             # Get vrt from domain
-            self.vrt = VRT(gdalDataset=domain.vrt.dataset)
+            self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # add a band from array
             self.add_band(array, wkv, parameters)
-            # Set raw VRT object
-            self.raw = self.vrt.copy()
 
         # name, for compatibility with some Domain methods
         self.name = self.fileName
@@ -177,8 +175,12 @@ class Nansat(Domain):
     def add_band(self, array, wkv="", p=None):
         '''Add band from the array to self.vrt
         
-        Create VRT object which contains VRT and RAW binary file
-        Create new band in self.vrt whci points to this vrt
+        Create VRT object which contains VRT and RAW binary file and append it
+        to self.addedBands
+        Create new band in self.raw which points to this vrt
+        
+        NB!: Adding band is possible to raw (nonprojected, nonresized) images
+        only. Adding band will cancel any previous repoject() or resize()
 
         Parameters
         ----------
@@ -198,19 +200,19 @@ class Nansat(Domain):
             p = {}
         # create a band from array
         self.addedBands.append(VRT(array=array))
-        #arrayVrt = VRT(array=array)
         # add the array band into self.vrt
-        self.vrt._create_band(self.addedBands[-1].fileName, 1, wkv, p)
-        # delete arrayVrt and unnecessary files
-        #delFileList = [arrayVrt.fileName, arrayVrt.fileName.replace(".vrt", ".raw")]
-        #arrayVrt._del_gdalMemoryFile(delFileList)
+        self.raw._create_band(self.addedBands[-1].fileName, 1, wkv, p)
+        # copy raw VRT object to the current vrt
+        self.vrt = self.raw.copy()
 
-    def export(self, fileName):
+    def export(self, fileName, rmMetadata=[]):
         '''Create a netCDF file
 
         Parameters
         ----------
             fileName: output file name
+            rmMetadata: list with metadata names to remove before export.
+                e.g. ['band_name', 'colormap', 'source', 'sourceBands']
 
         Modifies
         --------
@@ -258,15 +260,25 @@ class Nansat(Domain):
         except:
             self.logger.warning("Unable to get projection for netcdf")
 
-        # Replace the band names
+        # manage metadata for each band
         for iBand in range(tmpVrt.dataset.RasterCount):
             band = tmpVrt.dataset.GetRasterBand(iBand + 1)
+            bandMetadata = band.GetMetadata()
+            # set NETCDF_VARNAME
             try:
-                band.SetMetadataItem('NETCDF_VARNAME',
-                                     str(band.GetMetadata_Dict()["band_name"]))
+                bandMetadata['NETCDF_VARNAME'] = bandMetadata["band_name"]
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
                                     % iBand)
+            # remove unwanted metadata
+            for rmMeta in rmMetadata:
+                try:
+                    bandMetadata.pop(rmMeta)
+                except:
+                    self.logger.warning(
+                        'Unable to remove metadata %s from band %d' %
+                         rmMeta, iBand + 1)
+            band.SetMetadata(bandMetadata)
 
         # Create a netCDF file
         dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
