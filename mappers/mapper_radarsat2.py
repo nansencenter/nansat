@@ -62,7 +62,7 @@ class Mapper(VRT):
         # Add SAR look direction to metadata domain
         ############################################
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
-            Domain(gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
+            Domain(ds=gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
             + 90, 360)))
 
         # Experimental feature for the Radarsat2-mapper:

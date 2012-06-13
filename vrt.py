@@ -68,6 +68,8 @@ class VRT():
                                          srcProjection="",
                                          srcRasterXSize=None,
                                          srcRasterYSize=None,
+                                         srcGCPs=[],
+                                         srcGCPProjection="",
                                          srcMetadata="",
                                          logLevel=30):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
@@ -131,9 +133,6 @@ class VRT():
                 srcMetadata = gdalDataset.GetMetadata()
                 self.logger.debug('RasterXSize %d' % gdalDataset.RasterXSize)
                 self.logger.debug('RasterYSize %d' % gdalDataset.RasterYSize)
-            else:
-                srcGCPs = []
-                srcGCPProjection = None
 
             # create VRT dataset (empty or with a band from array)
             if array is None:

@@ -20,6 +20,7 @@
 import os.path
 import re
 import string
+import numpy as np
 
 # test if methods with advanced libraries are available
 try:
@@ -61,31 +62,51 @@ class ProjectionError(Error):
 
 
 class Domain():
-    '''"Domain" is a grid with known dimentions and spatial reference'''
+    '''Domain is a grid with known dimentions and spatial reference'''
 
-    def __init__(self, *args, **kwargs):
-        '''Create Domain from given GDAL Dataset or textual options
+    def __init__(self, ds=None, srs=None, ext=None, lat=None, lon=None, name='', logLevel=30):
+        '''Create Domain from GDALDataset or string options or lat/lon grids
 
-        The main attribute of Domain is vrtDataset which is a GDAL
-        Dataset of type MEM. It has such attributes as rasterXsize,
-        rasterYsize, GeoTransform and GeoPorjection which fully describe
-        dimentions and spatial reference of the grid. The MEM dataset is
+        The main attribute of Domain is a GDAL VRT Dataset self.vrt.
+        It has such attributes as rasterXsize,
+        rasterYsize, GeoTransform and GeoPorjection, etc which fully describe
+        dimentions and spatial reference of the grid. The VRT dataset is
         empty - it has no bands.
-        If a GDAL dataset is given the Domain covers the same area and
-        has the same resolution as the input Dataset.
-        Textual options are srsString (proj4 syntax) and extentString
-        (some of the gdalwarp otpions).
-
-        Parameters: Domain(dataset) or Domain(srsString, extentString)
+        
+        d = Domain(ds):
+            Size, extent and spatial reference is copied from input GDAL dataset
+        d = Domain(srs, ext)
+            Size, extent and satial reference is given by: srs and ext
+        d = Domain(lat, lon)
+            Size, extent and satial reference is given by two grids: lat and lon
+        
+        Parameters:
         ----------
-        dataset: GDAL dataset, optional
-        srsString : string, optional
-            proj4 options [http://trac.osgeo.org/proj/]
-            (e.g."+proj=utm +zone=25 +datum=WGS84 +no_defs")
-            SPecifies spatial reference
-        extentString : string, optional
+        ds: GDAL dataset
+        srs : PROJ4 or EPSG or WKT
+            Specifies spatial reference system (SRS)
+            PROJ4: 
+            string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
+            "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
+            "+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs"
+            EPSG:
+            integer with EPSG number, [http://spatialreference.org/], e.g. 4326
+            WKT:
+            string with Well Know Text of SRS. E.g.:
+            'GEOGCS["WGS 84",
+                DATUM["WGS_1984",
+                    SPHEROID["WGS 84",6378137,298.257223563,
+                        AUTHORITY["EPSG","7030"]],
+                    TOWGS84[0,0,0,0,0,0,0],
+                    AUTHORITY["EPSG","6326"]],
+                PRIMEM["Greenwich",0,
+                    AUTHORITY["EPSG","8901"]],
+                UNIT["degree",0.0174532925199433,
+                    AUTHORITY["EPSG","9108"]],
+                AUTHORITY["EPSG","4326"]]'
+        ext : string
             some gdalwarp options [http://www.gdal.org/gdalwarp.html] +
-            additional options
+            +additional options
             Specifies extent, resolution / size
             Available options: (("-te" or "-lle") and ("-tr" or "-ts"))
             (e.g. "-lle -10 30 55 60 -ts 1000 1000" or
@@ -94,6 +115,10 @@ class Domain():
             -ts sizex sizey
             -te xmin ymin xmax ymax
             -lle lonmin latmin lonmax latmax
+        lat : Numpy array
+            Grid with latitudes
+        lon : Numpy array
+            Grid with longitudes
         name: string, optional
             Name to be added to the Domain object
         logLevel: int, optional, default=30
@@ -115,64 +140,57 @@ class Domain():
         Nansat.reproject()
         [http://www.gdal.org/gdalwarp.html]
         [http://trac.osgeo.org/proj/]
-
+        [http://spatialreference.org/]
+        [http://www.gdal.org/ogr/osr_tutorial.html]
         '''
 
-        # test input options
-        logLevel = 30
-        if 'logLevel' in kwargs:
-            logLevel = kwargs['logLevel']
+        # set default attributes
         self.logger = add_logger('Nansat', logLevel=logLevel)
+        self.name = name
+        self.latVRT = None
+        self.lonVRT = None
 
-        self.name = ''
-        if 'name' in kwargs:
-            self.name = kwargs['name']
-
-        # Domain(dataset=...) or Domain(dataset)
-        gdalDataset = None
-        if 'dataset' in kwargs:
-            gdalDataset = kwargs['dataset']
-        elif (len(args) > 0 and isinstance(args[0], gdal.Dataset)):
-            gdalDataset = args[0]
-
-        # Domain(srsString='...', extentString='...') or
-        # Domain(srsString, extentString)
-        srsString = None
-        extentString = None
-        if 'srsString' in kwargs and 'extentString' in kwargs:
-            srsString = kwargs['srsString']
-            extentString = kwargs['extentString']
-        elif (len(args) > 1 and
-              isinstance(args[0], str) and
-              isinstance(args[1], str)):
-            srsString = args[0]
-            extentString = args[1]
-
-        self.logger.debug('ds: %s' % str(gdalDataset))
-        self.logger.debug('srs: %s' % srsString)
-        self.logger.debug('ext: %s' % extentString)
+        self.logger.debug('ds: %s' % str(ds))
+        self.logger.debug('srs: %s' % srs)
+        self.logger.debug('ext: %s' % ext)
 
         # test option when only dataset is given
-        if gdalDataset is not None:
-            self.vrt = VRT(gdalDataset=gdalDataset, logLevel=logLevel)
+        if ds is not None:
+            self.vrt = VRT(gdalDataset=ds, logLevel=logLevel)
 
         # test option when proj4 and extent string are given
-        elif (srsString is not None and extentString is not None):
+        elif (srs is not None and ext is not None):
             # if XML-file and domain name is given - read that file
-            if os.path.isfile(srsString):
-                srsString, extentString, self.name = self._from_xml(
-                                                          srsString,
-                                                          extentString)
+            if os.path.isfile(srs):
+                srs, ext, self.name = self._from_xml(srs, ext)
             # import srs from srsString and get the projection
-            srs = osr.SpatialReference()
-            srs.ImportFromProj4(srsString)
-            dstWKT = srs.ExportToWkt()
-            if dstWKT == "":
-                raise ProjectionError("srsString (%s) is wrong" % (
-                                       srsString))
+            sr = osr.SpatialReference()
+            # try to use different import methods
+            # import from proj4 string
+            try:
+                status = sr.ImportFromProj4(srs)
+            except:
+                status = 1
+            # import from EPSG number
+            if status > 0:
+                try:
+                    status = sr.ImportFromEPSG(srs)
+                except:
+                    status = 1
+            # import from WKT text
+            if status > 0:
+                try:
+                    status = sr.ImportFromWkt(srs)
+                except:
+                    status = 1
+            # create WKT
+            dstWKT = sr.ExportToWkt()
+            # test success of WKT
+            if status > 0 or dstWKT == "":
+                raise ProjectionError("srs (%s) is wrong" % (srs))
 
             # create full dictionary of parameters
-            extentDic = self._create_extentDic(extentString)
+            extentDic = self._create_extentDic(ext)
 
             # convert -lle to -te
             if "lle" in extentDic.keys():
@@ -186,7 +204,22 @@ class Domain():
                                            srcRasterXSize=rasterXSize,
                                            srcRasterYSize=rasterYSize,
                                            logLevel=logLevel)
-
+        elif (lat is not None and lon is not None):
+            # create list of GCPs from given grids of lat/lon
+            srcGCPs = self._latlon2gcps(lat, lon)
+            # create latlong Projection
+            srcGCPProjection = self._latlong_srs().ExportToWkt()
+            # create VRTs to store lat/lon grids
+            self.latVRT = VRT(array=lat)
+            self.lonVRT = VRT(array=lon)
+            # create self.vrt
+            self.vrt = VRT( srcProjection='',
+                            srcRasterXSize=self.latVRT.dataset.RasterXSize,
+                            srcRasterYSize=self.latVRT.dataset.RasterYSize,
+                            srcGCPs=srcGCPs,
+                            srcGCPProjection=srcGCPProjection)
+            # add Geolocation domain to the VRT metadata
+            self._add_geolocation()
         else:
             raise OptionError("'dataset' or 'srsString and extentString' "
                               "are required")
@@ -250,7 +283,7 @@ class Domain():
             for xmlDomain in list(xmlDomains):
                 # append Domain object to domains list
                 domainName = xmlDomain.attrib['name']
-                domains.append(Domain(xmlFileName, domainName))
+                domains.append(Domain(srs=xmlFileName, ext=domainName))
 
         elif xmlFileName is None and kmlFileName is not None:
             # if only output KML-file is given
@@ -284,17 +317,63 @@ class Domain():
         kmlFile.close()
 
     def get_geolocation_grids(self):
-        '''Get longitude and latitude grids representing the full data grid'''
-        longitude = []
-        latitude = []
-        for i in range(self.vrt.dataset.RasterXSize):
-            [lo, la] = self._transform_points(
-                                [i] * self.vrt.dataset.RasterYSize,
-                                range(self.vrt.dataset.RasterYSize))
-            longitude.append(lo)
-            latitude.append(la)
-        return [longitude, latitude]
+        '''Get longitude and latitude grids representing the full data grid
+        
+        If GEOLOCATION is not present in the self.vrt.dataset then grids
+        are generated by converting pixel/line of each pixel into lat/lon
+        If GEOLOCATION is present in the self.vrt.dataset then grids are read
+        from the geolocation bands.
+        
+        Returns:
+        ========
+        longitude : numpy array
+            grid with longitudes
+        latitude  : numpy array
+            grid with latitudes
+        '''
+        # if the vrt dataset has geolocation arrays
+        if self.latVRT is not None and self.lonVRT is not None:
+            longitude = self.lonVRT.dataset.ReadAsArray()
+            latitude = self.latVRT.dataset.ReadAsArray()
+        else:
+            # create empty grids
+            longitude = np.zeros([self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize], 'float32')
+            latitude = np.zeros([self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize], 'float32')
+            # fill row-wise
+            for i in range(self.vrt.dataset.RasterXSize):
+                [lo, la] = self._transform_points(
+                                    [i] * self.vrt.dataset.RasterYSize,
+                                    range(self.vrt.dataset.RasterYSize))
+                longitude[:, i] = lo
+                latitude[:, i] = la
 
+        return longitude, latitude
+
+    def _add_geolocation(self):
+        ''' Add Geolocation domain to the metadata
+        
+        The method assumes that self.latVRT and self.lonVRT are already created
+        and keep lat/lon grids. It add Geolocation metadata which points to the 
+        VRT files of the self.latVRT and self.lonVRT
+        '''
+        xDatasetGeolocation = self.lonVRT.fileName
+        yDatasetGeolocation = self.latVRT.fileName
+        
+        self.logger.debug('x/y datasets: %s %s', xDatasetGeolocation,
+                                                 yDatasetGeolocation)
+        self.vrt.dataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('SRS', self._latlong_srs().ExportToWkt(),
+                                            'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('X_BAND', '1', 'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('X_DATASET', xDatasetGeolocation,
+                                            'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
+        self.vrt.dataset.SetMetadataItem('Y_DATASET', yDatasetGeolocation,
+                                            'GEOLOCATION')
+            
     def _convert_extentDic(self, dstWKT, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
 
@@ -766,6 +845,48 @@ class Domain():
                                     +datum=WGS84 +no_defs")
 
         return latlongSRS
+
+    def _latlon2gcps(self, lat, lon, numOfGCPs=100):
+        ''' Create list of GCPs from given grids of latitude and longitude
+        
+        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
+        Create GCPs from these pixels
+        Create latlong GCPs projection
+        
+        Parameters:
+        ===========
+        lat : Numpy grid
+            array of latitudes
+        lon : Numpy grid
+            array of longitudes (should be the same size as lat)
+        numOfGCPs : int, optional, default = 100
+            number of GCPs to create
+        
+        Returns:
+        ========
+        gcsp : List with GDAL GCPs
+        '''
+        
+        # estimate step of GCPs
+        gcpSize = np.sqrt(numOfGCPs)
+        step0 = max(1, int(float(lat.shape[0]) / gcpSize))
+        step1 = max(1, int(float(lat.shape[1]) / gcpSize))
+        self.logger.debug('gcpCount: %d %d %f %d %d', lat.shape[0], lat.shape[1], gcpSize, step0, step1)
+        
+        # generate list of GCPs
+        gcps = []
+        k = 0
+        for i0 in range(0, lat.shape[0], step0):
+            for i1 in range(0, lat.shape[1], step1):
+                # create GCP with X,Y,pixel,line from lat/lon matrices
+                gcp = gdal.GCP(float(lon[i0, i1]),
+                               float(lat[i0, i1]),
+                               0, i1, i0)
+                self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+                gcps.append(gcp)
+                k += 1
+        
+        return gcps
 
     def upwards_azimuth_direction(self):
         '''Caluculate and return upwards azimuth direction of domain.

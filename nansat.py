@@ -647,7 +647,7 @@ class Nansat(Domain):
             if dstDomain is not None:
                 watermask.reproject(dstDomain)
             elif self.vrt.dataset.GetGCPCount() == 0:
-                watermask.reproject(Domain(self.vrt.dataset,
+                watermask.reproject(Domain(ds=self.vrt.dataset,
                                     logLevel=self.logger.level))
             else:
                 watermask.reproject_on_gcp(self)
