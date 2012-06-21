@@ -161,7 +161,7 @@ class Domain():
         # test option when proj4 and extent string are given
         elif (srs is not None and ext is not None):
             # if XML-file and domain name is given - read that file
-            if os.path.isfile(srs):
+            if isinstance(srs, str) and os.path.isfile(srs):
                 srs, ext, self.name = self._from_xml(srs, ext)
             # import srs from srsString and get the projection
             sr = osr.SpatialReference()
