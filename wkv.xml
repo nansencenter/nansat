@@ -177,5 +177,6 @@
 	<wkv>
 		<standard_name>sea_ice_area_fraction</standard_name>
 		<units>1</units>
+        <minmax>0 110</minmax>
 	</wkv>
 </all_wkvs>
