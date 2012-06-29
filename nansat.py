@@ -757,7 +757,7 @@ class Nansat(Domain):
             clim = [[], []]
             for i, iBand in enumerate(bands):
                 try:
-                    defValue = (self.vrt.dataset.GetRasterBand(iBand+1).
+                    defValue = (self.vrt.dataset.GetRasterBand(iBand).
                                 GetMetadataItem("minmax").split(" "))
                 except:
                     clim = 'hist'
