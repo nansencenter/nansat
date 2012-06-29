@@ -109,7 +109,8 @@ class Nansat(Domain):
               'mapper_ncep.py',
               'mapper_radarsat2.py',
               'mapper_MOD44W.py',
-              'mapper_modisL2NRT.py'
+              'mapper_modisL2NRT.py',
+              'mapper_geostationary'
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))

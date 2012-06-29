@@ -7,6 +7,12 @@
         <colormap>gray</colormap>
     </wkv>
     <wkv>
+        <standard_name>grayscale</standard_name>
+        <long_name>grayscale</long_name>
+        <units>1</units>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
         <standard_name>eastward_wind</standard_name>
         <long_name>Eastward wind velocity</long_name>
         <units>m s-1</units>
@@ -130,6 +136,13 @@
         <long_name>Air Temperature</long_name>
         <units>celsius</units>
         <minmax>10 30</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+        <wkv>
+        <standard_name>brightness_temperature</standard_name>
+        <long_name>Brightness Temperature</long_name>
+        <units>kelvin</units>
+        <minmax>200 330</minmax>
         <colormap>jet</colormap>
     </wkv>
     <wkv>
