@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+#
+# Utility to make an 8-bit Geotiff figure for one band of a Nansat dataset
+# Scaling ("minmax") and colormap from VKW is applied
+
+import sys
+import os
+from numpy import arange
+from matplotlib import cm
+import gdal
+from nansat import Nansat
+
+tmpVRTfileName = 'tmp.VRT'
+
+def Usage():
+	sys.exit('Usage: nansat_geotiffimage <band> <input_file> <output_file>')
+
+if (len(sys.argv) <= 2):
+	Usage()
+
+try:
+	band = sys.argv[1]
+	infileName = sys.argv[2]
+	outfileName = sys.argv[3]
+except:
+	Usage()
+
+n = Nansat(infileName)
+n.vrt.export(tmpVRTfileName)
+minmax = n.vrt.dataset.GetRasterBand(int(band)).GetMetadataItem('minmax')
+
+# Apply offset and scaling if available
+try:
+	offset = float(n.vrt.dataset.GetRasterBand(int(band)).GetMetadataItem('offset'))
+	scale = float(n.vrt.dataset.GetRasterBand(int(band)).GetMetadataItem('scale'))
+	minval = float(minmax.split(" ")[0])
+	maxval = float(minmax.split(" ")[1])
+	minmax = str((minval-offset)/scale) + ' ' + str((maxval-offset)/scale)
+except:
+	pass
+
+# Create 8-bit geotiff image
+os.system('gdal_translate ' + tmpVRTfileName + ' ' + outfileName + 
+		' -b ' + band + ' -ot Byte -scale ' + minmax + ' 0 255')
+
+try:
+	colormap = n.vrt.dataset.GetRasterBand(int(band)).GetMetadataItem('colormap')
+except:
+	colormap = 'gray'
+
+if colormap == 'gray':
+	os.remove(tmpVRTfileName)
+	sys.exit()
+
+# Add colormap from WKV to the geotiff figure
+cmap = cm.get_cmap(colormap, 256)
+cmap = cmap(arange(256))*255
+colorTable = gdal.ColorTable()
+for i in range(cmap.shape[0]):
+	colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
+    	int(cmap[i, 2]), int(cmap[i, 3]))
+	colorTable.SetColorEntry(i, colorEntry)
+
+infile = gdal.Open(outfileName)
+infile.GetRasterBand(1).SetRasterColorTable(colorTable)
+
+outfile = gdal.GetDriverByName("GTiff").CreateCopy(outfileName, infile, 0)
+
+os.remove(tmpVRTfileName)
