@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def write_map(self, outputFileName, lonBorder=10., latBorder=10.,
+def write_map(self, outputFileName, lonVec = None, latVec=None,
+                                    lonBorder=10., latBorder=10.,
                                     figureSize=(6, 6), dpi=50,
                                     projection='cyl', resolution='c',
                                     continetsColor='coral',
@@ -67,8 +68,16 @@ def write_map(self, outputFileName, lonBorder=10., latBorder=10.,
         padding : float
             0., width of white padding around the map
     '''
-    # get vectors with lat/lon values
-    lonVec, latVec = self.get_border()
+    # if lat/lon vectors are not given as input
+    if lonVec is None or latVec is None or len(lonVec) != len(latVec):
+        try:
+            # get lon/lat from Domain/Nansat object
+            lonVec, latVec = self.get_border()
+        except:
+            print 'Domain/Nansat object is not given and lat/lon vectors=None'
+            return
+        
+    # convert vectors to numpy arrays
     lonVec = np.array(lonVec)
     latVec = np.array(latVec)
 
@@ -94,16 +103,26 @@ def write_map(self, outputFileName, lonBorder=10., latBorder=10.,
     bmap.fillcontinents(color=continetsColor)
     bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
     bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
+    
+    # convert input lat/lon vectors to arrays of vectors with one row if only
+    # one vector was given
+    print 'lon vec before: ', lonVec
+    if len(lonVec.shape) == 1:
+        lonVec = lonVec.reshape(1, lonVec.shape[0])
+        latVec = latVec.reshape(1, latVec.shape[0])
+    print 'lon vec after: ', lonVec
 
-    # convert lat/lons to map units
-    mapX, mapY = bmap(list(lonVec.flat), list(latVec.flat))
+    for lonSubVec, latSubVec in zip(lonVec, latVec):
+        print 'lon sub vec during: ', lonSubVec
+        # convert lat/lons to map units
+        mapX, mapY = bmap(list(lonSubVec.flat), list(latSubVec.flat))
 
-    # from x/y vectors create a Patch to be added to map
-    boundary = Polygon(zip(mapX, mapY), alpha=pAlpha, ec=pLine, fc=pColor)
+        # from x/y vectors create a Patch to be added to map
+        boundary = Polygon(zip(mapX, mapY), alpha=pAlpha, ec=pLine, fc=pColor)
 
-    # add patch to the map
-    plt.gca().add_patch(boundary)
-    plt.gca().set_aspect('auto')
+        # add patch to the map
+        plt.gca().add_patch(boundary)
+        plt.gca().set_aspect('auto')
 
     # save figure and close
     plt.savefig(outputFileName, bbox_inches='tight',
