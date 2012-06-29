@@ -97,7 +97,7 @@ class Figure():
         mask_lut: dictionary
             Look-Up-Table with colors for masking land, clouds etc. Used
             tgether            with mask_array:
-            {0, [0, 0, 0, ]1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
+            {0, [0, 0, 0, ], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
             index 0 - will have black color
                 1 - dark gray
                 2 - light gray
@@ -111,6 +111,14 @@ class Figure():
             Offset is calculated from the entire image legend inclusive
         logoSize: list of two int
             desired X,Y size of logo. If None - original size is used
+        latGrid : numpy array
+            full size array with latitudes. Used for adding lat/lon grid lines
+        lonGrid : numpy array
+            full size array with longitudes. Used for adding lat/lon grid lines
+        latlonGridSpacing : int
+            number of lat/lon grid lines to show
+        latlonLabels: int
+            number of lat/lon labels to show along each side.
 
         Advanced parameters:
         --------------------
@@ -185,10 +193,16 @@ class Figure():
         self.d['legend'] = False
         self.d['mask_array'] = None
         self.d['mask_lut'] = None
+
         self.d['logoFileName'] = None
         self.d['logoLocation'] = [0, 0]
         self.d['logoSize'] = None
 
+        self.d['latGrid'] = None
+        self.d['lonGrid'] = None        
+        self.d['latlonGridSpacing'] = 10
+        self.d['latlonLabels'] = 0
+                
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
         self.d['CBAR_HEIGHT'] = 0.15
@@ -202,7 +216,7 @@ class Figure():
         self.d['NAME_LOCATION_X'] = 0.1
         self.d['NAME_LOCATION_Y'] = 0.3
         self.d['DEFAULT_EXTENSION'] = ".png"
-
+        
         # default values which are set when input values are not correct
         self._cmapName = 'jet'
 
@@ -215,6 +229,12 @@ class Figure():
 
         self.extensionList = ["png", "PNG", "tif", "TIF", "bmp",
                               "BMP", "jpg", "JPG", "jpeg", "JPEG"]
+
+        # set fonts for Legend
+        self.fontFileName = os.path.join(os.path.dirname(
+                                     os.path.realpath(__file__)),
+                                     'fonts/times.ttf')
+
 
     def apply_logarithm(self, **kwargs):
         '''Apply a tone curve to the array
@@ -339,6 +359,101 @@ class Figure():
         self.pilImg = self.pilImg.convert("RGB")
         self.pilImg.paste(logoImg, tuple(box))
 
+    def add_latlon_grids(self, **kwargs):
+        '''Add lat/lon grid lines into the PIL image
+
+        Compute step of the grid
+        Make matrices with binarized lat/lon
+        Find edge (make line)
+        Convert to maks
+        Add mask to PIL
+        
+        Parameters:
+        ----------
+        Any of Figure__init__() parameters:
+        latGrid : numpy array
+            array with values of latitudes
+        lonGrid : numpy array
+            array with values of longitudes
+        latlonGridSpacing : int
+            number of lines to draw
+
+        Modifies:
+        ---------
+            self.pilImg
+        '''
+        # modify default values
+        self._set_defaults(kwargs)
+        # test availability of grids
+        if (self.d['latGrid'] is None or
+            self.d['lonGrid'] is None or
+            self.d['latlonGridSpacing'] is None or
+            self.d['latlonGridSpacing'] == 0):
+            return
+        # get number of grid lines
+        llSpacing = self.d['latlonGridSpacing']
+        # get vectors for grid lines
+        latVec = np.linspace(self.d['latGrid'].min(), self.d['latGrid'].max(), llSpacing)
+        lonVec = np.linspace(self.d['lonGrid'].min(), self.d['lonGrid'].max(), llSpacing)
+        latI = np.zeros(self.d['latGrid'].shape, 'int8')
+        lonI = np.zeros(self.d['latGrid'].shape, 'int8')
+        # convert lat/lon to indeces
+        for i in range(len(latVec)):
+            latI[self.d['latGrid'] > latVec[i]] = i
+            lonI[self.d['lonGrid'] > lonVec[i]] = i
+        # find pixels on the rgid lines (binarize)
+        latI = np.diff(latI)
+        lonI = np.diff(lonI)
+        # make grid from both lat and lon
+        latI += lonI
+        latI[latI != 0] = 1
+        # add mask to the image
+        self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
+
+    def add_latlon_labels(self, **kwargs):
+        '''Add lat/lon labels along upper and left side
+
+        Compute step of lables
+        Get lat/lon for these labels from latGrid, lonGrid
+        Print lables to PIL
+        
+        Parameters:
+        ----------
+        Figure__init__() parameters:
+        latGrid : numpy array
+        lonGrid : numpy array
+        latlonLabels: int
+
+        Modifies:
+        ---------
+            self.pilImg
+        '''
+        # modify default values
+        self._set_defaults(kwargs)
+        # test availability of grids
+        if (self.d['latGrid'] is None or
+            self.d['lonGrid'] is None or
+            self.d['latlonLabels'] == 0):
+            return
+        
+        draw = ImageDraw.Draw(self.pilImg)
+        font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
+        
+        # get number of labels; step of lables
+        llLabels = self.d['latlonLabels']
+        llShape = self.d['latGrid'].shape
+        latI = range(0, llShape[0], (llShape[0]/llLabels)-1)
+        lonI = range(0, llShape[1], (llShape[1]/llLabels)-1)
+        # get lons/lats from first row/column
+        #lats = self.d['latGrid'][latI, 0]
+        #lons = self.d['lonGrid'][0, lonI]
+        for i in range(len(latI)):
+            lat = self.d['latGrid'][latI[i], 0]
+            lon = self.d['lonGrid'][0, lonI[i]]
+            draw.text((0, 10+latI[i]), '%4.2f' % lat, fill=255, font=font)
+            draw.text((50+lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
+        
+        
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
 
@@ -463,11 +578,6 @@ class Figure():
                                       self.d['LEGEND_HEIGHT'])), 255)
         draw = ImageDraw.Draw(self.pilImgLegend)
 
-        # set fonts for Legend
-        fileName_font = os.path.join(os.path.dirname(
-                                     os.path.realpath(__file__)),
-                                     'fonts/times.ttf')
-
         # set black color
         if self.array.shape[0] == 1:
             black = 254
@@ -499,7 +609,7 @@ class Figure():
                         self.d['cmin'][0]) + self.d['cmin'][0])
             scaleArray = map(self._round_number, scaleArray)
             # set fonts size for colorbar
-            font = ImageFont.truetype(fileName_font, self.d['fontSize'])
+            font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
             # draw scales and lines on the legend pilImage
             for iTick in range(self.d['numOfTicks']):
                 coordX = int(scaleLocation[iTick] *
@@ -519,9 +629,6 @@ class Figure():
                            self.d['CBAR_HEIGHT'])) +
                            self.d['CBAR_LOCATION_ADJUST_Y'])
                 draw.text(box, scaleArray[iTick], fill=black, font=font)
-
-        # set font size for text
-        font = ImageFont.truetype(fileName_font, self.d['fontSize'])
 
         # draw longname and units
         box = (int(self.pilImgLegend.size[0] * self.d['NAME_LOCATION_X']),
@@ -586,7 +693,7 @@ class Figure():
             self.pilImg.paste(self.pilImgLegend, (0, self.height))
 
         # remove array from memory
-        self.array = None
+        #self.array = None
 
     def process(self, **kwargs):
         '''Do all common operations for preparation of a figure for saving
@@ -633,6 +740,10 @@ class Figure():
         # apply colored mask (land mask, cloud mask and something else)
         if self.d['mask_array'] is not None and self.d['mask_lut'] is not None:
             self.apply_mask()
+        
+        # add lat/lon grids lines if latGrid and lonGrid are given
+        if self.d['latGrid'] is not None and self.d['lonGrid'] is not None:
+            self.add_latlon_grids()
 
         # append legend
         if self.d['legend']:
@@ -640,6 +751,12 @@ class Figure():
 
         # create PIL image ready for saving
         self.create_pilImage()
+
+        # add labels with lats/lons
+        if (self.d['latGrid'] is not None and
+            self.d['lonGrid'] is not None and
+            self.d['latlonLabels'] > 0):
+            self.add_latlon_labels()
 
         # add logo
         if self.d['logoFileName'] is not None:

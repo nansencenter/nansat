@@ -116,6 +116,8 @@ class Nansat(Domain):
 
         # set input file name
         self.fileName = fileName
+        self.latVRT = None
+        self.lonVRT = None
 
         # create self from a file using mapper or...
         if fileName != "":
