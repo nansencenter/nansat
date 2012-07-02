@@ -10,26 +10,26 @@ import Image
 from nansat import Nansat
 
 def Usage():
-	sys.exit('Usage: nansat_show <band_number> <input filename> [<output_file>]')
-	
+    sys.exit('Usage: nansat_show <band_number> <input filename> [<output_file>]')
+    
 if (len(sys.argv) < 3):
-	Usage()
+    Usage()
 
 bandNo = int(sys.argv[1])
 try:
-	n = Nansat(sys.argv[2])
+    n = Nansat(sys.argv[2])
 except:
-	Usage()
+    Usage()
 
 try:
-	outfile = sys.argv[3]
-	delete = False
+    outfile = sys.argv[3]
+    delete = False
 except:
-	outfile = 'tmp.png'
-	delete = True
+    outfile = 'tmp.png'
+    delete = True
 
 n.write_figure(outfile, bandNo, legend=True, cmapName='jet')
 Image.open(outfile).show()
 
 if delete:
-	os.remove(outfile)
+    os.remove(outfile)

@@ -6,7 +6,7 @@
 import sys
 
 if (len(sys.argv) != 2):
-	sys.exit('Usage: nansatinfo <filename>')
+    sys.exit('Usage: nansatinfo <filename>')
 
 from nansat import Nansat
 n = Nansat(sys.argv[1])

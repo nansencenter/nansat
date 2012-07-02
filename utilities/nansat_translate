@@ -11,7 +11,7 @@ import os
 tmpfile = 'test.VRT'
 
 if (len(sys.argv) <= 2):
-	sys.exit('Usage: nansat_translate <input_file> <output_file> <gdal_translate options>')
+    sys.exit('Usage: nansat_translate <input_file> <output_file> <gdal_translate options>')
 
 outfile = sys.argv[2]
 options = " ".join(sys.argv[3:])
