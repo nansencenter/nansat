@@ -74,9 +74,9 @@ class Node(object):
     '''
 
     def __init__(self, tag, value=None, **attributes):
-    '''Everything is a Node. The XML is maintained as (very efficient)
-    Python objects until an XML representation is needed.
-    '''
+        '''Everything is a Node. The XML is maintained as (very efficient)
+        Python objects until an XML representation is needed.
+        '''
         self.tag = tag.strip()
         self.attributes = attributes
         self.children = []
