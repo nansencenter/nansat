@@ -177,7 +177,7 @@ class VRT():
         randomChars = ''.join(choice(allChars) for x in range(10))
         return '/vsimem/%s.%s' % (randomChars, extention)
 
-    def _create_bands(self, metaDict):
+    def _create_bands(self, metaDict, bandSize={}):
         ''' Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
 
@@ -204,10 +204,10 @@ class VRT():
         '''
         for bandDict in metaDict:
             self._create_band(bandDict["source"], bandDict["sourceBand"],
-                              bandDict["wkv"], bandDict["parameters"])
+                              bandDict["wkv"], bandDict["parameters"], bandSize)
         return
 
-    def _create_band(self, source, sourceBands, wkv, parameters):
+    def _create_band(self, source, sourceBands, wkv, parameters, bandSize={}):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
 
@@ -263,10 +263,16 @@ class VRT():
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
         md = {}
+        if bandSize=={}:
+            rasterXSize=self.dataset.RasterXSize
+            rasterYSize=self.dataset.RasterYSize
+        else:
+            rasterXSize=bandSize["XSize"]
+            rasterYSize=bandSize["YSize"]
         for i in range(len(sourceBands)):
             bandSource = self.SimpleSource.substitute(
-                                XSize=self.dataset.RasterXSize,
-                                YSize=self.dataset.RasterYSize,
+                                XSize=rasterXSize,
+                                YSize=rasterYSize,
                                 BlockXSize=blockXSize,
                                 BlockYSize=blockYSize,
                                 DataType=dataType,
@@ -396,9 +402,9 @@ class VRT():
         gdal.VSIFWriteL(array.tostring(), len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
         array = None
-        
+
         self.logger.debug('arrayDType: %s', arrayDType)
-        
+
         #create conents of VRT-file pointing to the binary file
         dataType = {"uint8": "Byte", "int8": "Byte",
                     "uint16": "UInt16", "int16": "Int16",
@@ -410,9 +416,9 @@ class VRT():
                     "UInt32": "4", "Int32": "4",
                     "Float32": "4","Float64": "8",
                     "CFloat64": "8"}.get(dataType)
-        
+
         self.logger.debug('DataType: %s', dataType)
-        
+
         lineOffset = str(int(pixelOffset)*arrayShape[1])
         contents = self.RawRasterBandSource.substitute(
                                         XSize=arrayShape[1],
