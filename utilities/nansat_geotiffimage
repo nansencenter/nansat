@@ -27,7 +27,12 @@ except:
 
 n = Nansat(infileName)
 n.vrt.export(tmpVRTfileName)
+
 minmax = n.vrt.dataset.GetRasterBand(int(band)).GetMetadataItem('minmax')
+# Get min and max from band histogram if not given (from wkv)
+if minmax is None:
+    (rmin, rmax) = n.vrt.dataset.GetRasterBand(int(band)).ComputeRasterMinMax(1)
+    minmax = str(rmin) + ' ' + str(rmax)
 
 # Apply offset and scaling if available
 try:
