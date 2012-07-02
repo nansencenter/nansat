@@ -27,10 +27,56 @@ import re
 
 class Node(object):
     '''
-    Everything is a Node. The XML is maintained as (very efficient)
+    Rapidly assemble XML using minimal coding.
+
+    By Bruce Eckel, (c)2006 MindView Inc. www.MindView.net
+    Permission is granted to use or modify without payment as 
+    long as this copyright notice is retained.
+    
+    Everything is a Node, and each Node can either have a value 
+    or subnodes. Subnodes can be appended to Nodes using '+=', 
+    and a group of Nodes can be strung together using '+'.
+    
+    Create a node containing a value by saying 
+    Node("tag", "value")
+    You can also give attributes to the node in the constructor:
+    Node("tag", "value", attr1 = "attr1", attr2 = "attr2")
+    or without a value:
+    Node("tag", attr1 = "attr1", attr2 = "attr2")
+    
+    To produce xml from a finished Node n, say n.xml() (for 
+    nicely formatted output) or n.rawxml().
+    
+    You can read and modify the attributes of an xml Node using 
+    getAttribute(), setAttribute(), or delAttribute().
+    
+    You can find the value of the first subnode with tag == "tag"
+    by saying n["tag"]. If there are multiple instances of n["tag"],
+    this will only find the first one, so you should use node() or
+    nodeList() to narrow your search down to a Node that only has
+    one instance of n["tag"] first.
+    
+    You can replace the value of the first subnode with tag == "tag"
+    by saying n["tag"] = newValue. The same issues exist as noted
+    in the above paragraph.
+    
+    You can find the first node with tag == "tag" by saying 
+    node("tag"). If there are multiple nodes with the same tag 
+    at the same level, use nodeList("tag").
+    
+    The Node class is also designed to create a kind of "domain 
+    specific language" by subclassing Node to create Node types 
+    specific to your problem domain.
+    
+    This implementation uses xml.dom.minidom which is available
+    in the standard Python 2.4 library. However, it can be 
+    retargeted to use other XML libraries without much effort.
+    '''
+
+    def __init__(self, tag, value=None, **attributes):
+    '''Everything is a Node. The XML is maintained as (very efficient)
     Python objects until an XML representation is needed.
     '''
-    def __init__(self, tag, value=None, **attributes):
         self.tag = tag.strip()
         self.attributes = attributes
         self.children = []
