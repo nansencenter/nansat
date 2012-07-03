@@ -344,9 +344,9 @@ class Nansat(Domain):
         for iNode in node0.nodeList("VRTRasterBand"):
             iNode.node("DstRect").replaceAttribute("xSize", str(rasterXSize))
             iNode.node("DstRect").replaceAttribute("ySize", str(rasterYSize))
-            # if method="average", overwrite "SimpleSource" to "AveragedSource"
+            # if method="average", overwrite "ComplexSource" to "AveragedSource"
             if method == "average":
-                iNode.replaceTag("SimpleSource", "AveragedSource")
+                iNode.replaceTag("ComplexSource", "AveragedSource")
 
         # Edit GCPs to correspond to the downscaled size
         if node0.node("GCPList"):

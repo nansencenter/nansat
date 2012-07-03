@@ -41,8 +41,8 @@ class VRT():
     writing, etc.
     All mapper inherit from VRT
     '''
-    SimpleSource = Template('''
-            <SimpleSource>
+    ComplexSource = Template('''
+            <ComplexSource>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
                 <SourceBand>$SourceBand</SourceBand>
                 <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
@@ -50,7 +50,7 @@ class VRT():
                         BlockYSize="$BlockYSize"/>
                 <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-            </SimpleSource> ''')
+            </ComplexSource> ''')
 
     RawRasterBandSource = Template('''
             <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
@@ -270,7 +270,7 @@ class VRT():
             rasterXSize=bandSize["XSize"]
             rasterYSize=bandSize["YSize"]
         for i in range(len(sourceBands)):
-            bandSource = self.SimpleSource.substitute(
+            bandSource = self.ComplexSource.substitute(
                                 XSize=rasterXSize,
                                 YSize=rasterYSize,
                                 BlockXSize=blockXSize,
