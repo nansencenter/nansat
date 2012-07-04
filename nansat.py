@@ -110,7 +110,8 @@ class Nansat(Domain):
               'mapper_radarsat2.py',
               'mapper_MOD44W.py',
               'mapper_modisL2NRT.py',
-              'mapper_geostationary'
+              'mapper_geostationary',
+              'mapper_landsat.py'
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -938,21 +939,21 @@ class Nansat(Domain):
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = gdal.Open(self.fileName)
-        if (gdalDataset is None) or (gdalDataset == ""):
-            raise GDALError("Nansat._get_,apper(): Cannot get the dataset from"
-                            + self.fileName)
-        # gete metadata from the GDAL dataset
-        metadata = gdalDataset.GetMetadata()
+        if gdalDataset is not None:
+            # get metadata from the GDAL dataset
+            metadata = gdalDataset.GetMetadata()
+        else:
+            metadata = None
 
         # add the given mapper first
         self.mapperList = ['mapper_' + mapperName] + self.mapperList
 
-        # try to import and get VRT datasaet from all mappers. Break on success
-        # if none of the mappers worked - None is returned
+        # try to import and get VRT datasaet from all mappers. Break on success.
+        # If none of the mappers worked - try generic gdal.Open
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL2NRT')
+        mapper_module = __import__('mapper_landsat')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata, logLevel=self.logger.level)
         """
@@ -974,7 +975,7 @@ class Nansat(Domain):
                 pass
         # """
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
-        if tmpVRT is None:
+        if tmpVRT is None and gdalDataset is not None:
             self.logger.info('No mapper fits!')
             tmpVRT = VRT(vrtDataset=gdalDataset, logLevel=self.logger.level)
 
