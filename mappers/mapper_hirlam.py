@@ -20,9 +20,9 @@ class Mapper(VRT):
 
         metaDict = [\
                     {'source': fileName, 'sourceBand': 2, 'wkv': 'eastward_wind', 
-                        'parameters':{'band_name': 'east_wind', 'height': '10 m'}},
+                        'parameters':{'band_name': 'east_wind', 'height': '10 m'}, 'NODATA': 9999},
                     {'source': fileName, 'sourceBand': 3, 'wkv': 'northward_wind',
-                        'parameters':{'band_name': 'north_wind', 'height': '10 m'}},
+                        'parameters':{'band_name': 'north_wind', 'height': '10 m'}, 'NODATA': 9999},
                     {'source': fileName, 'sourceBand': [2,3], 'wkv': 'wind_speed', 
                         'parameters':{'band_name': 'windspeed', 'height': '10 m', 'pixel_function': 'UVToMagnitude'}},
                     {'source': fileName, 'sourceBand': [2,3], 'wkv': 'wind_from_direction', 

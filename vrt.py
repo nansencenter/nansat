@@ -47,6 +47,8 @@ class VRT():
                 <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
                         DataType="$DataType" BlockXSize="$BlockXSize"
                         BlockYSize="$BlockYSize"/>
+                <NODATA>$NODATA</NODATA>
+                <LUT>$LUT</LUT>
                 <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </ComplexSource> ''')
@@ -202,11 +204,19 @@ class VRT():
 
         '''
         for bandDict in metaDict:
+            if 'NODATA' in bandDict:
+                NODATA=bandDict["NODATA"]
+            else:
+                NODATA=""
+            if 'LUT' in bandDict:
+                LUT=bandDict["LUT"]
+            else:
+                LUT=""
             self._create_band(bandDict["source"], bandDict["sourceBand"],
-                              bandDict["wkv"], bandDict.get("parameters", {}), bandSize)
+                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, bandSize)
         return
 
-    def _create_band(self, source, sourceBands, wkv, parameters, bandSize={}):
+    def _create_band(self, source, sourceBands, wkv, parameters, NODATA, LUT, bandSize={}):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
 
@@ -274,6 +284,8 @@ class VRT():
                                 YSize=rasterYSize,
                                 BlockXSize=blockXSize,
                                 BlockYSize=blockYSize,
+                                NODATA=NODATA,
+                                LUT=LUT,
                                 DataType=dataType,
                                 Dataset=source[i], SourceBand=sourceBands[i])
 

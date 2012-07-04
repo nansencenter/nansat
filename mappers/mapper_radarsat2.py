@@ -73,7 +73,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
             Domain(ds=gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
             + 90, 360)))
-
+        
         # Experimental feature for the Radarsat2-mapper:
         # Rationale:
         # - to convert sigma0 from HH-pol to VV-pol we can use the
@@ -106,12 +106,14 @@ class Mapper(VRT):
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize, 
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
+                    NODATA="", LUT="",
                     SourceBand=sourceBandHH,
                     Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
             md['source_1'] = self.ComplexSource.substitute(
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32, 
+                    NODATA="", LUT="",
                     SourceBand=sourceBandInci, 
                     Dataset='/vsimem/vsi_original.vrt')
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')
