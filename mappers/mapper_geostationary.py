@@ -49,8 +49,6 @@ class Mapper(VRT):
                     print "No LUT found"
                     LUT = [""]*len(wavelengths)
 
-        print LUT
-        print "ostekake"
         if wavelengths is None:
             raise AttributeError("No Eumetcast geostationary satellite");
         
@@ -84,7 +82,7 @@ class Mapper(VRT):
                       
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, logLevel=logLevel);
-        print "smalahove"
+
         # Create bands
         self._create_bands(metaDict)
 
