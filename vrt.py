@@ -30,8 +30,7 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import add_logger, Node, openXML
-
+from nansat_tools import add_logger, Node
 
 class VRT():
     '''VRT dataset management
@@ -204,7 +203,7 @@ class VRT():
         '''
         for bandDict in metaDict:
             self._create_band(bandDict["source"], bandDict["sourceBand"],
-                              bandDict["wkv"], bandDict["parameters"], bandSize)
+                              bandDict["wkv"], bandDict.get("parameters", {}), bandSize)
         return
 
     def _create_band(self, source, sourceBands, wkv, parameters, bandSize={}):
@@ -343,7 +342,7 @@ class VRT():
         # fetch band information corresponding to the fileType
         fileName_wkv = os.path.join(os.path.dirname(
                                     os.path.realpath(__file__)), "wkv.xml")
-        node0 = Node.create(openXML(fileName_wkv))
+        node0 = Node.create(fileName_wkv)
         wkvDict = {}
         for iNode in node0.nodeList("wkv"):
             tagsList = iNode.tagList()

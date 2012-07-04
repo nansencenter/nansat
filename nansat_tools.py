@@ -18,8 +18,9 @@
 
 from math import atan2, sin, cos, radians, degrees
 from scipy import mod
-from xml.dom.minidom import getDOMImplementation, parseString, parse
 
+from xml.dom.minidom import getDOMImplementation, parseString, parse
+from os import path
 import logging
 import copy
 import re
@@ -243,12 +244,16 @@ class Node(object):
         a string representation of an XML doc, or a dom.
         '''
         if isinstance(dom, str):
-            # Strip all extraneous whitespace so that
-            # text input is handled consistently:
-            dom = re.sub("\s+", " ", dom)
-            dom = dom.replace("> ", ">")
-            dom = dom.replace(" <", "<")
-            return Node.create(parseString(dom))
+            if path.exists(dom):
+                # parse input file
+                dom = parse(dom)
+            else:
+                # Strip all extraneous whitespace so that
+                # text input is handled consistently:
+                dom = re.sub("\s+", " ", dom)
+                dom = dom.replace("> ", ">")
+                dom = dom.replace(" <", "<")
+                return Node.create(parseString(dom))
         if dom.nodeType == dom.DOCUMENT_NODE:
             return Node.create(dom.childNodes[0])
         if dom.nodeName == "#text":
@@ -265,10 +270,6 @@ class Node(object):
                 if subnode:
                     node += subnode
         return node
-
-def openXML(fileName):
-    '''Open file '''
-    return parse(fileName)
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
