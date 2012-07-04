@@ -106,14 +106,11 @@ def write_map(self, outputFileName, lonVec = None, latVec=None,
     
     # convert input lat/lon vectors to arrays of vectors with one row if only
     # one vector was given
-    print 'lon vec before: ', lonVec
     if len(lonVec.shape) == 1:
         lonVec = lonVec.reshape(1, lonVec.shape[0])
         latVec = latVec.reshape(1, latVec.shape[0])
-    print 'lon vec after: ', lonVec
 
     for lonSubVec, latSubVec in zip(lonVec, latVec):
-        print 'lon sub vec during: ', lonSubVec
         # convert lat/lons to map units
         mapX, mapY = bmap(list(lonSubVec.flat), list(latSubVec.flat))
 

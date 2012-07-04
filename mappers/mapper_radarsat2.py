@@ -14,17 +14,26 @@ from numpy import mod
 
 from vrt import *
 from domain import Domain
+import tarfile
 
+import gdal
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
         ''' Create Radarsat2 VRT '''
+        fPathName, fExt = os.path.splitext(fileName)
+        if fExt == '.ZIP' or fExt == '.zip':
+            fPath, fName = os.path.split(fPathName)
+            fileName = '/vsizip/%s/%s' % (fileName, fName)
+            gdalDataset = gdal.Open(fileName)
+            gdalMetadata = gdalDataset.GetMetadata()
+            
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
 
         #if it is not RADARSAT-2, return
-        if product!= 'RADARSAT-2':
+        if product != 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER");
 
         #define dictionary of metadata and band specific parameters
