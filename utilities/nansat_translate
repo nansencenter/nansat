@@ -8,7 +8,7 @@
 import sys
 import os
 
-tmpfile = 'test.VRT'
+tmpfile = 'nansat_translate_test.VRT'
 
 if (len(sys.argv) <= 2):
     sys.exit('Usage: nansat_translate <input_file> <output_file> <gdal_translate options>')
@@ -20,3 +20,4 @@ from nansat import Nansat
 n = Nansat(sys.argv[1])
 n.vrt.export(tmpfile)
 os.system('gdal_translate ' + tmpfile + ' ' + outfile + ' ' + options)
+os.remove(tmpfile)

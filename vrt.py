@@ -258,6 +258,9 @@ class VRT():
         srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
         blockXSize, blockYSize = srcRasterBand.GetBlockSize()
         dataType = srcRasterBand.DataType
+        # If we apply LUT, we must allow Byte values to be mapped into floats
+        if LUT <> "" and dataType == gdal.GDT_Byte: 
+            dataType = gdal.GDT_Float32
 
         # Create band
         if "pixel_function" in parameters:

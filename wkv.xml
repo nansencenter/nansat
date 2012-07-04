@@ -13,6 +13,13 @@
         <colormap>gray</colormap>
     </wkv>
     <wkv>
+        <standard_name>albedo</standard_name>
+        <long_name>Albedo</long_name>
+        <units>percent</units>
+        <minmax>0 100</minmax>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
         <standard_name>eastward_wind</standard_name>
         <long_name>Eastward wind velocity</long_name>
         <units>m s-1</units>
@@ -142,7 +149,7 @@
         <standard_name>brightness_temperature</standard_name>
         <long_name>Brightness Temperature</long_name>
         <units>kelvin</units>
-        <minmax>200 330</minmax>
+        <minmax>230 330</minmax>
         <colormap>jet</colormap>
     </wkv>
     <wkv>
