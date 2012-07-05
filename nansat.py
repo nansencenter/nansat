@@ -132,8 +132,14 @@ class Nansat(Domain):
         if fileName != "":
             # Get oroginal VRT object with mapping of variables
             self.raw = self._get_mapper(mapperName)
+            """ test
+            projection = self.raw.dataset.GetGCPProjection()
+            self.raw.dataset.SetProjection(projection.replace("&quot;",","))
+            #self.raw.dataset.SetProjection(projection)
+            """
             # Set current VRT object
             self.vrt = self.raw.copy()
+
         # create using array, domain, and parameters
         else:
             # Get vrt from domain
@@ -142,7 +148,7 @@ class Nansat(Domain):
             self.add_band(array, wkv, parameters)
 
         self.logger.debug('Object created from %s ' % self.fileName)
-    
+
     def __getitem__(self, bandNo):
         ''' Returns the band as a NumPy array, by overloading []
         Parameters:
@@ -182,11 +188,11 @@ class Nansat(Domain):
 
     def add_band(self, array, wkv="", p=None):
         '''Add band from the array to self.vrt
-        
+
         Create VRT object which contains VRT and RAW binary file and append it
         to self.addedBands
         Create new band in self.raw which points to this vrt
-        
+
         NB!: Adding band is possible to raw (nonprojected, nonresized) images
         only. Adding band will cancel any previous repoject() or resize()
 
@@ -264,7 +270,7 @@ class Nansat(Domain):
             tmpVrt.dataset.SetMetadataItem("gcpProjection",
                                             self.vrt.dataset.
                                             GetGCPProjection().
-                                            replace('"', "&quot;"))
+                                            replace(",", "|").replace('"', "&quat;"))
         except:
             self.logger.warning("Unable to get projection for netcdf")
 
@@ -277,7 +283,7 @@ class Nansat(Domain):
                 bandMetadata['NETCDF_VARNAME'] = bandMetadata["band_name"]
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
-                                    % iBand)
+                                    % (iBand+1))
             # remove unwanted metadata
             for rmMeta in rmMetadata:
                 try:
@@ -955,7 +961,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL2NRT')
+        mapper_module = __import__('mapper_NetCDF')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -974,12 +980,11 @@ class Nansat(Domain):
                 break
             except:
                 pass
-        # """
+        #"""
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
             self.logger.info('No mapper fits!')
             tmpVRT = VRT(vrtDataset=gdalDataset)
-
         return tmpVRT
 
     def _get_pixelValue(self, val, defVal):
