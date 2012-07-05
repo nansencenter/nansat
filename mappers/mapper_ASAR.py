@@ -5,7 +5,7 @@
 # Author:      Knut-Frode
 #
 # Created:     13.12.2011
-# Copyright:   
+# Copyright:
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from vrt import VRT
@@ -15,7 +15,7 @@ class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1 '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
-        
+
         product = gdalMetadata.get("MPH_PRODUCT", "Not_ASAR")
 
         if product[0:4] != "ASA_":
@@ -30,7 +30,7 @@ class Mapper(VRT, Envisat):
                          'pass': gdalMetadata['SPH_PASS'],
                          'warning': 'fake sigma0, not yet calibrated'}}];
 
-            
+
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);
 
