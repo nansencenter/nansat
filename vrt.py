@@ -41,7 +41,7 @@ class VRT():
     All mapper inherit from VRT
     '''
     ComplexSource = Template('''
-            <ComplexSource>
+            <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
                 <SourceBand>$SourceBand</SourceBand>
                 <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
@@ -51,7 +51,7 @@ class VRT():
                 <LUT>$LUT</LUT>
                 <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-            </ComplexSource> ''')
+            </$SourceType> ''')
 
     RawRasterBandSource = Template('''
             <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
@@ -204,19 +204,16 @@ class VRT():
 
         '''
         for bandDict in metaDict:
-            if 'NODATA' in bandDict:
-                NODATA=bandDict["NODATA"]
-            else:
-                NODATA=""
-            if 'LUT' in bandDict:
-                LUT=bandDict["LUT"]
-            else:
-                LUT=""
+            # get values or set default
+            NODATA = bandDict.get("NODATA", "")
+            LUT = bandDict.get("LUT", "")
+            SourceType = bandDict.get('SourceType', 'ComplexSource')
+                
             self._create_band(bandDict["source"], bandDict["sourceBand"],
-                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, bandSize)
+                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType, bandSize)
         return
 
-    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", bandSize=None):
+    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource', bandSize=None):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
         '''
@@ -282,6 +279,7 @@ class VRT():
             rasterYSize=bandSize["YSize"]
         for i in range(len(sourceBands)):
             bandSource = self.ComplexSource.substitute(
+                                SourceType=SourceType,
                                 XSize=rasterXSize,
                                 YSize=rasterYSize,
                                 BlockXSize=blockXSize,
