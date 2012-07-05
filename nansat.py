@@ -21,7 +21,6 @@ import dateutil.parser
 from domain import Domain
 from vrt import *
 from figure import *
-import nansat_tools
 
 from nansat_tools import add_logger, Node
 
@@ -245,7 +244,7 @@ class Nansat(Domain):
 
         '''
         # Get the node from the XML content
-        node0 = nansat_tools.Node.create(self.vrt.read_xml())
+        node0 = Node.create(self.vrt.read_xml())
 
         # Change the element from GDAL datatype to NetCDF data type
         for iBand in node0.nodeList("VRTRasterBand"):
@@ -339,7 +338,7 @@ class Nansat(Domain):
         # Get XML content from VRT-file
         vrtXML = self.vrt.read_xml()
 
-        node0 = nansat_tools.Node.create(vrtXML)
+        node0 = Node.create(vrtXML)
         rasterXSize = int(float(node0.getAttribute("rasterXSize")) * factor)
         rasterYSize = int(float(node0.getAttribute("rasterYSize")) * factor)
         self.logger.info('New size/factor: (%f, %f)/%f' %
@@ -582,7 +581,7 @@ class Nansat(Domain):
         # read XML content from VRT
         tmpVRTXML = tmpVRT.read_xml()
         # find and remove GeoTransform
-        node0 = nansat_tools.Node.create(tmpVRTXML)
+        node0 = Node.create(tmpVRTXML)
         node1 = node0.delNode("GeoTransform")
 
         # Write the modified elemements back into temporary VRT
@@ -956,7 +955,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_radarsat2')
+        mapper_module = __import__('mapper_modisL2NRT')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1011,7 +1010,7 @@ class Nansat(Domain):
 
         '''
         invGeotransform = gdal.InvGeoTransform(geoTransform)
-        node0 = nansat_tools.Node.create(vrtXML)
+        node0 = Node.create(vrtXML)
 
         node0.replaceAttribute("rasterXSize", str(rasterXSize))
         node0.replaceAttribute("rasterYSize", str(rasterYSize))
