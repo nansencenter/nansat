@@ -216,11 +216,10 @@ class VRT():
                     bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, bandSize)
         return
 
-    def _create_band(self, source, sourceBands, wkv, parameters, NODATA=None, LUT=None, bandSize=None):
+    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", bandSize=None):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
         '''
-        print 'bandSize', bandSize
         # Make sure sourceBands and source are lists, ready for loop
         # There will be a single sourceBand for regular bands,
         # but several for bands which are pixel functions
@@ -258,6 +257,7 @@ class VRT():
         srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
         blockXSize, blockYSize = srcRasterBand.GetBlockSize()
         dataType = srcRasterBand.DataType
+
         # If we apply LUT, we must allow Byte values to be mapped into floats
         if LUT <> "" and dataType == gdal.GDT_Byte: 
             dataType = gdal.GDT_Float32
@@ -269,8 +269,7 @@ class VRT():
         else:
             options = []
         self.dataset.AddBand(dataType, options=options)
-        dstRasterBand = self.dataset.GetRasterBand(
-                                        self.dataset.RasterCount)
+        dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
@@ -306,8 +305,6 @@ class VRT():
         dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
         dstRasterBand = self._put_metadata(dstRasterBand, parameters)
         self.dataset.FlushCache()
-
-        return
 
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands

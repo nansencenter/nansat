@@ -88,10 +88,9 @@ class Mapper(VRT):
                                 }
                         metaEntry['parameters']['scale'] = slope
                         metaEntry['parameters']['offset'] = intercept
-            self.logger.debug(metaEntry)
+            self.logger.debug('metaEntry %s' % metaEntry)
             if metaEntry is not None:
                 metaDict.append(metaEntry)
-        self.logger.debug(metaDict)
         
         self.logger.debug('metaDict: %s' % metaDict)
         
