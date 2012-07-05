@@ -176,7 +176,7 @@ class VRT():
         randomChars = ''.join(choice(allChars) for x in range(10))
         return '/vsimem/%s.%s' % (randomChars, extention)
 
-    def _create_bands(self, metaDict, bandSize={}):
+    def _create_bands(self, metaDict, bandSize=None):
         ''' Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
 
@@ -192,6 +192,8 @@ class VRT():
             The corresponding parameters are added as metadata to the band
         parameters: dictionary
             metadata to be added to the band: {key: value}
+        bandSize: dict
+            {'XSize': int, 'YSize': int}: dctionary with size of bands
 
         If one of the latter parameter keys is "pixel_function", this
         band will be a pixel function defined by the corresponding name/value.
@@ -214,11 +216,11 @@ class VRT():
                     bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, bandSize)
         return
 
-    def _create_band(self, source, sourceBands, wkv, parameters, NODATA, LUT, bandSize={}):
+    def _create_band(self, source, sourceBands, wkv, parameters, NODATA=None, LUT=None, bandSize=None):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
-
         '''
+        print 'bandSize', bandSize
         # Make sure sourceBands and source are lists, ready for loop
         # There will be a single sourceBand for regular bands,
         # but several for bands which are pixel functions
@@ -273,7 +275,7 @@ class VRT():
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
         md = {}
-        if bandSize=={}:
+        if bandSize is None:
             rasterXSize=self.dataset.RasterXSize
             rasterYSize=self.dataset.RasterYSize
         else:
