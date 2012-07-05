@@ -14,7 +14,7 @@ from envisat import Envisat
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create MER1 VRT '''
         product = gdalMetadata.get("MPH_PRODUCT", "Not_MERIS")
 
@@ -52,7 +52,7 @@ class Mapper(VRT, Envisat):
             bandDict['parameters']['scale'] = str(scales[i])
         
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalDataset);
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

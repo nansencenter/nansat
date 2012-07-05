@@ -14,7 +14,7 @@ from envisat import Envisat
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         
         product = gdalMetadata.get("MPH_PRODUCT", "Not_ASAR")
 
@@ -32,7 +32,7 @@ class Mapper(VRT, Envisat):
 
             
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalDataset);
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

@@ -13,7 +13,7 @@ from vrt import VRT, gdal, parse
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create MODIS_L1 VRT '''
         #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
         gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
@@ -100,7 +100,7 @@ class Mapper(VRT):
             bandDict['parameters']['band_name'] = 'radiance_' + bandDict['parameters']['wavelength']
                     
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalSubDataset);
         
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

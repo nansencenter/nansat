@@ -21,7 +21,7 @@ import gdal
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create Radarsat2 VRT '''
         fPathName, fExt = os.path.splitext(fileName)
         if fExt == '.ZIP' or fExt == '.zip':
@@ -61,7 +61,7 @@ class Mapper(VRT):
                 'parameters': {'pixel_function': 'BetaSigmaToIncidence', 'band_name': 'incidence_angle'}})
         
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalDataset);
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -71,7 +71,7 @@ class Mapper(VRT):
         # Add SAR look direction to metadata domain
         ############################################
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
-            Domain(ds=gdalDataset, logLevel=self.logger.level).upwards_azimuth_direction()
+            Domain(ds=gdalDataset).upwards_azimuth_direction()
             + 90, 360)))
         
         # Experimental feature for the Radarsat2-mapper:

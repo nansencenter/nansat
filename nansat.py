@@ -15,12 +15,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
-
+import os.path
 import dateutil.parser
 
 from domain import Domain
 from vrt import *
 from figure import *
+import nansat_tools
+
 from nansat_tools import add_logger, Node
 
 
@@ -47,7 +49,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, wkv="", parameters=None, logLevel=30):
+                 array=None, wkv="", parameters=None, logLevel=None):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -95,7 +97,8 @@ class Nansat(Domain):
 
         # set attributes
         # create logger
-        self.logger = add_logger(logName='Nansat', logLevel=logLevel)
+        self.logger = add_logger('Nansat', logLevel)
+
         # create list of added bands
         self.addedBands = []
 
@@ -118,6 +121,11 @@ class Nansat(Domain):
 
         # set input file name
         self.fileName = fileName
+        # name, for compatibility with some Domain methods
+        self.name = os.path.basename(fileName);
+        self.path = os.path.dirname(fileName);
+
+
         self.latVRT = None
         self.lonVRT = None
 
@@ -133,9 +141,6 @@ class Nansat(Domain):
             self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # add a band from array
             self.add_band(array, wkv, parameters)
-
-        # name, for compatibility with some Domain methods
-        self.name = self.fileName
 
         self.logger.debug('Object created from %s ' % self.fileName)
     
@@ -240,7 +245,7 @@ class Nansat(Domain):
 
         '''
         # Get the node from the XML content
-        node0 = Node.create(self.vrt.read_xml())
+        node0 = nansat_tools.Node.create(self.vrt.read_xml())
 
         # Change the element from GDAL datatype to NetCDF data type
         for iBand in node0.nodeList("VRTRasterBand"):
@@ -334,7 +339,7 @@ class Nansat(Domain):
         # Get XML content from VRT-file
         vrtXML = self.vrt.read_xml()
 
-        node0 = Node.create(vrtXML)
+        node0 = nansat_tools.Node.create(vrtXML)
         rasterXSize = int(float(node0.getAttribute("rasterXSize")) * factor)
         rasterYSize = int(float(node0.getAttribute("rasterYSize")) * factor)
         self.logger.info('New size/factor: (%f, %f)/%f' %
@@ -494,7 +499,7 @@ class Nansat(Domain):
                                    resamplingAlg)
 
             # set default vrt to be the warped one
-            warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
+            warpedVRT = VRT(vrtDataset=warpedVRT)
 
             # modify extent of the created Warped VRT
             warpedVRTXML = warpedVRT.read_xml()
@@ -577,7 +582,7 @@ class Nansat(Domain):
         # read XML content from VRT
         tmpVRTXML = tmpVRT.read_xml()
         # find and remove GeoTransform
-        node0 = Node.create(tmpVRTXML)
+        node0 = nansat_tools.Node.create(tmpVRTXML)
         node1 = node0.delNode("GeoTransform")
 
         # Write the modified elemements back into temporary VRT
@@ -588,7 +593,7 @@ class Nansat(Domain):
                                                 stereoSRSWKT,
                                                 resamplingAlg)
         self.logger.debug('rawWarpedVRT: %s' % str(rawWarpedVRT))
-        warpedVRT = VRT(vrtDataset=rawWarpedVRT, logLevel=self.logger.level)
+        warpedVRT = VRT(vrtDataset=rawWarpedVRT)
         warpeVRTXML = warpedVRT.read_xml()
 
         # change size and geotransform to fit the DST image
@@ -657,14 +662,12 @@ class Nansat(Domain):
                                  self.vrt.dataset.RasterYSize)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path + '/MOD44W.vrt',
-                               logLevel=self.logger.level)
+            watermask = Nansat(mod44path + '/MOD44W.vrt')
             # choose reprojection method
             if dstDomain is not None:
                 watermask.reproject(dstDomain)
             elif self.vrt.dataset.GetGCPCount() == 0:
-                watermask.reproject(Domain(ds=self.vrt.dataset,
-                                    logLevel=self.logger.level))
+                watermask.reproject(Domain(ds=self.vrt.dataset))
             else:
                 watermask.reproject_on_gcp(self)
 
@@ -955,7 +958,7 @@ class Nansat(Domain):
         """
         mapper_module = __import__('mapper_radarsat2')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
-                                      metadata, logLevel=self.logger.level)
+                                      metadata)
         """
         # Otherwise
         for iMapper in self.mapperList:
@@ -966,9 +969,8 @@ class Nansat(Domain):
                 #import mapper
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
-                tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
-                                              metadata,
-                                              logLevel=self.logger.level)
+                tmpVRT = mapper_module.Mapper(self.fileName,
+                                              gdalDataset, metadata)
                 self.logger.info('Mapper %s - success!' % iMapper)
                 break
             except:
@@ -977,7 +979,7 @@ class Nansat(Domain):
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
             self.logger.info('No mapper fits!')
-            tmpVRT = VRT(vrtDataset=gdalDataset, logLevel=self.logger.level)
+            tmpVRT = VRT(vrtDataset=gdalDataset)
 
         return tmpVRT
 
@@ -1009,7 +1011,7 @@ class Nansat(Domain):
 
         '''
         invGeotransform = gdal.InvGeoTransform(geoTransform)
-        node0 = Node.create(vrtXML)
+        node0 = nansat_tools.Node.create(vrtXML)
 
         node0.replaceAttribute("rasterXSize", str(rasterXSize))
         node0.replaceAttribute("rasterYSize", str(rasterYSize))

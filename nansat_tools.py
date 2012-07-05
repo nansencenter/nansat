@@ -25,6 +25,7 @@ import logging
 import copy
 import re
 
+LOG_LEVEL = 30
 
 class Node(object):
     '''
@@ -301,28 +302,28 @@ def initial_bearing(lon1, lat1, lon2, lat2):
         return mod(degrees(bearing) + 360, 360)
 
 
-def add_logger(logName='', logLevel=30):
+def add_logger(logName='', logLevel=None):
     ''' Creates and returns logger with default formatting for Nansat
 
     Parameters:
     -----------
         logName: string, optional
             Name of the logger
-        logLevel: int, option, default=30
-            level at which logging is performed
 
     Returns:
     --------
         logging.logger
         See also: http://docs.python.org/howto/logging.html
     '''
-
+    global LOG_LEVEL
+    if logLevel is not None:
+        LOG_LEVEL = logLevel
     # create (or take already existing) logger
     # with default logging level WARNING
     logger = logging.getLogger(logName)
-    logger.setLevel(logLevel)
+    logger.setLevel(LOG_LEVEL)
 
-    # if logger already exits, default stream handler was already added
+    # if logger already exits, default stream handler has been already added
     # otherwise create and add a new handler
     if len(logger.handlers) == 0:
         # create console handler and set level to debug
@@ -335,6 +336,6 @@ def add_logger(logName='', logLevel=30):
         # add ch to logger
         logger.addHandler(ch)
 
-    logger.handlers[0].setLevel(logLevel)
+    logger.handlers[0].setLevel(LOG_LEVEL)
 
     return logger

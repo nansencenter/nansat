@@ -29,7 +29,7 @@ satDict = [\
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Geostationary satellite data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         satellite = gdalDataset.GetDescription().split(",")[2]
         
         for sat in satDict:
@@ -81,7 +81,7 @@ class Mapper(VRT):
                  'parameters': parameters})
                       
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalDataset);
 
         # Create bands
         self._create_bands(metaDict)

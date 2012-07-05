@@ -29,7 +29,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from numpy import outer
 from math import floor, log10
-import logging
+
+from nansat_tools import add_logger
 
 
 class Error(Exception):
@@ -164,7 +165,7 @@ class Figure():
             longName and units.
 
         '''
-        self.logger = logging.getLogger('Nansat')
+        self.logger = add_logger('Nansat')
 
         # if 2D array is given, reshape to 3D
         if array.ndim == 2:

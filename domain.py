@@ -41,7 +41,7 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import initial_bearing, add_logger
+from nansat_tools import add_logger, initial_bearing
 
 from vrt import VRT
 
@@ -64,7 +64,7 @@ class ProjectionError(Error):
 class Domain():
     '''Domain is a grid with known dimentions and spatial reference'''
 
-    def __init__(self, ds=None, srs=None, ext=None, lat=None, lon=None, name='', logLevel=30):
+    def __init__(self, ds=None, srs=None, ext=None, lat=None, lon=None, name='', logLevel=None):
         '''Create Domain from GDALDataset or string options or lat/lon grids
 
         The main attribute of Domain is a GDAL VRT Dataset self.vrt.
@@ -145,7 +145,7 @@ class Domain():
         '''
 
         # set default attributes
-        self.logger = add_logger('Nansat', logLevel=logLevel)
+        self.logger = add_logger('Nansat', logLevel)
         self.name = name
         self.latVRT = None
         self.lonVRT = None
@@ -156,7 +156,7 @@ class Domain():
 
         # test option when only dataset is given
         if ds is not None:
-            self.vrt = VRT(gdalDataset=ds, logLevel=logLevel)
+            self.vrt = VRT(gdalDataset=ds)
 
         # test option when proj4 and extent string are given
         elif (srs is not None and ext is not None):
@@ -202,8 +202,7 @@ class Domain():
             # create VRT object with given geo-reference parameters
             self.vrt = VRT(srcGeoTransform=geoTransform, srcProjection=dstWKT,
                                            srcRasterXSize=rasterXSize,
-                                           srcRasterYSize=rasterYSize,
-                                           logLevel=logLevel)
+                                           srcRasterYSize=rasterYSize)
         elif (lat is not None and lon is not None):
             # create list of GCPs from given grids of lat/lon
             srcGCPs = self._latlon2gcps(lat, lon)

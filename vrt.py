@@ -72,8 +72,7 @@ class VRT():
                                          srcGCPs=[],
                                          srcGCPProjection="",
                                          srcMetadata="",
-                                         srcGeoMetadata="",
-                                         logLevel=30):
+                                         srcGeoMetadata=""):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
         If vrtDataset is given, creates full copy of VRT content
@@ -100,7 +99,6 @@ class VRT():
                 parameter of geo-reference
             srcMetadata: GDAL Metadata
                 additional parameter
-            logLevel: int
 
         Modifies:
         ---------
@@ -110,7 +108,7 @@ class VRT():
 
         '''
         # essential attributes
-        self.logger = add_logger('Nansat', logLevel=logLevel)
+        self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
         self.vrtDriver = gdal.GetDriverByName("VRT")
         self.logger.debug('input vrtDataset: %s' % str(vrtDataset))
@@ -496,9 +494,9 @@ class VRT():
         '''Creates full copy of VRT dataset'''
         try:
             # deep copy (everything including bands)
-            vrt = VRT(vrtDataset=self.dataset, logLevel=self.logger.level)
+            vrt = VRT(vrtDataset=self.dataset)
         except:
             # shallow copy (only geometadata)
-            vrt = VRT(gdalDataset=self.dataset, logLevel=self.logger.level)
+            vrt = VRT(gdalDataset=self.dataset)
 
         return vrt

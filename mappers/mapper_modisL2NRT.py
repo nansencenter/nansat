@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create MODIS_L2 VRT '''
         GCP_COUNT = 200
        
@@ -35,7 +35,7 @@ class Mapper(VRT):
                 gdalSubDataset = gdal.Open(subDataset[0])
                 break
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset, logLevel=logLevel)
+        VRT.__init__(self, gdalSubDataset)
         
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '412'} }
@@ -122,8 +122,8 @@ class Mapper(VRT):
             longitude = ndimage.zoom(longitude, zoomFactor)
             latitude = ndimage.zoom(latitude, zoomFactor)
             self.logger.debug('Lat/Lon grids [%f, %f] read', latitude.shape[0], latitude.shape[1])
-            self.lonVrt = VRT(array=longitude, logLevel=logLevel)
-            self.latVrt = VRT(array=latitude, logLevel=logLevel)
+            self.lonVrt = VRT(array=longitude)
+            self.latVrt = VRT(array=latitude)
             # set geolocation name
             xDatasetGeolocation = self.lonVrt.fileName
             yDatasetGeolocation = self.latVrt.fileName
