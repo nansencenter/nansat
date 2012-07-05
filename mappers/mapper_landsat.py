@@ -11,7 +11,10 @@
 from vrt import VRT
 import tarfile
 
-import gdal
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
 
 class Mapper(VRT):
     ''' Mapper for LANDSAT3,4,5,6,7.tar.gz files'''
@@ -20,7 +23,7 @@ class Mapper(VRT):
         ''' Create LANDSAT VRT '''
         # try to open .tar or .tar.gz or .tgz file with tar
         tarFile = tarfile.open(fileName)
-        
+
         tarNames = tarFile.getnames()
         print tarNames
         metaDict = []
