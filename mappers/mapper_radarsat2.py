@@ -106,6 +106,7 @@ class Mapper(VRT):
 
             BlockXSize, BlockYSize = gdalDataset.GetRasterBand(1).GetBlockSize()
             md['source_0'] = self.ComplexSource.substitute(
+                    SourceType='ComplexSource',
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
@@ -113,6 +114,7 @@ class Mapper(VRT):
                     SourceBand=sourceBandHH,
                     Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
             md['source_1'] = self.ComplexSource.substitute(
+                    SourceType='ComplexSource',
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
