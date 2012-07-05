@@ -15,13 +15,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
-import os.path
+
 import dateutil.parser
 
 from domain import Domain
 from vrt import *
 from figure import *
-
 from nansat_tools import add_logger, Node
 
 
@@ -48,7 +47,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, wkv="", parameters=None, logLevel=None):
+                 array=None, wkv="", parameters=None, logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -96,8 +95,7 @@ class Nansat(Domain):
 
         # set attributes
         # create logger
-        self.logger = add_logger('Nansat', logLevel)
-
+        self.logger = add_logger(logName='Nansat', logLevel=logLevel)
         # create list of added bands
         self.addedBands = []
 
@@ -113,18 +111,13 @@ class Nansat(Domain):
               'mapper_MOD44W.py',
               'mapper_modisL2NRT.py',
               'mapper_geostationary',
-              'mapper_landsat.py'
+              'mapper_NetCDF'
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
         # set input file name
         self.fileName = fileName
-        # name, for compatibility with some Domain methods
-        self.name = os.path.basename(fileName);
-        self.path = os.path.dirname(fileName);
-
-
         self.latVRT = None
         self.lonVRT = None
 
@@ -132,11 +125,6 @@ class Nansat(Domain):
         if fileName != "":
             # Get oroginal VRT object with mapping of variables
             self.raw = self._get_mapper(mapperName)
-            """ test
-            projection = self.raw.dataset.GetGCPProjection()
-            self.raw.dataset.SetProjection(projection.replace("&quot;",","))
-            #self.raw.dataset.SetProjection(projection)
-            """
             # Set current VRT object
             self.vrt = self.raw.copy()
 
@@ -146,6 +134,9 @@ class Nansat(Domain):
             self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # add a band from array
             self.add_band(array, wkv, parameters)
+
+        # name, for compatibility with some Domain methods
+        self.name = self.fileName
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
@@ -355,9 +346,9 @@ class Nansat(Domain):
         for iNode in node0.nodeList("VRTRasterBand"):
             iNode.node("DstRect").replaceAttribute("xSize", str(rasterXSize))
             iNode.node("DstRect").replaceAttribute("ySize", str(rasterYSize))
-            # if method="average", overwrite "ComplexSource" to "AveragedSource"
+            # if method="average", overwrite "SimpleSource" to "AveragedSource"
             if method == "average":
-                iNode.replaceTag("ComplexSource", "AveragedSource")
+                iNode.replaceTag("SimpleSource", "AveragedSource")
 
         # Edit GCPs to correspond to the downscaled size
         if node0.node("GCPList"):
@@ -504,7 +495,7 @@ class Nansat(Domain):
                                    resamplingAlg)
 
             # set default vrt to be the warped one
-            warpedVRT = VRT(vrtDataset=warpedVRT)
+            warpedVRT = VRT(vrtDataset=warpedVRT, logLevel=self.logger.level)
 
             # modify extent of the created Warped VRT
             warpedVRTXML = warpedVRT.read_xml()
@@ -598,7 +589,7 @@ class Nansat(Domain):
                                                 stereoSRSWKT,
                                                 resamplingAlg)
         self.logger.debug('rawWarpedVRT: %s' % str(rawWarpedVRT))
-        warpedVRT = VRT(vrtDataset=rawWarpedVRT)
+        warpedVRT = VRT(vrtDataset=rawWarpedVRT, logLevel=self.logger.level)
         warpeVRTXML = warpedVRT.read_xml()
 
         # change size and geotransform to fit the DST image
@@ -667,12 +658,14 @@ class Nansat(Domain):
                                  self.vrt.dataset.RasterYSize)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path + '/MOD44W.vrt')
+            watermask = Nansat(mod44path + '/MOD44W.vrt',
+                               logLevel=self.logger.level)
             # choose reprojection method
             if dstDomain is not None:
                 watermask.reproject(dstDomain)
             elif self.vrt.dataset.GetGCPCount() == 0:
-                watermask.reproject(Domain(ds=self.vrt.dataset))
+                watermask.reproject(Domain(ds=self.vrt.dataset,
+                                    logLevel=self.logger.level))
             else:
                 watermask.reproject_on_gcp(self)
 
@@ -947,21 +940,22 @@ class Nansat(Domain):
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = gdal.Open(self.fileName)
-        if gdalDataset is not None:
-            # get metadata from the GDAL dataset
-            metadata = gdalDataset.GetMetadata()
-        else:
-            metadata = None
+        if (gdalDataset is None) or (gdalDataset == ""):
+            raise GDALError("Nansat._get_,apper(): Cannot get the dataset from"
+                            + self.fileName)
+        # gete metadata from the GDAL dataset
+        metadata = gdalDataset.GetMetadata()
 
         # add the given mapper first
         self.mapperList = ['mapper_' + mapperName] + self.mapperList
 
-        # try to import and get VRT datasaet from all mappers. Break on success.
-        # If none of the mappers worked - try generic gdal.Open
+        # try to import and get VRT datasaet from all mappers. Break on success
+        # if none of the mappers worked - None is returned
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_NetCDF')
+        mapper_module = __import__("mapper_ASAR")
+        print mapper_module
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -974,15 +968,15 @@ class Nansat(Domain):
                 #import mapper
                 mapper_module = __import__(iMapper)
                 #create a Mapper object and get VRT dataset from it
-                tmpVRT = mapper_module.Mapper(self.fileName,
-                                              gdalDataset, metadata)
+                tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
+                                              metadata)
                 self.logger.info('Mapper %s - success!' % iMapper)
                 break
             except:
                 pass
         #"""
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
-        if tmpVRT is None and gdalDataset is not None:
+        if tmpVRT is None:
             self.logger.info('No mapper fits!')
             tmpVRT = VRT(vrtDataset=gdalDataset)
         return tmpVRT
