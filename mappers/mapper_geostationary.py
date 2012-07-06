@@ -69,7 +69,7 @@ class Mapper(VRT):
                 except:
                     print "No LUT found"
                     LUT = [""]*len(wavelengths)
-        print LUT
+
         if wavelengths is None:
             raise AttributeError("No Eumetcast geostationary satellite");
         
