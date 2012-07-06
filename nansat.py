@@ -838,6 +838,18 @@ class Nansat(Domain):
             fileName: string
             bandNo: integer (default = None)
 
+        AK: Two thirds of this method is done in write_figure()
+        I would suggest rather to get rid of write_geotiffimage() and add 
+        functionality to write_figure(). E.g.:
+        if DEFAULT_EXTENSION=GTiff:
+            # save as tif
+            # add georeference to the ouput file c.a.: 
+            # ds = gdal.Open(outFile, 'RW')
+            # ds.SetProjection(self.vrt.dataset.GetProjection())
+            # ...GeoTransform...
+            # ...GCPs...
+        
+        
         '''
         
         minmax = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('minmax')
