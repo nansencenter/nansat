@@ -18,10 +18,15 @@
 import os.path
 import dateutil.parser
 
+try:
+    from matplotlib import cm
+    from numpy import arange
+except:
+    pass
+
 from domain import Domain
 from vrt import *
 from figure import *
-
 from nansat_tools import add_logger, Node
 
 import scipy.stats.stats as st
@@ -62,7 +67,7 @@ class Nansat(Domain):
         fileName : string
             location of the file
         mapperName : string, optional
-            "ASAR", "hurlam", "merisL1", "merisL2", "ncep", "radarsat2",
+            "ASAR", "hirlam", "merisL1", "merisL2", "ncep", "radarsat2",
             "seawifsL2" are currently available.  (27.01.2012)
         domain : domain object
         array : numpy array
@@ -818,6 +823,69 @@ class Nansat(Domain):
             fig.save(fileName)
 
         return fig
+
+    def write_geotiffimage(self, fileName, bandNo=1):
+        ''' Writes an 8-bit GeoTiff image for a given band.
+        
+        The output GeoTiff image is convenient e.g. for display in a GIS tool. 
+        Colormap is fetched from the metadata item 'colormap'. 
+            Fallback colormap is 'jet'.
+        Color limits are fetched from the metadata item 'minmax'.
+            If 'minmax' is not specified, min and max of raster is used.
+
+        Parameters
+        ----------
+            fileName: string
+            bandNo: integer (default = None)
+
+        '''
+        
+        minmax = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('minmax')
+        # Get min and max from band histogram if not given (from wkv)
+        if minmax is None:
+            (rmin, rmax) = self.vrt.dataset.GetRasterBand(bandNo).ComputeRasterMinMax(1)
+            minmax = str(rmin) + ' ' + str(rmax)
+            
+        # Apply offset and scaling if available 
+        #  (not necessary when a LUT is available, 
+        #   and when no offset/scaling should be specified)
+        try:
+            offset = float(self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('offset'))
+            scale = float(self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('scale'))
+            minval = float(minmax.split(" ")[0])
+            maxval = float(minmax.split(" ")[1])
+            minmax = str((minval-offset)/scale) + ' ' + str((maxval-offset)/scale)
+        except:
+            pass
+        
+        # Create a temporary VRT file (no colormap yet) and convert this to 8-bit geotiff image
+        # Should ideally do this directly with GDAL Python API (CreateCopy), 
+        # but gdal_translate provides conenient scaling and conversion to Byte
+        tmpVRTFileName = fileName + '.tmp.VRT'
+        self.vrt.export(tmpVRTFileName)
+        os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName + 
+            ' -b ' + str(bandNo) + ' -ot Byte -scale ' + minmax + ' 0 255' +
+            ' -co "COMPRESS=PACKBITS"')
+        os.remove(tmpVRTFileName)
+        
+        # Add colormap from WKV to the geotiff figure
+        try:
+            colormap = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('colormap')
+        except:
+            colormap = 'jet'   
+        try:
+            cmap = cm.get_cmap(colormap, 256)
+            cmap = cmap(arange(256))*255
+            colorTable = gdal.ColorTable()
+            for i in range(cmap.shape[0]):
+                colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
+                    int(cmap[i, 2]), int(cmap[i, 3]))
+                colorTable.SetColorEntry(i, colorEntry)
+            infile = gdal.Open(fileName)
+            infile.GetRasterBand(1).SetRasterColorTable(colorTable)
+            gdal.GetDriverByName("GTiff").CreateCopy(fileName, infile, 0)
+        except:
+            print 'Could not add colormap; Matplotlib may not be available.'            
 
     def get_time(self, bandNo=None):
         ''' Get time for dataset and/or its bands
