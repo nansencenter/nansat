@@ -15,7 +15,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
-
 from math import atan2, sin, cos, radians, degrees
 from scipy import mod
 
@@ -339,3 +338,4 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(LOG_LEVEL)
 
     return logger
+

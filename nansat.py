@@ -24,6 +24,7 @@ from figure import *
 
 from nansat_tools import add_logger, Node
 
+import scipy.stats.stats as st
 
 class GDALError(Error):
     '''Error from GDAL '''
@@ -91,8 +92,8 @@ class Nansat(Domain):
 
         '''
         # checkt the arguments
-        if fileName=="" and (domain is None or array is None):
-            raise OptionError("Either fileName or (domain and array) is required.")
+        if fileName=="" and domain is None:
+            raise OptionError("Either fileName or domain is required.")
 
         # set attributes
         # create logger
@@ -125,7 +126,6 @@ class Nansat(Domain):
         self.name = os.path.basename(fileName);
         self.path = os.path.dirname(fileName);
 
-
         self.latVRT = None
         self.lonVRT = None
 
@@ -139,8 +139,11 @@ class Nansat(Domain):
         else:
             # Get vrt from domain
             self.raw = VRT(gdalDataset=domain.vrt.dataset)
-            # add a band from array
-            self.add_band(array, wkv, parameters)
+            # Set current VRT object
+            self.vrt = self.raw.copy()
+            if array is not None:
+                # add a band from array
+                self.add_band(array, wkv, parameters)
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
@@ -1086,3 +1089,95 @@ class Nansat(Domain):
         else:
             raise OptionError("Nansat._specify_bandNo(): "
                               "Cannot find any band by the given arguments")
+
+    def mosaic(self, files=[], bands=[], geoloc=False, **kwargs):
+        '''Mosaic input files. If images overlap, calculate average
+        
+        Convert all input files into Nansat objects, reproject, get bands,
+        put bands into a 3D cube, average, add averaged bands to the current
+        object.
+        
+        mosaic() tries to get band 'mask' from the input files. The mask
+        should have the following coding:
+            0:   nodata
+            1:   clouds
+            2:   land
+            128: values
+        If it gets that band (which can be provided by some mappers or Nansat
+        childs, e.g.  ModisL2NRT) it uses it to select averagable pixels
+        (i.e. where mask == 128).
+        If it cannot locate the band 'mask' is assumes that all pixels are
+        averagebale except for thouse out of swath after reprojection.
+        
+        mosaic() works only with empty or projected Nansat objects
+        
+        Parameters
+        ----------
+            files: list
+                list of input files
+            bands: list
+                list of band_names/band_numbers to be processed
+            geoloc: boolean (False)
+                use or not geolocation arrays
+            nClass: child of Nansat
+                The class to be used to read input files
+        '''
+        # get Nansat child class
+        nClass = kwargs.get('nClass', Nansat)
+            
+        # get desired shape
+        dstShape = self.shape()
+        self.logger.debug('dstShape: %s' % str(dstShape))
+        
+        # preallocate 3D matrices for products and mask
+        self.logger.debug('Allocating 3D cubes')
+        cubes = {}
+        for b in bands:
+            cubes[b] = np.zeros((len(files), dstShape[0], dstShape[1]))
+        cubes['mask'] = np.zeros((len(files), dstShape[0], dstShape[1]))
+        
+        
+        for i, f in enumerate(files):
+            self.logger.debug('Processing %s' % f)
+            # open file using Nansat or its child class
+            n = nClass(f)
+            # add mask band [0: nodata, 2: cloud, 3: land, 128: value]
+            try:
+                mask = n['mask']
+            except:
+                mask = 128 * np.ones(n.shape()).astype('int8')
+                n.add_band(mask, p={'band_name': 'mask'})
+            
+            # use geolocation arrays (remove GCPs)
+            if geoloc:
+                n.raw.dataset.SetGCPs([], None)
+            n.reproject(self)
+            # get reprojected mask
+            mask = n['mask']
+        
+            # add data to cube
+            for b in bands:
+                self.logger.debug('    Adding %s to cube' % b)
+                # get projected data from Nansat object
+                a = n[b]
+                # mask invalid data
+                a[mask < 128] = np.nan
+                # add to cube
+                cubes[b][i,::] = a
+                cubes['mask'][i,::] = mask
+        
+        # average products
+        for b in bands:
+            self.logger.debug('    Averaging %s' % b)
+            cubes[b] = st.nanmean(cubes[b], 0)
+        # calculate mask (max of 0, 1, 2, 3)
+        cubes['mask'] = np.nanmax(cubes['mask'], 0)
+    
+        self.logger.debug('Adding bands')
+        # add mask band
+        self.logger.debug('    mask')
+        self.add_band(array=cubes['mask'], p={'band_name': 'mask'})
+        # add averaged bands
+        for b in bands:
+            self.logger.debug('    %s' % b)
+            self.add_band(array=cubes[b], p={'band_name': b})

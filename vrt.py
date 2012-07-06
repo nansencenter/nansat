@@ -208,9 +208,10 @@ class VRT():
             NODATA = bandDict.get("NODATA", "")
             LUT = bandDict.get("LUT", "")
             SourceType = bandDict.get('SourceType', 'ComplexSource')
-                
+            self.logger.debug('Creating band %s', str(bandDict))
             self._create_band(bandDict["source"], bandDict["sourceBand"],
                     bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType, bandSize)
+            self.logger.debug('OK!')
         return
 
     def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource', bandSize=None):
