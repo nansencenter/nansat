@@ -875,12 +875,8 @@ class Nansat(Domain):
         # but gdal_translate provides conenient scaling and conversion to Byte
         tmpVRTFileName = fileName + '.tmp.VRT'
         self.vrt.export(tmpVRTFileName)
-        os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName + 
-            ' -b ' + str(bandNo) + ' -ot Byte -scale ' + minmax + ' 0 255' +
-            ' -co "COMPRESS=PACKBITS"')
-        os.remove(tmpVRTFileName)
         
-        # Add colormap from WKV to the geotiff figure
+        # Add colormap from WKV to the VRT file
         try:
             colormap = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('colormap')
         except:
@@ -893,11 +889,17 @@ class Nansat(Domain):
                 colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
                     int(cmap[i, 2]), int(cmap[i, 3]))
                 colorTable.SetColorEntry(i, colorEntry)
-            infile = gdal.Open(fileName)
-            infile.GetRasterBand(1).SetRasterColorTable(colorTable)
-            gdal.GetDriverByName("GTiff").CreateCopy(fileName, infile, 0)
+            tmpFile = gdal.Open(tmpVRTFileName)
+            tmpFile.GetRasterBand(bandNo).SetColorTable(colorTable)
+            tmpFile = None
         except:
             print 'Could not add colormap; Matplotlib may not be available.'            
+
+        os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName + 
+            ' -b ' + str(bandNo) + ' -ot Byte -scale ' + minmax + ' 0 255' + 
+            ' -co "COMPRESS=PACKBITS"')
+        os.remove(tmpVRTFileName)        
+
 
     def get_time(self, bandNo=None):
         ''' Get time for dataset and/or its bands
