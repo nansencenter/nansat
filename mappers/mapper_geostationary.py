@@ -10,6 +10,7 @@
 #-------------------------------------------------------------------------------
 
 from numpy import array, arange
+from datetime import datetime
 from vrt import *
 from nansat_tools import Node
 
@@ -126,5 +127,8 @@ class Mapper(VRT):
                 band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].setAttribute("ySize", newSrcYSize)
             self.write_xml(str(node0.rawxml()))
 
+        # Set time
+        self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
+        
         print "successful"
         return
