@@ -897,7 +897,7 @@ class Nansat(Domain):
 
         os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName + 
             ' -b ' + str(bandNo) + ' -ot Byte -scale ' + minmax + ' 0 255' + 
-            ' -co "COMPRESS=PACKBITS"')
+            ' -co "COMPRESS=LZW"')
         os.remove(tmpVRTFileName)        
 
 
