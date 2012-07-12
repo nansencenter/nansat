@@ -40,7 +40,7 @@ satDict = [\
                 'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., (340.-170.)/1023.], 'offset': [0, 170, 170, 170]}, 
            {'name': 'GOES15', 'wavelengths': [700, 10700, 3900, 6600],
                 'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., (340.-170.)/1023.], 'offset': [0, 170, 170, 170]},
-           {'name': 'MTSAT2', 'wavelengths': [700, 3800, 6800, 10800], # 12mum ch not supported
+           {'name': 'MTSAT2', 'NODATA': [255, 255, 255, 255], 'wavelengths': [700, 3800, 6800, 10800], # 12mum ch not supported
                 'LUT': ['0:0,255:100', mtsat_calibration_3_8_mum, mtsat_calibration_6_8_mum, mtsat_calibration_10_7_mum]},  
            {'name': 'MET7', 'wavelengths': [795, 6400, 11500], #'scale': [100./255., 0.103, 0.103], 'offset': [0, 5, 5]},
                 'LUT': ['0:0,255:100', meteosat7_lut_VW, meteosat7_lut_IR]},
@@ -70,6 +70,11 @@ class Mapper(VRT):
                 except:
                     print "No LUT found"
                     LUT = [""]*len(wavelengths)
+                try:
+                    NODATA = sat['NODATA']
+                except:
+                    print "No NODATA values found"
+                    NODATA = [""]*len(wavelengths)
 
         if wavelengths is None:
             raise AttributeError("No Eumetcast geostationary satellite");
@@ -99,7 +104,7 @@ class Mapper(VRT):
                 parameters = {'wavelength': str(wavelength)}
             metaDict.append(
                 {'source': bandSource,
-                 'sourceBand': 1, 'wkv': standard_name, 'LUT': LUT[i],
+                 'sourceBand': 1, 'wkv': standard_name, 'LUT': LUT[i], 'NODATA': NODATA[i],
                  'parameters': parameters})
                       
         # create empty VRT dataset with geolocation only
