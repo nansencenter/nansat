@@ -222,6 +222,20 @@ class Nansat(Domain):
         # copy raw VRT object to the current vrt
         self.vrt = self.raw.copy()
 
+    def bands(self):
+        ''' Make a list with all bands metadata
+        
+        Returns:
+        --------
+        b: dictionary: key = band_name, value = dict with all band metadata
+        '''
+        b = {}
+        for iBand in range(self.vrt.dataset.RasterCount):
+            key = self.get_metadata('band_name', iBand+1)
+            b[key] = self.get_metadata(bandNo=iBand+1)
+        
+        return b
+
     def export(self, fileName, rmMetadata=[]):
         '''Create a netCDF file
 
@@ -361,6 +375,7 @@ class Nansat(Domain):
             # if method="average", overwrite "ComplexSource" to "AveragedSource"
             if method == "average":
                 iNode.replaceTag("ComplexSource", "AveragedSource")
+                iNode.replaceTag("SimpleSource", "AveragedSource")
 
         # Edit GCPs to correspond to the downscaled size
         if node0.node("GCPList"):
@@ -373,7 +388,7 @@ class Nansat(Domain):
                 if lin > float(rasterYSize):
                     lin = rasterYSize
                 iNode.replaceAttribute("Line", str(lin))
-
+        
         # Write the modified elemements into VRT
         self.vrt.write_xml(str(node0.rawxml()))
 
@@ -486,10 +501,12 @@ class Nansat(Domain):
             http://www.gdal.org/gdalwarp.html
 
         '''
-        # Get source SRS (either Projection or GCPProjection)
+        # Get source SRS (either Projection or GCPProjection or GeolocationProjection)
         srcWKT = self.raw.dataset.GetProjection()
         if srcWKT == '':
             srcWKT = self.raw.dataset.GetGCPProjection()
+        if srcWKT == '':
+            srcWKT = self.raw.dataset.GetMetadataItem('SRS', 'GEOLOCATION')
 
         if srcWKT == '':
             raise ProjectionError("Nansat.reproject(): "
@@ -510,12 +527,10 @@ class Nansat(Domain):
             warpedVRT = VRT(vrtDataset=warpedVRT)
 
             # modify extent of the created Warped VRT
-            warpedVRTXML = warpedVRT.read_xml()
-            warpedVRTXML = self._modify_warped_VRT_XML(warpedVRTXML,
+            warpedVRT._modify_warped_XML(
                                        dstDomain.vrt.dataset.RasterXSize,
                                        dstDomain.vrt.dataset.RasterYSize,
                                        dstDomain.vrt.dataset.GetGeoTransform())
-            warpedVRT.write_xml(warpedVRTXML)
 
             # check created Warped VRT
             if warpedVRT.dataset is None:
@@ -602,15 +617,11 @@ class Nansat(Domain):
                                                 resamplingAlg)
         self.logger.debug('rawWarpedVRT: %s' % str(rawWarpedVRT))
         warpedVRT = VRT(vrtDataset=rawWarpedVRT)
-        warpeVRTXML = warpedVRT.read_xml()
 
         # change size and geotransform to fit the DST image
-        warpeVRTXML = self._modify_warped_VRT_XML(warpeVRTXML,
-                                   dstDataset.RasterXSize,
-                                   dstDataset.RasterYSize,
-                                   (0, 1, 0, 0, 0, 1))
-        # update warped VRT with new XML
-        warpedVRT.write_xml(warpeVRTXML)
+        warpedVRT._modify_warped_XML(dstDataset.RasterXSize,
+                                     dstDataset.RasterYSize,
+                                     (0, 1, 0, 0, 0, 1))
 
         #append GCPs and Projection from the dstImage
         warpedVRT.dataset.SetGCPs(dstDataset.GetGCPs(),
@@ -1041,7 +1052,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_radarsat2')
+        mapper_module = __import__('mapper_modisL2NRT')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1064,7 +1075,9 @@ class Nansat(Domain):
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
             self.logger.info('No mapper fits!')
-            tmpVRT = VRT(vrtDataset=gdalDataset)
+            tmpVRT = VRT(gdalDataset=gdalDataset)
+            for iBand in range(gdalDataset.RasterCount):
+                tmpVRT._create_band(self.fileName, iBand+1, '', {})
 
         return tmpVRT
 
@@ -1073,45 +1086,6 @@ class Nansat(Domain):
             return defVal
         else:
             return val
-
-    def _modify_warped_VRT_XML(self, vrtXML,
-                          rasterXSize, rasterYSize, geoTransform):
-        ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
-
-        Parameters
-        ----------
-            vrtXML: string with XML
-                original content of the original VRT file
-            rasterXSize: integer
-                desired X size of warped image
-            rasterYSize: integer
-                desired Y size of warped image
-            geoTransform: tuple of 6 integers
-                desired GeoTransform size of the warped image
-
-        Returns
-        --------
-            vrtXML : string with XML
-                modified content of the original VRT file
-
-        '''
-        invGeotransform = gdal.InvGeoTransform(geoTransform)
-        node0 = Node.create(vrtXML)
-
-        node0.replaceAttribute("rasterXSize", str(rasterXSize))
-        node0.replaceAttribute("rasterYSize", str(rasterYSize))
-
-        # convert proper string style and set to the GeoTransform element
-        node0.node("GeoTransform").value = str(geoTransform).strip("()")
-        node0.node("DstGeoTransform").value = str(geoTransform).strip("()")
-        node0.node("DstInvGeoTransform").value = str(
-                                                invGeotransform[1]).strip("()")
-
-        if node0.node("SrcGeoLocTransformer"):
-            node0.node("BlockXSize").value = str(rasterXSize)
-            node0.node("BlockYSize").value = str(rasterYSize)
-
-        return str(node0.rawxml())
 
     def _specify_bandNo(self, bandID):
         '''Specify a band number based on bandID {'key_name': 'key_value'}

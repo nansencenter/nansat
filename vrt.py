@@ -21,14 +21,10 @@ from string import Template, ascii_uppercase, digits
 from random import choice
 import datetime
 from dateutil.parser import parse
-
 import logging
 
-try:
-    from osgeo import gdal, osr
-except ImportError:
-    import gdal
-    import osr
+from osgeo import gdal
+from osgeo import osr
 
 from nansat_tools import add_logger, Node
 
@@ -132,8 +128,6 @@ class VRT():
 
                 srcMetadata = gdalDataset.GetMetadata()
                 srcGeoMetadata = gdalDataset.GetMetadata('GEOLOCATION')
-                self.logger.debug('RasterXSize %d' % gdalDataset.RasterXSize)
-                self.logger.debug('RasterYSize %d' % gdalDataset.RasterYSize)
 
             # create VRT dataset (empty or with a band from array)
             if array is None:
@@ -158,7 +152,7 @@ class VRT():
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
         self.logger.debug('VRT description: %s ' %
                                              self.dataset.GetDescription())
-        self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
+        #self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
@@ -498,3 +492,110 @@ class VRT():
             vrt = VRT(gdalDataset=self.dataset)
 
         return vrt
+
+    def add_geolocation(self, xDataset, xBand, yDataset, yBand,
+                        srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"):
+        '''Add GEOLOCATION metadata to the dataset
+
+        Parameters:
+        ------
+            lonSource: numpy array with longitudes
+            latSource: numpy array with latitudes
+            srs: spatial reference, WGS84 by default
+        
+        Modifies:
+            Adds metadata to GEOLOCATION domain
+        '''
+        # set projection of the GEOLOCATION
+        sr = osr.SpatialReference()
+        sr.ImportFromProj4(srs)
+        
+        self.dataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
+        self.dataset.SetMetadataItem('SRS', sr.ExportToWkt(), 'GEOLOCATION')
+        self.dataset.SetMetadataItem('X_BAND', str(xBand), 'GEOLOCATION')
+        self.dataset.SetMetadataItem('X_DATASET', xDataset, 'GEOLOCATION')
+        self.dataset.SetMetadataItem('Y_BAND', str(yBand), 'GEOLOCATION')
+        self.dataset.SetMetadataItem('Y_DATASET', yDataset, 'GEOLOCATION')
+    
+    def resized(self, xSize, ySize):
+        '''Resize VRT
+        
+        Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
+        Parameters:
+        -----------
+            xSize, ySize: int
+                new size of the VRT object
+        
+        Returns:
+        --------
+            Resized VRT object
+        '''
+        # create a temporary copy of original VRT and remove GCPs in order to
+        # apply only affine tranformation in warping
+        tmp = self.copy()
+        tmp.dataset.SetGCPs([], None)
+        tmp.dataset.SetGeoTransform((0, 1, 0, self.dataset.RasterYSize, 0, -1))
+        tmp.dataset.SetProjection('')
+
+        # create simplest Warped VRT GDAL Dataset
+        warpedVRT = gdal.AutoCreateWarpedVRT(tmp.dataset, None, None, gdal.GRA_Bilinear)
+
+        # create VRT object from warped VRT
+        warpedVRT = VRT(vrtDataset=warpedVRT)
+        
+        # modify GeoTransform: set resolution from new X/Y size
+        geoTransform = (0,
+                        float(self.dataset.RasterXSize) / float(xSize),
+                        0,
+                        self.dataset.RasterYSize,
+                        0,
+                        - float(self.dataset.RasterYSize) / float(ySize))
+        
+        # update size and GeoTranform in XML of the warped VRT object
+        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform)
+        
+        # append temporary VRT to the warped VRT
+        warpedVRT.rawVRT = tmp
+
+        return warpedVRT
+
+
+    def _modify_warped_XML(self, rasterXSize, rasterYSize, geoTransform):
+        ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
+
+        Parameters
+        ----------
+            rasterXSize: integer
+                desired X size of warped image
+            rasterYSize: integer
+                desired Y size of warped image
+            geoTransform: tuple of 6 integers
+                desired GeoTransform size of the warped image
+
+        Modifies
+        --------
+            XML of the self VRT file: size and geotranform is updated
+
+        '''
+        warpedXML = self.read_xml()
+        
+        invGeotransform = gdal.InvGeoTransform(geoTransform)
+        node0 = Node.create(warpedXML)
+
+        node0.replaceAttribute("rasterXSize", str(rasterXSize))
+        node0.replaceAttribute("rasterYSize", str(rasterYSize))
+
+        # convert proper string style and set to the GeoTransform element
+        node0.node("GeoTransform").value = str(geoTransform).strip("()")
+        node0.node("DstGeoTransform").value = str(geoTransform).strip("()")
+        node0.node("DstInvGeoTransform").value = str(
+                                                invGeotransform[1]).strip("()")
+
+        if node0.node("SrcGeoLocTransformer"):
+            node0.node("BlockXSize").value = str(rasterXSize)
+            node0.node("BlockYSize").value = str(rasterYSize)
+        
+        self.write_xml(str(node0.rawxml()))
