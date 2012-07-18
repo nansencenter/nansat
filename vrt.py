@@ -415,6 +415,7 @@ class VRT():
                     "uint32": "UInt32", "int32": "Int32",
                     "float32": "Float32","float64": "Float64",
                     "complex64": "CFloat64"}.get(str(arrayDType))
+
         pixelOffset = {"Byte": "1",
                     "UInt16": "2", "Int16": "2",
                     "UInt32": "4", "Int32": "4",

@@ -235,7 +235,89 @@ class Nansat(Domain):
         
         return b
 
-    def export(self, fileName, rmMetadata=[]):
+    def _add_geolocation_bands(self):
+        '''Add Geolocation datasets as bands'''
+        xy = ['X', 'Y']
+        ll = ['longitude', 'latitude']
+
+        geolocation = self.vrt.dataset.GetMetadata('GEOLOCATION')
+        # number of the geolocation band within self
+        geoBandNumber = [0, 0]
+
+        # if GEOLOCATION in metadata: add X_DATASET, Y_DATASET bands
+        if  geolocation != {}:
+            # band metadata
+            bands = self.bands()
+            # for X and Y:
+            for gdsn in range(0, 2):
+                # get source and band number from GEOLOCATION
+                geoSource = geolocation[xy[gdsn]+'_DATASET']
+                geoSourceBand = geolocation[xy[gdsn]+'_BAND']
+                # if the band is already in self, take it's number
+                for b in bands:
+                    if geoSource == bands[b]['source']:
+                        geoBandNumber[gdsn] = b
+                # if the band is not in self: add it to self
+                if geoBandNumber[gdsn] == 0:
+                    # open dataset and get matrix
+                    geoDataset = gdal.Open(geoSource)
+                    geoGrid = geoDataset.GetRasterBand(int(geoSourceBand)).ReadAsArray()
+                    # if matrix is smaller: resize
+                    if (geoDataset.RasterXSize != self.vrt.dataset.RasterXSize and
+                          geoDataset.RasterYSize != self.vrt.dataset.RasterYSize):
+                        geoVRT = VRT(array = geoGrid)
+                        geoVRTResized = geoVRT.resized(self.vrt.dataset.RasterXSize,
+                                                       self.vrt.dataset.RasterYSize)
+                        geoGrid = geoVRTResized.dataset.GetRasterBand(1).ReadAsArray()
+                    # add band from the full size matrix of lon or lat
+                    self.add_band(array=geoGrid,
+                                    wkv=ll[gdsn],
+                                    p={'band_name': xy[gdsn]+'_DATASET'})
+                    # get the number of the added band
+                    geoBandNumber[gdsn] = self._get_band_number(xy[gdsn]+'_DATASET')
+
+        return geoBandNumber
+
+    def _add_gcp_metadata(self):
+        '''Add GCPs to metadata (prior to export())
+        Creates string representation of GCPs line/pixel/X/Y 
+        Add these string to metadata
+        
+        Modifies:
+            Adds self.vrd.dataset.Metadata
+        '''
+        gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
+        gcps = self.vrt.dataset.GetGCPs()
+        chunkLength = 5000
+
+        # if GCPs exist
+        if len(gcps) > 0:
+
+            self.vrt.dataset.SetMetadataItem("gcpProjection",
+                                            self.vrt.dataset.GetGCPProjection().
+                                            replace(",", "|").replace('"', "&quat;"))
+
+            # make empty strings
+            gspStrings  = ['', '', '', '']
+            
+            # fill string with values
+            for gcp in gcps:
+                gspStrings[0] = '%s%05d '    % (gspStrings[0], int(gcp.GCPPixel))
+                gspStrings[1] = '%s%05d '    % (gspStrings[1], int(gcp.GCPLine))
+                gspStrings[2] = '%s%012.8f ' % (gspStrings[2], gcp.GCPX)
+                gspStrings[3] = '%s%012.8f ' % (gspStrings[3], gcp.GCPY)
+            
+            
+            for i, gspString in enumerate(gspStrings):
+                #split string into chunks
+                numberOfChunks = int(float(len(gspString)) / chunkLength)
+                chunki = 0
+                for chunki in range(0, numberOfChunks+1):
+                    chunk = gspString[(chunki * chunkLength):min(((chunki+1) * chunkLength), len(gspString))]
+                    # add chunk to metadata
+                    self.set_metadata('%s_%03d: ' % (gcpNames[i], chunki), chunk)
+
+    def export(self, fileName, rmMetadata=[], addGeoloc=False, addGCPs=False):
         '''Create a netCDF file
 
         Parameters
@@ -265,6 +347,19 @@ class Nansat(Domain):
             --> "if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);"
 
         '''
+        if addGeoloc:
+            # try to add GEOLOCATION bands and get their numbers
+            geoBandNumber = self._add_geolocation_bands()
+            if geoBandNumber[0] != 0 and geoBandNumber[1] != 0:
+                # if geolocation bands were added:
+                #     add GEOLOCATION_X_BAND, GEOLOCATION_Y_BAND to metadata
+                self.set_metadata('GEOLOCATION_X_BAND', str(geoBandNumber[0]))
+                self.set_metadata('GEOLOCATION_Y_BAND', str(geoBandNumber[1]))
+        
+        # add GCPs to metadata
+        if addGCPs:
+            self._add_gcp_metadata()
+        
         # Get the node from the XML content
         node0 = Node.create(self.vrt.read_xml())
 
@@ -280,15 +375,6 @@ class Nansat(Domain):
         # Copy the vrt and overwrite the modified element
         tmpVrt = self.vrt.copy()
         tmpVrt.write_xml(str(node0.rawxml()))
-
-        # Get projection and add it in the global metadata
-        try:
-            tmpVrt.dataset.SetMetadataItem("gcpProjection",
-                                            self.vrt.dataset.
-                                            GetGCPProjection().
-                                            replace(",", "|").replace('"', "&quat;"))
-        except:
-            self.logger.warning("Unable to get projection for netcdf")
 
         # manage metadata for each band
         for iBand in range(tmpVrt.dataset.RasterCount):

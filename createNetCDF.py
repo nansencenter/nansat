@@ -117,8 +117,8 @@ def setGeolocation(nObj):
         gcps = nObj.vrt.dataset.GetGCPs()
         for igcp in gcps:
             try:
-                arrayList[0][int(igcp.GCPLine)][int(igcp.GCPPixel)] = ((igcp.GCPX + 180) * 100.0)
-                arrayList[1][int(igcp.GCPLine)][int(igcp.GCPPixel)] = ((igcp.GCPY + 180) * 100.0)
+                arrayList[0][int(igcp.GCPLine)][int(igcp.GCPPixel)] = ((igcp.GCPX + 180) * 1000.0)
+                arrayList[1][int(igcp.GCPLine)][int(igcp.GCPPixel)] = ((igcp.GCPY + 180) * 1000.0)
             except:
                 print ("GCPLine or GCPPixel is over the raster size")
                 #self.logger.warning("GCPLine or GCPPixel is over the raster size")
