@@ -573,6 +573,9 @@ class Figure():
         # modify default parameters
         self._set_defaults(kwargs)
 
+        # set fonts size for colorbar
+        font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
+
         # create a pilImage for the legend
         self.pilImgLegend = Image.new("P", (self.width,
                                       int(self.height *
@@ -609,8 +612,6 @@ class Figure():
             scaleArray = (scaleArray * (self.d['cmax'][0] -
                         self.d['cmin'][0]) + self.d['cmin'][0])
             scaleArray = map(self._round_number, scaleArray)
-            # set fonts size for colorbar
-            font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
             # draw scales and lines on the legend pilImage
             for iTick in range(self.d['numOfTicks']):
                 coordX = int(scaleLocation[iTick] *

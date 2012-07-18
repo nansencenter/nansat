@@ -152,21 +152,21 @@ class Nansat(Domain):
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
-    def __getitem__(self, bandNo):
+    def __getitem__(self, bandID):
         ''' Returns the band as a NumPy array, by overloading []
         Parameters:
         -----------
-            bandNo: int or string
-                If int, array from band with number <bandNo> is returned
+            bandID: int or str
+                If int, array from band with number <bandID> is returned
                 If string, array from band with metadata 'band_name' equal to
-                <bandNo> is returned
+                <bandID> is returned
         Returns
         -------
-            self.get_GDALRasterBand(bandNo).ReadAsArray(): NumPy array
+            self.get_GDALRasterBand(bandID).ReadAsArray(): NumPy array
 
         '''
         # get band
-        band = self.get_GDALRasterBand(bandNo)
+        band = self.get_GDALRasterBand(bandID)
         # get scale and offset
         scale = float(band.GetMetadata().get('scale', '1'))
         offset = float(band.GetMetadata().get('offset', '0'))
@@ -223,16 +223,15 @@ class Nansat(Domain):
         self.vrt = self.raw.copy()
 
     def bands(self):
-        ''' Make a list with all bands metadata
+        ''' Make a dictionary with all bands metadata
         
         Returns:
         --------
-        b: dictionary: key = band_name, value = dict with all band metadata
+        b: dictionary: key = N, value = dict with all band metadata
         '''
         b = {}
         for iBand in range(self.vrt.dataset.RasterCount):
-            key = self.get_metadata('band_name', iBand+1)
-            b[key] = self.get_metadata(bandNo=iBand+1)
+            b[iBand+1] = self.get_metadata(bandID=iBand+1)
         
         return b
 
@@ -392,56 +391,34 @@ class Nansat(Domain):
         # Write the modified elemements into VRT
         self.vrt.write_xml(str(node0.rawxml()))
 
-    def get_GDALRasterBand(self, bandNo=1, bandID=None):
+    def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object.
 
         Get a GDALRasterBand specified by the argument.
 
-        If a bandID is given, secify a bandNo based on it.
-        Otherwise check if the given bandNo is proper.
+        If a bandID is given, secify a bandID based on it.
+        Otherwise check if the given bandID is proper.
         Get a GDALRasterBand from vrt.
 
         Parameters
         ----------
-            bandNo: serial number or string, optional (default is 1)
+            bandID: serial number or string, optional (default is 1)
                 if number - a band number of the band to fetch
-                if string bandID = {'band_name': bandNo}
-            bandID: a dictionary with metadata unique for one band
+                if string bandID = {'band_name': bandID}
 
         Returns
         -------
             self.vrt.dataset.GetRasterBand: a GDAL RasterBand
 
-        Raises
-        ------
-            OptionError: occurs when the bandNo is not a proper number.
-
         Example
         -------
             b = get_GDALRasterBand(1)
             b = get_GDALRasterBand('sigma0')
-            b = get_GDALRasterBand({"short_name":"radiance",
-                                    "wavelength":"1240"})
-        See Also
-        --------
-            _specify_bandNo: specify a band number based on the bandID list
-
         '''
-        # If bandID is given, bandNo is specified here.
-        if bandID is not None:
-            bandNo = self._specify_bandNo(bandID)
-        # if bandNo is given and it is string fetch band which has
-        # band_name == bandNo
-        elif isinstance(bandNo, str):
-            bandNo = self._specify_bandNo({'band_name': bandNo})
-        # if given bandNo is over the existing bands, give error message
-        elif (bandNo < 1 or bandNo > self.vrt.dataset.RasterCount):
-            raise OptionError("Nansat.get_GDALRasterBand(): "
-                             "bandNo takes from 1 to",
-                             self.vrt.dataset.RasterCount)
-        # Based on bandNo,
+        # get band number
+        bandNumber = self._get_band_number(bandID)
         # the GDAL RasterBand of the corresponding band is returned
-        return self.vrt.dataset.GetRasterBand(bandNo)
+        return self.vrt.dataset.GetRasterBand(bandNumber)
 
     def list_bands(self, doPrint=True):
         ''' Show band information of the given Nansat object
@@ -458,14 +435,18 @@ class Nansat(Domain):
             outString: String
                 formatted string with bands info
         '''
+        # get dictionary of bands metadata
+        bands = self.bands()
         outString = ''
-        for iBand in range(self.vrt.dataset.RasterCount):
-            band = self.vrt.dataset.GetRasterBand(iBand + 1)
-            metadata = band.GetMetadata()
-            outString += "Band : %d\n" % (iBand + 1)
-            for i in metadata:
-                outString += "  %s: %s\n" % (i, band.GetMetadataItem(i))
+        
+        for b in bands:
+            # print band number, name
+            outString += "Band : %d %s\n" % (b, bands[b].get('band_name', ''))
+            # print band metadata
+            for i in bands[b]:
+                outString += "  %s: %s\n" % (i, bands[b][i])
         if doPrint:
+            # print to screeen
             print outString
         else:
             return outString
@@ -809,20 +790,11 @@ class Nansat(Domain):
 
         # == PREPARE caption ==
         # get longName and units from vrt
-        bandNo = 1
-        if isinstance(bands[0], int):
-            bandNo = bands[0]
-        elif isinstance(bands[0], str):
-            bandNo = self._specify_bandNo({'band_name': bands[0]})
-
-        longName = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem(
-                                                                   "long_name")
-        units = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem("units")
-        # if they don't exist make empty strings
-        if longName is None:
-            longName = ''
-        if units is None:
-            units = ''
+        band = self.get_GDALRasterBand(bands[0])
+        longName = band.GetMetadata().get("long_name", '')
+        units = band.GetMetadata().get("units", '')
+        
+        # make caption
         caption = longName + ' [' + units + ']'
         self.logger.info('caption: %s ' % caption)
 
@@ -835,7 +807,7 @@ class Nansat(Domain):
 
         return fig
 
-    def write_geotiffimage(self, fileName, bandNo=1):
+    def write_geotiffimage(self, fileName, bandID=1):
         ''' Writes an 8-bit GeoTiff image for a given band.
         
         The output GeoTiff image is convenient e.g. for display in a GIS tool. 
@@ -847,7 +819,7 @@ class Nansat(Domain):
         Parameters
         ----------
             fileName: string
-            bandNo: integer (default = None)
+            bandID: integer or string(default = 1)
 
         AK: Two thirds of this method is done in write_figure()
         I would suggest rather to get rid of write_geotiffimage() and add 
@@ -862,19 +834,20 @@ class Nansat(Domain):
         
         
         '''
-        
-        minmax = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('minmax')
+        bandNumber = self._get_band_number(bandID)
+        band = self.get_GDALRasterBand(bandID)
+        minmax = band.GetMetadataItem('minmax')
         # Get min and max from band histogram if not given (from wkv)
         if minmax is None:
-            (rmin, rmax) = self.vrt.dataset.GetRasterBand(bandNo).ComputeRasterMinMax(1)
+            (rmin, rmax) = band.ComputeRasterMinMax(1)
             minmax = str(rmin) + ' ' + str(rmax)
             
         # Apply offset and scaling if available 
         #  (not necessary when a LUT is available, 
         #   and when no offset/scaling should be specified)
         try:
-            offset = float(self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('offset'))
-            scale = float(self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('scale'))
+            offset = float(band.GetMetadataItem('offset'))
+            scale = float(band.GetMetadataItem('scale'))
             minval = float(minmax.split(" ")[0])
             maxval = float(minmax.split(" ")[1])
             minmax = str((minval-offset)/scale) + ' ' + str((maxval-offset)/scale)
@@ -889,7 +862,7 @@ class Nansat(Domain):
         
         # Add colormap from WKV to the VRT file
         try:
-            colormap = self.vrt.dataset.GetRasterBand(bandNo).GetMetadataItem('colormap')
+            colormap = band.GetMetadataItem('colormap')
         except:
             colormap = 'jet'   
         try:
@@ -901,32 +874,33 @@ class Nansat(Domain):
                     int(cmap[i, 2]), int(cmap[i, 3]))
                 colorTable.SetColorEntry(i, colorEntry)
             tmpFile = gdal.Open(tmpVRTFileName)
-            tmpFile.GetRasterBand(bandNo).SetColorTable(colorTable)
+            tmpFile.GetRasterBand(bandNumber).SetColorTable(colorTable)
             tmpFile = None
         except:
             print 'Could not add colormap; Matplotlib may not be available.'            
 
         os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName + 
-            ' -b ' + str(bandNo) + ' -ot Byte -scale ' + minmax + ' 0 255' + 
+            ' -b ' + str(bandNumber) + ' -ot Byte -scale ' + minmax + ' 0 255' + 
             ' -co "COMPRESS=LZW"')
         os.remove(tmpVRTFileName)        
 
 
-    def get_time(self, bandNo=None):
+    def get_time(self, bandID=None):
         ''' Get time for dataset and/or its bands
 
         Parameters
         ----------
-            bandNo: integer (default = None)
+            bandID: int or str (default = None)
+                number or band_name
 
-        If bandNo is given, or if all bands have the same time,
+        If bandID is given, or if all bands have the same time,
         a single datetime object is returned.
         Othwerwise a list of datetime objects for each band is returned.
 
         '''
         time = []
         for i in range(self.vrt.dataset.RasterCount):
-            band = self.vrt.dataset.GetRasterBand(i + 1)
+            band = self.get_GDALRasterBand(i + 1)
             try:
                 time.append(dateutil.parser.parse(
                                 band.GetMetadataItem("time")))
@@ -934,24 +908,25 @@ class Nansat(Domain):
                 self.logger.debug("Band " + str(i + 1) + " has no time")
                 time.append(None)
 
-        if bandNo is not None:
-            return time[bandNo - 1]
+        if bandID is not None:
+            bandNumber = self._get_band_number(bandID)
+            return time[bandNumber - 1]
         else:
             if len(set(time)) == 1:
                 return time[0]
             else:
                 return time
 
-    def get_metadata(self, key=None, bandNo=None):
+    def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset
 
         Parameters:
         -----------
         key: string, optional
             name of the metadata key. If not givem all metadata is returned
-        bandNo: int, optional
-            number of band to get metadata from. If not given, global metadata
-            is returned
+        bandID: int or str, optional
+            number or band_name of band to get metadata from.
+            If not given, global metadata is returned
 
         Returns:
             a string with metadata if key is given and found
@@ -960,18 +935,18 @@ class Nansat(Domain):
         '''
 
         # get all metadata from dataset or from band
-        if bandNo is None:
+        if bandID is None:
             metadata = self.vrt.dataset.GetMetadata()
         else:
-            metadata = self.vrt.dataset.GetRasterBand(bandNo).GetMetadata()
+            metadata = self.get_GDALRasterBand(bandID).GetMetadata()
 
         # get all metadata or from a key
         if key is not None:
-            metadata = metadata.get(key, '')
+            metadata = metadata.get(key, None)
 
         return metadata
 
-    def set_metadata(self, key='', value='', bandNo=None):
+    def set_metadata(self, key='', value='', bandID=None):
         ''' Set metadata to self.raw.dataset and self.vrt.dataset
 
         Parameters:
@@ -980,8 +955,9 @@ class Nansat(Domain):
             name of the metadata, or dictionary with metadata names, values
         value: string
             value of metadata
-        bandNo: int
-            number of band to set metadata to. Without: global metadata is set
+        bandID: int or str
+            number or name of band
+            Without: global metadata is set
 
         Modifies:
         ---------
@@ -989,13 +965,15 @@ class Nansat(Domain):
             self.vrt.dataset: sets metadata in GDAL current dataset
             '''
 
-        # set all metadata from dataset or from band
-        if bandNo is None:
+        # set all metadata to the dataset or to the band
+        if bandID is None:
             metaReceiverRAW = self.raw.dataset
             metaReceiverVRT = self.vrt.dataset
         else:
-            metaReceiverRAW = self.raw.dataset.GetRasterBand(bandNo)
-            metaReceiverVRT = self.vrt.dataset.GetRasterBand(bandNo)
+            bandNumber = self._get_band_number(bandID)
+
+            metaReceiverRAW = self.raw.dataset.GetRasterBand(bandNumber)
+            metaReceiverVRT = self.vrt.dataset.GetRasterBand(bandNumber)
 
         # set metadata from dictionary or from single pair key,value
         if isinstance(key, dict):
@@ -1087,64 +1065,40 @@ class Nansat(Domain):
         else:
             return val
 
-    def _specify_bandNo(self, bandID):
-        '''Specify a band number based on bandID {'key_name': 'key_value'}
-
-        Compare the key values of the bandID to the values of the
-        metadata in each band.
-        If matched, append the band number (iBand) into candidate list.
-        If not, go to the next band.
-        Iterate these steps until all bands are checked.
-        If single band is specified at the end, return the band number.
-        Otherwise raise OptionError.
-
+    def _get_band_number(self, bandID):
+        '''Return absolute band number
+        
+        Check if given band_id is valid
+        Return absolute number of the band in the VRT
+        
         Parameters
         ----------
-            bandID: a dictionary
-                Parameters to specify single band
-                (e.g. {"name":"radiance", "wavelength":"1234"})
+            bandID: int or str
+                if int: checks if such band exists and returns band_id
+                if str: finds band with coresponding band_name
 
         Returns
         -------
-            candidate[0]+1 : a band number
-
-        Raises
-        ------
-            OptionError: occurs when there is no band which satisfies
-            the condition (bandID) or when there are several bands chosen
-            by the condition.
-
+            int, absolute band  number
         '''
-        # search for the specific band based on bandID
-        candidate = []
-        # loop through all bands
-        for iBand in range(self.vrt.dataset.RasterCount):
-            # get metadata from band
-            bandMetadata = self.raw.dataset.GetRasterBand(
-                                                    iBand + 1).GetMetadata()
-            allKeysAreGood = True
-            # loop through all input keys
-            for bandIDKey in bandID:
-                # if band doesn't have key from input or value doesn't match
-                if (bandIDKey not in bandMetadata or
-                        bandMetadata[bandIDKey] != bandID[bandIDKey]):
-                    allKeysAreGood = False
+        bandNumber = 0
+        # if bandID is string, fetch band which has band_name == bandID
+        if isinstance(bandID, str):
+            bandsMeta = self.bands()
+            for b in bandsMeta:
+                if bandID == bandsMeta[b]['band_name']:
+                    bandNumber = b
 
-            if allKeysAreGood:
-                candidate.append(iBand)
-
-        # if a band is specified, set it to bandNo.
-        # if some bands are chosen, give an error message and stop.
-        if len(candidate) == 1:
-            self.logger.info("You chose bandNo: %d" % (candidate[0] + 1))
-            return candidate[0] + 1
-        elif len(candidate) >= 2:
-            raise OptionError("Nansat._specify_bandNo(): "
-                              "Cannot specify a single band "
-                              "by the given arguments")
-        else:
-            raise OptionError("Nansat._specify_bandNo(): "
-                              "Cannot find any band by the given arguments")
+        # if given bandID is int and within the existing bands, return it
+        elif (bandID >= 1 and bandID <= self.vrt.dataset.RasterCount):
+            bandNumber = bandID
+        # if not bandNumber found - raise error
+        if bandNumber == 0:
+            raise OptionError("Cannot find band %s! "
+                              "bandNumber is from 1 to %s" %
+                              (str(bandID), self.vrt.dataset.RasterCount))
+        
+        return bandNumber
 
     def mosaic(self, files=[], bands=[], geoloc=False, **kwargs):
         '''Mosaic input files. If images overlap, calculate average
