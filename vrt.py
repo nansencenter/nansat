@@ -180,6 +180,7 @@ class VRT():
             name of the source dataset (e.g. filename)
         sourceBand: integer
             band number of the source band in the given source dataset
+            if it is 0, it means VRT RawRasterband
         wkv: string
             refers to the "standard_name" of some of the
             "well known variables" listed in wkv.xml
@@ -244,24 +245,36 @@ class VRT():
                     parameters['band_name'] = bandName
                     break
 
-        # Find datatype and blocksizes
-        srcDataset = gdal.Open(source[0])
-        srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
-        blockXSize, blockYSize = srcRasterBand.GetBlockSize()
-        dataType = srcRasterBand.DataType
-
-        # If we apply LUT, we must allow Byte values to be mapped into floats
-        if LUT <> "" and dataType == gdal.GDT_Byte: 
-            dataType = gdal.GDT_Float32
-
-        # Create band
-        if "pixel_function" in parameters:
-            options = ['subClass=VRTDerivedRasterBand',
-                       'PixelFunctionType=' + parameters["pixel_function"]]
+        # if add VRT RawRasterBand
+        if sourceBands[0] == 0:
+            options = ["subclass=VRTRawRasterBand",
+                       "SourceFilename=%s" % source[0],
+                       "ImageOffset=%f" % parameters["ImageOffset"],
+                       "PixelOffset=%f" % parameters["PixelOffset"],
+                       "LineOffset=%f" % parameters["LineOffset"],
+                       "ByteOrder=%s" % parameters["ByteOrder"]]
+            self.dataset.AddBand(parameters["dataType"], options)
+            return
+        # else
         else:
-            options = []
-        self.dataset.AddBand(dataType, options=options)
-        dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
+            # Find datatype and blocksizes
+            srcDataset = gdal.Open(source[0])
+            srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
+            blockXSize, blockYSize = srcRasterBand.GetBlockSize()
+            dataType = srcRasterBand.DataType
+
+            # If we apply LUT, we must allow Byte values to be mapped into floats
+            if LUT <> "" and dataType == gdal.GDT_Byte:
+                dataType = gdal.GDT_Float32
+
+            # Create band
+            if "pixel_function" in parameters:
+                options = ['subClass=VRTDerivedRasterBand',
+                           'PixelFunctionType=' + parameters["pixel_function"]]
+            else:
+                options = []
+            self.dataset.AddBand(dataType, options=options)
+            dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
@@ -503,14 +516,14 @@ class VRT():
             lonSource: numpy array with longitudes
             latSource: numpy array with latitudes
             srs: spatial reference, WGS84 by default
-        
+
         Modifies:
             Adds metadata to GEOLOCATION domain
         '''
         # set projection of the GEOLOCATION
         sr = osr.SpatialReference()
         sr.ImportFromProj4(srs)
-        
+
         self.dataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
         self.dataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
         self.dataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
@@ -520,16 +533,16 @@ class VRT():
         self.dataset.SetMetadataItem('X_DATASET', xDataset, 'GEOLOCATION')
         self.dataset.SetMetadataItem('Y_BAND', str(yBand), 'GEOLOCATION')
         self.dataset.SetMetadataItem('Y_DATASET', yDataset, 'GEOLOCATION')
-    
+
     def resized(self, xSize, ySize):
         '''Resize VRT
-        
+
         Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
         Parameters:
         -----------
             xSize, ySize: int
                 new size of the VRT object
-        
+
         Returns:
         --------
             Resized VRT object
@@ -546,7 +559,7 @@ class VRT():
 
         # create VRT object from warped VRT
         warpedVRT = VRT(vrtDataset=warpedVRT)
-        
+
         # modify GeoTransform: set resolution from new X/Y size
         geoTransform = (0,
                         float(self.dataset.RasterXSize) / float(xSize),
@@ -554,10 +567,10 @@ class VRT():
                         self.dataset.RasterYSize,
                         0,
                         - float(self.dataset.RasterYSize) / float(ySize))
-        
+
         # update size and GeoTranform in XML of the warped VRT object
         warpedVRT._modify_warped_XML(xSize, ySize, geoTransform)
-        
+
         # append temporary VRT to the warped VRT
         warpedVRT.rawVRT = tmp
 
@@ -582,7 +595,7 @@ class VRT():
 
         '''
         warpedXML = self.read_xml()
-        
+
         invGeotransform = gdal.InvGeoTransform(geoTransform)
         node0 = Node.create(warpedXML)
 
@@ -598,5 +611,5 @@ class VRT():
         if node0.node("SrcGeoLocTransformer"):
             node0.node("BlockXSize").value = str(rasterXSize)
             node0.node("BlockYSize").value = str(rasterYSize)
-        
+
         self.write_xml(str(node0.rawxml()))
