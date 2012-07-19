@@ -28,6 +28,68 @@ from osgeo import osr
 
 from nansat_tools import add_logger, Node
 
+class Geolocation():
+    '''Container for GEOLOCATION data'''
+    def __init__(self, xVRT=None, yVRT=None, xBand=1, yBand=1,
+                        srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs",
+                        lineOffset=0, lineStep=1, pixelOffset=0, pixelStep=1,
+                        dataset=None):
+        '''Create Geolocation object from input parameters
+        Parameters:
+            xVRT: VRT-object or str
+                VRT with array of x-coordinates OR string with dataset source
+            yVRT: VRT-object or str
+                VRT with array of y-coordinates OR string with dataset source
+            xBand: number of band in the xDataset
+            xBand: number of band in the yDataset
+            srs: str, projection WKT
+            lineOffset: int, offset of first line
+            lineStep: int, step of lines
+            pixelOffset: int: offset of first pixel
+            pixelStep: step of pixels
+            dataset: GDAL dataset to take geolocation from
+        Modifies:
+            All input parameters are copied to self
+        '''
+        # dictionary with all metadata
+        self.d = {}
+        # VRT objects
+        self.xVRT = None
+        self.yVRT = None
+
+        # make object from GDAL dataset
+        if dataset is not None:
+            self.d = dataset.GetMetadata('GEOLOCATION')
+            return
+
+        # make empty object
+        if xVRT is None or yVRT is None:
+            return
+        
+        if isinstance(xVRT, str):
+            # make object from strings
+            self.d['X_DATASET'] = xVRT
+            self.d['Y_DATASET'] = yVRT
+        else:
+            # make object from VRTs
+            self.xVRT = xVRT
+            self.d['X_DATASET'] = xVRT.fileName
+            self.yVRT = xVRT
+            self.d['Y_DATASET'] = yVRT.fileName
+        
+        # proj4 to WKT
+        sr = osr.SpatialReference()
+        sr.ImportFromProj4(srs)
+        self.d['SRS'] = sr.ExportToWkt()
+        self.d['X_BAND'] = str(xBand)
+        self.d['Y_BAND'] = str(yBand)
+        self.d['LINE_OFFSET'] = str(lineOffset)
+        self.d['LINE_STEP'] = str(lineStep)
+        self.d['PIXEL_OFFSET'] = str(pixelOffset)
+        self.d['PIXEL_STEP'] = str(pixelStep)
+
+
+
 class VRT():
     '''VRT dataset management
 
@@ -68,7 +130,7 @@ class VRT():
                                          srcGCPs=[],
                                          srcGCPProjection="",
                                          srcMetadata="",
-                                         srcGeoMetadata=""):
+                                         geolocation=None):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
         If vrtDataset is given, creates full copy of VRT content
@@ -94,7 +156,9 @@ class VRT():
             srcRasterYSize, INT
                 parameter of geo-reference
             srcMetadata: GDAL Metadata
-                additional parameter
+                all global metadata
+            geolocation: Geolocation
+                object with info on geolocation and VRTs with x/y datasets
 
         Modifies:
         ---------
@@ -113,6 +177,8 @@ class VRT():
             self.logger.debug('Making copy of %s ' % str(vrtDataset))
             self.dataset = self.vrtDriver.CreateCopy(self.fileName,
                                                      vrtDataset)
+            # add geolocation from vrt dataset
+            self.add_geolocation(Geolocation(dataset=vrtDataset))
         else:
             # get geo-metadata from given GDAL dataset
             if gdalDataset is not None:
@@ -127,7 +193,6 @@ class VRT():
                 srcRasterYSize = gdalDataset.RasterYSize
 
                 srcMetadata = gdalDataset.GetMetadata()
-                srcGeoMetadata = gdalDataset.GetMetadata('GEOLOCATION')
 
             # create VRT dataset (empty or with a band from array)
             if array is None:
@@ -145,9 +210,16 @@ class VRT():
 
             # set metadata
             self.dataset.SetMetadata(srcMetadata)
-            self.dataset.SetMetadata(srcGeoMetadata, 'GEOLOCATION')
+            
+            # add geolocation from gdal dataset
+            self.add_geolocation(Geolocation(dataset=gdalDataset))
             # write file contents
             self.dataset.FlushCache()
+
+        # add geolocation from input geolocation 
+        # if not None: overwrite geoloc from vrt or gdal datasets
+        if geolocation is not None:
+            self.add_geolocation(geolocation)
 
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
         self.logger.debug('VRT description: %s ' %
@@ -170,7 +242,7 @@ class VRT():
         randomChars = ''.join(choice(allChars) for x in range(10))
         return '/vsimem/%s.%s' % (randomChars, extention)
 
-    def _create_bands(self, metaDict, bandSize=None):
+    def _create_bands(self, metaDict):
         ''' Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
 
@@ -187,8 +259,6 @@ class VRT():
             The corresponding parameters are added as metadata to the band
         parameters: dictionary
             metadata to be added to the band: {key: value}
-        bandSize: dict
-            {'XSize': int, 'YSize': int}: dctionary with size of bands
 
         If one of the latter parameter keys is "pixel_function", this
         band will be a pixel function defined by the corresponding name/value.
@@ -205,11 +275,11 @@ class VRT():
             SourceType = bandDict.get('SourceType', 'ComplexSource')
             self.logger.debug('Creating band %s', str(bandDict))
             self._create_band(bandDict["source"], bandDict["sourceBand"],
-                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType, bandSize)
+                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType)
             self.logger.debug('OK!')
         return
 
-    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource', bandSize=None):
+    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource'):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
         '''
@@ -279,12 +349,8 @@ class VRT():
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
         md = {}
-        if bandSize is None:
-            rasterXSize=self.dataset.RasterXSize
-            rasterYSize=self.dataset.RasterYSize
-        else:
-            rasterXSize=bandSize["XSize"]
-            rasterYSize=bandSize["YSize"]
+        rasterXSize=self.dataset.RasterXSize
+        rasterYSize=self.dataset.RasterYSize
         for i in range(len(sourceBands)):
             bandSource = self.ComplexSource.substitute(
                                 SourceType=SourceType,
@@ -500,39 +566,27 @@ class VRT():
         '''Creates full copy of VRT dataset'''
         try:
             # deep copy (everything including bands)
-            vrt = VRT(vrtDataset=self.dataset)
+            vrt = VRT(vrtDataset=self.dataset, geolocation=self.geoloc)
         except:
             # shallow copy (only geometadata)
-            vrt = VRT(gdalDataset=self.dataset)
-
+            vrt = VRT(gdalDataset=self.dataset, geolocation=self.geoloc)
+        
         return vrt
 
-    def add_geolocation(self, xDataset, xBand, yDataset, yBand,
-                        srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"):
-        '''Add GEOLOCATION metadata to the dataset
-
+    def add_geolocation(self, geoloc=Geolocation()):
+        ''' Add GEOLOCATION to the VRT
+        
         Parameters:
-        ------
-            lonSource: numpy array with longitudes
-            latSource: numpy array with latitudes
-            srs: spatial reference, WGS84 by default
+            geoloc: Geolocation object
 
-        Modifies:
-            Adds metadata to GEOLOCATION domain
+        Modifes:
+            add geoloc to self
+            Sets GEOLOCATION metadata
         '''
-        # set projection of the GEOLOCATION
-        sr = osr.SpatialReference()
-        sr.ImportFromProj4(srs)
+        self.geoloc = geoloc
 
-        self.dataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
-        self.dataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
-        self.dataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
-        self.dataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
-        self.dataset.SetMetadataItem('SRS', sr.ExportToWkt(), 'GEOLOCATION')
-        self.dataset.SetMetadataItem('X_BAND', str(xBand), 'GEOLOCATION')
-        self.dataset.SetMetadataItem('X_DATASET', xDataset, 'GEOLOCATION')
-        self.dataset.SetMetadataItem('Y_BAND', str(yBand), 'GEOLOCATION')
-        self.dataset.SetMetadataItem('Y_DATASET', yDataset, 'GEOLOCATION')
+        # add GEOLOCATION metadata (empty if geoloc is empty)
+        self.dataset.SetMetadata(geoloc.d, 'GEOLOCATION')
 
     def resized(self, xSize, ySize):
         '''Resize VRT
@@ -613,3 +667,50 @@ class VRT():
             node0.node("BlockYSize").value = str(rasterYSize)
 
         self.write_xml(str(node0.rawxml()))
+
+    def _remove_geotransform(self):
+        ''' remove GeoTransfomr from VRT Object'''
+        # read XML content from VRT
+        tmpVRTXML = self.read_xml()
+        # find and remove GeoTransform
+        node0 = Node.create(tmpVRTXML)
+        node1 = node0.delNode("GeoTransform")
+        # Write the modified elemements back into temporary VRT
+        self.write_xml(str(node0.rawxml()))
+
+    def _add_gcp_metadata(self):
+        '''Add GCPs to metadata (required e.g. by Nansat.export())
+        Creates string representation of GCPs line/pixel/X/Y 
+        Add these string to metadata
+        
+        Modifies:
+            Adds self.vrd.dataset.Metadata
+        '''
+        gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
+        gcps = self.dataset.GetGCPs()
+        srs = self.dataset.GetGCPProjection()
+        chunkLength = 5000
+
+        # if GCPs exist
+        if len(gcps) > 0:
+            # add GCP Projection
+            self.dataset.SetMetadataItem('NANSAT_GCPProjection', srs.replace(",", "|").replace('"', "&"))
+
+            # make empty strings
+            gspStrings  = ['', '', '', '']
+            
+            # fill string with values
+            for gcp in gcps:
+                gspStrings[0] = '%s%05d| '    % (gspStrings[0], int(gcp.GCPPixel))
+                gspStrings[1] = '%s%05d| '    % (gspStrings[1], int(gcp.GCPLine))
+                gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcp.GCPX)
+                gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcp.GCPY)
+            
+            for i, gspString in enumerate(gspStrings):
+                #split string into chunks
+                numberOfChunks = int(float(len(gspString)) / chunkLength)
+                chunki = 0
+                for chunki in range(0, numberOfChunks+1):
+                    chunk = gspString[(chunki * chunkLength):min(((chunki+1) * chunkLength), len(gspString))]
+                    # add chunk to metadata
+                    self.dataset.SetMetadataItem('NANSAT_%s_%03d' % (gcpNames[i], chunki), chunk)

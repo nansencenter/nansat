@@ -8,7 +8,7 @@
 # Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import VRT, gdal, osr
+from vrt import Geolocation, VRT, gdal, osr
 import re
 from datetime import datetime, timedelta
 
@@ -102,28 +102,19 @@ class Mapper(VRT):
         # make lon/lat VRT objects
         for subDataset in subDatasets:
             if 'longitude' in subDataset[1]:
-                ds = gdal.Open(subDataset[0])
-                self.lonVRT = VRT(vrtDataset=ds)
+                xDatasetSource = subDataset[0]
+                xVRT = VRT(vrtDataset=gdal.Open(xDatasetSource))
             if 'latitude' in subDataset[1]:
-                ds = gdal.Open(subDataset[0])
-                self.latVRT = VRT(vrtDataset=ds)
+                yDatasetSource = subDataset[0]
+                yVRT = VRT(vrtDataset=gdal.Open(yDatasetSource))
         
-        # resize if necessary
-        if (self.dataset.RasterXSize != self.lonVRT.dataset.RasterXSize or
-                self.dataset.RasterYSize != self.lonVRT.dataset.RasterYSize):
-            self.lonVRT = self.lonVRT.resized(self.dataset.RasterXSize,
-                                              self.dataset.RasterYSize)
-            self.latVRT = self.latVRT.resized(self.dataset.RasterXSize,
-                                              self.dataset.RasterYSize)
-
-        # add lon/lat as bands
-        self._create_band(self.lonVRT.fileName, 1, 'longitude', {'band_name': 'longitude'})
-        self._create_band(self.latVRT.fileName, 1, 'latitude',  {'band_name': 'latitude'})            
+        # add geolocation
+        self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource))
 
         # ==== ADD GCPs and Pojection ====        
         # get lat/lon matrices
-        longitude = self.lonVRT.dataset.GetRasterBand(1).ReadAsArray()
-        latitude = self.latVRT.dataset.GetRasterBand(1).ReadAsArray()
+        longitude = xVRT.dataset.GetRasterBand(1).ReadAsArray()
+        latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
 
         # estimate step of GCPs
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
@@ -150,8 +141,8 @@ class Mapper(VRT):
         self.dataset.SetGCPs(gcps, latlongSRSWKT)
         
         # === ADD GEOLOCATION  ===
-        self.logger.debug('x/y datasets: %s %s', self.lonVRT.fileName, self.latVRT.fileName)
-        self.add_geolocation(self.lonVRT.fileName, 1, self.latVRT.fileName, 1)
+        #self.logger.debug('x/y datasets: %s %s', self.lonVRT.fileName, self.latVRT.fileName)
+        #self.add_geolocation(self.lonVRT.fileName, 1, self.latVRT.fileName, 1)
         
         # set TIME
         startYear = int(gdalMetadata['Start Year'])
