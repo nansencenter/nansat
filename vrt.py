@@ -283,6 +283,7 @@ class VRT():
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
         '''
+        self.logger.info('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
         # Make sure sourceBands and source are lists, ready for loop
         # There will be a single sourceBand for regular bands,
         # but several for bands which are pixel functions

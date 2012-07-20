@@ -189,7 +189,7 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, array, wkv="", p=None):
+    def add_band(self, fileName=None, vrt=None, bandID=1, array=None, wkv="", p=None):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -211,14 +211,40 @@ class Nansat(Domain):
             Adds band to the self.vrt
 
         '''
-        # if p is not given it is empty dictionary
-        # NB: default value p={} remembers the value from the last assigment
-        if p is None:
-            p = {}
+        vrt2add = None
+        bandNumber = None
+        parameters = None
+        
+        if fileName is not None:
+            n = Nansat(fileName)
+            n.reproject(self)
+            vrt2add = n.vrt
+            bandNumber = n._get_band_number(bandID)
+            parameters = n.get_metadata(bandID=bandID)
+            wkv = parameters.get('band_name', '')
+                        
+        if vrt is not None:
+            print 'VRT NOT NONE!'
+            vrt2add = vrt
+            print vrt2add.fileName
+            bandNumber = bandID
+            parameters = vrt.dataset.GetRasterBand(bandID).GetMetadata()
+            wkv = parameters.get('band_name', '')
+            print parameters
+            print wkv
+            
+        if array is not None:
+            vrt2add = VRT(array=array)
+            bandNumber = 1
+            parameters = p
+
+        if parameters is None:
+            parameters = {}
+
         # create a band from array
-        self.addedBands.append(VRT(array=array))
+        self.addedBands.append(vrt2add)
         # add the array band into self.vrt
-        self.raw._create_band(self.addedBands[-1].fileName, 1, wkv, p)
+        self.raw._create_band(vrt2add.fileName, bandNumber, wkv, parameters)
         # copy raw VRT object to the current vrt
         self.vrt = self.raw.copy()
 
@@ -474,7 +500,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, resamplingAlg=0):
+    def reproject(self, dstDomain=None, resamplingAlg=0, geoloc=False):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -505,6 +531,18 @@ class Nansat(Domain):
             http://www.gdal.org/gdalwarp.html
 
         '''
+        # dereproject and quit
+        if dstDomain is None:
+            self.vrt = self.raw.copy()
+            return
+        
+        # reproject using GCPs of destination image and quit
+        gcps = dstDomain.vrt.dataset.GetGCPs()
+        if len(gcps) > 0:
+            self.reproject_on_gcp(dstDomain, resamplingAlg)
+            return
+        
+        # reproject using GeoTransform of destination image
         # Get source SRS (either Projection or GCPProjection or GeolocationProjection)
         srcWKT = self.raw.dataset.GetProjection()
         if srcWKT == '':
@@ -516,31 +554,31 @@ class Nansat(Domain):
             raise ProjectionError("Nansat.reproject(): "
                                   "rawVrt.GetProjection() is None")
 
-        if dstDomain is None:
-            # dereproject
-            self.vrt = self.raw.copy()
-        else:
-            # warp the Raw VRT onto the coordinate stystem given by
-            # input Domain
-            warpedVRT = gdal.AutoCreateWarpedVRT(
-                                   self.raw.dataset, srcWKT,
-                                   dstDomain.vrt.dataset.GetProjection(),
-                                   resamplingAlg)
+        # get copy of raw VRT
+        raw = self.raw.copy()
+        # remove GCPS in order to apply geolocation warping
+        if geoloc and len(raw.geoloc.d) > 0:
+            raw.dataset.SetGCPs([], '')
+        # warp the Raw VRT onto the coordinate stystem given by input Domain
+        warpedVRT = gdal.AutoCreateWarpedVRT(
+                               raw.dataset, srcWKT,
+                               dstDomain.vrt.dataset.GetProjection(),
+                               resamplingAlg)
 
-            # set default vrt to be the warped one
-            warpedVRT = VRT(vrtDataset=warpedVRT)
+        # set default vrt to be the warped one
+        warpedVRT = VRT(vrtDataset=warpedVRT)
 
-            # modify extent of the created Warped VRT
-            warpedVRT._modify_warped_XML(
-                                       dstDomain.vrt.dataset.RasterXSize,
-                                       dstDomain.vrt.dataset.RasterYSize,
-                                       dstDomain.vrt.dataset.GetGeoTransform())
+        # modify extent of the created Warped VRT
+        warpedVRT._modify_warped_XML(
+                                   dstDomain.vrt.dataset.RasterXSize,
+                                   dstDomain.vrt.dataset.RasterYSize,
+                                   dstDomain.vrt.dataset.GetGeoTransform())
 
-            # check created Warped VRT
-            if warpedVRT.dataset is None:
-                raise AttributeError("Nansat.reproject():cannot get warpedVRT")
+        # check created Warped VRT
+        if warpedVRT.dataset is None:
+            raise AttributeError("Nansat.reproject():cannot get warpedVRT")
 
-            self.vrt = warpedVRT
+        self.vrt = warpedVRT
 
     def reproject_on_gcp(self, gcpImage, resamplingAlg=0):
         ''' Reproject the object onto the input object with gcps
