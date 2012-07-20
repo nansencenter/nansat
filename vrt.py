@@ -31,7 +31,7 @@ from nansat_tools import add_logger, Node
 class Geolocation():
     '''Container for GEOLOCATION data'''
     def __init__(self, xVRT=None, yVRT=None, xBand=1, yBand=1,
-                        srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs",
+                        srs="",
                         lineOffset=0, lineStep=1, pixelOffset=0, pixelStep=1,
                         dataset=None):
         '''Create Geolocation object from input parameters
@@ -42,7 +42,7 @@ class Geolocation():
                 VRT with array of y-coordinates OR string with dataset source
             xBand: number of band in the xDataset
             xBand: number of band in the yDataset
-            srs: str, projection WKT
+            srs: str, WKT
             lineOffset: int, offset of first line
             lineStep: int, step of lines
             pixelOffset: int: offset of first pixel
@@ -65,7 +65,7 @@ class Geolocation():
         # make empty object
         if xVRT is None or yVRT is None:
             return
-        
+
         if isinstance(xVRT, str):
             # make object from strings
             self.d['X_DATASET'] = xVRT
@@ -76,11 +76,13 @@ class Geolocation():
             self.d['X_DATASET'] = xVRT.fileName
             self.yVRT = xVRT
             self.d['Y_DATASET'] = yVRT.fileName
-        
+
         # proj4 to WKT
-        sr = osr.SpatialReference()
-        sr.ImportFromProj4(srs)
-        self.d['SRS'] = sr.ExportToWkt()
+        if srs == "":
+            sr = osr.SpatialReference()
+            sr.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
+            srs = sr.ExportToWkt()
+        self.d['SRS'] = srs
         self.d['X_BAND'] = str(xBand)
         self.d['Y_BAND'] = str(yBand)
         self.d['LINE_OFFSET'] = str(lineOffset)
@@ -210,13 +212,13 @@ class VRT():
 
             # set metadata
             self.dataset.SetMetadata(srcMetadata)
-            
+
             # add geolocation from gdal dataset
             self.add_geolocation(Geolocation(dataset=gdalDataset))
             # write file contents
             self.dataset.FlushCache()
 
-        # add geolocation from input geolocation 
+        # add geolocation from input geolocation
         # if not None: overwrite geoloc from vrt or gdal datasets
         if geolocation is not None:
             self.add_geolocation(geolocation)
@@ -252,7 +254,7 @@ class VRT():
             name of the source dataset (e.g. filename)
         sourceBand: integer
             band number of the source band in the given source dataset
-            if it is 0, it means VRT RawRasterband
+            if it is 0, it means VRTRawRasterband
         wkv: string
             refers to the "standard_name" of some of the
             "well known variables" listed in wkv.xml
@@ -325,6 +327,11 @@ class VRT():
                        "LineOffset=%f" % parameters["LineOffset"],
                        "ByteOrder=%s" % parameters["ByteOrder"]]
             self.dataset.AddBand(parameters["dataType"], options)
+            if "band_name" in parameters:
+                dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
+                dstRasterBand = self._put_metadata(dstRasterBand,
+                                                   {"band_name" : parameters["band_name"]})
+                self.dataset.FlushCache()
             return
         # else
         else:
@@ -570,12 +577,12 @@ class VRT():
         except:
             # shallow copy (only geometadata)
             vrt = VRT(gdalDataset=self.dataset, geolocation=self.geoloc)
-        
+
         return vrt
 
     def add_geolocation(self, geoloc=Geolocation()):
         ''' Add GEOLOCATION to the VRT
-        
+
         Parameters:
             geoloc: Geolocation object
 
@@ -680,9 +687,9 @@ class VRT():
 
     def _add_gcp_metadata(self):
         '''Add GCPs to metadata (required e.g. by Nansat.export())
-        Creates string representation of GCPs line/pixel/X/Y 
+        Creates string representation of GCPs line/pixel/X/Y
         Add these string to metadata
-        
+
         Modifies:
             Adds self.vrd.dataset.Metadata
         '''
@@ -698,14 +705,14 @@ class VRT():
 
             # make empty strings
             gspStrings  = ['', '', '', '']
-            
+
             # fill string with values
             for gcp in gcps:
                 gspStrings[0] = '%s%05d| '    % (gspStrings[0], int(gcp.GCPPixel))
                 gspStrings[1] = '%s%05d| '    % (gspStrings[1], int(gcp.GCPLine))
                 gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcp.GCPX)
                 gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcp.GCPY)
-            
+
             for i, gspString in enumerate(gspStrings):
                 #split string into chunks
                 numberOfChunks = int(float(len(gspString)) / chunkLength)

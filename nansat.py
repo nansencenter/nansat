@@ -251,7 +251,7 @@ class Nansat(Domain):
 
     def bands(self):
         ''' Make a dictionary with all bands metadata
-        
+
         Returns:
         --------
         b: dictionary: key = N, value = dict with all band metadata
@@ -259,7 +259,7 @@ class Nansat(Domain):
         b = {}
         for iBand in range(self.vrt.dataset.RasterCount):
             b[iBand+1] = self.get_metadata(bandID=iBand+1)
-        
+
         return b
 
     def export(self, fileName, bands=None, rmMetadata=[], addGeoloc=True, addGCPs=True):
@@ -294,7 +294,7 @@ class Nansat(Domain):
         '''
         # Create new VRT object which will be used for export
         if bands is None:
-            # if <bands> are not specified use all bands and make full copy 
+            # if <bands> are not specified use all bands and make full copy
             exportVRT = self.vrt.copy()
         else:
             # if list of bands is given, make shallow copy of self.VRT
@@ -325,13 +325,13 @@ class Nansat(Domain):
         if len(exportVRT.geoloc.d) > 0:
             exportVRT._create_band(self.vrt.geoloc.d['X_DATASET'],
                           int(self.vrt.geoloc.d['X_BAND']), 'longitude',
-                          {'band_name': 'GEOLOCATION_X_DATASET'})        
+                          {'band_name': 'GEOLOCATION_X_DATASET'})
             exportVRT._create_band(self.vrt.geoloc.d['Y_DATASET'],
                           int(self.vrt.geoloc.d['Y_BAND']), 'latitude',
-                          {'band_name': 'GEOLOCATION_Y_DATASET'})        
+                          {'band_name': 'GEOLOCATION_Y_DATASET'})
 
         exportVRT._add_gcp_metadata()
-        
+
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
         exportVRT.dataset.SetMetadataItem('NANSAT_Projection', srs.replace(",", "|").replace('"', "&"))
@@ -437,7 +437,7 @@ class Nansat(Domain):
                 if lin > float(rasterYSize):
                     lin = rasterYSize
                 iNode.replaceAttribute("Line", str(lin))
-        
+
         # Write the modified elemements into VRT
         self.vrt.write_xml(str(node0.rawxml()))
 
@@ -488,7 +488,7 @@ class Nansat(Domain):
         # get dictionary of bands metadata
         bands = self.bands()
         outString = ''
-        
+
         for b in bands:
             # print band number, name
             outString += "Band : %d %s\n" % (b, bands[b].get('band_name', ''))
@@ -847,7 +847,7 @@ class Nansat(Domain):
         band = self.get_GDALRasterBand(bands[0])
         longName = band.GetMetadata().get("long_name", '')
         units = band.GetMetadata().get("units", '')
-        
+
         # make caption
         caption = longName + ' [' + units + ']'
         self.logger.info('caption: %s ' % caption)
@@ -863,9 +863,9 @@ class Nansat(Domain):
 
     def write_geotiffimage(self, fileName, bandID=1):
         ''' Writes an 8-bit GeoTiff image for a given band.
-        
-        The output GeoTiff image is convenient e.g. for display in a GIS tool. 
-        Colormap is fetched from the metadata item 'colormap'. 
+
+        The output GeoTiff image is convenient e.g. for display in a GIS tool.
+        Colormap is fetched from the metadata item 'colormap'.
             Fallback colormap is 'jet'.
         Color limits are fetched from the metadata item 'minmax'.
             If 'minmax' is not specified, min and max of raster is used.
@@ -876,17 +876,17 @@ class Nansat(Domain):
             bandID: integer or string(default = 1)
 
         AK: Two thirds of this method is done in write_figure()
-        I would suggest rather to get rid of write_geotiffimage() and add 
+        I would suggest rather to get rid of write_geotiffimage() and add
         functionality to write_figure(). E.g.:
         if DEFAULT_EXTENSION=GTiff:
             # save as tif
-            # add georeference to the ouput file c.a.: 
+            # add georeference to the ouput file c.a.:
             # ds = gdal.Open(outFile, 'RW')
             # ds.SetProjection(self.vrt.dataset.GetProjection())
             # ...GeoTransform...
             # ...GCPs...
-        
-        
+
+
         '''
         bandNumber = self._get_band_number(bandID)
         band = self.get_GDALRasterBand(bandID)
@@ -895,9 +895,9 @@ class Nansat(Domain):
         if minmax is None:
             (rmin, rmax) = band.ComputeRasterMinMax(1)
             minmax = str(rmin) + ' ' + str(rmax)
-            
-        # Apply offset and scaling if available 
-        #  (not necessary when a LUT is available, 
+
+        # Apply offset and scaling if available
+        #  (not necessary when a LUT is available,
         #   and when no offset/scaling should be specified)
         try:
             offset = float(band.GetMetadataItem('offset'))
@@ -907,18 +907,18 @@ class Nansat(Domain):
             minmax = str((minval-offset)/scale) + ' ' + str((maxval-offset)/scale)
         except:
             pass
-        
+
         # Create a temporary VRT file (no colormap yet) and convert this to 8-bit geotiff image
-        # Should ideally do this directly with GDAL Python API (CreateCopy), 
+        # Should ideally do this directly with GDAL Python API (CreateCopy),
         # but gdal_translate provides conenient scaling and conversion to Byte
         tmpVRTFileName = fileName + '.tmp.VRT'
         self.vrt.export(tmpVRTFileName)
-        
+
         # Add colormap from WKV to the VRT file
         try:
             colormap = band.GetMetadataItem('colormap')
         except:
-            colormap = 'jet'   
+            colormap = 'jet'
         try:
             cmap = cm.get_cmap(colormap, 256)
             cmap = cmap(arange(256))*255
@@ -931,12 +931,12 @@ class Nansat(Domain):
             tmpFile.GetRasterBand(bandNumber).SetColorTable(colorTable)
             tmpFile = None
         except:
-            print 'Could not add colormap; Matplotlib may not be available.'            
+            print 'Could not add colormap; Matplotlib may not be available.'
 
-        os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName + 
-            ' -b ' + str(bandNumber) + ' -ot Byte -scale ' + minmax + ' 0 255' + 
+        os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName +
+            ' -b ' + str(bandNumber) + ' -ot Byte -scale ' + minmax + ' 0 255' +
             ' -co "COMPRESS=LZW"')
-        os.remove(tmpVRTFileName)        
+        os.remove(tmpVRTFileName)
 
 
     def get_time(self, bandID=None):
@@ -1083,8 +1083,8 @@ class Nansat(Domain):
         # If none of the mappers worked - try generic gdal.Open
         tmpVRT = None
         # For debugging:
-        """
-        mapper_module = __import__('mapper_NetCDF')
+        #"""
+        mapper_module = __import__('mapper_ASAR')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1121,10 +1121,10 @@ class Nansat(Domain):
 
     def _get_band_number(self, bandID):
         '''Return absolute band number
-        
+
         Check if given band_id is valid
         Return absolute number of the band in the VRT
-        
+
         Parameters
         ----------
             bandID: int or str
@@ -1151,16 +1151,16 @@ class Nansat(Domain):
             raise OptionError("Cannot find band %s! "
                               "bandNumber is from 1 to %s" %
                               (str(bandID), self.vrt.dataset.RasterCount))
-        
+
         return bandNumber
 
     def mosaic(self, files=[], bands=[], geoloc=False, **kwargs):
         '''Mosaic input files. If images overlap, calculate average
-        
+
         Convert all input files into Nansat objects, reproject, get bands,
         put bands into a 3D cube, average, add averaged bands to the current
         object.
-        
+
         mosaic() tries to get band 'mask' from the input files. The mask
         should have the following coding:
             0:   nodata
@@ -1172,9 +1172,9 @@ class Nansat(Domain):
         (i.e. where mask == 128).
         If it cannot locate the band 'mask' is assumes that all pixels are
         averagebale except for thouse out of swath after reprojection.
-        
+
         mosaic() works only with empty or projected Nansat objects
-        
+
         Parameters
         ----------
             files: list
@@ -1188,19 +1188,19 @@ class Nansat(Domain):
         '''
         # get Nansat child class
         nClass = kwargs.get('nClass', Nansat)
-            
+
         # get desired shape
         dstShape = self.shape()
         self.logger.debug('dstShape: %s' % str(dstShape))
-        
+
         # preallocate 3D matrices for products and mask
         self.logger.debug('Allocating 3D cubes')
         cubes = {}
         for b in bands:
             cubes[b] = np.zeros((len(files), dstShape[0], dstShape[1]))
         cubes['mask'] = np.zeros((len(files), dstShape[0], dstShape[1]))
-        
-        
+
+
         for i, f in enumerate(files):
             self.logger.debug('Processing %s' % f)
             # open file using Nansat or its child class
@@ -1211,14 +1211,14 @@ class Nansat(Domain):
             except:
                 mask = 128 * np.ones(n.shape()).astype('int8')
                 n.add_band(mask, p={'band_name': 'mask'})
-            
+
             # use geolocation arrays (remove GCPs)
             if geoloc:
                 n.raw.dataset.SetGCPs([], None)
             n.reproject(self)
             # get reprojected mask
             mask = n['mask']
-        
+
             # add data to cube
             for b in bands:
                 self.logger.debug('    Adding %s to cube' % b)
@@ -1229,14 +1229,14 @@ class Nansat(Domain):
                 # add to cube
                 cubes[b][i,::] = a
                 cubes['mask'][i,::] = mask
-        
+
         # average products
         for b in bands:
             self.logger.debug('    Averaging %s' % b)
             cubes[b] = st.nanmean(cubes[b], 0)
         # calculate mask (max of 0, 1, 2, 3)
         cubes['mask'] = np.nanmax(cubes['mask'], 0)
-    
+
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
