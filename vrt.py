@@ -277,7 +277,7 @@ class VRT():
             self._create_band(bandDict["source"], bandDict["sourceBand"],
                     bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType)
             self.logger.debug('OK!')
-        return
+        self.dataset.FlushCache()
 
     def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource'):
         ''' Function to add a band to the VRT from a source.
@@ -377,7 +377,6 @@ class VRT():
         # set metadata from WKV and from provided parameters
         dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
         dstRasterBand = self._put_metadata(dstRasterBand, parameters)
-        self.dataset.FlushCache()
 
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands

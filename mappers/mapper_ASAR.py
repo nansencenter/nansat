@@ -33,6 +33,7 @@ class Mapper(VRT, Envisat):
                        "ByteOrder" : "MSB", "dataType": 6}
         # Add VRT RawRasterband
         geoDataset._create_band(fileName, 0, "", parameters)
+        geoDataset.dataset.FlushCache()
         # Enlarge the small band to the size of the underlying data
         self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
 

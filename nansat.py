@@ -245,6 +245,7 @@ class Nansat(Domain):
         self.addedBands.append(vrt2add)
         # add the array band into self.vrt
         self.raw._create_band(vrt2add.fileName, bandNumber, wkv, parameters)
+        self.raw.dataset.FlushCache() # required after adding bands
         # copy raw VRT object to the current vrt
         self.vrt = self.raw.copy()
 
