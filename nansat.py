@@ -148,7 +148,7 @@ class Nansat(Domain):
             self.vrt = self.raw.copy()
             if array is not None:
                 # add a band from array
-                self.add_band(array, wkv, parameters)
+                self.add_band(array=array, wkv=wkv, p=parameters)
 
         self.logger.debug('Object created from %s ' % self.fileName)
 

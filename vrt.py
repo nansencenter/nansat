@@ -840,10 +840,9 @@ class VRT():
             warpedVRT.add_geolocation(dstGeolocation)
             warpedVRT.dataset.SetProjection('')
 
-        warpedVRT.export('/data/v0.vrt')
+        # replace the reference from srcVRT to self
         rawFileName = str(os.path.basename(self.fileName))
         srcFileName = str(os.path.basename(srcVRT.fileName))
-        
         xmlString = str(warpedVRT.read_xml())
         xmlString = str(xmlString.replace(srcFileName, rawFileName))
         warpedVRT.write_xml(xmlString)

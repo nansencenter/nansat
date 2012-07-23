@@ -197,7 +197,7 @@
     <wkv>
         <standard_name>sea_ice_area_fraction</standard_name>
         <long_name>Sea Ice Concentration</long_name>
-        <units>1</units>
+        <units>%</units>
         <minmax>0 100</minmax>
         <colormap>jet</colormap>
     </wkv>
