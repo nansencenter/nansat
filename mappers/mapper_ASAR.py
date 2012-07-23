@@ -25,54 +25,55 @@ class Mapper(VRT, Envisat):
 
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
-        # prepare parameters to create a dataset with a small band from geolocation array
-        gadsDSName = 'DS_NAME="GEOLOCATION GRID ADS        "\n'
-        parameters = [{"DS_OFFSET": 3,
-                       "substream" : {"incidentAngle": 25+(4*2)*11}},
-                      {"NUM_DSR" : 5},
-                      {"DSR_SIZE" : 6}]
-        dataType = "float32"
 
-        # create a data set with a small band for incident Angle
-        incAngleDataset = self.create_geoDataset(fileName, gadsDSName, parameters, dataType)
+        # Get parameters for geolocation band
+        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["first_line_incidenceAngle"])
 
-        geoDataset.dataset.FlushCache()
-        # Enlarge the small band to the size of the underlying data
+        # Create dataset with small band
+        incAngleDataset = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
+        incAngleDataset._create_bands(parameters)
+        # Enlarge the band to the underlying data band size
         self.incAngleDataset = incAngleDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
-
-        # Create a dictionary for ASAR band and incident angle
-        metaDict = [{'source': fileName, 'sourceBand': 1, 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 'parameters':{'band_name': 'sigma0', 'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'], 'pass': gdalMetadata['SPH_PASS'], 'warning': 'fake sigma0, not yet calibrated'}},
-                    {'source': self.incAngleDataset.fileName, 'sourceBand': 1, 'wkv': '', 'parameters':{'band_name': 'Incidence Angle'}}]
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
+
+        # Create a dictionary for ASAR band and geolocation
+        metaDict = [{'source': fileName, 'sourceBand': 1, 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 'parameters':{'band_name': 'sigma0', 'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'], 'pass': gdalMetadata['SPH_PASS'], 'warning': 'fake sigma0, not yet calibrated'}}]
+
+        #add dictionary for IncidenceAngle into metaDict
+        for iBand in range(self.incAngleDataset.dataset.RasterCount):
+            bandMetadata = self.incAngleDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
+            metaDict.append({'source': self.incAngleDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
         # set time
         self._set_envisat_time(gdalMetadata)
-        '''
-        # prepare parameters to create a dataset from longitude and latitude
-        gadsDSName = 'DS_NAME="GEOLOCATION GRID ADS        "\n'
-        parameters = [{"DS_OFFSET": 3,
-                       "substream" : {"longitude": 25+(4*4)*11, "latitude": 25+(4*3)*11}},
-                      {"NUM_DSR" : 5},
-                      {"DSR_SIZE" : 6}]
-        dataType = "int32"
+
+        ''' Set GeolocationArray
+        # Get parameters for geolocation band
+        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["first_line_lats", "first_line_longs"])
+        print XSize, YSize, parameters
+        # Create dataset with small band
+        latlonVRT = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
+        latlonVRT._create_bands(parameters)
+        #print type(self.latlon)
+        latlonVRT.export("c:/Users/asumak/Data/output/geovrt.vrt")
 
         # create dataset for longitude and
-        self.geoDataset = self.create_geoDataset(fileName, gadsDSName, parameters, dataType)
-        band = self.geoDataset.dataset.GetRasterBand(1)
-        if band.GetMetadata()["band_name"] == "longitude":
+        band = latlonVRT.dataset.GetRasterBand(1)
+        if band.GetMetadata()["band_name"] == "first_line_lons":
             xBand = 1
             yBand = 2
         else:
             xBand = 2
             yBand = 1
 
-        self.add_geolocation(Geolocation(xVRT=self.geoDataset.fileName,
-                                  yVRT=self.geoDataset.fileName,
+        self.add_geolocation(Geolocation(xVRT=latlonVRT.fileName,
+                                  yVRT=latlonVRT.fileName,
                                   xBand=xBand, yBand=yBand,
                                   srs = gdalDataset.GetGCPProjection()))
         '''
+

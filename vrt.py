@@ -322,18 +322,13 @@ class VRT():
         # if add VRT RawRasterBand
         if sourceBands[0] == 0:
             options = ["subclass=VRTRawRasterBand",
-                       "SourceFilename=%s" % source[0],
-                       "ImageOffset=%f" % parameters["ImageOffset"],
-                       "PixelOffset=%f" % parameters["PixelOffset"],
-                       "LineOffset=%f" % parameters["LineOffset"],
-                       "ByteOrder=%s" % parameters["ByteOrder"]]
-            self.dataset.AddBand(parameters["dataType"], options)
-            if "band_name" in parameters:
-                dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
-                dstRasterBand = self._put_metadata(dstRasterBand,
-                                                   {"band_name" : parameters["band_name"]})
-                self.dataset.FlushCache()
-            return
+                       "SourceFilename=%s" % parameters.pop("source"),
+                       "ImageOffset=%f" % parameters.pop("ImageOffset"),
+                       "PixelOffset=%f" % parameters.pop("PixelOffset"),
+                       "LineOffset=%f" % parameters.pop("LineOffset"),
+                       "ByteOrder=%s" % parameters.pop("ByteOrder")]
+            dataType = parameters.pop("dataType")
+
         # else
         else:
             # Find datatype and blocksizes
@@ -352,35 +347,36 @@ class VRT():
                            'PixelFunctionType=' + parameters["pixel_function"]]
             else:
                 options = []
-            self.dataset.AddBand(dataType, options=options)
-            dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
+        self.dataset.AddBand(dataType, options=options)
+        dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
-        md = {}
-        rasterXSize=self.dataset.RasterXSize
-        rasterYSize=self.dataset.RasterYSize
-        for i in range(len(sourceBands)):
-            bandSource = self.ComplexSource.substitute(
-                                SourceType=SourceType,
-                                XSize=rasterXSize,
-                                YSize=rasterYSize,
-                                BlockXSize=blockXSize,
-                                BlockYSize=blockYSize,
-                                NODATA=NODATA,
-                                LUT=LUT,
-                                DataType=dataType,
-                                Dataset=source[i], SourceBand=sourceBands[i])
+        if SourceType == "ComplexSource":
+            md = {}
+            rasterXSize=self.dataset.RasterXSize
+            rasterYSize=self.dataset.RasterYSize
+            for i in range(len(sourceBands)):
+                bandSource = self.ComplexSource.substitute(
+                                    SourceType=SourceType,
+                                    XSize=rasterXSize,
+                                    YSize=rasterYSize,
+                                    BlockXSize=blockXSize,
+                                    BlockYSize=blockYSize,
+                                    NODATA=NODATA,
+                                    LUT=LUT,
+                                    DataType=dataType,
+                                    Dataset=source[i], SourceBand=sourceBands[i])
 
+                if "pixel_function" in parameters:
+                    md['source_' + str(i)] = bandSource
+
+            # Append sources to destination dataset
             if "pixel_function" in parameters:
-                md['source_' + str(i)] = bandSource
-
-        # Append sources to destination dataset
-        if "pixel_function" in parameters:
-            dstRasterBand.SetMetadata(md, 'vrt_sources')
-        else:
-            dstRasterBand.SetMetadataItem("source_0", bandSource,
-                                "new_vrt_sources")
+                dstRasterBand.SetMetadata(md, 'vrt_sources')
+            else:
+                dstRasterBand.SetMetadataItem("source_0", bandSource,
+                                    "new_vrt_sources")
 
         # set metadata from WKV and from provided parameters
         dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))

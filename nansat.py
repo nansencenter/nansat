@@ -214,7 +214,7 @@ class Nansat(Domain):
         vrt2add = None
         bandNumber = None
         parameters = None
-        
+
         if fileName is not None:
             n = Nansat(fileName)
             n.reproject(self)
@@ -222,13 +222,13 @@ class Nansat(Domain):
             bandNumber = n._get_band_number(bandID)
             parameters = n.get_metadata(bandID=bandID)
             wkv = parameters.get('band_name', '')
-                        
+
         if vrt is not None:
             vrt2add = vrt
             bandNumber = bandID
             parameters = vrt.dataset.GetRasterBand(bandID).GetMetadata()
             wkv = parameters.get('band_name', '')
-            
+
         if array is not None:
             vrt2add = VRT(array=array)
             bandNumber = 1
@@ -532,7 +532,7 @@ class Nansat(Domain):
         if dstDomain is None:
             self.vrt = self.raw.copy()
             return
-        
+
         # get projection of destination dataset
         dstSRS = dstDomain.vrt.dataset.GetProjection()
 
