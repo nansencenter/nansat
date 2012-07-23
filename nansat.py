@@ -128,8 +128,8 @@ class Nansat(Domain):
         # set input file name
         self.fileName = fileName
         # name, for compatibility with some Domain methods
-        self.name = os.path.basename(fileName);
-        self.path = os.path.dirname(fileName);
+        self.name = os.path.basename(fileName)
+        self.path = os.path.dirname(fileName)
 
         self.latVRT = None
         self.lonVRT = None
@@ -224,14 +224,10 @@ class Nansat(Domain):
             wkv = parameters.get('band_name', '')
                         
         if vrt is not None:
-            print 'VRT NOT NONE!'
             vrt2add = vrt
-            print vrt2add.fileName
             bandNumber = bandID
             parameters = vrt.dataset.GetRasterBand(bandID).GetMetadata()
             wkv = parameters.get('band_name', '')
-            print parameters
-            print wkv
             
         if array is not None:
             vrt2add = VRT(array=array)
@@ -501,7 +497,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, resamplingAlg=0, geoloc=False):
+    def reproject(self, dstDomain=None, resamplingAlg=0):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -537,132 +533,22 @@ class Nansat(Domain):
             self.vrt = self.raw.copy()
             return
         
-        # reproject using GCPs of destination image and quit
-        gcps = dstDomain.vrt.dataset.GetGCPs()
-        if len(gcps) > 0:
-            self.reproject_on_gcp(dstDomain, resamplingAlg)
-            return
+        # get projection of destination dataset
+        dstSRS = dstDomain.vrt.dataset.GetProjection()
+
+        # get destination GCPs
+        dstGCPs = dstDomain.vrt.dataset.GetGCPs()
+        if len(dstGCPs) > 0:
+            # get projection of destination GCPs
+            dstSRS = dstDomain.vrt.dataset.GetGCPProjection()
+
+        # create Warped VRT
+        warpedVRT = self.raw.create_warped_vrt(
+                    dstSRS=dstSRS, dstGCPs=dstGCPs,
+                    xSize=dstDomain.vrt.dataset.RasterXSize,
+                    ySize=dstDomain.vrt.dataset.RasterYSize,
+                    geoTransform=dstDomain.vrt.dataset.GetGeoTransform())
         
-        # reproject using GeoTransform of destination image
-        # Get source SRS (either Projection or GCPProjection or GeolocationProjection)
-        srcWKT = self.raw.dataset.GetProjection()
-        if srcWKT == '':
-            srcWKT = self.raw.dataset.GetGCPProjection()
-        if srcWKT == '':
-            srcWKT = self.raw.dataset.GetMetadataItem('SRS', 'GEOLOCATION')
-
-        if srcWKT == '':
-            raise ProjectionError("Nansat.reproject(): "
-                                  "rawVrt.GetProjection() is None")
-
-        # get copy of raw VRT
-        raw = self.raw.copy()
-        # remove GCPS in order to apply geolocation warping
-        if geoloc and len(raw.geoloc.d) > 0:
-            raw.dataset.SetGCPs([], '')
-        # warp the Raw VRT onto the coordinate stystem given by input Domain
-        warpedVRT = gdal.AutoCreateWarpedVRT(
-                               raw.dataset, srcWKT,
-                               dstDomain.vrt.dataset.GetProjection(),
-                               resamplingAlg)
-
-        # set default vrt to be the warped one
-        warpedVRT = VRT(vrtDataset=warpedVRT)
-
-        # modify extent of the created Warped VRT
-        warpedVRT._modify_warped_XML(
-                                   dstDomain.vrt.dataset.RasterXSize,
-                                   dstDomain.vrt.dataset.RasterYSize,
-                                   dstDomain.vrt.dataset.GetGeoTransform())
-
-        # check created Warped VRT
-        if warpedVRT.dataset is None:
-            raise AttributeError("Nansat.reproject():cannot get warpedVRT")
-
-        self.vrt = warpedVRT
-
-    def reproject_on_gcp(self, gcpImage, resamplingAlg=0):
-        ''' Reproject the object onto the input object with gcps
-        NB! This is a test function required urgently for the open-wind
-        project. It is tesed only on NCEP or GLOBAL DEM and
-        RADARSAT2 or MERIS images and should be refined and
-        added to Nansat.reproject()
-
-        Parameters
-        ----------
-            gcpImage: Nansat object of an image with GCPs
-            resamplingAlg: integer, option for AutoCreateWarpedVRT
-
-        Modifies
-        --------
-            self.vrt: VRT object with VRT dataset
-                replaced with warpedVRT
-
-        '''
-        dstDataset = gcpImage.vrt.dataset
-
-        # prepare pure lat/lon WKT
-        latlongWKT = self._latlong_srs().ExportToWkt()
-
-        # get source SRS (either Projection or GCPProjection)
-        srcWKT = self.vrt.dataset.GetProjection()
-        if srcWKT == '':
-            srcWKT = self.vrt.dataset.GetGCPProjection()
-
-        # the transformer converts lat/lon to pixel/line of SRC image
-        srcTransformer = gdal.Transformer(
-                             self.vrt.dataset, None,
-                             ['SRC_SRS=' + srcWKT,
-                             'DST_SRS=' + latlongWKT])
-
-        # get GCPs from DST image
-        gcps = dstDataset.GetGCPs()
-
-        # create 'fake' GCPs
-        for g in gcps:
-            # transform DST lat/lon to SRC pixel/line
-            succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
-            srcPixel = point[0]
-            srcLine = point[1]
-
-            # swap coordinates in GCPs:
-            # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
-            g.GCPX = g.GCPPixel
-            g.GCPY = g.GCPLine
-            g.GCPPixel = srcPixel
-            g.GCPLine = srcLine
-
-        # make copy of the RAW VRT file and replace GCPs
-        tmpVRT = self.raw.copy()
-
-        # create 'fake' STEREO projection for 'fake' GCPs of SRC image
-        srsString = ("+proj=stere +lon_0=0 +lat_0=0 +k=1 "
-                     "+ellps=WGS84 +datum=WGS84 +no_defs ")
-        stereoSRS = osr.SpatialReference()
-        stereoSRS.ImportFromProj4(srsString)
-        stereoSRSWKT = stereoSRS.ExportToWkt()
-        tmpVRT.dataset.SetGCPs(gcps, stereoSRSWKT)
-        tmpVRT.dataset.SetProjection('')
-
-        tmpVRT._remove_geotransform()
-
-        # create warped vrt out of tmp vrt
-        rawWarpedVRT = gdal.AutoCreateWarpedVRT(tmpVRT.dataset, stereoSRSWKT,
-                                                stereoSRSWKT,
-                                                resamplingAlg)
-        self.logger.debug('rawWarpedVRT: %s' % str(rawWarpedVRT))
-        warpedVRT = VRT(vrtDataset=rawWarpedVRT)
-
-        # change size and geotransform to fit the DST image
-        warpedVRT._modify_warped_XML(dstDataset.RasterXSize,
-                                     dstDataset.RasterYSize,
-                                     (0, 1, 0, 0, 0, 1))
-
-        #append GCPs and Projection from the dstImage
-        warpedVRT.dataset.SetGCPs(dstDataset.GetGCPs(),
-                                  dstDataset.GetGCPProjection())
-        warpedVRT.dataset.SetProjection('')
-        # set current VRT to be warped
         self.vrt = warpedVRT
 
     def watermask(self, mod44path=None, dstDomain=None):
@@ -717,13 +603,11 @@ class Nansat(Domain):
         else:
             # MOD44W data does exist: open the VRT file in Nansat
             watermask = Nansat(mod44path + '/MOD44W.vrt')
-            # choose reprojection method
-            if dstDomain is not None:
-                watermask.reproject(dstDomain)
-            elif self.vrt.dataset.GetGCPCount() == 0:
-                watermask.reproject(Domain(ds=self.vrt.dataset))
+            # reproject on self or given Domain
+            if dstDomain is None:
+                watermask.reproject(self)
             else:
-                watermask.reproject_on_gcp(self)
+                watermask.reproject(dstDomain)
 
         return watermask
 
@@ -1083,7 +967,7 @@ class Nansat(Domain):
         # If none of the mappers worked - try generic gdal.Open
         tmpVRT = None
         # For debugging:
-        #"""
+        """
         mapper_module = __import__('mapper_ASAR')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
@@ -1110,6 +994,7 @@ class Nansat(Domain):
             tmpVRT = VRT(gdalDataset=gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
                 tmpVRT._create_band(self.fileName, iBand+1, '', {})
+                tmpVRT.dataset.FlushCache()
 
         return tmpVRT
 
