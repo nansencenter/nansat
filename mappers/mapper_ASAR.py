@@ -52,28 +52,34 @@ class Mapper(VRT, Envisat):
         # set time
         self._set_envisat_time(gdalMetadata)
 
-        ''' Set GeolocationArray
+        ''' Set GeolocationArray'''
+        '''
         # Get parameters for geolocation band
         XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["first_line_lats", "first_line_longs"])
-        print XSize, YSize, parameters
+        # Get geolocParameter (=[pixelOffset, linelOffset, pixelStep, lineStep])
+        geolocParameter = self.get_GeoArrayParameters(fileName, product[0:4], ["num_lines"])
+
         # Create dataset with small band
         latlonVRT = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
         latlonVRT._create_bands(parameters)
-        #print type(self.latlon)
-        latlonVRT.export("c:/Users/asumak/Data/output/geovrt.vrt")
+        #latlonVRT.export("c:/Users/asumak/Data/output/geovrt.vrt")
 
         # create dataset for longitude and
-        band = latlonVRT.dataset.GetRasterBand(1)
-        if band.GetMetadata()["band_name"] == "first_line_lons":
-            xBand = 1
-            yBand = 2
-        else:
-            xBand = 2
-            yBand = 1
+        for iBand in range(latlonVRT.dataset.RasterCount):
+            print iBand
+            band = latlonVRT.dataset.GetRasterBand(iBand+1)
+            if band.GetMetadata()["band_name"] == "first_line_longs":
+                xBand = iBand+1
+            elif band.GetMetadata()["band_name"] == "first_line_lats":
+                yBand = iBand+1
 
         self.add_geolocation(Geolocation(xVRT=latlonVRT.fileName,
                                   yVRT=latlonVRT.fileName,
                                   xBand=xBand, yBand=yBand,
-                                  srs = gdalDataset.GetGCPProjection()))
+                                  srs = gdalDataset.GetGCPProjection(),
+                                  lineOffset = geolocParameter[1],
+                                  lineStep = geolocParameter[3],
+                                  pixelOffset = geolocParameter[0],
+                                  pixelStep = geolocParameter[2]))
         '''
 

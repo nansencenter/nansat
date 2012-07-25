@@ -8,7 +8,7 @@
 # Copyright:   (c) asumak 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import VRT
+from vrt import VRT, Geolocation
 from envisat import Envisat
 
 class Mapper(VRT, Envisat):
@@ -74,3 +74,35 @@ class Mapper(VRT, Envisat):
 
         # set time
         self._set_envisat_time(gdalMetadata)
+
+
+        ''' Set GeolocationArray '''
+        '''
+        # Get parameters for geolocation band
+        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["latitude", "longitude"])
+        # Get geolocParameter (=[pixelOffset, linelOffset, pixelStep, lineStep])
+        geolocParameter = self.get_GeoArrayParameters(fileName, product[0:4])
+
+        # Create dataset with small band
+        latlonVRT = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
+        latlonVRT._create_bands(parameters)
+
+        # create dataset for longitude and
+        for iBand in range(latlonVRT.dataset.RasterCount):
+            band = latlonVRT.dataset.GetRasterBand(iBand+1)
+            if band.GetMetadata()["band_name"] == "longitude":
+                xBand = iBand+1
+            elif band.GetMetadata()["band_name"] == "latitude":
+                yBand = iBand+1
+
+        self.add_geolocation(Geolocation(xVRT=latlonVRT.fileName,
+                                  yVRT=latlonVRT.fileName,
+                                  xBand=xBand, yBand=yBand,
+                                  srs = gdalDataset.GetGCPProjection(),
+                                  lineOffset = geolocParameter[1],
+                                  lineStep = geolocParameter[3],
+                                  pixelOffset = geolocParameter[0],
+                                  pixelStep = geolocParameter[2]))
+        '''
+
+

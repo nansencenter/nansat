@@ -9,117 +9,123 @@ class Envisat():
         productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
         self._set_time(parse(productTime))
 
-    def read_scaling_gads(self, fileName, indeces):
-        ''' Read Scaling Factor GADS to get scalings of MERIS L1/L2'''
-
-        maxGADS = max(indeces) + 1
-
-        # open file, find offset
-        f = file(fileName, 'rt')
-        headerLines = f.readlines(100)
-        gadsDSNameString = 'DS_NAME="Scaling Factor GADS         "\n'
-        if gadsDSNameString in headerLines:
-            i1 = headerLines.index(gadsDSNameString)
-            iGadsOffset = i1 + 3
-            scalingGADSOffset = int(headerLines[iGadsOffset].\
-                               replace('DS_OFFSET=', '').replace('<bytes>', ''))
-        f.close()
-
-        # fseek to gads, read all into a list
-        f = file(fileName, 'rb')
-        f.seek(scalingGADSOffset, 0)
-        allGADSValues = []
-        for i in range(maxGADS):
-            fbString = f.read(4)
-            fbVal = unpack('>f', fbString)[0]
-            allGADSValues.append(fbVal)
-        f.close()
-
-        #get only values required for the mapper
-        return [allGADSValues[i] for i in indeces]
-
-    def create_geoDataset(self, fileName, gadsDSName, parameters, dataType):
-        ''' Create a dataset with a geolocation band.
-
-        Create a dataset with VRTRawRasterBand for geolocation.
-        The size of the band is small.
-        the column is 11 and the row depends on the data.
+    def find_offset(self, fileName, gadsDSName, stepDict, dataDict={}):
+        '''
+        Return a band wchich include parameters (offsets and steps)
+        for creating Geolocation Array metadata
 
         Parameters
         ----------
-            fileName: string.
-                      fileName of the underlying data.
-            gadsDSName : string.
-                         dataset name.
-            parameters : dictionary.
-                         key is a name of the dataset.
-                         values is an integer that shows the offset.
-            dataType : string. (python dataType)
-                        "uint16", "int16", "uint32","int32",
-                        "float32", "float64" or "complex64"
+            fileName: string
+                       fileName of the underlying data
+            gadsDSName : string
+            stepDict : dictionary
+                key is a name of ADS.
+                value is offset form the beginning of gadsDSName
+            dataDict : dictionary
+                key is a name in "DS_OFFSET".
+                value is offset from the beginning of "DS_OFFSET".
 
         Returns
         -------
-            geoDataset : dataset with a small geolocation band
-
+            offsetDict : dictionary
+                keys are keys in stepDict and dataDict.
+                values are offset from the beginning of the file
         '''
         # open file, find offset
         f = file(fileName, 'rt')
         headerLines = f.readlines(150)
         offsetDict = {}
-        bandNames = []
 
         # create a dictionary which has offsets
         if gadsDSName in headerLines:
             gridOffset = headerLines.index(gadsDSName)
-            for iDic in parameters:
-                keys = iDic.keys()
-                subDict = None
-                if "substream" in keys:
-                    subDict = iDic["substream"]
-                    keys.remove("substream")
-                for ikey in keys:
-                    offset = gridOffset + iDic[ikey]
-                    offsetDict[ikey] = int(headerLines[offset].replace(ikey+'=', '').replace('<bytes>', ''))
-                    if subDict is not None:
-                        for j, jkey in enumerate (subDict.keys()):
-                            bandNames.append(jkey)
-                            offsetDict[bandNames[j]] = offsetDict[ikey] + int(subDict[bandNames[j]])
+            for iKey in stepDict:
+                offsetDict[iKey]  = int(headerLines[gridOffset + stepDict[iKey]].replace(iKey+"=", '').replace('<bytes>', ''))
+            if dataDict != {}:
+                for jkey in dataDict:
+                    offsetDict[jkey] = int(offsetDict["DS_OFFSET"]) + dataDict[jkey]["offset"]
+        f.close()
+        return offsetDict
 
-        # convert python dataType to gdal dataType index
-        dataType = { "uint16": 2, "int16": 3 , "uint32": 4,
-                     "int32": 5 , "float32": 6, "float64": 7,
-                     "complex64": 11}.get(dataType, 6)
-        # get size of the dataType in byte
-        pixOffset = {2:2, 3:2, 4:4, 5:4, 6:4, 7:8, 11:8}.get(dataType, 4)
 
-        # Create a small empty VRT for incident angle
-        #geoDataset = VRT(srcRasterXSize=11, srcRasterYSize=offsetDict["NUM_DSR"])
+    def read_allList(self, fileName, offsetDict, keyName, calcsize, numOfReadData):
+        '''
+        Read data based on indices of data
 
-        metaDict = []
-        for iBandName in bandNames:
-            # Make a dictionary that is parameters for creating a band
-            parameters = { "ImageOffset" : offsetDict[iBandName],
-                           "PixelOffset" : pixOffset,
-                           "LineOffset" : offsetDict["DSR_SIZE"],
-                           "ByteOrder" : "MSB", "dataType": dataType,
-                           "band_name": iBandName}
-            metaDict.append({'source': fileName, 'sourceBand': 0, 'wkv': '', 'parameters': parameters })
-        # Add VRTRawRasterband
-        geoDataset._create_bands(metaDict)
-        return geoDataset
-    '''
-    Reference:
-    Meris :    http://earth.eo.esa.int/pcs/envisat/meris/documentation/meris_3rd_reproc/Vol11_Meris_6a.pdf
-                --> p52
-    ASAR :      http://envisat.esa.int/handbooks/asar/CNTR6-6-9.htm#eph.asar.asardf.asarrec.ASAR_Geo_Grid_ADSR
-    '''
+        Parameters
+        ----------
+            fileName : string
+            offsetDict : dictionary
+                key is title(name) of ADS, values is index of the key
+            keyName : string
+                key in ADSR_list
+            calcsize: data type format
+            numOfReadData: int
+                number of reading data
+                step = {'LINES_PER_TIE_PT':-4, 'SAMPLES_PER_TIE_PT':-3}
+        Returns
+        -------
+            allGADSValues : list
+                includes values which are read from the file.
+                the number of elements is numOdReadData.
+        '''
+        # fseek to gads, read all into a list
+        f = file(fileName, 'rb')
+        f.seek(offsetDict[keyName], 0)
+        allGADSValues = []
+        for i in range(numOfReadData):
+            fbString = f.read(4)
+            fbVal = unpack(calcsize, fbString)[0]
+            allGADSValues.append(fbVal)
+        f.close()
+        return allGADSValues
 
-    def get_parameters(self, fileName, fileType, data_key):
+    def read_scaling_gads(self, fileName, indeces):
+        ''' Read Scaling Factor GADS to get scalings of MERIS L1/L2
+
+        Parameters
+        ----------
+            fileName : string
+            indeces : list
+
+        Returns
+        -------
+            list
+        '''
+        maxGADS = max(indeces) + 1
+        # open file, find offset
+        gadsDSName = 'DS_NAME="Scaling Factor GADS         "\n'
+        step = {"DS_OFFSET" : 3}
+        offsetDict = self.find_offset(fileName, gadsDSName, step)
+        allGADSValues = self.read_allList(fileName, offsetDict, "DS_OFFSET", '>f', maxGADS)
+
+        #get only values required for the mapper
+        return [allGADSValues[i] for i in indeces]
+
+    def get_ADSRlist(self, fileType):
+        '''
+        Parameters
+        ----------
+            fileType : string ("MER_" or "ASA_")
+
+        Returns
+        -------
+            gadsDSName : string
+            ADSR_list : list
+                includes "key name for geolocation", "offset", "datatype" and "unit"
+
+        See also
+        ---------
+            Meris : http://earth.eo.esa.int/pcs/envisat/meris/documentation/meris_3rd_reproc/Vol11_Meris_6a.pdf (--> p52)
+            ASAR :  http://envisat.esa.int/handbooks/asar/CNTR6-6-9.htm#eph.asar.asardf.asarrec.ASAR_Geo_Grid_ADSR
+        '''
+
         if fileType == "MER_":
             gadsDSName = 'DS_NAME="Tie points ADS              "\n'
             ADSR_list = {
              "Dim" : 71,
+             "temp"                      : {"offset" : 0          , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
              "latitude"                  : {"offset" : 13         , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
              "longitude"                 : {"offset" : 13+284*1   , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
              "DME altitude"              : {"offset" : 13+284*2   , "datatype" : "int32" , "unit" : "m"},
@@ -140,39 +146,54 @@ class Envisat():
             gadsDSName = 'DS_NAME="GEOLOCATION GRID ADS        "\n'
             ADSR_list = {
              "Dim" : 11,
-             "first_line_samp_numbers"      : {"offset" : 25               , "datatype" : "int32"  , "unit" : ""},
-             "first_samp_numbers"           : {"offset" : 25+11*4*0        , "datatype" : "float32", "unit" : "ns"},
-             "first_slant_range_times"      : {"offset" : 25+11*4*1        , "datatype" : "float32", "unit" : "deg"},
-             "first_line_incidenceAngle"    : {"offset" : 25+11*4*2        , "datatype" : "float32", "unit" : "deg"},
-             "first_line_lats"              : {"offset" : 25+11*4*3        , "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
-             "first_line_longs"             : {"offset" : 25+11*4*4        , "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
-             "last_line_samp_numbers"       : {"offset" : 25+11*5+34+11*4*0, "datatype" : "int32"  , "unit" : ""},
-             "last_line_slant_range_times"  : {"offset" : 25+11*5+34+11*4*1, "datatype" : "float32", "unit" : "ns"},
-             "last_line_incidenceAngle"     : {"offset" : 25+11*5+34+11*4*2, "datatype" : "float32", "unit" : "deg"},
-             "last_line_lats"               : {"offset" : 25+11*5+34+11*4*3, "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
-             "last_line_longs"              : {"offset" : 25+11*5+34+11*4*4, "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
+             "num_lines"                    : {"offset" : 13                 , "datatype" : "int"    , "unit" : ""},
+             "first_samp_numbers"           : {"offset" : 25+11*4*0          , "datatype" : "float32", "unit" : ""},
+             "first_slant_range_times"      : {"offset" : 25+11*4*1          , "datatype" : "float32", "unit" : "ns"},
+             "first_line_incidenceAngle"    : {"offset" : 25+11*4*2          , "datatype" : "float32", "unit" : "deg"},
+             "first_line_lats"              : {"offset" : 25+11*4*3          , "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
+             "first_line_longs"             : {"offset" : 25+11*4*4          , "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
+             "last_line_samp_numbers"       : {"offset" : 25+11*4*5+34+11*4*0, "datatype" : "int32"  , "unit" : ""},
+             "last_line_slant_range_times"  : {"offset" : 25+11*4*5+34+11*4*1, "datatype" : "float32", "unit" : "ns"},
+             "last_line_incidenceAngle"     : {"offset" : 25+11*4*5+34+11*4*2, "datatype" : "float32", "unit" : "deg"},
+             "last_line_lats"               : {"offset" : 25+11*4*5+34+11*4*3, "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
+             "last_line_longs"              : {"offset" : 25+11*4*5+34+11*4*4, "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
             }
+
+        return gadsDSName, ADSR_list
+
+    def get_parameters(self, fileName, fileType, data_key):
+        '''
+        Preparation for _creats_bands_().
+        Return band size and dictionary which includes
+        'source','sourceBand','wkv','parameters' and 'SourceType' as the keys.
+
+        Parameters
+        ----------
+            fileName: string
+                       fileName of the underlying data
+            fileType : string
+                       "MER_" or "ASA_"
+            data_key : list
+                       element should be one/some of keys in ADSR_list
+
+        Returns
+        -------
+            dim, offsetDict["NUM_DSR"] : int
+                        XSize and YSize of the band
+            metaDict : dictionary
+                        parameters for _creats_bands_()
+
+        '''
+        gadsDSName, ADSR_list = self.get_ADSRlist(fileType)
 
         dim = ADSR_list["Dim"]
         dataDict = {}
         for key in data_key:
             if key in ADSR_list:
                 dataDict[key] = ADSR_list[key]
+        step = {'NUM_DSR':5, 'DSR_SIZE':6, 'DS_OFFSET':3}
 
-        f = file(fileName, 'rt')
-        headerLines = f.readlines(150)
-        offsetDict = {}
-        bandNames = []
-
-        parameters = {"DS_OFFSET": 3, "NUM_DSR" : 5, "DSR_SIZE" : 6}
-        # create a dictionary which has offsets
-        if gadsDSName in headerLines:
-            gridOffset = headerLines.index(gadsDSName)
-            offsetDict["NUM_DSR"]  = int(headerLines[gridOffset + parameters["NUM_DSR"]].replace('NUM_DSR=', '').replace('<bytes>', ''))
-            offsetDict["DSR_SIZE"] = int(headerLines[gridOffset + parameters["DSR_SIZE"]].replace('DSR_SIZE=', '').replace('<bytes>', ''))
-            offsetDict["DS_OFFSET"] = int(headerLines[gridOffset + parameters["DS_OFFSET"]].replace('DS_OFFSET=', '').replace('<bytes>', ''))
-            for ikey in dataDict:
-                offsetDict[ikey] = int(offsetDict["DS_OFFSET"]) + dataDict[ikey]["offset"]
+        offsetDict = self.find_offset(fileName, gadsDSName, step, dataDict)
 
         metaDict = []
         for ikey in data_key:
@@ -190,9 +211,56 @@ class Envisat():
                            "ByteOrder" : "MSB", "dataType": dataType,
                            "band_name": ikey,
                            "unit": dataDict[ikey]["unit"]}
-            metaDict.append({'source': fileName, 'sourceBand': 0, 'wkv': ikey, 'parameters': parameters, "SourceType":"RawRasterBand" })
+            metaDict.append({'source': fileName, 'sourceBand': 0, 'wkv': ikey,
+                             'parameters': parameters, "SourceType":"RawRasterBand" })
 
         return dim,  offsetDict["NUM_DSR"], metaDict
+
+    def get_GeoArrayParameters(self, fileName, fileType, data_key=[]):
+        '''
+        Return a band wchich include parameters (offsets and steps)
+        for creating Geolocation Array metadata
+
+        Parameters
+        ----------
+            fileName: string
+                       fileName of the underlying data
+            fileType : string
+                       "MER_" or "ASA_"
+            data_key : list
+                       elements should be latitude and longitude key names in ADSR_list
+
+        Returns
+        -------
+            geolocParameter : list
+                [pixelOffset, lineOffset, pixelStep, lineStep]
+
+        '''
+        if fileType == "MER_":
+            gadsDSName = 'DS_NAME="Quality ADS                 "\n'
+            step = {'LINES_PER_TIE_PT':-4, 'SAMPLES_PER_TIE_PT':-3}
+            offsetDict = self.find_offset(fileName, gadsDSName, step)
+
+            geolocParameter = [0, 0, offsetDict["SAMPLES_PER_TIE_PT"],
+                               offsetDict["LINES_PER_TIE_PT"]]
+
+        elif fileType == "ASA_":
+            gadsDSName, ADSR_list = self.get_ADSRlist(fileType)
+
+            dataDict = {}
+            for ikey in data_key:
+                if ikey in ADSR_list:
+                    dataDict[ikey] = ADSR_list[ikey]
+            step = {'DS_OFFSET':3}
+            offsetDict = self.find_offset(fileName, gadsDSName, step, dataDict)
+            # fseek to gads, read all into a list
+            allGADSValues = self.read_allList(fileName, offsetDict, "num_lines", '>i', 14)
+
+            geolocParameter = [allGADSValues[3]-1, allGADSValues[0]-1,
+                               allGADSValues[4]-allGADSValues[3],
+                               allGADSValues[1]]
+
+        return geolocParameter
 
 #m = MERIS();
 #print m.read_scaling_gads('/Data/sat/GDAL_test/MER_FRS_1PNPDK20110817_110451_000004053105_00339_49491_7010.N1', range(7, 22))
