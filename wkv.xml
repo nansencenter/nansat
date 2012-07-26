@@ -201,4 +201,11 @@
         <minmax>0 100</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>net_primary_productivity_of_carbon</standard_name>
+        <long_name>Net Primary Production</long_name>
+        <units>kg m-2 s-1</units>
+        <minmax>0 10000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>

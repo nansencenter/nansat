@@ -104,8 +104,8 @@ class Nansat(Domain):
         # create logger
         self.logger = add_logger('Nansat', logLevel)
 
-        # create list of added bands
-        self.addedBands = []
+        # empty dict of VRTs with added bands
+        self.addedBands = {}
 
         # all available mappers
         self.mapperList = [
@@ -148,7 +148,7 @@ class Nansat(Domain):
             self.vrt = self.raw.copy()
             if array is not None:
                 # add a band from array
-                self.add_band(array=array, wkv=wkv, p=parameters)
+                self.add_band(array=array, wkv=wkv, parameters=parameters)
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
@@ -189,7 +189,7 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, fileName=None, vrt=None, bandID=1, array=None, wkv="", p=None):
+    def add_band(self, fileName=None, vrt=None, bandID=1, array=None, wkv="", parameters=None, resamplingAlg=1):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -201,9 +201,13 @@ class Nansat(Domain):
 
         Parameters
         ----------
+            fileName: name of the file to add band from
+            vrt: VRT object to add band from
+            bandID: number of the band from fileName or from vrt to be added
             array : Numpy array with band data
             wkv : string with name of WKV
-            p: dictionary for defining parameters of the band, name, etc.
+            parameters: dictionary for defining parameters of the band, name, etc.
+            resamplingAlg: 0, 1, 2 stands for nearest, bilinear, cubic
 
         Modifies
         --------
@@ -211,36 +215,59 @@ class Nansat(Domain):
             Adds band to the self.vrt
 
         '''
-        vrt2add = None
-        bandNumber = None
-        parameters = None
-
-        if fileName is not None:
-            n = Nansat(fileName)
-            n.reproject(self)
-            vrt2add = n.vrt
-            bandNumber = n._get_band_number(bandID)
-            parameters = n.get_metadata(bandID=bandID)
-            wkv = parameters.get('band_name', '')
-
-        if vrt is not None:
-            vrt2add = vrt
-            bandNumber = bandID
-            parameters = vrt.dataset.GetRasterBand(bandID).GetMetadata()
-            wkv = parameters.get('band_name', '')
-
-        if array is not None:
-            vrt2add = VRT(array=array)
-            bandNumber = 1
-            parameters = p
-
+        # None => {} in input p
         if parameters is None:
             parameters = {}
+            
+        # default added vrt, source bandNumber and metadata
+        vrt2add = None
+        bandNumber = None
+        p2add = {}
 
-        # create a band from array
-        self.addedBands.append(vrt2add)
-        # add the array band into self.vrt
-        self.raw._create_band(vrt2add.fileName, bandNumber, wkv, parameters)
+        # get band from input file name
+        if fileName is not None:
+            # create temporary nansat object
+            n = Nansat(fileName)
+            # reproject onto current grid
+            n.reproject(self)
+            # get vrt to be added
+            vrt2add = n.vrt
+            # get band metadata
+            bandNumber = n._get_band_number(bandID)
+            p2add = n.get_metadata(bandID=bandID)
+            wkv = p2add.get('band_name', '')
+
+        # get band from input VRT
+        if vrt is not None:
+            # get VRT to be added
+            vrt2add = vrt
+            # get band metadata
+            bandNumber = bandID
+            p2add = vrt.dataset.GetRasterBand(bandID).GetMetadata()
+            wkv = p2add.get('band_name', '')
+
+        # get band from input array
+        if array is not None:
+            if array.shape == self.shape():
+                # create VRT from array
+                vrt2add = VRT(array=array)
+            else:
+                # create VRT from resized array
+                srcVRT = VRT(array=array)
+                vrt2add = srcVRT.resized(self.shape()[1], self.shape()[0],
+                                         resamplingAlg)
+            # set parameters
+            bandNumber = 1
+
+        # add parameters from input
+        for pKey in parameters:
+            p2add[pKey] = parameters[pKey]
+
+        # add the array band into self.vrt and get bandName
+        bandName = self.raw._create_band(vrt2add.fileName, bandNumber, wkv, p2add)
+        # add VRT with the band to the dictionary
+        # (not to loose the VRT object and VRT file in memory)
+        self.addedBands[bandName] = vrt2add
         self.raw.dataset.FlushCache() # required after adding bands
         # copy raw VRT object to the current vrt
         self.vrt = self.raw.copy()
@@ -353,7 +380,7 @@ class Nansat(Domain):
                 except:
                     self.logger.warning(
                         'Unable to remove metadata %s from band %d' %
-                         rmMeta, iBand + 1)
+                         (rmMeta, iBand + 1))
             band.SetMetadata(bandMetadata)
 
         # Create a NetCDF file
@@ -1095,7 +1122,7 @@ class Nansat(Domain):
                 mask = n['mask']
             except:
                 mask = 128 * np.ones(n.shape()).astype('int8')
-                n.add_band(mask, p={'band_name': 'mask'})
+                n.add_band(mask, parameters={'band_name': 'mask'})
 
             # use geolocation arrays (remove GCPs)
             if geoloc:
@@ -1125,8 +1152,8 @@ class Nansat(Domain):
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=cubes['mask'], p={'band_name': 'mask'})
+        self.add_band(array=cubes['mask'], parameters={'band_name': 'mask'})
         # add averaged bands
         for b in bands:
             self.logger.debug('    %s' % b)
-            self.add_band(array=cubes[b], p={'band_name': b})
+            self.add_band(array=cubes[b], parameters={'band_name': b})

@@ -221,6 +221,9 @@ class VRT():
         if geolocation is not None:
             self.add_geolocation(geolocation)
 
+        # add self.fileName to metadata
+        self.dataset.SetMetadataItem('fileName', self.fileName)
+        
         # write file contents
         self.dataset.FlushCache()
 
@@ -285,6 +288,11 @@ class VRT():
     def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource'):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
+        
+        Returns:
+        --------
+            band_name: string, name of the added band
+            
         '''
         self.logger.info('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
         # Make sure sourceBands and source are lists, ready for loop
@@ -381,6 +389,9 @@ class VRT():
         # set metadata from WKV and from provided parameters
         dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
         dstRasterBand = self._put_metadata(dstRasterBand, parameters)
+
+        # return name of the created band
+        return parameters['band_name']
 
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands
@@ -592,7 +603,7 @@ class VRT():
         # add GEOLOCATION metadata (empty if geoloc is empty)
         self.dataset.SetMetadata(geoloc.d, 'GEOLOCATION')
 
-    def resized(self, xSize, ySize):
+    def resized(self, xSize, ySize, resamplingAlg=1):
         '''Resize VRT
 
         Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
@@ -600,6 +611,8 @@ class VRT():
         -----------
             xSize, ySize: int
                 new size of the VRT object
+            resamplingAlg:
+                0, 1, 2 stands for nearest, bilinear, cubic
 
         Returns:
         --------
@@ -619,7 +632,10 @@ class VRT():
                                            use_geoloc=False,
                                            use_gcps=False,
                                            use_geotransform=False,
-                                           resamplingAlg=1)
+                                           resamplingAlg=resamplingAlg)
+        # add source VRT (self) to the warpedVRT
+        # in order not to loose RAW file from self
+        warpedVRT.srcVRT = self
 
         return warpedVRT
 
