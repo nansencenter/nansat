@@ -22,7 +22,7 @@ class Mapper(VRT, Envisat):
             raise AttributeError("MERIS_L1 BAD MAPPER")
 
         # Get parameters for geolocation band
-        #XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["DME roughness", "viewing zenith angles"])
+        #XSize, YSize, parameters = self.get_RawBandParameters(fileName, product[0:4], ["DME roughness", "viewing zenith angles"])
         #
         # Create dataset with small band
         #geoDataset = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
@@ -75,34 +75,6 @@ class Mapper(VRT, Envisat):
         # set time
         self._set_envisat_time(gdalMetadata)
 
-
         ''' Set GeolocationArray '''
-        '''
-        # Get parameters for geolocation band
-        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["latitude", "longitude"])
-        # Get geolocParameter (=[pixelOffset, linelOffset, pixelStep, lineStep])
-        geolocParameter = self.get_GeoArrayParameters(fileName, product[0:4])
-
-        # Create dataset with small band
-        latlonVRT = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
-        latlonVRT._create_bands(parameters)
-
-        # create dataset for longitude and
-        for iBand in range(latlonVRT.dataset.RasterCount):
-            band = latlonVRT.dataset.GetRasterBand(iBand+1)
-            if band.GetMetadata()["band_name"] == "longitude":
-                xBand = iBand+1
-            elif band.GetMetadata()["band_name"] == "latitude":
-                yBand = iBand+1
-
-        self.add_geolocation(Geolocation(xVRT=latlonVRT.fileName,
-                                  yVRT=latlonVRT.fileName,
-                                  xBand=xBand, yBand=yBand,
-                                  srs = gdalDataset.GetGCPProjection(),
-                                  lineOffset = geolocParameter[1],
-                                  lineStep = geolocParameter[3],
-                                  pixelOffset = geolocParameter[0],
-                                  pixelStep = geolocParameter[2]))
-        '''
-
-
+        #latlonName = {"latitude":"latitude","longitude":"longitude"}
+        #self.add_GeolocArrayDataset(fileName, product[0:4], latlonName, gdalDataset.GetGCPProjection())

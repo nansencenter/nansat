@@ -27,7 +27,7 @@ class Mapper(VRT, Envisat):
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
         # Get parameters for geolocation band
-        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["first_line_incidenceAngle"])
+        XSize, YSize, parameters = self.get_RawBandParameters(fileName, product[0:4], ["first_line_incidenceAngle"])
 
         # Create dataset with small band
         incAngleDataset = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
@@ -52,34 +52,7 @@ class Mapper(VRT, Envisat):
         # set time
         self._set_envisat_time(gdalMetadata)
 
-        ''' Set GeolocationArray'''
-        '''
-        # Get parameters for geolocation band
-        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["first_line_lats", "first_line_longs"])
-        # Get geolocParameter (=[pixelOffset, linelOffset, pixelStep, lineStep])
-        geolocParameter = self.get_GeoArrayParameters(fileName, product[0:4], ["num_lines"])
-
-        # Create dataset with small band
-        latlonVRT = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
-        latlonVRT._create_bands(parameters)
-        #latlonVRT.export("c:/Users/asumak/Data/output/geovrt.vrt")
-
-        # create dataset for longitude and
-        for iBand in range(latlonVRT.dataset.RasterCount):
-            print iBand
-            band = latlonVRT.dataset.GetRasterBand(iBand+1)
-            if band.GetMetadata()["band_name"] == "first_line_longs":
-                xBand = iBand+1
-            elif band.GetMetadata()["band_name"] == "first_line_lats":
-                yBand = iBand+1
-
-        self.add_geolocation(Geolocation(xVRT=latlonVRT.fileName,
-                                  yVRT=latlonVRT.fileName,
-                                  xBand=xBand, yBand=yBand,
-                                  srs = gdalDataset.GetGCPProjection(),
-                                  lineOffset = geolocParameter[1],
-                                  lineStep = geolocParameter[3],
-                                  pixelOffset = geolocParameter[0],
-                                  pixelStep = geolocParameter[2]))
-        '''
+        ''' Set GeolocationArray '''
+        #latlonName = {"latitude":"first_line_lats","longitude":"first_line_longs"}
+        #self.add_GeolocArrayDataset(fileName, product[0:4], latlonName, gdalDataset.GetGCPProjection(), ["num_lines"])
 

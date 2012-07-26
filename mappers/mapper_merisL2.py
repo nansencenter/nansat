@@ -22,7 +22,7 @@ class Mapper(VRT, Envisat):
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
         # Get parameters for geolocation band
-        #XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["latitude", "zonal winds"])
+        #XSize, YSize, parameters = self.get_RawBandParameters(fileName, product[0:4], ["latitude", "zonal winds"])
         #
         # Create dataset with small band
         #geoDataset = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
@@ -66,9 +66,9 @@ class Mapper(VRT, Envisat):
             bandDict['parameters']['offset'] = str(offsets[i])
 
         #add geolocation dictionary into metaDict
-        #for iBand in range(self.geoDataset.dataset.RasterCount):
-        #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-        #    metaDict.append({'source': self.geoDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
+        for iBand in range(self.geoDataset.dataset.RasterCount):
+            bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
+            metaDict.append({'source': self.geoDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);
@@ -80,30 +80,6 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         ''' Set GeolocationArray '''
-        '''
-        # Get parameters for geolocation band
-        XSize, YSize, parameters = self.get_parameters(fileName, product[0:4], ["latitude", "longitude"])
-        # Get geolocParameter (=[pixelOffset, linelOffset, pixelStep, lineStep])
-        geolocParameter = self.get_GeoArrayParameters(fileName, product[0:4])
+        #latlonName = {"latitude":"latitude","longitude":"longitude"}
+        #self.add_GeolocArrayDataset(fileName, product[0:4], latlonName, gdalDataset.GetGCPProjection())
 
-        # Create dataset with small band
-        latlonVRT = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
-        latlonVRT._create_bands(parameters)
-
-        # create dataset for longitude and
-        for iBand in range(latlonVRT.dataset.RasterCount):
-            band = latlonVRT.dataset.GetRasterBand(iBand+1)
-            if band.GetMetadata()["band_name"] == "longitude":
-                xBand = iBand+1
-            elif band.GetMetadata()["band_name"] == "latitude":
-                yBand = iBand+1
-
-        self.add_geolocation(Geolocation(xVRT=latlonVRT.fileName,
-                                  yVRT=latlonVRT.fileName,
-                                  xBand=xBand, yBand=yBand,
-                                  srs = gdalDataset.GetGCPProjection(),
-                                  lineOffset = geolocParameter[1],
-                                  lineStep = geolocParameter[3],
-                                  pixelOffset = geolocParameter[0],
-                                  pixelStep = geolocParameter[2]))
-        '''
