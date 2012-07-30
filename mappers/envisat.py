@@ -15,11 +15,11 @@ class Envisat():
 
         Find a location of gadsDSName.
         Adjust the location with textOffset and read the text at the location.
-        Convert the text to integer and set it into offsetDict.
+        Convert the text to integer and set it into valueDict.
         If subValOffset is given, adjust the location by adding subValOffset
-        and set it into offsetDict.
-        Return the offsetDict which has names of variables and
-        the offset from the beginning of the file.
+        and set it into valueDict.
+        Return the valueDict which has names of variables and
+        values or offset of the variables.
 
         Parameters
         ----------
@@ -236,7 +236,7 @@ class Envisat():
                              'parameters': parameters, "SourceType":"RawRasterBand"})
         return dim, offsetDict["NUM_DSR"], metaDict
 
-    def get_GeoArrayParameters(self, fileName, fileType, data_key=[]):
+    def get_GeoArrayParameters(self, fileName, fileType, stepSize, data_key=[]):
         ''' Return parameters for Geolocation Domain Metadata
 
         Parameters
@@ -254,8 +254,11 @@ class Envisat():
                 [pixelOffset, lineOffset, pixelStep, lineStep]
 
         '''
+        if stepSize != 0:
+            geolocParameter = [0, 0, stepSize, stepSize]
+
         # if MERIS
-        if fileType == "MER_":
+        elif fileType == "MER_":
             gadsDSName = 'DS_NAME="Quality ADS                 "\n'
             textOffset = {'LINES_PER_TIE_PT':-4, 'SAMPLES_PER_TIE_PT':-3}
             # get values of 'LINES_PER_TIE_PT' and 'SAMPLES_PER_TIE_PT'
@@ -270,12 +273,12 @@ class Envisat():
             dataDict = {data_key[0] : ADSR_list[data_key[0]]}
             textOffset = {'DS_OFFSET':3}
             # get data format
-            fmt = {"int":"i", "int32":"i", "uint32" : "I",
-                   "float32":"f"}.get(ADSR_list[data_key[0]]["datatype"], "f")
+            fmt = {"int":">i", "int32":">i", "uint32" : ">I",
+                   "float32":">f"}.get(ADSR_list[data_key[0]]["datatype"], ">f")
             # read text data and get the offset of required key
             offsetDict = self.read_text(fileName, gadsDSName, textOffset, dataDict)
             # Read binary data from offset
-            allGADSValues = self.read_allList(fileName, offsetDict, data_key[0], fmt, 5)
+            allGADSValues = self.read_allList(fileName, offsetDict, data_key[0], fmt, 14)
             # create parameters for Geolocation Domain Metadata
             geolocParameter = [allGADSValues[3]-1, allGADSValues[0]-1,
                                allGADSValues[4]-allGADSValues[3],
@@ -311,7 +314,7 @@ class Envisat():
         vrt._create_bands(parameters)
         return vrt
 
-    def add_GeolocArrayDataset(self, fileName, fileType, latlonName, srs, parameters=[]):
+    def add_GeolocArrayDataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[], stepSize = 2):
         ''' Add geolocation domain metadata to the dataset
 
         Create VRT which has lat and lon VRTRawRasterBands.
@@ -335,6 +338,11 @@ class Envisat():
             srs :  string. SRS
             parameters : list, optional
                        elements keys in ADSR_list
+            stepSize : int > 0
+                        step size for geolocation array. default is 2.
+                        If stepSize=0, geolocation array is not enlarged.
+                        If stepSize > 0, geolocation array is enlarged to (XSize/stepSize, YSize/stepSize).
+                        If stepSize=1, geolocation size is same as the band. it takes time to calculate the reprojection.
 
         Modifies:
         ---------
@@ -345,29 +353,34 @@ class Envisat():
         geoVRT = self.create_VRTwithRawBands(fileName, fileType, [latlonName["latitude"], latlonName["longitude"]])
 
         # Get geolocParameter which is required for adding geolocation array metadata
-        geolocParameter = self.get_GeoArrayParameters(fileName, fileType, parameters)
+        geolocParameter = self.get_GeoArrayParameters(fileName, fileType, stepSize, parameters)
 
-        # Get band numbers for latitude and longitude
+
+        # Create lat and lon VRT with original units
+        '''
         for iBand in range(geoVRT.dataset.RasterCount):
             band = geoVRT.dataset.GetRasterBand(iBand+1)
             if band.GetMetadata()["band_name"] == latlonName["longitude"]:
-                xBand = iBand+1
+                lonBand = iBand+1
             elif band.GetMetadata()["band_name"] == latlonName["latitude"]:
-                yBand = iBand+1
+                latBand = iBand+1
+        '''
+        self.lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
+        self.latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
 
-        # Create lat and lon VRT with original units
-        self.latVRT = VRT(array=geoVRT.dataset.GetRasterBand(xBand).ReadAsArray()/1000000.0)
-        self.lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(yBand).ReadAsArray()/1000000.0)
+        if stepSize != 0:
+            self.latVRT = self.latVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
+            self.lonVRT = self.lonVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
 
         # Add geolocation domain metadata to the dataset
-        self.add_geolocation(Geolocation(xVRT=self.lonVRT.fileName,
-                                  yVRT=self.latVRT.fileName,
-                                  xBand=1, yBand=1,
-                                  srs=srs,
-                                  lineOffset=geolocParameter[1],
-                                  lineStep=geolocParameter[3],
-                                  pixelOffset=geolocParameter[0],
-                                  pixelStep=geolocParameter[2]))
+        self.add_geolocation(Geolocation(xVRT=self.lonVRT,
+                              yVRT=self.latVRT,
+                              xBand=1, yBand=1,
+                              srs=srs,
+                              lineOffset=geolocParameter[1],
+                              lineStep=int(geolocParameter[3]),
+                              pixelOffset=geolocParameter[0],
+                              pixelStep=int(geolocParameter[2])))
 
 
 #m = MERIS()

@@ -372,7 +372,7 @@ class Nansat(Domain):
                 bandMetadata['NETCDF_VARNAME'] = bandMetadata["band_name"]
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
-                                    % iBand)
+                                    % (iBand+1))
             # remove unwanted metadata
             for rmMeta in rmMetadata:
                 try:

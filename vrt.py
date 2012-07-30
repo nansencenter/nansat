@@ -74,7 +74,7 @@ class Geolocation():
             # make object from VRTs
             self.xVRT = xVRT
             self.d['X_DATASET'] = xVRT.fileName
-            self.yVRT = xVRT
+            self.yVRT = yVRT
             self.d['Y_DATASET'] = yVRT.fileName
 
         # proj4 to WKT
@@ -223,7 +223,7 @@ class VRT():
 
         # add self.fileName to metadata
         self.dataset.SetMetadataItem('fileName', self.fileName)
-        
+
         # write file contents
         self.dataset.FlushCache()
 
@@ -288,11 +288,11 @@ class VRT():
     def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource'):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
-        
+
         Returns:
         --------
             band_name: string, name of the added band
-            
+
         '''
         self.logger.info('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
         # Make sure sourceBands and source are lists, ready for loop
@@ -660,13 +660,13 @@ class VRT():
         warpedXML = self.read_xml()
 
         node0 = Node.create(warpedXML)
-        
+
         if rasterXSize > 0:
             node0.replaceAttribute("rasterXSize", str(rasterXSize))
         if rasterYSize > 0:
             node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
-        
+
         if geoTransform is not None:
             invGeotransform = gdal.InvGeoTransform(geoTransform)
             # convert proper string style and set to the GeoTransform element
@@ -733,13 +733,13 @@ class VRT():
                                 use_geoloc=True, use_gcps=True, use_geotransform=True,
                                 dstGCPs=[], dstGeolocation=None):
         ''' Create VRT object with WarpedVRT
-        
+
         Modifies the input VRT according to the input options
         Creates simple WarpedVRT with AutoCreateWarpedVRT
         Modifies the WarpedVRT according to the input options
-        
-        The function tries to use geolocation by default; if not present (or 
-        canceled) tries to use GCPs; if not present (or canceled) tries to use 
+
+        The function tries to use geolocation by default; if not present (or
+        canceled) tries to use GCPs; if not present (or canceled) tries to use
         GeoTransform (either from input dataset or calculates a new one with
         dx=1,dy=-1). Three switches (use_geoloc, use_gcps, use_geotransform)
         allow to select which method to apply for warping. E.g.:
@@ -753,7 +753,7 @@ class VRT():
         # are not used either. Only input GeoTranform is used
         warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize, geoTransform,
                                              use_geoloc=False, use_gcps=False)
-        
+
         # #4: srcVRT has whatever georeference, geolocation is not used, GCPs
         # are not used, GeoTransform is not used either.
         # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.xSize, -1)
@@ -761,15 +761,15 @@ class VRT():
         warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize, geoTransform,
                                              use_geoloc=False, use_gcps=False.,
                                              use_geotransform=false)
-        
-        If destination image has GCPs (provided in <dstGCPs>): fake GCPs for 
+
+        If destination image has GCPs (provided in <dstGCPs>): fake GCPs for
         referencing line/piex of SRC image and X/Y of DST image are created and
         added to the SRC image. After warping dstGCPs are added to the WarpedVRT
-        
+
         If destination image has geolocation (provided in <dstGeolocation>):
         this geolocation is added to the WarpedVRT
-        
-        
+
+
         Parameters:
         -----------
         dstSRS: string
@@ -791,22 +791,22 @@ class VRT():
         use_geotransform: Boolean (True)
             Use GeoTransform in input dataset for warping or make artificial
             GeoTransform: (0, 1, 0, srcVRT.xSize, -1)
-            
+
         Returns:
         --------
         warpedVRT: VRT object with WarpedVRT
         '''
         # VRT to be warped
         srcVRT = self.copy()
-        
-        # if destination GCPs are given: create and add fake GCPs 
+
+        # if destination GCPs are given: create and add fake GCPs
         if len(dstGCPs) > 0:
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation
             use_geoloc = False
             dstSRS=None
-            
+
         # prepare VRT.dataset for warping.
         # Select if GEOLOCATION, or GCPs, or GeoTransform from the original
         # dataset are used
@@ -831,23 +831,23 @@ class VRT():
             srcVRT.dataset.SetMetadata('', 'GEOLOCATION')
             srcVRT.dataset.SetGCPs([], '')
             srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
-        
+
         # create Warped VRT GDAL Dataset
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, dstSRS, resamplingAlg)
-        # check if Warped VRT was created 
+        # check if Warped VRT was created
         if warpedVRT is None:
             raise AttributeError("Cannot create warpedVRT!")
-        
+
         # create VRT object from Warped VRT GDAL Dataset
-        warpedVRT = VRT(vrtDataset=warpedVRT)        
-        
+        warpedVRT = VRT(vrtDataset=warpedVRT)
+
         # set x/y size, geoTransform
-        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform)        
+        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform)
 
         # if given, add dst GCPs
         if len(dstGCPs) > 0:
             warpedVRT.dataset.SetGCPs(dstGCPs, dstSRS)
-            warpedVRT._remove_geotransform()            
+            warpedVRT._remove_geotransform()
             warpedVRT.dataset.SetProjection('')
 
         # if given, add dst Geolocation
@@ -862,20 +862,20 @@ class VRT():
         xmlString = str(warpedVRT.read_xml())
         xmlString = str(xmlString.replace(srcFileName, rawFileName))
         warpedVRT.write_xml(xmlString)
-        
+
         return warpedVRT
 
     def _create_fake_gcps(self, gcps):
         '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
-        
+
         GCPs from a destination image (dstGCP) are converted to a gcp of source
         image (srcGCP) this way:
-        
+
         srcGCPPixel = srcPixel
         srcGCPLine = srcLine
         srcGCPX = dstGCPPixel = f(srcSRS, dstGCPX, dstGCPY)
         srcGCPY = dstGCPLine = f(srcSRS, dstGCPX, dstGCPY)
-        
+
         Parameters:
         -----------
         gcps: list
@@ -890,7 +890,7 @@ class VRT():
         sr = osr.SpatialReference()
         sr.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongWKT = sr.ExportToWkt()
-        
+
         # get source SRS (either Projection or GCPProjection)
         srcWKT = self.dataset.GetProjection()
         if srcWKT == '':
@@ -901,7 +901,7 @@ class VRT():
                              self.dataset, None,
                              ['SRC_SRS=' + srcWKT,
                              'DST_SRS=' + latlongWKT])
-        
+
         # create 'fake' GCPs
         for g in gcps:
             # transform DST lat/lon to SRC pixel/line
