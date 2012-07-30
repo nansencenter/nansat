@@ -21,12 +21,8 @@ class Mapper(VRT, Envisat):
         if product[0:9] != "MER_FRS_2" and product[0:9] != "MER_RR__2":
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
-        # Get parameters for geolocation band
-        #XSize, YSize, parameters = self.get_RawBandParameters(fileName, product[0:4], ["latitude", "zonal winds"])
-        #
-        # Create dataset with small band
-        #geoDataset = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
-        #geoDataset._create_bands(parameters)
+        # Create VRTdataset with small VRTRawRasterbands
+        #geoDataset = self.create_VRTwithRawBands(fileName, product[0:4], ["latitude", "zonal winds"])
         #
         # Enlarge the band to the underlying data band size
         #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
@@ -66,9 +62,9 @@ class Mapper(VRT, Envisat):
             bandDict['parameters']['offset'] = str(offsets[i])
 
         #add geolocation dictionary into metaDict
-        for iBand in range(self.geoDataset.dataset.RasterCount):
-            bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-            metaDict.append({'source': self.geoDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
+        #for iBand in range(self.geoDataset.dataset.RasterCount):
+        #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
+        #    metaDict.append({'source': self.geoDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);
@@ -81,5 +77,4 @@ class Mapper(VRT, Envisat):
 
         ''' Set GeolocationArray '''
         #latlonName = {"latitude":"latitude","longitude":"longitude"}
-        #self.add_GeolocArrayDataset(fileName, product[0:4], latlonName, gdalDataset.GetGCPProjection())
-
+        #self.add_GeolocArrayDataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection())

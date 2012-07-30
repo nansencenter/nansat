@@ -26,12 +26,9 @@ class Mapper(VRT, Envisat):
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
-        # Get parameters for geolocation band
-        XSize, YSize, parameters = self.get_RawBandParameters(fileName, product[0:4], ["first_line_incidenceAngle"])
+        # Create VRTdataset with small VRTRawRasterbands
+        incAngleDataset = self.create_VRTwithRawBands(fileName, product[0:4], ["first_line_incidenceAngle"])
 
-        # Create dataset with small band
-        incAngleDataset = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
-        incAngleDataset._create_bands(parameters)
         # Enlarge the band to the underlying data band size
         self.incAngleDataset = incAngleDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
 
@@ -54,5 +51,5 @@ class Mapper(VRT, Envisat):
 
         ''' Set GeolocationArray '''
         #latlonName = {"latitude":"first_line_lats","longitude":"first_line_longs"}
-        #self.add_GeolocArrayDataset(fileName, product[0:4], latlonName, gdalDataset.GetGCPProjection(), ["num_lines"])
+        #self.add_GeolocArrayDataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection(), ["num_lines"])
 
