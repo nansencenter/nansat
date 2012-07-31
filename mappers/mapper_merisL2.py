@@ -22,7 +22,7 @@ class Mapper(VRT, Envisat):
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
         # Create VRTdataset with small VRTRawRasterbands
-        #geoDataset = self.create_VRTwithRawBands(fileName, product[0:4], ["latitude", "zonal winds"])
+        #geoDataset = self.create_VRT_with_rawbands(fileName, product[0:4], ["latitude", "zonal winds"])
         #
         # Enlarge the band to the underlying data band size
         #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
@@ -46,7 +46,7 @@ class Mapper(VRT, Envisat):
         {'source': fileName, 'sourceBand': 17, 'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'parameters': {'band_name': 'total_susp', 'case': 'II'} },\
         {'source': fileName, 'sourceBand': 18, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_2', 'case': 'II'} },\
         {'source': fileName, 'sourceBand': 22, 'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },\
-        ];
+        ]
 
         # add 'band_name' to 'parameters'
         for bandDict in metaDict:
@@ -77,4 +77,4 @@ class Mapper(VRT, Envisat):
 
         ''' Set GeolocationArray '''
         #latlonName = {"latitude":"latitude","longitude":"longitude"}
-        #self.add_GeolocArrayDataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection())
+        #self.add_geoarray_dataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection())

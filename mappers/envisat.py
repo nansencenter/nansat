@@ -61,9 +61,9 @@ class Envisat():
         return valueDict
 
 
-    def read_allList(self, fileName, offsetDict, keyName, fmt, numOfReadData):
+    def read_all_list(self, fileName, offsetDict, keyName, fmt, numOfReadData):
         '''
-        Read binary data and return the required values
+        Read binary data and return values corresponding to keyNames
 
         Parameters
         ----------
@@ -110,13 +110,14 @@ class Envisat():
         gadsDSName = 'DS_NAME="Scaling Factor GADS         "\n'
         textOffset = {"DS_OFFSET" : 3}
         offsetDict = self.read_text(fileName, gadsDSName, textOffset)
-        allGADSValues = self.read_allList(fileName, offsetDict, "DS_OFFSET", '>f', maxGADS)
+        allGADSValues = self.read_all_list(fileName, offsetDict, "DS_OFFSET", '>f', maxGADS)
 
         #get only values required for the mapper
         return [allGADSValues[i] for i in indeces]
 
     def get_ADSRlist(self, fileType):
-        '''
+        '''Return a dictionary which incldes name of geolocation and their offset, datatype and unit.
+
         Parameters
         ----------
             fileType : string ("MER_" or "ASA_")
@@ -172,7 +173,7 @@ class Envisat():
 
         return gadsDSName, ADSR_list
 
-    def get_RawBandParameters(self, fileName, fileType, data_key):
+    def get_rawband_parameters(self, fileName, fileType, data_key):
         '''Return all parameters to create a VRTRawRasterBand.
 
         Get ADSR_list of required variables given by data_key.
@@ -236,7 +237,7 @@ class Envisat():
                              'parameters': parameters, "SourceType":"RawRasterBand"})
         return dim, offsetDict["NUM_DSR"], metaDict
 
-    def get_GeoArrayParameters(self, fileName, fileType, stepSize, data_key=[]):
+    def get_geoarray_parameters(self, fileName, fileType, stepSize, data_key=[]):
         ''' Return parameters for Geolocation Domain Metadata
 
         Parameters
@@ -278,7 +279,7 @@ class Envisat():
             # read text data and get the offset of required key
             offsetDict = self.read_text(fileName, gadsDSName, textOffset, dataDict)
             # Read binary data from offset
-            allGADSValues = self.read_allList(fileName, offsetDict, data_key[0], fmt, 14)
+            allGADSValues = self.read_all_list(fileName, offsetDict, data_key[0], fmt, 14)
             # create parameters for Geolocation Domain Metadata
             geolocParameter = [allGADSValues[3]-1, allGADSValues[0]-1,
                                allGADSValues[4]-allGADSValues[3],
@@ -286,7 +287,7 @@ class Envisat():
 
         return geolocParameter
 
-    def create_VRTwithRawBands(self, fileName, fileType, data_key):
+    def create_VRT_with_rawbands(self, fileName, fileType, data_key):
         ''' Create VRT with some small bands
 
         Get parameters for createing VRT.
@@ -307,14 +308,14 @@ class Envisat():
 
         '''
         # Get parameters for VRTRawRasterBand
-        XSize, YSize, parameters = self.get_RawBandParameters(fileName, fileType, data_key)
+        XSize, YSize, parameters = self.get_rawband_parameters(fileName, fileType, data_key)
         # Create dataset with small band
         vrt = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
         # Add VRTRawRasterBand
         vrt._create_bands(parameters)
         return vrt
 
-    def add_GeolocArrayDataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[], stepSize = 2):
+    def add_geoarray_dataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[], stepSize = 2):
         ''' Add geolocation domain metadata to the dataset
 
         Create VRT which has lat and lon VRTRawRasterBands.
@@ -350,31 +351,22 @@ class Envisat():
 
         '''
         # Create dataset with VRTRawRasterbands
-        geoVRT = self.create_VRTwithRawBands(fileName, fileType, [latlonName["latitude"], latlonName["longitude"]])
+        geoVRT = self.create_VRT_with_rawbands(fileName, fileType, [latlonName["latitude"], latlonName["longitude"]])
 
         # Get geolocParameter which is required for adding geolocation array metadata
-        geolocParameter = self.get_GeoArrayParameters(fileName, fileType, stepSize, parameters)
-
+        geolocParameter = self.get_geoarray_parameters(fileName, fileType, stepSize, parameters)
 
         # Create lat and lon VRT with original units
-        '''
-        for iBand in range(geoVRT.dataset.RasterCount):
-            band = geoVRT.dataset.GetRasterBand(iBand+1)
-            if band.GetMetadata()["band_name"] == latlonName["longitude"]:
-                lonBand = iBand+1
-            elif band.GetMetadata()["band_name"] == latlonName["latitude"]:
-                latBand = iBand+1
-        '''
-        self.lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
-        self.latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
+        lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
+        latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
 
         if stepSize != 0:
-            self.latVRT = self.latVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
-            self.lonVRT = self.lonVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
+            latVRT = latVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
+            lonVRT = lonVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
 
         # Add geolocation domain metadata to the dataset
-        self.add_geolocation(Geolocation(xVRT=self.lonVRT,
-                              yVRT=self.latVRT,
+        self.add_geolocation(Geolocation(xVRT=lonVRT,
+                              yVRT=latVRT,
                               xBand=1, yBand=1,
                               srs=srs,
                               lineOffset=geolocParameter[1],
