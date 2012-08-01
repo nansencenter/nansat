@@ -44,6 +44,8 @@ class Mapper(VRT):
         'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },
         'sst': {'wkv': 'sea_surface_temperature', 'parameters': {'band_name': 'sst'} },        
         'l2_flags': {'wkv': 'quality_flags', 'SourceType':'SimpleSource', 'parameters': {'band_name': 'l2_flags'} },
+        'latitude': {'wkv': 'latitude', 'parameters': {'band_name': 'latitude'} },
+        'longitude': {'wkv': 'longitude', 'parameters': {'band_name': 'longitude'} },
         }
         
         # loop through available bands and generate metaDict (non fixed)

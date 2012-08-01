@@ -279,6 +279,7 @@ class VRT():
             NODATA = bandDict.get("NODATA", "")
             LUT = bandDict.get("LUT", "")
             SourceType = bandDict.get('SourceType', 'ComplexSource')
+            self.logger.debug('SourceType %s' % SourceType)
             self.logger.debug('Creating band %s', str(bandDict))
             self._create_band(bandDict["source"], bandDict["sourceBand"],
                     bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType)
@@ -360,7 +361,7 @@ class VRT():
 
         # Prepare sources
         # (only one item for regular bands, several for pixelfunctions)
-        if SourceType == "ComplexSource":
+        if SourceType == "ComplexSource" or SourceType == "SimpleSource":
             md = {}
             rasterXSize=self.dataset.RasterXSize
             rasterYSize=self.dataset.RasterYSize
