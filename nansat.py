@@ -1070,7 +1070,7 @@ class Nansat(Domain):
 
         return bandNumber
 
-    def mosaic(self, files=[], bands=[], geoloc=False, **kwargs):
+    def mosaic(self, files=[], bands=[], **kwargs):
         '''Mosaic input files. If images overlap, calculate average
 
         Convert all input files into Nansat objects, reproject, get bands,
@@ -1097,8 +1097,6 @@ class Nansat(Domain):
                 list of input files
             bands: list
                 list of band_names/band_numbers to be processed
-            geoloc: boolean (False)
-                use or not geolocation arrays
             nClass: child of Nansat
                 The class to be used to read input files
         '''
@@ -1121,16 +1119,13 @@ class Nansat(Domain):
             self.logger.debug('Processing %s' % f)
             # open file using Nansat or its child class
             n = nClass(f)
-            # add mask band [0: nodata, 2: cloud, 3: land, 128: value]
+            # add mask band [0: nodata, 1: cloud, 2: land, 128: data]
             try:
                 mask = n['mask']
             except:
                 mask = 128 * np.ones(n.shape()).astype('int8')
                 n.add_band(mask, parameters={'band_name': 'mask'})
 
-            # use geolocation arrays (remove GCPs)
-            if geoloc:
-                n.raw.dataset.SetGCPs([], None)
             n.reproject(self)
             # get reprojected mask
             mask = n['mask']
@@ -1150,7 +1145,7 @@ class Nansat(Domain):
         for b in bands:
             self.logger.debug('    Averaging %s' % b)
             cubes[b] = st.nanmean(cubes[b], 0)
-        # calculate mask (max of 0, 1, 2, 3)
+        # calculate mask (max of 0, 1, 2, 128)
         cubes['mask'] = np.nanmax(cubes['mask'], 0)
 
         self.logger.debug('Adding bands')
