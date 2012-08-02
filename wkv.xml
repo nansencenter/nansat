@@ -69,6 +69,13 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
+        <standard_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water</standard_name>
+        <long_name>Reflectance</long_name>
+        <units>sr-1</units>
+        <minmax>0.000 0.05</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
         <standard_name>mass_concentration_of_chlorophyll_a_in_sea_water</standard_name>
         <long_name>Chlorophyll-a</long_name>
         <units>kg m-3</units>

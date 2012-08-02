@@ -170,11 +170,15 @@ class Nansat(Domain):
         # get scale and offset
         scale = float(band.GetMetadata().get('scale', '1'))
         offset = float(band.GetMetadata().get('offset', '0'))
+        expression = band.GetMetadata().get('expression', '')
         # get data
         bandData = band.ReadAsArray()
         # perform scaling if necessary
         if scale != 1 or offset != 0:
             bandData = bandData * scale + offset
+        # execute expression if any
+        if expression != '':
+            bandData = eval(expression)
 
         return bandData
 

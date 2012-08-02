@@ -58,6 +58,7 @@ class Mapper(VRT):
             # if success - append Reflectance with respective parameters to meta
             rrsBandName = re.findall('Rrs_\d*', subDatasetName)
             metaEntry = None
+            metaEntry2 = None
             if len(rrsBandName) > 0:
                 tmpSubDataset = gdal.Open(subDataset[0])
                 slope = tmpSubDataset.GetMetadataItem('slope')
@@ -71,6 +72,15 @@ class Mapper(VRT):
                                                 'offset': intercept,
                                                 }
                                 }
+                metaEntry2 = {'source': subDataset[0],
+                                 'sourceBand':  1,
+                                 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
+                                 'parameters': {'band_name': rrsBandName[0].replace('Rrs', 'Rrsw'),
+                                                'wavelength': rrsBandName[0][-3:],
+                                                'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
+                                                }
+                                }
+
             else:
                 # if the band is not Rrs_NNN
                 # try to find it (and metadata) in dict of known bands (allBandsDict)
@@ -95,6 +105,8 @@ class Mapper(VRT):
                     
             if metaEntry is not None:
                 metaDict.append(metaEntry)
+            if metaEntry2 is not None:
+                metaDict.append(metaEntry2)
         
         self.logger.debug('metaDict: %s' % metaDict)
         
