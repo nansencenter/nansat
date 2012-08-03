@@ -120,7 +120,8 @@ class Nansat(Domain):
               'mapper_modisL2NRT.py',
               'mapper_geostationary',
               'mapper_landsat.py',
-              'mapper_NetCDF.py'
+              'mapper_NetCDF.py',
+              'mapper_opendap.py'
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -664,6 +665,7 @@ class Nansat(Domain):
                 "TIF", "bmp", "BMP", "jpg", "JPG", "jpeg", "JPEG" is included,
                 specified file is crated. otherwise, "png" file is created.
                 if None, the figure object is returned.
+                if True, the figure is shown
             bands : int or list, default = 1
                 the size of the list has to be 1 or 3.
                 if the size is 3, RGB image is created based on the
@@ -770,9 +772,12 @@ class Nansat(Domain):
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
 
-        # == finally SAVE to a image file ==
+        # == finally SAVE to a image file or SHOW ==
         if fileName is not None:
-            fig.save(fileName)
+            if type(fileName) == bool and fileName:
+                fig.pilImg.show()
+            elif type(fileName) == str:
+                fig.save(fileName)
 
         return fig
 
@@ -998,8 +1003,8 @@ class Nansat(Domain):
         # If none of the mappers worked - try generic gdal.Open
         tmpVRT = None
         # For debugging:
-        """
-        mapper_module = __import__('mapper_merisL1')
+        #"""
+        mapper_module = __import__('mapper_opendap')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

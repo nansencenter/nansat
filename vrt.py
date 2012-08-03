@@ -173,10 +173,9 @@ class VRT():
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
         self.vrtDriver = gdal.GetDriverByName("VRT")
-        self.logger.debug('input vrtDataset: %s' % str(vrtDataset))
-        # copy content of the provided VRT dataset
         if vrtDataset is not None:
-            self.logger.debug('Making copy of %s ' % str(vrtDataset))
+            # copy content of the provided VRT dataset using CreateCopy
+            self.logger.debug('copy content of the provided VRT dataset using CreateCopy')
             self.dataset = self.vrtDriver.CreateCopy(self.fileName,
                                                      vrtDataset)
             # add geolocation from vrt dataset
@@ -834,30 +833,37 @@ class VRT():
             srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
 
         # create Warped VRT GDAL Dataset
+        self.logger.debug('Run AutoCreateWarpedVRT...')
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, dstSRS, resamplingAlg)
+        
         # check if Warped VRT was created
         if warpedVRT is None:
             raise AttributeError("Cannot create warpedVRT!")
 
         # create VRT object from Warped VRT GDAL Dataset
+        self.logger.debug('create VRT object from Warped VRT GDAL Dataset')
         warpedVRT = VRT(vrtDataset=warpedVRT)
 
         # set x/y size, geoTransform
+        self.logger.debug('set x/y size, geoTransform')
         warpedVRT._modify_warped_XML(xSize, ySize, geoTransform)
 
         # if given, add dst GCPs
+        self.logger.debug('if given, add dst GCPs')
         if len(dstGCPs) > 0:
             warpedVRT.dataset.SetGCPs(dstGCPs, dstSRS)
             warpedVRT._remove_geotransform()
             warpedVRT.dataset.SetProjection('')
 
         # if given, add dst Geolocation
+        self.logger.debug('# if given, add dst Geolocation')
         if dstGeolocation is not None:
             warpedVRT._remove_geotransform()
             warpedVRT.add_geolocation(dstGeolocation)
             warpedVRT.dataset.SetProjection('')
 
         # replace the reference from srcVRT to self
+        self.logger.debug('replace the reference from srcVRT to self')
         rawFileName = str(os.path.basename(self.fileName))
         srcFileName = str(os.path.basename(srcVRT.fileName))
         xmlString = str(warpedVRT.read_xml())
