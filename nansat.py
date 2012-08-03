@@ -1088,8 +1088,9 @@ class Nansat(Domain):
         (i.e. where mask == 128).
         If it cannot locate the band 'mask' is assumes that all pixels are
         averagebale except for thouse out of swath after reprojection.
-
-        mosaic() works only with empty or projected Nansat objects
+        
+        mosaic() adds bands to the object, so it works only with empty, or
+        non-projected objects
 
         Parameters
         ----------
@@ -1107,14 +1108,19 @@ class Nansat(Domain):
         dstShape = self.shape()
         self.logger.debug('dstShape: %s' % str(dstShape))
 
-        # preallocate 3D matrices for products and mask
-        self.logger.debug('Allocating 3D cubes')
-        cubes = {}
+        # preallocate 2D matrices for sum, sum of squares, count of products
+        # and mask
+        self.logger.debug('Allocating 2D matrices')
+        avgMat = {}
+        stdMat = {}
         for b in bands:
-            cubes[b] = np.zeros((len(files), dstShape[0], dstShape[1]))
-        cubes['mask'] = np.zeros((len(files), dstShape[0], dstShape[1]))
+            avgMat[b] = np.zeros((dstShape[0], dstShape[1]))
+            stdMat[b] = np.zeros((dstShape[0], dstShape[1]))
 
+        cntMat = np.zeros((dstShape[0], dstShape[1]))
+        maskMat = np.zeros((2, dstShape[0], dstShape[1]))
 
+        # for all input files
         for i, f in enumerate(files):
             self.logger.debug('Processing %s' % f)
             # open file using Nansat or its child class
@@ -1127,32 +1133,52 @@ class Nansat(Domain):
                 n.add_band(mask, parameters={'band_name': 'mask'})
 
             n.reproject(self)
-            # get reprojected mask
-            mask = n['mask']
-
-            # add data to cube
-            for b in bands:
-                self.logger.debug('    Adding %s to cube' % b)
-                # get projected data from Nansat object
-                a = n[b]
-                # mask invalid data
-                a[mask < 128] = np.nan
-                # add to cube
-                cubes[b][i,::] = a
-                cubes['mask'][i,::] = mask
+            try:
+                # get reprojected mask
+                mask = n['mask']
+            except:
+                # if 'mask' cannot be fetched, skip the file
+                self.logger.error('Cannot reproject %s!' % f)
+            else:
+                # add data to counting matrix
+                cntMatTmp = np.zeros((dstShape[0], dstShape[1]))
+                cntMatTmp[mask == 128] = 1
+                cntMat += cntMatTmp
+                # add data to mask matrix (maximum of 0, 1, 2, 128)
+                maskMat[0, :, :] = mask
+                maskMat[1, :, :] = maskMat.max(0)
+                
+                # add data to summation matrix
+                for b in bands:
+                    self.logger.debug('    Adding %s to sum' % b)
+                    # get projected data from Nansat object
+                    a = n[b]
+                    # mask invalid data
+                    a[mask < 128] = 0
+                    # sum of valid values and squares
+                    avgMat[b] += a
+                    stdMat[b] += np.square(a)
 
         # average products
         for b in bands:
             self.logger.debug('    Averaging %s' % b)
-            cubes[b] = st.nanmean(cubes[b], 0)
+            # get average
+            avg = avgMat[b] / cntMat
+            # get/set STD
+            # STD = sqrt(sum((x-M)^2)/n) = sqrt((sum(x^2) - 2*mean(x)*sum(x) + sum(mean(x)^2))
+            stdMat[b] = np.square((stdMat[b] - 2 * avg * avgMat[b] + np.square(avg)) / cntMat)
+            # set std
+            avgMat[b] = avg
+            
         # calculate mask (max of 0, 1, 2, 128)
-        cubes['mask'] = np.nanmax(cubes['mask'], 0)
+        maskMat = maskMat.max(0)
 
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=cubes['mask'], parameters={'band_name': 'mask'})
+        self.add_band(array=maskMat, parameters={'band_name': 'mask'})
         # add averaged bands
         for b in bands:
             self.logger.debug('    %s' % b)
-            self.add_band(array=cubes[b], parameters={'band_name': b})
+            self.add_band(array=avgMat[b], parameters={'band_name': b})
+            self.add_band(array=stdMat[b], parameters={'band_name': b + '_std'})
