@@ -1003,8 +1003,8 @@ class Nansat(Domain):
         # If none of the mappers worked - try generic gdal.Open
         tmpVRT = None
         # For debugging:
-        #"""
-        mapper_module = __import__('mapper_opendap')
+        """
+        mapper_module = __import__('mapper_NetCDF')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

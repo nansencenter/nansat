@@ -27,19 +27,26 @@ class Mapper(VRT):
             subDatasets = gdalDataset.GetSubDatasets()
             fileNames = [f[0] for f in subDatasets]
 
-        # get raster size from the first band
-        firstSubDataset = gdal.Open(fileNames[0])
-
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
         geoFileDict = {}
         xDatasetSource = ''
         yDatasetSource = ''
+        projection = ''
+        firstXSize = 0
+        firstYSize = 0
         for i, fileName in enumerate(fileNames):
             subDataset = gdal.Open(fileName)
+            # choose the first dataset whith grid
+            if (firstXSize == 0 and firstYSize == 0 and
+                    subDataset.RasterXSize > 1 and subDataset.RasterYSize > 1):
+                firstXSize = subDataset.RasterXSize
+                firstYSize = subDataset.RasterYSize
+                firstSubDataset = subDataset
+                
             # take bands whose sizes are same as the first band.
-            if (subDataset.RasterXSize == firstSubDataset.RasterXSize and
-                        subDataset.RasterYSize == firstSubDataset.RasterYSize):
+            if (subDataset.RasterXSize == firstXSize and
+                        subDataset.RasterYSize == firstYSize):
                 if 'GEOLOCATION_X_DATASET' in fileName:
                     xDatasetSource = fileName
                 elif 'GEOLOCATION_Y_DATASET' in fileName:
@@ -48,13 +55,21 @@ class Mapper(VRT):
                     for iBand in range(subDataset.RasterCount):
                         bandDict = subDataset.GetRasterBand(iBand+1).GetMetadata_Dict()
                         sourceBands = iBand + 1
+                        # set wkv and bandname
                         wkv = bandDict.get('standard_name', '')
+                        band_name = bandDict.get('NETCDF_VARNAME', '')
+                        if len(band_name) > 0:
+                            bandDict['band_name'] = band_name
+                        # remove non-necessary metadata
                         for rmMetadata in rmMetadatas:
                             if rmMetadata in bandDict:
                                 bandDict.pop(rmMetadata)
                         
-                        print 'bandDict: ', bandDict
                         metaDict.append(({'source': fileName, 'sourceBand': sourceBands, 'wkv': wkv,'parameters':bandDict}))
+                    # get non-empty projection from one of the bands
+                    srs = subDataset.GetProjection()
+                    if len(srs) != 0:
+                        projection = srs
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, firstSubDataset)
@@ -62,8 +77,16 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # set projection to dataset
-        projection = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_Projection', '')
+        # if projetcion was not set automatically:
+        #       get projection from GDAL_NANSAT_Projection
+        if len(projection) == 0:
+            projection = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_Projection', '')
+        # if no projection was found in netcdf, generate WGS84 by default
+        if len(projection) == 0:
+            sr = osr.SpatialReference()
+            sr.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
+            projection = sr.ExportToWkt()
+        # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
         
         # ADD GCPs from metadata
@@ -73,10 +96,12 @@ class Mapper(VRT):
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
             self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource))
         elif gcpCount == 0:
-            # if no GCPs found and not GEOLOCATION set: Set Geotransform
-            geoTransformStr = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_GeoTransform', '(0|1|0|0|0|0|1)')
-            geoTransform = eval(geoTransformStr.replace('|', ','))
-            self.dataset.SetGeoTransform(geoTransform)
+            # if no GCPs found and not GEOLOCATION set: Set Nansat Geotransform if it is not set automatically
+            geoTransform = self.dataset.GetGeoTransform()
+            if len(geoTransform) == 0:
+                geoTransformStr = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_GeoTransform', '(0|1|0|0|0|0|1)')
+                geoTransform = eval(geoTransformStr.replace('|', ','))
+                self.dataset.SetGeoTransform(geoTransform)
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
