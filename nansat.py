@@ -866,11 +866,9 @@ class Nansat(Domain):
         ----------
             bandID: int or str (default = None)
                 number or band_name
-
-        If bandID is given, or if all bands have the same time,
-        a single datetime object is returned.
-        Othwerwise a list of datetime objects for each band is returned.
-
+        Returns:
+            time: list with datetime objects for each band.
+            If time is the same for all bands, the list contains 1 item
         '''
         time = []
         for i in range(self.vrt.dataset.RasterCount):
@@ -886,10 +884,7 @@ class Nansat(Domain):
             bandNumber = self._get_band_number(bandID)
             return time[bandNumber - 1]
         else:
-            if len(set(time)) == 1:
-                return time[0]
-            else:
-                return time
+            return time
 
     def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset
@@ -1127,9 +1122,9 @@ class Nansat(Domain):
 
         # for all input files
         for i, f in enumerate(files):
-            self.logger.debug('Processing %s' % f)
+            self.logger.info('Processing %s' % f)
             # open file using Nansat or its child class
-            n = nClass(f)
+            n = nClass(f, logLevel=self.logger.level)
             # add mask band [0: nodata, 1: cloud, 2: land, 128: data]
             try:
                 mask = n['mask']

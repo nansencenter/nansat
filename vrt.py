@@ -294,7 +294,7 @@ class VRT():
             band_name: string, name of the added band
 
         '''
-        self.logger.info('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
+        self.logger.debug('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
         # Make sure sourceBands and source are lists, ready for loop
         # There will be a single sourceBand for regular bands,
         # but several for bands which are pixel functions
