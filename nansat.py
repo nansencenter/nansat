@@ -378,16 +378,23 @@ class Nansat(Domain):
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
                                     % (iBand+1))
-            # remove unwanted metadata
+            # remove unwanted metadata from bands
             for rmMeta in rmMetadata:
                 try:
                     bandMetadata.pop(rmMeta)
                 except:
-                    self.logger.warning(
+                    self.logger.info(
                         'Unable to remove metadata %s from band %d' %
                          (rmMeta, iBand + 1))
             band.SetMetadata(bandMetadata)
-
+        # remove unwanted global metadata
+        globMetadata = exportVRT.dataset.GetMetadata()
+        for rmMeta in rmMetadata:
+            try:
+                globMetadata.pop(rmMeta)
+            except:
+                self.logger.info('Global metadata %s not found' % rmMeta)
+        exportVRT.dataset.SetMetadata(globMetadata)
         # Create a NetCDF file
         dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
                                                             exportVRT.dataset)
@@ -447,8 +454,11 @@ class Nansat(Domain):
         node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
         for iNode in node0.nodeList("VRTRasterBand"):
-            iNode.node("DstRect").replaceAttribute("xSize", str(rasterXSize))
-            iNode.node("DstRect").replaceAttribute("ySize", str(rasterYSize))
+            for sourceName in ["ComplexSource", "SimpleSource"]:
+                for iNode2 in iNode.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node("DstRect")
+                    iNodeDstRect.replaceAttribute("xSize", str(rasterXSize))
+                    iNodeDstRect.replaceAttribute("ySize", str(rasterYSize))
             # if method="average", overwrite "ComplexSource" to "AveragedSource"
             if method == "average":
                 iNode.replaceTag("ComplexSource", "AveragedSource")
@@ -576,7 +586,7 @@ class Nansat(Domain):
 
         # create Warped VRT
         warpedVRT = self.raw.create_warped_vrt(
-                    dstSRS=dstSRS, dstGCPs=dstGCPs,
+                    dstSRS=dstSRS, dstGCPs=dstGCPs, resamplingAlg=resamplingAlg,
                     xSize=dstDomain.vrt.dataset.RasterXSize,
                     ySize=dstDomain.vrt.dataset.RasterYSize,
                     geoTransform=dstDomain.vrt.dataset.GetGeoTransform())
