@@ -146,10 +146,12 @@ class Nansat(Domain):
             # Get vrt from domain
             self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # Set current VRT object
-            self.vrt = self.raw.copy()
+            #self.vrt = self.raw.copy()
+            self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             if array is not None:
                 # add a band from array
                 self.add_band(array=array, wkv=wkv, parameters=parameters)
+
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
@@ -223,7 +225,7 @@ class Nansat(Domain):
         # None => {} in input p
         if parameters is None:
             parameters = {}
-            
+
         # default added vrt, source bandNumber and metadata
         vrt2add = None
         bandNumber = None
@@ -590,7 +592,7 @@ class Nansat(Domain):
                     xSize=dstDomain.vrt.dataset.RasterXSize,
                     ySize=dstDomain.vrt.dataset.RasterYSize,
                     geoTransform=dstDomain.vrt.dataset.GetGeoTransform())
-        
+
         self.vrt = warpedVRT
 
     def watermask(self, mod44path=None, dstDomain=None):
@@ -676,7 +678,7 @@ class Nansat(Domain):
                 specified file is crated. otherwise, "png" file is created.
                 if None, the figure object is returned.
                 if True, the figure is shown
-            bands : int or list, default = 1
+            bands : integer or string or list (elements are integer or string), default = 1
                 the size of the list has to be 1 or 3.
                 if the size is 3, RGB image is created based on the
                 three bands.
@@ -722,7 +724,7 @@ class Nansat(Domain):
         if isinstance(bands, list):
             array = np.array([])
             for iBand in bands:
-                iArray = self.__getitem__(iBand)
+                iArray = self.__getitem__(self._get_band_number(iBand))
                 self.logger.debug(iArray.shape)
                 array = np.append(array, iArray)
             array = array.reshape(len(bands),
@@ -730,7 +732,7 @@ class Nansat(Domain):
                                  int(self.vrt.dataset.RasterXSize))
         else:
             array = self.__getitem__(bands)
-            bands = [bands]
+            bands = [self._get_band_number(bands)]
 
         # == CREATE FIGURE object and parse input parameters ==
         fig = Figure(array, **kwargs)
@@ -1098,7 +1100,7 @@ class Nansat(Domain):
         (i.e. where mask == 128).
         If it cannot locate the band 'mask' is assumes that all pixels are
         averagebale except for thouse out of swath after reprojection.
-        
+
         mosaic() adds bands to the object, so it works only with empty, or
         non-projected objects
 
@@ -1157,7 +1159,7 @@ class Nansat(Domain):
                 # add data to mask matrix (maximum of 0, 1, 2, 128)
                 maskMat[0, :, :] = mask
                 maskMat[1, :, :] = maskMat.max(0)
-                
+
                 # add data to summation matrix
                 for b in bands:
                     self.logger.debug('    Adding %s to sum' % b)
@@ -1179,7 +1181,7 @@ class Nansat(Domain):
             stdMat[b] = np.square((stdMat[b] - 2 * avg * avgMat[b] + np.square(avg)) / cntMat)
             # set std
             avgMat[b] = avg
-            
+
         # calculate mask (max of 0, 1, 2, 128)
         maskMat = maskMat.max(0)
 
