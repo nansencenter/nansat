@@ -29,7 +29,8 @@
 
 #include <math.h>
 #include <gdal.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 
 CPLErr RealPixelFunc(void **papoSources, int nSources, void *pData,
                      int nXSize, int nYSize,
@@ -770,11 +771,11 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 	int ii, iLine, iCol;
 	double incidence;
 	double beta0, sigma0;
-		
+
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
 	#define PI 3.14159265;
-	
+
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -784,16 +785,16 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 			/* Source raster pixels may be obtained with SRCVAL macro */
 			beta0 = SRCVAL(papoSources[0], eSrcType, ii);
 			sigma0 = SRCVAL(papoSources[1], eSrcType, ii);
-			
+
 			if (beta0 != 0) incidence = asin(sigma0/beta0)*180/PI
 			else incidence = 0;
-			
+
 			GDALCopyWords(&incidence, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
 	}
-	
+
 	/* ---- Return success ---- */
 return CE_None;
 }
@@ -807,10 +808,10 @@ CPLErr UVToMagnitude(void **papoSources, int nSources, void *pData,
 	int ii, iLine, iCol;
 	double magnitude;
 	double u, v;
-		
+
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
-	
+
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -820,15 +821,15 @@ CPLErr UVToMagnitude(void **papoSources, int nSources, void *pData,
 			/* Source raster pixels may be obtained with SRCVAL macro */
 			u = SRCVAL(papoSources[0], eSrcType, ii);
 			v = SRCVAL(papoSources[1], eSrcType, ii);
-			
+
 			magnitude = sqrt(u*u + v*v);
-			
+
 			GDALCopyWords(&magnitude, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
 	}
-	
+
 	/* ---- Return success ---- */
 return CE_None;
 }
@@ -844,10 +845,10 @@ CPLErr UVToDirectionTo(void **papoSources, int nSources, void *pData,
 	double u, v;
 	#define PI 3.14159265;
 	#define offset 180.
-		
+
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
-	
+
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -857,16 +858,16 @@ CPLErr UVToDirectionTo(void **papoSources, int nSources, void *pData,
 			/* Source raster pixels may be obtained with SRCVAL macro */
 			u = SRCVAL(papoSources[0], eSrcType, ii);
 			v = SRCVAL(papoSources[1], eSrcType, ii);
-			
+
 			winddir_to = atan2(-u,-v)*180/PI; /* Convention 0-360 degrees */
 			winddir_to = winddir_to + 180;    /* Convention 0-360 degrees */
-			
+
 			GDALCopyWords(&winddir_to, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
 	}
-	
+
 	/* ---- Return success ---- */
 return CE_None;
 }
@@ -880,10 +881,10 @@ CPLErr UVToDirectionFrom(void **papoSources, int nSources, void *pData,
 	double winddir_from;
 	double u, v;
 	#define PI 3.14159265;
-		
+
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
-	
+
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -893,7 +894,7 @@ CPLErr UVToDirectionFrom(void **papoSources, int nSources, void *pData,
 			/* Source raster pixels may be obtained with SRCVAL macro */
 			u = SRCVAL(papoSources[0], eSrcType, ii);
 			v = SRCVAL(papoSources[1], eSrcType, ii);
-			
+
 			winddir_from = atan2(u,v)*180/PI; 	/* Convention 0-360 degrees */
 			winddir_from = winddir_from + 180;  /* Convention 0-360 degrees */
 
@@ -902,7 +903,7 @@ CPLErr UVToDirectionFrom(void **papoSources, int nSources, void *pData,
 			              eBufType, nPixelSpace, 1);
 		}
 	}
-	
+
 	/* ---- Return success ---- */
 return CE_None;
 }
@@ -916,10 +917,10 @@ CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData
 	int ii, iLine, iCol;
 	double sigma0VV, sigma0HH, incidence_angle, factor;
 	#define PI 3.14159265;
-		
+
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
-	
+
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -930,9 +931,9 @@ CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData
 			sigma0HH = SRCVAL(papoSources[0], eSrcType, ii);
 			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii)*PI;
 			incidence_angle = incidence_angle/180;
-			
+
 			/* Polarisation ratio from Thompson et al. with alpha=1 */
-			factor = pow( (1+2* pow(tan(incidence_angle),2)) / (1+1*pow(tan(incidence_angle),2)), 2); 
+			factor = pow( (1+2* pow(tan(incidence_angle),2)) / (1+1*pow(tan(incidence_angle),2)), 2);
 			sigma0VV = sigma0HH*factor;
 
 			GDALCopyWords(&sigma0VV, GDT_Float64, 0,
@@ -940,11 +941,61 @@ CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData
 			              eBufType, nPixelSpace, 1);
 		}
 	}
-	
+
 	/* ---- Return success ---- */
 return CE_None;
 }
 
+CPLErr RawcountsIncidenceToSigma0(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	FILE *fp;
+	int ii, iLine, iCol;
+	double raw_counts, incidence_angle, sigma0;
+	double calibration_const;
+	char *fileName;
+	char calConstFileName[26] = "/calibration_constant.txt";
+	#define PI 3.14159265;
+
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+
+	/* ---- open calConst.txt ---- */
+	fileName = getenv("GDAL_DRIVER_PATH");
+	strcat(fileName, calConstFileName);
+	fp = fopen(fileName,"r");
+	if(fp == NULL){
+		printf ("Cannot Open the File <calibration_constant.txt> \n");
+		exit(1);
+	}
+	/* ---- get calibration_const from calibration_constant.txt ---- */
+	fscanf(fp, "%lf", &calibration_const);
+	fclose(fp);
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			raw_counts = SRCVAL(papoSources[0], eSrcType, ii);
+			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii);
+			incidence_angle *= PI;
+			incidence_angle /= 180.0;
+			sigma0 = pow(raw_counts, 2.0) * sin(incidence_angle) / calibration_const;
+
+			GDALCopyWords(&sigma0, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+	/* ---- Return success ---- */
+return CE_None;
+}
 
 
 /************************************************************************/
@@ -1007,6 +1058,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
     GDALAddDerivedBandPixelFunc("Sigma0HHIncidenceToSigma0VV", Sigma0HHIncidenceToSigma0VV);
-    
+	GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
+
     return CE_None;
 }

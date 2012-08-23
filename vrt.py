@@ -23,8 +23,10 @@ import datetime
 from dateutil.parser import parse
 import logging
 
-from osgeo import gdal
-from osgeo import osr
+try:
+    from osgeo import gdal, osr
+except ImportError:
+    import gdal, osr
 
 from nansat_tools import add_logger, Node
 
@@ -343,8 +345,17 @@ class VRT():
             srcDataset = gdal.Open(source[0])
             srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
             blockXSize, blockYSize = srcRasterBand.GetBlockSize()
-            dataType = srcRasterBand.DataType
+            if "datatype" in parameters:
+                dataType = parameters.pop("dataType")
+                dataType = {"uint8": gdal.GDT_Byte, "int8": gdal.GDT_Byte,
+                    "uint16": gdal.GDT_UInt16, "int16":  gdal.GDT_Int16,
+                    "uint32": gdal.GDT_UInt32, "int32":  gdal.GDT_Int32,
+                    "float32": gdal.GDT_Float32,"float64": gdal.GDT_Float64,
+                    "complex64":  gdal.GDT_CFloat64}.get(str(arrayDType), gdal.GDT_Float32)
+            else:
+                dataType = srcRasterBand.DataType
 
+            dataType = 6
             # If we apply LUT, we must allow Byte values to be mapped into floats
             if LUT <> "" and dataType == gdal.GDT_Byte:
                 dataType = gdal.GDT_Float32
@@ -835,7 +846,7 @@ class VRT():
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, dstSRS, resamplingAlg)
-        
+
         # check if Warped VRT was created
         if warpedVRT is None:
             raise AttributeError("Cannot create warpedVRT!")
