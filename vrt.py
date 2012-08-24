@@ -110,6 +110,8 @@ class VRT():
                         DataType="$DataType" BlockXSize="$BlockXSize"
                         BlockYSize="$BlockYSize"/>
                 <NODATA>$NODATA</NODATA>
+                <ScaleOffset>$SCALEOFFSET</ScaleOffset>
+                <ScaleRatio>$SCALERATIO</ScaleRatio>
                 <LUT>$LUT</LUT>
                 <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
                 <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
@@ -278,16 +280,18 @@ class VRT():
         for bandDict in metaDict:
             # get values or set default
             NODATA = bandDict.get("NODATA", "")
+            SCALEOFFSET = bandDict.get("SCALEOFFSET", 0.0)
+            SCALERATIO = bandDict.get("SCALERATIO", 1.0)
             LUT = bandDict.get("LUT", "")
             SourceType = bandDict.get('SourceType', 'ComplexSource')
             self.logger.debug('SourceType %s' % SourceType)
             self.logger.debug('Creating band %s', str(bandDict))
             self._create_band(bandDict["source"], bandDict["sourceBand"],
-                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, LUT, SourceType)
+                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, SCALEOFFSET, SCALERATIO, LUT, SourceType)
             self.logger.debug('OK!')
         self.dataset.FlushCache()
 
-    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", LUT="", SourceType='ComplexSource'):
+    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", SCALEOFFSET=0.0, SCALERATIO=1.0, LUT="", SourceType='ComplexSource'):
         ''' Function to add a band to the VRT from a source.
         See function _create_bands() for explanation of the input parameters
 
@@ -296,6 +300,7 @@ class VRT():
             band_name: string, name of the added band
 
         '''
+
         self.logger.debug('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
         # Make sure sourceBands and source are lists, ready for loop
         # There will be a single sourceBand for regular bands,
@@ -304,6 +309,10 @@ class VRT():
             sourceBands = [sourceBands]
         if isinstance(source, str):
             source = [source] * len(sourceBands)
+        if isinstance(SCALEOFFSET, float):
+            SCALEOFFSET = [SCALEOFFSET]
+        if isinstance(SCALERATIO, float):
+            SCALERATIO = [SCALERATIO]
 
         # add source and sourceBand parameters for Band metadata
         parameters["sourceBands"] = str(sourceBands[0])
@@ -345,17 +354,17 @@ class VRT():
             srcDataset = gdal.Open(source[0])
             srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
             blockXSize, blockYSize = srcRasterBand.GetBlockSize()
-            if "datatype" in parameters:
+
+            if "dataType" in parameters:
                 dataType = parameters.pop("dataType")
                 dataType = {"uint8": gdal.GDT_Byte, "int8": gdal.GDT_Byte,
                     "uint16": gdal.GDT_UInt16, "int16":  gdal.GDT_Int16,
                     "uint32": gdal.GDT_UInt32, "int32":  gdal.GDT_Int32,
                     "float32": gdal.GDT_Float32,"float64": gdal.GDT_Float64,
-                    "complex64":  gdal.GDT_CFloat64}.get(str(arrayDType), gdal.GDT_Float32)
+                    "complex64":  gdal.GDT_CFloat64}.get(dataType, gdal.GDT_Float32)
             else:
                 dataType = srcRasterBand.DataType
 
-            dataType = 6
             # If we apply LUT, we must allow Byte values to be mapped into floats
             if LUT <> "" and dataType == gdal.GDT_Byte:
                 dataType = gdal.GDT_Float32
@@ -383,6 +392,8 @@ class VRT():
                                     BlockXSize=blockXSize,
                                     BlockYSize=blockYSize,
                                     NODATA=NODATA,
+                                    SCALEOFFSET=SCALEOFFSET,
+                                    SCALERATIO=SCALERATIO[i],
                                     LUT=LUT,
                                     DataType=dataType,
                                     Dataset=source[i], SourceBand=sourceBands[i])
@@ -400,7 +411,6 @@ class VRT():
         # set metadata from WKV and from provided parameters
         dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
         dstRasterBand = self._put_metadata(dstRasterBand, parameters)
-
         # return name of the created band
         return parameters['band_name']
 

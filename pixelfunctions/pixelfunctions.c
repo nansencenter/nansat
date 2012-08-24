@@ -951,28 +951,12 @@ CPLErr RawcountsIncidenceToSigma0(void **papoSources, int nSources, void *pData,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace)
 {
-	FILE *fp;
 	int ii, iLine, iCol;
 	double raw_counts, incidence_angle, sigma0;
-	double calibration_const;
-	char *fileName;
-	char calConstFileName[26] = "/calibration_constant.txt";
 	#define PI 3.14159265;
 
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
-
-	/* ---- open calConst.txt ---- */
-	fileName = getenv("GDAL_DRIVER_PATH");
-	strcat(fileName, calConstFileName);
-	fp = fopen(fileName,"r");
-	if(fp == NULL){
-		printf ("Cannot Open the File <calibration_constant.txt> \n");
-		exit(1);
-	}
-	/* ---- get calibration_const from calibration_constant.txt ---- */
-	fscanf(fp, "%lf", &calibration_const);
-	fclose(fp);
 
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
@@ -985,7 +969,7 @@ CPLErr RawcountsIncidenceToSigma0(void **papoSources, int nSources, void *pData,
 			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii);
 			incidence_angle *= PI;
 			incidence_angle /= 180.0;
-			sigma0 = pow(raw_counts, 2.0) * sin(incidence_angle) / calibration_const;
+			sigma0 = pow(raw_counts, 2.0) * sin(incidence_angle);
 
 			GDALCopyWords(&sigma0, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,

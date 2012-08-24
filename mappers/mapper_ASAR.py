@@ -37,25 +37,18 @@ class Mapper(VRT, Envisat):
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
 
+        # get calibration constant
+        calibrationConst = float(gdalDataset.GetMetadataItem("MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+
         # compute calibrated sigma0
         metaDict = [{'source': fileName, 'sourceBand': 1, 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 'parameters':{'band_name': 'sigma0', 'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'], 'pass': gdalMetadata['SPH_PASS'], 'warning': 'fake sigma0, not yet calibrated'}}]
-
-        calibrationConst = gdalDataset.GetMetadataItem("MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records")
-
-        # get pixelfunctions folder from "GDAL_DRIVER_PATH"
-        folder = os.environ["GDAL_DRIVER_PATH"]
-        # Create calibration_constant.txt and write the calibrationConst
-        f = open(folder+"/calibration_constant.txt", 'w')
-        f.write(calibrationConst)
-        f.close()
-
         #add dictionary for IncidenceAngle into metaDict
         for iBand in range(self.incAngleDataset.dataset.RasterCount):
             bandMetadata = self.incAngleDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
             metaDict.append({'source': self.incAngleDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
 
         sigma0SourceFiles = [fileName, self.incAngleDataset.fileName]
-        metaDict.append({'source': sigma0SourceFiles, 'sourceBand': [1, 1], 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+        metaDict.append({'source': sigma0SourceFiles, 'sourceBand': [1, 1], 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 'SCALERATIO':[1.0/np.sqrt(calibrationConst), 1.0],
                 'parameters': {'pixel_function': 'RawcountsIncidenceToSigma0', 'band_name': 'sigma0', 'dataType':'float32'}})
 
         # add bands with metadata and corresponding values to the empty VRT
