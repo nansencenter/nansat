@@ -48,8 +48,8 @@ class Mapper(VRT, Envisat):
             metaDict.append({'source': self.incAngleDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
 
         sigma0SourceFiles = [fileName, self.incAngleDataset.fileName]
-        metaDict.append({'source': sigma0SourceFiles, 'sourceBand': [1, 1], 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 'SCALERATIO':[1.0/np.sqrt(calibrationConst), 1.0],
-                'parameters': {'pixel_function': 'RawcountsIncidenceToSigma0', 'band_name': 'sigma0', 'dataType':'float32'}})
+        metaDict.append({'source': sigma0SourceFiles, 'sourceBand': [1, 1], 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                'parameters': {'pixel_function': 'RawcountsIncidenceToSigma0', 'band_name': 'sigma0', 'dataType':'float32', 'scale':str(1.0/calibrationConst)}})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
