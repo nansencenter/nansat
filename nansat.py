@@ -720,20 +720,26 @@ class Nansat(Domain):
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
-        # == create 3D ARRAY ==
+        # convert <bands> from integer, or string, or list of strings
+        # into list of integers
         if isinstance(bands, list):
-            array = np.array([])
-            for iBand in bands:
-                iArray = self.__getitem__(self._get_band_number(iBand))
-                self.logger.debug(iArray.shape)
-                array = np.append(array, iArray)
-            array = array.reshape(len(bands),
-                                 int(self.vrt.dataset.RasterYSize),
-                                 int(self.vrt.dataset.RasterXSize))
+            for i, band in enumerate(bands):
+                bands[i] = self._get_band_number(band)
         else:
-            array = self.__getitem__(bands)
             bands = [self._get_band_number(bands)]
 
+        # == create 3D ARRAY ==                
+        array = None
+        for band in bands:
+            # get array from band and reshape to (1,height,width)
+            iArray = self[band]
+            iArray = iArray.reshape(1, iArray.shape[0], iArray.shape[1])
+            # create new 3D array or append band
+            if array is None:
+                array = iArray
+            else:
+                array = np.append(array, iArray, axis=0)
+        
         # == CREATE FIGURE object and parse input parameters ==
         fig = Figure(array, **kwargs)
         array = None
@@ -1011,7 +1017,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_ASAR')
+        mapper_module = __import__('mapper_radarsat2')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

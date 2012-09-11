@@ -92,7 +92,8 @@ class Mapper(VRT):
 
         # set geoTransform (from grid_mapping metadata or from variable vectors)
         if 'GeoTransform' in gmMetadata:
-            geoTransform = tuple(map(int, gmMetadata['spatial_ref'].split(' ')))
+            #print gmMetadata['GeoTransform'].strip().split(' ')
+            geoTransform = tuple(map(int, gmMetadata['GeoTransform'].strip().split(' ')))
         else:
             d0Vec = od[dim0Name][:].astype('float32') # Y-axis
             d1Vec = od[dim1Name][:].astype('float32') # X-axis

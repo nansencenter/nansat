@@ -190,14 +190,14 @@
     <wkv>
         <standard_name>surface_geostrophic_eastward_sea_water_velocity</standard_name>
         <long_name>Eastward Geostrophic Current</long_name>
-        <units>m s-1</units>
+        <units>cm s-1</units>
         <minmax>-20 20</minmax>
         <colormap>jet</colormap>
     </wkv>
     <wkv>
         <standard_name>surface_geostrophic_northward_sea_water_velocity</standard_name>
         <long_name>Northward Geostrophic Current</long_name>
-        <units>m s-1</units>
+        <units>cm s-1</units>
         <minmax>-20 20</minmax>
         <colormap>jet</colormap>
     </wkv>
@@ -211,7 +211,7 @@
     <wkv>
         <standard_name>sea_surface_height_above_geoid</standard_name>
         <long_name>ADTH</long_name>
-        <units>m</units>
+        <units>cm</units>
         <minmax>-100 100</minmax>
         <colormap>jet</colormap>
     </wkv>
