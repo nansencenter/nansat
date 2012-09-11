@@ -69,7 +69,6 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-
         ############################################
         # Add SAR look direction to metadata domain
         ############################################
@@ -110,7 +109,7 @@ class Mapper(VRT):
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
-                    NODATA="", LUT="",
+                    NODATA="", LUT="", SCALEOFFSET=0.0, SCALERATIO=1.0,
                     SourceBand=sourceBandHH,
                     Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
             md['source_1'] = self.ComplexSource.substitute(
@@ -118,7 +117,7 @@ class Mapper(VRT):
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
-                    NODATA="", LUT="",
+                    NODATA="", LUT="", SCALEOFFSET=0.0, SCALERATIO=1.0,
                     SourceBand=sourceBandInci,
                     Dataset='/vsimem/vsi_original.vrt')
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')

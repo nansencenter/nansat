@@ -309,10 +309,10 @@ class VRT():
             sourceBands = [sourceBands]
         if isinstance(source, str):
             source = [source] * len(sourceBands)
-        if isinstance(SCALEOFFSET, float):
-            SCALEOFFSET = [SCALEOFFSET]
-        if isinstance(SCALERATIO, float):
-            SCALERATIO = [SCALERATIO]
+        if isinstance(SCALEOFFSET, float) or isinstance(SCALEOFFSET, str):
+            SCALEOFFSET = [SCALEOFFSET]* len(sourceBands)
+        if isinstance(SCALERATIO, float) or isinstance(SCALERATIO, str):
+            SCALERATIO = [SCALERATIO]* len(sourceBands)
 
         # add source and sourceBand parameters for Band metadata
         parameters["sourceBands"] = str(sourceBands[0])
@@ -392,7 +392,7 @@ class VRT():
                                     BlockXSize=blockXSize,
                                     BlockYSize=blockYSize,
                                     NODATA=NODATA,
-                                    SCALEOFFSET=SCALEOFFSET,
+                                    SCALEOFFSET=SCALEOFFSET[i],
                                     SCALERATIO=SCALERATIO[i],
                                     LUT=LUT,
                                     DataType=dataType,
