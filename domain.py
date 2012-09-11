@@ -147,8 +147,6 @@ class Domain():
         # set default attributes
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
-        self.latVRT = None
-        self.lonVRT = None
 
         self.logger.debug('ds: %s' % str(ds))
         self.logger.debug('srs: %s' % srs)
@@ -208,19 +206,17 @@ class Domain():
             srcGCPs = self._latlon2gcps(lat, lon)
             # create latlong Projection
             srcGCPProjection = self._latlong_srs().ExportToWkt()
-            # create VRTs to store lat/lon grids
-            self.latVRT = VRT(array=lat)
-            self.lonVRT = VRT(array=lon)
             # create self.vrt
             self.vrt = VRT( srcProjection=srcGCPProjection,
-                            srcRasterXSize=self.latVRT.dataset.RasterXSize,
-                            srcRasterYSize=self.latVRT.dataset.RasterYSize,
+                            srcRasterXSize=lat.shape[1],
+                            srcRasterYSize=lat.shape[0],
                             srcGCPs=srcGCPs,
                             srcGCPProjection=srcGCPProjection)
             # add Geolocation domain to the VRT metadata
-            ##self._add_geolocation()
-            self.vrt.add_geolocation(Geolocation(xVRT=self.lonVRT.fileName,
-                                                 yVRT=self.latVRT.fileName))
+            # create VRTs to store lat/lon grids
+            latVRT = VRT(array=lat)
+            lonVRT = VRT(array=lon)
+            self.vrt.add_geolocation(Geolocation(xVRT=lonVRT, yVRT=latVRT))
         else:
             raise OptionError("'dataset' or 'srsString and extentString' "
                               "are required")
@@ -332,10 +328,10 @@ class Domain():
         latitude  : numpy array
             grid with latitudes
         '''
-        # if the vrt dataset has geolocation arrays
-        if self.latVRT is not None and self.lonVRT is not None:
-            longitude = self.lonVRT.dataset.ReadAsArray()
-            latitude = self.latVRT.dataset.ReadAsArray()
+        # if the vrt dataset has geolocation
+        if len(self.vrt.geoloc.d) > 0:
+            longitude = self.vrt.geoloc.xVRT.dataset.ReadAsArray()
+            latitude =  self.vrt.geoloc.yVRT.dataset.ReadAsArray()
         else:
             # create empty grids
             longitude = np.zeros([self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize], 'float32')
@@ -349,32 +345,7 @@ class Domain():
                 latitude[:, i] = la
 
         return longitude, latitude
-    """
-    def _add_geolocation(self):
-        ''' Add Geolocation domain to the metadata
 
-        The method assumes that self.latVRT and self.lonVRT are already created
-        and keep lat/lon grids. It add Geolocation metadata which points to the
-        VRT files of the self.latVRT and self.lonVRT
-        '''
-        xDatasetGeolocation = self.lonVRT.fileName
-        yDatasetGeolocation = self.latVRT.fileName
-
-        self.logger.debug('x/y datasets: %s %s', xDatasetGeolocation,
-                                                 yDatasetGeolocation)
-        self.vrt.dataset.SetMetadataItem('LINE_OFFSET', '0', 'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('LINE_STEP', '1', 'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('PIXEL_OFFSET', '0', 'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('PIXEL_STEP', '1', 'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('SRS', self._latlong_srs().ExportToWkt(),
-                                            'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('X_BAND', '1', 'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('X_DATASET', xDatasetGeolocation,
-                                            'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('Y_BAND', '1', 'GEOLOCATION')
-        self.vrt.dataset.SetMetadataItem('Y_DATASET', yDatasetGeolocation,
-                                            'GEOLOCATION')
-    """
     def _convert_extentDic(self, dstWKT, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
 
