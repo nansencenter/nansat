@@ -1200,3 +1200,6 @@ class Nansat(Domain):
             self.logger.debug('    %s' % b)
             self.add_band(array=avgMat[b], parameters={'band_name': b})
             self.add_band(array=stdMat[b], parameters={'band_name': b + '_std'})
+
+    def process(self):
+        '''Default L2 processing of Nansat object. Empty. Overloaded.'''
