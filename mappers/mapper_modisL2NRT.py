@@ -36,16 +36,16 @@ class Mapper(VRT):
         VRT.__init__(self, gdalSubDataset)
         
         # parts of dictionary for all Reflectances
-        #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '412'} }
+        #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
         # dictionary for all possible bands
         allBandsDict = {
-        'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'parameters': {'wavelength': '490'} },
-        'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_1', 'case': 'I'} },
-        'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },
-        'sst': {'wkv': 'sea_surface_temperature', 'parameters': {'band_name': 'sst'} },        
-        'l2_flags': {'wkv': 'quality_flags', 'SourceType':'SimpleSource', 'parameters': {'band_name': 'l2_flags'} },
-        'latitude': {'wkv': 'latitude', 'parameters': {'band_name': 'latitude'} },
-        'longitude': {'wkv': 'longitude', 'parameters': {'band_name': 'longitude'} },
+        'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'BandName': 'Kd_490', 'wavelength': '490'},
+        'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1', 'case': 'I'},
+        'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs', 'case': 'II'},
+        'sst': {'wkv': 'sea_surface_temperature', 'BandName': 'sst'},
+        'l2_flags': {'wkv': 'quality_flags', 'SourceType': 'SimpleSource', 'BandName': 'l2_flags'},
+        'latitude': {'wkv': 'latitude', 'BandName': 'latitude'},
+        'longitude': {'wkv': 'longitude', 'BandName': 'longitude'},
         }
         
         # loop through available bands and generate metaDict (non fixed)
@@ -63,23 +63,19 @@ class Mapper(VRT):
                 tmpSubDataset = gdal.Open(subDataset[0])
                 slope = tmpSubDataset.GetMetadataItem('slope')
                 intercept = tmpSubDataset.GetMetadataItem('intercept')
-                metaEntry = {'source': subDataset[0],
-                                 'sourceBand':  1,
-                                 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                                 'parameters': {'band_name': rrsBandName[0],
-                                                'wavelength': rrsBandName[0][-3:],
-                                                'scale': slope,
-                                                'offset': intercept,
-                                                }
-                                }
-                metaEntry2 = {'source': subDataset[0],
-                                 'sourceBand':  1,
-                                 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
-                                 'parameters': {'band_name': rrsBandName[0].replace('Rrs', 'Rrsw'),
-                                                'wavelength': rrsBandName[0][-3:],
-                                                'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
-                                                }
-                                }
+                metaEntry = {'src': {'SourceFilename': subDataset[0], 'sourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
+                             'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
+                                     'BandName': rrsBandName[0],
+                                     'wavelength': rrsBandName[0][-3:],
+                                      }
+                             }
+                metaEntry2 = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1},
+                              'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
+                                      'BandName': rrsBandName[0].replace('Rrs', 'Rrsw'),
+                                      'wavelength': rrsBandName[0][-3:],
+                                      'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
+                                      }
+                              }
 
             else:
                 # if the band is not Rrs_NNN
@@ -89,17 +85,10 @@ class Mapper(VRT):
                         tmpSubDataset = gdal.Open(subDataset[0])
                         slope = tmpSubDataset.GetMetadataItem('slope')
                         intercept = tmpSubDataset.GetMetadataItem('intercept')
-                        metaEntry = {'source': subDataset[0],
-                                 'sourceBand':  1,
-                                 'wkv': allBandsDict[bandName]['wkv'],
-                                 'scale': slope,
-                                 'offset': intercept,
-                                 'parameters': allBandsDict[bandName]['parameters']
-                                }
-                        metaEntry['parameters']['scale'] = slope
-                        metaEntry['parameters']['offset'] = intercept
+                        metaEntry = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
+                                     'dst': allBandsDict[bandName]}
                         if 'SourceType' in allBandsDict[bandName]:
-                            metaEntry['SourceType'] = allBandsDict[bandName]['SourceType']
+                            metaEntry['src']['SourceType'] = allBandsDict[bandName]['SourceType']
                 
                 self.logger.debug('metaEntry %s' % metaEntry)
                     
@@ -153,10 +142,6 @@ class Mapper(VRT):
         latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
         self.dataset.SetGCPs(gcps, latlongSRSWKT)
-        
-        # === ADD GEOLOCATION  ===
-        #self.logger.debug('x/y datasets: %s %s', self.lonVRT.fileName, self.latVRT.fileName)
-        #self.add_geolocation(self.lonVRT.fileName, 1, self.latVRT.fileName, 1)
         
         # set TIME
         startYear = int(gdalMetadata['Start Year'])

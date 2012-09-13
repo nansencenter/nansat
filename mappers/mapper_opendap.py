@@ -12,6 +12,7 @@ class Mapper(VRT):
         '''
         #fileName = 'http://thredds.nersc.no/thredds/dodsC/normap/test1/westernnorway300m_oceancolor_20111001-20111031.nc'
         #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_200712010000.nc'
+        #fileName = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst05/20120912000000-METNO-L4_GHRSST-SSTfnd-METNO_OI-ARC-v02.0-fv01.0.nc'
         # OpenDAP object
         od = open_url(fileName)
         
@@ -45,25 +46,21 @@ class Mapper(VRT):
             # get the band if dims are equal to the dims of the first band
             if len(bandShape) == 2 and bandShape[0] == dim0 and bandShape[1] == dim1:
                 subBandName = bandName
-                bandMetadata['band_name'] = subBandName
+                bandMetadata['BandName'] = subBandName
                 # read array from thredds and create VRT
                 self.odVRTDict[subBandName] = VRT(array = odBand.array[:].astype('float32'))
                 metaDict.append(
-                    {'source': self.odVRTDict[subBandName].fileName,
-                     'sourceBand': 1,
-                     'wkv': '',
-                     'parameters': bandMetadata})
+                    {'src': {'SourceFilename': self.odVRTDict[subBandName].fileName, 'SourceBand': 1},
+                     'dst': bandMetadata})
             if len(bandShape) == 3 and bandShape[1] == dim0 and bandShape[2] == dim1:
                 for i in range(0, bandShape[0]):
                     subBandName = bandName + '_%03d' % i
-                    bandMetadata['band_name'] = subBandName
+                    bandMetadata['BandName'] = subBandName
                     # read array from thredds and create VRT                    
                     self.odVRTDict[subBandName] = VRT(array = odBand.array[i, :, :].reshape(bandShape[1], bandShape[2]).astype('float32'))
                     metaDict.append(
-                        {'source': self.odVRTDict[subBandName].fileName,
-                         'sourceBand': 1,
-                         'wkv': '',
-                         'parameters': bandMetadata})
+                        {'src': {'SourceFilename': self.odVRTDict[subBandName].fileName, 'SourceBand': i + 1},
+                         'dst': bandMetadata})
                     
         # get variable with grid_mapping 
         try:

@@ -27,44 +27,44 @@ class Mapper(VRT, Envisat):
         # Enlarge the band to the underlying data band size
         #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
 
-        metaDict = [\
-        {'source': fileName, 'sourceBand':  1, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '412'} },\
-        {'source': fileName, 'sourceBand':  2, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '443'}},\
-        {'source': fileName, 'sourceBand':  3, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '490'}},\
-        {'source': fileName, 'sourceBand':  4, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '510'}},\
-        {'source': fileName, 'sourceBand':  5, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '560'}},\
-        {'source': fileName, 'sourceBand':  6, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '620'}},\
-        {'source': fileName, 'sourceBand':  7, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '665'}},\
-        {'source': fileName, 'sourceBand':  8, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '680'}},\
-        {'source': fileName, 'sourceBand':  9, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '708'}},\
-        {'source': fileName, 'sourceBand': 10, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '753'}},\
-        {'source': fileName, 'sourceBand': 11, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '761'}},\
-        {'source': fileName, 'sourceBand': 12, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '778'}},\
-        {'source': fileName, 'sourceBand': 13, 'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'parameters': {'wavelength': '864'}},\
-        {'source': fileName, 'sourceBand': 15, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_1', 'case': 'I'} },\
-        {'source': fileName, 'sourceBand': 16, 'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'parameters': {'band_name': 'yellow_subs', 'case': 'II'} },\
-        {'source': fileName, 'sourceBand': 17, 'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'parameters': {'band_name': 'total_susp', 'case': 'II'} },\
-        {'source': fileName, 'sourceBand': 18, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'algal_2', 'case': 'II'} },\
-        {'source': fileName, 'sourceBand': 22, 'wkv': 'quality_flags', 'parameters': {'band_name': 'l2_flags'} },\
+        metaDict = [
+        {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  2}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '443'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  3}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '490'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  4}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '510'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  5}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '560'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  6}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '620'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  7}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '665'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  8}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '680'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  9}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '708'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 10}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '753'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 11}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '761'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 12}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '778'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 13}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '864'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1', 'case': 'I'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 16}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs', 'case': 'II'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 17}, 'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'BandName': 'total_susp', 'case': 'II'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 18}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_2', 'case': 'II'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 22}, 'dst': {'wkv': 'quality_flags', 'BandName': 'l2_flags'}},
         ]
 
-        # add 'band_name' to 'parameters'
+        # add 'BandName' to 'parameters'
         for bandDict in metaDict:
-            if bandDict['parameters'].has_key('wavelength'):
-                bandDict['parameters']['band_name'] = 'reflectance_' + bandDict['parameters']['wavelength']
+            if 'wavelength' in bandDict['dst']:
+                bandDict['dst']['BandName'] = 'reflectance_' + bandDict['dst']['wavelength']
 
         #get GADS from header
         scales = self.read_scaling_gads(fileName, range(7, 20) + [20, 21, 22, 20])
         offsets = self.read_scaling_gads(fileName, range(33, 46) + [46, 47, 48, 46])
         # set scale/offset to the band metadata (only reflectance)
         for i, bandDict in enumerate(metaDict[:-1]):
-            bandDict['parameters']['scale'] = str(scales[i])
-            bandDict['parameters']['offset'] = str(offsets[i])
+            bandDict['src']['ScaleRatio'] = str(scales[i])
+            bandDict['src']['ScaleOffset'] = str(offsets[i])
 
         #add geolocation dictionary into metaDict
         #for iBand in range(self.geoDataset.dataset.RasterCount):
         #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-        #    metaDict.append({'source': self.geoDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
+        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst': {'wkv': '', 'parameters':bandMetadata})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);

@@ -18,15 +18,15 @@ class Mapper(VRT):
         if gdalDataset.GetGeoTransform()[0:5] != (-12.1, 0.2, 0.0, 81.95, 0.0):
             raise AttributeError("HIRLAM BAD MAPPER");
 
-        metaDict = [\
-                    {'source': fileName, 'sourceBand': 2, 'wkv': 'eastward_wind', 
-                        'parameters':{'band_name': 'east_wind', 'height': '10 m'}, 'NODATA': 9999},
-                    {'source': fileName, 'sourceBand': 3, 'wkv': 'northward_wind',
-                        'parameters':{'band_name': 'north_wind', 'height': '10 m'}, 'NODATA': 9999},
-                    {'source': fileName, 'sourceBand': [2,3], 'wkv': 'wind_speed', 
-                        'parameters':{'band_name': 'windspeed', 'height': '10 m', 'pixel_function': 'UVToMagnitude'}},
-                    {'source': fileName, 'sourceBand': [2,3], 'wkv': 'wind_from_direction', 
-                        'parameters':{'band_name': 'winddirection', 'height': '10 m', 'pixel_function': 'UVToDirectionFrom'}}                    
+        metaDict = [
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 2, 'NODATA': 9999},
+                     'dst': {'wkv': 'eastward_wind', 'BandName': 'east_wind', 'height': '10 m'}},
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 3, 'NODATA': 9999},
+                     'dst': {'wkv': 'northward_wind', 'BandName': 'north_wind', 'height': '10 m'}},
+                    {'src': [{'SourceFilename': fileName, 'SourceBand': 2}, {'SourceFilename': fileName, 'SourceBand': 3}],
+                     'dst': {'wkv': 'wind_speed', 'BandName': 'windspeed', 'height': '10 m', 'PixelFunctionType': 'UVToMagnitude'}},
+                    {'src': [{'SourceFilename': fileName, 'SourceBand': 2}, {'SourceFilename': fileName, 'SourceBand': 2}],
+                     'dst': {'wkv': 'wind_from_direction', 'BandName': 'winddirection', 'height': '10 m', 'PixelFunctionType': 'UVToDirectionFrom'}}                    
                     ];
   
         # create empty VRT dataset with geolocation only

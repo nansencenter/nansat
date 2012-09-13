@@ -46,22 +46,29 @@ class Mapper(VRT):
         for i in range(1, gdalDataset.RasterCount+1):
             polString = gdalDataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP']
             pol.append(polString)
-            metaDict.append( {'source': 'RADARSAT_2_CALIB:SIGMA0:' + fileName +
-                '/product.xml', 'sourceBand': i, 'wkv':
-                'surface_backwards_scattering_coefficient_of_radar_wave', 'parameters':
-                {'band_name':'sigma0_'+polString, 'polarization': polString}} );
+            metaDict.append(
+                {'src': {'SourceFilename':
+                         'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
+                         'SourceBand': i},
+                 'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 
+                         'BandName': 'sigma0_' + polString,
+                         'polarization': polString}})
 
         ##############################################################
         # Adding derived band (incidence angle) calculated
         # using pixel function "BetaSigmaToIncidence":
         #      incidence = arcsin(sigma0/beta0)*180/pi
         ##############################################################
-        incidence_angle_source = [
+        incidence_angle_sources = [
             'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
             'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml']
         metaDict.append(
-            {'source': incidence_angle_source, 'sourceBand': [1, 1], 'wkv': 'sensor_zenith_angle',
-                'parameters': {'pixel_function': 'BetaSigmaToIncidence', 'band_name': 'incidence_angle'}})
+            {'src': [
+                {'SourceFilename': incidence_angle_sources[0], 'SourceBand':  1},
+                {'SourceFilename': incidence_angle_sources[1], 'SourceBand':  1}],
+            'dst': {'wkv': 'sensor_zenith_angle',
+                    'PixelFunctionType': 'BetaSigmaToIncidence',
+                    'BandName': 'incidence_angle'}})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);
@@ -106,10 +113,7 @@ class Mapper(VRT):
             BlockXSize, BlockYSize = gdalDataset.GetRasterBand(1).GetBlockSize()
             md['source_0'] = self.ComplexSource.substitute(
                     SourceType='ComplexSource',
-                    XSize=self.dataset.RasterXSize,
-                    YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
-                    BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
-                    NODATA="", LUT="", SCALEOFFSET=0.0, SCALERATIO=1.0,
+                    NODATA="", LUT="", ScaleOffset=0.0, ScaleRatio=1.0,
                     SourceBand=sourceBandHH,
                     Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
             md['source_1'] = self.ComplexSource.substitute(
@@ -117,7 +121,7 @@ class Mapper(VRT):
                     XSize=self.dataset.RasterXSize,
                     YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
                     BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
-                    NODATA="", LUT="", SCALEOFFSET=0.0, SCALERATIO=1.0,
+                    NODATA="", LUT="", ScaleOffset=0.0, ScaleRatio=1.0,
                     SourceBand=sourceBandInci,
                     Dataset='/vsimem/vsi_original.vrt')
             self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')
@@ -126,9 +130,9 @@ class Mapper(VRT):
             self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
                            self._get_wkv('surface_backwards_scattering_coefficient_of_radar_wave'))
             self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
-                {'band_name': 'sigma0_VV',
+                {'BandName': 'sigma0_VV',
                  'polarisation': 'VV',
-                'pixelfunction': 'Sigma0HHIncidenceToSigma0VV'})
+                 'pixelfunction': 'Sigma0HHIncidenceToSigma0VV'})
             self.dataset.FlushCache()
 
         # Set time

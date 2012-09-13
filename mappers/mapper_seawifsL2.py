@@ -22,7 +22,8 @@ class Mapper(VRT):
         
         # Trying to read band 21 = chlor_a The parameter height is added just to check that it does not crash due to no parameters
         metaDict = [
-        {'source': subDsString % (fileName, '21'), 'sourceBand': 1, 'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'parameters': {'band_name': 'chlor_a'}}
+        {'src': {'SourceFilename': subDsString % (fileName, '21'), 'SourceBand': 1},
+         'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'chlor_a'}}
         ]
                 
         #open subdataset

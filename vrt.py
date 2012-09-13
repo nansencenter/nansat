@@ -106,15 +106,10 @@ class VRT():
             <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
                 <SourceBand>$SourceBand</SourceBand>
-                <SourceProperties RasterXSize="$XSize" RasterYSize="$YSize"
-                        DataType="$DataType" BlockXSize="$BlockXSize"
-                        BlockYSize="$BlockYSize"/>
                 <NODATA>$NODATA</NODATA>
-                <ScaleOffset>$SCALEOFFSET</ScaleOffset>
-                <ScaleRatio>$SCALERATIO</ScaleRatio>
+                <ScaleOffset>$ScaleOffset</ScaleOffset>
+                <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
-                <SrcRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$XSize" ySize="$YSize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -267,152 +262,191 @@ class VRT():
             "well known variables" listed in wkv.xml
             The corresponding parameters are added as metadata to the band
         parameters: dictionary
-            metadata to be added to the band: {key: value}
-
-        If one of the latter parameter keys is "pixel_function", this
-        band will be a pixel function defined by the corresponding name/value.
-        In this case sourceBands and source may be lists of integers/strings
-        (i.e. possibly several bands and several sources as input).
-        If source is a single string, this source will
-        be used for all source bands.
+            metadata to be added to the band: {key: value}. Typical keys:
+            'BandName': name of the band
+            'ScaleRatio': scale
+            'ScaleOffset': offset
+            'NODATA': value for nodata (not used?)
+            'LUT':    set of values for Look-Up-Table
+            'SourceType': type of the source [SimpleSource, ComplexSource]
+            'dataType':   data type of the created band (not source band)
+            "PixelFunction": band will be a pixel function defined by the
+                corresponding name/value. In this case sourceBands and source
+                may be lists of integers/strings (i.e. possibly several bands
+                and several sources as input). If source is a single string,
+                this source will be used for all source bands.
 
         '''
         for bandDict in metaDict:
-            # get values or set default
-            NODATA = bandDict.get("NODATA", "")
-            SCALEOFFSET = bandDict.get("SCALEOFFSET", 0.0)
-            SCALERATIO = bandDict.get("SCALERATIO", 1.0)
-            LUT = bandDict.get("LUT", "")
-            SourceType = bandDict.get('SourceType', 'ComplexSource')
-            self.logger.debug('SourceType %s' % SourceType)
-            self.logger.debug('Creating band %s', str(bandDict))
-            self._create_band(bandDict["source"], bandDict["sourceBand"],
-                    bandDict["wkv"], bandDict.get("parameters", {}), NODATA, SCALEOFFSET, SCALERATIO, LUT, SourceType)
-            self.logger.debug('OK!')
+            src = bandDict['src']
+            dst = bandDict.get('dst', None)
+            self._create_band(src, dst)
+            self.logger.debug('Creating band - OK!')
         self.dataset.FlushCache()
 
-    def _create_band(self, source, sourceBands, wkv, parameters, NODATA="", SCALEOFFSET=0.0, SCALERATIO=1.0, LUT="", SourceType='ComplexSource'):
-        ''' Function to add a band to the VRT from a source.
-        See function _create_bands() for explanation of the input parameters
+    def _create_band(self, src, dst=None):
+        ''' Add band to self.dataset:
+        Get parameters of the source band(s) from input
+        Generate source XML for the VRT, add options of creating
+        AddBand
+        Set source and options
+        Add metadata
+        Input:
+        ------
+            src: dict with parameters of sources
+                SourceFilename
+                SourceBand
+                ScaleRatio
+                ScaleOffset
+                NODATA
+                LUT
+                SourceType
+                ImageOffset (RawVRT)
+                PixelOffset (RawVRT)
+                LineOffset (RawVRT)
+                ByteOrder (RawVRT)
+                DataType (RawVRT)
+            dst: dict with parameters of the created band
+                BandName
+                dataType
+                wkv
+                PixelFunctionType
+        src may be a list of several dictionaries of a PixelFunctionType is used
 
         Returns:
         --------
-            band_name: string, name of the added band
+            BandName: string, name of the added band
 
         '''
+        self.logger.debug('INPUTS: %s, %s " ' % (str(src), str(dst)))
+        # Make sure src is list, ready for loop
+        if type(src) == dict:
+            srcs = [src]
+        elif type(src) in [list, tuple]:
+            srcs = src
+        else:
+             AttributeError("Wrong src!")
+        
+        # Check if dst is given, or create empty dict
+        if dst is None:
+            dst = {}
+            
+        # process all sources: check, set defaults, make XML
+        srcDefaults = {
+                     'SourceBand': 1,
+                     'LUT': '',
+                     'NODATA': '',
+                     'SourceType': 'ComplexSource',
+                     'ScaleRatio': 1.0,
+                     'ScaleOffset': 0.0}
+        for src in srcs:
+            # check if SourceFilename is given
+            if 'SourceFilename' not in src:
+                AttributeError("SourceFilename not given!")
 
-        self.logger.debug('INPUTS: %s, %s %s %s" ' % (str(source), str(sourceBands), str(wkv), str(parameters)))
-        # Make sure sourceBands and source are lists, ready for loop
-        # There will be a single sourceBand for regular bands,
-        # but several for bands which are pixel functions
-        if isinstance(sourceBands, int):
-            sourceBands = [sourceBands]
-        if isinstance(source, str):
-            source = [source] * len(sourceBands)
-        if isinstance(SCALEOFFSET, float) or isinstance(SCALEOFFSET, str):
-            SCALEOFFSET = [SCALEOFFSET]* len(sourceBands)
-        if isinstance(SCALERATIO, float) or isinstance(SCALERATIO, str):
-            SCALERATIO = [SCALERATIO]* len(sourceBands)
+            # set default values
+            for srcDefault in srcDefaults:
+                if srcDefault not in src:
+                    src[srcDefault] = srcDefaults[srcDefault]
 
-        # add source and sourceBand parameters for Band metadata
-        parameters["sourceBands"] = str(sourceBands[0])
-        parameters["source"] = source[0]
+            # Find datatype, size and blocksize of sources
+            srcDataset = gdal.Open(src['SourceFilename'])
+            srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
+            if srcRasterBand is not None:
+                src['DataType'] = srcRasterBand.DataType
 
+            # create XML for each source
+            src['XML'] = self.ComplexSource.substitute(
+                                    Dataset=src['SourceFilename'],
+                                    SourceBand=src['SourceBand'],
+                                    SourceType=src['SourceType'],
+                                    NODATA=src['NODATA'],
+                                    ScaleOffset=src['ScaleOffset'],
+                                    ScaleRatio=src['ScaleRatio'],
+                                    LUT=src['LUT'])
+
+        # create destination options
+        if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
+            # in case of PixelFunction
+            options = ['subClass=VRTDerivedRasterBand',
+                       'PixelFunctionType=%s' % dst['PixelFunctionType']]
+        elif len(srcs) == 1 and srcs[0]['SourceBand'] == 0:
+            # in case of VRTRawRasterBand
+            options = ["subclass=VRTRawRasterBand",
+                       "SourceFilename=%s" % src["SourceFilename"],
+                       "ImageOffset=%f" % src["ImageOffset"],
+                       "PixelOffset=%f" % src["PixelOffset"],
+                       "LineOffset=%f" % src["LineOffset"],
+                       "ByteOrder=%s" % src["ByteOrder"]]
+        else:
+            # in common case
+            options = []
+        
+        # set destination dataType (if not given in input parameters)
+        if 'dataType' not in dst:
+            if (len(srcs) > 1 or srcs[0]['ScaleRatio'] != 1 or
+                                len(srcs[0]['LUT']) > 0 or
+                                'DataType' not in src):
+                # if pixel function
+                # if scaling is applied
+                # if LUT
+                # if source band not available: float32
+                dst['dataType'] = gdal.GDT_Float32
+            else:
+                #otherwise take the DataType from source
+                dst['dataType'] = src['DataType']
+        
+        # Set destination BandName
         # create list of available bands (to prevent duplicate names)
         bandNames = []
         for iBand in range(self.dataset.RasterCount):
-            bandNames.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("band_name"))
+            bandNames.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("BandName"))
 
-        # if band_name is not given add 'band_00N'
-        if "band_name" not in parameters:
+        # if BandName is not given add 'band_00N'
+        if "BandName" not in dst:
             for n in range(999):
                 bandName = 'band_%03d' % n
                 if bandName not in bandNames:
-                    parameters['band_name'] = bandName
+                    dst['BandName'] = bandName
                     break
-        # if band_name already exist add '_00N'
-        elif parameters["band_name"] in bandNames:
+        # if BandName already exist add '_00N'
+        elif dst["BandName"] in bandNames:
             for n in range(999):
-                bandName = parameters["band_name"] + '_%03d' % n
+                bandName = dst["BandName"] + '_%03d' % n
                 if bandName not in bandNames:
-                    parameters['band_name'] = bandName
+                    dst['BandName'] = bandName
                     break
 
-        # if add VRT RawRasterBand
-        if sourceBands[0] == 0:
-            options = ["subclass=VRTRawRasterBand",
-                       "SourceFilename=%s" % parameters.pop("source"),
-                       "ImageOffset=%f" % parameters.pop("ImageOffset"),
-                       "PixelOffset=%f" % parameters.pop("PixelOffset"),
-                       "LineOffset=%f" % parameters.pop("LineOffset"),
-                       "ByteOrder=%s" % parameters.pop("ByteOrder")]
-            dataType = parameters.pop("dataType")
-
-        # else
-        else:
-            # Find datatype and blocksizes
-            srcDataset = gdal.Open(source[0])
-            srcRasterBand = srcDataset.GetRasterBand(sourceBands[0])
-            blockXSize, blockYSize = srcRasterBand.GetBlockSize()
-
-            if "dataType" in parameters:
-                dataType = parameters.pop("dataType")
-                dataType = {"uint8": gdal.GDT_Byte, "int8": gdal.GDT_Byte,
-                    "uint16": gdal.GDT_UInt16, "int16":  gdal.GDT_Int16,
-                    "uint32": gdal.GDT_UInt32, "int32":  gdal.GDT_Int32,
-                    "float32": gdal.GDT_Float32,"float64": gdal.GDT_Float64,
-                    "complex64":  gdal.GDT_CFloat64}.get(dataType, gdal.GDT_Float32)
-            else:
-                dataType = srcRasterBand.DataType
-
-            # If we apply LUT, we must allow Byte values to be mapped into floats
-            if LUT <> "" and dataType == gdal.GDT_Byte:
-                dataType = gdal.GDT_Float32
-
-            # Create band
-            if "pixel_function" in parameters:
-                options = ['subClass=VRTDerivedRasterBand',
-                           'PixelFunctionType=' + parameters["pixel_function"]]
-            else:
-                options = []
-        self.dataset.AddBand(dataType, options=options)
+        # Add Band
+        self.dataset.AddBand(dst['dataType'], options=options)
         dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
-        # Prepare sources
-        # (only one item for regular bands, several for pixelfunctions)
-        if SourceType == "ComplexSource" or SourceType == "SimpleSource":
-            md = {}
-            rasterXSize=self.dataset.RasterXSize
-            rasterYSize=self.dataset.RasterYSize
-            for i in range(len(sourceBands)):
-                bandSource = self.ComplexSource.substitute(
-                                    SourceType=SourceType,
-                                    XSize=rasterXSize,
-                                    YSize=rasterYSize,
-                                    BlockXSize=blockXSize,
-                                    BlockYSize=blockYSize,
-                                    NODATA=NODATA,
-                                    SCALEOFFSET=SCALEOFFSET[i],
-                                    SCALERATIO=SCALERATIO[i],
-                                    LUT=LUT,
-                                    DataType=dataType,
-                                    Dataset=source[i], SourceBand=sourceBands[i])
+        # Append sources to destination dataset
+        if len(srcs) == 1:
+            # only one source
+            dstRasterBand.SetMetadataItem('source_0',
+                                          src['XML'], 'new_vrt_sources')
+        else:
+            # several sources for PixelFunction
+            metadataSRC = {}
+            for i, src in enumerate(srcs):
+                metadataSRC['source_%d' % i] = src['XML']
 
-                if "pixel_function" in parameters:
-                    md['source_' + str(i)] = bandSource
+            dstRasterBand.SetMetadata(metadataSRC, 'vrt_sources')
+            
+        # set metadata from WKV
+        dstWKV = dst.get('wkv', '')
+        dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(dstWKV))
 
-            # Append sources to destination dataset
-            if "pixel_function" in parameters:
-                dstRasterBand.SetMetadata(md, 'vrt_sources')
-            else:
-                dstRasterBand.SetMetadataItem("source_0", bandSource,
-                                    "new_vrt_sources")
+        # set metadata from provided parameters
+        # remove and add params
+        dst.pop('dataType')
+        dst['SourceFilename'] = srcs[0]['SourceFilename']
+        dst['SourceBand'] = str(srcs[0]['SourceBand'])
+        dstRasterBand = self._put_metadata(dstRasterBand, dst)
 
-        # set metadata from WKV and from provided parameters
-        dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(wkv))
-        dstRasterBand = self._put_metadata(dstRasterBand, parameters)
         # return name of the created band
-        return parameters['band_name']
+        return dst['BandName']
 
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands

@@ -1,6 +1,7 @@
 from dateutil.parser import parse
 from struct import unpack
 from vrt import VRT, Geolocation
+import gdal
 
 class Envisat():
     '''Methods shared between Envisat mappers'''
@@ -116,7 +117,7 @@ class Envisat():
         return [allGADSValues[i] for i in indeces]
 
     def get_ADSRlist(self, fileType):
-        '''Return a dictionary which incldes name of geolocation and their offset, datatype and unit.
+        '''Return a dictionary which incldes name of geolocation and their offset, dataType and unit.
 
         Parameters
         ----------
@@ -126,7 +127,7 @@ class Envisat():
         -------
             gadsDSName : string
             ADSR_list : list
-                includes "key name for geolocation", "offset", "datatype" and "unit"
+                includes "key name for geolocation", "offset", "dataType" and "unit"
 
         See also
         ---------
@@ -138,37 +139,37 @@ class Envisat():
             gadsDSName = 'DS_NAME="Tie points ADS              "\n'
             ADSR_list = {
              "Dim" : 71,
-             "latitude"                  : {"offset" : 13         , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
-             "longitude"                 : {"offset" : 13+284*1   , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
-             "DME altitude"              : {"offset" : 13+284*2   , "datatype" : "int32" , "unit" : "m"},
-             "DME roughness"             : {"offset" : 13+284*3   , "datatype" : "uint32", "unit" : "m"},
-             "DME latitude corrections"  : {"offset" : 13+284*4   , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
-             "DME longitude corrections" : {"offset" : 13+284*5   , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
-             "sun zenith angles"         : {"offset" : 13+284*6   , "datatype" : "uint32", "unit" : "(10)^-6 deg"},
-             "sun azimuth angles"        : {"offset" : 13+284*7   , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
-             "viewing zenith angles"     : {"offset" : 13+284*8   , "datatype" : "uint32", "unit" : "(10)^-6 deg"},
-             "viewing azimuth angles"    : {"offset" : 13+284*9   , "datatype" : "int32" , "unit" : "(10)^-6 deg"},
-             "zonal winds"               : {"offset" : 13+284*10+142*0 , "datatype" : "int16" , "unit" : "m*s-1"},
-             "meridional winds"          : {"offset" : 13+284*10+142*1 , "datatype" : "int16" , "unit" : "m*s-1"},
-             "mean sea level pressure"   : {"offset" : 13+284*10+142*2 , "datatype" : "uint16", "unit" : "hPa"},
-             "total ozone"               : {"offset" : 13+284*10+142*3 , "datatype" : "uint16", "unit" : "DU"},
-             "relative humidity"         : {"offset" : 13+284*10+142*4 , "datatype" : "uint16", "unit" : "%"}
+             "latitude"                  : {"offset" : 13         , "dataType" : gdal.GDT_Int32 , "unit" : "(10)^-6 deg"},
+             "longitude"                 : {"offset" : 13+284*1   , "dataType" : gdal.GDT_Int32 , "unit" : "(10)^-6 deg"},
+             "DME altitude"              : {"offset" : 13+284*2   , "dataType" : gdal.GDT_Int32 , "unit" : "m"},
+             "DME roughness"             : {"offset" : 13+284*3   , "dataType" : gdal.GDT_UInt32, "unit" : "m"},
+             "DME latitude corrections"  : {"offset" : 13+284*4   , "dataType" : gdal.GDT_Int32 , "unit" : "(10)^-6 deg"},
+             "DME longitude corrections" : {"offset" : 13+284*5   , "dataType" : gdal.GDT_Int32 , "unit" : "(10)^-6 deg"},
+             "sun zenith angles"         : {"offset" : 13+284*6   , "dataType" : gdal.GDT_UInt32, "unit" : "(10)^-6 deg"},
+             "sun azimuth angles"        : {"offset" : 13+284*7   , "dataType" : gdal.GDT_Int32 , "unit" : "(10)^-6 deg"},
+             "viewing zenith angles"     : {"offset" : 13+284*8   , "dataType" : gdal.GDT_UInt32, "unit" : "(10)^-6 deg"},
+             "viewing azimuth angles"    : {"offset" : 13+284*9   , "dataType" : gdal.GDT_Int32 , "unit" : "(10)^-6 deg"},
+             "zonal winds"               : {"offset" : 13+284*10+142*0 , "dataType" : gdal.GDT_Int16 , "unit" : "m*s-1"},
+             "meridional winds"          : {"offset" : 13+284*10+142*1 , "dataType" : gdal.GDT_Int16 , "unit" : "m*s-1"},
+             "mean sea level pressure"   : {"offset" : 13+284*10+142*2 , "dataType" : gdal.GDT_UInt16, "unit" : "hPa"},
+             "total ozone"               : {"offset" : 13+284*10+142*3 , "dataType" : gdal.GDT_UInt16, "unit" : "DU"},
+             "relative humidity"         : {"offset" : 13+284*10+142*4 , "dataType" : gdal.GDT_UInt16, "unit" : "%"}
             }
         elif fileType == "ASA_":
             gadsDSName = 'DS_NAME="GEOLOCATION GRID ADS        "\n'
             ADSR_list = {
              "Dim" : 11,
-             "num_lines"                    : {"offset" : 13                 , "datatype" : "int"    , "unit" : ""},
-             "first_samp_numbers"           : {"offset" : 25+11*4*0          , "datatype" : "float32", "unit" : ""},
-             "first_slant_range_times"      : {"offset" : 25+11*4*1          , "datatype" : "float32", "unit" : "ns"},
-             "first_line_incidenceAngle"    : {"offset" : 25+11*4*2          , "datatype" : "float32", "unit" : "deg"},
-             "first_line_lats"              : {"offset" : 25+11*4*3          , "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
-             "first_line_longs"             : {"offset" : 25+11*4*4          , "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
-             "last_line_samp_numbers"       : {"offset" : 25+11*4*5+34+11*4*0, "datatype" : "int32"  , "unit" : ""},
-             "last_line_slant_range_times"  : {"offset" : 25+11*4*5+34+11*4*1, "datatype" : "float32", "unit" : "ns"},
-             "last_line_incidenceAngle"     : {"offset" : 25+11*4*5+34+11*4*2, "datatype" : "float32", "unit" : "deg"},
-             "last_line_lats"               : {"offset" : 25+11*4*5+34+11*4*3, "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
-             "last_line_longs"              : {"offset" : 25+11*4*5+34+11*4*4, "datatype" : "int32"  , "unit" : "(10)^-6 deg"},
+             "num_lines"                    : {"offset" : 13                 , "dataType" : gdal.GDT_Int16  , "unit" : ""},
+             "first_samp_numbers"           : {"offset" : 25+11*4*0          , "dataType" : gdal.GDT_Float32, "unit" : ""},
+             "first_slant_range_times"      : {"offset" : 25+11*4*1          , "dataType" : gdal.GDT_Float32, "unit" : "ns"},
+             "first_line_incidenceAngle"    : {"offset" : 25+11*4*2          , "dataType" : gdal.GDT_Float32, "unit" : "deg"},
+             "first_line_lats"              : {"offset" : 25+11*4*3          , "dataType" : gdal.GDT_Int32  , "unit" : "(10)^-6 deg"},
+             "first_line_longs"             : {"offset" : 25+11*4*4          , "dataType" : gdal.GDT_Int32  , "unit" : "(10)^-6 deg"},
+             "last_line_samp_numbers"       : {"offset" : 25+11*4*5+34+11*4*0, "dataType" : gdal.GDT_Int32  , "unit" : ""},
+             "last_line_slant_range_times"  : {"offset" : 25+11*4*5+34+11*4*1, "dataType" : gdal.GDT_Float32, "unit" : "ns"},
+             "last_line_incidenceAngle"     : {"offset" : 25+11*4*5+34+11*4*2, "dataType" : gdal.GDT_Float32, "unit" : "deg"},
+             "last_line_lats"               : {"offset" : 25+11*4*5+34+11*4*3, "dataType" : gdal.GDT_Int32  , "unit" : "(10)^-6 deg"},
+             "last_line_longs"              : {"offset" : 25+11*4*5+34+11*4*4, "dataType" : gdal.GDT_Int32  , "unit" : "(10)^-6 deg"},
             }
 
         return gadsDSName, ADSR_list
@@ -205,7 +206,7 @@ class Envisat():
         dim = ADSR_list["Dim"]
         adsrDict = {}
 
-        # pick up required dictionary from ADSR_List
+        # pick up required dictionaries from ADSR_List
         for key in data_key:
             if key in ADSR_list:
                 adsrDict[key] = ADSR_list[key]
@@ -219,22 +220,31 @@ class Envisat():
         metaDict = []
         # prepare parameters to create bands
         for ikey in data_key:
-            # convert python dataType to gdal dataType index
-            dataType = { "uint16": 2, "int16": 3 , "uint32": 4,
-                         "int32": 5 , "float32": 6, "float64": 7,
-                         "complex64": 11}.get(adsrDict[ikey]["datatype"], 6)
-            # get size of the dataType in byte
-            pixOffset = {2:2, 3:2, 4:4, 5:4, 6:4, 7:8, 11:8}.get(dataType, 4)
-            # Make a dictionary that is parameter for creating a VRTRawRasterBand
-            parameters = { "ImageOffset" : offsetDict[ikey],
-                           "PixelOffset" : pixOffset,
-                           "LineOffset" : offsetDict["DSR_SIZE"],
-                           "ByteOrder" : "MSB", "dataType": dataType,
-                           "band_name": ikey,
-                           "unit": adsrDict[ikey]["unit"]}
-            # add dictionary to the list
-            metaDict.append({'source': fileName, 'sourceBand': 0, 'wkv': ikey,
-                             'parameters': parameters, "SourceType":"RawRasterBand"})
+            # get size of the dataType in bytes
+            pixOffset = {gdal.GDT_Byte:     1,
+                         gdal.GDT_Int16:    2,
+                         gdal.GDT_UInt16:   2,
+                         gdal.GDT_Int32:    4,
+                         gdal.GDT_UInt32:   4,
+                         gdal.GDT_Float32:  4,
+                         gdal.GDT_Float64:  8,
+                         gdal.GDT_CInt16:   2,
+                         gdal.GDT_CInt32:   4,
+                         gdal.GDT_CFloat32: 4,
+                         gdal.GDT_CFloat64: 8}[adsrDict[ikey]["dataType"]]
+                         
+            # Append dictionary with parameters for this band
+            metaDict.append({'src': {'SourceFilename': fileName,
+                                'SourceBand': 0,
+                                "SourceType": "RawRasterBand",
+                                "ImageOffset" : offsetDict[ikey],
+                                "PixelOffset" : pixOffset,
+                                "LineOffset" : offsetDict["DSR_SIZE"],
+                                "ByteOrder" : "MSB"},
+                             'dst': {"dataType": adsrDict[ikey]["dataType"],
+                                "BandName": ikey,
+                                'wkv': ikey,
+                                "unit": adsrDict[ikey]["unit"]}})
         return dim, offsetDict["NUM_DSR"], metaDict
 
     def get_geoarray_parameters(self, fileName, fileType, stepSize, data_key=[]):
@@ -274,8 +284,8 @@ class Envisat():
             dataDict = {data_key[0] : ADSR_list[data_key[0]]}
             textOffset = {'DS_OFFSET':3}
             # get data format
-            fmt = {"int":">i", "int32":">i", "uint32" : ">I",
-                   "float32":">f"}.get(ADSR_list[data_key[0]]["datatype"], ">f")
+            fmt = {"int":">i", gdal.GDT_Int32:">i", gdal.GDT_UInt32 : ">I",
+                   gdal.GDT_Float32:">f"}.get(ADSR_list[data_key[0]]["dataType"], ">f")
             # read text data and get the offset of required key
             offsetDict = self.read_text(fileName, gadsDSName, textOffset, dataDict)
             # Read binary data from offset
@@ -308,11 +318,12 @@ class Envisat():
 
         '''
         # Get parameters for VRTRawRasterBand
-        XSize, YSize, parameters = self.get_rawband_parameters(fileName, fileType, data_key)
+        XSize, YSize, metaDict = self.get_rawband_parameters(fileName, fileType, data_key)
+        print 'metaDict', metaDict
         # Create dataset with small band
         vrt = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
         # Add VRTRawRasterBand
-        vrt._create_bands(parameters)
+        vrt._create_bands(metaDict)
         return vrt
 
     def add_geoarray_dataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[], stepSize = 2):

@@ -56,16 +56,17 @@ class Mapper(VRT):
                         bandDict = subDataset.GetRasterBand(iBand+1).GetMetadata_Dict()
                         sourceBands = iBand + 1
                         # set wkv and bandname
-                        wkv = bandDict.get('standard_name', '')
-                        band_name = bandDict.get('NETCDF_VARNAME', '')
-                        if len(band_name) > 0:
-                            bandDict['band_name'] = band_name
+                        bandDict['wkv'] = bandDict.get('standard_name', '')
+                        bandName = bandDict.get('NETCDF_VARNAME', '')
+                        if len(bandName) > 0:
+                            bandDict['BandName'] = bandName
+                            
                         # remove non-necessary metadata
                         for rmMetadata in rmMetadatas:
                             if rmMetadata in bandDict:
                                 bandDict.pop(rmMetadata)
                         
-                        metaDict.append(({'source': fileName, 'sourceBand': sourceBands, 'wkv': wkv,'parameters':bandDict}))
+                        metaDict.append({'src': {'SourceFilename': fileName, 'SourceBand': sourceBands}, 'dst': bandDict})
                     # get non-empty projection from one of the bands
                     srs = subDataset.GetProjection()
                     if len(srs) != 0:

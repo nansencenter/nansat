@@ -28,39 +28,39 @@ class Mapper(VRT, Envisat):
         #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
 
         metaDict = [
-        {'source': fileName, 'sourceBand':  1, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '412'}},
-        {'source': fileName, 'sourceBand':  2, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '443'}},
-        {'source': fileName, 'sourceBand':  3, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '490'}},
-        {'source': fileName, 'sourceBand':  4, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '510'}},
-        {'source': fileName, 'sourceBand':  5, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '560'}},
-        {'source': fileName, 'sourceBand':  6, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '620'}},
-        {'source': fileName, 'sourceBand':  7, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '665'}},
-        {'source': fileName, 'sourceBand':  8, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '680'}},
-        {'source': fileName, 'sourceBand':  9, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '708'}},
-        {'source': fileName, 'sourceBand': 10, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '753'}},
-        {'source': fileName, 'sourceBand': 11, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '761'}},
-        {'source': fileName, 'sourceBand': 12, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '778'}},
-        {'source': fileName, 'sourceBand': 13, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '864'}},
-        {'source': fileName, 'sourceBand': 14, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '849'}},
-        {'source': fileName, 'sourceBand': 15, 'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'parameters': {'wavelength': '900'}},
-        {'source': fileName, 'sourceBand': 16, 'wkv': 'quality_flags', 'parameters': {'band_name': 'l1_flags'}}
+        {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '412'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '443'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  3}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '490'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  4}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '510'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  5}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '560'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  6}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '620'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  7}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '665'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  8}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '680'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  9}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '708'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 10}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '753'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 11}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '761'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 12}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '778'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 13}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '864'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 14}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '849'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '900'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 16}, 'dst': {'wkv': 'quality_flags', 'BandName': 'l1_flags'}}
         ]
 
         # add 'band_name' to 'parameters'
         for bandDict in metaDict:
-            if bandDict['parameters'].has_key('wavelength'):
-                bandDict['parameters']['band_name'] = 'radiance_' + bandDict['parameters']['wavelength']
+            if bandDict['dst'].has_key('wavelength'):
+                bandDict['dst']['BandName'] = 'radiance_' + bandDict['dst']['wavelength']
 
         # get GADS from header
         scales = self.read_scaling_gads(fileName, range(7, 22));
         # set scale factor to the band metadata (only radiances)
         for i, bandDict in enumerate(metaDict[:-1]):
-            bandDict['parameters']['scale'] = str(scales[i])
+            bandDict['src']['ScaleRatio'] = str(scales[i])
 
         #add geolocation dictionary into metaDict
         #for iBand in range(self.geoDataset.dataset.RasterCount):
         #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-        #    metaDict.append({'source': self.geoDataset.fileName, 'sourceBand': iBand+1, 'wkv': '', 'parameters':bandMetadata})
+        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst': {'wkv': '', 'parameters':bandMetadata})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)

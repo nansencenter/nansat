@@ -54,7 +54,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, wkv="", parameters=None, logLevel=None):
+                 array=None, parameters=None, logLevel=None):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -150,7 +150,7 @@ class Nansat(Domain):
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             if array is not None:
                 # add a band from array
-                self.add_band(array=array, wkv=wkv, parameters=parameters)
+                self.add_band(array=array, parameters=parameters)
 
 
         self.logger.debug('Object created from %s ' % self.fileName)
@@ -161,7 +161,7 @@ class Nansat(Domain):
         -----------
             bandID: int or str
                 If int, array from band with number <bandID> is returned
-                If string, array from band with metadata 'band_name' equal to
+                If string, array from band with metadata 'BandName' equal to
                 <bandID> is returned
         Returns
         -------
@@ -196,7 +196,7 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, fileName=None, vrt=None, bandID=1, array=None, wkv="", parameters=None, resamplingAlg=1):
+    def add_band(self, fileName=None, vrt=None, bandID=1, array=None, parameters=None, resamplingAlg=1):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -212,8 +212,7 @@ class Nansat(Domain):
             vrt: VRT object to add band from
             bandID: number of the band from fileName or from vrt to be added
             array : Numpy array with band data
-            wkv : string with name of WKV
-            parameters: dictionary for defining parameters of the band, name, etc.
+            parameters: dictionary with band parameters: wkv, name, etc.
             resamplingAlg: 0, 1, 2 stands for nearest, bilinear, cubic
 
         Modifies
@@ -242,7 +241,6 @@ class Nansat(Domain):
             # get band metadata
             bandNumber = n._get_band_number(bandID)
             p2add = n.get_metadata(bandID=bandID)
-            wkv = p2add.get('band_name', '')
 
         # get band from input VRT
         if vrt is not None:
@@ -251,7 +249,6 @@ class Nansat(Domain):
             # get band metadata
             bandNumber = bandID
             p2add = vrt.dataset.GetRasterBand(bandID).GetMetadata()
-            wkv = p2add.get('band_name', '')
 
         # get band from input array
         if array is not None:
@@ -271,7 +268,8 @@ class Nansat(Domain):
             p2add[pKey] = parameters[pKey]
 
         # add the array band into self.vrt and get bandName
-        bandName = self.raw._create_band(vrt2add.fileName, bandNumber, wkv, p2add)
+        bandName = self.raw._create_band({'SourceFilename': vrt2add.fileName,
+                                          'SourceBand': bandNumber}, p2add)
         # add VRT with the band to the dictionary
         # (not to loose the VRT object and VRT file in memory)
         self.addedBands[bandName] = vrt2add
@@ -299,7 +297,7 @@ class Nansat(Domain):
         ----------
             fileName: output file name
             rmMetadata: list with metadata names to remove before export.
-                e.g. ['band_name', 'colormap', 'source', 'sourceBands']
+                e.g. ['BandName', 'colormap', 'source', 'sourceBands']
 
         Modifies
         --------
@@ -334,10 +332,10 @@ class Nansat(Domain):
             for bandID in bands:
                 bandNumber = self._get_band_number(bandID)
                 bandMetadata = allBands[bandNumber]
-                bandMetadata.pop('source')
-                bandMetadata.pop('sourceBands')
-                exportVRT._create_band(self.vrt.fileName,
-                                       bandNumber, '',
+                bandMetadata.pop('SourceFilename')
+                bandMetadata.pop('SourceBand')
+                exportVRT._create_band({'SourceFilename': self.vrt.fileName,
+                                        'SourceBand': bandNumber},
                                        bandMetadata)
 
         # Change the element from GDAL datatype to NetCDF data type
@@ -353,13 +351,18 @@ class Nansat(Domain):
 
         # add bands with geolocation to the VRT
         if len(exportVRT.geoloc.d) > 0:
-            exportVRT._create_band(self.vrt.geoloc.d['X_DATASET'],
-                          int(self.vrt.geoloc.d['X_BAND']), 'longitude',
-                          {'band_name': 'GEOLOCATION_X_DATASET'})
-            exportVRT._create_band(self.vrt.geoloc.d['Y_DATASET'],
-                          int(self.vrt.geoloc.d['Y_BAND']), 'latitude',
-                          {'band_name': 'GEOLOCATION_Y_DATASET'})
+            exportVRT._create_band(
+                {'SourceFilename': self.vrt.geoloc.d['X_DATASET'],
+                 'SourceBand': int(self.vrt.geoloc.d['X_BAND'])},
+                {'wkv': 'longitude',
+                 'BandName': 'GEOLOCATION_X_DATASET'})
 
+            exportVRT._create_band(
+                {'SourceFilename': self.vrt.geoloc.d['Y_DATASET'],
+                 'SourceBand': int(self.vrt.geoloc.d['Y_BAND'])},
+                {'wkv': 'latitude',
+                 'BandName': 'GEOLOCATION_Y_DATASET'})
+                 
         exportVRT._add_gcp_metadata()
 
         # add projection metadata
@@ -376,7 +379,7 @@ class Nansat(Domain):
             bandMetadata = band.GetMetadata()
             # set NETCDF_VARNAME
             try:
-                bandMetadata['NETCDF_VARNAME'] = bandMetadata["band_name"]
+                bandMetadata['NETCDF_VARNAME'] = bandMetadata["BandName"]
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
                                     % (iBand+1))
@@ -494,7 +497,7 @@ class Nansat(Domain):
         ----------
             bandID: serial number or string, optional (default is 1)
                 if number - a band number of the band to fetch
-                if string bandID = {'band_name': bandID}
+                if string bandID = {'BandName': bandID}
 
         Returns
         -------
@@ -531,7 +534,7 @@ class Nansat(Domain):
 
         for b in bands:
             # print band number, name
-            outString += "Band : %d %s\n" % (b, bands[b].get('band_name', ''))
+            outString += "Band : %d %s\n" % (b, bands[b].get('BandName', ''))
             # print band metadata
             for i in bands[b]:
                 outString += "  %s: %s\n" % (i, bands[b][i])
@@ -883,7 +886,7 @@ class Nansat(Domain):
         Parameters
         ----------
             bandID: int or str (default = None)
-                number or band_name
+                number or BandName
         Returns:
             time: list with datetime objects for each band.
             If time is the same for all bands, the list contains 1 item
@@ -912,7 +915,7 @@ class Nansat(Domain):
         key: string, optional
             name of the metadata key. If not givem all metadata is returned
         bandID: int or str, optional
-            number or band_name of band to get metadata from.
+            number or BandName of band to get metadata from.
             If not given, global metadata is returned
 
         Returns:
@@ -1017,7 +1020,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_radarsat2')
+        mapper_module = __import__('mapper_ASAR')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1042,7 +1045,8 @@ class Nansat(Domain):
             self.logger.info('No mapper fits!')
             tmpVRT = VRT(gdalDataset=gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
-                tmpVRT._create_band(self.fileName, iBand+1, '', {})
+                tmpVRT._create_band({'SourceFilename': self.fileName,
+                                     'SourceBand': iBand+1})
                 tmpVRT.dataset.FlushCache()
 
         return tmpVRT
@@ -1063,18 +1067,18 @@ class Nansat(Domain):
         ----------
             bandID: int or str
                 if int: checks if such band exists and returns band_id
-                if str: finds band with coresponding band_name
+                if str: finds band with coresponding BandName
 
         Returns
         -------
             int, absolute band  number
         '''
         bandNumber = 0
-        # if bandID is string, fetch band which has band_name == bandID
+        # if bandID is string, fetch band which has BandName == bandID
         if isinstance(bandID, str):
             bandsMeta = self.bands()
             for b in bandsMeta:
-                if bandID == bandsMeta[b]['band_name']:
+                if bandID == bandsMeta[b]['BandName']:
                     bandNumber = b
 
         # if given bandID is int and within the existing bands, return it
@@ -1115,7 +1119,7 @@ class Nansat(Domain):
             files: list
                 list of input files
             bands: list
-                list of band_names/band_numbers to be processed
+                list of BandNames/band_numbers to be processed
             nClass: child of Nansat
                 The class to be used to read input files
         '''
@@ -1148,7 +1152,7 @@ class Nansat(Domain):
                 mask = n['mask']
             except:
                 mask = 128 * np.ones(n.shape()).astype('int8')
-                n.add_band(mask, parameters={'band_name': 'mask'})
+                n.add_band(mask, parameters={'BandName': 'mask'})
 
             n.reproject(self)
             try:
@@ -1194,12 +1198,12 @@ class Nansat(Domain):
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'band_name': 'mask'})
+        self.add_band(array=maskMat, parameters={'BandName': 'mask'})
         # add averaged bands
         for b in bands:
             self.logger.debug('    %s' % b)
-            self.add_band(array=avgMat[b], parameters={'band_name': b})
-            self.add_band(array=stdMat[b], parameters={'band_name': b + '_std'})
+            self.add_band(array=avgMat[b], parameters={'BandName': b})
+            self.add_band(array=stdMat[b], parameters={'BandName': b + '_std'})
 
     def process(self):
         '''Default L2 processing of Nansat object. Empty. Overloaded.'''
