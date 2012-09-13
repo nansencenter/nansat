@@ -250,32 +250,19 @@ class VRT():
         ''' Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
 
-        Keys and values in the metaDict dictionary:
-        -------------------------------------------
-        source: string
-            name of the source dataset (e.g. filename)
-        sourceBand: integer
-            band number of the source band in the given source dataset
-            if it is 0, it means VRTRawRasterband
-        wkv: string
-            refers to the "standard_name" of some of the
-            "well known variables" listed in wkv.xml
-            The corresponding parameters are added as metadata to the band
-        parameters: dictionary
-            metadata to be added to the band: {key: value}. Typical keys:
-            'BandName': name of the band
-            'ScaleRatio': scale
-            'ScaleOffset': offset
-            'NODATA': value for nodata (not used?)
-            'LUT':    set of values for Look-Up-Table
-            'SourceType': type of the source [SimpleSource, ComplexSource]
-            'dataType':   data type of the created band (not source band)
-            "PixelFunction": band will be a pixel function defined by the
-                corresponding name/value. In this case sourceBands and source
-                may be lists of integers/strings (i.e. possibly several bands
-                and several sources as input). If source is a single string,
-                this source will be used for all source bands.
-
+        Input:
+        ------
+        metaDict: list of dict with params of input bands and generated bands.
+            Each dict has:
+                'src': dictionary with parameters of the sources:
+                'dst': dictionary with parameters of the generated bands
+        Modifies:
+        ---------
+            Adds bands to the self.dataset based on info in metaDict
+        
+        See Also
+        --------
+        VRT._create_band()
         '''
         for bandDict in metaDict:
             src = bandDict['src']
@@ -291,6 +278,7 @@ class VRT():
         AddBand
         Set source and options
         Add metadata
+
         Input:
         ------
             src: dict with parameters of sources
@@ -305,18 +293,29 @@ class VRT():
                 PixelOffset (RawVRT)
                 LineOffset (RawVRT)
                 ByteOrder (RawVRT)
-                DataType (RawVRT)
             dst: dict with parameters of the created band
                 BandName
                 dataType
                 wkv
-                PixelFunctionType
-        src may be a list of several dictionaries of a PixelFunctionType is used
+                AnyOtherMetadata
+                PixelFunctionType: band will be a pixel function defined by the
+                corresponding name/value. In this case src may be list of
+                dicts with parameters for each source.
 
         Returns:
         --------
             BandName: string, name of the added band
 
+        Examples:
+        --------
+            vrt._create_band({'SourceFilename': filename, 'SourceBand': 1})
+            vrt._create_band({'SourceFilename': filename,
+                              'SourceBand': 2,
+                              'ScaleRatio': 0.0001},
+                             {'BandName': 'LAT', 'wkv': 'latitude'})
+            vrt._create_band([{'SourceFilename': filename, 'SourceBand': 1},
+                              {'SourceFilename': filename, 'SourceBand': 1}],
+                             {'PixelFunctionType': 'NameOfPixelFunction'})
         '''
         self.logger.debug('INPUTS: %s, %s " ' % (str(src), str(dst)))
         # Make sure src is list, ready for loop
