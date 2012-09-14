@@ -348,10 +348,10 @@ class VRT():
                 if srcDefault not in src:
                     src[srcDefault] = srcDefaults[srcDefault]
 
-            # Find datatype, size and blocksize of sources
-            srcDataset = gdal.Open(src['SourceFilename'])
-            srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
-            if srcRasterBand is not None:
+            # Find datatype of source
+            if src['SourceBand'] > 0:
+                srcDataset = gdal.Open(src['SourceFilename'])
+                srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
                 src['DataType'] = srcRasterBand.DataType
 
             # create XML for each source

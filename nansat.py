@@ -1152,7 +1152,7 @@ class Nansat(Domain):
                 mask = n['mask']
             except:
                 mask = 128 * np.ones(n.shape()).astype('int8')
-                n.add_band(mask, parameters={'BandName': 'mask'})
+                n.add_band(array=mask, parameters={'BandName': 'mask'})
 
             n.reproject(self)
             try:
