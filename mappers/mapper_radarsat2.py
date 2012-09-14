@@ -39,6 +39,9 @@ class Mapper(VRT):
         if product != 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER");
 
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, gdalDataset);
+
         #define dictionary of metadata and band specific parameters
         pol = []
         metaDict = []
@@ -70,11 +73,26 @@ class Mapper(VRT):
                     'PixelFunctionType': 'BetaSigmaToIncidence',
                     'BandName': 'incidence_angle'}})
 
-        # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset);
-
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+
+                    
+        ###################################################################
+        # Add sigma0_VV - pixel function of incidence angle and sigma0_HH
+        ###################################################################
+        if 'VV' not in pol and 'HH' in pol:        
+            sourceBandHH = pol.index('HH')+1
+            sourceBandInci = len(metaDict)
+            src = [{'SourceFilename': 'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
+                    'SourceBand':  sourceBandHH},
+                   {'SourceFilename': self.fileName,
+                    'SourceBand':  sourceBandInci}]
+            dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                   'PixelFunctionType': 'Sigma0HHIncidenceToSigma0VV',
+                   'polarisation': 'VV',
+                   'BandName': 'sigma0_VV'}
+            self._create_band(src, dst)
+            self.dataset.FlushCache()
 
         ############################################
         # Add SAR look direction to metadata domain
@@ -83,61 +101,8 @@ class Mapper(VRT):
             Domain(ds=gdalDataset).upwards_azimuth_direction()
             + 90, 360)))
 
-        # Experimental feature for the Radarsat2-mapper:
-        # Rationale:
-        # - to convert sigma0 from HH-pol to VV-pol we can use the
-        #   pixelfunction Sigma0HHIncidenceToSigma0VV which takes as input
-        #   sigma0HH and incidence_angle. However, incidence_angle is itself a
-        #   pixelfunction, so here we need a pixelfunction of a pixelfunction!
-        # Issue:
-        # - this second pixelfunction cannot access the first pixelfunction
-        #   through the regular VRT/VSI-file because if we e.g. downscale the
-        #   nansat object, then we end up with a double downscaling of the
-        #   second pixelfunction band
-        # Solution:
-        # - to copy the vsiDataset into another vsimem-file which remains
-        #   unchanged under reprojection and downscaling
-        if 'VV' not in pol and 'HH' in pol:
-            # Write the vrt to a VSI-file
-            vrtDatasetCopy_temp = self.vrtDriver.CreateCopy(
-                    '/vsimem/vsi_original.vrt', self.dataset)
-            options = ['subClass=VRTDerivedRasterBand',
-                    'PixelFunctionType=Sigma0HHIncidenceToSigma0VV']
-            self.dataset.AddBand(datatype=gdal.GDT_Float32, options=options)
-            md = {}
-            for i in range(len(pol)):
-                if pol[i]=='HH':
-                    sourceBandHH = i+1
-            sourceBandInci = len(pol)+1
-
-            BlockXSize, BlockYSize = gdalDataset.GetRasterBand(1).GetBlockSize()
-            md['source_0'] = self.ComplexSource.substitute(
-                    SourceType='ComplexSource',
-                    NODATA="", LUT="", ScaleOffset=0.0, ScaleRatio=1.0,
-                    SourceBand=sourceBandHH,
-                    Dataset='RADARSAT_2_CALIB:BETA0:'+fileName+'/product.xml')
-            md['source_1'] = self.ComplexSource.substitute(
-                    SourceType='ComplexSource',
-                    XSize=self.dataset.RasterXSize,
-                    YSize=self.dataset.RasterYSize, BlockXSize=BlockXSize,
-                    BlockYSize=BlockYSize, DataType=gdal.GDT_Float32,
-                    NODATA="", LUT="", ScaleOffset=0.0, ScaleRatio=1.0,
-                    SourceBand=sourceBandInci,
-                    Dataset='/vsimem/vsi_original.vrt')
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetMetadata(md, 'vrt_sources')
-            self.dataset.GetRasterBand(self.dataset.RasterCount).SetNoDataValue(0)
-
-            self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
-                           self._get_wkv('surface_backwards_scattering_coefficient_of_radar_wave'))
-            self._put_metadata(self.dataset.GetRasterBand(self.dataset.RasterCount),
-                {'BandName': 'sigma0_VV',
-                 'polarisation': 'VV',
-                 'pixelfunction': 'Sigma0HHIncidenceToSigma0VV'})
-            self.dataset.FlushCache()
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
         self.logger.info('Valid time: %s', str(validTime))
         self._set_time(parse(validTime))
-
-        return
