@@ -459,11 +459,11 @@ class Nansat(Domain):
         node0.replaceAttribute("rasterYSize", str(rasterYSize))
 
         for iNode in node0.nodeList("VRTRasterBand"):
-            for sourceName in ["ComplexSource", "SimpleSource"]:
-                for iNode2 in iNode.nodeList(sourceName):
-                    iNodeDstRect = iNode2.node("DstRect")
-                    iNodeDstRect.replaceAttribute("xSize", str(rasterXSize))
-                    iNodeDstRect.replaceAttribute("ySize", str(rasterYSize))
+            #for sourceName in ["ComplexSource", "SimpleSource"]:
+            #    for iNode2 in iNode.nodeList(sourceName):
+            #        iNodeDstRect = iNode2.node("DstRect")
+            #        iNodeDstRect.replaceAttribute("xSize", str(rasterXSize))
+            #        iNodeDstRect.replaceAttribute("ySize", str(rasterYSize))
             # if method="average", overwrite "ComplexSource" to "AveragedSource"
             if method == "average":
                 iNode.replaceTag("ComplexSource", "AveragedSource")
@@ -1205,5 +1205,5 @@ class Nansat(Domain):
             self.add_band(array=avgMat[b], parameters={'BandName': b})
             self.add_band(array=stdMat[b], parameters={'BandName': b + '_std'})
 
-    def process(self):
+    def process(self, opts=None):
         '''Default L2 processing of Nansat object. Empty. Overloaded.'''
