@@ -451,19 +451,26 @@ class Nansat(Domain):
         vrtXML = self.vrt.read_xml()
 
         node0 = Node.create(vrtXML)
-        rasterXSize = int(float(node0.getAttribute("rasterXSize")) * factor)
-        rasterYSize = int(float(node0.getAttribute("rasterYSize")) * factor)
+        rasterXSize = float(node0.getAttribute("rasterXSize"))
+        rasterYSize = float(node0.getAttribute("rasterYSize"))
+        newRasterXSize = int(rasterXSize * factor)
+        newRasterYSize = int(rasterYSize * factor)
         self.logger.info('New size/factor: (%f, %f)/%f' %
-                        (rasterXSize, rasterYSize, factor))
-        node0.replaceAttribute("rasterXSize", str(rasterXSize))
-        node0.replaceAttribute("rasterYSize", str(rasterYSize))
+                        (newRasterXSize, newRasterYSize, factor))
+        node0.replaceAttribute("rasterXSize", str(newRasterXSize))
+        node0.replaceAttribute("rasterYSize", str(newRasterYSize))
 
         for iNode in node0.nodeList("VRTRasterBand"):
-            #for sourceName in ["ComplexSource", "SimpleSource"]:
-            #    for iNode2 in iNode.nodeList(sourceName):
-            #        iNodeDstRect = iNode2.node("DstRect")
-            #        iNodeDstRect.replaceAttribute("xSize", str(rasterXSize))
-            #        iNodeDstRect.replaceAttribute("ySize", str(rasterYSize))
+            for sourceName in ["ComplexSource", "SimpleSource"]:
+                srcNode = Node('SrcRect', xOff="0", yOff="0",
+                                          xSize="%d" % rasterXSize,
+                                          ySize="%d" % rasterYSize)
+                dstNode = Node('DstRect', xOff="0", yOff="0",
+                                          xSize="%d" % newRasterXSize,
+                                          ySize="%d" % newRasterYSize)
+                for iNode2 in iNode.nodeList(sourceName):
+                    iNode2 += srcNode
+                    iNode2 += dstNode
             # if method="average", overwrite "ComplexSource" to "AveragedSource"
             if method == "average":
                 iNode.replaceTag("ComplexSource", "AveragedSource")
