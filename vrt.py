@@ -289,6 +289,7 @@ class VRT():
                 NODATA
                 LUT
                 SourceType
+                DataType
                 ImageOffset (RawVRT)
                 PixelOffset (RawVRT)
                 LineOffset (RawVRT)
@@ -348,8 +349,8 @@ class VRT():
                 if srcDefault not in src:
                     src[srcDefault] = srcDefaults[srcDefault]
 
-            # Find datatype of source
-            if src['SourceBand'] > 0:
+            # Find datatype of source (if not given in src)
+            if src['SourceBand'] > 0 and 'DataType' not in src:
                 srcDataset = gdal.Open(src['SourceFilename'])
                 srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
                 src['DataType'] = srcRasterBand.DataType

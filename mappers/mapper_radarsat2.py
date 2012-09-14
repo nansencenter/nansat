@@ -52,7 +52,8 @@ class Mapper(VRT):
             metaDict.append(
                 {'src': {'SourceFilename':
                          'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
-                         'SourceBand': i},
+                         'SourceBand': i,
+                         'DataType': 6},
                  'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 
                          'BandName': 'sigma0_' + polString,
                          'polarization': polString}})
@@ -62,13 +63,14 @@ class Mapper(VRT):
         # using pixel function "BetaSigmaToIncidence":
         #      incidence = arcsin(sigma0/beta0)*180/pi
         ##############################################################
-        incidence_angle_sources = [
-            'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
-            'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml']
         metaDict.append(
             {'src': [
-                {'SourceFilename': incidence_angle_sources[0], 'SourceBand':  1},
-                {'SourceFilename': incidence_angle_sources[1], 'SourceBand':  1}],
+                {'SourceFilename': 'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
+                 'SourceBand':  1,
+                 'DataType': 6},
+                {'SourceFilename': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
+                 'SourceBand':  1,
+                 'DataType': 6}],
             'dst': {'wkv': 'sensor_zenith_angle',
                     'PixelFunctionType': 'BetaSigmaToIncidence',
                     'BandName': 'incidence_angle'}})
@@ -84,9 +86,11 @@ class Mapper(VRT):
             sourceBandHH = pol.index('HH')+1
             sourceBandInci = len(metaDict)
             src = [{'SourceFilename': 'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
-                    'SourceBand':  sourceBandHH},
+                    'SourceBand':  sourceBandHH,
+                    'DataType': 6},
                    {'SourceFilename': self.fileName,
-                    'SourceBand':  sourceBandInci}]
+                    'SourceBand':  sourceBandInci,
+                    'DataType': 6}]
             dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                    'PixelFunctionType': 'Sigma0HHIncidenceToSigma0VV',
                    'polarisation': 'VV',
