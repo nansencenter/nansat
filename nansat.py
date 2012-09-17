@@ -450,6 +450,7 @@ class Nansat(Domain):
         # Get XML content from VRT-file
         vrtXML = self.vrt.read_xml()
 
+        # calculate ratio based on given inputs
         node0 = Node.create(vrtXML)
         rasterXSize = float(node0.getAttribute("rasterXSize"))
         rasterYSize = float(node0.getAttribute("rasterYSize"))
@@ -457,24 +458,23 @@ class Nansat(Domain):
         newRasterYSize = int(rasterYSize * factor)
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
+
+        # replace rasterXSize in <VRTDataset>
         node0.replaceAttribute("rasterXSize", str(newRasterXSize))
         node0.replaceAttribute("rasterYSize", str(newRasterYSize))
 
-        for iNode in node0.nodeList("VRTRasterBand"):
+        # replace xSize in <DstRect> of each source
+        for iNode1 in node0.nodeList("VRTRasterBand"):
             for sourceName in ["ComplexSource", "SimpleSource"]:
-                srcNode = Node('SrcRect', xOff="0", yOff="0",
-                                          xSize="%d" % rasterXSize,
-                                          ySize="%d" % rasterYSize)
-                dstNode = Node('DstRect', xOff="0", yOff="0",
-                                          xSize="%d" % newRasterXSize,
-                                          ySize="%d" % newRasterYSize)
-                for iNode2 in iNode.nodeList(sourceName):
-                    iNode2 += srcNode
-                    iNode2 += dstNode
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node("DstRect")
+                    iNodeDstRect.replaceAttribute("xSize", str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute("ySize", str(newRasterYSize))
+                    print 'Replaced %d in DstRect' % newRasterYSize
             # if method="average", overwrite "ComplexSource" to "AveragedSource"
             if method == "average":
-                iNode.replaceTag("ComplexSource", "AveragedSource")
-                iNode.replaceTag("SimpleSource", "AveragedSource")
+                iNode2.replaceTag("ComplexSource", "AveragedSource")
+                iNode2.replaceTag("SimpleSource", "AveragedSource")
 
         # Edit GCPs to correspond to the downscaled size
         if node0.node("GCPList"):
@@ -1027,7 +1027,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_radarsat2')
+        mapper_module = __import__('mapper_merisL1')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

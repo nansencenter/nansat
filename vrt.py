@@ -110,6 +110,8 @@ class VRT():
                 <ScaleOffset>$ScaleOffset</ScaleOffset>
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
+                <SrcRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
+                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>                
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -349,7 +351,7 @@ class VRT():
                 if srcDefault not in src:
                     src[srcDefault] = srcDefaults[srcDefault]
 
-            # Find datatype of source (if not given in src)
+            # Find DataType of source (if not given in src)
             if src['SourceBand'] > 0 and 'DataType' not in src:
                 srcDataset = gdal.Open(src['SourceFilename'])
                 srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
@@ -363,7 +365,9 @@ class VRT():
                                     NODATA=src['NODATA'],
                                     ScaleOffset=src['ScaleOffset'],
                                     ScaleRatio=src['ScaleRatio'],
-                                    LUT=src['LUT'])
+                                    LUT=src['LUT'],
+                                    xSize=self.dataset.RasterXSize,
+                                    ySize=self.dataset.RasterYSize)
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
