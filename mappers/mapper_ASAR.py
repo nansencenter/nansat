@@ -66,6 +66,6 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         ''' Set GeolocationArray '''
-        #latlonName = {"latitude":"first_line_lats","longitude":"first_line_longs"}
-        #self.add_geoarray_dataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection(), ["num_lines"])
+        latlonName = {"latitude":"first_line_lats","longitude":"first_line_longs"}
+        self.add_geoarray_dataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection(), ["num_lines"])
 

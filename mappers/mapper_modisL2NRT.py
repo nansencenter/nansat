@@ -76,7 +76,6 @@ class Mapper(VRT):
                                       'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
                                       }
                               }
-
             else:
                 # if the band is not Rrs_NNN
                 # try to find it (and metadata) in dict of known bands (allBandsDict)
@@ -106,13 +105,18 @@ class Mapper(VRT):
         for subDataset in subDatasets:
             if 'longitude' in subDataset[1]:
                 xDatasetSource = subDataset[0]
-                xVRT = VRT(vrtDataset=gdal.Open(xDatasetSource))
+                xDataset = gdal.Open(xDatasetSource)
+                xVRT = VRT(vrtDataset=xDataset)
             if 'latitude' in subDataset[1]:
                 yDatasetSource = subDataset[0]
                 yVRT = VRT(vrtDataset=gdal.Open(yDatasetSource))
+
+        # estimate pixel/line step
+        pixelStep = int(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize))
+        lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
         
         # add geolocation
-        self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource))
+        self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
 
         # ==== ADD GCPs and Pojection ====        
         # get lat/lon matrices
@@ -132,7 +136,7 @@ class Mapper(VRT):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
                 gcp = gdal.GCP(float(longitude[i0, i1]),
                                float(latitude[i0, i1]),
-                               0, i1, i0)
+                               0, i1 * pixelStep, i0 * lineStep)
                 self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
                 gcps.append(gcp)
                 k += 1

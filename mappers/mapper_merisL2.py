@@ -41,10 +41,10 @@ class Mapper(VRT, Envisat):
         {'src': {'SourceFilename': fileName, 'SourceBand': 11}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '761'}},
         {'src': {'SourceFilename': fileName, 'SourceBand': 12}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '778'}},
         {'src': {'SourceFilename': fileName, 'SourceBand': 13}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '864'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1', 'case': 'I'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 16}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs', 'case': 'II'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 17}, 'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'BandName': 'total_susp', 'case': 'II'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 18}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_2', 'case': 'II'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1_log', 'case': 'I'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 16}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs_log', 'case': 'II'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 17}, 'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'BandName': 'total_susp_log', 'case': 'II'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 18}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_2_log', 'case': 'II'}},
         {'src': {'SourceFilename': fileName, 'SourceBand': 22}, 'dst': {'wkv': 'quality_flags', 'BandName': 'l2_flags'}},
         ]
 
@@ -61,6 +61,13 @@ class Mapper(VRT, Envisat):
             bandDict['src']['ScaleRatio'] = str(scales[i])
             bandDict['src']['ScaleOffset'] = str(offsets[i])
 
+        # add log10-scaled variables
+        metaDict += [
+            {'src': {'SourceFilename': fileName, 'SourceBand': 1}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1', 'case': 'I', 'expression': 'np.power(10, self["algal_1_log"])'}},
+            {'src': {'SourceFilename': fileName, 'SourceBand': 1}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_2', 'case': 'II', 'expression': 'np.power(10, self["algal_2_log"])'}},
+            {'src': {'SourceFilename': fileName, 'SourceBand': 1}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs', 'case': 'II', 'expression': 'np.power(10, self["yellow_subs_log"])'}},
+            {'src': {'SourceFilename': fileName, 'SourceBand': 1}, 'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'BandName': 'total_susp', 'case': 'II', 'expression': 'np.power(10, self["total_susp_log"])'}},
+        ]
         #add geolocation dictionary into metaDict
         #for iBand in range(self.geoDataset.dataset.RasterCount):
         #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
