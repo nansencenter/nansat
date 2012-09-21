@@ -23,12 +23,14 @@ import datetime
 from dateutil.parser import parse
 import logging
 
+import numpy as np
+
 try:
     from osgeo import gdal, osr
 except ImportError:
     import gdal, osr
 
-from nansat_tools import add_logger, Node
+from nansat_tools import add_logger, Node, latlongSRS
 
 class Geolocation():
     '''Container for GEOLOCATION data'''
@@ -133,7 +135,9 @@ class VRT():
                                          srcGCPs=[],
                                          srcGCPProjection="",
                                          srcMetadata="",
-                                         geolocation=None):
+                                         geolocation=None,
+                                         lat=None,
+                                         lon=None):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
         If vrtDataset is given, creates full copy of VRT content
@@ -174,20 +178,20 @@ class VRT():
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
         self.vrtDriver = gdal.GetDriverByName("VRT")
+        # default empty geolocation of source
+        srcGeolocation = Geolocation()
         if vrtDataset is not None:
             # copy content of the provided VRT dataset using CreateCopy
             self.logger.debug('copy content of the provided VRT dataset using CreateCopy')
             self.dataset = self.vrtDriver.CreateCopy(self.fileName,
                                                      vrtDataset)
-            # add geolocation from vrt dataset
-            self.add_geolocation(Geolocation(dataset=vrtDataset))
+            # get source geolocation
+            srcGeolocation = Geolocation(dataset=vrtDataset)
         else:
-            # get geo-metadata from given GDAL dataset
             if gdalDataset is not None:
+                # get geo-metadata from given GDAL dataset
                 srcGeoTransform = gdalDataset.GetGeoTransform()
                 srcProjection = gdalDataset.GetProjection()
-                srcProjectionRef = gdalDataset.GetProjectionRef()
-                srcGCPCount = gdalDataset.GetGCPCount()
                 srcGCPs = gdalDataset.GetGCPs()
                 srcGCPProjection = gdalDataset.GetGCPProjection()
 
@@ -195,7 +199,21 @@ class VRT():
                 srcRasterYSize = gdalDataset.RasterYSize
 
                 srcMetadata = gdalDataset.GetMetadata()
-
+                # get source geolocation
+                srcGeolocation = Geolocation(dataset=gdalDataset)
+            elif lat is not None and lon is not None:
+                # get geo-metadata from given lat/lon grids
+                srcRasterYSize, srcRasterXSize = lon.shape
+                srcGCPs = self._latlon2gcps(lat, lon)
+                srcGCPProjection = latlongSRS.ExportToWkt()
+                print srcRasterYSize
+                print srcGCPs
+                print srcGCPProjection
+                latVRT = VRT(array=lat)
+                lonVRT = VRT(array=lon)
+                # create source geolocation
+                srcGeolocation = Geolocation(xVRT=lonVRT, yVRT=latVRT)
+                
             # create VRT dataset (empty or with a band from array)
             if array is None:
                 self.dataset = self.vrtDriver.Create(self.fileName,
@@ -213,12 +231,10 @@ class VRT():
             # set metadata
             self.dataset.SetMetadata(srcMetadata)
 
-            # add geolocation from gdal dataset
-            self.add_geolocation(Geolocation(dataset=gdalDataset))
-
-        # add geolocation from input geolocation
-        # if not None: overwrite geoloc from vrt or gdal datasets
-        if geolocation is not None:
+        # add geolocation from input or from source data
+        if geolocation is None:
+            self.add_geolocation(srcGeolocation)
+        else:
             self.add_geolocation(geolocation)
 
         # add self.fileName to metadata
@@ -699,7 +715,7 @@ class VRT():
         return warpedVRT
 
 
-    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0, geoTransform=None):
+    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0, geoTransform=None, blockSize=None):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
 
         Parameters
@@ -737,6 +753,10 @@ class VRT():
             if node0.node("SrcGeoLocTransformer"):
                 node0.node("BlockXSize").value = str(rasterXSize)
                 node0.node("BlockYSize").value = str(rasterYSize)
+                
+            if blockSize is not None:
+                node0.node("BlockXSize").value = str(blockSize)
+                node0.node("BlockYSize").value = str(blockSize)
 
         self.write_xml(str(node0.rawxml()))
 
@@ -788,7 +808,8 @@ class VRT():
                     self.dataset.SetMetadataItem('NANSAT_%s_%03d' % (gcpNames[i], chunki), chunk)
 
     def create_warped_vrt(self, dstSRS=None, resamplingAlg=0,
-                                xSize=0, ySize=0, geoTransform=None,
+                                xSize=0, ySize=0, blockSize=None,
+                                geoTransform=None,
                                 use_geoloc=True, use_gcps=True, use_geotransform=True,
                                 dstGCPs=[], dstGeolocation=None):
         ''' Create VRT object with WarpedVRT
@@ -904,8 +925,8 @@ class VRT():
         warpedVRT = VRT(vrtDataset=warpedVRT)
 
         # set x/y size, geoTransform
-        self.logger.debug('set x/y size, geoTransform')
-        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform)
+        self.logger.debug('set x/y size, geoTransform, blockSize')
+        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform, blockSize)
 
         # if given, add dst GCPs
         self.logger.debug('if given, add dst GCPs')
@@ -952,11 +973,6 @@ class VRT():
             {'gcps': list with GDAL GCPs, 'srs': fake stereo WKT}
         '''
 
-        # prepare pure lat/lon WKT
-        sr = osr.SpatialReference()
-        sr.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
-        latlongWKT = sr.ExportToWkt()
-
         # get source SRS (either Projection or GCPProjection)
         srcWKT = self.dataset.GetProjection()
         if srcWKT == '':
@@ -966,7 +982,7 @@ class VRT():
         srcTransformer = gdal.Transformer(
                              self.dataset, None,
                              ['SRC_SRS=' + srcWKT,
-                             'DST_SRS=' + latlongWKT])
+                             'DST_SRS=' + latlongSRS.ExportToWkt()])
 
         # create 'fake' GCPs
         for g in gcps:
@@ -990,3 +1006,45 @@ class VRT():
         stereoSRSWKT = stereoSRS.ExportToWkt()
 
         return {'gcps': gcps, 'srs': stereoSRSWKT}
+
+    def _latlon2gcps(self, lat, lon, numOfGCPs=100):
+        ''' Create list of GCPs from given grids of latitude and longitude
+
+        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
+        Create GCPs from these pixels
+        Create latlong GCPs projection
+
+        Parameters:
+        ===========
+        lat : Numpy grid
+            array of latitudes
+        lon : Numpy grid
+            array of longitudes (should be the same size as lat)
+        numOfGCPs : int, optional, default = 100
+            number of GCPs to create
+
+        Returns:
+        ========
+        gcsp : List with GDAL GCPs
+        '''
+
+        # estimate step of GCPs
+        gcpSize = np.sqrt(numOfGCPs)
+        step0 = max(1, int(float(lat.shape[0]) / gcpSize))
+        step1 = max(1, int(float(lat.shape[1]) / gcpSize))
+        self.logger.debug('gcpCount: %d %d %f %d %d', lat.shape[0], lat.shape[1], gcpSize, step0, step1)
+
+        # generate list of GCPs
+        gcps = []
+        k = 0
+        for i0 in range(0, lat.shape[0], step0):
+            for i1 in range(0, lat.shape[1], step1):
+                # create GCP with X,Y,pixel,line from lat/lon matrices
+                gcp = gdal.GCP(float(lon[i0, i1]),
+                               float(lat[i0, i1]),
+                               0, i1, i0)
+                self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+                gcps.append(gcp)
+                k += 1
+
+        return gcps

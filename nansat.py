@@ -122,6 +122,7 @@ class Nansat(Domain):
               'mapper_landsat.py',
               'mapper_NetCDF.py',
               'mapper_opendap.py'
+              'mapper_smi.py'
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -290,7 +291,7 @@ class Nansat(Domain):
 
         return b
 
-    def export(self, fileName, bands=None, rmMetadata=[], addGeoloc=True, addGCPs=True):
+    def export(self, fileName, bands=None, rmMetadata=[], addGeoloc=True, addGCPs=True, driver='netCDF'):
         '''Create a netCDF file
 
         Parameters
@@ -401,7 +402,7 @@ class Nansat(Domain):
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
         # Create a NetCDF file
-        dataset = gdal.GetDriverByName("netCDF").CreateCopy(fileName,
+        dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                             exportVRT.dataset)
 
     def resize(self, factor=1, width=None, height=None, method="average"):
@@ -551,7 +552,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, resamplingAlg=0):
+    def reproject(self, dstDomain=None, resamplingAlg=0, blockSize=None):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -601,6 +602,7 @@ class Nansat(Domain):
                     dstSRS=dstSRS, dstGCPs=dstGCPs, resamplingAlg=resamplingAlg,
                     xSize=dstDomain.vrt.dataset.RasterXSize,
                     ySize=dstDomain.vrt.dataset.RasterYSize,
+                    blockSize=blockSize,
                     geoTransform=dstDomain.vrt.dataset.GetGeoTransform())
 
         self.vrt = warpedVRT
@@ -1027,7 +1029,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_merisL1')
+        mapper_module = __import__('mapper_smos_mat')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1146,7 +1148,7 @@ class Nansat(Domain):
             avgMat[b] = np.zeros((dstShape[0], dstShape[1]))
             stdMat[b] = np.zeros((dstShape[0], dstShape[1]))
 
-        cntMat = np.zeros((dstShape[0], dstShape[1]))
+        cntMat = np.zeros((dstShape[0], dstShape[1]), 'uint16')
         maskMat = np.zeros((2, dstShape[0], dstShape[1]))
 
         # for all input files
@@ -1170,7 +1172,7 @@ class Nansat(Domain):
                 self.logger.error('Cannot reproject %s!' % f)
             else:
                 # add data to counting matrix
-                cntMatTmp = np.zeros((dstShape[0], dstShape[1]))
+                cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
                 cntMatTmp[mask == 128] = 1
                 cntMat += cntMatTmp
                 # add data to mask matrix (maximum of 0, 1, 2, 128)
@@ -1189,6 +1191,7 @@ class Nansat(Domain):
                     stdMat[b] += np.square(a)
 
         # average products
+        cntMat[cntMat == 0] = 1
         for b in bands:
             self.logger.debug('    Averaging %s' % b)
             # get average

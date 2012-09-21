@@ -41,7 +41,7 @@ except ImportError:
     import gdal
     import osr
 
-from nansat_tools import add_logger, initial_bearing
+from nansat_tools import add_logger, initial_bearing, latlongSRS
 
 from vrt import VRT, Geolocation
 
@@ -202,21 +202,8 @@ class Domain():
                                            srcRasterXSize=rasterXSize,
                                            srcRasterYSize=rasterYSize)
         elif (lat is not None and lon is not None):
-            # create list of GCPs from given grids of lat/lon
-            srcGCPs = self._latlon2gcps(lat, lon)
-            # create latlong Projection
-            srcGCPProjection = self._latlong_srs().ExportToWkt()
-            # create self.vrt
-            self.vrt = VRT( srcProjection=srcGCPProjection,
-                            srcRasterXSize=lat.shape[1],
-                            srcRasterYSize=lat.shape[0],
-                            srcGCPs=srcGCPs,
-                            srcGCPProjection=srcGCPProjection)
-            # add Geolocation domain to the VRT metadata
-            # create VRTs to store lat/lon grids
-            latVRT = VRT(array=lat)
-            lonVRT = VRT(array=lon)
-            self.vrt.add_geolocation(Geolocation(xVRT=lonVRT, yVRT=latVRT))
+            # create self.vrt from given lat/lon
+            self.vrt = VRT(lat=lat, lon=lon)
         else:
             raise OptionError("'dataset' or 'srsString and extentString' "
                               "are required")
@@ -372,7 +359,7 @@ class Domain():
         dstSRS = osr.SpatialReference()
         dstSRS.ImportFromWkt(dstWKT)
 
-        coorTrans = osr.CoordinateTransformation(self._latlong_srs(), dstSRS)
+        coorTrans = osr.CoordinateTransformation(latlongSRS, dstSRS)
 
         # convert lat/lon given by "lle" to the target coordinate system and
         # add key "te" and the converted values to extentDic
@@ -788,7 +775,7 @@ class Domain():
         srcWKT = self._get_projection(self.vrt.dataset)
 
         # prepare target WKT (pure lat/lon)
-        dstWKT = self._latlong_srs().ExportToWkt()
+        dstWKT = latlongSRS.ExportToWkt()
 
         # create transformer
         transformer = gdal.Transformer(self.vrt.dataset, None,
@@ -804,61 +791,6 @@ class Domain():
             latVector.append(point[1])
 
         return lonVector, latVector
-
-    def _latlong_srs(self):
-        '''Create SRS for latlong projectiom, WGS84
-
-        Returns
-        -------
-            latlongSRS: osr.SpatialReference with projection for lat/long
-        '''
-        latlongSRS = osr.SpatialReference()
-        latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 \
-                                    +datum=WGS84 +no_defs")
-
-        return latlongSRS
-
-    def _latlon2gcps(self, lat, lon, numOfGCPs=100):
-        ''' Create list of GCPs from given grids of latitude and longitude
-
-        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
-        Create GCPs from these pixels
-        Create latlong GCPs projection
-
-        Parameters:
-        ===========
-        lat : Numpy grid
-            array of latitudes
-        lon : Numpy grid
-            array of longitudes (should be the same size as lat)
-        numOfGCPs : int, optional, default = 100
-            number of GCPs to create
-
-        Returns:
-        ========
-        gcsp : List with GDAL GCPs
-        '''
-
-        # estimate step of GCPs
-        gcpSize = np.sqrt(numOfGCPs)
-        step0 = max(1, int(float(lat.shape[0]) / gcpSize))
-        step1 = max(1, int(float(lat.shape[1]) / gcpSize))
-        self.logger.debug('gcpCount: %d %d %f %d %d', lat.shape[0], lat.shape[1], gcpSize, step0, step1)
-
-        # generate list of GCPs
-        gcps = []
-        k = 0
-        for i0 in range(0, lat.shape[0], step0):
-            for i1 in range(0, lat.shape[1], step1):
-                # create GCP with X,Y,pixel,line from lat/lon matrices
-                gcp = gdal.GCP(float(lon[i0, i1]),
-                               float(lat[i0, i1]),
-                               0, i1, i0)
-                self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-                gcps.append(gcp)
-                k += 1
-
-        return gcps
 
     def upwards_azimuth_direction(self):
         '''Caluculate and return upwards azimuth direction of domain.

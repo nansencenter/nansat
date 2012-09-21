@@ -24,7 +24,12 @@ import logging
 import copy
 import re
 
+import osr
+
 LOG_LEVEL = 30
+
+latlongSRS = osr.SpatialReference()
+latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
 
 class Node(object):
     '''
