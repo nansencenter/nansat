@@ -373,6 +373,8 @@ class VRT():
                 srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
                 src['DataType'] = srcRasterBand.DataType
 
+            self.logger.debug('SRC[DataType]: %d'  % src['DataType'])
+            
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
                                     Dataset=src['SourceFilename'],
@@ -404,15 +406,16 @@ class VRT():
         
         # set destination dataType (if not given in input parameters)
         if 'dataType' not in dst:
-            if (len(srcs) > 1 or srcs[0]['ScaleRatio'] != 1 or
+            if (len(srcs) > 1 or float(srcs[0]['ScaleRatio']) != 1.0 or
                                 len(srcs[0]['LUT']) > 0 or
-                                'DataType' not in src):
+                                'DataType' not in srcs[0]):
                 # if pixel function
                 # if scaling is applied
                 # if LUT
                 # if source band not available: float32
                 dst['dataType'] = gdal.GDT_Float32
             else:
+                self.logger.debug('Set dst[DataType]: %d'  % src['DataType'])
                 #otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
         

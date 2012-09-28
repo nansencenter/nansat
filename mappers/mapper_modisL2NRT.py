@@ -61,8 +61,8 @@ class Mapper(VRT):
             metaEntry2 = None
             if len(rrsBandName) > 0:
                 tmpSubDataset = gdal.Open(subDataset[0])
-                slope = tmpSubDataset.GetMetadataItem('slope')
-                intercept = tmpSubDataset.GetMetadataItem('intercept')
+                slope = tmpSubDataset.GetMetadata().get('slope', 1)
+                intercept = tmpSubDataset.GetMetadata().get('intercept', 0)
                 metaEntry = {'src': {'SourceFilename': subDataset[0], 'sourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
                              'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                                      'BandName': rrsBandName[0],
@@ -82,8 +82,8 @@ class Mapper(VRT):
                 for bandName in allBandsDict:
                     if bandName == subDatasetName:
                         tmpSubDataset = gdal.Open(subDataset[0])
-                        slope = tmpSubDataset.GetMetadataItem('slope')
-                        intercept = tmpSubDataset.GetMetadataItem('intercept')
+                        slope = tmpSubDataset.GetMetadata().get('slope', 1)
+                        intercept = tmpSubDataset.GetMetadata().get('intercept', 0)
                         metaEntry = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
                                      'dst': allBandsDict[bandName]}
                         if 'SourceType' in allBandsDict[bandName]:

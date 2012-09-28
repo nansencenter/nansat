@@ -1036,7 +1036,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_smos_mat')
+        mapper_module = __import__('mapper_modisL2NRT')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1163,6 +1163,7 @@ class Nansat(Domain):
         for i, f in enumerate(files):
             self.logger.info('Processing %s' % f)
             # open file using Nansat or its child class
+            ## n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             try:
                 n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             except:
