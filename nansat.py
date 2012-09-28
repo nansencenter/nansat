@@ -121,8 +121,9 @@ class Nansat(Domain):
               'mapper_geostationary',
               'mapper_landsat.py',
               'mapper_NetCDF.py',
-              'mapper_opendap.py'
-              'mapper_smi.py'
+              'mapper_opendap.py',
+              'mapper_smi.py',
+              'mapper_smos_mat.py',
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -299,6 +300,9 @@ class Nansat(Domain):
             fileName: output file name
             rmMetadata: list with metadata names to remove before export.
                 e.g. ['BandName', 'colormap', 'source', 'sourceBands']
+            addGeoloc: flag to add geolocation datasets. True.
+            addGCPs: flag to add GCPs. True
+            driver: Which GDAL driver (format) to use [netCDF]
 
         Modifies
         --------
@@ -790,13 +794,16 @@ class Nansat(Domain):
         self.logger.info('clim: %s ' % clim)
 
         # == PREPARE caption ==
-        # get longName and units from vrt
-        band = self.get_GDALRasterBand(bands[0])
-        longName = band.GetMetadata().get("long_name", '')
-        units = band.GetMetadata().get("units", '')
+        if 'caption' in kwargs:
+            caption = kwargs['caption']
+        else:
+            # get longName and units from vrt
+            band = self.get_GDALRasterBand(bands[0])
+            longName = band.GetMetadata().get("long_name", '')
+            units = band.GetMetadata().get("units", '')
 
-        # make caption
-        caption = longName + ' [' + units + ']'
+            # make caption from longname, units
+            caption = longName + ' [' + units + ']'
         self.logger.info('caption: %s ' % caption)
 
         # == PROCESS figure ==
@@ -1134,6 +1141,7 @@ class Nansat(Domain):
         '''
         # get Nansat child class
         nClass = kwargs.get('nClass', Nansat)
+        mapperName = kwargs.get('mapperName', '')
 
         # get desired shape
         dstShape = self.shape()
@@ -1155,7 +1163,12 @@ class Nansat(Domain):
         for i, f in enumerate(files):
             self.logger.info('Processing %s' % f)
             # open file using Nansat or its child class
-            n = nClass(f, logLevel=self.logger.level)
+            try:
+                n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
+            except:
+                self.logger.error('Unable to open %s' % f)
+                continue
+
             # add mask band [0: nodata, 1: cloud, 2: land, 128: data]
             try:
                 mask = n['mask']
@@ -1163,32 +1176,32 @@ class Nansat(Domain):
                 mask = 128 * np.ones(n.shape()).astype('int8')
                 n.add_band(array=mask, parameters={'BandName': 'mask'})
 
-            n.reproject(self)
+            # reproject image and get reprojected mask
             try:
-                # get reprojected mask
+                n.reproject(self)
                 mask = n['mask']
             except:
-                # if 'mask' cannot be fetched, skip the file
-                self.logger.error('Cannot reproject %s!' % f)
-            else:
-                # add data to counting matrix
-                cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
-                cntMatTmp[mask == 128] = 1
-                cntMat += cntMatTmp
-                # add data to mask matrix (maximum of 0, 1, 2, 128)
-                maskMat[0, :, :] = mask
-                maskMat[1, :, :] = maskMat.max(0)
+                self.logger.error('Unable to reproject %s' % f)
+                continue
+                
+            # add data to counting matrix
+            cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
+            cntMatTmp[mask == 128] = 1
+            cntMat += cntMatTmp
+            # add data to mask matrix (maximum of 0, 1, 2, 128)
+            maskMat[0, :, :] = mask
+            maskMat[1, :, :] = maskMat.max(0)
 
-                # add data to summation matrix
-                for b in bands:
-                    self.logger.debug('    Adding %s to sum' % b)
-                    # get projected data from Nansat object
-                    a = n[b]
-                    # mask invalid data
-                    a[mask < 128] = 0
-                    # sum of valid values and squares
-                    avgMat[b] += a
-                    stdMat[b] += np.square(a)
+            # add data to summation matrix
+            for b in bands:
+                self.logger.debug('    Adding %s to sum' % b)
+                # get projected data from Nansat object
+                a = n[b]
+                # mask invalid data
+                a[mask < 128] = 0
+                # sum of valid values and squares
+                avgMat[b] += a
+                stdMat[b] += np.square(a)
 
         # average products
         cntMat[cntMat == 0] = 1
@@ -1196,9 +1209,9 @@ class Nansat(Domain):
             self.logger.debug('    Averaging %s' % b)
             # get average
             avg = avgMat[b] / cntMat
-            # get/set STD
-            # STD = sqrt(sum((x-M)^2)/n) = sqrt((sum(x^2) - 2*mean(x)*sum(x) + sum(mean(x)^2))
-            stdMat[b] = np.square((stdMat[b] - 2 * avg * avgMat[b] + np.square(avg)) / cntMat)
+            # calculate STD
+            # STD = sqrt(sum((x-M)^2)/n) = sqrt((sum(x^2) - 2*mean(x)*sum(x) + sum(mean(x)^2))/n)
+            stdMat[b] = np.sqrt((stdMat[b] - 2.0 * avg * avgMat[b] + np.square(avg) * cntMat) / cntMat)
             # set std
             avgMat[b] = avg
 
@@ -1214,6 +1227,8 @@ class Nansat(Domain):
             self.logger.debug('    %s' % b)
             self.add_band(array=avgMat[b], parameters={'BandName': b})
             self.add_band(array=stdMat[b], parameters={'BandName': b + '_std'})
+
+        #return OstdMatb, Oavg, OavgMatb, OcntMat
 
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Empty. Overloaded.'''
