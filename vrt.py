@@ -102,7 +102,7 @@ class VRT():
     Used in Domain and Nansat
     Perfroms all peration on VRT datasets: creation, copying, modification,
     writing, etc.
-    All mapper inherit from VRT
+    All mappers inherit from VRT
     '''
     ComplexSource = Template('''
             <$SourceType>
@@ -125,6 +125,14 @@ class VRT():
                 <LineOffset>$LineOffset</LineOffset>
               </VRTRasterBand>
             </VRTDataset> ''')
+
+    ReprojectTransformer = Template('''
+        <ReprojectTransformer>
+          <ReprojectionTransformer>
+            <SourceSRS>$SourceSRS</SourceSRS>
+            <TargetSRS>$TargetSRS</TargetSRS>
+          </ReprojectionTransformer>
+        </ReprojectTransformer> ''')
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                                          array=None,
@@ -206,9 +214,6 @@ class VRT():
                 srcRasterYSize, srcRasterXSize = lon.shape
                 srcGCPs = self._latlon2gcps(lat, lon)
                 srcGCPProjection = latlongSRS.ExportToWkt()
-                print srcRasterYSize
-                print srcGCPs
-                print srcGCPProjection
                 latVRT = VRT(array=lat)
                 lonVRT = VRT(array=lon)
                 # create source geolocation
@@ -445,11 +450,11 @@ class VRT():
         dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
         # Append sources to destination dataset
-        if len(srcs) == 1:
+        if len(srcs) == 1 and srcs[0]['SourceBand'] > 0:
             # only one source
             dstRasterBand.SetMetadataItem('source_0',
                                           src['XML'], 'new_vrt_sources')
-        else:
+        elif len(srcs) > 1:
             # several sources for PixelFunction
             metadataSRC = {}
             for i, src in enumerate(srcs):
@@ -681,7 +686,7 @@ class VRT():
         # add GEOLOCATION metadata (empty if geoloc is empty)
         self.dataset.SetMetadata(geoloc.d, 'GEOLOCATION')
 
-    def resized(self, xSize, ySize, resamplingAlg=1):
+    def resized(self, xSize, ySize, eResampleAlg=1):
         '''Resize VRT
 
         Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
@@ -689,8 +694,8 @@ class VRT():
         -----------
             xSize, ySize: int
                 new size of the VRT object
-            resamplingAlg:
-                0, 1, 2 stands for nearest, bilinear, cubic
+            eResampleAlg:
+                GDALResampleAlg, see also gdal.AutoCreateWarpedVRT
 
         Returns:
         --------
@@ -710,7 +715,7 @@ class VRT():
                                            use_geoloc=False,
                                            use_gcps=False,
                                            use_geotransform=False,
-                                           resamplingAlg=resamplingAlg)
+                                           eResampleAlg=eResampleAlg)
         # add source VRT (self) to the warpedVRT
         # in order not to loose RAW file from self
         warpedVRT.srcVRT = self
@@ -718,7 +723,7 @@ class VRT():
         return warpedVRT
 
 
-    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0, geoTransform=None, blockSize=None):
+    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0, geoTransform=None, blockSize=None, srcSRS=None, dstSRS=None):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
 
         Parameters
@@ -760,7 +765,21 @@ class VRT():
             if blockSize is not None:
                 node0.node("BlockXSize").value = str(blockSize)
                 node0.node("BlockYSize").value = str(blockSize)
-
+        
+        """
+        # TODO: test thoroughly and implement later
+        if srcSRS is not None and dstSRS is not None:
+            rt = self.ReprojectTransformer.substitute(SourceSRS=srcSRS,
+                                                      TargetSRS=dstSRS)
+            print 'rt', rt
+            rtNode = Node.create(rt)
+            print 'rtNode.xml()', rtNode.xml()
+            giptNode = node0.node('GenImgProjTransformer')
+            print 'giptNode', giptNode
+            giptNode += rtNode
+            print 'node0.xml()', node0.xml()
+        """
+            
         self.write_xml(str(node0.rawxml()))
 
     def _remove_geotransform(self):
@@ -810,7 +829,7 @@ class VRT():
                     # add chunk to metadata
                     self.dataset.SetMetadataItem('NANSAT_%s_%03d' % (gcpNames[i], chunki), chunk)
 
-    def create_warped_vrt(self, dstSRS=None, resamplingAlg=0,
+    def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                                 xSize=0, ySize=0, blockSize=None,
                                 geoTransform=None,
                                 use_geoloc=True, use_gcps=True, use_geotransform=True,
@@ -857,8 +876,8 @@ class VRT():
         -----------
         dstSRS: string
             WKT of the destination projection
-        resamplingAlg: int
-            0, 1, 2 stands for: NearestNeigbour, Bilinear, Cubic
+        eResampleAlg: int (GDALResampleAlg)
+            0, 1, 2, 3, 4: NearestNeighbour, Bilinear, Cubic, CubicSpline, Lancoz
         xSize, ySize: int
             width and height of the destination rasetr
         geoTransform: tuple with 6 floats
@@ -917,7 +936,9 @@ class VRT():
 
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
-        warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, dstSRS, resamplingAlg)
+        warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, dstSRS, eResampleAlg)
+        # TODO: implement the below option for proper handling of stereo projections
+        # warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, '', dstSRS, eResampleAlg)
 
         # check if Warped VRT was created
         if warpedVRT is None:
@@ -927,9 +948,20 @@ class VRT():
         self.logger.debug('create VRT object from Warped VRT GDAL Dataset')
         warpedVRT = VRT(vrtDataset=warpedVRT)
 
-        # set x/y size, geoTransform
+        # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
         warpedVRT._modify_warped_XML(xSize, ySize, geoTransform, blockSize)
+
+        """
+        # TODO: implement the below option for proper handling stero projections over the pole
+        # get source projection from GCPs or from dataset (TODO: or from Geolocation)
+        if len(srcVRT.dataset.GetGCPs()) == 0:
+            srcSRS = srcVRT.dataset.GetProjection()
+        else:
+            srcSRS = srcVRT.dataset.GetGCPProjection()
+        # modify the VRT XML file
+        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform, blockSize, srcSRS, dstSRS)
+        """
 
         # if given, add dst GCPs
         self.logger.debug('if given, add dst GCPs')

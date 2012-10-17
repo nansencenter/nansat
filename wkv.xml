@@ -90,6 +90,13 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
+        <standard_name>sea_surface_salinity</standard_name>
+        <long_name>Sea Surface Salinity</long_name>
+        <units>psu</units>
+        <minmax>30 40</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
         <standard_name>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</standard_name>
         <long_name>Yellow Substance Absorption</long_name>
         <units>m-1</units>

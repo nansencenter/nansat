@@ -122,8 +122,9 @@ class Nansat(Domain):
               'mapper_landsat.py',
               'mapper_NetCDF.py',
               'mapper_opendap.py',
-              'mapper_smi.py',
+              'mapper_oceancolor.py',
               'mapper_smos_mat.py',
+              'mapper_landsat5_ceos.py',
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -409,7 +410,7 @@ class Nansat(Domain):
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                             exportVRT.dataset)
 
-    def resize(self, factor=1, width=None, height=None, method="average"):
+    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor) or
@@ -426,75 +427,78 @@ class Nansat(Domain):
             factor: float, optional, default=1
             width: int, optional
             height: int, optional
-            method: "average" (default) or "subsample" (= nearest neighbor),
-                    optional
+            eResampleAlg: int (GDALResampleAlg), optional
+                -1, 0, 1, 2, 3, 4: Average, NearestNeighbour, Bilinear, Cubic,
+                                   CubicSpline, Lancoz
+                if eResampleAlg > 0: VRT.resized() is used
+                    
         Modifies
         --------
             self.vrt.dataset : VRT dataset of VRT object
                 raster size are modified to downscaled size.
                 If GCPs are given in the dataset, they are also overwritten.
-        Raises
-        ------
-            OptionError: occurs when method is not "average" or "subsample"
-
         '''
         # resize back to original size/setting
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
             return
-
+        
+        # get current shape
+        rasterYSize  = float(self.shape()[0])
+        rasterXSize  = float(self.shape()[1])
+        
         # estimate factor if width or height is given
         if width is not None:
-            factor = float(width) / float(self.vrt.dataset.RasterXSize)
+            factor = float(width) / rasterXSize
         if height is not None:
-            factor = float(height) / float(self.vrt.dataset.RasterYSize)
+            factor = float(height) / rasterYSize
 
-        if not (method == "average" or method == "subsample"):
-            raise OptionError("method should be 'average' or 'subsample'")
-
-        # Get XML content from VRT-file
-        vrtXML = self.vrt.read_xml()
-
-        # calculate ratio based on given inputs
-        node0 = Node.create(vrtXML)
-        rasterXSize = float(node0.getAttribute("rasterXSize"))
-        rasterYSize = float(node0.getAttribute("rasterYSize"))
-        newRasterXSize = int(rasterXSize * factor)
+        # calculate new size
         newRasterYSize = int(rasterYSize * factor)
+        newRasterXSize = int(rasterXSize * factor)
+        
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
-
-        # replace rasterXSize in <VRTDataset>
-        node0.replaceAttribute("rasterXSize", str(newRasterXSize))
-        node0.replaceAttribute("rasterYSize", str(newRasterYSize))
-
-        # replace xSize in <DstRect> of each source
-        for iNode1 in node0.nodeList("VRTRasterBand"):
-            for sourceName in ["ComplexSource", "SimpleSource"]:
-                for iNode2 in iNode1.nodeList(sourceName):
-                    iNodeDstRect = iNode2.node("DstRect")
-                    iNodeDstRect.replaceAttribute("xSize", str(newRasterXSize))
-                    iNodeDstRect.replaceAttribute("ySize", str(newRasterYSize))
-                    print 'Replaced %d in DstRect' % newRasterYSize
-            # if method="average", overwrite "ComplexSource" to "AveragedSource"
-            if method == "average":
-                iNode2.replaceTag("ComplexSource", "AveragedSource")
-                iNode2.replaceTag("SimpleSource", "AveragedSource")
-
-        # Edit GCPs to correspond to the downscaled size
-        if node0.node("GCPList"):
-            for iNode in node0.node("GCPList").nodeList("GCP"):
-                pxl = float(iNode.getAttribute("Pixel")) * factor
-                if pxl > float(rasterXSize):
-                    pxl = rasterXSize
-                iNode.replaceAttribute("Pixel", str(pxl))
-                lin = float(iNode.getAttribute("Line")) * factor
-                if lin > float(rasterYSize):
-                    lin = rasterYSize
-                iNode.replaceAttribute("Line", str(lin))
-
-        # Write the modified elemements into VRT
-        self.vrt.write_xml(str(node0.rawxml()))
+        
+        if eResampleAlg > 0:
+            # apply affine transformation using reprojection
+            self.vrt = self.vrt.resized(newRasterXSize, newRasterYSize, eResampleAlg)
+        else:
+            # simply modify VRT rasterX/Ysize and GCPs
+            # Get XML content from VRT-file
+            vrtXML = self.vrt.read_xml()
+            node0 = Node.create(vrtXML)
+        
+            # replace rasterXSize in <VRTDataset>
+            node0.replaceAttribute("rasterXSize", str(newRasterXSize))
+            node0.replaceAttribute("rasterYSize", str(newRasterYSize))
+        
+            # replace xSize in <DstRect> of each source
+            for iNode1 in node0.nodeList("VRTRasterBand"):
+                for sourceName in ["ComplexSource", "SimpleSource"]:
+                    for iNode2 in iNode1.nodeList(sourceName):
+                        iNodeDstRect = iNode2.node("DstRect")
+                        iNodeDstRect.replaceAttribute("xSize", str(newRasterXSize))
+                        iNodeDstRect.replaceAttribute("ySize", str(newRasterYSize))
+                # if method=-1, overwrite "ComplexSource" to "AveragedSource"
+                if eResampleAlg == -1:
+                    iNode1.replaceTag("ComplexSource", "AveragedSource")
+                    iNode1.replaceTag("SimpleSource", "AveragedSource")
+        
+            # Edit GCPs to correspond to the downscaled size
+            if node0.node("GCPList"):
+                for iNode in node0.node("GCPList").nodeList("GCP"):
+                    pxl = float(iNode.getAttribute("Pixel")) * factor
+                    if pxl > float(rasterXSize):
+                        pxl = rasterXSize
+                    iNode.replaceAttribute("Pixel", str(pxl))
+                    lin = float(iNode.getAttribute("Line")) * factor
+                    if lin > float(rasterYSize):
+                        lin = rasterYSize
+                    iNode.replaceAttribute("Line", str(lin))
+        
+            # Write the modified elemements into VRT
+            self.vrt.write_xml(str(node0.rawxml()))
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object.
@@ -556,7 +560,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, resamplingAlg=0, blockSize=None):
+    def reproject(self, dstDomain=None, eResampleAlg=1, blockSize=None):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -568,8 +572,9 @@ class Nansat(Domain):
         ----------
             dstDomain: domain
                 destination Domain where projection and resolution are set
-            resamplingAlg: int
-                0, 1 or 2 stand for NearestNeigbour, Bilinear, Cubic
+            eResampleAlg: int (GDALResampleAlg)
+                0, 1, 2, 3, 4: NearestNeighbour, Bilinear,
+                                   Cubic, CubicSpline, Lancoz
 
         Modifies
         --------
@@ -603,7 +608,7 @@ class Nansat(Domain):
 
         # create Warped VRT
         warpedVRT = self.raw.create_warped_vrt(
-                    dstSRS=dstSRS, dstGCPs=dstGCPs, resamplingAlg=resamplingAlg,
+                    dstSRS=dstSRS, dstGCPs=dstGCPs, eResampleAlg=eResampleAlg,
                     xSize=dstDomain.vrt.dataset.RasterXSize,
                     ySize=dstDomain.vrt.dataset.RasterYSize,
                     blockSize=blockSize,
@@ -1036,7 +1041,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL2NRT')
+        mapper_module = __import__('mapper_landsat5_ceos')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
