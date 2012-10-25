@@ -356,7 +356,7 @@ class Nansat(Domain):
         exportVRT.write_xml(str(node0.rawxml()))
 
         # add bands with geolocation to the VRT
-        if len(exportVRT.geoloc.d) > 0:
+        if addGeoloc and len(exportVRT.geoloc.d) > 0:
             exportVRT._create_band(
                 {'SourceFilename': self.vrt.geoloc.d['X_DATASET'],
                  'SourceBand': int(self.vrt.geoloc.d['X_BAND'])},
@@ -369,7 +369,9 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'BandName': 'GEOLOCATION_Y_DATASET'})
                  
-        exportVRT._add_gcp_metadata()
+        # add GCPs to VRT metadata
+        if addGCPs:
+            exportVRT._add_gcp_metadata()
 
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
@@ -1041,7 +1043,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_landsat5_ceos')
+        mapper_module = __import__('mapper_ASAR')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

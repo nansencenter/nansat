@@ -135,8 +135,9 @@ n.export(oFileName + '.nc', bands=[4], driver='GeoTIFF')
 # 2. Add band with modified data to the object
 # 3. Check that the band is in the ibject
 n.reproject()
+arrayMeta = n.get_metadata(bandID=1)
 array = n[1] * 10
-n.add_band(array=array, parameters={'BandName': 'new_band_1', 'description': 'Modified values of first band'}
+n.add_band(array=array, parameters=arrayMeta) #{'BandName': 'new_band_1', 'description': 'Modified values of first band'})
 print n
 
 # add band from another file to existing object
