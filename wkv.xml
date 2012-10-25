@@ -236,4 +236,18 @@
         <minmax>0 10000</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>toa_outgoing_spectral_radiance</standard_name>
+        <long_name>top of atmosphere emitted toward outer space per unit wavenumber or as a function of wavenumber radiative flux in a particular direction, per unit of solid angle</long_name>
+        <units>mW m-2 sr-1 (cm-1)-1</units>
+        <minmax>0.000 1000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>instantaneous_photosynthetically_available_radiation</standard_name>
+        <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
+        <units>enstain m-2 s-1</units>
+        <minmax>0 0.0024</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>

@@ -125,6 +125,7 @@ class Nansat(Domain):
               'mapper_oceancolor.py',
               'mapper_smos_mat.py',
               'mapper_landsat5_ceos.py',
+              'mapper_kmss.py',
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -1043,7 +1044,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_ASAR')
+        mapper_module = __import__('mapper_oceancolor')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

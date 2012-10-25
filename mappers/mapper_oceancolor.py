@@ -29,6 +29,7 @@ class Mapper(VRT):
     'CDOM Index': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
     'Sea Surface Salinity': 'sea_surface_salinity',
     'Sea Surface Temperature': 'sea_surface_temperature',
+    'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
     }
     
     bandNames = {
@@ -38,6 +39,7 @@ class Mapper(VRT):
     'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter': 'yellow_substance',
     'sea_surface_salinity': 'SSS',
     'sea_surface_temperature': 'SST',
+    'instantaneous_photosynthetically_available_radiation': 'par',
     }
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
