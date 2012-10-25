@@ -2,23 +2,12 @@
 # Name:        mapper_kmssL1
 # Purpose:     Mapping for KMSS-L1 data
 #
-# Author:      evgenym
+# Author:      evgenym(me)
 #
 # Created:     01.08.2012
 # Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-
-#
-#%assign values to L_500, L_655, L_800
-#L_555 = img(:, :, 1);
-#L_655 = img(:, :, 2);
-#L_800 = img(:, :, 3);
-
-#
-#from vrt import *
-#import os.path
-
 
 from datetime import datetime
 from numpy import mod
@@ -31,45 +20,35 @@ except ImportError:
 from vrt import *
 from domain import Domain
 
-
 class Mapper(VRT):
     ''' VRT with mapping of WKV for KMSS TOA tiff data'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=10):
         ''' Create VRT '''
-       # print 'KMSS_MAPPER_Started'
-       # product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_KMSS_tiff")
-       # print "gdalMetadata_out"
-       # print product
-        #if it is not KMSS, return
-       # if product!= 'KMSS':
-       #     raise AttributeError("KMSS BAD MAPPER");
         product = gdalDataset.GetDriver().LongName
-        print 'KMSS ' + product
+        print product
         if product!= 'GeoTIFF':
             raise AttributeError("Not_KMSS_tiff");
-      
+
         metaDict = [
-        {'source': fileName, 'sourceBand':  1, 'wkv': 'toa_outgoing_spectral_radiance', 'parameters': {'wavelength': '555'}},
-        {'source': fileName, 'sourceBand':  2, 'wkv': 'toa_outgoing_spectral_radiance', 'parameters': {'wavelength': '655'}},
-        {'source': fileName, 'sourceBand':  3, 'wkv': 'toa_outgoing_spectral_radiance', 'parameters': {'wavelength': '800'}},
-        ];
-        # from https://gsics.nesdis.noaa.gov/wiki/Development/StandardVariableNames
-            
-        # add 'band_name' to 'parameters'
-        #for bandDict in metaDict:
-        #    if bandDict['parameters'].has_key('wavelength'):
-        #        bandDict['parameters']['band_name'] = 'radiance_' + bandDict['parameters']['wavelength']    
-        
-        # set scale factor to the band metadata (only radiances)
-        #for i, bandDict in enumerate(metaDict[:-1]):
-         #   bandDict['parameters']['scale'] = str(scales[i])
-        
+        {'src': {'SourceFilename': fileName, 'SourceBand':  1},
+         'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '555'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  2},
+         'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '655'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  3},
+         'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '800'}},
+        ]
+	# from https://gsics.nesdis.noaa.gov/wiki/Development/StandardVariableNames
+
+        # add DataType into 'src' and BandName into 'dst'
+        for bandDict in metaDict:
+            if 'DataType' not in bandDict['src']:
+                bandDict['src']['DataType'] = 2
+            if bandDict['dst'].has_key('wavelength'):
+                bandDict['dst']['BandName'] = 'toa_radiance_' + bandDict['dst']['wavelength']
+
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, logLevel=logLevel);
+        VRT.__init__(self, gdalDataset);
 
-        # add bands with metadata and corresponding values to the empty VRT
-        self._add_all_bands(metaDict)
-
-
-       
+         # add bands with metadata and corresponding values to the empty VRT
+        self._create_bands(metaDict)
