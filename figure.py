@@ -22,13 +22,17 @@
 
 import os
 import numpy as np
-import Image
-import ImageDraw
-import ImageFont
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from numpy import outer
 from math import floor, log10
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    import Image
+    import ImageDraw
+    import ImageFont
 
 from nansat_tools import add_logger
 
@@ -200,10 +204,10 @@ class Figure():
         self.d['logoSize'] = None
 
         self.d['latGrid'] = None
-        self.d['lonGrid'] = None        
+        self.d['lonGrid'] = None
         self.d['latlonGridSpacing'] = 10
         self.d['latlonLabels'] = 0
-                
+
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
         self.d['CBAR_HEIGHT'] = 0.15
@@ -217,7 +221,7 @@ class Figure():
         self.d['NAME_LOCATION_X'] = 0.1
         self.d['NAME_LOCATION_Y'] = 0.3
         self.d['DEFAULT_EXTENSION'] = ".png"
-        
+
         # default values which are set when input values are not correct
         self._cmapName = 'jet'
 
@@ -368,7 +372,7 @@ class Figure():
         Find edge (make line)
         Convert to maks
         Add mask to PIL
-        
+
         Parameters:
         ----------
         Any of Figure__init__() parameters:
@@ -417,7 +421,7 @@ class Figure():
         Compute step of lables
         Get lat/lon for these labels from latGrid, lonGrid
         Print lables to PIL
-        
+
         Parameters:
         ----------
         Figure__init__() parameters:
@@ -436,10 +440,10 @@ class Figure():
             self.d['lonGrid'] is None or
             self.d['latlonLabels'] == 0):
             return
-        
+
         draw = ImageDraw.Draw(self.pilImg)
         font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
-        
+
         # get number of labels; step of lables
         llLabels = self.d['latlonLabels']
         llShape = self.d['latGrid'].shape
@@ -453,8 +457,8 @@ class Figure():
             lon = self.d['lonGrid'][0, lonI[i]]
             draw.text((0, 10+latI[i]), '%4.2f' % lat, fill=255, font=font)
             draw.text((50+lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
-        
-        
+
+
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
 
@@ -742,7 +746,7 @@ class Figure():
         # apply colored mask (land mask, cloud mask and something else)
         if self.d['mask_array'] is not None and self.d['mask_lut'] is not None:
             self.apply_mask()
-        
+
         # add lat/lon grids lines if latGrid and lonGrid are given
         if self.d['latGrid'] is not None and self.d['lonGrid'] is not None:
             self.add_latlon_grids()
