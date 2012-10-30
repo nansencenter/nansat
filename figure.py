@@ -28,14 +28,13 @@ from numpy import outer
 from math import floor, log10
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
-except ImportError:
     import Image
     import ImageDraw
     import ImageFont
+except ImportError:
+    from PIL import Image, ImabeDraw, ImageFont
 
 from nansat_tools import add_logger
-
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
