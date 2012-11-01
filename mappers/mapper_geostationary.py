@@ -53,7 +53,7 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
         satellite = gdalDataset.GetDescription().split(",")[2]
-        
+
         for sat in satDict:
             if sat['name'] == satellite:
                 print 'This is ' + satellite
@@ -96,16 +96,15 @@ class Mapper(VRT):
             if gdal.Open(bandSource) is None:
                 print "Warning: band missing for wavelength " + str(wavelength) + "nm"
                 continue
+            src = {'SourceFilename': bandSource, 'SourceBand': 1, 'LUT': LUT[i], 'NODATA': NODATA[i]}
+            dst = {'wkv': standard_name, 'wavelength': str(wavelength)}
             if scale is not None:
                 bandScale = scale[i]
                 bandOffset = offset[i]
-                parameters = {'wavelength': str(wavelength), 'scale': str(bandScale), 'offset': str(bandOffset)}
-            else:
-                parameters = {'wavelength': str(wavelength)}
-            metaDict.append(
-                {'source': bandSource,
-                 'sourceBand': 1, 'wkv': standard_name, 'LUT': LUT[i], 'NODATA': NODATA[i],
-                 'parameters': parameters})
+                src['ScaleRatio'] = str(bandScale)
+                src['ScaleOffset'] = str(bandOffset)
+            metaDict.append({'src': src, 'dst': dst})
+
                       
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);
@@ -133,7 +132,7 @@ class Mapper(VRT):
             self.write_xml(str(node0.rawxml()))
 
         # Set time
-        self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
+        #self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
         
         print "successful"
         return
