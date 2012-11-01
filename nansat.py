@@ -125,7 +125,7 @@ class Nansat(Domain):
               'mapper_oceancolor.py',
               'mapper_smos_mat.py',
               'mapper_landsat5_ceos.py',
-              'mapper_kmss.py',
+              #'mapper_kmss.py',
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -563,7 +563,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, eResampleAlg=1, blockSize=None):
+    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -1044,7 +1044,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_oceancolor')
+        mapper_module = __import__('mapper_modisL1')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """
@@ -1147,9 +1147,14 @@ class Nansat(Domain):
             nClass: child of Nansat
                 The class to be used to read input files
         '''
-        # get Nansat child class
+        # get Nansat child class for opening file
         nClass = kwargs.get('nClass', Nansat)
+        
+        # get mapper name for opening file 
         mapperName = kwargs.get('mapperName', '')
+        
+        # get resampling method for reproject
+        eResampleAlg = kwargs.get('eResampleAlg', 1)
 
         # get desired shape
         dstShape = self.shape()
@@ -1187,7 +1192,7 @@ class Nansat(Domain):
 
             # reproject image and get reprojected mask
             try:
-                n.reproject(self)
+                n.reproject(self, eResampleAlg=eResampleAlg)
                 mask = n['mask']
             except:
                 self.logger.error('Unable to reproject %s' % f)
