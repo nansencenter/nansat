@@ -946,6 +946,84 @@ CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData
 return CE_None;
 }
 
+CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+
+    int ii, iLine, iCol;
+    //int iReal, iImag;
+    double imPower, real, imag;
+
+    //printf("%d", nYSize);
+
+    /* ---- Init ---- */
+    if (nSources != 2) return CE_Failure;
+
+    /* ---- Set pixels ---- */
+    for( iLine = 0; iLine < nYSize; iLine++ ){
+        for( iCol = 0; iCol < nXSize; iCol++ ){
+	    ii = iLine * nXSize + iCol;
+	    /* Source raster pixels may be obtained with SRCVAL macro */
+	    real = SRCVAL(papoSources[0], eSrcType, ii);
+	    imag = SRCVAL(papoSources[1], eSrcType, ii);
+
+            //printf("%d",iReal); OK!
+
+            //real = (double) iReal;
+            //imag = (double) iImag;
+
+            //printf("%.1f",imag); OK!
+
+            imPower = pow(real,2.0) + pow(imag,2.0);
+            //printf("%.1f",imPower); //OK!
+                        
+	    GDALCopyWords(&imPower, GDT_Float64, 0,
+			    ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			    eBufType, nPixelSpace, 1);
+
+        }
+    }
+
+    /* ---- Return success ---- */
+    return CE_None;
+
+}
+
+CPLErr RawcountsToSigma0_CosmoSkymed_QLK(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+
+    int ii, iLine, iCol;
+    double raw_counts, imPower;
+
+    /* ---- Init ---- */
+    if (nSources != 1) return CE_Failure;
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			raw_counts = SRCVAL(papoSources[0], eSrcType, ii);
+                        imPower = pow(raw_counts,2.);
+                        
+			GDALCopyWords(&imPower, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+                }
+        }
+
+    /* ---- Return success ---- */
+    return CE_None;
+
+}
+
 CPLErr RawcountsIncidenceToSigma0(void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
@@ -1042,7 +1120,9 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
     GDALAddDerivedBandPixelFunc("Sigma0HHIncidenceToSigma0VV", Sigma0HHIncidenceToSigma0VV);
-	GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
+    GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
+    GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_QLK", RawcountsToSigma0_CosmoSkymed_QLK);
+    GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_SBI", RawcountsToSigma0_CosmoSkymed_SBI);
 
     return CE_None;
 }

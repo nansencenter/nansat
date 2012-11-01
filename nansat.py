@@ -110,6 +110,7 @@ class Nansat(Domain):
         # all available mappers
         self.mapperList = [
               'mapper_ASAR.py',
+              'mapper_CSKS.py',
               'mapper_hirlam.py',
               'mapper_merisL1.py',
               'mapper_merisL2.py',

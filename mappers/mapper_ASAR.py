@@ -50,7 +50,8 @@ class Mapper(VRT, Envisat):
             metaDict.append({'src': {'SourceFilename': self.incAngleDataset.fileName, 'SourceBand': iBand+1},
                              'dst': bandMetadata})
         # add dictionary for real sigma0
-        metaDict.append({'src': [{'SourceFilename': fileName, 'SourceBand': 1, 'ScaleRatio': np.sqrt(1.0/calibrationConst)},
+        metaDict.append({'src': [{'SourceFilename': fileName, 'SourceBand': 1, 
+                                    'ScaleRatio': np.sqrt(1.0/calibrationConst)},
                                  {'SourceFilename': self.incAngleDataset.fileName, 'SourceBand': 1}],
                          'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                                  'PixelFunctionType': 'RawcountsIncidenceToSigma0',

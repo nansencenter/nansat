@@ -378,7 +378,7 @@ class VRT():
                 srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
                 src['DataType'] = srcRasterBand.DataType
                 self.logger.debug('SRC[DataType]: %d'  % src['DataType'])
-            
+
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
                                     Dataset=src['SourceFilename'],
