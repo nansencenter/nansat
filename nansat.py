@@ -120,12 +120,12 @@ class Nansat(Domain):
               'mapper_modisL2NRT.py',
               'mapper_geostationary',
               'mapper_landsat.py',
-              'mapper_NetCDF.py',
               'mapper_opendap.py',
               'mapper_oceancolor.py',
               'mapper_smos_mat.py',
               'mapper_landsat5_ceos.py',
               #'mapper_kmss.py',
+              'mapper_generic.py'
               ]
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
@@ -1044,7 +1044,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_modisL1')
+        mapper_module = __import__('mapper_generic')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                       metadata)
         """

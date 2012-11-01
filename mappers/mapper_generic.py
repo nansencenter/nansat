@@ -9,30 +9,29 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from vrt import *
-from nansat_tools import Node
+from nansat_tools import Node, latlongSRS
 import numpy as np
 
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
 
-        if not "NC_GLOBAL#Conventions" in gdalMetadata.keys():
-            raise AttributeError("NETCDF BAD MAPPER")
-
         rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned']
         
         # Get file names from dataset or subdataset
-        if gdalDataset.RasterCount==1:
+        subDatasets = gdalDataset.GetSubDatasets()
+        if len(subDatasets) == 0:
             fileNames = [fileName]
         else:
-            subDatasets = gdalDataset.GetSubDatasets()
             fileNames = [f[0] for f in subDatasets]
+
+        print 'fileNames', fileNames
+
 
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
         geoFileDict = {}
         xDatasetSource = ''
         yDatasetSource = ''
-        projection = ''
         firstXSize = 0
         firstYSize = 0
         for i, fileName in enumerate(fileNames):
@@ -43,6 +42,8 @@ class Mapper(VRT):
                 firstXSize = subDataset.RasterXSize
                 firstYSize = subDataset.RasterYSize
                 firstSubDataset = subDataset
+                # get projection from the first subDataset
+                projection = firstSubDataset.GetProjection()
                 
             # take bands whose sizes are same as the first band.
             if (subDataset.RasterXSize == firstXSize and
@@ -53,25 +54,36 @@ class Mapper(VRT):
                     yDatasetSource = fileName
                 else:
                     for iBand in range(subDataset.RasterCount):
-                        bandDict = subDataset.GetRasterBand(iBand+1).GetMetadata_Dict()
+                        bandMetadata = subDataset.GetRasterBand(iBand+1).GetMetadata_Dict()
                         sourceBands = iBand + 1
-                        # set wkv and bandname
-                        bandDict['wkv'] = bandDict.get('standard_name', '')
-                        bandName = bandDict.get('NETCDF_VARNAME', '')
-                        if len(bandName) > 0:
-                            bandDict['BandName'] = bandName
-                            
-                        # remove non-necessary metadata
-                        for rmMetadata in rmMetadatas:
-                            if rmMetadata in bandDict:
-                                bandDict.pop(rmMetadata)
                         
-                        metaDict.append({'src': {'SourceFilename': fileName, 'SourceBand': sourceBands}, 'dst': bandDict})
-                    # get non-empty projection from one of the bands
-                    srs = subDataset.GetProjection()
-                    if len(srs) != 0:
-                        projection = srs
+                        # generate src metadata
+                        src = {'SourceFilename': fileName, 'SourceBand': sourceBands}
+                        # set scale ratio and scale offset
+                        scaleRatio = bandMetadata.get('ScaleRatio', bandMetadata.get('scale', ''))
+                        if len(scaleRatio) > 0:
+                            src['ScaleRatio'] = scaleRatio
+                        scaleOffset = bandMetadata.get('ScaleOffset', bandMetadata.get('offset', ''))
+                        if len(scaleOffset) > 0:
+                            src['ScaleOffset'] = scaleOffset
 
+                        # generate dst metadata
+                        # get all metadata from input band
+                        dst = bandMetadata
+                        # set wkv and bandname
+                        dst['wkv'] = bandMetadata.get('standard_name', '')
+                        bandName = bandMetadata.get('NETCDF_VARNAME', '')
+                        if len(bandName) > 0:
+                            dst['BandName'] = bandName
+                            
+                        # remove non-necessary metadata from dst
+                        for rmMetadata in rmMetadatas:
+                            if rmMetadata in dst:
+                                dst.pop(rmMetadata)
+
+                        # append band with src and dst dictionaries
+                        metaDict.append({'src': src, 'dst': dst})
+                        
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, firstSubDataset)
 
@@ -82,16 +94,18 @@ class Mapper(VRT):
         #       get projection from GDAL_NANSAT_Projection
         if len(projection) == 0:
             projection = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_Projection', '')
-        # if no projection was found in netcdf, generate WGS84 by default
+        # if no projection was found in dataset or metadata:
+        #       generate WGS84 by default
         if len(projection) == 0:
-            sr = osr.SpatialReference()
-            sr.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
-            projection = sr.ExportToWkt()
+            projection = latlongSRS.ExportToWkt()
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
         
-        # ADD GCPs from metadata
-        gcpCount = self.add_gcps_from_metadata(gdalMetadata)
+        # check if GCPs were added from input dataset
+        gcpCount = firstSubDataset.GetGCPCount()
+        if gcpCount == 0:
+            # if no GCPs in input dataset: try to add GCPs from metadata
+            gcpCount = self.add_gcps_from_metadata(gdalMetadata)
         
         # Find proper bands and insert GEOLOCATION into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
