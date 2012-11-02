@@ -16,6 +16,8 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 import os.path
+import sys
+import glob
 import dateutil.parser
 
 try:
@@ -108,26 +110,10 @@ class Nansat(Domain):
         self.addedBands = {}
 
         # all available mappers
-        self.mapperList = [
-              'mapper_ASAR.py',
-              'mapper_CSKS.py',
-              'mapper_hirlam.py',
-              'mapper_merisL1.py',
-              'mapper_merisL2.py',
-              'mapper_modisL1.py',
-              'mapper_ncep.py',
-              'mapper_radarsat2.py',
-              'mapper_MOD44W.py',
-              'mapper_modisL2NRT.py',
-              'mapper_geostationary',
-              'mapper_landsat.py',
-              'mapper_opendap.py',
-              'mapper_oceancolor.py',
-              'mapper_smos_mat.py',
-              'mapper_landsat5_ceos.py',
-              #'mapper_kmss.py',
-              'mapper_generic.py'
-              ]
+        self.mapperList = []
+        for folder in sys.path:
+            for mapper in glob.glob(folder + '/mapper_*.py'):
+                self.mapperList.append(os.path.basename(mapper))
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
