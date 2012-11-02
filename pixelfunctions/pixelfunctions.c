@@ -953,10 +953,10 @@ CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void 
 {
 
     int ii, iLine, iCol;
-    //int iReal, iImag;
+    /* int iReal, iImag; */
     double imPower, real, imag;
 
-    //printf("%d", nYSize);
+    /* printf("%d", nYSize); */
 
     /* ---- Init ---- */
     if (nSources != 2) return CE_Failure;
@@ -969,15 +969,15 @@ CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void 
 	    real = SRCVAL(papoSources[0], eSrcType, ii);
 	    imag = SRCVAL(papoSources[1], eSrcType, ii);
 
-            //printf("%d",iReal); OK!
+            /*printf("%d",iReal); OK!*/
 
-            //real = (double) iReal;
-            //imag = (double) iImag;
+            /*real = (double) iReal;*/
+            /*imag = (double) iImag;*/
 
-            //printf("%.1f",imag); OK!
+            /*printf("%.1f",imag); OK!*/
 
             imPower = pow(real,2.0) + pow(imag,2.0);
-            //printf("%.1f",imPower); //OK!
+            /*printf("%.1f",imPower); //OK! */
                         
 	    GDALCopyWords(&imPower, GDT_Float64, 0,
 			    ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
