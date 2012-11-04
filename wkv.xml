@@ -250,4 +250,11 @@
         <minmax>0 0.0024</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>particle_backscatter_at_443_nm</standard_name>
+        <long_name>Particle backscatter at 443 nm</long_name>
+        <units>m-1</units>
+        <minmax>0 0.1</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>

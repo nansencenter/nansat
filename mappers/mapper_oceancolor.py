@@ -30,6 +30,7 @@ class Mapper(VRT):
     'Sea Surface Salinity': 'sea_surface_salinity',
     'Sea Surface Temperature': 'sea_surface_temperature',
     'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
+    'Particle backscatter at 443 nm':'particle_backscatter_at_443_nm',
     }
     
     bandNames = {
@@ -40,6 +41,7 @@ class Mapper(VRT):
     'sea_surface_salinity': 'SSS',
     'sea_surface_temperature': 'SST',
     'instantaneous_photosynthetically_available_radiation': 'par',
+    'particle_backscatter_at_443_nm': 'bbp_443',
     }
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
