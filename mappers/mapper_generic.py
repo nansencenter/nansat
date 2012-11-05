@@ -15,7 +15,7 @@ import numpy as np
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
 
-        rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned']
+        rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned', 'ScaleRatio', 'ScaleOffset']
         
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
@@ -23,9 +23,6 @@ class Mapper(VRT):
             fileNames = [fileName]
         else:
             fileNames = [f[0] for f in subDatasets]
-
-        print 'fileNames', fileNames
-
 
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
@@ -60,10 +57,10 @@ class Mapper(VRT):
                         # generate src metadata
                         src = {'SourceFilename': fileName, 'SourceBand': sourceBands}
                         # set scale ratio and scale offset
-                        scaleRatio = bandMetadata.get('ScaleRatio', bandMetadata.get('scale', ''))
+                        scaleRatio = bandMetadata.get('ScaleRatio', bandMetadata.get('scale', bandMetadata.get('scale_factor', '')))
                         if len(scaleRatio) > 0:
                             src['ScaleRatio'] = scaleRatio
-                        scaleOffset = bandMetadata.get('ScaleOffset', bandMetadata.get('offset', ''))
+                        scaleOffset = bandMetadata.get('ScaleOffset', bandMetadata.get('offset', bandMetadata.get('add_offset', '')))
                         if len(scaleOffset) > 0:
                             src['ScaleOffset'] = scaleOffset
 
