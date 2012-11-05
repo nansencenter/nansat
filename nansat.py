@@ -98,23 +98,26 @@ class Nansat(Domain):
             GDALError: occurs when the dataset is None or "".
 
         '''
-        # checkt the arguments
+        # check the arguments
         if fileName=="" and domain is None:
             raise OptionError("Either fileName or domain is required.")
 
-        # set attributes
         # create logger
         self.logger = add_logger('Nansat', logLevel)
 
         # empty dict of VRTs with added bands
         self.addedBands = {}
 
-        # all available mappers
+        # add all available mappers
         self.mapperList = []
         for folder in sys.path:
             for mapper in glob.glob(folder + '/mapper_*.py'):
                 self.mapperList.append(os.path.basename(mapper))
 
+        # pop and append generic mapper to the end
+        self.mapperList.pop(self.mapperList.index('mapper_generic.py'))
+        self.mapperList.append('mapper_generic.py')
+        
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
         # set input file name
@@ -582,9 +585,11 @@ class Nansat(Domain):
             http://www.gdal.org/gdalwarp.html
 
         '''
-        # dereproject and quit
+        # dereproject
+        self.vrt = self.raw.copy()
+
+        # if no domain: quit
         if dstDomain is None:
-            self.vrt = self.raw.copy()
             return
 
         # get projection of destination dataset

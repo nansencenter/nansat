@@ -952,7 +952,7 @@ class VRT():
         warpedVRT._modify_warped_XML(xSize, ySize, geoTransform, blockSize)
 
         """
-        # TODO: implement the below option for proper handling stero projections over the pole
+        # TODO: implement the below option for proper handling stereo projections over the pole
         # get source projection from GCPs or from dataset (TODO: or from Geolocation)
         if len(srcVRT.dataset.GetGCPs()) == 0:
             srcSRS = srcVRT.dataset.GetProjection()
@@ -979,11 +979,12 @@ class VRT():
         # replace the reference from srcVRT to self
         self.logger.debug('replace the reference from srcVRT to self')
         rawFileName = str(os.path.basename(self.fileName))
-        srcFileName = str(os.path.basename(srcVRT.fileName))
-        xmlString = str(warpedVRT.read_xml())
-        xmlString = str(xmlString.replace(srcFileName, rawFileName))
-        warpedVRT.write_xml(xmlString)
-
+        warpedXML = str(warpedVRT.read_xml())
+        node0 = Node.create(warpedXML)
+        node1 = node0.node("GDALWarpOptions")
+        node1.node('SourceDataset').value = '/vsimem/' + rawFileName
+        warpedVRT.write_xml(str(node0.rawxml()))
+        
         return warpedVRT
 
     def _create_fake_gcps(self, gcps):
