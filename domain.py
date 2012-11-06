@@ -62,27 +62,27 @@ class ProjectionError(Error):
 
 
 class Domain():
-    '''Domain is a grid with known dimentions and spatial reference'''
+    '''Domain is a grid with known dimentions and spatial reference
 
-    def __init__(self, ds=None, srs=None, ext=None, lat=None, lon=None, name='', logLevel=None):
+    The main attribute of Domain is a GDAL VRT Dataset self.vrt.
+    It has such attributes as rasterXsize,
+    rasterYsize, GeoTransform and GeoPorjection, etc which fully describe
+    dimentions and spatial reference of the grid. The VRT dataset is
+    empty - it has no bands.    
+    '''
+
+    def __init__(self, srs=None, ext=None, ds=None, lon=None, lat=None, name='', logLevel=None):
         '''Create Domain from GDALDataset or string options or lat/lon grids
 
-        The main attribute of Domain is a GDAL VRT Dataset self.vrt.
-        It has such attributes as rasterXsize,
-        rasterYsize, GeoTransform and GeoPorjection, etc which fully describe
-        dimentions and spatial reference of the grid. The VRT dataset is
-        empty - it has no bands.
-
-        d = Domain(ds):
-            Size, extent and spatial reference is copied from input GDAL dataset
         d = Domain(srs, ext)
-            Size, extent and satial reference is given by: srs and ext
-        d = Domain(lat, lon)
-            Size, extent and satial reference is given by two grids: lat and lon
+            Size, extent and satial reference is given by strings
+        d = Domain(ds=GDALDataset):
+            Size, extent and spatial reference is copied from input GDAL dataset
+        d = Domain(lon=lonGrid, lat=latGrig)
+            Size, extent and satial reference is given by two grids
 
         Parameters:
         ----------
-        ds: GDAL dataset
         srs : PROJ4 or EPSG or WKT
             Specifies spatial reference system (SRS)
             PROJ4:
@@ -105,8 +105,8 @@ class Domain():
                     AUTHORITY["EPSG","9108"]],
                 AUTHORITY["EPSG","4326"]]'
         ext : string
-            some gdalwarp options [http://www.gdal.org/gdalwarp.html] +
-            +additional options
+            several gdalwarp options + additional options
+            [http://www.gdal.org/gdalwarp.html]
             Specifies extent, resolution / size
             Available options: (("-te" or "-lle") and ("-tr" or "-ts"))
             (e.g. "-lle -10 30 55 60 -ts 1000 1000" or
@@ -115,6 +115,7 @@ class Domain():
             -ts sizex sizey
             -te xmin ymin xmax ymax
             -lle lonmin latmin lonmax latmax
+        ds: GDAL dataset
         lat : Numpy array
             Grid with latitudes
         lon : Numpy array
@@ -133,7 +134,7 @@ class Domain():
         Modifies
         --------
         self.vrt.datasetset: dataset in memory
-            dataset created based on the arguments
+            dataset is created based on the input arguments
 
         See Also
         --------

@@ -96,7 +96,7 @@ n.write_map(oFileName + '_map.png')
 # -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
 # 2. Reproject the Nansat object
 # 3. Make simple image
-dLatlong = Domain(srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", ext="-lle 25 70 35 72 -ts 2000 2000")
+dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", "-lle 25 70 35 72 -ts 2000 2000")
 dLatlong.write_map(oFileName + '_latlong_map.png')
 print 'Latlong Domain:', dLatlong
 n.reproject(dLatlong)
@@ -114,7 +114,7 @@ meanLon = sum(lons, 0.0) / 4.
 meanLat = sum(lats, 0.0) / 4.
 srsString = "+proj=stere +lon_0=%f +lat_0=%f +k=1 +ellps=WGS84 +datum=WGS84 +no_defs" % (meanLon, meanLat)
 extentString = '-lle %f %f %f %f -tr 100 100' % (min(lons), min(lats), max(lons), max(lats))
-dStereo = Domain(srs=srsString, ext=extentString) # 3.
+dStereo = Domain(srsString, extentString) # 3.
 dStereo.write_map(oFileName + '_stereo_map.png')
 print 'Stereo Domain:', dStereo
 n.reproject(dStereo, 2) # 4.
