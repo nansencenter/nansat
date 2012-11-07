@@ -1,0 +1,116 @@
+#-------------------------------------------------------------------------------
+# Name:        mapper_op
+# Purpose:     Mapping for MODIS and SeaWiFS Level-3 from Ocean Productivity website (Oregon State University) 
+#
+# Author:      Dmitry Petrenko
+#
+# Created:     24.10.2012
+# Copyright:   (c) NERSC 2012
+#-------------------------------------------------------------------------------
+import datetime
+import os.path
+import glob
+
+import gdal
+
+import numpy as np
+
+from vrt import VRT, Geolocation
+
+class Mapper(VRT):
+    ''' Mapper for Ocean Productivity website 
+    http://www.science.oregonstate.edu/ocean.productivity/'''
+    # detect wkv from metadata 'Parameter'
+    param2wkv = {
+    'chl': 'mass_concentration_of_chlorophyll_a_in_sea_water',
+    'sst': 'sea_surface_temperature',
+    'par': 'instantaneous_photosynthetically_available_radiation',
+    'bbp':'particle_backscatter_at_443_nm',
+    }
+    
+    bandNames = {
+    'mass_concentration_of_chlorophyll_a_in_sea_water': 'algal_1',
+    'sea_surface_temperature': 'SST',
+    'instantaneous_photosynthetically_available_radiation': 'par',
+    'particle_backscatter_at_443_nm': 'bbp_443',
+    }
+
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
+        ''' Ocean Productivity website VRT '''
+
+        if ('IDL' not in gdalMetadata['Projection Category'] and 'Source' not in gdalMetadata and '-9999' not in gdalMetadata['Hole Value']):
+                raise AttributeError("BAD MAPPER")
+        print 'Ocean Productivity website data'
+        # get list of similar (same date) files in the directory
+        iDir, iFile = os.path.split(fileName)
+        iFileName, iFileExt = os.path.splitext(iFile)
+        simFiles = glob.glob('*' + iFileName[4:11] + iFileExt)
+       
+        metaDict = []
+        for simFile in simFiles:
+           
+            # open subdataset with GDAL
+            #print 'simFile', simFile
+            tmpSourceFilename = simFile
+            tmpGdalDataset = gdal.Open(tmpSourceFilename)
+            
+            # get metadata, get 'Parameter'
+            tmpGdalMetadata = tmpGdalDataset.GetMetadata()
+            simParameter = simFile[0:3]
+            
+            # set params of the similar file
+            simSourceFilename = tmpSourceFilename
+            simGdalDataset = tmpGdalDataset
+            simGdalMetadata = tmpGdalMetadata
+                
+            # get WKV from the similar file
+            #print 'simParameter', simParameter
+            for param in self.param2wkv:
+                #print 'param', param
+                if param in simParameter:
+                    simWKV = self.param2wkv[param]
+                    break
+
+            # generate entry to metaDict
+            metaEntry = {
+                'src': {'SourceFilename': simSourceFilename,
+                        'SourceBand':  1,
+                        'ScaleRatio': float(simGdalMetadata['Slope']),
+                        'ScaleOffset': float(simGdalMetadata['Intercept'])},
+                'dst': {'wkv': simWKV,
+                        'BandName': self.bandNames[simWKV],
+                        'Parameter': simParameter}}
+
+            # append entry to metaDict
+            metaDict.append(metaEntry)
+            
+        #get array with data and make 'mask'
+        a = simGdalDataset.ReadAsArray()
+        mask = np.zeros(a.shape, 'uint8') + 128
+        mask[a < -9990] = 1
+        self.maskVRT = VRT(array=mask)
+
+        metaDict.append(
+            {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
+             'dst': {'BandName': 'mask'}})
+
+        # create empty VRT dataset with geolocation only
+        # print 'simGdalMetadata', simGdalMetadata
+        latitudeStep = 0.08333334
+        longitudeStep = 0.08333334
+        numberOfColumns = 4320
+        numberOfLines = 2160
+        #longitudeStep = float(simGdalMetadata['Longitude Step'])
+        VRT.__init__(self, srcGeoTransform=(-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
+                           srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+                           srcRasterXSize=numberOfColumns,
+                           srcRasterYSize=numberOfLines
+                    )
+        
+        # add bands with metadata and corresponding values to the empty VRT
+        self._create_bands(metaDict)
+
+        # Add valid time
+        startYear = int(fileName[4:8])
+        startDay = int(fileName[8:11])
+        self._set_time(datetime.datetime(startYear, 1, 1) + datetime.timedelta(startDay))
