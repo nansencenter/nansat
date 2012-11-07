@@ -45,23 +45,22 @@ class Mapper(VRT):
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         simFilesMask = os.path.join(iDir, '*' + iFileName[4:11] + iFileExt)
-        print 'simFilesMask', simFilesMask
+        #print 'simFilesMask', simFilesMask
         simFiles = glob.glob(simFilesMask)
-        print 'simFiles', simFiles
+        #print 'simFiles', simFiles
        
         metaDict = []
         for simFile in simFiles:
-           
+            #print 'simFile',simFile
             # open subdataset with GDAL
-            #print 'simFile', simFile
             tmpSourceFilename = simFile
-            print 'simFile', simFile
             tmpGdalDataset = gdal.Open(tmpSourceFilename)
             
             # get metadata, get 'Parameter'
             tmpGdalMetadata = tmpGdalDataset.GetMetadata()
-            simParameter = simFile[0:3]
-            print 'tmpGdalMetadata', tmpGdalMetadata
+            iDir, ifileName = os.path.split(tmpSourceFilename)
+            #print 'ifileName',ifileName
+            simParameter = ifileName[0:3]
             
             # set params of the similar file
             simSourceFilename = tmpSourceFilename
@@ -69,13 +68,12 @@ class Mapper(VRT):
             simGdalMetadata = tmpGdalMetadata
                 
             # get WKV from the similar file
-            #print 'simParameter', simParameter
             for param in self.param2wkv:
-                print 'param', param
+                #print 'param', param
                 if param in simParameter:
                     simWKV = self.param2wkv[param]
                     break
-
+            #print 'simWKV', simWKV
             # generate entry to metaDict
             metaEntry = {
                 'src': {'SourceFilename': simSourceFilename,
@@ -85,7 +83,7 @@ class Mapper(VRT):
                 'dst': {'wkv': simWKV,
                         'BandName': self.bandNames[simWKV],
                         'Parameter': simParameter}}
-
+            #print 'metaEntry', metaEntry
             # append entry to metaDict
             metaDict.append(metaEntry)
             
@@ -116,6 +114,6 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Add valid time
-        startYear = int(fileName[4:8])
-        startDay = int(fileName[8:11])
+        startYear = int(iFile[4:8])
+        startDay = int(iFile[8:11])
         self._set_time(datetime.datetime(startYear, 1, 1) + datetime.timedelta(startDay))

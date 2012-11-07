@@ -1036,7 +1036,7 @@ class Nansat(Domain):
         tmpVRT = None
         # For debugging:
         """
-        mapper_module = __import__('mapper_obpg_l2')
+        mapper_module = __import__('mapper_ocean_productivity')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
         """
         # Otherwise
