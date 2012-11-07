@@ -44,7 +44,10 @@ class Mapper(VRT):
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
-        simFiles = glob.glob('*' + iFileName[4:11] + iFileExt)
+        simFilesMask = os.path.join(iDir, '*' + iFileName[4:11] + iFileExt)
+        print 'simFilesMask', simFilesMask
+        simFiles = glob.glob(simFilesMask)
+        print 'simFiles', simFiles
        
         metaDict = []
         for simFile in simFiles:
@@ -52,11 +55,13 @@ class Mapper(VRT):
             # open subdataset with GDAL
             #print 'simFile', simFile
             tmpSourceFilename = simFile
+            print 'simFile', simFile
             tmpGdalDataset = gdal.Open(tmpSourceFilename)
             
             # get metadata, get 'Parameter'
             tmpGdalMetadata = tmpGdalDataset.GetMetadata()
             simParameter = simFile[0:3]
+            print 'tmpGdalMetadata', tmpGdalMetadata
             
             # set params of the similar file
             simSourceFilename = tmpSourceFilename
@@ -66,7 +71,7 @@ class Mapper(VRT):
             # get WKV from the similar file
             #print 'simParameter', simParameter
             for param in self.param2wkv:
-                #print 'param', param
+                print 'param', param
                 if param in simParameter:
                     simWKV = self.param2wkv[param]
                     break
