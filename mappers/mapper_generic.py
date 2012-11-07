@@ -15,8 +15,8 @@ import numpy as np
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
 
-        rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned', 'ScaleRatio', 'ScaleOffset']
-        
+        rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
+
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
         if len(subDatasets) == 0:
@@ -41,7 +41,7 @@ class Mapper(VRT):
                 firstSubDataset = subDataset
                 # get projection from the first subDataset
                 projection = firstSubDataset.GetProjection()
-                
+
             # take bands whose sizes are same as the first band.
             if (subDataset.RasterXSize == firstXSize and
                         subDataset.RasterYSize == firstYSize):
@@ -53,7 +53,7 @@ class Mapper(VRT):
                     for iBand in range(subDataset.RasterCount):
                         bandMetadata = subDataset.GetRasterBand(iBand+1).GetMetadata_Dict()
                         sourceBands = iBand + 1
-                        
+
                         # generate src metadata
                         src = {'SourceFilename': fileName, 'SourceBand': sourceBands}
                         # set scale ratio and scale offset
@@ -70,9 +70,11 @@ class Mapper(VRT):
                         # set wkv and bandname
                         dst['wkv'] = bandMetadata.get('standard_name', '')
                         bandName = bandMetadata.get('NETCDF_VARNAME', '')
+                        if len(bandName) == 0:
+                            bandName = bandMetadata.get('dods_variable', '')
                         if len(bandName) > 0:
                             dst['BandName'] = bandName
-                            
+
                         # remove non-necessary metadata from dst
                         for rmMetadata in rmMetadatas:
                             if rmMetadata in dst:
@@ -80,7 +82,7 @@ class Mapper(VRT):
 
                         # append band with src and dst dictionaries
                         metaDict.append({'src': src, 'dst': dst})
-                        
+
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, firstSubDataset)
 
@@ -97,13 +99,13 @@ class Mapper(VRT):
             projection = latlongSRS.ExportToWkt()
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
-        
+
         # check if GCPs were added from input dataset
         gcpCount = firstSubDataset.GetGCPCount()
         if gcpCount == 0:
             # if no GCPs in input dataset: try to add GCPs from metadata
             gcpCount = self.add_gcps_from_metadata(gdalMetadata)
-        
+
         # Find proper bands and insert GEOLOCATION into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
             self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource))
@@ -144,18 +146,18 @@ class Mapper(VRT):
                     gcpValues.append(float(x))
             #gcpValues = [float(x) for x in gcpString.strip().split('|')]
             gcpAllValues.append(gcpValues)
-        
+
         # create list of GDAL GCPs
         gcps = []
         for i in range(0, len(gcpAllValues[0])):
             gcps.append(gdal.GCP(gcpAllValues[2][i], gcpAllValues[3][i], 0,
                                  gcpAllValues[0][i], gcpAllValues[1][i]))
-        
+
         if len(gcps) > 0:
             # get GCP projection and repare
             projection = self.repare_projection(gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_GCPProjection', ''))
             # add GCPs to dataset
             self.dataset.SetGCPs(gcps, projection)
             self._remove_geotransform()
-        
+
         return len(gcps)
