@@ -419,7 +419,7 @@ class VRT():
                 # if source band not available: float32
                 dst['dataType'] = gdal.GDT_Float32
             else:
-                self.logger.debug('Set dst[DataType]: %d'  % src['DataType'])
+                self.logger.debug('Set dst[dataType]: %d'  % src['DataType'])
                 #otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
         

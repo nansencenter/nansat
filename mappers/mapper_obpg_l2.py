@@ -13,17 +13,28 @@ import re
 from datetime import datetime, timedelta
 
 class Mapper(VRT):
-    ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
+    ''' Mapper for MODIS/MERIS/VIIRS L2 data from OBPG
+    
+    TODO:
+    * Test on SeaWIFS
+    * Test on MODIS Terra
+    
+    '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
-        ''' Create MODIS_L2 VRT '''
+        ''' Create VRT '''
         # number of GCPs along each dimention
         GCP_COUNT = 10
-       
-        # should raise error in case of not MODIS_L2_NRT
-        mTitle = gdalMetadata["Title"];
-        if mTitle is not 'HMODISA Level-2 Data':
-            AttributeError("MODIS_L2_NRT BAD MAPPER");
+        """
+        Title=
+        Title=HMODISA Level-2 Data
+        Title=MERIS Level-2 Data
+        """
+        
+        titles = ['HMODISA Level-2 Data', 'MERIS Level-2 Data']
+        # should raise error in case of not obpg_l2 file
+        title = gdalMetadata["Title"];
+        assert title in titles, 'obpg_l2 BAD MAPPER'
 
         # get subdataset and parse to VRT.__init__() for retrieving geo-metadata
         # but NOT from longitude or latitude because it can be smaller!
@@ -39,36 +50,65 @@ class Mapper(VRT):
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
         # dictionary for all possible bands
         allBandsDict = {
-        'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'BandName': 'Kd_490', 'wavelength': '490'},
-        'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1', 'case': 'I'},
-        'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs', 'case': 'II'},
-        'sst': {'wkv': 'sea_surface_temperature', 'BandName': 'sst'},
-        'l2_flags': {'wkv': 'quality_flags', 'SourceType': 'SimpleSource', 'BandName': 'l2_flags'},
-        'latitude': {'wkv': 'latitude', 'BandName': 'latitude'},
-        'longitude': {'wkv': 'longitude', 'BandName': 'longitude'},
+        'Rrs':        {'src': {}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air'}},
+        'Kd':         {'src': {}, 'dst': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water'}},
+        'chlor_a':    {'src': {}, 'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'case': 'I'}},
+        'cdom_index': {'src': {}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'case': 'II'}},
+        'sst':        {'src': {}, 'dst': {'wkv': 'sea_surface_temperature'}},
+        'l2_flags':   {'src': {'SourceType': 'SimpleSource', 'DataType': 4},
+                                  'dst': {'wkv': 'quality_flags'}},
+        'latitude':   {'src': {}, 'dst': {'wkv': 'latitude'}},
+        'longitude':  {'src': {}, 'dst': {'wkv': 'longitude'}},
         }
         
         # loop through available bands and generate metaDict (non fixed)
         metaDict = []
         for subDataset in subDatasets:
+            # get sub dataset name
             subDatasetName = subDataset[1].split(' ')[1]
             self.logger.debug('Subdataset: %s' % subDataset[1])
-            self.logger.debug('Subdataset name: %s' % subDatasetName)
-            # try to get Rrs_412 or similar from subdataset name
-            # if success - append Reflectance with respective parameters to meta
-            rrsBandName = re.findall('Rrs_\d*', subDatasetName)
-            metaEntry = None
-            metaEntry2 = None
-            if len(rrsBandName) > 0:
+            self.logger.debug('Subdataset name: "%s"' % subDatasetName)
+            # get wavelength if applicable, get dataset name without wavelength
+            try:
+                wavelength = int(subDatasetName.split('_')[-1])
+            except:
+                wavelength = None
+                subBandName = subDatasetName
+            else:
+                subBandName = subDatasetName.split('_')[0]
+
+            self.logger.debug('subBandName: %s' % subBandName)
+            
+            if subBandName in allBandsDict:
+                # get name, slope, intercept
+                self.logger.debug('BandName: %s' % subBandName)
                 tmpSubDataset = gdal.Open(subDataset[0])
-                slope = tmpSubDataset.GetMetadata().get('slope', 1)
-                intercept = tmpSubDataset.GetMetadata().get('intercept', 0)
-                metaEntry = {'src': {'SourceFilename': subDataset[0], 'sourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
-                             'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                                     'BandName': rrsBandName[0],
-                                     'wavelength': rrsBandName[0][-3:],
-                                      }
-                             }
+                tmpSubMetadata = tmpSubDataset.GetMetadata()
+                slope = tmpSubMetadata.get('slope', '1')
+                intercept = tmpSubMetadata.get('intercept', '0')
+                self.logger.debug('slope, intercept: %s %s ' % (slope, intercept))
+                # create meta entry
+                metaEntry = {'src': {'SourceFilename': subDataset[0],
+                                     'sourceBand':  1,
+                                     'ScaleRatio': slope,
+                                     'ScaleOffset': intercept},
+                             'dst': allBandsDict[subBandName]['dst']}
+                # add more to src
+                for srcKey in allBandsDict[subBandName]['src']:
+                    metaEntry['src'][srcKey] = allBandsDict[subBandName]['src'][srcKey]
+                # add wavelength, band name to dst
+                if wavelength is None:
+                    metaEntry['dst']['BandName'] = subBandName
+                else:
+                    metaEntry['dst']['BandName'] = '%s_%d' % (subBandName, wavelength)
+                    metaEntry['dst']['wavelength'] = str(wavelength)
+
+                self.logger.debug('metaEntry: %s' % str(metaEntry))
+
+                # append band metadata to metaDict
+                metaDict.append(metaEntry)
+                    
+        """
                 metaEntry2 = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1},
                               'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
                                       'BandName': rrsBandName[0].replace('Rrs', 'Rrsw'),
@@ -76,28 +116,8 @@ class Mapper(VRT):
                                       'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
                                       }
                               }
-            else:
-                # if the band is not Rrs_NNN
-                # try to find it (and metadata) in dict of known bands (allBandsDict)
-                for bandName in allBandsDict:
-                    if bandName == subDatasetName:
-                        tmpSubDataset = gdal.Open(subDataset[0])
-                        slope = tmpSubDataset.GetMetadata().get('slope', 1)
-                        intercept = tmpSubDataset.GetMetadata().get('intercept', 0)
-                        metaEntry = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
-                                     'dst': allBandsDict[bandName]}
-                        if 'SourceType' in allBandsDict[bandName]:
-                            metaEntry['src']['SourceType'] = allBandsDict[bandName]['SourceType']
-                
-                self.logger.debug('metaEntry %s' % metaEntry)
-                    
-            if metaEntry is not None:
-                metaDict.append(metaEntry)
-            if metaEntry2 is not None:
-                metaDict.append(metaEntry2)
-        
-        self.logger.debug('metaDict: %s' % metaDict)
-        
+        """
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
@@ -109,11 +129,13 @@ class Mapper(VRT):
                 xVRT = VRT(vrtDataset=xDataset)
             if 'latitude' in subDataset[1]:
                 yDatasetSource = subDataset[0]
-                yVRT = VRT(vrtDataset=gdal.Open(yDatasetSource))
+                yDataset = gdal.Open(yDatasetSource)
+                yVRT = VRT(vrtDataset=yDataset)
 
         # estimate pixel/line step
         pixelStep = int(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize))
         lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
+        self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
         
         # add geolocation
         self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
@@ -153,4 +175,3 @@ class Mapper(VRT):
         startMillisec =  int(gdalMetadata['Start Millisec'])
         startDate = datetime(startYear, 1, 1) + timedelta(startDay, 0, 0, startMillisec)
         self._set_time(startDate)
-
