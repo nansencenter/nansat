@@ -658,8 +658,8 @@ class Nansat(Domain):
 
         if not mod44DataExist:
             # MOD44W data does not exist generate empty matrix
-            watermask = np.zeros(self.vrt.dataset.RasterXSize,
-                                 self.vrt.dataset.RasterYSize)
+            watermask = np.zeros([self.vrt.dataset.RasterXSize, 
+                                  self.vrt.dataset.RasterYSize])
         else:
             # MOD44W data does exist: open the VRT file in Nansat
             watermask = Nansat(mod44path + '/MOD44W.vrt')

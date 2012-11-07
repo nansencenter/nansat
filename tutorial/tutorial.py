@@ -9,7 +9,7 @@ from nansat import Nansat
 from domain import Domain
 
 iPath = './'
-oPath = './'
+oPath = 'tmpdata/'
 fileName = 'gcps.tif'
 oFileName = oPath + fileName
 
@@ -146,9 +146,9 @@ print 'Stereo Nansat:', nStereo
 # 3. Check that the band is in the object
 n.reproject()
 array = n[1] * 10
-n.raw.export('/data/raw0.vrt')
+n.raw.export('tmpdata/raw0.vrt')
 n.add_band(array=array, parameters={'BandName': 'new_band', 'about': 'test'})
-n.raw.export('/data/raw1.vrt')
+n.raw.export('tmpdata/raw1.vrt')
 print 'Nansat with new band:', n
 
 
