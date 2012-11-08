@@ -26,17 +26,16 @@ try:
 except:
     pass
 
+import scipy.stats.stats as st
+
 from domain import Domain
 from vrt import *
 from figure import *
 from nansat_tools import add_logger, Node
 
-import scipy.stats.stats as st
-
 class GDALError(Error):
     '''Error from GDAL '''
     pass
-
 
 class DataError(Error):
     '''Error for data.
@@ -56,7 +55,7 @@ class Nansat(Domain):
         is saved in an XML format in memory (GDAL VSI).
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
-                 array=None, parameters=None, logLevel=None):
+                 array=None, parameters=None, logLevel=30):
         '''Construct Nansat object
 
         Open GDAL dataset,
@@ -1004,9 +1003,7 @@ class Nansat(Domain):
 
         Parameters
         ----------
-        mapperName : string, optional
-            "ASAR", "hurlam", "merisL1", "merisL2", "ncep", "radarsat2",
-            "seawifsL2" are currently available.  (27.01.2012)
+        mapperName : string, optional (e.g. "ASAR" or "merisL2")
 
         Returns
         -------
@@ -1026,10 +1023,13 @@ class Nansat(Domain):
             # get metadata from the GDAL dataset
             metadata = gdalDataset.GetMetadata()
         else:
-            metadata = None
+            raise GDALError('GDAL can not open the file ' + self.fileName)
+            # In future we may want to make mappers for Raw GDAL datasets
+            # instead of raising an error here
 
-        # add the given mapper first
-        self.mapperList = ['mapper_' + mapperName] + self.mapperList
+        # If a specific mapper is requested, we test only this one
+        if mapperName is not '':
+            self.mapperList = ['mapper_' + mapperName]
 
         # try to import and get VRT datasaet from all mappers. Break on success.
         # If none of the mappers worked - try generic gdal.Open
@@ -1054,10 +1054,15 @@ class Nansat(Domain):
                 break
             except:
                 pass
-        # """
+
+        # if the requested mapper does not fit, raise an error
+        if tmpVRT is None and mapperName is not '':
+            raise GDALError('The mapper ' + mapperName + ' does not fit for ' +
+                            self.fileName)
+
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
-            self.logger.info('No mapper fits!')
+            self.logger.warning('No mapper fits, returning GDAL bands!')
             tmpVRT = VRT(gdalDataset=gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
                 tmpVRT._create_band({'SourceFilename': self.fileName,
