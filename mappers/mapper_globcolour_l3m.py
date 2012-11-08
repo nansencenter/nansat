@@ -83,7 +83,7 @@ class Mapper(VRT):
                         'SourceBand':  1},
                 'dst': {'wkv': simWKV, 'original_name': simVarname}}
             
-            # add wavelength and BandName
+            # add wavelength and name
             longName = simBandMetadata['long_name']
             if 'Fully normalised water leaving radiance' in longName:
                 simWavelength = simVarname.split('L')[1].split('_mean')[0]
@@ -124,7 +124,7 @@ class Mapper(VRT):
 
         metaDict.append(
             {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
-             'dst': {'BandName': 'mask'}})
+             'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         simGdalDataset.SetProjection('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')

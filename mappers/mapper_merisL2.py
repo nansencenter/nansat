@@ -48,7 +48,7 @@ class Mapper(VRT, Envisat):
         {'src': {'SourceFilename': fileName, 'SourceBand': 22}, 'dst': {'wkv': 'quality_flags', 'suffix': 'l2'}},
         ]
 
-        # add 'BandName' to 'parameters'
+        # add 'name' to 'parameters'
         for bandDict in metaDict:
             if 'wavelength' in bandDict['dst']:
                 bandDict['dst']['suffix'] = bandDict['dst']['wavelength']

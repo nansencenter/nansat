@@ -20,13 +20,13 @@ class Mapper(VRT):
 
         metaDict = [
                     {'src': {'SourceFilename': fileName, 'SourceBand': 2, 'NODATA': 9999},
-                     'dst': {'wkv': 'eastward_wind', 'BandName': 'east_wind', 'height': '10 m'}},
+                     'dst': {'wkv': 'eastward_wind', 'name': 'east_wind', 'height': '10 m'}},
                     {'src': {'SourceFilename': fileName, 'SourceBand': 3, 'NODATA': 9999},
-                     'dst': {'wkv': 'northward_wind', 'BandName': 'north_wind', 'height': '10 m'}},
+                     'dst': {'wkv': 'northward_wind', 'name': 'north_wind', 'height': '10 m'}},
                     {'src': [{'SourceFilename': fileName, 'SourceBand': 2}, {'SourceFilename': fileName, 'SourceBand': 3}],
-                     'dst': {'wkv': 'wind_speed', 'BandName': 'windspeed', 'height': '10 m', 'PixelFunctionType': 'UVToMagnitude'}},
+                     'dst': {'wkv': 'wind_speed', 'name': 'windspeed', 'height': '10 m', 'PixelFunctionType': 'UVToMagnitude'}},
                     {'src': [{'SourceFilename': fileName, 'SourceBand': 2}, {'SourceFilename': fileName, 'SourceBand': 2}],
-                     'dst': {'wkv': 'wind_from_direction', 'BandName': 'winddirection', 'height': '10 m', 'PixelFunctionType': 'UVToDirectionFrom'}}                    
+                     'dst': {'wkv': 'wind_from_direction', 'name': 'winddirection', 'height': '10 m', 'PixelFunctionType': 'UVToDirectionFrom'}}                    
                     ];
   
         # create empty VRT dataset with geolocation only

@@ -43,7 +43,7 @@ class Mapper(VRT, Envisat):
 
         # compute calibrated sigma0
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
-                     'dst': {'BandName': 'RawCounts_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR']}}]
+                     'dst': {'name': 'RawCounts_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR']}}]
         # add dictionary for IncidenceAngle
         for iBand in range(self.incAngleDataset.dataset.RasterCount):
             bandMetadata = self.incAngleDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
@@ -56,7 +56,7 @@ class Mapper(VRT, Envisat):
                          'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                                  'PixelFunctionType': 'RawcountsIncidenceToSigma0',
                                  'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
-                                 'BandName': 'sigma0_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
+                                 'name': 'sigma0_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
                                  'pass': gdalMetadata['SPH_PASS'],
                                  'dataType': gdal.GDT_Float32}})
 

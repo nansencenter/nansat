@@ -73,7 +73,7 @@ class Mapper(VRT):
                  'DataType': 6}],
             'dst': {'wkv': 'sensor_zenith_angle',
                     'PixelFunctionType': 'BetaSigmaToIncidence',
-                    'BandName': 'incidence_angle'}})
+                    'name': 'incidence_angle'}})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

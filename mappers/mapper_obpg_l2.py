@@ -80,7 +80,7 @@ class Mapper(VRT):
             
             if subBandName in allBandsDict:
                 # get name, slope, intercept
-                self.logger.debug('BandName: %s' % subBandName)
+                self.logger.debug('name: %s' % subBandName)
                 tmpSubDataset = gdal.Open(subDataset[0])
                 tmpSubMetadata = tmpSubDataset.GetMetadata()
                 slope = tmpSubMetadata.get('slope', '1')
@@ -112,7 +112,7 @@ class Mapper(VRT):
         """
                 metaEntry2 = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1},
                               'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
-                                      'BandName': rrsBandName[0].replace('Rrs', 'Rrsw'),
+                                      'name': rrsBandName[0].replace('Rrs', 'Rrsw'),
                                       'wavelength': rrsBandName[0][-3:],
                                       'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
                                       }

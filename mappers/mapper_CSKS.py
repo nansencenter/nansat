@@ -104,12 +104,12 @@ class Mapper(VRT):
                 {'src': {'SourceFilename': fileNames[0], 'SourceBand': 1, 
                     'DataType': gdal.GDT_Int16}, 
                     'dst': {'dataType': gdal.GDT_Float32, 
-                        'BandName': 'reRawCounts_%s' % gdalMetadata[band+'_Polarisation']}}]
+                        'name': 'reRawCounts_%s' % gdalMetadata[band+'_Polarisation']}}]
         metaDict.append(
                 {'src': {'SourceFilename': fileNames[0], 'SourceBand': 2,
                     'DataType': gdal.GDT_Int16},
                     'dst': {'dataType': gdal.GDT_Float32,
-                        'BandName': 'imRawCounts_%s' % gdalMetadata[band+'_Polarisation'] }} )
+                        'name': 'imRawCounts_%s' % gdalMetadata[band+'_Polarisation'] }} )
 
         #metaDict.append({'src': [{'SourceFilename': fileNames[0], 
         #            'DataType': gdal.GDT_Int16,
@@ -120,7 +120,7 @@ class Mapper(VRT):
         #                'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
         #                    'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
         #                    'polarisation': gdalMetadata[band+'_Polarisation'],
-        #                    'BandName': 'sigma0_%s' % gdalMetadata[band+'_Polarisation'],
+        #                    'name': 'sigma0_%s' % gdalMetadata[band+'_Polarisation'],
         #                    'SatelliteID': gdalMetadata['Satellite_ID'],
         #                    'dataType': gdal.GDT_Float32}
         #                })
@@ -167,7 +167,7 @@ class Mapper(VRT):
                 'surface_backwards_scattering_coefficient_of_radar_wave',
                 'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
                 'polarisation': gdalMetadata[band+'_Polarisation'],
-                'BandName': 'sigma0_%s' % gdalMetadata[band+'_Polarisation'],
+                'name': 'sigma0_%s' % gdalMetadata[band+'_Polarisation'],
                 'SatelliteID': gdalMetadata['Satellite_ID'],
                 'dataType': gdal.GDT_Float32}
                 #'pass': gdalMetadata[''] - I can't find this in the metadata...

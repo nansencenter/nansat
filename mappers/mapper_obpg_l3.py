@@ -101,7 +101,7 @@ class Mapper(VRT):
                         'ScaleOffset': float(simGdalMetadata['Intercept'])},
                 'dst': {'wkv': simWKV}}
 
-            # add wavelength and BandName
+            # add wavelength and name
             if ' at ' in simParameter and ' nm' in simParameter:
                 simWavelength = simParameter.split(' at ')[1].split(' nm')[0]
                 metaEntry['dst']['suffix'] = simWavelength
@@ -133,7 +133,7 @@ class Mapper(VRT):
 
         metaDict.append(
             {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
-             'dst': {'BandName': 'mask'}})
+             'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         # print 'simGdalMetadata', simGdalMetadata

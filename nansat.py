@@ -155,7 +155,7 @@ class Nansat(Domain):
         -----------
             bandID: int or str
                 If int, array from band with number <bandID> is returned
-                If string, array from band with metadata 'BandName' equal to
+                If string, array from band with metadata 'name' equal to
                 <bandID> is returned
         Returns
         -------
@@ -291,7 +291,7 @@ class Nansat(Domain):
         ----------
             fileName: output file name
             rmMetadata: list with metadata names to remove before export.
-                e.g. ['BandName', 'colormap', 'source', 'sourceBands']
+                e.g. ['name', 'colormap', 'source', 'sourceBands']
             addGeoloc: flag to add geolocation datasets. True.
             addGCPs: flag to add GCPs. True
             driver: Which GDAL driver (format) to use [netCDF]
@@ -352,13 +352,13 @@ class Nansat(Domain):
                 {'SourceFilename': self.vrt.geoloc.d['X_DATASET'],
                  'SourceBand': int(self.vrt.geoloc.d['X_BAND'])},
                 {'wkv': 'longitude',
-                 'BandName': 'GEOLOCATION_X_DATASET'})
+                 'name': 'GEOLOCATION_X_DATASET'})
 
             exportVRT._create_band(
                 {'SourceFilename': self.vrt.geoloc.d['Y_DATASET'],
                  'SourceBand': int(self.vrt.geoloc.d['Y_BAND'])},
                 {'wkv': 'latitude',
-                 'BandName': 'GEOLOCATION_Y_DATASET'})
+                 'name': 'GEOLOCATION_Y_DATASET'})
                  
         # add GCPs to VRT metadata
         if addGCPs:
@@ -378,7 +378,7 @@ class Nansat(Domain):
             bandMetadata = band.GetMetadata()
             # set NETCDF_VARNAME
             try:
-                bandMetadata['NETCDF_VARNAME'] = bandMetadata["BandName"]
+                bandMetadata['NETCDF_VARNAME'] = bandMetadata["name"]
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
                                     % (iBand+1))
@@ -506,7 +506,7 @@ class Nansat(Domain):
         ----------
             bandID: serial number or string, optional (default is 1)
                 if number - a band number of the band to fetch
-                if string bandID = {'BandName': bandID}
+                if string bandID = {'name': bandID}
 
         Returns
         -------
@@ -543,7 +543,7 @@ class Nansat(Domain):
 
         for b in bands:
             # print band number, name
-            outString += "Band : %d %s\n" % (b, bands[b].get('BandName', ''))
+            outString += "Band : %d %s\n" % (b, bands[b].get('name', ''))
             # print band metadata
             for i in bands[b]:
                 outString += "  %s: %s\n" % (i, bands[b][i])
@@ -902,7 +902,7 @@ class Nansat(Domain):
         Parameters
         ----------
             bandID: int or str (default = None)
-                number or BandName
+                number or name
         Returns:
             time: list with datetime objects for each band.
             If time is the same for all bands, the list contains 1 item
@@ -931,7 +931,7 @@ class Nansat(Domain):
         key: string, optional
             name of the metadata key. If not givem all metadata is returned
         bandID: int or str, optional
-            number or BandName of band to get metadata from.
+            number or name of band to get metadata from.
             If not given, global metadata is returned
 
         Returns:
@@ -1082,18 +1082,18 @@ class Nansat(Domain):
         ----------
             bandID: int or str
                 if int: checks if such band exists and returns band_id
-                if str: finds band with coresponding BandName
+                if str: finds band with coresponding name
 
         Returns
         -------
             int, absolute band  number
         '''
         bandNumber = 0
-        # if bandID is string, fetch band which has BandName == bandID
+        # if bandID is string, fetch band which has name == bandID
         if isinstance(bandID, str):
             bandsMeta = self.bands()
             for b in bandsMeta:
-                if bandID == bandsMeta[b]['BandName']:
+                if bandID == bandsMeta[b]['name']:
                     bandNumber = b
 
         # if given bandID is int and within the existing bands, return it
@@ -1134,7 +1134,7 @@ class Nansat(Domain):
             files: list
                 list of input files
             bands: list
-                list of BandNames/band_numbers to be processed
+                list of names/band_numbers to be processed
             nClass: child of Nansat
                 The class to be used to read input files
         '''
@@ -1179,7 +1179,7 @@ class Nansat(Domain):
                 mask = n['mask']
             except:
                 mask = 128 * np.ones(n.shape()).astype('int8')
-                n.add_band(array=mask, parameters={'BandName': 'mask'})
+                n.add_band(array=mask, parameters={'name': 'mask'})
 
             # reproject image and get reprojected mask
             try:
@@ -1226,12 +1226,12 @@ class Nansat(Domain):
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'BandName': 'mask'})
+        self.add_band(array=maskMat, parameters={'name': 'mask'})
         # add averaged bands
         for b in bands:
             self.logger.debug('    %s' % b)
-            self.add_band(array=avgMat[b], parameters={'BandName': b})
-            self.add_band(array=stdMat[b], parameters={'BandName': b + '_std'})
+            self.add_band(array=avgMat[b], parameters={'name': b})
+            self.add_band(array=stdMat[b], parameters={'name': b + '_std'})
 
         #return OstdMatb, Oavg, OavgMatb, OcntMat
 

@@ -318,7 +318,7 @@ class VRT():
                 LineOffset (RawVRT)
                 ByteOrder (RawVRT)
             dst: dict with parameters of the created band
-                BandName
+                name
                 dataType
                 wkv
                 suffix
@@ -329,14 +329,14 @@ class VRT():
 
         Returns:
         --------
-            BandName: string, name of the added band
+            name: string, name of the added band
 
         Examples:
         --------
             vrt._create_band({'SourceFilename': filename, 'SourceBand': 1})
             vrt._create_band({'SourceFilename': filename, 'SourceBand': 2,
                               'ScaleRatio': 0.0001},
-                             {'BandName': 'LAT', 'wkv': 'latitude'})
+                             {'name': 'LAT', 'wkv': 'latitude'})
             vrt._create_band({'SourceFilename': filename, 'SourceBand': 2},
                              {'suffix': '670', 'wkv': 'brightness_temperature'})                 
             vrt._create_band([{'SourceFilename': filename, 'SourceBand': 1},
@@ -426,7 +426,7 @@ class VRT():
                 #otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
         
-        # Set destination BandName
+        # Set destination name
         # get short_name from WKV.XML
         dstWKV = dst.get('wkv', '')
         wkvDict = self._get_wkv(dstWKV)
@@ -435,33 +435,33 @@ class VRT():
         self.logger.debug('WKV short_name:%s' % wkvShortName)
 
         # merge wkv[short_name] and dst[suffix] if both given
-        if ("BandName" not in dst and len(wkvShortName) > 0):
+        if ("name" not in dst and len(wkvShortName) > 0):
             dstSuffix = dst.get('suffix', '')
             if len(dstSuffix) > 0:
                 dstSuffix = '_' + dstSuffix
-            dst['BandName'] = wkvShortName + dstSuffix
+            dst['name'] = wkvShortName + dstSuffix
         
         # create list of available bands (to prevent duplicate names)
         bandNames = []
         for iBand in range(self.dataset.RasterCount):
-            bandNames.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("BandName"))
+            bandNames.append(self.dataset.GetRasterBand(iBand+1).GetMetadataItem("name"))
 
-        # if BandName is not given add 'band_00N'
-        if "BandName" not in dst:
+        # if name is not given add 'band_00N'
+        if "name" not in dst:
             for n in range(999):
                 bandName = 'band_%03d' % n
                 if bandName not in bandNames:
-                    dst['BandName'] = bandName
+                    dst['name'] = bandName
                     break
-        # if BandName already exist add '_00N'
-        elif dst["BandName"] in bandNames:
+        # if name already exist add '_00N'
+        elif dst["name"] in bandNames:
             for n in range(999):
-                bandName = dst["BandName"] + '_%03d' % n
+                bandName = dst["name"] + '_%03d' % n
                 if bandName not in bandNames:
-                    dst['BandName'] = bandName
+                    dst['name'] = bandName
                     break
 
-        self.logger.debug('dst[BandName]:%s' % dst['BandName'])
+        self.logger.debug('dst[name]:%s' % dst['name'])
 
         # Add Band
         self.dataset.AddBand(int(dst['dataType']), options=options)
@@ -490,7 +490,7 @@ class VRT():
         dstRasterBand = self._put_metadata(dstRasterBand, dst)
 
         # return name of the created band
-        return dst['BandName']
+        return dst['name']
 
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands

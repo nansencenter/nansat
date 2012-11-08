@@ -73,7 +73,7 @@ class Mapper(VRT):
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('dods_variable', '')
                         if len(bandName) > 0:
-                            dst['BandName'] = bandName
+                            dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
                         for rmMetadata in rmMetadatas:

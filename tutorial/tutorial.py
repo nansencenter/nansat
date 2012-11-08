@@ -135,7 +135,7 @@ n.export(oFileName + '_2.tif', bands=[1], driver='GTiff')
 # 2. Create new Nansat object from the given array and for given domain
 n.reproject(dStereo)
 array = n[1]
-nStereo = Nansat(domain=dStereo, array=array, parameters={'BandName': 'band1'})
+nStereo = Nansat(domain=dStereo, array=array, parameters={'name': 'band1'})
 print 'Stereo Nansat:', nStereo
 
 # add band from array to existing object
@@ -146,7 +146,7 @@ print 'Stereo Nansat:', nStereo
 n.reproject()
 array = n[1] * 10
 n.raw.export(oPath + 'raw0.vrt')
-n.add_band(array=array, parameters={'BandName': 'new_band', 'about': 'test'})
+n.add_band(array=array, parameters={'name': 'new_band', 'about': 'test'})
 n.raw.export(oPath + 'raw1.vrt')
 print 'Nansat with new band:', n
 
@@ -157,7 +157,7 @@ print 'Tutorial completed successfully. Output files are found in folder ' + oPa
 # TODO: add another test file
 # add band from another file to existing object
 # (actually the same file in this example but it may be any other file)
-#n.add_band(fileName=iPath+fileName, bandID=1, parameters={'BandName': 'one_more_band_1'})
+#n.add_band(fileName=iPath+fileName, bandID=1, parameters={'name': 'one_more_band_1'})
 
 # TODO: where to take sample lat/lon grids from?
 # reproject object onto given lat/lon arrays

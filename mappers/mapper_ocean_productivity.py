@@ -81,7 +81,7 @@ class Mapper(VRT):
                         'ScaleRatio': float(simGdalMetadata['Slope']),
                         'ScaleOffset': float(simGdalMetadata['Intercept'])},
                 'dst': {'wkv': simWKV,
-                        'BandName': self.bandNames[simWKV],
+                        'name': self.bandNames[simWKV],
                         'Parameter': simParameter}}
             #print 'metaEntry', metaEntry
             # append entry to metaDict
@@ -95,7 +95,7 @@ class Mapper(VRT):
 
         metaDict.append(
             {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
-             'dst': {'BandName': 'mask'}})
+             'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         # print 'simGdalMetadata', simGdalMetadata

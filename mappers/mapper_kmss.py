@@ -41,12 +41,12 @@ class Mapper(VRT):
         ]
 	# from https://gsics.nesdis.noaa.gov/wiki/Development/StandardVariableNames
 
-        # add DataType into 'src' and BandName into 'dst'
+        # add DataType into 'src' and name into 'dst'
         for bandDict in metaDict:
             if 'DataType' not in bandDict['src']:
                 bandDict['src']['DataType'] = 2
             if bandDict['dst'].has_key('wavelength'):
-                bandDict['dst']['BandName'] = 'toa_radiance_' + bandDict['dst']['wavelength']
+                bandDict['dst']['name'] = 'toa_radiance_' + bandDict['dst']['wavelength']
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);

@@ -242,7 +242,7 @@ class Envisat():
                                 "LineOffset" : offsetDict["DSR_SIZE"],
                                 "ByteOrder" : "MSB"},
                              'dst': {"dataType": adsrDict[ikey]["dataType"],
-                                "BandName": ikey,
+                                "name": ikey,
                                 'wkv': ikey,
                                 "unit": adsrDict[ikey]["unit"]}})
         return dim, offsetDict["NUM_DSR"], metaDict

@@ -21,11 +21,11 @@ class Mapper(VRT):
             raise AttributeError("NCEP BAD MAPPER");
 
         metaDict = [
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 8}, 'dst': {'wkv': 'eastward_wind', 'BandName': 'east_wind', 'height': '10 m'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 9}, 'dst': {'wkv': 'northward_wind', 'BandName': 'north_wind', 'height': '10 m'}},
-                    {'src': [{'SourceFilename': fileName, 'SourceBand': 8}, {'SourceFilename': fileName, 'SourceBand': 9}], 'dst': {'wkv': 'wind_speed', 'PixelFunctionType': 'UVToMagnitude', 'BandName': 'windspeed', 'height': '2 m'}},
-                    {'src': [{'SourceFilename': fileName, 'SourceBand': 8}, {'SourceFilename': fileName, 'SourceBand': 9}], 'dst': {'wkv': 'wind_from_direction', 'PixelFunctionType': 'UVToDirectionFrom', 'BandName': 'winddirection', 'height': '2 m'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 6}, 'dst': {'wkv': 'air_temperature', 'BandName': 'air_t', 'height': '2 m'}}
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 8}, 'dst': {'wkv': 'eastward_wind', 'name': 'east_wind', 'height': '10 m'}},
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 9}, 'dst': {'wkv': 'northward_wind', 'name': 'north_wind', 'height': '10 m'}},
+                    {'src': [{'SourceFilename': fileName, 'SourceBand': 8}, {'SourceFilename': fileName, 'SourceBand': 9}], 'dst': {'wkv': 'wind_speed', 'PixelFunctionType': 'UVToMagnitude', 'name': 'windspeed', 'height': '2 m'}},
+                    {'src': [{'SourceFilename': fileName, 'SourceBand': 8}, {'SourceFilename': fileName, 'SourceBand': 9}], 'dst': {'wkv': 'wind_from_direction', 'PixelFunctionType': 'UVToDirectionFrom', 'name': 'winddirection', 'height': '2 m'}},
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 6}, 'dst': {'wkv': 'air_temperature', 'name': 'air_t', 'height': '2 m'}}
                     ];
 
         # create empty VRT dataset with geolocation only

@@ -59,7 +59,7 @@ class Mapper(VRT):
             self.varVRTs[varName] = VRT(array=var)
             metaDict.append(
             {'src': {'SourceFilename': self.varVRTs[varName].fileName, 'sourceBand':  1},
-             'dst': {'BandName': varName}})
+             'dst': {'name': varName}})
         
         # create mask
         cloudBits = [2, 3, 4, 5, 6]
@@ -78,7 +78,7 @@ class Mapper(VRT):
         self.varVRTs['mask'] = VRT(array=mask)
         metaDict.append(
         {'src': {'SourceFilename': self.varVRTs['mask'].fileName, 'sourceBand':  1},
-         'dst': {'BandName': 'mask'}})
+         'dst': {'name': 'mask'}})
 
 
         self.logger.debug('metaDict: %s' % metaDict)
@@ -94,13 +94,13 @@ class Mapper(VRT):
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
         # dictionary for all possible bands
         allBandsDict = {
-        'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'BandName': 'Kd_490', 'wavelength': '490'},
-        'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'BandName': 'algal_1', 'case': 'I'},
-        'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'BandName': 'yellow_subs', 'case': 'II'},
-        'sst': {'wkv': 'sea_surface_temperature', 'BandName': 'sst'},
-        'l2_flags': {'wkv': 'quality_flags', 'SourceType': 'SimpleSource', 'BandName': 'l2_flags'},
-        'latitude': {'wkv': 'latitude', 'BandName': 'latitude'},
-        'longitude': {'wkv': 'longitude', 'BandName': 'longitude'},
+        'Kd_490': {'wkv': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water', 'name': 'Kd_490', 'wavelength': '490'},
+        'chlor_a': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water', 'name': 'algal_1', 'case': 'I'},
+        'cdom_index': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'name': 'yellow_subs', 'case': 'II'},
+        'sst': {'wkv': 'sea_surface_temperature', 'name': 'sst'},
+        'l2_flags': {'wkv': 'quality_flags', 'SourceType': 'SimpleSource', 'name': 'l2_flags'},
+        'latitude': {'wkv': 'latitude', 'name': 'latitude'},
+        'longitude': {'wkv': 'longitude', 'name': 'longitude'},
         }
         
         # loop through available bands and generate metaDict (non fixed)
@@ -120,13 +120,13 @@ class Mapper(VRT):
                 intercept = tmpSubDataset.GetMetadataItem('intercept')
                 metaEntry = {'src': {'SourceFilename': subDataset[0], 'sourceBand':  1, 'ScaleRatio': slope, 'ScaleOffset': intercept},
                              'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                                     'BandName': rrsBandName[0],
+                                     'name': rrsBandName[0],
                                      'wavelength': rrsBandName[0][-3:],
                                       }
                              }
                 metaEntry2 = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1},
                               'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
-                                      'BandName': rrsBandName[0].replace('Rrs', 'Rrsw'),
+                                      'name': rrsBandName[0].replace('Rrs', 'Rrsw'),
                                       'wavelength': rrsBandName[0][-3:],
                                       'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
                                       }
