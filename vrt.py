@@ -464,7 +464,7 @@ class VRT():
         self.logger.debug('dst[BandName]:%s' % dst['BandName'])
 
         # Add Band
-        self.dataset.AddBand(dst['dataType'], options=options)
+        self.dataset.AddBand(int(dst['dataType']), options=options)
         dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
         # Append sources to destination dataset

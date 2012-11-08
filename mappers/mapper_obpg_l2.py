@@ -9,7 +9,6 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from vrt import Geolocation, VRT, gdal, osr
-import re
 from datetime import datetime, timedelta
 
 class Mapper(VRT):

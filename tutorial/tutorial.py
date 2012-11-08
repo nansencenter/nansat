@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 
 
-from nansat import Nansat
-from domain import Domain
+from nansat import Nansat, Domain
 
 iPath = './'
 oPath = 'tmpdata/'
@@ -14,7 +13,7 @@ fileName = 'gcps.tif'
 oFileName = oPath + fileName
 
 # create Nansat object
-n = Nansat(iPath + fileName)
+n = Nansat(iPath + fileName, logLevel=10)
 
 # list bands and georeference of the object
 print 'Raw Nansat:', n
