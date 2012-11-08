@@ -145,9 +145,7 @@ print 'Stereo Nansat:', nStereo
 # 3. Check that the band is in the object
 n.reproject()
 array = n[1] * 10
-n.raw.export(oPath + 'raw0.vrt')
 n.add_band(array=array, parameters={'name': 'new_band', 'about': 'test'})
-n.raw.export(oPath + 'raw1.vrt')
 print 'Nansat with new band:', n
 
 print 'Tutorial completed successfully. Output files are found in folder ' + oPath
