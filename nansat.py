@@ -1025,10 +1025,6 @@ class Nansat(Domain):
         else:
             metadata = None
 
-        # If a specific mapper is requested, we test only this one
-        if mapperName is not '':
-            self.mapperList = ['mapper_' + mapperName]
-
         # try to import and get VRT datasaet from all mappers. Break on success.
         # If none of the mappers worked - try generic gdal.Open
         tmpVRT = None
@@ -1037,26 +1033,31 @@ class Nansat(Domain):
         mapper_module = __import__('mapper_ocean_productivity')
         tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
         """
-        # Otherwise
-        for iMapper in self.mapperList:
+        if mapperName is not '':
+            # If a specific mapper is requested, we test only this one
+            self.mapperList = ['mapper_' + mapperName]
             try:
-                #get rid of .py extension
-                iMapper = iMapper.replace('.py', '')
-                self.logger.debug('Trying %s...' % iMapper)
-                #import mapper
-                mapper_module = __import__(iMapper)
-                #create a Mapper object and get VRT dataset from it
-                tmpVRT = mapper_module.Mapper(self.fileName,
-                                              gdalDataset, metadata)
-                self.logger.info('Mapper %s - success!' % iMapper)
-                break
+                mapper_module = __import__(self.mapperList[0])
             except:
-                pass
-
-        # if the requested mapper does not fit, raise an error
-        if tmpVRT is None and mapperName is not '':
-            raise GDALError('The mapper ' + mapperName + ' does not fit for ' +
-                            self.fileName)
+                raise Error('Mapper ' + mapperName + ' does not exist in PYTHONPATH')
+            tmpVRT = mapper_module.Mapper(self.fileName,
+                                            gdalDataset, metadata)
+        else:
+            # We test all mappers, one by one 
+            for iMapper in self.mapperList:
+                try:
+                    #get rid of .py extension
+                    iMapper = iMapper.replace('.py', '')
+                    self.logger.debug('Trying %s...' % iMapper)
+                    #import mapper
+                    mapper_module = __import__(iMapper)
+                    #create a Mapper object and get VRT dataset from it
+                    tmpVRT = mapper_module.Mapper(self.fileName,
+                                                  gdalDataset, metadata)
+                    self.logger.info('Mapper %s - success!' % iMapper)
+                    break
+                except:
+                    pass
 
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
