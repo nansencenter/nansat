@@ -30,27 +30,14 @@ class Mapper(VRT):
     'Sea Surface Salinity': 'sea_surface_salinity',
     'Sea Surface Temperature': 'sea_surface_temperature',
     'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
-    'Particle backscatter at 443 nm':'particle_backscatter_at_443_nm',
+    'Particle backscatter at 443 nm': 'volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles',
     }
     
-    bandNames = {
-    'mass_concentration_of_chlorophyll_a_in_sea_water': 'algal_1',
-    'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water': 'kd',
-    'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air': 'rrs',
-    'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter': 'yellow_substance',
-    'sea_surface_salinity': 'SSS',
-    'sea_surface_temperature': 'SST',
-    'instantaneous_photosynthetically_available_radiation': 'par',
-    'particle_backscatter_at_443_nm': 'bbp_443',
-    }
-
     def __init__(self, fileName, gdalDataset, gdalMetadata):
-        ''' SMI VRT '''
-
-        print "=>%s<=" % gdalMetadata['Title']
+        ''' OBPG L3 VRT '''
 
         if 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
-            raise AttributeError("SMI BAD MAPPER")
+            raise AttributeError("OBPG L3 Standard Mapped Image BAD MAPPER")
         
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)
@@ -58,7 +45,7 @@ class Mapper(VRT):
         simFilesMask = os.path.join(iDir, iFileName)
         simFiles = glob.glob(simFilesMask + iFileExt[0:6] + '*')
         #print 'simFilesMask, simFiles', simFilesMask, simFiles
-
+        
         metaDict = []
         for simFile in simFiles:
             #print 'simFile', simFile
@@ -112,14 +99,12 @@ class Mapper(VRT):
                         'SourceBand':  1,
                         'ScaleRatio': float(simGdalMetadata['Slope']),
                         'ScaleOffset': float(simGdalMetadata['Intercept'])},
-                'dst': {'wkv': simWKV,
-                        'BandName': self.bandNames[simWKV],
-                        'Parameter': simParameter}}
+                'dst': {'wkv': simWKV}}
 
             # add wavelength and BandName
             if ' at ' in simParameter and ' nm' in simParameter:
                 simWavelength = simParameter.split(' at ')[1].split(' nm')[0]
-                metaEntry['dst']['BandName'] = '%s_%s' % (self.bandNames[simWKV], simWavelength)
+                metaEntry['dst']['suffix'] = simWavelength
                 metaEntry['dst']['wavelength'] = simWavelength
 
             # add band with rrsw
@@ -128,7 +113,7 @@ class Mapper(VRT):
                 metaEntry2 = {'src': metaEntry['src']}
                 metaEntry2['dst'] ={
                     'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
-                    'BandName': 'rrsw_%s' % simWavelength,
+                    'suffix': simWavelength,
                     'wavelength': simWavelength,
                     'expression': 'self["rrs_%s"] / (0.52 + 1.7 * self["rrs_%s"])' % (simWavelength, simWavelength),
                     }

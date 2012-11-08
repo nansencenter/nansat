@@ -321,6 +321,7 @@ class VRT():
                 BandName
                 dataType
                 wkv
+                suffix
                 AnyOtherMetadata
                 PixelFunctionType: band will be a pixel function defined by the
                 corresponding name/value. In this case src may be list of
@@ -333,13 +334,15 @@ class VRT():
         Examples:
         --------
             vrt._create_band({'SourceFilename': filename, 'SourceBand': 1})
-            vrt._create_band({'SourceFilename': filename,
-                              'SourceBand': 2,
+            vrt._create_band({'SourceFilename': filename, 'SourceBand': 2,
                               'ScaleRatio': 0.0001},
                              {'BandName': 'LAT', 'wkv': 'latitude'})
+            vrt._create_band({'SourceFilename': filename, 'SourceBand': 2},
+                             {'suffix': '670', 'wkv': 'brightness_temperature'})                 
             vrt._create_band([{'SourceFilename': filename, 'SourceBand': 1},
                               {'SourceFilename': filename, 'SourceBand': 1}],
                              {'PixelFunctionType': 'NameOfPixelFunction'})
+            
         '''
         self.logger.debug('INPUTS: %s, %s " ' % (str(src), str(dst)))
         # Make sure src is list, ready for loop
@@ -424,6 +427,20 @@ class VRT():
                 dst['dataType'] = src['DataType']
         
         # Set destination BandName
+        # get short_name from WKV.XML
+        dstWKV = dst.get('wkv', '')
+        wkvDict = self._get_wkv(dstWKV)
+        self.logger.debug('wkvDict:%s' % str(wkvDict))
+        wkvShortName = wkvDict.get('short_name', '')
+        self.logger.debug('WKV short_name:%s' % wkvShortName)
+
+        # merge wkv[short_name] and dst[suffix] if both given
+        if ("BandName" not in dst and len(wkvShortName) > 0):
+            dstSuffix = dst.get('suffix', '')
+            if len(dstSuffix) > 0:
+                dstSuffix = '_' + dstSuffix
+            dst['BandName'] = wkvShortName + dstSuffix
+        
         # create list of available bands (to prevent duplicate names)
         bandNames = []
         for iBand in range(self.dataset.RasterCount):
@@ -444,6 +461,8 @@ class VRT():
                     dst['BandName'] = bandName
                     break
 
+        self.logger.debug('dst[BandName]:%s' % dst['BandName'])
+
         # Add Band
         self.dataset.AddBand(dst['dataType'], options=options)
         dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
@@ -462,12 +481,10 @@ class VRT():
             dstRasterBand.SetMetadata(metadataSRC, 'vrt_sources')
             
         # set metadata from WKV
-        dstWKV = dst.get('wkv', '')
-        dstRasterBand = self._put_metadata(dstRasterBand, self._get_wkv(dstWKV))
+        dstRasterBand = self._put_metadata(dstRasterBand, wkvDict)
 
         # set metadata from provided parameters
         # remove and add params
-        dst.pop('dataType')
         dst['SourceFilename'] = srcs[0]['SourceFilename']
         dst['SourceBand'] = str(srcs[0]['SourceBand'])
         dstRasterBand = self._put_metadata(dstRasterBand, dst)
@@ -553,7 +570,7 @@ class VRT():
         '''
         self.logger.debug('Put: %s ' % str(metadataDict))
         for key in metadataDict:
-            rasterBand.SetMetadataItem(key, metadataDict[key])
+            rasterBand.SetMetadataItem(key, str(metadataDict[key]))
 
         return rasterBand
 

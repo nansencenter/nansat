@@ -45,15 +45,15 @@ class Mapper(VRT, Envisat):
         {'src': {'SourceFilename': fileName, 'SourceBand': 13}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '864'}},
         {'src': {'SourceFilename': fileName, 'SourceBand': 14}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '849'}},
         {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '900'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 16, 'DataType': 1}, 'dst': {'wkv': 'quality_flags', 'BandName': 'l1_flags'}}
+        {'src': {'SourceFilename': fileName, 'SourceBand': 16, 'DataType': 1}, 'dst': {'wkv': 'quality_flags', 'suffix': 'l1'}}
         ]
 
-        # add DataType into 'src' and BandName into 'dst'
+        # add DataType into 'src' and suffix into 'dst'
         for bandDict in metaDict:
             if 'DataType' not in bandDict['src']:
                 bandDict['src']['DataType'] = 2  # default for meris L1 DataType UInt16
             if bandDict['dst'].has_key('wavelength'):
-                bandDict['dst']['BandName'] = 'radiance_' + bandDict['dst']['wavelength']
+                bandDict['dst']['suffix'] = bandDict['dst']['wavelength']
 
         # get GADS from header
         scales = self.read_scaling_gads(fileName, range(7, 22));

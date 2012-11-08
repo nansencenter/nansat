@@ -31,9 +31,10 @@ class Mapper(VRT):
             if tarName[0] == 'L' and (tarName[-4:] == '.TIF' or
                                       tarName[-4:] == '.tif'):
                 print tarName
+                bandNo = tarName[-6:-4]
                 metaDict.append({
                     'src': {'SourceFilename': '/vsitar/%s/%s' % (fileName, tarName), 'SourceBand':  1},
-                    'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'BandName': tarName}})
+                    'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'suffix': bandNo}})
         print metaDict
         tmpName = metaDict[0]['src']['SourceFilename']
         print tmpName

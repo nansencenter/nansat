@@ -34,64 +34,64 @@ class Mapper(VRT):
         #provide all mappings
         metaDict250SF = ['EV_250_RefSB']
         metaDict250 = [
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '645'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '858'}}
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '645'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '858'}}
         ];
         
         metaDict500SF = ['EV_250_Aggr500_RefSB', 'EV_500_RefSB']
         metaDict500 = [
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr500_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '645'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr500_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '858'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '469'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '555'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '1240'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '1640'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '2130'}}
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr500_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '645'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr500_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '858'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '469'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '555'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1240'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1640'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '2130'}}
         ];
 
         metaDict1000SF = ['EV_250_Aggr1km_RefSB', 'EV_500_Aggr1km_RefSB', 'EV_1KM_RefSB', 'EV_1KM_Emissive']
         metaDict1000 = [
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr1km_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '645'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr1km_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '858'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr1km_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '645'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr1km_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '858'}},
 
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '469'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '555'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '1240'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '1640'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '2130'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '469'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '555'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1240'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1640'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_Aggr1km_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '2130'}},
 
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '412'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '443'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '488'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '531'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '551'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 6}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '667'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 7}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '667'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 8}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '678'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 9}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '678'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 10}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '748'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 11}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '869'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 12}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '905'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 13}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '936'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 14}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '940'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 15}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '1375'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '412'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '443'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '488'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '531'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '551'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 6}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '667'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 7}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '667'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 8}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '678'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 9}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '678'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 10}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '748'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 11}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '869'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 12}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '905'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 13}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '936'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 14}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '940'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_RefSB'), 'SourceBand': 15}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1375'}},
 
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '3750'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '3959'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 3}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '3959'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 4}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '4050'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 5}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '4465'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 6}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '4515'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 7}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '6715'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 8}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '7325'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 9}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '8550'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 10}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '9730'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 11}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '11030'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 12}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '12020'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 13}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '13335'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 14}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '13635'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 15}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '13935'}},
-        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 16}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '14235'}}
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '3750'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '3959'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 3}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '3959'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 4}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '4050'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 5}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '4465'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 6}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '4515'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 7}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '6715'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 8}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '7325'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 9}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '8550'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 10}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '9730'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 11}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '11030'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 12}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '12020'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 13}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '13335'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 14}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '13635'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 15}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '13935'}},
+        {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 16}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '14235'}}
         ];
 
         # get proper mapping depending on resolution
@@ -121,7 +121,7 @@ class Mapper(VRT):
         for bandDict in metaDict:
             SourceFilename = bandDict['src']['SourceFilename']
             SourceBand = bandDict['src']['SourceBand']
-            bandDict['dst']['BandName'] = 'radiance_' + bandDict['dst']['wavelength']
+            bandDict['dst']['suffix'] = bandDict['dst']['wavelength']
             scale = rScales[SourceFilename][SourceBand-1]
             offset = rOffsets[SourceFilename][SourceBand-1]
             self.logger.debug('band, scale, offset: %s_%d %s %s' % (SourceFilename, SourceBand, scale, offset))

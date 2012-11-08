@@ -107,15 +107,16 @@ class Nansat(Domain):
         # empty dict of VRTs with added bands
         self.addedBands = {}
 
-        # add all available mappers
+        # add all available mappers if mapperName is not given
         self.mapperList = []
-        for folder in sys.path:
-            for mapper in glob.glob(folder + '/mapper_*.py'):
-                self.mapperList.append(os.path.basename(mapper))
+        if mapperName is '':
+            for folder in sys.path:
+                for mapper in glob.glob(folder + '/mapper_*.py'):
+                    self.mapperList.append(os.path.basename(mapper))
 
-        # pop and append generic mapper to the end
-        self.mapperList.pop(self.mapperList.index('mapper_generic.py'))
-        self.mapperList.append('mapper_generic.py')
+            # pop and append generic mapper to the end
+            self.mapperList.pop(self.mapperList.index('mapper_generic.py'))
+            self.mapperList.append('mapper_generic.py')
         
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
@@ -1025,31 +1026,22 @@ class Nansat(Domain):
         else:
             metadata = None
 
-        # try to import and get VRT datasaet from all mappers. Break on success.
-        # If none of the mappers worked - try generic gdal.Open
+        # Import Mapper
         tmpVRT = None
-        # For debugging:
-        """
-        mapper_module = __import__('mapper_ocean_productivity')
-        tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
-        """
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one
-            self.mapperList = ['mapper_' + mapperName]
             try:
-                mapper_module = __import__(self.mapperList[0])
-            except:
-                raise Error('Mapper ' + mapperName + ' does not exist in PYTHONPATH')
-            tmpVRT = mapper_module.Mapper(self.fileName,
-                                            gdalDataset, metadata)
+                mapper_module = __import__('mapper_' + mapperName)
+            except ImportError:
+                raise Error('Mapper ' + mapperName + ' not in PYTHONPATH')
+            tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
         else:
-            # We test all mappers, one by one 
+            # We test all mappers, import one by one 
             for iMapper in self.mapperList:
+                #get rid of .py extension
+                iMapper = iMapper.replace('.py', '')
+                self.logger.debug('Trying %s...' % iMapper)
                 try:
-                    #get rid of .py extension
-                    iMapper = iMapper.replace('.py', '')
-                    self.logger.debug('Trying %s...' % iMapper)
-                    #import mapper
                     mapper_module = __import__(iMapper)
                     #create a Mapper object and get VRT dataset from it
                     tmpVRT = mapper_module.Mapper(self.fileName,
@@ -1068,9 +1060,9 @@ class Nansat(Domain):
                                      'SourceBand': iBand+1})
                 tmpVRT.dataset.FlushCache()
 
-        # if GDAL cannot open the file, and no mappers exist which can make raw VRT, 
+        # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
-            raise GDALError('GDAL can not open the file ' + self.fileName)
+            raise GDALError('NANSAT can not open the file ' + self.fileName)
 
         return tmpVRT
 

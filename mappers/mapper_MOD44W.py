@@ -21,7 +21,7 @@ class Mapper(VRT):
         if not fileBaseName == 'MOD44W.vrt':
             raise AttributeError("MOD44W BAD MAPPER");
         
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'land_binary_mask', 'BandName': 'land_mask'}}];
+        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'land_binary_mask'}}];
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);

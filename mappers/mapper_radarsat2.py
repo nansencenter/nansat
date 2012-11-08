@@ -55,7 +55,7 @@ class Mapper(VRT):
                          'SourceBand': i,
                          'DataType': 6},
                  'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 
-                         'BandName': 'sigma0_' + polString,
+                         'suffix': polString,
                          'polarization': polString}})
 
         ##############################################################
@@ -94,7 +94,7 @@ class Mapper(VRT):
             dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                    'PixelFunctionType': 'Sigma0HHIncidenceToSigma0VV',
                    'polarisation': 'VV',
-                   'BandName': 'sigma0_VV'}
+                   'suffix': 'VV'}
             self._create_band(src, dst)
             self.dataset.FlushCache()
 

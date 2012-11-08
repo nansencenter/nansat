@@ -77,7 +77,7 @@ class Mapper(VRT):
             else:
                 subBandName = subDatasetName.split('_')[0]
 
-            self.logger.debug('subBandName: %s' % subBandName)
+            self.logger.debug('subBandName, wavelength: %s %s' % (subBandName, str(wavelength)))
             
             if subBandName in allBandsDict:
                 # get name, slope, intercept
@@ -92,22 +92,24 @@ class Mapper(VRT):
                                      'sourceBand':  1,
                                      'ScaleRatio': slope,
                                      'ScaleOffset': intercept},
-                             'dst': allBandsDict[subBandName]['dst']}
+                              'dst': {}}
                 # add more to src
                 for srcKey in allBandsDict[subBandName]['src']:
                     metaEntry['src'][srcKey] = allBandsDict[subBandName]['src'][srcKey]
+                # add dst from allBandsDict
+                for dstKey in allBandsDict[subBandName]['dst']:
+                    metaEntry['dst'][dstKey] = allBandsDict[subBandName]['dst'][dstKey]
+                
                 # add wavelength, band name to dst
-                if wavelength is None:
-                    metaEntry['dst']['BandName'] = subBandName
-                else:
-                    metaEntry['dst']['BandName'] = '%s_%d' % (subBandName, wavelength)
+                if wavelength is not None:
+                    metaEntry['dst']['suffix'] = str(wavelength)[:]
                     metaEntry['dst']['wavelength'] = str(wavelength)
 
                 self.logger.debug('metaEntry: %s' % str(metaEntry))
 
                 # append band metadata to metaDict
                 metaDict.append(metaEntry)
-                    
+
         """
                 metaEntry2 = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1},
                               'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
