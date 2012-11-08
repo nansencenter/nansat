@@ -1023,9 +1023,7 @@ class Nansat(Domain):
             # get metadata from the GDAL dataset
             metadata = gdalDataset.GetMetadata()
         else:
-            raise GDALError('GDAL can not open the file ' + self.fileName)
-            # In future we may want to make mappers for Raw GDAL datasets
-            # instead of raising an error here
+            metadata = None
 
         # If a specific mapper is requested, we test only this one
         if mapperName is not '':
@@ -1068,6 +1066,10 @@ class Nansat(Domain):
                 tmpVRT._create_band({'SourceFilename': self.fileName,
                                      'SourceBand': iBand+1})
                 tmpVRT.dataset.FlushCache()
+
+        # if GDAL cannot open the file, and no mappers exist which can make raw VRT, 
+        if tmpVRT is None and gdalDataset is None:
+            raise GDALError('GDAL can not open the file ' + self.fileName)
 
         return tmpVRT
 
