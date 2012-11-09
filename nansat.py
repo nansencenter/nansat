@@ -108,6 +108,7 @@ class Nansat(Domain):
         self.addedBands = {}
 
         # add all available mappers if mapperName is not given
+        self.mapper = 'None'
         self.mapperList = []
         if mapperName is '':
             for folder in sys.path:
@@ -183,7 +184,10 @@ class Nansat(Domain):
         '''Creates string basic info about the Nansat object
 
         '''
-        outString = self.fileName + '\n'
+        outString = '-' * 40 + '\n'
+        outString += self.fileName + '\n'
+        outString += '-' * 40 + '\n'
+        outString += 'Mapper: ' + self.mapper + '\n'
         outString += '-' * 40 + '\n'
         outString += self.list_bands(False)
         outString += '-' * 40 + '\n'
@@ -1047,6 +1051,7 @@ class Nansat(Domain):
                     tmpVRT = mapper_module.Mapper(self.fileName,
                                                   gdalDataset, metadata)
                     self.logger.info('Mapper %s - success!' % iMapper)
+                    self.mapper = iMapper
                     break
                 except:
                     pass
