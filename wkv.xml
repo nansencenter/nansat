@@ -293,4 +293,12 @@
         <minmax>0 0.1</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>sea_surface_skin_temperature</standard_name>
+        <long_name>Sea Surface Temperature</long_name>
+        <short_name>SST</short_name>
+        <units>kelvin</units>
+        <minmax>280 300</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>
