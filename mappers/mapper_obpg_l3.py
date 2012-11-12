@@ -31,6 +31,8 @@ class Mapper(VRT):
     'Sea Surface Temperature': 'sea_surface_temperature',
     'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
     'Particle backscatter at 443 nm': 'volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles',
+    'Chlorophyll a concentration, Garver-Siegel-Maritorena Model': 'mass_concentration_of_chlorophyll_a_in_sea_water', 
+    'Photosynthetically Available Radiation': 'photosynthetically_available_radiation',
     }
     
     def __init__(self, fileName, gdalDataset, gdalMetadata):
@@ -101,7 +103,7 @@ class Mapper(VRT):
                         'ScaleOffset': float(simGdalMetadata['Intercept'])},
                 'dst': {'wkv': simWKV}}
 
-            # add wavelength and name
+            # add wavelength and BandName
             if ' at ' in simParameter and ' nm' in simParameter:
                 simWavelength = simParameter.split(' at ')[1].split(' nm')[0]
                 metaEntry['dst']['suffix'] = simWavelength
@@ -133,7 +135,7 @@ class Mapper(VRT):
 
         metaDict.append(
             {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
-             'dst': {'name': 'mask'}})
+             'dst': {'BandName': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         # print 'simGdalMetadata', simGdalMetadata

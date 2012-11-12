@@ -301,4 +301,12 @@
         <minmax>280 300</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>photosynthetically_available_radiation</standard_name>
+        <long_name>Photosynthetically Available Radiation</long_name>
+        <short_name>PAR</short_name>
+        <units>enstain m-2 day-1</units>
+        <minmax>0 80</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>
