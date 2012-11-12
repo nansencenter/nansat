@@ -851,18 +851,6 @@ class Nansat(Domain):
             (rmin, rmax) = band.ComputeRasterMinMax(1)
             minmax = str(rmin) + ' ' + str(rmax)
 
-        # Apply offset and scaling if available
-        #  (not necessary when a LUT is available,
-        #   and when no offset/scaling should be specified)
-        try:
-            offset = float(band.GetMetadataItem('offset'))
-            scale = float(band.GetMetadataItem('scale'))
-            minval = float(minmax.split(" ")[0])
-            maxval = float(minmax.split(" ")[1])
-            minmax = str((minval-offset)/scale) + ' ' + str((maxval-offset)/scale)
-        except:
-            pass
-
         # Create a temporary VRT file (no colormap yet) and convert this to 8-bit geotiff image
         # Should ideally do this directly with GDAL Python API (CreateCopy),
         # but gdal_translate provides conenient scaling and conversion to Byte
