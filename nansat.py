@@ -161,19 +161,14 @@ class Nansat(Domain):
         Returns
         -------
             self.get_GDALRasterBand(bandID).ReadAsArray(): NumPy array
-
         '''
+
         # get band
         band = self.get_GDALRasterBand(bandID)
-        # get scale and offset
-        scale = float(band.GetMetadata().get('scale', '1'))
-        offset = float(band.GetMetadata().get('offset', '0'))
+        # get expression from metadata
         expression = band.GetMetadata().get('expression', '')
         # get data
         bandData = band.ReadAsArray()
-        # perform scaling if necessary
-        if scale != 1 or offset != 0:
-            bandData = bandData * scale + offset
         # execute expression if any
         if expression != '':
             bandData = eval(expression)
@@ -181,9 +176,8 @@ class Nansat(Domain):
         return bandData
 
     def __repr__(self):
-        '''Creates string basic info about the Nansat object
-
-        '''
+        '''Creates string with basic info about the Nansat object'''
+        
         outString = '-' * 40 + '\n'
         outString += self.fileName + '\n'
         outString += '-' * 40 + '\n'
@@ -1039,6 +1033,7 @@ class Nansat(Domain):
             except ImportError:
                 raise Error('Mapper ' + mapperName + ' not in PYTHONPATH')
             tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
+            self.mapper = mapperName
         else:
             # We test all mappers, import one by one 
             for iMapper in self.mapperList:

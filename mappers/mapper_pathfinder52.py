@@ -13,11 +13,11 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from vrt import VRT, gdal, parse
+import vrt
 
 from nansat_tools import latlongSRS
 
-class Mapper(VRT):
+class Mapper(vrt.VRT):
     ''' Mapper PATHFINDER (local files)
     
     TODO:
@@ -36,7 +36,8 @@ class Mapper(VRT):
         sstName = ''
         
         for subDataset in subDatasets:
-            subDatasetName = subDataset[1].split(' ')[1]
+            subDatasetName = subDataset[0].split(':')[2]
+
             if '//' in subDatasetName:
                 h5Style = True
             else:
@@ -48,7 +49,7 @@ class Mapper(VRT):
             if subDatasetName == 'sea_surface_temperature':
                 sstName = subDataset[0]
                 
-            subGDALDataset = gdal.Open(subDataset[0])
+            subGDALDataset = vrt.gdal.Open(subDataset[0])
             subGDALMetadata = subGDALDataset.GetRasterBand(1).GetMetadata()
             if h5Style:
                 metaPrefix = subDatasetName + '_'
@@ -68,16 +69,16 @@ class Mapper(VRT):
             metaDict.append(metaEntry)
             
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, subGDALDataset)
+        vrt.VRT.__init__(self, subGDALDataset)
         
         # add mask
         if sstName != '':
-            sstDataset = gdal.Open(sstName)
+            sstDataset = vrt.gdal.Open(sstName)
             sstArray = sstDataset.ReadAsArray()
             mask = np.zeros(sstArray.shape, 'uint8')
             mask[:] = 128 # all valid
-            mask[sstArray < 0] = 1 # cloud pixels
-            self.maskVRT = VRT(array=mask)
+            mask[sstArray == -32768] = 1 # cloud pixels
+            self.maskVRT = vrt.VRT(array=mask)
             metaDict.append(
                 {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
                  'dst': {'name': 'mask'}})
@@ -94,4 +95,4 @@ class Mapper(VRT):
             startTimeKey = 'start_time'
         else:
             startTimeKey = 'NC_GLOBAL#start_time'
-        self._set_time(parse(subGDALDataset.GetMetadataItem(startTimeKey)))
+        self._set_time(vrt.parse(subGDALDataset.GetMetadataItem(startTimeKey)))

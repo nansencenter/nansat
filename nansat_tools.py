@@ -18,7 +18,7 @@
 from math import atan2, sin, cos, radians, degrees
 from scipy import mod
 
-from xml.dom.minidom import getDOMImplementation, parseString, parse
+import xml.dom.minidom as xdm
 from os import path
 import logging
 import copy
@@ -161,8 +161,8 @@ class Node(object):
         return nameList, valList
 
     def insert(self, contents):
-        dom2 = parseString(contents)
-        dom1 = parseString(self.dom().toxml())
+        dom2 = xdm.parseString(contents)
+        dom1 = xdm.parseString(self.dom().toxml())
         dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0], True))
         contents = str(dom1.toxml())
         if contents.find("<?") != -1 and contents.find("?>"):
@@ -217,7 +217,7 @@ class Node(object):
     # in order to retarget to a different underlying implementation.
 
     # A static dom implementation object, used to create elements:
-    doc = getDOMImplementation().createDocument(None, None, None)
+    doc = xdm.getDOMImplementation().createDocument(None, None, None)
 
     def dom(self):
         '''
@@ -251,14 +251,14 @@ class Node(object):
         if isinstance(dom, str):
             if path.exists(dom):
                 # parse input file
-                dom = parse(dom)
+                dom = xdm.parse(dom)
             else:
                 # Strip all extraneous whitespace so that
                 # text input is handled consistently:
                 dom = re.sub("\s+", " ", dom)
                 dom = dom.replace("> ", ">")
                 dom = dom.replace(" <", "<")
-                return Node.create(parseString(dom))
+                return Node.create(xdm.parseString(dom))
         if dom.nodeType == dom.DOCUMENT_NODE:
             return Node.create(dom.childNodes[0])
         if dom.nodeName == "#text":
