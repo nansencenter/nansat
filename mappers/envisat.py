@@ -247,7 +247,7 @@ class Envisat():
 
         '''
         if stepSize != 0:
-            geolocParameter = [0, 0, stepSize, stepSize]
+            geolocParameter = [0, 0, stepSize[0], stepSize[1]]
 
         # if MERIS
         elif fileType == "MER_":
@@ -411,7 +411,7 @@ class Envisat():
 
         return geoVrt
 
-    def add_geoarray_dataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[], stepSize = 2):
+    def add_geoarray_dataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[]):
         ''' Add geolocation domain metadata to the dataset
 
         Create VRT which has lat and lon VRTRawRasterBands.
@@ -435,11 +435,6 @@ class Envisat():
             srs :  string. SRS
             parameters : list, optional
                        elements keys in ADSR_list
-            stepSize : int > 0
-                        step size for geolocation array. default is 2.
-                        If stepSize=0, geolocation array is not enlarged.
-                        If stepSize > 0, geolocation array is enlarged to (XSize/stepSize, YSize/stepSize).
-                        If stepSize=1, geolocation size is same as the band. it takes time to calculate the reprojection.
 
         Modifies:
         ---------
@@ -457,9 +452,8 @@ class Envisat():
             lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
             latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
 
-        if stepSize != 0:
-            lonVRT = lonVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
-            latVRT = latVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
+        # calculate stepSize
+        stepSize = [int(XSize/lonVRT.dataset.RasterXSize), int(YSize/lonVRT.dataset.RasterYSize)]
 
         # Get geolocParameter which is required for adding geolocation array metadata
         geolocParameter = self.get_geoarray_parameters(fileName, fileType, stepSize, parameters)

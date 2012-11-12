@@ -41,9 +41,10 @@ class Mapper(VRT, Envisat):
         # get calibration constant
         calibrationConst = float(gdalDataset.GetMetadataItem("MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
 
-        # compute calibrated sigma0
+        # compute calibrated sigma0 (netcdf does not accept "/")
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
-                     'dst': {'name': 'RawCounts_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR']}}]
+                     'dst': {'name': 'RawCounts_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")}}]
+
         # add dictionary for IncidenceAngle
         for iBand in range(self.incAngleDataset.dataset.RasterCount):
             bandMetadata = self.incAngleDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
@@ -55,8 +56,8 @@ class Mapper(VRT, Envisat):
                                  {'SourceFilename': self.incAngleDataset.fileName, 'SourceBand': 1}],
                          'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                                  'PixelFunctionType': 'RawcountsIncidenceToSigma0',
-                                 'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
-                                 'name': 'sigma0_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'],
+                                 'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", ""),
+                                 'name': 'sigma0_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", ""),
                                  'pass': gdalMetadata['SPH_PASS'],
                                  'dataType': gdal.GDT_Float32}})
 
