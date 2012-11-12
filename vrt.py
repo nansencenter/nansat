@@ -186,6 +186,12 @@ class VRT():
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
         self.vrtDriver = gdal.GetDriverByName("VRT")
+
+        # open and parse wkv.xml
+        fileNameWKV = os.path.join(os.path.dirname(
+                                    os.path.realpath(__file__)), "wkv.xml")
+        self.wkvNode0 = Node.create(fileNameWKV)
+        
         # default empty geolocation of source
         srcGeolocation = Geolocation()
         if vrtDataset is not None:
@@ -537,12 +543,8 @@ class VRT():
             WKV corresponds to the given wkv_name
 
         '''
-        # fetch band information corresponding to the fileType
-        fileName_wkv = os.path.join(os.path.dirname(
-                                    os.path.realpath(__file__)), "wkv.xml")
-        node0 = Node.create(fileName_wkv)
         wkvDict = {}
-        for iNode in node0.nodeList("wkv"):
+        for iNode in self.wkvNode0.nodeList("wkv"):
             tagsList = iNode.tagList()
             if iNode.node("standard_name").value == wkvName:
                 wkvDict = {"standard_name": wkvName}

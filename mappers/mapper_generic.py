@@ -45,25 +45,32 @@ class Mapper(VRT):
             # take bands whose sizes are same as the first band.
             if (subDataset.RasterXSize == firstXSize and
                         subDataset.RasterYSize == firstYSize):
-                if 'GEOLOCATION_X_DATASET' in fileName:
+                if 'GEOLOCATION_X_DATASET' in fileName or 'longitude' in fileName:
                     xDatasetSource = fileName
-                elif 'GEOLOCATION_Y_DATASET' in fileName:
+                elif 'GEOLOCATION_Y_DATASET' in fileName or 'latitude' in fileName:
                     yDatasetSource = fileName
                 else:
                     for iBand in range(subDataset.RasterCount):
-                        bandMetadata = subDataset.GetRasterBand(iBand+1).GetMetadata_Dict()
+                        subBand = subDataset.GetRasterBand(iBand+1)
+                        bandMetadata = subBand.GetMetadata_Dict()
                         sourceBands = iBand + 1
 
                         # generate src metadata
                         src = {'SourceFilename': fileName, 'SourceBand': sourceBands}
                         # set scale ratio and scale offset
-                        scaleRatio = bandMetadata.get('ScaleRatio', bandMetadata.get('scale', bandMetadata.get('scale_factor', '')))
+                        scaleRatio = bandMetadata.get('ScaleRatio',
+                                     bandMetadata.get('scale',
+                                     bandMetadata.get('scale_factor', '')))
                         if len(scaleRatio) > 0:
                             src['ScaleRatio'] = scaleRatio
-                        scaleOffset = bandMetadata.get('ScaleOffset', bandMetadata.get('offset', bandMetadata.get('add_offset', '')))
+                        scaleOffset = bandMetadata.get('ScaleOffset',
+                                      bandMetadata.get('offset',
+                                      bandMetadata.get('add_offset', '')))
                         if len(scaleOffset) > 0:
                             src['ScaleOffset'] = scaleOffset
-
+                        # sate DataType
+                        src['DataType'] = subBand.DataType
+                        
                         # generate dst metadata
                         # get all metadata from input band
                         dst = bandMetadata
