@@ -15,7 +15,6 @@ class Mapper(VRT, Envisat):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
-
         product = gdalMetadata.get("MPH_PRODUCT", "Not_MERIS")
 
         if product[0:9] != "MER_FRS_2" and product[0:9] != "MER_RR__2":
@@ -68,11 +67,13 @@ class Mapper(VRT, Envisat):
             {'src': {'SourceFilename': fileName, 'SourceBand': 1}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'suffix': '2', 'case': 'II', 'expression': 'np.power(10., self["cdom_a_2_log"])'}},
             {'src': {'SourceFilename': fileName, 'SourceBand': 1}, 'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water', 'suffix': '2', 'case': 'II', 'expression': 'np.power(10., self["tsm_2_log"])'}},
         ]
+
         #add geolocation dictionary into metaDict
         #for iBand in range(self.geoDataset.dataset.RasterCount):
         #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst': {'wkv': '', 'parameters':bandMetadata})
+        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst': bandMetadata})
 
+        #print metaDict
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset);
 

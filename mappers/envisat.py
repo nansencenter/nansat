@@ -2,6 +2,7 @@ from dateutil.parser import parse
 from struct import unpack
 from vrt import VRT, Geolocation
 import gdal
+import numpy as np
 
 class Envisat():
     '''Methods shared between Envisat mappers'''
@@ -45,7 +46,6 @@ class Envisat():
         f = file(fileName, 'rt')
         headerLines = f.readlines(150)
         valueDict = {}
-
         # create a dictionary which has offsets
         if gadsDSName in headerLines:
             # get location of gadsDSName
@@ -53,14 +53,15 @@ class Envisat():
             # Adjust the location of the varaibles by adding textOffset.
             # Read a text at the location and convert the text into integer.
             for iKey in textOffset:
-                valueDict[iKey]  = int(headerLines[gridOffset + textOffset[iKey]].replace(iKey+"=", '').replace('<bytes>', ''))
+                valueDict[iKey]  = int(headerLines[gridOffset +
+                                    textOffset[iKey]].replace(iKey+"=", '').
+                                    replace('<bytes>', ''))
             # if subValOffset is given, the offset given by the above step is adjusted
             if subValOffset != {}:
                 for jkey in subValOffset:
                     valueDict[jkey] = int(valueDict["DS_OFFSET"]) + subValOffset[jkey]["offset"]
         f.close()
         return valueDict
-
 
     def read_all_list(self, fileName, offsetDict, keyName, fmt, numOfReadData):
         '''
@@ -112,7 +113,6 @@ class Envisat():
         textOffset = {"DS_OFFSET" : 3}
         offsetDict = self.read_text(fileName, gadsDSName, textOffset)
         allGADSValues = self.read_all_list(fileName, offsetDict, "DS_OFFSET", '>f', maxGADS)
-
         #get only values required for the mapper
         return [allGADSValues[i] for i in indeces]
 
@@ -160,8 +160,8 @@ class Envisat():
             ADSR_list = {
              "Dim" : 11,
              "num_lines"                    : {"offset" : 13                 , "dataType" : gdal.GDT_Int16  , "unit" : ""},
-             "first_samp_numbers"           : {"offset" : 25+11*4*0          , "dataType" : gdal.GDT_Float32, "unit" : ""},
-             "first_slant_range_times"      : {"offset" : 25+11*4*1          , "dataType" : gdal.GDT_Float32, "unit" : "ns"},
+             "first_line_samp_numbers"      : {"offset" : 25+11*4*0          , "dataType" : gdal.GDT_Float32, "unit" : ""},
+             "first_line_slant_range_times" : {"offset" : 25+11*4*1          , "dataType" : gdal.GDT_Float32, "unit" : "ns"},
              "first_line_incidenceAngle"    : {"offset" : 25+11*4*2          , "dataType" : gdal.GDT_Float32, "unit" : "deg"},
              "first_line_lats"              : {"offset" : 25+11*4*3          , "dataType" : gdal.GDT_Int32  , "unit" : "(10)^-6 deg"},
              "first_line_longs"             : {"offset" : 25+11*4*4          , "dataType" : gdal.GDT_Int32  , "unit" : "(10)^-6 deg"},
@@ -174,10 +174,10 @@ class Envisat():
 
         return gadsDSName, ADSR_list
 
-    def get_rawband_parameters(self, fileName, fileType, data_key):
+    def get_offsets(self, fileName, fileType, dataKey, textOffset):
         '''Return all parameters to create a VRTRawRasterBand.
 
-        Get ADSR_list of required variables given by data_key.
+        Get ADSR_list of required variables given by dataKey.
         Make parameters to create RawRasterBands.
         Create dictionary(metaDict) which has format for_create_bands().
         Return band size to create VRT and dictionary to add bands.
@@ -188,15 +188,21 @@ class Envisat():
                        fileName of the underlying data
             fileType : string
                        "MER_" or "ASA_"
-            data_key : list
+            dataKey : list
                        element should be one/some of keys in ADSR_list
+            textOffset : dictionary
+                        represents offset from location of gadsDSName
 
         Returns
         -------
-            dim, offsetDict["NUM_DSR"] : int
-                        XSize and YSize of the band
-            metaDict : list
-                        elements are dictionaries that are parameters for _creats_bands_()
+            dim : int
+                        XSize of the band
+            unitsDict : dictionary
+                        units given by ADSR_list
+            dTypeDict : dictionary
+                        data type
+            offsetDict : dictionary
+                        elements are offsets from the beginning of the file
 
         '''
         # Get gadsDSName and ADSR_list corresoinding to the given fileType
@@ -207,47 +213,22 @@ class Envisat():
         adsrDict = {}
 
         # pick up required dictionaries from ADSR_List
-        for key in data_key:
+        for key in dataKey:
             if key in ADSR_list:
                 adsrDict[key] = ADSR_list[key]
 
-        # create a dictionary which represent offset from location of gadsDSName
-        textOffset = {'NUM_DSR':5, 'DSR_SIZE':6, 'DS_OFFSET':3}
+        dTypeDict = {}
+        unitsDict = {}
+        for iKey in adsrDict.keys():
+            dTypeDict[iKey] = adsrDict[iKey]["dataType"]
+            unitsDict[iKey] = ADSR_list[iKey]["unit"]
 
         # Get offsets of required variables from the beginning of the file
         offsetDict = self.read_text(fileName, gadsDSName, textOffset, adsrDict)
 
-        metaDict = []
-        # prepare parameters to create bands
-        for ikey in data_key:
-            # get size of the dataType in bytes
-            pixOffset = {gdal.GDT_Byte:     1,
-                         gdal.GDT_Int16:    2,
-                         gdal.GDT_UInt16:   2,
-                         gdal.GDT_Int32:    4,
-                         gdal.GDT_UInt32:   4,
-                         gdal.GDT_Float32:  4,
-                         gdal.GDT_Float64:  8,
-                         gdal.GDT_CInt16:   2,
-                         gdal.GDT_CInt32:   4,
-                         gdal.GDT_CFloat32: 4,
-                         gdal.GDT_CFloat64: 8}[adsrDict[ikey]["dataType"]]
-                         
-            # Append dictionary with parameters for this band
-            metaDict.append({'src': {'SourceFilename': fileName,
-                                'SourceBand': 0,
-                                "SourceType": "RawRasterBand",
-                                "ImageOffset" : offsetDict[ikey],
-                                "PixelOffset" : pixOffset,
-                                "LineOffset" : offsetDict["DSR_SIZE"],
-                                "ByteOrder" : "MSB"},
-                             'dst': {"dataType": adsrDict[ikey]["dataType"],
-                                "name": ikey,
-                                'wkv': ikey,
-                                "unit": adsrDict[ikey]["unit"]}})
-        return dim, offsetDict["NUM_DSR"], metaDict
+        return dim, unitsDict, dTypeDict, offsetDict
 
-    def get_geoarray_parameters(self, fileName, fileType, stepSize, data_key=[]):
+    def get_geoarray_parameters(self, fileName, fileType, stepSize, dataKey=[]):
         ''' Return parameters for Geolocation Domain Metadata
 
         Parameters
@@ -256,7 +237,7 @@ class Envisat():
                        fileName of the underlying data
             fileType : string
                        "MER_" or "ASA_"
-            data_key : list
+            dataKey : list
                        elements should be latitude and longitude key names in ADSR_list
 
         Returns
@@ -280,16 +261,16 @@ class Envisat():
 
         # if ASAR
         elif fileType == "ASA_":
-            gadsDSName, ADSR_list = self.get_ADSRlist(fileType)
-            dataDict = {data_key[0] : ADSR_list[data_key[0]]}
-            textOffset = {'DS_OFFSET':3}
+            # Get offset and datatype format
+            dim, units, dType, offsetDict = self.get_offsets(fileName, fileType,
+                                            dataKey, textOffset = {'DS_OFFSET':3})
+
             # get data format
             fmt = {"int":">i", gdal.GDT_Int32:">i", gdal.GDT_UInt32 : ">I",
-                   gdal.GDT_Float32:">f"}.get(ADSR_list[data_key[0]]["dataType"], ">f")
-            # read text data and get the offset of required key
-            offsetDict = self.read_text(fileName, gadsDSName, textOffset, dataDict)
+               gdal.GDT_Float32:">f"}.get(dType[dataKey[0]], ">f")
+
             # Read binary data from offset
-            allGADSValues = self.read_all_list(fileName, offsetDict, data_key[0], fmt, 14)
+            allGADSValues = self.read_all_list(fileName, offsetDict, dataKey[0], fmt, 14)
             # create parameters for Geolocation Domain Metadata
             geolocParameter = [allGADSValues[3]-1, allGADSValues[0]-1,
                                allGADSValues[4]-allGADSValues[3],
@@ -297,11 +278,12 @@ class Envisat():
 
         return geolocParameter
 
-    def create_VRT_with_rawbands(self, fileName, fileType, data_key):
+    def create_VRT_with_rawbands(self, fileName, fileType, dataKey):
         ''' Create VRT with some small bands
 
-        Get parameters for createing VRT.
-        Create a empty VRT and add bands.
+        Get parameters for createing VRT. Create a empty VRT and add bands.
+        This is specially for MER because ASA has different data constraction.
+        (see: create_VRT_from_ADSRarray)
 
         Parameters
         ----------
@@ -309,7 +291,7 @@ class Envisat():
                        fileName of the underlying data
             fileType : string
                        "MER_" or "ASA_"
-            data_key : list
+            dataKey : list
                        elements should be one/some of keys in ADSR_list
 
         Returns:
@@ -318,13 +300,116 @@ class Envisat():
 
         '''
         # Get parameters for VRTRawRasterBand
-        XSize, YSize, metaDict = self.get_rawband_parameters(fileName, fileType, data_key)
-        print 'metaDict', metaDict
+        textOffset = {'NUM_DSR':5, 'DSR_SIZE':6, 'DS_OFFSET':3}
+        XSize, units, dType, offsetDict = self.get_offsets(fileName, fileType, dataKey, textOffset)
+        metaDict = []
+        # prepare parameters to create bands
+        for iKey in dataKey:
+            # get size of the dataType in bytes
+            pixOffset = {gdal.GDT_Byte:     1,
+                         gdal.GDT_Int16:    2,
+                         gdal.GDT_UInt16:   2,
+                         gdal.GDT_Int32:    4,
+                         gdal.GDT_UInt32:   4,
+                         gdal.GDT_Float32:  4,
+                         gdal.GDT_Float64:  8,
+                         gdal.GDT_CInt16:   2,
+                         gdal.GDT_CInt32:   4,
+                         gdal.GDT_CFloat32: 4,
+                         gdal.GDT_CFloat64: 8}[dType[iKey]]
+            # Append dictionary with parameters for this band
+            metaDict.append({'src': {'SourceFilename': fileName,
+                                'SourceBand': 0,
+                                "SourceType": "RawRasterBand",
+                                "ImageOffset" : offsetDict[iKey],
+                                "PixelOffset" : dType[iKey],
+                                "LineOffset" : offsetDict["DSR_SIZE"],
+                                "ByteOrder" : "MSB"},
+                             'dst': {"dataType": dType[iKey],
+                                "name": iKey,
+                                'wkv': iKey,
+                                "unit": units[iKey]}})
+
         # Create dataset with small band
-        vrt = VRT(srcRasterXSize=XSize, srcRasterYSize=YSize)
+        vrt = VRT(srcRasterXSize=XSize, srcRasterYSize=offsetDict["NUM_DSR"])
         # Add VRTRawRasterBand
         vrt._create_bands(metaDict)
         return vrt
+
+    def create_VRT_from_ADSRarray(self, fileName, dataKey, fileType = "ASA_"):
+        ''' Create VRT with a band based on an array whose elements are fetched from ADSR.
+
+        It is specially for ASAR because it provides
+        first_line_tie_points and last_line_tie_points in each DSR.
+        (see create_VRT_with_rawbands for MER.)
+        An array is crated by first_line_tie_points in each DSR and
+        last_line_tie_points in the last DSR, because last_line_tie_points
+        in the i-th DSR and first_line_tie_points in the (i+1)-th DSR are
+        mostly overlapped.
+
+        Parameters
+        ----------
+            fileName: string
+                       fileName of the underlying data
+            dataKey : string
+                        "samp_numbers", "slant_range_times",
+                        "incidenceAngle", "lats" or "longs"
+            fileType : string
+                       "ASA_"
+        Returns:
+        ---------
+            VRT : vrt with a band created by an array
+
+        '''
+        # create a list whose elements are keys in ADSR_list
+        dataKey2 = []
+        dataKey2.append("first_line_" + dataKey)
+        dataKey2.append("last_line_" + dataKey)
+
+        # Get parameters to read arrays in ADSR
+        textOffset = {'NUM_DSR':5, 'DSR_SIZE':6, 'DS_OFFSET':3}
+        dim, units, dType, offsetDict = self.get_offsets(fileName, fileType, dataKey2, textOffset)
+
+        # get data type format
+        fmt = {"int":">i", gdal.GDT_Int32:">i", gdal.GDT_UInt32 : ">I",
+           gdal.GDT_Float32:">f"}.get(dType[dataKey2[0]], ">f")
+
+        # crate an array whose elements are fetched from ADSR
+        array = np.array([])
+
+        f = file(fileName, 'rb')
+        for i in range( int(offsetDict["NUM_DSR"]) ):
+            # fetch varlues of first_line_tie_points in i-th DSR and append to array
+            for j in range( dim ):
+                f.seek(int(offsetDict[dataKey2[0]]) + int(offsetDict["DSR_SIZE"]) * i + 4 * j , 0)
+                fbString = f.read(4)
+                fbVal = unpack(fmt, fbString)[0]
+                array = np.append(array, float(fbVal))
+
+        # fetch varlues of last_line_tie_points in the last DSR and append to array
+        for j in range( dim ):
+            f.seek(int(offsetDict[dataKey2[1]]) + int(offsetDict["DSR_SIZE"]) * (int(offsetDict["NUM_DSR"]) - 1)  + 4 * j, 0)
+            fbString = f.read(4)
+            fbVal = unpack(fmt, fbString)[0]
+            array = np.append(array, float(fbVal))
+
+        f.close()
+
+        # adjust the scale
+        if (units[dataKey2[0]] == "(10)^-6 deg"):
+            array /= 1000000.0
+            units[dataKey2[0]] = "deg"
+
+        # reshape the array
+        array = array.reshape(int(offsetDict["NUM_DSR"])+1, dim)
+
+        # create VRT from the array
+        geoVrt = VRT(array=array)
+        # add "name" and "units" to band metadata
+        bandMetadata = {"name" : dataKey, "units" : units[dataKey2[0]]}
+        geoVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)
+
+        return geoVrt
 
     def add_geoarray_dataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[], stepSize = 2):
         ''' Add geolocation domain metadata to the dataset
@@ -361,29 +446,33 @@ class Envisat():
             Add Geolocation Array metadata
 
         '''
-        # Create dataset with VRTRawRasterbands
-        geoVRT = self.create_VRT_with_rawbands(fileName, fileType, [latlonName["latitude"], latlonName["longitude"]])
+        if (fileType == "ASA_"):
+            # Create lat and lon VRTs based on arryas fetched from ADSR
+            lonVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["longitude"], )
+            latVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["latitude"])
+        else:
+            # Create dataset with VRTRawRasterbands
+            geoVRT = self.create_VRT_with_rawbands(fileName, fileType, [latlonName["latitude"], latlonName["longitude"]])
+            # Create lat and lon VRT with original units
+            lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
+            latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
+
+        if stepSize != 0:
+            lonVRT = lonVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
+            latVRT = latVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
 
         # Get geolocParameter which is required for adding geolocation array metadata
         geolocParameter = self.get_geoarray_parameters(fileName, fileType, stepSize, parameters)
 
-        # Create lat and lon VRT with original units
-        lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
-        latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
-
-        if stepSize != 0:
-            latVRT = latVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
-            lonVRT = lonVRT.resized(int(XSize/stepSize), int(YSize/stepSize))
-
         # Add geolocation domain metadata to the dataset
         self.add_geolocation(Geolocation(xVRT=lonVRT,
-                              yVRT=latVRT,
-                              xBand=1, yBand=1,
-                              srs=srs,
-                              lineOffset=geolocParameter[1],
-                              lineStep=int(geolocParameter[3]),
-                              pixelOffset=geolocParameter[0],
-                              pixelStep=int(geolocParameter[2])))
+                      yVRT=latVRT,
+                      xBand=1, yBand=1,
+                      srs=srs,
+                      lineOffset=geolocParameter[1],
+                      lineStep=int(geolocParameter[3]),
+                      pixelOffset=geolocParameter[0],
+                      pixelStep=int(geolocParameter[2])))
 
 
 #m = MERIS()

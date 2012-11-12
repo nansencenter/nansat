@@ -26,8 +26,6 @@ class Mapper(VRT, Envisat):
         #
         # Enlarge the band to the underlying data band size
         #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
-        
-        
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '412'}},
@@ -64,7 +62,7 @@ class Mapper(VRT, Envisat):
         #add geolocation dictionary into metaDict
         #for iBand in range(self.geoDataset.dataset.RasterCount):
         #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst': {'wkv': '', 'parameters':bandMetadata})
+        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst':bandMetadata})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
