@@ -29,6 +29,9 @@ class Mapper(VRT, Envisat):
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
+        # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
+        polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
+        
         # Create VRTdataset with small VRTRawRasterbands
         incAngleDataset = self.create_VRT_from_ADSRarray(fileName, "incidenceAngle")
 
@@ -41,9 +44,9 @@ class Mapper(VRT, Envisat):
         # get calibration constant
         calibrationConst = float(gdalDataset.GetMetadataItem("MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
 
-        # compute calibrated sigma0 (netcdf does not accept "/")
+        # compute calibrated sigma0
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
-                     'dst': {'name': 'RawCounts_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")}}]
+                     'dst': {'name': 'RawCounts_%s' % polarization}}]
 
         # add dictionary for IncidenceAngle
         for iBand in range(self.incAngleDataset.dataset.RasterCount):
@@ -56,8 +59,8 @@ class Mapper(VRT, Envisat):
                                  {'SourceFilename': self.incAngleDataset.fileName, 'SourceBand': 1}],
                          'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                                  'PixelFunctionType': 'RawcountsIncidenceToSigma0',
-                                 'polarisation': gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", ""),
-                                 'name': 'sigma0_%s' % gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", ""),
+                                 'polarization': polarization,
+                                 'suffix': polarization,
                                  'pass': gdalMetadata['SPH_PASS'],
                                  'dataType': gdal.GDT_Float32}})
 
