@@ -36,7 +36,7 @@ class Mapper(VRT, Envisat):
         incAngleDataset = self.create_VRT_from_ADSRarray(fileName, "incidenceAngle")
 
         # Enlarge the band to the underlying data band size
-        self.incAngleDataset = incAngleDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        self.incAngleDataset = incAngleDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize, eResampleAlg=1)
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)

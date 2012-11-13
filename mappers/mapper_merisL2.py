@@ -21,7 +21,7 @@ class Mapper(VRT, Envisat):
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
         # Create VRTdataset with small VRTRawRasterbands
-        #geoDataset = self.create_VRT_with_rawbands(fileName, product[0:4], ["latitude", "zonal winds"])
+        #geoDataset = self.create_VRT_with_rawbands(fileName, ["latitude", "zonal winds"])
         #
         # Enlarge the band to the underlying data band size
         #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)

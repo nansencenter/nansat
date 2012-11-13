@@ -3,6 +3,7 @@ from struct import unpack
 from vrt import VRT, Geolocation
 import gdal
 import numpy as np
+import scipy.ndimage
 
 class Envisat():
     '''Methods shared between Envisat mappers'''
@@ -278,7 +279,7 @@ class Envisat():
 
         return geolocParameter
 
-    def create_VRT_with_rawbands(self, fileName, fileType, dataKey):
+    def create_VRT_with_rawbands(self, fileName, dataKey, fileType = "MER_"):
         ''' Create VRT with some small bands
 
         Get parameters for createing VRT. Create a empty VRT and add bands.
@@ -289,10 +290,11 @@ class Envisat():
         ----------
             fileName: string
                        fileName of the underlying data
-            fileType : string
-                       "MER_" or "ASA_"
             dataKey : list
                        elements should be one/some of keys in ADSR_list
+            fileType : string (optional)
+                       "MER_" (or "ASA_")
+
 
         Returns:
         --------
@@ -362,17 +364,15 @@ class Envisat():
 
         '''
         # create a list whose elements are keys in ADSR_list
-        dataKey2 = []
-        dataKey2.append("first_line_" + dataKey)
-        dataKey2.append("last_line_" + dataKey)
+        dataKeyList = ["first_line_" + dataKey, "last_line_" + dataKey]
 
         # Get parameters to read arrays in ADSR
         textOffset = {'NUM_DSR':5, 'DSR_SIZE':6, 'DS_OFFSET':3}
-        dim, units, dType, offsetDict = self.get_offsets(fileName, fileType, dataKey2, textOffset)
+        dim, units, dType, offsetDict = self.get_offsets(fileName, fileType, dataKeyList, textOffset)
 
         # get data type format
         fmt = {"int":">i", gdal.GDT_Int32:">i", gdal.GDT_UInt32 : ">I",
-           gdal.GDT_Float32:">f"}.get(dType[dataKey2[0]], ">f")
+           gdal.GDT_Float32:">f"}.get(dType[dataKeyList[0]], ">f")
 
         # crate an array whose elements are fetched from ADSR
         array = np.array([])
@@ -381,14 +381,14 @@ class Envisat():
         for i in range( int(offsetDict["NUM_DSR"]) ):
             # fetch varlues of first_line_tie_points in i-th DSR and append to array
             for j in range( dim ):
-                f.seek(int(offsetDict[dataKey2[0]]) + int(offsetDict["DSR_SIZE"]) * i + 4 * j , 0)
+                f.seek(int(offsetDict[dataKeyList[0]]) + int(offsetDict["DSR_SIZE"]) * i + 4 * j , 0)
                 fbString = f.read(4)
                 fbVal = unpack(fmt, fbString)[0]
                 array = np.append(array, float(fbVal))
 
         # fetch varlues of last_line_tie_points in the last DSR and append to array
         for j in range( dim ):
-            f.seek(int(offsetDict[dataKey2[1]]) + int(offsetDict["DSR_SIZE"]) * (int(offsetDict["NUM_DSR"]) - 1)  + 4 * j, 0)
+            f.seek(int(offsetDict[dataKeyList[1]]) + int(offsetDict["DSR_SIZE"]) * (int(offsetDict["NUM_DSR"]) - 1)  + 4 * j, 0)
             fbString = f.read(4)
             fbVal = unpack(fmt, fbString)[0]
             array = np.append(array, float(fbVal))
@@ -396,17 +396,22 @@ class Envisat():
         f.close()
 
         # adjust the scale
-        if (units[dataKey2[0]] == "(10)^-6 deg"):
+        if (units[dataKeyList[0]] == "(10)^-6 deg"):
             array /= 1000000.0
-            units[dataKey2[0]] = "deg"
+            units[dataKeyList[0]] = "deg"
 
         # reshape the array
         array = array.reshape(int(offsetDict["NUM_DSR"])+1, dim)
 
+        # if the array is not latitude or longitude, zoom the array
+        if (dataKey != "longs" and dataKey != "lats"):
+            array = scipy.ndimage.interpolation.zoom(array,
+                            int( 150 / int(offsetDict["NUM_DSR"]) + 1) ,order = 1)
+
         # create VRT from the array
         geoVrt = VRT(array=array)
         # add "name" and "units" to band metadata
-        bandMetadata = {"name" : dataKey, "units" : units[dataKey2[0]]}
+        bandMetadata = {"name" : dataKey, "units" : units[dataKeyList[0]]}
         geoVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)
 
         return geoVrt
@@ -443,11 +448,11 @@ class Envisat():
         '''
         if (fileType == "ASA_"):
             # Create lat and lon VRTs based on arryas fetched from ADSR
-            lonVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["longitude"], )
+            lonVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["longitude"])
             latVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["latitude"])
-        else:
+        elif (fileType == "MER_"):
             # Create dataset with VRTRawRasterbands
-            geoVRT = self.create_VRT_with_rawbands(fileName, fileType, [latlonName["latitude"], latlonName["longitude"]])
+            geoVRT = self.create_VRT_with_rawbands(fileName, [latlonName["latitude"], latlonName["longitude"]])
             # Create lat and lon VRT with original units
             lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
             latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
