@@ -1158,26 +1158,37 @@ class Nansat(Domain):
 
         Parameters
         ----------
-            bandID: int or str
+            bandID: int or str or dict
                 if int: checks if such band exists and returns band_id
                 if str: finds band with coresponding name
+                if dict: finds first band with given metadata
 
         Returns
         -------
             int, absolute band  number
         '''
         bandNumber = 0
-        # if bandID is string, fetch band which has name == bandID
-        if isinstance(bandID, str):
+        # if bandID is str: create simple dict with seraching criteria
+        searchDict = None
+        if type(bandID) == str:
+            bandID = {'name': bandID}
+
+        # if bandID is dict: search self.bands with seraching criteria
+        if type(bandID) == dict:
             bandsMeta = self.bands()
             for b in bandsMeta:
-                if bandID == bandsMeta[b]['name']:
-                    bandNumber = b
+                for key in bandID:
+                    if key in bandsMeta[b] and bandID[key] == bandsMeta[b][key]:
+                        bandNumber = b
+                        break
 
-        # if given bandID is int and within the existing bands, return it
-        elif (bandID >= 1 and bandID <= self.vrt.dataset.RasterCount):
+        # if bandID is int and with bounds: return this number
+        if   (type(bandID) == int and 
+              bandID >= 1 and
+              bandID <= self.vrt.dataset.RasterCount):
             bandNumber = bandID
-        # if not bandNumber found - raise error
+
+        # if no bandNumber found - raise error
         if bandNumber == 0:
             raise OptionError("Cannot find band %s! "
                               "bandNumber is from 1 to %s" %
