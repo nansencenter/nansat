@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	17.10.2012
-# Last modified:01.11.2012 16:43
+# Last modified:15.11.2012 16:04
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -24,32 +24,8 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata ):
         ''' Create CSKS VRT '''
 
-        # Let it be possible to choose these later
-        band='S01'
-        res='SBI'
-
         if fileName[0:4] != "CSKS":
             raise AttributeError("COSMO-SKYMED BAD MAPPER")
-
-        # Get sub-datasets
-        subDatasets = gdalDataset.GetSubDatasets()
-
-        # Get file names from dataset or subdataset
-        if subDatasets.__len__()==1:
-            fileNames = [fileName]
-        else:
-            fileNames = [f[0] for f in subDatasets]
-
-        # Get rid of the "unwanted" datasets
-        for i,elem in enumerate(fileNames):
-            band_number = i
-            if fileNames[i][-3:]!=res:
-                fileNames.pop(i)
-            if fileNames[i][-7:-4]!=band:
-                fileNames.pop(i)
-        
-        subDataset = gdal.Open(fileNames[0])
-
 
         # Get coordinates
         bottom_left_lon = float(gdalMetadata['Estimated_Bottom_Left_Geodetic_Coordinates'].split(' ')[1])
@@ -62,6 +38,23 @@ class Mapper(VRT):
         top_right_lat = float(gdalMetadata['Estimated_Top_Right_Geodetic_Coordinates'].split(' ')[0])
         center_lon = float(gdalMetadata['Scene_Centre_Geodetic_Coordinates'].split(' ')[1])
         center_lat = float(gdalMetadata['Scene_Centre_Geodetic_Coordinates'].split(' ')[0])
+
+        # Get sub-datasets
+        subDatasets = gdalDataset.GetSubDatasets()
+
+        # Get file names from dataset or subdataset
+        if subDatasets.__len__()==1:
+            fileNames = [fileName]
+        else:
+            fileNames = [f[0] for f in subDatasets]
+
+        for i,elem in enumerate(fileNames):
+            if fileNames[i][-3:]=='QLK':
+                fileNames.pop(i)
+
+        #print fileNames
+
+        subDataset = gdal.Open(fileNames[0])
 
         # generate list of GCPs
         gcps = []
@@ -96,82 +89,63 @@ class Mapper(VRT):
                 srcGCPs=gcps,
                 srcGCPProjection=latlongSRSWKT)
 
-        print self.fileName
-        #print fileNames[0]
+        #print self.fileName
 
-        # Add real and imaginary raw counts as bands
-        metaDict = [
-                {'src': {'SourceFilename': fileNames[0], 'SourceBand': 1, 
-                    'DataType': gdal.GDT_Int16}, 
-                    'dst': {'dataType': gdal.GDT_Float32, 
-                        'name': 'reRawCounts_%s' % gdalMetadata[band+'_Polarisation']}}]
-        metaDict.append(
-                {'src': {'SourceFilename': fileNames[0], 'SourceBand': 2,
-                    'DataType': gdal.GDT_Int16},
-                    'dst': {'dataType': gdal.GDT_Float32,
-                        'name': 'imRawCounts_%s' % gdalMetadata[band+'_Polarisation'] }} )
 
-        #metaDict.append({'src': [{'SourceFilename': fileNames[0], 
-        #            'DataType': gdal.GDT_Int16,
-        #            'SourceBand': 1}, 
-        #                { 'SourceFilename': fileNames[0], 
-        #                    'DataType': gdal.GDT_Int16, 
-        #                    'SourceBand': 2}],
-        #                'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-        #                    'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
-        #                    'polarisation': gdalMetadata[band+'_Polarisation'],
-        #                    'name': 'sigma0_%s' % gdalMetadata[band+'_Polarisation'],
-        #                    'SatelliteID': gdalMetadata['Satellite_ID'],
-        #                    'dataType': gdal.GDT_Float32}
-        #                })
+        # Read all bands later
+        #band='S01'
+        #res='SBI'
 
-        # add band with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        # Use only full size "original" datasets
+        for i,elem in enumerate(fileNames):
+            band_number = i
+            if fileNames[i][-3:]=='SBI':
+                # Add real and imaginary raw counts as bands
+                src = {'SourceFilename': fileNames[i], 'SourceBand': 1, 'DataType': gdal.GDT_Int16}
+                dst = {'dataType': gdal.GDT_Float32, 'name': 'RawCounts_%s_real' %
+                                gdalMetadata[fileNames[i][-7:-4]+'_Polarisation']}
+                self._create_band(src,dst)
 
-        # Calculate sigma0 scaling factor
-        Rref = float(gdalMetadata['Reference_Slant_Range'])
-        Rexp = float(gdalMetadata['Reference_Slant_Range_Exponent'])
-        alphaRef = float(gdalMetadata['Reference_Incidence_Angle'])
-        F=float(gdalMetadata['Rescaling_Factor'])
-        K=float(gdalMetadata[band+'_Calibration_Constant'])
-        Ftot = Rref**(2.*Rexp)
-        Ftot *=np.sin(alphaRef*np.pi/180.0)
-        Ftot /=F**2.
-        Ftot /=K
+                src = {'SourceFilename': fileNames[i], 'SourceBand': 2, 'DataType': gdal.GDT_Int16}
+                dst = {'dataType': gdal.GDT_Float32, 'name': 'RawCounts_%s_imaginary' %
+                                gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'] }
+                self._create_band(src,dst)
 
-        #print 'Reference slant range: '+str(Rref)
-        #print 'RSR Exponent: '+str(Rexp)
-        #print 'Reference Incidence Angle: '+str(alphaRef)
-        #print 'Rescaling Factor: '+str(F)
-        #print 'Calibration constant '+band+' channel: '+str(K)
-        #print 'Total rescaling factor: '+str(Ftot)
+                self.dataset.FlushCache()
 
-        #metaDict.append(
-        #        {'src': [{'SourceFilename': self.fileName, 'DataType':
-        #            gdal.GDT_Float32, 'SourceBand': 1, 'ScaleRatio': Ftot}, 
-        #                { 'SourceFilename': self.fileName, 'dataType':
-        #                    gdal.GDT_Float32, 'SourceBand': 2}],
-        src = [{'SourceFilename': self.fileName, 
-                    'DataType': gdal.GDT_Float32,
-                    'SourceBand': 1, 'ScaleRatio': np.sqrt(Ftot)}, 
-                        { 'SourceFilename': self.fileName, 
-                            'DataType': gdal.GDT_Float32, 
-                            'SourceBand': 2, 'ScaleRatio': np.sqrt(Ftot)}]
-        #src = [{'SourceFilename': fileNames[0], 
-        #            'DataType': gdal.GDT_Int16,
-        #            'SourceBand': 1}, 
-        #                { 'SourceFilename': fileNames[0], 
-        #                    'DataType': gdal.GDT_Int16, 
-        #                    'SourceBand': 2}]
-        dst = {'wkv': 
-                'surface_backwards_scattering_coefficient_of_radar_wave',
-                'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
-                'polarisation': gdalMetadata[band+'_Polarisation'],
-                'name': 'sigma0_%s' % gdalMetadata[band+'_Polarisation'],
-                'SatelliteID': gdalMetadata['Satellite_ID'],
-                'dataType': gdal.GDT_Float32}
-                #'pass': gdalMetadata[''] - I can't find this in the metadata...
+        for i,elem in enumerate(fileNames):
+            band_number = i
+            if fileNames[i][-3:]=='SBI':
+                # Calculate sigma0 scaling factor
+                Rref = float(gdalMetadata['Reference_Slant_Range'])
+                Rexp = float(gdalMetadata['Reference_Slant_Range_Exponent'])
+                alphaRef = float(gdalMetadata['Reference_Incidence_Angle'])
+                F=float(gdalMetadata['Rescaling_Factor'])
+                K=float(gdalMetadata[fileNames[i][-7:-4]+'_Calibration_Constant'])
+                Ftot = Rref**(2.*Rexp)
+                Ftot *=np.sin(alphaRef*np.pi/180.0)
+                Ftot /=F**2.
+                Ftot /=K
 
-        self._create_band(src,dst)
+                #print Ftot
+
+                src = [{'SourceFilename': self.fileName, 
+                            'DataType': gdal.GDT_Float32,
+                            'SourceBand': 2*i+1, 'ScaleRatio': np.sqrt(Ftot)}, 
+                                { 'SourceFilename': self.fileName, 
+                                    'DataType': gdal.GDT_Float32, 
+                                    'SourceBand': 2*i+2, 'ScaleRatio': np.sqrt(Ftot)}]
+                dst = {'wkv': 
+                        'surface_backwards_scattering_coefficient_of_radar_wave',
+                        'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
+                        'polarisation': gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
+                        'name': 'sigma0_%s' % gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
+                        'SatelliteID': gdalMetadata['Satellite_ID'],
+                        'dataType': gdal.GDT_Float32}
+                        #'pass': gdalMetadata[''] - I can't find this in the metadata...
+
+                self._create_band(src,dst)
+        
+                self.dataset.FlushCache()
 
 

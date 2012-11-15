@@ -956,10 +956,12 @@ CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void 
     /* int iReal, iImag; */
     double imPower, real, imag;
 
-    /* printf("%d", nYSize); */
+    //printf("%d", nYSize);
 
     /* ---- Init ---- */
     if (nSources != 2) return CE_Failure;
+
+    //printf("%d", nXSize);
 
     /* ---- Set pixels ---- */
     for( iLine = 0; iLine < nYSize; iLine++ ){
