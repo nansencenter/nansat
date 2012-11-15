@@ -31,12 +31,12 @@ class Mapper(VRT, Envisat):
 
         # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
         polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
-        
+
         # Create VRTdataset with small VRTRawRasterbands
-        incAngleDataset = self.create_VRT_from_ADSRarray(fileName, "incidenceAngle")
+        incAngleDataset = self.create_VRT_from_ADSRarray(fileName, "incidenceAngle", arraySize=500)
 
         # Enlarge the band to the underlying data band size
-        self.incAngleDataset = incAngleDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize, eResampleAlg=1)
+        self.incAngleDataset = incAngleDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
@@ -72,6 +72,5 @@ class Mapper(VRT, Envisat):
 
         ''' Set GeolocationArray '''
         latlonName = {"latitude":"lats","longitude":"longs"}
-        self.add_geoarray_dataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection(), ["num_lines"])
-
+        self.add_geoarray_dataset(fileName, "ASA_", gdalDataset, latlonName, ["num_lines"], arraySize= 500, stepSize= 1)
 

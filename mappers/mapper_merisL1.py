@@ -75,4 +75,5 @@ class Mapper(VRT, Envisat):
 
         ''' Set GeolocationArray '''
         #latlonName = {"latitude":"latitude","longitude":"longitude"}
-        #self.add_geoarray_dataset(fileName, product[0:4], gdalDataset.RasterXSize, gdalDataset.RasterYSize, latlonName, gdalDataset.GetGCPProjection())
+        #self.add_geoarray_dataset(fileName, "MER_", gdalDataset, latlonName, stepSize= 1)
+

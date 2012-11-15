@@ -238,8 +238,10 @@ class Envisat():
                        fileName of the underlying data
             fileType : string
                        "MER_" or "ASA_"
+            stepSize : int
+                        step size for geolocation domain
             dataKey : list
-                       elements should be latitude and longitude key names in ADSR_list
+                        elements should be latitude and longitude key names in ADSR_list
 
         Returns
         -------
@@ -248,7 +250,7 @@ class Envisat():
 
         '''
         if stepSize != 0:
-            geolocParameter = [0, 0, stepSize[0], stepSize[1]]
+            geolocParameter = [0, 0, stepSize, stepSize]
 
         # if MERIS
         elif fileType == "MER_":
@@ -295,7 +297,6 @@ class Envisat():
             fileType : string (optional)
                        "MER_" (or "ASA_")
 
-
         Returns:
         --------
             VRT : includes some VRTRawRasterBands
@@ -338,7 +339,7 @@ class Envisat():
         vrt._create_bands(metaDict)
         return vrt
 
-    def create_VRT_from_ADSRarray(self, fileName, dataKey, fileType = "ASA_"):
+    def create_VRT_from_ADSRarray(self, fileName, dataKey, arraySize=500, fileType="ASA_"):
         ''' Create VRT with a band based on an array whose elements are fetched from ADSR.
 
         It is specially for ASAR because it provides
@@ -348,6 +349,8 @@ class Envisat():
         last_line_tie_points in the last DSR, because last_line_tie_points
         in the i-th DSR and first_line_tie_points in the (i+1)-th DSR are
         mostly overlapped.
+        The array is zoomed to arraySize.
+        Then create VRT from the array.
 
         Parameters
         ----------
@@ -356,6 +359,12 @@ class Envisat():
             dataKey : string
                         "samp_numbers", "slant_range_times",
                         "incidenceAngle", "lats" or "longs"
+
+            arraySize :  int
+                        an array created by the binary file is zoomed to "arraySize".
+                        see "http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.zoom.html".
+                        The default settings are "order=1" and "mode =constant".
+
             fileType : string
                        "ASA_"
         Returns:
@@ -404,9 +413,9 @@ class Envisat():
         array = array.reshape(int(offsetDict["NUM_DSR"])+1, dim)
 
         # if the array is not latitude or longitude, zoom the array
-        if (dataKey != "longs" and dataKey != "lats"):
-            array = scipy.ndimage.interpolation.zoom(array,
-                            int( 150 / int(offsetDict["NUM_DSR"]) + 1) ,order = 1)
+        array = scipy.ndimage.interpolation.zoom(array,
+                            int( arraySize / int(offsetDict["NUM_DSR"]) + 1) ,
+                            order = 1)
 
         # create VRT from the array
         geoVrt = VRT(array=array)
@@ -416,17 +425,16 @@ class Envisat():
 
         return geoVrt
 
-    def add_geoarray_dataset(self, fileName, fileType, XSize, YSize, latlonName, srs, parameters=[]):
+    def add_geoarray_dataset(self, fileName, fileType, gdalDataset, latlonName, parameters=[], **sizeArgs):
         ''' Add geolocation domain metadata to the dataset
 
-        Create VRT which has lat and lon VRTRawRasterBands.
+        Create lat and lon VRTs.
+        MER has VRTRawRasterbands and ASA has VRT crated by small arrays.
+        If MER, create latitude and longitude VRT which has original units. (/1000000.0)
+        Resize VRTs to the band size specified by stepSize.
         Get parameter for geolocation domain metadata (steps and offsets).
-        Create latitude and longitude VRT which has original units. (/1000000.0)
         Add the bands in the latitude and longitude VRT
         as X_DATASET and Y_DATASET in geolocation domain metadata.
-
-        Return a band wchich include parameters (offsets and steps)
-        for creating Geolocation Array metadata
 
         Parameters
         ----------
@@ -434,22 +442,42 @@ class Envisat():
                        fileName of the underlying data
             fileType : string
                        "MER_" or "ASA_"
+            gdalDataset : GDAL Dataset
+
             latlonName : dictionary
                         keys are "latitude" and "longitude" and
                         the values are keys which correspond to "longitude" and "latitude" in ADSR_list
-            srs :  string. SRS
             parameters : list, optional
                        elements keys in ADSR_list
 
+            sizeArgs : dictionary
+                        keys are "arraySize" and "stepSize".
+                        - stepSize is common parameter for ASAR and MER.
+                          defulat is 1.
+                          It means lat and lon VRTs are resized to full scale.
+                        - arraySize is used for ASAR geolocaion VRT.
+                          lon and lat arrays are zoomed to "arraySize"
+                          the default is 500.
+                          (See : create_VRT_from_ADSRarray())
         Modifies:
         ---------
             Add Geolocation Array metadata
 
         '''
+        XSize = gdalDataset.RasterXSize
+        YSize = gdalDataset.RasterYSize
+        srs = gdalDataset.GetGCPProjection()
+
+        # Create sizeParameter dictionary
+        sizeParameter = {"arraySize" : 500, "stepSize" : 1 }
+        for iKey in sizeArgs:
+            if iKey in sizeParameter.keys():
+                sizeParameter[iKey] = sizeArgs[iKey]
+
         if (fileType == "ASA_"):
             # Create lat and lon VRTs based on arryas fetched from ADSR
-            lonVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["longitude"])
-            latVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["latitude"])
+            lonVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["longitude"], sizeParameter["arraySize"])
+            latVRT = self.create_VRT_from_ADSRarray(fileName, latlonName["latitude"], sizeParameter["arraySize"])
         elif (fileType == "MER_"):
             # Create dataset with VRTRawRasterbands
             geoVRT = self.create_VRT_with_rawbands(fileName, [latlonName["latitude"], latlonName["longitude"]])
@@ -457,11 +485,13 @@ class Envisat():
             lonVRT = VRT(array=geoVRT.dataset.GetRasterBand(2).ReadAsArray()/1000000.0)
             latVRT = VRT(array=geoVRT.dataset.GetRasterBand(1).ReadAsArray()/1000000.0)
 
-        # calculate stepSize
-        stepSize = [int(XSize/lonVRT.dataset.RasterXSize), int(YSize/lonVRT.dataset.RasterYSize)]
+        # Resize small geolocation VRTs to size specified by stepSize
+        if sizeParameter["stepSize"] != 0:
+            lonVRT = lonVRT.resized(int(XSize/sizeParameter["stepSize"]), int(YSize/sizeParameter["stepSize"]))
+            latVRT = latVRT.resized(int(XSize/sizeParameter["stepSize"]), int(YSize/sizeParameter["stepSize"]))
 
         # Get geolocParameter which is required for adding geolocation array metadata
-        geolocParameter = self.get_geoarray_parameters(fileName, fileType, stepSize, parameters)
+        geolocParameter = self.get_geoarray_parameters(fileName, fileType, sizeParameter["stepSize"], parameters)
 
         # Add geolocation domain metadata to the dataset
         self.add_geolocation(Geolocation(xVRT=lonVRT,
