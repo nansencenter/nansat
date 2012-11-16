@@ -27,6 +27,8 @@ class Mapper(vrt.VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create VRT '''
         
+        minQual = 4
+        
         assert 'AVHRR_Pathfinder-PFV5.2' in fileName, 'pathfinder52 BAD MAPPER'
 
         subDatasets = gdalDataset.GetSubDatasets()
@@ -46,8 +48,8 @@ class Mapper(vrt.VRT):
             if h5Style:
                 subDatasetName = subDatasetName.replace('//', '')
 
-            if subDatasetName == 'sea_surface_temperature':
-                sstName = subDataset[0]
+            if subDatasetName == 'quality_level':
+                qualName = subDataset[0]
                 
             subGDALDataset = vrt.gdal.Open(subDataset[0])
             subGDALMetadata = subGDALDataset.GetRasterBand(1).GetMetadata()
@@ -72,17 +74,18 @@ class Mapper(vrt.VRT):
         vrt.VRT.__init__(self, subGDALDataset)
         
         # add mask
-        if sstName != '':
-            sstDataset = vrt.gdal.Open(sstName)
-            sstArray = sstDataset.ReadAsArray()
-            mask = np.zeros(sstArray.shape, 'uint8')
-            mask[:] = 128 # all valid
-            mask[sstArray == -32768] = 1 # cloud pixels
-            self.maskVRT = vrt.VRT(array=mask)
+        if qualName != '':
+            qualDataset = vrt.gdal.Open(qualName)
+            qualArray = qualDataset.ReadAsArray()
+            qualArray[qualArray < minQual] = 1
+            qualArray[qualArray >= minQual] = 128
+            self.maskVRT = vrt.VRT(array=qualArray.astype('int8'))
             metaDict.append(
-                {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
+                {'src': {'SourceFilename': self.maskVRT.fileName,
+                         'SourceBand':  1,
+                         'SourceType': 'SimpleSource', 'DataType': 1},
                  'dst': {'name': 'mask'}})
-            
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
