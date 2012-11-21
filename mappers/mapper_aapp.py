@@ -98,7 +98,7 @@ class Mapper(VRT):
 
         GeolocVRT._create_bands(GeolocMetaDict)
 
-        GeolocObject = Geolocation(xVRT=GeolocVRT, yVRT=GeolocVRT,
+        GeolocObject = GeolocationArray(xVRT=GeolocVRT, yVRT=GeolocVRT,
                     xBand=2, yBand=1, # x = lon, y = lat
                     lineOffset=0, pixelOffset=25, lineStep=1, pixelStep=40)
 
@@ -107,7 +107,7 @@ class Mapper(VRT):
         #######################
         # create empty VRT dataset with geolocation only (from Geolocation Array)
         VRT.__init__(self, srcRasterXSize=2048, srcRasterYSize=numCalibratedScanLines, 
-                        geolocation=GeolocObject, srcProjection=GeolocObject.d['SRS'])
+                        geolocationArray=GeolocObject, srcProjection=GeolocObject.d['SRS'])
 
         ##################
         # Create bands

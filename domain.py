@@ -43,7 +43,7 @@ except ImportError:
 
 from nansat_tools import add_logger, initial_bearing, latlongSRS
 
-from vrt import VRT, Geolocation
+from vrt import VRT, GeolocationArray
 
 
 class Error(Exception):
@@ -316,10 +316,10 @@ class Domain():
         latitude  : numpy array
             grid with latitudes
         '''
-        # if the vrt dataset has geolocation
-        if len(self.vrt.geoloc.d) > 0:
-            longitude = self.vrt.geoloc.xVRT.dataset.ReadAsArray()
-            latitude =  self.vrt.geoloc.yVRT.dataset.ReadAsArray()
+        # if the vrt dataset has geolocationArray
+        if len(self.vrt.geolocationArray.d) > 0:
+            longitude = self.vrt.geolocationArray.xVRT.dataset.ReadAsArray()
+            latitude =  self.vrt.geolocationArray.yVRT.dataset.ReadAsArray()
         else:
             # create empty grids
             longitude = np.zeros([self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize], 'float32')

@@ -113,11 +113,12 @@ class Mapper(VRT):
             # if no GCPs in input dataset: try to add GCPs from metadata
             gcpCount = self.add_gcps_from_metadata(gdalMetadata)
 
-        # Find proper bands and insert GEOLOCATION into dataset
+        # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
-            self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource))
+            self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
         elif gcpCount == 0:
-            # if no GCPs found and not GEOLOCATION set: Set Nansat Geotransform if it is not set automatically
+            # if no GCPs found and not GEOLOCATION ARRAY set: 
+            #   Set Nansat Geotransform if it is not set automatically
             geoTransform = self.dataset.GetGeoTransform()
             if len(geoTransform) == 0:
                 geoTransformStr = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_GeoTransform', '(0|1|0|0|0|0|1)')

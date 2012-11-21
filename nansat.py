@@ -282,7 +282,7 @@ class Nansat(Domain):
 
         return b
 
-    def export(self, fileName, bands=None, rmMetadata=[], addGeoloc=True, addGCPs=True, driver='netCDF'):
+    def export(self, fileName, bands=None, rmMetadata=[], addGeolocArray=True, addGCPs=True, driver='netCDF'):
         '''Create a netCDF file
 
         Parameters
@@ -290,7 +290,7 @@ class Nansat(Domain):
             fileName: output file name
             rmMetadata: list with metadata names to remove before export.
                 e.g. ['name', 'colormap', 'source', 'sourceBands']
-            addGeoloc: flag to add geolocation datasets. True.
+            addGeolocArray: flag to add geolocation array datasets. True.
             addGCPs: flag to add GCPs. True
             driver: Which GDAL driver (format) to use [netCDF]
 
@@ -322,7 +322,8 @@ class Nansat(Domain):
         else:
             # if list of bands is given, make shallow copy of self.VRT
             # and add only those bands
-            exportVRT = VRT(gdalDataset=self.vrt.dataset, geolocation=self.vrt.geoloc)
+            exportVRT = VRT(gdalDataset=self.vrt.dataset, 
+                        geolocationArray=self.vrt.geolocationArray)
             allBands = self.bands()
             for bandID in bands:
                 bandNumber = self._get_band_number(bandID)
@@ -344,17 +345,17 @@ class Nansat(Domain):
             iBand.replaceAttribute("dataType", dataType)
         exportVRT.write_xml(str(node0.rawxml()))
 
-        # add bands with geolocation to the VRT
-        if addGeoloc and len(exportVRT.geoloc.d) > 0:
+        # add bands with geolocation arrays to the VRT
+        if addGeolocArray and len(exportVRT.geolocationArray.d) > 0:
             exportVRT._create_band(
-                {'SourceFilename': self.vrt.geoloc.d['X_DATASET'],
-                 'SourceBand': int(self.vrt.geoloc.d['X_BAND'])},
+                {'SourceFilename': self.vrt.geolocationArray.d['X_DATASET'],
+                 'SourceBand': int(self.vrt.geolocationArray.d['X_BAND'])},
                 {'wkv': 'longitude',
                  'name': 'GEOLOCATION_X_DATASET'})
 
             exportVRT._create_band(
-                {'SourceFilename': self.vrt.geoloc.d['Y_DATASET'],
-                 'SourceBand': int(self.vrt.geoloc.d['Y_BAND'])},
+                {'SourceFilename': self.vrt.geolocationArray.d['Y_DATASET'],
+                 'SourceBand': int(self.vrt.geolocationArray.d['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
                  

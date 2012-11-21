@@ -8,7 +8,7 @@
 # Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import Geolocation, VRT, gdal, osr, os
+from vrt import GeolocationArray, VRT, gdal, osr, os
 import re
 from datetime import datetime, timedelta
 
@@ -171,7 +171,7 @@ class Mapper(VRT):
         lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
         
         # add geolocation
-        self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
+        self.add_geolocation(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
 
         # ==== ADD GCPs and Pojection ====        
         # get lat/lon matrices

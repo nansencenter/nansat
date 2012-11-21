@@ -15,7 +15,7 @@ import gdal
 
 import numpy as np
 
-from vrt import VRT, Geolocation
+from vrt import VRT, GeolocationArray
 
 class Mapper(VRT):
     ''' Mapper for Ocean Productivity website 

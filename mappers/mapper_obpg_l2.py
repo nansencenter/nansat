@@ -8,7 +8,7 @@
 # Copyright:   (c) NERSC 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import Geolocation, VRT, gdal, osr
+from vrt import GeolocationArray, VRT, gdal, osr
 from datetime import datetime, timedelta
 
 class Mapper(VRT):
@@ -138,8 +138,8 @@ class Mapper(VRT):
         lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
         
-        # add geolocation
-        self.add_geolocation(Geolocation(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
+        # add geolocation array
+        self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
 
         # ==== ADD GCPs and Pojection ====        
         # get lat/lon matrices
