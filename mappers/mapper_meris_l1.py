@@ -8,7 +8,7 @@
 # Copyright:   (c) asumak 2011
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from vrt import VRT, Geolocation
+from vrt import VRT
 from envisat import Envisat
 
 class Mapper(VRT, Envisat):
@@ -16,16 +16,14 @@ class Mapper(VRT, Envisat):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create MER1 VRT '''
-        product = gdalMetadata.get("MPH_PRODUCT", "Not_MERIS")
-
+        # get ENVISAT MPH_PRODUCT
+        product = gdalMetadata.get("MPH_PRODUCT")
+        
         if product[0:9] != "MER_FRS_1" and product[0:9] != "MER_RR__1":
             raise AttributeError("MERIS_L1 BAD MAPPER")
-
-        # Create VRTdataset with small VRTRawRasterbands
-        #geoDataset = self.create_VRT_with_rawbands(fileName, ["DME roughness", "viewing zenith angles"])
-        #
-        # Enlarge the band to the underlying data band size
-        #self.geoDataset = geoDataset.resized(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+         
+        # init ADS parameters
+        Envisat.__init__(self, fileName, product[0:4])
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '412'}},
@@ -52,17 +50,22 @@ class Mapper(VRT, Envisat):
                 bandDict['src']['DataType'] = 2  # default for meris L1 DataType UInt16
             if bandDict['dst'].has_key('wavelength'):
                 bandDict['dst']['suffix'] = bandDict['dst']['wavelength']
-
-        # get GADS from header
-        scales = self.read_scaling_gads(fileName, range(7, 22));
+        
+        # get scaling GADS from header
+        scales = self.read_scaling_gads(range(7, 22));
         # set scale factor to the band metadata (only radiances)
         for i, bandDict in enumerate(metaDict[:-1]):
             bandDict['src']['ScaleRatio'] = str(scales[i])
 
-        #add geolocation dictionary into metaDict
-        #for iBand in range(self.geoDataset.dataset.RasterCount):
-        #    bandMetadata = self.geoDataset.dataset.GetRasterBand(iBand+1).GetMetadata()
-        #    metaDict.append({'src': {'SourceFilename': self.geoDataset.fileName, 'SourceBand': iBand+1}, 'dst':bandMetadata})
+        # get list with resized VRTs from ADS
+        self.adsVRTs = self.get_ads_vrts(gdalDataset, ['sun zenith angles', "sun azimuth angles", "zonal winds", "meridional winds"])
+        # add bands from the ADS VRTs
+        for adsVRT in self.adsVRTs:
+            metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
+                                     'SourceBand': 1},
+                             'dst': {'name':  adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name'),
+                                     'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}
+                            })
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
@@ -73,7 +76,5 @@ class Mapper(VRT, Envisat):
         # set time
         self._set_envisat_time(gdalMetadata)
 
-        ''' Set GeolocationArray '''
-        #latlonName = {"latitude":"latitude","longitude":"longitude"}
-        #self.add_geoarray_dataset(fileName, "MER_", gdalDataset, latlonName, stepSize= 1)
-
+        # add geolocation arrays
+        #self.add_geolocation_from_ads(gdalDataset, step=1)
