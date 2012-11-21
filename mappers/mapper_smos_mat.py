@@ -171,7 +171,7 @@ class Mapper(VRT):
         lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
         
         # add geolocation
-        self.add_geolocation(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
+        self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
 
         # ==== ADD GCPs and Pojection ====        
         # get lat/lon matrices
