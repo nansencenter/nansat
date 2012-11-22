@@ -1096,6 +1096,14 @@ class Nansat(Domain):
 
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
+
+        import zipfile
+        fPathName, fExt = os.path.splitext(self.fileName)
+        if fExt == '.ZIP' or fExt == '.zip':
+            z=zipfile.ZipFile(self.fileName)
+            z.extractall()
+            self.fileName = fPathName
+
         gdalDataset = gdal.Open(self.fileName)
         if gdalDataset is not None:
             # get metadata from the GDAL dataset

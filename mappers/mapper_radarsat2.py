@@ -3,7 +3,7 @@
 # Purpose:     Mapping for Radarsat2 data
 #
 # Author:      knutfd
-# Modified:    mortenwh
+# Modified:	Morten Wergeland Hansen
 #
 # Created:     29.11.2011
 # Copyright:   (c) NERSC 2011
@@ -26,13 +26,6 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create Radarsat2 VRT '''
-        fPathName, fExt = os.path.splitext(fileName)
-        if fExt == '.ZIP' or fExt == '.zip':
-            fPath, fName = os.path.split(fPathName)
-            fileName = '/vsizip/%s/%s' % (fileName, fName)
-            gdalDataset = gdal.Open(fileName)
-            gdalMetadata = gdalDataset.GetMetadata()
-
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
 
         #if it is not RADARSAT-2, return
