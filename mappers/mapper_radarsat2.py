@@ -26,6 +26,13 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create Radarsat2 VRT '''
+        fPathName, fExt = os.path.splitext(fileName)
+        if fExt == '.ZIP' or fExt == '.zip':
+            fPath, fName = os.path.split(fPathName)
+            fileName = '/vsizip/%s/%s' % (fileName, fName)
+            gdalDataset = gdal.Open(fileName)
+            gdalMetadata = gdalDataset.GetMetadata()
+
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
 
         #if it is not RADARSAT-2, return
@@ -71,7 +78,6 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-                    
         ###################################################################
         # Add sigma0_VV - pixel function of incidence angle and sigma0_HH
         ###################################################################
@@ -97,7 +103,6 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
             Domain(ds=gdalDataset).upwards_azimuth_direction()
             + 90, 360)))
-
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
