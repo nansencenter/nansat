@@ -64,7 +64,7 @@ class Mapper(VRT):
         ###########################
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
-        RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=numCalibratedScanLines)
+        self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=numCalibratedScanLines)
         RawGeolocMetaDict = []
         for lonlatNo in range(1,3):
             RawGeolocMetaDict.append({'src': {
@@ -76,29 +76,25 @@ class Mapper(VRT):
                         'PixelOffset' : 8,
                         'LineOffset' : recordLength,
                         'ByteOrder' : 'LSB'},
-                    'dst': {
-                        #'dataType': gdal.GDT_Int32,
-                        'wkv': 'latitude'}})
+                    'dst': {}})
 
-        RawGeolocVRT._create_bands(RawGeolocMetaDict)
+        self.RawGeolocVRT._create_bands(RawGeolocMetaDict)
 
 #       # Make derived GeolocVRT with scaled lon and lat
-        GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=numCalibratedScanLines)
+        self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=numCalibratedScanLines)
         GeolocMetaDict = []
         for lonlatNo in range(1,3):
             GeolocMetaDict.append({'src': {
-                        'SourceFilename': RawGeolocVRT.fileName,
+                        'SourceFilename': self.RawGeolocVRT.fileName,
                         'SourceBand': lonlatNo,
                         'ScaleRatio': 0.0001,
                         'ScaleOffset': 0,
                         'DataType': gdal.GDT_Int32},
-                    'dst': {
-                        #'dataType': gdal.GDT_Int32,
-                        'wkv': 'latitude'}})
+                    'dst': {}})
 
-        GeolocVRT._create_bands(GeolocMetaDict)
+        self.GeolocVRT._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=GeolocVRT, yVRT=GeolocVRT,
+        GeolocObject = GeolocationArray(xVRT=self.GeolocVRT, yVRT=self.GeolocVRT,
                     xBand=2, yBand=1, # x = lon, y = lat
                     lineOffset=0, pixelOffset=25, lineStep=1, pixelStep=40)
 
@@ -131,7 +127,7 @@ class Mapper(VRT):
                                 "unit": "1"}})
 
         self._create_bands(metaDict)
-
+        
         # Adding valid time to dataset
         self._set_time(time)
         
