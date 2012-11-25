@@ -95,7 +95,6 @@ class GeolocationArray():
         self.d['PIXEL_STEP'] = str(pixelStep)
 
 
-
 class VRT():
     '''VRT dataset management
 
@@ -1103,3 +1102,36 @@ class VRT():
                 k += 1
 
         return gcps
+
+    def convert_GeolocationArray2GPCs(self):
+        ''' (Temporary?) function to make GCPs from geolocation arrays, and to delete the latter
+
+        When the geolocation arrays are much smaller than the raster bands,
+        warping quality is very bad, as seen with Envisat and AAPP datasets.
+        For AAPP improved quality is obtained after making GCPs for all points
+        in the (small) geolocation arrays.
+
+        '''
+
+        geolocArray = self.dataset.GetMetadata('GEOLOCATION')
+        x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
+        y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
+        numy, numx = x.shape 
+        PIXEL_OFFSET = int(geolocArray['PIXEL_OFFSET'])
+        PIXEL_STEP = int(geolocArray['PIXEL_STEP'])
+        LINE_OFFSET = int(geolocArray['LINE_OFFSET'])
+        LINE_STEP = int(geolocArray['LINE_STEP'])
+        pixels = np.linspace(PIXEL_OFFSET, PIXEL_OFFSET + (numx-1)*PIXEL_STEP, numx)
+        lines  = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy-1)*LINE_STEP, numy)
+        print lines, pixels
+        # Make GCPs
+        GCPs = []
+        for p in range(len(pixels)):
+            for l in range(len(lines)):
+                g = gdal.GCP(float(x[l,p]), float(y[l,p]), 0, pixels[p], lines[l])
+                GCPs.append(g)
+        # Insert GCPs
+        self.dataset.SetGCPs(GCPs, geolocArray['SRS'])
+        #print self.dataset.GetGCPs()
+        # Delete geolocation array
+        self.add_geolocationArray()

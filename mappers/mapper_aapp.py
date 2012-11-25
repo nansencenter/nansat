@@ -62,9 +62,12 @@ class Mapper(VRT):
         ###########################
         # Make Geolocation Arrays
         ###########################
+        factor=10 # Downsampling geolocation array, to not use every line
+        # Note that some lines at the end will be missing, could matter for small images!
+        srcRasterYSize = int(numCalibratedScanLines/factor)
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
-        self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=numCalibratedScanLines)
+        self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
         RawGeolocMetaDict = []
         for lonlatNo in range(1,3):
             RawGeolocMetaDict.append({'src': {
@@ -74,14 +77,14 @@ class Mapper(VRT):
                         'DataType': gdal.GDT_Int32,
                         'ImageOffset' : headerLength + 640 + (lonlatNo-1)*4,
                         'PixelOffset' : 8,
-                        'LineOffset' : recordLength,
+                        'LineOffset' : recordLength*factor,
                         'ByteOrder' : 'LSB'},
                     'dst': {}})
 
         self.RawGeolocVRT._create_bands(RawGeolocMetaDict)
 
-#       # Make derived GeolocVRT with scaled lon and lat
-        self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=numCalibratedScanLines)
+        # Make derived GeolocVRT with scaled lon and lat
+        self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1,3):
             GeolocMetaDict.append({'src': {
@@ -96,7 +99,7 @@ class Mapper(VRT):
 
         GeolocObject = GeolocationArray(xVRT=self.GeolocVRT, yVRT=self.GeolocVRT,
                     xBand=2, yBand=1, # x = lon, y = lat
-                    lineOffset=0, pixelOffset=25, lineStep=1, pixelStep=40)
+                    lineOffset=0, pixelOffset=25, lineStep=factor, pixelStep=40)
 
         #######################
         # Initialize dataset
@@ -104,6 +107,11 @@ class Mapper(VRT):
         # create empty VRT dataset with geolocation only (from Geolocation Array)
         VRT.__init__(self, srcRasterXSize=2048, srcRasterYSize=numCalibratedScanLines, 
                         geolocationArray=GeolocObject, srcProjection=GeolocObject.d['SRS'])
+
+        # Since warping quality is horrible using geolocation arrays
+        # which are much smaller than raster bands, the geolocation arrays
+        # are here converted to GCPs
+        self.convert_GeolocationArray2GPCs()
 
         ##################
         # Create bands
@@ -130,5 +138,5 @@ class Mapper(VRT):
         
         # Adding valid time to dataset
         self._set_time(time)
-        
+
         return
