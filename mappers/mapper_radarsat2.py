@@ -71,7 +71,7 @@ class Mapper(VRT):
                 {'SourceFilename': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
                  'SourceBand':  1,
                  'DataType': 6}],
-            'dst': {'wkv': 'sensor_zenith_angle',
+            'dst': {'wkv': 'angle_of_incidence',
                     'PixelFunctionType': 'BetaSigmaToIncidence',
                     'name': 'incidence_angle'}})
 
