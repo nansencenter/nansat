@@ -33,6 +33,8 @@ from vrt import *
 from figure import *
 from nansat_tools import add_logger, Node
 
+gdal.UseExceptions()
+
 class GDALError(Error):
     '''Error from GDAL '''
     pass
@@ -1096,7 +1098,12 @@ class Nansat(Domain):
 
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
-        gdalDataset = gdal.Open(self.fileName)
+        try:
+            gdalDataset = gdal.Open(self.fileName)
+        except RuntimeError:
+            print 'GDAL could not open ' + self.fileName + \
+                    ', trying to read with Nansat raw mapper...'
+            gdalDataset = None
         if gdalDataset is not None:
             # get metadata from the GDAL dataset
             metadata = gdalDataset.GetMetadata()
