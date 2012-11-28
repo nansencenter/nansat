@@ -93,7 +93,9 @@ class Mapper(VRT):
             else:
                 standard_name = 'albedo'
             bandSource = 'MSG('+path+','+resolution+','+satellite+','+datestamp+','+str(i+1)+',Y,N,1,1)'
-            if gdal.Open(bandSource) is None:
+            try:
+                gdal.Open(bandSource)
+            except:
                 print "Warning: band missing for wavelength " + str(wavelength) + "nm"
                 continue
             src = {'SourceFilename': bandSource, 'SourceBand': 1, 'LUT': LUT[i], 'NODATA': NODATA[i]}
