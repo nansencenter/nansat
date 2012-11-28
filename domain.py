@@ -787,9 +787,13 @@ class Domain():
         latVector = []
         lonVector = []
         for pixel, line in zip(colVector, rowVector):
-            succ, point = transformer.TransformPoint(0, pixel, line)
-            lonVector.append(point[0])
-            latVector.append(point[1])
+            try:
+                succ, point = transformer.TransformPoint(0, pixel, line)
+                lonVector.append(point[0])
+                latVector.append(point[1])
+            except:
+                lonVector.append(np.nan)
+                latVector.append(np.nan)
 
         return lonVector, latVector
 

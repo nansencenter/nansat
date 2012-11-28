@@ -132,7 +132,6 @@ class Mapper(VRT):
             self.write_xml(str(node0.rawxml()))
 
         # Set time
-        #self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
+        self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
         
-        print "successful"
         return
