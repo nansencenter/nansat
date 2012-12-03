@@ -693,8 +693,11 @@ class Figure():
         ----------
         fileName : string
             name of outputfile
-        transparency : int
-            transparency of the PIL image
+        transparency: int
+            transparency of the image background, set for PIL in Figure.save()
+            default transparent color is 0
+        transparentMask: boolean, defult = False
+            If True, the masked pixelds will be transparent when saving to png
 
         Modifies
         --------

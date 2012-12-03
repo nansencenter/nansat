@@ -370,7 +370,8 @@ class Domain():
         kmlFile.write('    </LatLonBox>\n')
 
         # write footer and close
-        kmlFile.write('        </GroundOverlay></kml>\n')
+        kmlFile.write('</GroundOverlay>\n')
+        kmlFile.write('</kml>')
         kmlFile.close()
 
     def get_geolocation_grids(self):

@@ -770,9 +770,9 @@ class Nansat(Domain):
                 number of lat/lon grid lines to show
             latlonLabels: int
                 number of lat/lon labels to show along each side.
-			transparency: int
-				transparency of the image background, set for PIL in Figure.save()
-				default transparent color is 0
+            transparency: int
+                transparency of the image background, set for PIL in Figure.save()
+                default transparent color is 0
             transparentMask: boolean, defult = False
                 If True, the masked pixelds will be transparent when saving to png
     
