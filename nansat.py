@@ -929,25 +929,17 @@ class Nansat(Domain):
         Color limits are fetched from the metadata item 'minmax'.
             If 'minmax' is not specified, min and max of raster is used.
 
+        The method can be replaced by using nansat.write_figure()
+        followed by vrt.copyproj(). However, write_figure uses PIL
+        which does not allow Tiff compression, which gives much larger files
+
         Parameters
         ----------
             fileName: string
             bandID: integer or string(default = 1)
 
-        AK: Two thirds of this method is done in write_figure()
-        I would suggest rather to get rid of write_geotiffimage() and add
-        functionality to write_figure(). E.g.:
-        if DEFAULT_EXTENSION=GTiff:
-            # save as tif
-            # add georeference to the ouput file c.a.:
-            # ds = gdal.Open(outFile, 'RW')
-            # ds.SetProjection(self.vrt.dataset.GetProjection())
-            # ...GeoTransform...
-            # ...GCPs...
-
-
         '''
-        bandNumber = self._get_band_number(bandID)
+        bandNo = self._get_band_number(bandID)
         band = self.get_GDALRasterBand(bandID)
         minmax = band.GetMetadataItem('minmax')
         # Get min and max from band histogram if not given (from wkv)
@@ -955,13 +947,9 @@ class Nansat(Domain):
             (rmin, rmax) = band.ComputeRasterMinMax(1)
             minmax = str(rmin) + ' ' + str(rmax)
 
-        # Create a temporary VRT file (no colormap yet) and convert this to 8-bit geotiff image
-        # Should ideally do this directly with GDAL Python API (CreateCopy),
-        # but gdal_translate provides conenient scaling and conversion to Byte
-        tmpVRTFileName = fileName + '.tmp.VRT'
-        self.vrt.export(tmpVRTFileName)
-
-        # Add colormap from WKV to the VRT file
+        bMin = float(minmax.split(' ')[0])
+        bMax = float(minmax.split(' ')[1])
+        # Make colormap from WKV information
         try:
             colormap = band.GetMetadataItem('colormap')
         except:
@@ -972,19 +960,21 @@ class Nansat(Domain):
             colorTable = gdal.ColorTable()
             for i in range(cmap.shape[0]):
                 colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
-                    int(cmap[i, 2]), int(cmap[i, 3]))
+                int(cmap[i, 2]), int(cmap[i, 3]))
                 colorTable.SetColorEntry(i, colorEntry)
-            tmpFile = gdal.Open(tmpVRTFileName)
-            tmpFile.GetRasterBand(bandNumber).SetColorTable(colorTable)
-            tmpFile = None
         except:
-            print 'Could not add colormap; Matplotlib may not be available.'
-
-        os.system('gdal_translate ' + tmpVRTFileName + ' ' + fileName +
-            ' -b ' + str(bandNumber) + ' -ot Byte -scale ' + minmax + ' 0 255' +
-            ' -co "COMPRESS=LZW"')
-        os.remove(tmpVRTFileName)
-
+            'Could not add colormap; Matplotlib may not be available.'
+        # Write Tiff image, with data scaled to values between 0 and 255
+        outDataset = gdal.GetDriverByName('Gtiff').Create(
+                fileName, band.XSize, band.YSize,
+                1, gdal.GDT_Byte, ['COMPRESS=LZW'])
+        data = self.__getitem__(bandNo)
+        scaledData = ((data-bMin)/(bMax-bMin)) * 255
+        outDataset.GetRasterBand(1).WriteArray(scaledData)
+        outDataset.GetRasterBand(1).SetColorTable(colorTable)
+        outDataset.GetRasterBand(1).SetMetadata(band.GetMetadata())
+        outDataset = None
+        self.vrt.copyproj(fileName)
 
     def get_time(self, bandID=None):
         ''' Get time for dataset and/or its bands

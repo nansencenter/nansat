@@ -1145,10 +1145,9 @@ class VRT():
         '''
 
         figDataset = gdal.Open(fileName, gdal.GA_Update)
-        figDataset.SetProjection(self.dataset.GetProjection())
         figDataset.SetGeoTransform(self.dataset.GetGeoTransform())
+        figDataset.SetProjection(self.dataset.GetProjection())
         gcps = self.dataset.GetGCPs()
-        if gcps != 0:
+        if len(gcps) != 0:
             figDataset.SetGCPs(gcps, self.dataset.GetGCPProjection())
         figDataset = None # Close and write output file
-
