@@ -239,7 +239,7 @@ class Domain():
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         '''Write KML file with domains
 
-        Convert XML-file with domains into into KML-file for GoogleEart
+        Convert XML-file with domains into KML-file for GoogleEart
         or
         Write KML-file with the current Domain
 
@@ -299,6 +299,78 @@ class Domain():
 
         # write footer and close
         kmlFile.write('        </Folder></Document></kml>\n')
+        kmlFile.close()
+
+    def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
+        '''Create KML file for already projected image
+        
+        Write Domain Image into KML-file for GoogleEarth
+ 
+        Parameters
+        ----------
+        kmlFileName: string, optional
+            Name of the KML-file to generate from the current Domain
+        kmlFigureName: string, optional
+            Name of the projected image stored in .png format
+
+        Examples
+        ---------
+        # First of all, reproject an image into Lat/Lon WGS84 (Simple Cylindrical) projection
+        # 1. Cancel previous reprojection
+        # 2. Get corners of the image and the pixel resolution
+        # 3. Create Domain with stereographic projection, corner coordinates and resolution 1000m
+        # 4. Reproject
+        # 5. Write image
+        # 6. Write KML for the image
+        n.reproject() # 1.
+        lons, lats = n.get_corners() # 2.
+        srsString = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
+        extentString = '-lle %f %f %f %f -ts 3000 3000' % (min(lons), min(lats), max(lons), max(lats))
+        d = Domain(srs=srsString, ext=extentString) # 3.
+        n.reproject(d) # 4.
+        n.write_figure(fileName=figureName, bands=[3], clim=[0,0.15], cmapName='gray', transparency=0) # 5.
+        n.write_kml_image(kmlFileName=oPath + fileName + '.kml', kmlFigureName=figureName) # 6.
+
+        '''
+
+        # test input options
+        if kmlFileName is not None:
+            # if only output KML-file is given
+            # then convert the current domain to KML
+            domains = [self]
+        else:
+            # otherwise it is potentially error
+            raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
+        
+        if kmlFigureName is None:
+            raise OptionError('kmlFigureName(%s) is not specified' % (kmlFigureName))
+
+        # open KML, write header
+        kmlFile = file(kmlFileName, 'wt')
+        kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
+                      'xmlns:gx="http://www.google.com/kml/ext/2.2" '
+                      'xmlns:kml="http://www.opengis.net/kml/2.2" '
+                      'xmlns:atom="http://www.w3.org/2005/Atom">\n')
+        kmlFile.write('<GroundOverlay>\n')
+        kmlFile.write('    <name>%s</name>\n' % kmlFileName)
+        kmlFile.write('    <Icon>\n')
+        kmlFile.write('        <href>%s</href>\n' % kmlFigureName)
+        kmlFile.write('        <viewBoundScale>0.75</viewBoundScale>\n')
+        kmlFile.write('    </Icon>\n')
+
+        # get corner of the domain and add to KML
+        domainLon, domainLat = self.get_corners()
+
+        kmlFile.write('    <LatLonBox>\n')
+        kmlFile.write('        <north>%s</north>\n' % max(domainLat))
+        kmlFile.write('        <south>%s</south>\n' % min(domainLat))
+        kmlFile.write('        <east>%s</east>\n' % max(domainLon))
+        kmlFile.write('        <west>%s</west>\n' % min(domainLon))
+        kmlFile.write('    </LatLonBox>\n')
+
+        # write footer and close
+        kmlFile.write('        </GroundOverlay></kml>\n')
         kmlFile.close()
 
     def get_geolocation_grids(self):

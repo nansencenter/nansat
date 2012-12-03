@@ -15,6 +15,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
+
 import os.path
 import sys
 import glob
@@ -769,6 +770,11 @@ class Nansat(Domain):
                 number of lat/lon grid lines to show
             latlonLabels: int
                 number of lat/lon labels to show along each side.
+			transparency: int
+				transparency of the image background, set for PIL in Figure.save()
+				default transparent color is 0
+            transparentMask: boolean, defult = False
+                If True, the masked pixelds will be transparent when saving to png
     
             Advanced parameters:
             --------------------
@@ -820,6 +826,11 @@ class Nansat(Domain):
         n.write_figure('r09_log3_leg.jpg', logarithm=True, legend=True,
                                 gamma=3, titleString='Title', fontSize=30,
                                 numOfTicks=15)
+        # write an image to png with transparent Mask set to color 
+        transparency=0, following PIL Image.save(..., transparency=0)
+        n.write_figure(fileName='transparent.png', bands=[3], \
+               transparentMask=True, mask_array=wmArray, mask_lut={0: 0},
+               clim=[0,0.15], cmapName='gray', transparency=0)
 
         See also
         ------
@@ -905,7 +916,7 @@ class Nansat(Domain):
             if type(fileName) == bool and fileName:
                 fig.pilImg.show()
             elif type(fileName) == str:
-                fig.save(fileName)
+				fig.save(fileName, **kwargs)
 
         return fig
 

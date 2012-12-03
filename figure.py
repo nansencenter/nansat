@@ -19,7 +19,6 @@
 # http://www.gnu.org/licenses/
 #------------------------------------------------------------------------------
 
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,7 +43,6 @@ class Error(Exception):
 class OptionError(Error):
     '''Error for improper options (arguments) '''
     pass
-
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
@@ -119,6 +117,9 @@ class Figure():
         self.d['lonGrid'] = None
         self.d['latlonGridSpacing'] = 10
         self.d['latlonLabels'] = 0
+
+        self.d['transparentMask'] = False
+        self.d['transparency'] = 0
 
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
@@ -201,7 +202,10 @@ class Figure():
         # modify default parameters
         self._set_defaults(kwargs)
         # get values of free indeces in the palette
-        availIndeces = range(self.d['numOfColor'], 255 - 1)
+        if self.d['transparentMask']:
+            availIndeces = [self.d['transparency']]
+        else:
+            availIndeces = range(self.d['numOfColor'], 255 - 1)
         # for all lut color indeces
         for i, maskValue in enumerate(self.d['mask_lut']):
             if i < len(availIndeces):
@@ -680,7 +684,7 @@ class Figure():
         if self.d['logoFileName'] is not None:
             self.add_logo()
 
-    def save(self, fileName):
+    def save(self, fileName, **kwargs):
         ''' Save self.pilImg to a physical file
 
         If given extension is JPG, convert the image mode from Palette to RGB
@@ -689,12 +693,17 @@ class Figure():
         ----------
         fileName : string
             name of outputfile
+        transparency : int
+            transparency of the PIL image
 
         Modifies
         --------
         self.pilImg : None
 
         '''
+        # modify default values
+        self._set_defaults(kwargs)
+
         if not((fileName.split(".")[-1] in self.extensionList)):
             fileName = fileName + self.d['DEFAULT_EXTENSION']
 
@@ -702,7 +711,7 @@ class Figure():
         if fileExtension in ["jpg", "JPG", "jpeg", "JPEG"]:
             self.pilImg = self.pilImg.convert("RGB")
 
-        self.pilImg.save(fileName)
+        self.pilImg.save(fileName, transparency=self.d['transparency'])
 
     def _create_palette(self):
         '''Create a palette based on Matplotlib colormap name
