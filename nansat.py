@@ -916,7 +916,7 @@ class Nansat(Domain):
             if type(fileName) == bool and fileName:
                 fig.pilImg.show()
             elif type(fileName) == str:
-				fig.save(fileName, **kwargs)
+                fig.save(fileName, **kwargs)
 
         return fig
 
