@@ -53,7 +53,6 @@ class Mapper(VRT):
         ##################
         fp.seek(84)
         year = int(struct.unpack('<H', fp.read(2))[0])
-        print year
         dayofyear = int(struct.unpack('<H', fp.read(2))[0])
         millisecondsOfDay = int(struct.unpack('<l', fp.read(4))[0])
         time = datetime.datetime(year,1,1) + datetime.timedelta(dayofyear-1, 

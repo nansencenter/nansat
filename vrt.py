@@ -1123,7 +1123,6 @@ class VRT():
         LINE_STEP = int(geolocArray['LINE_STEP'])
         pixels = np.linspace(PIXEL_OFFSET, PIXEL_OFFSET + (numx-1)*PIXEL_STEP, numx)
         lines  = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy-1)*LINE_STEP, numy)
-        print lines, pixels
         # Make GCPs
         GCPs = []
         for p in range(len(pixels)):
@@ -1132,6 +1131,24 @@ class VRT():
                 GCPs.append(g)
         # Insert GCPs
         self.dataset.SetGCPs(GCPs, geolocArray['SRS'])
-        #print self.dataset.GetGCPs()
         # Delete geolocation array
         self.add_geolocationArray()
+
+    def copyproj(self, fileName):
+        ''' Copy geoloctation data from given VRT to a figure file
+
+        Useful for adding geolocation information to figure
+        files produced e.g. by Figure class, which contain 
+        no geolocation. 
+        Analogue to utility gdalcopyproj.py.
+
+        '''
+
+        figDataset = gdal.Open(fileName, gdal.GA_Update)
+        figDataset.SetProjection(self.dataset.GetProjection())
+        figDataset.SetGeoTransform(self.dataset.GetGeoTransform())
+        gcps = self.dataset.GetGCPs()
+        if gcps != 0:
+            figDataset.SetGCPs(gcps, self.dataset.GetGCPProjection())
+        figDataset = None # Close and write output file
+
