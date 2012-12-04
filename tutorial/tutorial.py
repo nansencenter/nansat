@@ -3,12 +3,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-
+import os
 
 from nansat import Nansat, Domain
 
-iPath = './'
-oPath = 'tmpdata/'
+iPath = os.getcwd() + '/'
+
+oPath = iPath + 'tmpdata/'
 fileName = 'gcps.tif'
 oFileName = oPath + fileName
 
@@ -147,6 +148,38 @@ n.reproject()
 array = n[1] * 10
 n.add_band(array=array, parameters={'name': 'new_band', 'about': 'test'})
 print 'Nansat with new band:', n
+
+# Prepare the image for Google Earth exporting
+# reproject image into Lat/Lon WGS84 (Simple Cylindrical) projection
+# 1. Cancel previous reprojection
+# 2. Get corners of the image and the pixel resolution
+# 3. Create Domain with stereographic projection, corner coordinates 1000m
+# 4. Reproject
+n.reproject()                                                       # 1.
+lons, lats = n.get_corners()                                        # 2.
+srsString = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
+extentString = '-lle %f %f %f %f -ts 800 600' % (min(lons), min(lats), max(lons), max(lats))
+d = Domain(srs=srsString, ext=extentString)                         # 3.
+n.reproject(d)                                                      # 4.
+# get array with watermask (landmask)
+# it must be done after reprojection!
+# 6. Get Nansat object with watermask
+# 7. Get array from Nansat object. 0 - land, 1 - water
+wm = n.watermask()                                                  # 6.
+wmArray = wm[1]                                                     # 7.
+
+# 8. Write the projected image with transparent land mask and image background
+# transparentMask: boolean, defult = False
+# If True, the masked pixels will be transparent when saving to png
+#transparency: int
+#transparency of the image background, set for PIL in Figure.save()
+#default transparent color is 0
+n.write_figure(fileName=oFileName + '_proj.png', \
+               transparentMask=True, mask_array=wmArray, mask_lut={0: 0},
+               clim='hist', transparency=0)                         # 8.
+
+# make KML file for exported image
+n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
 
 print 'Tutorial completed successfully. Output files are found in folder ' + oPath
 
