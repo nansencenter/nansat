@@ -15,6 +15,9 @@ oFileName = oPath + fileName
 # create Nansat object
 n = Nansat(iPath + fileName, logLevel=10)
 
+# create nNansat object faster
+n = Nansat(iPath + fileName, mapperName='generic', logLevel=10)
+
 # list bands and georeference of the object
 print 'Raw Nansat:', n
 
@@ -119,15 +122,12 @@ print 'Stereo Domain:', dStereo
 n.reproject(dStereo, 2) # 4.
 n.write_figure(oFileName + '_pro_stereo.png') # 5.
 
-# export all data into NetCDF format (may take some time and lot's of space)
+
+# export all data into NetCDF format
 n.export(oFileName + '_0.nc')
 
-# export only few bands and remove some metadata
-n.export(oFileName + '_1.nc', bands=[1,2]) #, rmMetadata=['SourceFilename'])
-
 # export one band to GeoTIFF
-n.export(oFileName + '_2.tif', bands=[1], driver='GTiff')
-
+n.export_band(oFileName + '_2.tif', bandID=2, driver='GTiff')
 
 # create new object from given domain and array
 # 1. Reproject the current object

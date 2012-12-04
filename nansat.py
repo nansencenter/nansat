@@ -285,7 +285,7 @@ class Nansat(Domain):
 
         return b
 
-    def export(self, fileName, bands=None, rmMetadata=[], addGeolocArray=True, addGCPs=True, driver='netCDF'):
+    def export(self, fileName, rmMetadata=[], addGeolocArray=True, addGCPs=True, driver='netCDF'):
         '''Create a netCDF file
 
         Parameters
@@ -318,24 +318,8 @@ class Nansat(Domain):
             --> "if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);"
 
         '''
-        # Create new VRT object which will be used for export
-        if bands is None:
-            # if <bands> are not specified use all bands and make full copy
-            exportVRT = self.vrt.copy()
-        else:
-            # if list of bands is given, make shallow copy of self.VRT
-            # and add only those bands
-            exportVRT = VRT(gdalDataset=self.vrt.dataset, 
-                        geolocationArray=self.vrt.geolocationArray)
-            allBands = self.bands()
-            for bandID in bands:
-                bandNumber = self._get_band_number(bandID)
-                bandMetadata = allBands[bandNumber]
-                bandMetadata.pop('SourceFilename')
-                bandMetadata.pop('SourceBand')
-                exportVRT._create_band({'SourceFilename': self.vrt.fileName,
-                                        'SourceBand': bandNumber},
-                                       bandMetadata)
+        # if <bands> are not specified use all bands and make full copy
+        exportVRT = self.vrt.copy()
 
         # Change the element from GDAL datatype to NetCDF data type
         node0 = Node.create(exportVRT.read_xml())
@@ -402,8 +386,10 @@ class Nansat(Domain):
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
         # Create a NetCDF file
+        self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                             exportVRT.dataset)
+        self.logger.debug('Export - OK!')
 
     def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
@@ -611,7 +597,13 @@ class Nansat(Domain):
                     blockSize=blockSize,
                     geoTransform=dstDomain.vrt.dataset.GetGeoTransform())
 
+        # set current VRT object
         self.vrt = warpedVRT
+        # add metadata from RAW to VRT (except fileName)
+        vrtFileName = self.vrt.dataset.GetMetadataItem('fileName')
+        rawMetadata = self.raw.dataset.GetMetadata()
+        self.vrt.dataset.SetMetadata(rawMetadata)
+        self.vrt.dataset.SetMetadataItem('fileName', vrtFileName)
 
     def watermask(self, mod44path=None, dstDomain=None):
         ''' Create numpy array with watermask (water=1, land=0)
@@ -660,11 +652,12 @@ class Nansat(Domain):
 
         if not mod44DataExist:
             # MOD44W data does not exist generate empty matrix
-            watermask = np.zeros([self.vrt.dataset.RasterXSize, 
+            watermaskArray = np.zeros([self.vrt.dataset.RasterXSize, 
                                   self.vrt.dataset.RasterYSize])
+            watermask = Nansat(domain=self, array=watermaskArray)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path + '/MOD44W.vrt')
+            watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W', logLevel=self.logger.level)
             # reproject on self or given Domain
             if dstDomain is None:
                 watermask.reproject(self)
@@ -1062,7 +1055,7 @@ class Nansat(Domain):
             metaReceiverVRT = self.vrt.dataset.GetRasterBand(bandNumber)
 
         # set metadata from dictionary or from single pair key,value
-        if isinstance(key, dict):
+        if type(key) == dict:
             for k in key:
                 metaReceiverRAW.SetMetadataItem(k, key[k])
                 metaReceiverVRT.SetMetadataItem(k, key[k])
@@ -1242,7 +1235,7 @@ class Nansat(Domain):
         nClass = kwargs.get('nClass', Nansat)
         
         # get mapper name for opening file 
-        mapperName = kwargs.get('mapperName', '')
+        mapperName = kwargs.get('mapperName', 'generic')
         
         # get resampling method for reproject
         eResampleAlg = kwargs.get('eResampleAlg', 1)
@@ -1267,7 +1260,8 @@ class Nansat(Domain):
         for i, f in enumerate(files):
             self.logger.info('Processing %s' % f)
             # open file using Nansat or its child class
-            ## n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
+            # the line below is for debugging
+            # n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             try:
                 n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             except:
@@ -1333,7 +1327,34 @@ class Nansat(Domain):
             self.add_band(array=avgMat[b], parameters={'name': b})
             self.add_band(array=stdMat[b], parameters={'name': b + '_std'})
 
-        #return OstdMatb, Oavg, OavgMatb, OcntMat
-
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Empty. Overloaded.'''
+
+    def export_band(self, fileName, bandID=1, driver='netCDF'):
+        '''Export only one band of the Nansat object
+        Get array from the required band
+        Create temporary Nansat from the array
+        Export temporary Nansat to file
+        
+        Parameters:
+        -----------
+        fileName: str
+            name of the output file
+        bandID: int or str
+            number of name of the band
+        driver:
+            name of the GDAL Driver (format) to use
+        '''
+        # get array from self
+        bandArray = self[bandID]
+        # get root, band metadata
+        rootMetadata = self.get_metadata()
+        bandMetadata = self.get_metadata(bandID=bandID)
+        # create temporary nansat
+        tmpNansat = Nansat(domain=self, array=bandArray)
+        # set metadata
+        tmpNansat.set_metadata(rootMetadata)
+        tmpNansat.set_metadata(bandMetadata, bandID=1)
+        # export
+        tmpNansat.export(fileName, driver=driver)
+        tmpNansat.vrt.export('vrt.vrt')

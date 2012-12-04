@@ -854,7 +854,7 @@ class Domain():
         # create transformer
         transformer = gdal.Transformer(self.vrt.dataset, None,
                                        ['SRC_SRS=' + srcWKT,
-                                       'DST_SRS=' + dstWKT])
+                                       'DST_SRS=' + dstWKT])#,'METHOD=GCP_TPS'])
 
         # use the transformer to convert pixel/line into lat/lon
         latVector = []
