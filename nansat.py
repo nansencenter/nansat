@@ -1114,7 +1114,9 @@ class Nansat(Domain):
         # Import Mapper
         tmpVRT = None
         if mapperName is not '':
-            # If a specific mapper is requested, we test only this one
+            # If a specific mapper is requested, we test only this one.
+            # Stripping off eventual 'mapper_' and '.py' and converting to lowercase
+            mapperName = mapperName.replace('mapper_', '').replace('.py', '').lower()
             try:
                 mapper_module = __import__('mapper_' + mapperName)
             except ImportError:
