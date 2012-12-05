@@ -29,7 +29,7 @@
 
 #include <math.h>
 #include <gdal.h>
-#include <stdio.h>
+#include <stdio.h> 
 #include <stdlib.h>
 
 CPLErr RealPixelFunc(void **papoSources, int nSources, void *pData,

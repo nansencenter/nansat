@@ -38,7 +38,7 @@ CPL_C_START
 CPL_DLL void GDALRegister_PIXFUN(void);
 CPL_C_END
 
-extern CPLErr GDALRegisterDefaultPixelFunc();
+extern CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc();
 
 /************************************************************************/
 /*                         GDALRegister_PIXFUN()                        */
