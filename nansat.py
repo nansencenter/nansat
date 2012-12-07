@@ -34,7 +34,14 @@ from vrt import *
 from figure import *
 from nansat_tools import add_logger, Node
 
+# We want GDAL to raise exceptions, rather than only sending error messages to stdout
 gdal.UseExceptions()
+
+# Setting environment variables
+nansathome = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(nansathome + '/mappers/')
+os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
+
 
 class GDALError(Error):
     '''Error from GDAL '''
