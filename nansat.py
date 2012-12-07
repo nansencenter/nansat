@@ -42,6 +42,12 @@ nansathome = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(nansathome + '/mappers/')
 os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
+# Compiling pixelfunctions if not already done. 
+# Similar could be implemented for windows (checking if DLL-file exists)
+if not sys.platform.startswith('win'):
+    if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
+        os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make') 
+
 
 class GDALError(Error):
     '''Error from GDAL '''
