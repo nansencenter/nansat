@@ -919,13 +919,16 @@ class VRT():
         # VRT to be warped
         srcVRT = self.copy()
 
-        # if destination GCPs are given: create and add fake GCPs
+        # srs to be used in AutoCreateWarpedVRT
+        acwvSRS = dstSRS
+        
+        # if destination GCPs are given: create and add fake GCPs to src
         if len(dstGCPs) > 0:
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
             use_geolocationArray = False
-            dstSRS=None
+            acwvSRS = None
 
         # prepare VRT.dataset for warping.
         # Select if GEOLOCATION Array, or GCPs, or GeoTransform from the original
@@ -954,7 +957,7 @@ class VRT():
 
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
-        warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, dstSRS, eResampleAlg)
+        warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, acwvSRS, eResampleAlg)
         # TODO: implement the below option for proper handling of stereo projections
         # warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, '', dstSRS, eResampleAlg)
 
@@ -1039,6 +1042,7 @@ class VRT():
                              'DST_SRS=' + latlongSRS.ExportToWkt()])
 
         # create 'fake' GCPs
+        fakeGCPs = []
         for g in gcps:
             # transform DST lat/lon to SRC pixel/line
             succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
@@ -1047,10 +1051,11 @@ class VRT():
 
             # swap coordinates in GCPs:
             # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
-            g.GCPX = g.GCPPixel
-            g.GCPY = g.GCPLine
-            g.GCPPixel = srcPixel
-            g.GCPLine = srcLine
+            fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine, 0, srcPixel, srcLine))
+            #g.GCPX = 
+            #g.GCPY = 
+            #g.GCPPixel = 
+            #g.GCPLine = 
 
         # create 'fake' STEREO projection for 'fake' GCPs of SRC image
         srsString = ("+proj=stere +lon_0=0 +lat_0=0 +k=1 "
@@ -1059,7 +1064,7 @@ class VRT():
         stereoSRS.ImportFromProj4(srsString)
         stereoSRSWKT = stereoSRS.ExportToWkt()
 
-        return {'gcps': gcps, 'srs': stereoSRSWKT}
+        return {'gcps': fakeGCPs, 'srs': stereoSRSWKT}
 
     def _latlon2gcps(self, lat, lon, numOfGCPs=100):
         ''' Create list of GCPs from given grids of latitude and longitude
