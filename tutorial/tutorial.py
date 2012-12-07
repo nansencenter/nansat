@@ -3,14 +3,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-import os
+import inspect, os
 
 from nansat import Nansat, Domain
 
-iPath = os.getcwd() + '/'
+# Setting environment variables, the script directory
+iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-oPath = iPath + 'tmpdata/'
-fileName = 'gcps.tif'
+oPath = iPath + '/tmpdata'
+fileName = '/gcps.tif'
 oFileName = oPath + fileName
 
 # create Nansat object
@@ -173,12 +174,12 @@ wmArray = wm[1]                                                     # 7.
 # If True, the masked pixels will be transparent when saving to png
 #transparency: int
 #transparency of the image background, set for PIL in Figure.save()
-#default transparent color is 0
-n.write_figure(fileName=oFileName + '_proj.png', \
-               transparentMask=True, mask_array=wmArray, mask_lut={0: 0},
-               clim='hist', transparency=0)                         # 8.
+#default transparent color is [0,0,0]
+n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3], \
+               mask_array=wmArray, mask_lut={0: [128, 128, 128]},
+               clim='hist', transparency=[128, 128, 128])           # 8.
 
-# make KML file for exported image
+# make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
 
 print 'Tutorial completed successfully. Output files are found in folder ' + oPath

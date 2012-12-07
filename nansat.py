@@ -16,7 +16,7 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-import os.path
+import inspect, os
 import sys
 import glob
 import dateutil.parser
@@ -37,8 +37,8 @@ from nansat_tools import add_logger, Node
 # We want GDAL to raise exceptions, rather than only sending error messages to stdout
 gdal.UseExceptions()
 
-# Setting environment variables
-nansathome = os.path.dirname(os.path.abspath(__file__))
+# Setting environment variables, the script directory
+nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(nansathome + '/mappers/')
 os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
@@ -777,10 +777,8 @@ class Nansat(Domain):
             latlonLabels: int
                 number of lat/lon labels to show along each side.
             transparency: int
-                transparency of the image background, set for PIL in Figure.save()
-                default transparent color is 0
-            transparentMask: boolean, defult = False
-                If True, the masked pixelds will be transparent when saving to png
+                transparency of the image background(mask), set for PIL alpha mask in Figure.save()
+                default transparency is None
     
             Advanced parameters:
             --------------------
@@ -833,10 +831,10 @@ class Nansat(Domain):
                                 gamma=3, titleString='Title', fontSize=30,
                                 numOfTicks=15)
         # write an image to png with transparent Mask set to color 
-        transparency=0, following PIL Image.save(..., transparency=0)
+        transparency=[0,0,0], following PIL alpha mask
         n.write_figure(fileName='transparent.png', bands=[3], \
-               transparentMask=True, mask_array=wmArray, mask_lut={0: 0},
-               clim=[0,0.15], cmapName='gray', transparency=0)
+               transparentMask=True, mask_array=wmArray, mask_lut={0: [0,0,0]},
+               clim=[0,0.15], cmapName='gray', transparency=[0,0,0])
 
         See also
         ------

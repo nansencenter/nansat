@@ -28,6 +28,7 @@ from math import floor, log10
 
 try:
     import Image
+    import ImageMath
     import ImageDraw
     import ImageFont
 except ImportError:
@@ -118,8 +119,7 @@ class Figure():
         self.d['latlonGridSpacing'] = 10
         self.d['latlonLabels'] = 0
 
-        self.d['transparentMask'] = False
-        self.d['transparency'] = 0
+        self.d['transparency'] = None
 
         self.d['LEGEND_HEIGHT'] = 0.1
         self.d['CBAR_HEIGHTMIN'] = 5
@@ -201,11 +201,10 @@ class Figure():
         '''
         # modify default parameters
         self._set_defaults(kwargs)
+
         # get values of free indeces in the palette
-        if self.d['transparentMask']:
-            availIndeces = [self.d['transparency']]
-        else:
-            availIndeces = range(self.d['numOfColor'], 255 - 1)
+        availIndeces = range(self.d['numOfColor'], 255 - 1)
+
         # for all lut color indeces
         for i, maskValue in enumerate(self.d['mask_lut']):
             if i < len(availIndeces):
@@ -646,6 +645,9 @@ class Figure():
         # modify default parameters
         self._set_defaults(kwargs)
 
+        # if the image is reprojected it has 0 values we replace them with mask before creating PIL Image
+        self.alphaMask = self.array[0,:,:] == 0
+
         # clip values to min/max
         self.clip()
 
@@ -684,6 +686,27 @@ class Figure():
         if self.d['logoFileName'] is not None:
             self.add_logo()
 
+    def makeTransparentColor(self):
+
+        self.pilImg = self.pilImg.convert("RGBA")
+        datas = self.pilImg.getdata()
+        newData = list()
+
+        for item in datas:
+            if item[0] == self.d['transparency'][0] and item[1] == self.d['transparency'][1]  and item[2] == self.d['transparency'][2] :
+                newData.append((255, 255, 255, 0))
+            else:
+                newData.append(item)
+
+        self.pilImg.putdata(newData)
+
+        # The alphaMask is set in process() before clip() the Image
+        newData = list()
+        for y in xrange(self.alphaMask.shape[1]):
+            for x in xrange(self.alphaMask.shape[0]):
+                if self.alphaMask[x, y] == 1:
+                    self.pilImg.putpixel((y,x), 0)
+
     def save(self, fileName, **kwargs):
         ''' Save self.pilImg to a physical file
 
@@ -696,8 +719,6 @@ class Figure():
         transparency: int
             transparency of the image background, set for PIL in Figure.save()
             default transparent color is 0
-        transparentMask: boolean, defult = False
-            If True, the masked pixelds will be transparent when saving to png
 
         Modifies
         --------
@@ -714,7 +735,10 @@ class Figure():
         if fileExtension in ["jpg", "JPG", "jpeg", "JPEG"]:
             self.pilImg = self.pilImg.convert("RGB")
 
-        self.pilImg.save(fileName, transparency=self.d['transparency'])
+        if self.d['transparency'] is not None:
+             self.makeTransparentColor()
+
+        self.pilImg.save(fileName)
 
     def _create_palette(self):
         '''Create a palette based on Matplotlib colormap name
