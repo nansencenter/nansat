@@ -646,7 +646,7 @@ class Figure():
         self._set_defaults(kwargs)
 
         # if the image is reprojected it has 0 values we replace them with mask before creating PIL Image
-        self.alphaMask = self.array[0,:,:] == 0
+        self.reprojMask = self.array[0,:,:] == 0
 
         # clip values to min/max
         self.clip()
@@ -687,8 +687,8 @@ class Figure():
             self.add_logo()
 
     def makeTransparentColor(self):
-        ''' self.makeTransparentColor makes
-        colors specified by self.d['transparency'] and self.alphaMask transparent
+        ''' makes colors specified by self.d['transparency']
+        and self.reprojMask (if the image is reprojected) transparent
 
         Parameters
         ----------
@@ -713,7 +713,7 @@ class Figure():
 
         # The alphaMask is set in process() before clip() the Image
         img = np.array(self.pilImg)
-        img[:,:,3][self.alphaMask] = 0
+        img[:,:,3][self.reprojMask] = 0
         self.pilImg = Image.fromarray(np.uint8(img))
 
     def save(self, fileName, **kwargs):
