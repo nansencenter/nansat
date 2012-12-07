@@ -68,7 +68,7 @@ class Domain():
     It has such attributes as rasterXsize,
     rasterYsize, GeoTransform and GeoPorjection, etc which fully describe
     dimentions and spatial reference of the grid. The VRT dataset is
-    empty - it has no bands.    
+    empty - it has no bands.
     '''
 
     def __init__(self, srs=None, ext=None, ds=None, lon=None, lat=None, name='', logLevel=None):
@@ -303,9 +303,9 @@ class Domain():
 
     def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
         '''Create KML file for already projected image
-        
+
         Write Domain Image into KML-file for GoogleEarth
- 
+
         Parameters
         ----------
         kmlFileName: string, optional
@@ -341,7 +341,7 @@ class Domain():
         else:
             # otherwise it is potentially error
             raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
-        
+
         if kmlFigureName is None:
             raise OptionError('kmlFigureName(%s) is not specified' % (kmlFigureName))
 

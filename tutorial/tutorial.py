@@ -37,7 +37,7 @@ print 'Border:', n.get_border()
 
 # get time of the image aquisition
 print 'Time:', n.get_time()[0]
- 
+
 # Get band data and do some operations
 # 1. Get data from 1st band as numpy array
 # 2. Plot the array (pyplot image is save to a PNG file)
@@ -77,7 +77,7 @@ n.write_figure(oFileName + '_latlon.png', latGrid=latGrid, lonGrid=lonGrid, latl
 # make small preview
 # 1. Reduce size of the Nansat object ten times
 # 2. Make simple grayscaled image with brightness correction
-# 3. Resize back to original resolution 
+# 3. Resize back to original resolution
 n.resize(0.1)
 n.write_figure(oFileName + '_preview.png', clim='hist', cmapName='gray')
 n.resize()

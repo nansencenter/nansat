@@ -42,11 +42,11 @@ nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 sys.path.append(nansathome + '/mappers/')
 os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
-# Compiling pixelfunctions if not already done. 
+# Compiling pixelfunctions if not already done.
 # Similar could be implemented for windows (checking if DLL-file exists)
 if not sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
-        os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make') 
+        os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
 
 
 class GDALError(Error):
@@ -134,7 +134,7 @@ class Nansat(Domain):
             # pop and append generic mapper to the end
             self.mapperList.pop(self.mapperList.index('mapper_generic.py'))
             self.mapperList.append('mapper_generic.py')
-        
+
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
         # set input file name
@@ -193,7 +193,7 @@ class Nansat(Domain):
 
     def __repr__(self):
         '''Creates string with basic info about the Nansat object'''
-        
+
         outString = '-' * 40 + '\n'
         outString += self.fileName + '\n'
         outString += '-' * 40 + '\n'
@@ -358,7 +358,7 @@ class Nansat(Domain):
                  'SourceBand': int(self.vrt.geolocationArray.d['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
-                 
+
         # add GCPs to VRT metadata
         if addGCPs:
             exportVRT._add_gcp_metadata()
@@ -425,7 +425,7 @@ class Nansat(Domain):
                 -1, 0, 1, 2, 3, 4: Average, NearestNeighbour, Bilinear, Cubic,
                                    CubicSpline, Lancoz
                 if eResampleAlg > 0: VRT.resized() is used
-                    
+
         Modifies
         --------
             self.vrt.dataset : VRT dataset of VRT object
@@ -436,11 +436,11 @@ class Nansat(Domain):
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
             return
-        
+
         # get current shape
         rasterYSize  = float(self.shape()[0])
         rasterXSize  = float(self.shape()[1])
-        
+
         # estimate factor if width or height is given
         if width is not None:
             factor = float(width) / rasterXSize
@@ -450,10 +450,10 @@ class Nansat(Domain):
         # calculate new size
         newRasterYSize = int(rasterYSize * factor)
         newRasterXSize = int(rasterXSize * factor)
-        
+
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
-        
+
         if eResampleAlg > 0:
             # apply affine transformation using reprojection
             self.vrt = self.vrt.resized(newRasterXSize, newRasterYSize, eResampleAlg)
@@ -462,11 +462,11 @@ class Nansat(Domain):
             # Get XML content from VRT-file
             vrtXML = self.vrt.read_xml()
             node0 = Node.create(vrtXML)
-        
+
             # replace rasterXSize in <VRTDataset>
             node0.replaceAttribute("rasterXSize", str(newRasterXSize))
             node0.replaceAttribute("rasterYSize", str(newRasterYSize))
-        
+
             # replace xSize in <DstRect> of each source
             for iNode1 in node0.nodeList("VRTRasterBand"):
                 for sourceName in ["ComplexSource", "SimpleSource"]:
@@ -478,7 +478,7 @@ class Nansat(Domain):
                 if eResampleAlg == -1:
                     iNode1.replaceTag("ComplexSource", "AveragedSource")
                     iNode1.replaceTag("SimpleSource", "AveragedSource")
-        
+
             # Edit GCPs to correspond to the downscaled size
             if node0.node("GCPList"):
                 for iNode in node0.node("GCPList").nodeList("GCP"):
@@ -490,7 +490,7 @@ class Nansat(Domain):
                     if lin > float(rasterYSize):
                         lin = rasterYSize
                     iNode.replaceAttribute("Line", str(lin))
-        
+
             # Write the modified elemements into VRT
             self.vrt.write_xml(str(node0.rawxml()))
 
@@ -665,7 +665,7 @@ class Nansat(Domain):
 
         if not mod44DataExist:
             # MOD44W data does not exist generate empty matrix
-            watermaskArray = np.zeros([self.vrt.dataset.RasterXSize, 
+            watermaskArray = np.zeros([self.vrt.dataset.RasterXSize,
                                   self.vrt.dataset.RasterYSize])
             watermask = Nansat(domain=self, array=watermaskArray)
         else:
@@ -779,7 +779,7 @@ class Nansat(Domain):
             transparency: int
                 transparency of the image background(mask), set for PIL alpha mask in Figure.save()
                 default transparency is None
-    
+
             Advanced parameters:
             --------------------
             LEGEND_HEIGHT: float, [0 1]
@@ -807,7 +807,7 @@ class Nansat(Domain):
             NAME_LOCATION_Y
                 0.3, title  offset Y relative to legend height
             DEFAULT_EXTENSION, string
-                ".png"            
+                ".png"
             --------------------------------------------------
 
         Modifies
@@ -830,7 +830,7 @@ class Nansat(Domain):
         n.write_figure('r09_log3_leg.jpg', logarithm=True, legend=True,
                                 gamma=3, titleString='Title', fontSize=30,
                                 numOfTicks=15)
-        # write an image to png with transparent Mask set to color 
+        # write an image to png with transparent Mask set to color
         transparency=[0,0,0], following PIL alpha mask
         n.write_figure(fileName='transparent.png', bands=[3], \
                transparentMask=True, mask_array=wmArray, mask_lut={0: [0,0,0]},
@@ -850,7 +850,7 @@ class Nansat(Domain):
         else:
             bands = [self._get_band_number(bands)]
 
-        # == create 3D ARRAY ==                
+        # == create 3D ARRAY ==
         array = None
         for band in bands:
             # get array from band and reshape to (1,height,width)
@@ -861,7 +861,7 @@ class Nansat(Domain):
                 array = iArray
             else:
                 array = np.append(array, iArray, axis=0)
-        
+
         # == CREATE FIGURE object and parse input parameters ==
         fig = Figure(array, **kwargs)
         array = None
@@ -1128,7 +1128,7 @@ class Nansat(Domain):
             tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
             self.mapper = mapperName
         else:
-            # We test all mappers, import one by one 
+            # We test all mappers, import one by one
             for iMapper in self.mapperList:
                 #get rid of .py extension
                 iMapper = iMapper.replace('.py', '')
@@ -1198,7 +1198,7 @@ class Nansat(Domain):
                         break
 
         # if bandID is int and with bounds: return this number
-        if   (type(bandID) == int and 
+        if   (type(bandID) == int and
               bandID >= 1 and
               bandID <= self.vrt.dataset.RasterCount):
             bandNumber = bandID
@@ -1244,10 +1244,10 @@ class Nansat(Domain):
         '''
         # get Nansat child class for opening file
         nClass = kwargs.get('nClass', Nansat)
-        
-        # get mapper name for opening file 
+
+        # get mapper name for opening file
         mapperName = kwargs.get('mapperName', 'generic')
-        
+
         # get resampling method for reproject
         eResampleAlg = kwargs.get('eResampleAlg', 1)
 
@@ -1293,7 +1293,7 @@ class Nansat(Domain):
             except:
                 self.logger.error('Unable to reproject %s' % f)
                 continue
-                
+
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
             cntMatTmp[mask == 128] = 1
@@ -1346,7 +1346,7 @@ class Nansat(Domain):
         Get array from the required band
         Create temporary Nansat from the array
         Export temporary Nansat to file
-        
+
         Parameters:
         -----------
         fileName: str

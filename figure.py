@@ -18,7 +18,7 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 #------------------------------------------------------------------------------
-
+\
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -687,7 +687,18 @@ class Figure():
             self.add_logo()
 
     def makeTransparentColor(self):
+        ''' self.makeTransparentColor makes
+        colors specified by self.d['transparency'] and self.alphaMask transparent
 
+        Parameters
+        ----------
+        self
+
+        Modifies
+        --------
+        self.pilImg : PIL image
+            Adds transparency to PIL image
+        '''
         self.pilImg = self.pilImg.convert("RGBA")
         datas = self.pilImg.getdata()
         newData = list()
@@ -701,11 +712,9 @@ class Figure():
         self.pilImg.putdata(newData)
 
         # The alphaMask is set in process() before clip() the Image
-        newData = list()
-        for y in xrange(self.alphaMask.shape[1]):
-            for x in xrange(self.alphaMask.shape[0]):
-                if self.alphaMask[x, y] == 1:
-                    self.pilImg.putpixel((y,x), 0)
+        img = np.array(self.pilImg)
+        img[:,:,3][self.alphaMask] = 0
+        self.pilImg = Image.fromarray(np.uint8(img))
 
     def save(self, fileName, **kwargs):
         ''' Save self.pilImg to a physical file
