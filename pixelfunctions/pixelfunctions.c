@@ -1061,6 +1061,40 @@ CPLErr RawcountsIncidenceToSigma0(void **papoSources, int nSources, void *pData,
 return CE_None;
 }
 
+/************************************************************************/
+/*                       Convert Rrs to Rrsw                            */
+/************************************************************************/
+
+CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol;
+	double rrs, rrsw;
+
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			rrs = SRCVAL(papoSources[0], eSrcType, ii);
+			rrsw = rrs / (0.52 + 1.7 * rrs);
+
+			GDALCopyWords(&rrsw, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+	/* ---- Return success ---- */
+return CE_None;
+}
 
 /************************************************************************/
 /*                     GDALRegisterDefaultPixelFunc()                   */
@@ -1125,6 +1159,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_QLK", RawcountsToSigma0_CosmoSkymed_QLK);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_SBI", RawcountsToSigma0_CosmoSkymed_SBI);
+    GDALAddDerivedBandPixelFunc("NormReflectanceToRemSensReflectance", NormReflectanceToRemSensReflectance);    
 
     return CE_None;
 }
