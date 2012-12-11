@@ -40,7 +40,8 @@ gdal.UseExceptions()
 # Setting environment variables, the script directory
 nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 sys.path.append(nansathome + '/mappers/')
-os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
+if not os.environ.has_key('GDAL_DRIVER_PATH'):
+    os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
 # Compiling pixelfunctions if not already done.
 # Similar could be implemented for windows (checking if DLL-file exists)
@@ -967,7 +968,7 @@ class Nansat(Domain):
                 int(cmap[i, 2]), int(cmap[i, 3]))
                 colorTable.SetColorEntry(i, colorEntry)
         except:
-            'Could not add colormap; Matplotlib may not be available.'
+            print 'Could not add colormap; Matplotlib may not be available.'
         # Write Tiff image, with data scaled to values between 0 and 255
         outDataset = gdal.GetDriverByName('Gtiff').Create(
                 fileName, band.XSize, band.YSize,
@@ -975,8 +976,13 @@ class Nansat(Domain):
         data = self.__getitem__(bandNo)
         scaledData = ((data-bMin)/(bMax-bMin)) * 255
         outDataset.GetRasterBand(1).WriteArray(scaledData)
-        outDataset.GetRasterBand(1).SetColorTable(colorTable)
         outDataset.GetRasterBand(1).SetMetadata(band.GetMetadata())
+        try:
+            outDataset.GetRasterBand(1).SetColorTable(colorTable)
+        except:
+            # Happens after reprojection, a possible bug?
+            print 'Could not set color table'
+            print colorTable
         outDataset = None
         self.vrt.copyproj(fileName)
 
