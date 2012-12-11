@@ -61,9 +61,12 @@ class Mapper(VRT):
         ###########################
         # Make Geolocation Arrays
         ###########################
-        factor=10 # Downsampling geolocation array, to not use every line
+        if numCalibratedScanLines < 400:
+            factor = 10 # Small segment, we use more tie points
+        else:
+            factor=40 # Downsampling geolocation array for long scenes
         # Note that some lines at the end will be missing, could matter for small images!
-        srcRasterYSize = int(numCalibratedScanLines/factor)
+        srcRasterYSize = int(numCalibratedScanLines/factor) + 1
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
         self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
@@ -108,14 +111,29 @@ class Mapper(VRT):
                         geolocationArray=GeolocObject, srcProjection=GeolocObject.d['SRS'])
 
         # Since warping quality is horrible using geolocation arrays
-        # which are much smaller than raster bands, the geolocation arrays
-        # are here converted to GCPs
+        # which are much smaller than raster bands (due to a bug in GDAL:
+        # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
+        # are here converted to GCPs.
         self.convert_GeolocationArray2GPCs()
 
         ##################
         # Create bands
         ##################
         metaDict = []
+        ch = ({},{},{},{},{},{})
+
+        ch[1]['wavelength'] = 0.63
+        ch[2]['wavelength'] = 0.86
+        ch[3]['wavelength'] = '1.6 or 3.7 mum'
+        ch[4]['wavelength'] = 10.8
+        ch[5]['wavelength'] = 12.0
+
+        ch[1]['minmax'] = '400 900'
+        ch[2]['minmax'] = '0 900'
+        ch[3]['minmax'] = '0 900'
+        ch[4]['minmax'] = '0 900'
+        ch[5]['minmax'] = '0 900'
+
 
         for bandNo in range(1,6):
             metaDict.append({'src': {
@@ -129,8 +147,10 @@ class Mapper(VRT):
                                 'ByteOrder' : 'LSB'},
                             'dst': {
                                 'dataType': gdal.GDT_UInt16,
-                                'wkv': 'latitude',
-                                'minmax': '500 1100',
+                                'wkv': 'raw_counts',
+                                'colormap': 'gray',
+                                'wavelength': ch[bandNo]['wavelength'],
+                                'minmax': ch[bandNo]['minmax'],
                                 "unit": "1"}})
 
         self._create_bands(metaDict)
