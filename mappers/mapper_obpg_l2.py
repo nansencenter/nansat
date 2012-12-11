@@ -55,13 +55,14 @@ class Mapper(VRT):
         'cdom_index': {'src': {}, 'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter', 'case': 'II'}},
         'sst':        {'src': {}, 'dst': {'wkv': 'sea_surface_temperature'}},
         'l2_flags':   {'src': {'SourceType': 'SimpleSource', 'DataType': 4},
-                                  'dst': {'wkv': 'quality_flags'}},
+                       'dst': {'wkv': 'quality_flags', 'dataType': 4}},
         'latitude':   {'src': {}, 'dst': {'wkv': 'latitude'}},
         'longitude':  {'src': {}, 'dst': {'wkv': 'longitude'}},
         }
         
         # loop through available bands and generate metaDict (non fixed)
         metaDict = []
+        bandNo = 0
         for subDataset in subDatasets:
             # get sub dataset name
             subDatasetName = subDataset[1].split(' ')[1]
@@ -101,23 +102,33 @@ class Mapper(VRT):
                 
                 # add wavelength, band name to dst
                 if wavelength is not None:
-                    metaEntry['dst']['suffix'] = str(wavelength)[:]
+                    metaEntry['dst']['suffix'] = str(wavelength)
                     metaEntry['dst']['wavelength'] = str(wavelength)
 
-                self.logger.debug('metaEntry: %s' % str(metaEntry))
-
                 # append band metadata to metaDict
+                self.logger.debug('metaEntry: %d => %s' % (bandNo, str(metaEntry)))
                 metaDict.append(metaEntry)
+                bandNo += 1
+                
+                if subBandName == 'Rrs':
+                    metaEntryRrsw = {
+                        'src': [{
+                            'SourceFilename': subDataset[0],
+                            'SourceBand':  1,
+                            'ScaleRatio': slope,
+                            'ScaleOffset': intercept,
+                            'DataType': 6}],
+                        'dst': {
+                            'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
+                            'suffix': str(wavelength),
+                            'wavelength': str(wavelength),
+                            'PixelFunctionType': 'NormReflectanceToRemSensReflectance',
+                        }}
 
-        """
-                metaEntry2 = {'src': {'SourceFilename': subDataset[0], 'SourceBand':  1},
-                              'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
-                                      'name': rrsBandName[0].replace('Rrs', 'Rrsw'),
-                                      'wavelength': rrsBandName[0][-3:],
-                                      'expression': 'self["%s"] / (0.52 + 1.7 * self["%s"])' % (rrsBandName[0], rrsBandName[0]),
-                                      }
-                              }
-        """
+                    # append band metadata to metaDict
+                    self.logger.debug('metaEntry: %d => %s' % (bandNo, str(metaEntryRrsw)))
+                    metaDict.append(metaEntryRrsw)
+                    bandNo += 1
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

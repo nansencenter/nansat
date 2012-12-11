@@ -415,6 +415,7 @@ class VRT():
         else:
             # in common case
             options = []
+        self.logger.debug('Options of AddBand: %s', str(options))
         
         # set destination dataType (if not given in input parameters)
         if 'dataType' not in dst:
@@ -740,7 +741,7 @@ class VRT():
         return warpedVRT
 
 
-    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0, geoTransform=None, blockSize=None, srcSRS=None, dstSRS=None):
+    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0, geoTransform=None, blockSize=None, srcSRS=None, dstSRS=None, WorkingDataType=None):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
 
         Parameters
@@ -782,6 +783,9 @@ class VRT():
             if blockSize is not None:
                 node0.node("BlockXSize").value = str(blockSize)
                 node0.node("BlockYSize").value = str(blockSize)
+            
+            if WorkingDataType is not None:
+                node0.node('WorkingDataType').value = WorkingDataType
         
         """
         # TODO: test thoroughly and implement later
@@ -851,7 +855,8 @@ class VRT():
                                 geoTransform=None,
                                 use_geolocationArray=True, use_gcps=True, 
                                 use_geotransform=True,
-                                dstGCPs=[], dstGeolocationArray=None):
+                                dstGCPs=[], dstGeolocationArray=None,
+                                WorkingDataType=None):
         ''' Create VRT object with WarpedVRT
 
         Modifies the input VRT according to the input options
@@ -971,7 +976,7 @@ class VRT():
 
         # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
-        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform, blockSize)
+        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform, blockSize, WorkingDataType)
 
         """
         # TODO: implement the below option for proper handling stereo projections over the pole

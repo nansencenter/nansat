@@ -555,7 +555,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None):
+    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None, WorkingDataType=None):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -609,7 +609,8 @@ class Nansat(Domain):
                     xSize=dstDomain.vrt.dataset.RasterXSize,
                     ySize=dstDomain.vrt.dataset.RasterYSize,
                     blockSize=blockSize,
-                    geoTransform=dstDomain.vrt.dataset.GetGeoTransform())
+                    geoTransform=dstDomain.vrt.dataset.GetGeoTransform(),
+                    WorkingDataType=WorkingDataType)
 
         # set current VRT object
         self.vrt = warpedVRT

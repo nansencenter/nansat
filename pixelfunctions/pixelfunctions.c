@@ -1073,9 +1073,6 @@ CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, voi
 	int ii, iLine, iCol;
 	double rrs, rrsw;
 
-	/* ---- Init ---- */
-	if (nSources != 2) return CE_Failure;
-
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
