@@ -113,8 +113,9 @@ class Mapper(VRT):
         # Since warping quality is horrible using geolocation arrays
         # which are much smaller than raster bands (due to a bug in GDAL:
         # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
-        # are here converted to GCPs.
-        self.convert_GeolocationArray2GPCs()
+        # are here converted to GCPs. Only every 4 GCP is added, which
+        # significantly increases speed when using -tps warping
+        self.convert_GeolocationArray2GPCs(4, 4)
 
         ##################
         # Create bands

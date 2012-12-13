@@ -1113,13 +1113,26 @@ class VRT():
 
         return gcps
 
-    def convert_GeolocationArray2GPCs(self):
-        ''' (Temporary?) function to make GCPs from geolocation arrays, and to delete the latter
+    def convert_GeolocationArray2GPCs(self, stepX=1, stepY=1):
+        ''' Converting geolocation arrays to GCPs, and deleting the former
 
         When the geolocation arrays are much smaller than the raster bands,
-        warping quality is very bad, as seen with Envisat and AAPP datasets.
-        For AAPP improved quality is obtained after making GCPs for all points
-        in the (small) geolocation arrays.
+        warping quality is very bad. This function is a temporary solution
+        until (eventually) the problem with geolocation interpolation is solved:
+        http://trac.osgeo.org/gdal/ticket/4907
+
+        Parameters
+        ----------
+        stepX : integer, optional (default 1)
+        stepY : integer, optional (default 1)
+            If density of GCPs is too high, warping speed increases dramatically
+            when using -tps (switch to gdalwarp). stepX and stepY can be adjusted
+            to reduce density of GCPs (always keeping the ones around boundaries)
+
+        Modifies
+        --------
+        self.GCPs are added
+        self.geolocationArray is removed
 
         '''
 
@@ -1135,8 +1148,10 @@ class VRT():
         lines  = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy-1)*LINE_STEP, numy)
         # Make GCPs
         GCPs = []
-        for p in range(len(pixels)):
-            for l in range(len(lines)):
+        # Subsample (if requested), but use linspace to 
+        # make sure endpoints are contained 
+        for p in np.around(np.linspace(0, len(pixels)-1, numx/stepX)):
+            for l in np.around(np.linspace(0, len(lines)-1, numy/stepY)):
                 g = gdal.GCP(float(x[l,p]), float(y[l,p]), 0, pixels[p], lines[l])
                 GCPs.append(g)
         # Insert GCPs
@@ -1151,6 +1166,11 @@ class VRT():
         files produced e.g. by Figure class, which contain 
         no geolocation. 
         Analogue to utility gdalcopyproj.py.
+
+        Parameters
+        ----------
+        fileName : string
+            Name of file to which the geolocation data shall be written
 
         '''
 
