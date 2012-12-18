@@ -23,6 +23,8 @@ import datetime
 from dateutil.parser import parse
 import logging
 
+#import pdb
+
 import numpy as np
 
 try:
@@ -473,11 +475,17 @@ class VRT():
         self.dataset.AddBand(int(dst['dataType']), options=options)
         dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
+        self.logger.debug('Added band: %s' % dst['dataType'] )
+
         # Append sources to destination dataset
         if len(srcs) == 1 and srcs[0]['SourceBand'] > 0:
             # only one source
-            dstRasterBand.SetMetadataItem('source_0',
-                                          src['XML'], 'new_vrt_sources')
+            self.logger.debug('Append source to destination dataset: %s' %
+                    src['XML'] )
+            #pdb.set_trace()
+            dstRasterBand.SetMetadataItem('source_0', str(src['XML']), 'new_vrt_sources')
+            self.logger.debug('Appended source to destination dataset: %s' %
+                    src['XML'] )
         elif len(srcs) > 1:
             # several sources for PixelFunction
             metadataSRC = {}
@@ -485,8 +493,11 @@ class VRT():
                 metadataSRC['source_%d' % i] = src['XML']
 
             dstRasterBand.SetMetadata(metadataSRC, 'vrt_sources')
+            self.logger.debug('Appended sources to destination dataset: %s' %
+                    metadataSRC )
             
         # set metadata from WKV
+        self.logger.debug('set metadata from WKV')
         dstRasterBand = self._put_metadata(dstRasterBand, wkvDict)
 
         # set metadata from provided parameters
@@ -496,6 +507,7 @@ class VRT():
         dstRasterBand = self._put_metadata(dstRasterBand, dst)
 
         # return name of the created band
+        self.logger.debug('Return created band: %s' % dst['name'] )
         return dst['name']
 
     def _set_time(self, time):
