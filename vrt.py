@@ -477,7 +477,7 @@ class VRT():
         if len(srcs) == 1 and srcs[0]['SourceBand'] > 0:
             # only one source
             dstRasterBand.SetMetadataItem('source_0',
-                                          src['XML'], 'new_vrt_sources')
+                                          str(src['XML']), 'new_vrt_sources')
         elif len(srcs) > 1:
             # several sources for PixelFunction
             metadataSRC = {}
