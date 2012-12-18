@@ -21,8 +21,6 @@ import sys
 import glob
 import dateutil.parser
 
-import pdb
-
 try:
     from matplotlib import cm
     from numpy import arange
@@ -1124,7 +1122,6 @@ class Nansat(Domain):
         else:
             metadata = None
 
-        #pdb.set_trace()
         # Import Mapper
         tmpVRT = None
         if mapperName is not '':

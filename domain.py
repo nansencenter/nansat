@@ -21,7 +21,6 @@ import os.path
 import re
 import string
 import numpy as np
-import pdb
 
 # test if methods with advanced libraries are available
 try:
@@ -823,12 +822,11 @@ class Domain():
         '''
         #get projection or GCPProjection
         projection = dataset.GetProjection()
-        if not projection:
+        if projection == "":
             projection = dataset.GetGCPProjection()
 
         #test projection
-        #pdb.set_trace()
-        if not projection:
+        if projection == "":
             raise ProjectionError('Empty projection in input dataset!')
 
         return projection

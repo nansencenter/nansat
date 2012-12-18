@@ -1,13 +1,5 @@
 <all_wkvs multiple="true">
     <wkv>
-        <standard_name>radar_brightness_coefficient</standard_name>
-        <long_name>Reflectivity per unit area in slant range</long_name>
-        <short_name>beta0</short_name>
-        <units>m/m</units>
-        <minmax>0 0.1</minmax>
-        <colormap>gray</colormap>
-    </wkv>
-    <wkv>
         <standard_name>surface_backwards_scattering_coefficient_of_radar_wave</standard_name>
         <long_name>Normalized Radar Cross Section</long_name>
         <short_name>sigma0</short_name>
