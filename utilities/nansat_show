@@ -28,7 +28,7 @@ except:
     outfile = 'tmp.png'
     delete = True
 
-n.write_figure(outfile, bandNo, legend=True, cmapName='jet')
+n.write_figure(outfile, bandNo, legend=True)
 Image.open(outfile).show()
 
 if delete:
