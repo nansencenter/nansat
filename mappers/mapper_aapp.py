@@ -37,6 +37,10 @@ class Mapper(VRT):
         fp = open(fileName, 'rb')
         fp.seek(72)
         satNum = int(struct.unpack('<H', fp.read(2))[0])
+        if satNum >= 11:
+            isMetop = True
+        else:
+            isMetop = False
         satID = satIDs[satNum]
         fp.seek(76)
         dataFormatNum = int(struct.unpack('<H', fp.read(2))[0])
@@ -61,12 +65,10 @@ class Mapper(VRT):
         ###########################
         # Make Geolocation Arrays
         ###########################
-        if numCalibratedScanLines < 400:
-            factor = 10 # Small segment, we use more tie points
-        else:
-            factor=40 # Downsampling geolocation array for long scenes
+        factor = 1 # Now reduction is rather done when creating GCPs below
+
         # Note that some lines at the end will be missing, could matter for small images!
-        srcRasterYSize = int(numCalibratedScanLines/factor) + 1
+        srcRasterYSize = int(numCalibratedScanLines/factor)
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
         self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
@@ -113,9 +115,9 @@ class Mapper(VRT):
         # Since warping quality is horrible using geolocation arrays
         # which are much smaller than raster bands (due to a bug in GDAL:
         # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
-        # are here converted to GCPs. Only every 4 GCP is added, which
-        # significantly increases speed when using -tps warping
-        self.convert_GeolocationArray2GPCs(4, 4)
+        # are here converted to GCPs. Only a subset of GCPs is added, 
+        # significantly increasing speed when using -tps warping
+        self.convert_GeolocationArray2GPCs(4, 40)
 
         ##################
         # Create bands
