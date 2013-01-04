@@ -175,12 +175,23 @@ wmArray = wm[1]                                                     # 7.
 #transparency: int
 #transparency of the image background, set for PIL in Figure.save()
 #default transparent color is [0,0,0]
-n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3], \
+n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
                mask_array=wmArray, mask_lut={0: [128, 128, 128]},
                clim='hist', transparency=[128, 128, 128])           # 8.
 
 # make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
+
+# 9. Reproject onto grid of another file
+# 9.A destination file is projected
+n2 = Nansat('stere.tif')
+n.reproject(n2)
+n.write_figure(fileName=oFileName + '_proj_1onto2.png', bands=[1,2,3], clim='hist')
+
+# 9.B destination file has GCPs (in swath projection)
+n.reproject()
+n2.reproject(n)
+n2.write_figure(fileName=oFileName + '_proj_2onto1.png', bands=[1,2,3], clim='hist')
 
 print 'Tutorial completed successfully. Output files are found in folder ' + oPath
 
