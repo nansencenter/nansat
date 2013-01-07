@@ -1221,7 +1221,7 @@ class Nansat(Domain):
 
         return bandNumber
 
-    def mosaic(self, files=[], bands=[], **kwargs):
+    def mosaic(self, files=[], bands=[], reproject=True, maskName='mask', **kwargs):
         '''Mosaic input files. If images overlap, calculate average
 
         Convert all input files into Nansat objects, reproject, get bands,
@@ -1233,10 +1233,10 @@ class Nansat(Domain):
             0:   nodata
             1:   clouds
             2:   land
-            128: values
+            64: values
         If it gets that band (which can be provided by some mappers or Nansat
         childs, e.g.  ModisL2NRT) it uses it to select averagable pixels
-        (i.e. where mask == 128).
+        (i.e. where mask == 64).
         If it cannot locate the band 'mask' is assumes that all pixels are
         averagebale except for thouse out of swath after reprojection.
 
@@ -1256,10 +1256,10 @@ class Nansat(Domain):
         nClass = kwargs.get('nClass', Nansat)
 
         # get mapper name for opening file
-        mapperName = kwargs.get('mapperName', 'generic')
+        mapperName = kwargs.get('mapperName', '')
 
         # get resampling method for reproject
-        eResampleAlg = kwargs.get('eResampleAlg', 1)
+        eResampleAlg = kwargs.get('eResampleAlg', 0)
 
         # get desired shape
         dstShape = self.shape()
@@ -1282,33 +1282,38 @@ class Nansat(Domain):
             self.logger.info('Processing %s' % f)
             # open file using Nansat or its child class
             # the line below is for debugging
-            # n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
+            #n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             try:
                 n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             except:
                 self.logger.error('Unable to open %s' % f)
                 continue
 
-            # add mask band [0: nodata, 1: cloud, 2: land, 128: data]
+            # add mask band [0: nodata, 1: cloud, 2: land, 64: data]
             try:
-                mask = n['mask']
+                mask = n[maskName]
             except:
-                mask = 128 * np.ones(n.shape()).astype('int8')
-                n.add_band(array=mask, parameters={'name': 'mask'})
+                self.logger.error('Cannot get mask')
+                mask = 64 * np.ones(n.shape()).astype('int8')
+                n.add_band(array=mask, parameters={'name': maskName})
 
-            # reproject image and get reprojected mask
-            try:
-                n.reproject(self, eResampleAlg=eResampleAlg)
-                mask = n['mask']
-            except:
-                self.logger.error('Unable to reproject %s' % f)
-                continue
+            if reproject:
+                # reproject image and get reprojected mask
+                try:
+                    n.reproject(self, eResampleAlg=eResampleAlg)
+                    mask = n[maskName]
+                except:
+                    self.logger.error('Unable to reproject %s' % f)
+                    continue
+
+            if mask is None:
+                mask = np.zeros(n.shape()).astype('int8')
 
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
-            cntMatTmp[mask == 128] = 1
+            cntMatTmp[mask == 64] = 1
             cntMat += cntMatTmp
-            # add data to mask matrix (maximum of 0, 1, 2, 128)
+            # add data to mask matrix (maximum of 0, 1, 2, 64)
             maskMat[0, :, :] = mask
             maskMat[1, :, :] = maskMat.max(0)
 
@@ -1317,11 +1322,12 @@ class Nansat(Domain):
                 self.logger.debug('    Adding %s to sum' % b)
                 # get projected data from Nansat object
                 a = n[b]
-                # mask invalid data
-                a[mask < 128] = 0
-                # sum of valid values and squares
-                avgMat[b] += a
-                stdMat[b] += np.square(a)
+                if a is not None:
+                    # mask invalid data
+                    a[mask < 64] = 0
+                    # sum of valid values and squares
+                    avgMat[b] += a
+                    stdMat[b] += np.square(a)
 
         # average products
         cntMat[cntMat == 0] = 1
@@ -1335,13 +1341,13 @@ class Nansat(Domain):
             # set std
             avgMat[b] = avg
 
-        # calculate mask (max of 0, 1, 2, 128)
+        # calculate mask (max of 0, 1, 2, 64)
         maskMat = maskMat.max(0)
 
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'name': 'mask'})
+        self.add_band(array=maskMat, parameters={'name': maskName})
         # add averaged bands
         for b in bands:
             self.logger.debug('    %s' % b)

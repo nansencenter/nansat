@@ -12,12 +12,11 @@ from vrt import GeolocationArray, VRT, gdal, osr
 from datetime import datetime, timedelta
 
 class Mapper(VRT):
-    ''' Mapper for MODIS/MERIS/VIIRS L2 data from OBPG
+    ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
     
     TODO:
     * Test on SeaWIFS
     * Test on MODIS Terra
-    
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata):
@@ -129,7 +128,7 @@ class Mapper(VRT):
                     self.logger.debug('metaEntry: %d => %s' % (bandNo, str(metaEntryRrsw)))
                     metaDict.append(metaEntryRrsw)
                     bandNo += 1
-
+                    
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 

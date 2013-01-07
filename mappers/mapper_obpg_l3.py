@@ -109,19 +109,17 @@ class Mapper(VRT):
                 metaEntry['dst']['suffix'] = simWavelength
                 metaEntry['dst']['wavelength'] = simWavelength
 
-            # add band with rrsw
+            # add band with Rrsw
             metaEntry2 = None
             if simWKV == 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air':
-                metaEntry2 = {'src': metaEntry['src']}
+                metaEntry2 = {'src': [metaEntry['src']]}
                 metaEntry2['dst'] ={
                     'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
                     'suffix': simWavelength,
                     'wavelength': simWavelength,
-                    'expression': 'self["rrs_%s"] / (0.52 + 1.7 * self["rrs_%s"])' % (simWavelength, simWavelength),
+                    'PixelFunctionType': 'NormReflectanceToRemSensReflectance',
                     }
             
-
-            #print 'metaEntry', metaEntry
             # append entry to metaDict
             metaDict.append(metaEntry)
             if metaEntry2 is not None:
@@ -129,13 +127,13 @@ class Mapper(VRT):
 
         #get array with data and make 'mask'
         a = simGdalDataset.ReadAsArray()
-        mask = np.zeros(a.shape, 'uint8') + 128
+        mask = np.zeros(a.shape, 'uint8') + 64
         mask[a < -32000] = 1
         self.maskVRT = VRT(array=mask)
 
         metaDict.append(
             {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
-             'dst': {'BandName': 'mask'}})
+             'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         # print 'simGdalMetadata', simGdalMetadata
