@@ -909,44 +909,6 @@ return CE_None;
 }
 
 
-CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace)
-{
-	int ii, iLine, iCol;
-	double sigma0VV, sigma0HH, incidence_angle, factor;
-	#define PI 3.14159265;
-
-	/* ---- Init ---- */
-	if (nSources != 2) return CE_Failure;
-
-	/* ---- Set pixels ---- */
-	for( iLine = 0; iLine < nYSize; iLine++ )
-	{
-		for( iCol = 0; iCol < nXSize; iCol++ )
-		{
-			ii = iLine * nXSize + iCol;
-			/* Source raster pixels may be obtained with SRCVAL macro */
-			sigma0HH = SRCVAL(papoSources[0], eSrcType, ii);
-			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii)*PI;
-			incidence_angle = incidence_angle/180;
-
-			/* Polarisation ratio from Thompson et al. with alpha=1 */
-			factor = pow( (1+2* pow(tan(incidence_angle),2)) / (1+1*pow(tan(incidence_angle),2)), 2);
-			sigma0VV = sigma0HH*factor;
-
-			GDALCopyWords(&sigma0VV, GDT_Float64, 0,
-			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
-			              eBufType, nPixelSpace, 1);
-		}
-	}
-
-	/* ---- Return success ---- */
-return CE_None;
-}
-
-
 CPLErr Sigma0HHBetaToSigma0VV(void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
@@ -1195,7 +1157,6 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToMagnitude", UVToMagnitude);
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
-    GDALAddDerivedBandPixelFunc("Sigma0HHIncidenceToSigma0VV", Sigma0HHIncidenceToSigma0VV);
     GDALAddDerivedBandPixelFunc("Sigma0HHBetaToSigma0VV", Sigma0HHBetaToSigma0VV);
     GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_QLK", RawcountsToSigma0_CosmoSkymed_QLK);

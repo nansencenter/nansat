@@ -55,8 +55,6 @@ class Mapper(VRT):
                 s0dataset = gdal.Open(dataset[0])
                 s0datasetName = dataset[0][:]
                 s0datasetPol = s0dataset.GetRasterBand(1).GetMetadata()['POLARIMETRIC_INTERP']
-                print 's0datasetName', s0datasetName
-                print 's0datasetPol', s0datasetPol
                 for i in range(1, s0dataset.RasterCount+1):
                     polString = s0dataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP']
                     ''' 
@@ -81,7 +79,6 @@ class Mapper(VRT):
                 b0datasetName = dataset[0][:]
                 for j in range(1, b0dataset.RasterCount+1):
                     polString = b0dataset.GetRasterBand(j).GetMetadata()['POLARIMETRIC_INTERP']
-                    #pdb.set_trace()
                     if polString==s0datasetPol:
                         b0datasetBand = j
         
