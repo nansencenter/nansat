@@ -1384,4 +1384,3 @@ class Nansat(Domain):
         tmpNansat.set_metadata(bandMetadata, bandID=1)
         # export
         tmpNansat.export(fileName, driver=driver)
-        tmpNansat.vrt.export('vrt.vrt')

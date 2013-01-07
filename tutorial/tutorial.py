@@ -124,6 +124,20 @@ print 'Stereo Domain:', dStereo
 n.reproject(dStereo, 2) # 4.
 n.write_figure(oFileName + '_pro_stereo.png') # 5.
 
+# Reproject onto grid of another file (destination file is projected)
+n2 = Nansat('stere.tif')
+n.reproject(n2)
+n.write_figure(fileName=oFileName + '_proj_1onto2.png', bands=[1,2,3], clim='hist')
+
+# Reproject onto grid of another file (destination file is in swath projection)
+n.reproject()
+n2.reproject(n)
+n2.write_figure(fileName=oFileName + '_proj_2onto1.png', bands=[1,2,3], clim='hist')
+
+# Reproject onto grids of lat/lon
+dFromGrids = Domain(lon=lonGrid, lat=latGrid)
+n2.reproject(dFromGrids)
+n2.write_figure(fileName=oFileName + '_proj_on_grid.png', bands=[1,2,3], clim='hist')
 
 # export all data into NetCDF format
 n.export(oFileName + '_0.nc')
@@ -149,6 +163,10 @@ n.reproject()
 array = n[1] * 10
 n.add_band(array=array, parameters={'name': 'new_band', 'about': 'test'})
 print 'Nansat with new band:', n
+
+# add band from another file to existing object
+n.add_band(fileName='stere.tif', bandID='L_645', parameters={'name': 'L_645_stere'})
+print 'Nansat with new band from another file:', n
 
 # Prepare the image for Google Earth exporting
 # reproject image into Lat/Lon WGS84 (Simple Cylindrical) projection
@@ -182,26 +200,15 @@ n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
 # make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
 
-# 9. Reproject onto grid of another file
-# 9.A destination file is projected
-n2 = Nansat('stere.tif')
-n.reproject(n2)
-n.write_figure(fileName=oFileName + '_proj_1onto2.png', bands=[1,2,3], clim='hist')
-
-# 9.B destination file has GCPs (in swath projection)
-n.reproject()
-n2.reproject(n)
-n2.write_figure(fileName=oFileName + '_proj_2onto1.png', bands=[1,2,3], clim='hist')
-
 print 'Tutorial completed successfully. Output files are found in folder ' + oPath
 
-# TODO: MOSAIC
-
-# TODO: add another test file
-# add band from another file to existing object
-# (actually the same file in this example but it may be any other file)
-#n.add_band(fileName=iPath+fileName, bandID=1, parameters={'name': 'one_more_band_1'})
-
-# TODO: where to take sample lat/lon grids from?
-# reproject object onto given lat/lon arrays
-#n.reproject(Domain(lon=lonGrid, lat=latGrid))
+# Perform batch averaging of several files
+# 1. Create destination Nansat object with desired projection
+nMosaic = Nansat(domain=dStereo)
+# 2. Perfom averaging
+nMosaic.mosaic(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
+# 3. Get mask of non-valid pixels
+mask = nMosaic['mask']
+# 4. Output averaged data using the mask
+nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
+                        mask_array=mask, mask_lut={0:[128,128,128]})
