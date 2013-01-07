@@ -151,7 +151,7 @@ class Figure():
         # set fonts for Legend
         self.fontFileName = os.path.join(os.path.dirname(
                                      os.path.realpath(__file__)),
-                                     'fonts/times.ttf')
+                                     'fonts/DejaVuSans.ttf')
 
 
     def apply_logarithm(self, **kwargs):
