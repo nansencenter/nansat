@@ -946,6 +946,53 @@ CPLErr Sigma0HHIncidenceToSigma0VV(void **papoSources, int nSources, void *pData
 return CE_None;
 }
 
+
+CPLErr Sigma0HHBetaToSigma0VV(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol;
+	double sigma0HH, beta0, incidence, factor, sigma0VV;
+
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+    /*fprintf("nSources: %d\n", nSources);*/
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			sigma0HH = SRCVAL(papoSources[0], eSrcType, ii);
+			beta0 = SRCVAL(papoSources[1], eSrcType, ii);
+            
+            /* get incidence angle first */
+			if (beta0 != 0){
+                incidence = asin(sigma0HH/beta0);
+            } else {
+                incidence = 0;
+            }
+            
+			/* Polarisation ratio from Thompson et al. with alpha=1 */
+			factor = pow( (1 + 2 * pow(tan(incidence), 2)) / (1 + 1 * pow(tan(incidence), 2)), 2);
+			sigma0VV = sigma0HH * factor;
+
+			GDALCopyWords(&sigma0VV, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+	/* ---- Return success ---- */
+return CE_None;
+}
+
+
+
+
 CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
@@ -956,12 +1003,8 @@ CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void 
     /* int iReal, iImag; */
     double imPower, real, imag;
 
-    //printf("%d", nYSize);
-
     /* ---- Init ---- */
     if (nSources != 2) return CE_Failure;
-
-    //printf("%d", nXSize);
 
     /* ---- Set pixels ---- */
     for( iLine = 0; iLine < nYSize; iLine++ ){
@@ -979,7 +1022,7 @@ CPLErr RawcountsToSigma0_CosmoSkymed_SBI(void **papoSources, int nSources, void 
             /*printf("%.1f",imag); OK!*/
 
             imPower = pow(real,2.0) + pow(imag,2.0);
-            /*printf("%.1f",imPower); //OK! */
+            /*printf("%.1f",imPower); */
                         
 	    GDALCopyWords(&imPower, GDT_Float64, 0,
 			    ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
@@ -1153,6 +1196,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
     GDALAddDerivedBandPixelFunc("Sigma0HHIncidenceToSigma0VV", Sigma0HHIncidenceToSigma0VV);
+    GDALAddDerivedBandPixelFunc("Sigma0HHBetaToSigma0VV", Sigma0HHBetaToSigma0VV);
     GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_QLK", RawcountsToSigma0_CosmoSkymed_QLK);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_SBI", RawcountsToSigma0_CosmoSkymed_SBI);

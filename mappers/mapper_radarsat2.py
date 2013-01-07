@@ -53,8 +53,10 @@ class Mapper(VRT):
         for dataset in gdalDataset.GetSubDatasets():
             if dataset[1]=='Sigma Nought calibrated':
                 s0dataset = gdal.Open(dataset[0])
-                inciCalcIndex_SIGMA0 = 1
-                inciCalcPol_SIGMA0 = s0dataset.GetRasterBand(inciCalcIndex_SIGMA0).GetMetadata()['POLARIMETRIC_INTERP']
+                s0datasetName = dataset[0][:]
+                s0datasetPol = s0dataset.GetRasterBand(1).GetMetadata()['POLARIMETRIC_INTERP']
+                print 's0datasetName', s0datasetName
+                print 's0datasetPol', s0datasetPol
                 for i in range(1, s0dataset.RasterCount+1):
                     polString = s0dataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP']
                     ''' 
@@ -75,49 +77,16 @@ class Mapper(VRT):
                             'suffix': suffix,
                             'polarization': polString}})
             if dataset[1]=='Beta Nought calibrated':
-                inciCalcIndex_BETA0 = 0
                 b0dataset = gdal.Open(dataset[0])
+                b0datasetName = dataset[0][:]
                 for j in range(1, b0dataset.RasterCount+1):
                     polString = b0dataset.GetRasterBand(j).GetMetadata()['POLARIMETRIC_INTERP']
                     #pdb.set_trace()
-                    if polString==inciCalcPol_SIGMA0:
-                        inciCalcIndex_BETA0 = i+1
-                        break
-                if inciCalcIndex_BETA0 == 0:
-                    # Throw an error...
-                    print 'This should be an error...'
-                #if b0dataset.GetRasterBand(i).DataType==10:
-                #    suffix = polString+'_complex'
-                #else:
-                suffix = polString
-                #pol.append(polString)
-                metaDict.append(
-                        {'src': {
-                                'SourceFilename': 'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
-                                'SourceBand': j,
-                                'DataType': b0dataset.GetRasterBand(j).DataType
-                            },
-                            'dst': {
-                                'wkv': 'radar_brightness_coefficient', 
-                                'suffix': suffix,
-                                'polarization': polString
-                            }})
+                    if polString==s0datasetPol:
+                        b0datasetBand = j
         
-        #for i in range(1, gdalDataset.RasterCount+1):
-        #    polString = gdalDataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP']
-        #    pol.append(polString)
-        #    metaDict.append(
-        #        {'src': {'SourceFilename':
-        #                 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
-        #                 'SourceBand': i,
-        #                 'DataType': 6}, # don't want hardcoding, so wrote the
-        #                 # above and now it works with complex data as well
-        #         'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 
-        #                 'suffix': polString,
-        #                 'polarization': polString}})
-
-        # add bands with metadata and corresponding values to the empty VRT
-        #pdb.set_trace()
+        # add Sigma0 and Beta0 bands with metadata
+        # and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
         #This doesn't work - the resulting array is still complex, but with
@@ -147,47 +116,42 @@ class Mapper(VRT):
         # Adding derived band (incidence angle) calculated
         # using pixel function "BetaSigmaToIncidence":
         #      incidence = arcsin(sigma0/beta0)*180/pi
-        # we check the datatype within the pixel function
         ##############################################################
-        #pdb.set_trace()
 
         # bruk enten sigma0 fra pixelfunksjon eller en omregning (ny
         # pikselfunksjon) med komplekse tall fra originalfil  - isafall blir
         # inci og kompleks, men det trenger ikke bety noe sa lenge de andre
         # bandene ogsa er komplekse...
 
-        #print 'Source band beta0: '+str(inciCalcIndex_BETA0)
-        #print 'Source band sigma0: '+str(inciCalcIndex_SIGMA0)
-        src = [{'SourceFilename': self.fileName,
-                'SourceBand':  inciCalcIndex_BETA0,
-                'DataType': b0dataset.GetRasterBand(j).DataType},
-                {'SourceFilename': self.fileName,
-                'SourceBand': inciCalcIndex_SIGMA0, 
-                'DataType': s0dataset.GetRasterBand(1).DataType}
-                ]
+        src = [{'SourceFilename': b0datasetName,
+                'SourceBand':  b0datasetBand,
+                'DataType': 6},
+                {'SourceFilename': s0datasetName,
+                'SourceBand': 1, 
+                'DataType': 1}]
         dst = {'wkv': 'angle_of_incidence',
                     'PixelFunctionType': 'BetaSigmaToIncidence',
-                    'dataType': s0dataset.GetRasterBand(inciCalcIndex_SIGMA0).DataType,
+                    'dataType': 6,
                     'name': 'incidence_angle'}
             
         self._create_band(src,dst)
         self.dataset.FlushCache()
 
-
         ###################################################################
-        # Add sigma0_VV - pixel function of incidence angle and sigma0_HH
+        # Add sigma0_VV - pixel function of sigma0_HH and beta0_HH
+        # incidence angle is calculated within pixel function
+        # It is assummed that HH is the first band in sigma0 and beta0 sub datasets
         ###################################################################
         if 'VV' not in pol and 'HH' in pol:        
-            sourceBandHH = pol.index('HH')+1
-            sourceBandInci = len(metaDict)
-            src = [{'SourceFilename': 'RADARSAT_2_CALIB:BETA0:' + fileName + '/product.xml',
-                    'SourceBand':  sourceBandHH,
+            s0datasetNameHH = pol.index('HH')+1
+            src = [{'SourceFilename': s0datasetName,
+                    'SourceBand':  s0datasetNameHH,
                     'DataType': 6},
-                   {'SourceFilename': self.fileName,
-                    'SourceBand':  sourceBandInci,
+                   {'SourceFilename': b0datasetName,
+                    'SourceBand':  b0datasetBand,
                     'DataType': 6}]
             dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-                   'PixelFunctionType': 'Sigma0HHIncidenceToSigma0VV',
+                   'PixelFunctionType': 'Sigma0HHBetaToSigma0VV',
                    'polarisation': 'VV',
                    'suffix': 'VV'}
             self._create_band(src, dst)
@@ -199,7 +163,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
             Domain(ds=gdalDataset).upwards_azimuth_direction()
             + 90, 360)))
-
+        
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
         self.logger.info('Valid time: %s', str(validTime))
