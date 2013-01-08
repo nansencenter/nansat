@@ -70,7 +70,12 @@ except:
                 Nansat will not work''')
 
 # Force GDAL to raise exceptions
-gdal.UseExceptions()
+try:
+    gdal.UseExceptions()
+except:
+    warnings.warn('''
+                GDAL will not raise exceptions.
+                Probably GDAL is not installed''')
 
 # Setting environment variables, the script directory
 nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
