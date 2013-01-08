@@ -42,14 +42,14 @@ except ImportError:
                 Try installing GDAL.''')    
 try:
     from mpl_toolkits.basemap import Basemap
-except ImportError:
+except:
     warnings.warn('''
                 Cannot import mpl_toolkits.basemap.Basemap!
                 Domain.write_map() will not work
                 Try installing Basemap.''')    
 try:
     from matplotlib.patches import Polygon
-except ImportError:
+except:
     warnings.warn('''
                 Cannot import matplotlib.patches.Polygon!
                 Domain.write_map() will not work
@@ -57,7 +57,7 @@ except ImportError:
 
 try:
     import matplotlib.pyplot as plt
-except ImportError:
+except:
     warnings.warn('''
                 Cannot import matplotlib.pyplot!
                 Domain.write_map() will not work
