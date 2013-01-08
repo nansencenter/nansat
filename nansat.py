@@ -1,5 +1,5 @@
 # Name:    nansat.py
-# Purpose: main file of the NANSAT module.
+# Purpose: Container of Nansat class
 #
 # Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 #
@@ -16,27 +16,60 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
+# import standard modules
 import inspect, os
 import sys
 import glob
 import dateutil.parser
-
+import warnings
 import pdb
 
+# try to import additional modules
 try:
     from matplotlib import cm
+except:
+    warnings.warn('''
+                Cannot import matplotlib.cm!
+                Nansat.write_geotiffimage will not work.
+                Try installing matplotlib.''')
+
+try:
     from numpy import arange
 except:
-    pass
+    warnings.warn('''
+                Cannot import numpy.arange!
+                Nansat.write_geotiffimage will not work.
+                Try installing numpy.''')
 
-import scipy.stats.stats as st
+try:
+    from osgeo import gdal
+except:
+    warnings.warn('''Cannot import GDAL! Nansat will not work''')
+    
+# try to import Nansat parts
+try:
+    from domain import Domain, GDALError, OptionError
+except:
+    warnings.warn('''Cannot import Domain! Nansat will not work''')
 
-from domain import Domain
-from vrt import *
-from figure import *
-from nansat_tools import add_logger, Node
+try:    
+    from vrt import VRT
+except:
+    warnings.warn('''Cannot import VRT! Nansat will not work''')
 
-# We want GDAL to raise exceptions, rather than only sending error messages to stdout
+try:
+    from figure import Figure
+except:
+    warnings.warn('''Cannot import Figure! Nansat will not work''')
+
+try:    
+    from nansat_tools import add_logger, Node
+except:
+    warnings.warn('''
+                Cannot import from nansat_tools!
+                Nansat will not work''')
+
+# Force GDAL to raise exceptions
 gdal.UseExceptions()
 
 # Setting environment variables, the script directory
@@ -50,20 +83,6 @@ if not os.environ.has_key('GDAL_DRIVER_PATH'):
 if not sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
         os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
-
-
-class GDALError(Error):
-    '''Error from GDAL '''
-    pass
-
-class DataError(Error):
-    '''Error for data.
-        e.g. : empty pixel value array in get_pixelValueRange()'''
-    pass
-
-class ProjectionError(Error):
-    '''Error for reprojection.'''
-    pass
 
 class Nansat(Domain):
     '''Main of Nansat
@@ -110,11 +129,6 @@ class Nansat(Domain):
             logger for output debugging info
         self.name: string
             name of object (for writing KML)
-
-        Raises
-        ------
-            GDALError: occurs when the dataset is None or "".
-
         '''
         # check the arguments
         if fileName=="" and domain is None:
@@ -577,12 +591,6 @@ class Nansat(Domain):
         --------
             self.vrt: VRT object with VRT dataset
                 replaced to warpedVRT dataset
-
-        Raises
-        ------
-            ProjectionError: occurs when the projection of the target data
-            is None.
-            AttributeError: occurs when it is impossible to get warpedVRT.
 
         See Also
         --------
@@ -1106,9 +1114,8 @@ class Nansat(Domain):
 
         Raises
         --------
-            GDALError: occures if the given file cannot be opened with GDAL
-            TypeError: occurs when the given driver type is not registarated
-                        in the mappers.
+            GDALError: occurs if input file cannot be opened with Nansat
+            Error: occurs if given mapper cannot open the input file
 
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
