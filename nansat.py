@@ -35,7 +35,7 @@ except:
 
 try:
     from numpy import arange
-except:
+except ImportError:
     warnings.warn('''
                 Cannot import numpy.arange!
                 Nansat.write_geotiffimage will not work.
@@ -43,28 +43,31 @@ except:
 
 try:
     from osgeo import gdal
-except:
-    warnings.warn('''Cannot import GDAL! Nansat will not work''')
+except ImportError:
+    warnings.warn('''
+                Cannot import GDAL!
+                Domain will not work
+                Try installing GDAL.''')    
     
 # try to import Nansat parts
 try:
-    from domain import Domain, GDALError, OptionError
-except:
+    from domain import Domain, Error, OptionError
+except ImportError:
     warnings.warn('''Cannot import Domain! Nansat will not work''')
 
 try:    
     from vrt import VRT
-except:
+except ImportError:
     warnings.warn('''Cannot import VRT! Nansat will not work''')
 
 try:
     from figure import Figure
-except:
+except ImportError:
     warnings.warn('''Cannot import Figure! Nansat will not work''')
 
 try:    
     from nansat_tools import add_logger, Node
-except:
+except ImportError:
     warnings.warn('''
                 Cannot import from nansat_tools!
                 Nansat will not work''')
@@ -88,6 +91,10 @@ if not os.environ.has_key('GDAL_DRIVER_PATH'):
 if not sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
         os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
+
+class GDALError(Error):
+    '''Error from GDAL '''
+    pass
 
 class Nansat(Domain):
     '''Main of Nansat
