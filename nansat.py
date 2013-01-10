@@ -26,59 +26,61 @@ import pdb
 
 # try to import additional modules
 try:
-    from matplotlib import cm
+    import numpy as np
 except:
-    warnings.warn('''
-                Cannot import matplotlib.cm!
-                Nansat.write_geotiffimage will not work.
-                Try installing matplotlib.''')
+    warnings.warn('''Cannot import numpy!
+                Nansat will not work.
+                Try installing numpy.''')
 
 try:
+    from matplotlib import cm
+except:
+    warnings.warn('''Cannot import matplotlib.cm!
+                Nansat.write_geotiffimage will not work.
+                Try installing matplotlib.''')
+try:
     from numpy import arange
-except ImportError:
-    warnings.warn('''
-                Cannot import numpy.arange!
+except:
+    warnings.warn('''Cannot import numpy.arange!
                 Nansat.write_geotiffimage will not work.
                 Try installing numpy.''')
 
 try:
     from osgeo import gdal
-except ImportError:
-    warnings.warn('''
-                Cannot import GDAL!
-                Domain will not work
+except:
+    warnings.warn('''Cannot import GDAL!
+                Domain will not work.
                 Try installing GDAL.''')    
-    
+
+
 # try to import Nansat parts
 try:
     from domain import Domain, Error, OptionError
-except ImportError:
+except:
     warnings.warn('''Cannot import Domain! Nansat will not work''')
 
 try:    
     from vrt import VRT
-except ImportError:
+except:
     warnings.warn('''Cannot import VRT! Nansat will not work''')
 
 try:
     from figure import Figure
-except ImportError:
+except:
     warnings.warn('''Cannot import Figure! Nansat will not work''')
 
 try:    
     from nansat_tools import add_logger, Node
-except ImportError:
-    warnings.warn('''
-                Cannot import from nansat_tools!
-                Nansat will not work''')
+except:
+    warnings.warn('''Cannot import from nansat_tools! \
+                    Nansat will not work''')
 
 # Force GDAL to raise exceptions
 try:
     gdal.UseExceptions()
 except:
-    warnings.warn('''
-                GDAL will not raise exceptions.
-                Probably GDAL is not installed''')
+    warnings.warn('''GDAL will not raise exceptions.
+                    Probably GDAL is not installed''')
 
 # Setting environment variables, the script directory
 nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -856,7 +858,7 @@ class Nansat(Domain):
                                 numOfTicks=15)
         # write an image to png with transparent Mask set to color
         transparency=[0,0,0], following PIL alpha mask
-        n.write_figure(fileName='transparent.png', bands=[3], \
+        n.write_figure(fileName='transparent.png', bands=[3],
                transparentMask=True, mask_array=wmArray, mask_lut={0: [0,0,0]},
                clim=[0,0.15], cmapName='gray', transparency=[0,0,0])
 
@@ -1134,8 +1136,8 @@ class Nansat(Domain):
         try:
             gdalDataset = gdal.Open(self.fileName)
         except RuntimeError:
-            print 'GDAL could not open ' + self.fileName + \
-                    ', trying to read with Nansat raw mapper...'
+            print ('GDAL could not open ' + self.fileName + 
+                    ', trying to read with Nansat mappers...')
             gdalDataset = None
         if gdalDataset is not None:
             # get metadata from the GDAL dataset

@@ -16,21 +16,36 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-import os
+# import standard modules
+import os.path
 from string import Template, ascii_uppercase, digits
 from random import choice
 import datetime
 from dateutil.parser import parse
 import logging
+import warnings
 
-import numpy as np
+# try to import additional modules
+try:
+    import numpy as np
+except:
+    warnings.warn('''Cannot import numpy!
+                Domain will not work.
+                Try installing numpy.''')
 
 try:
     from osgeo import gdal, osr
-except ImportError:
-    import gdal, osr
+except:
+    warnings.warn('''Cannot import GDAL!
+                Domain will not work.
+                Try installing GDAL.''')    
 
-from nansat_tools import add_logger, Node, latlongSRS
+# try to import Nansat parts
+try:
+    from nansat_tools import add_logger, Node, latlongSRS
+except:
+    warnings.warn('''Cannot import from nansat_tools!
+                VRT will not work''')
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data'''

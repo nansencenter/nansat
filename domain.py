@@ -27,48 +27,42 @@ from xml.etree.ElementTree import ElementTree
 # try to import additional modules
 try:
     import numpy as np
-except ImportError:
-    warnings.warn('''
-                Cannot import numpy!
+except:
+    warnings.warn('''Cannot import numpy!
                 Domain will not work.
                 Try installing numpy.''')
 
 try:
     from osgeo import gdal, osr
-except ImportError:
-    warnings.warn('''
-                Cannot import GDAL!
+except:
+    warnings.warn('''Cannot import GDAL!
                 Domain will not work
                 Try installing GDAL.''')    
 try:
     from mpl_toolkits.basemap import Basemap
 except:
-    warnings.warn('''
-                Cannot import mpl_toolkits.basemap.Basemap!
+    warnings.warn('''Cannot import mpl_toolkits.basemap.Basemap!
                 Domain.write_map() will not work
                 Try installing Basemap.''')    
 try:
     from matplotlib.patches import Polygon
 except:
-    warnings.warn('''
-                Cannot import matplotlib.patches.Polygon!
+    warnings.warn('''Cannot import matplotlib.patches.Polygon!
                 Domain.write_map() will not work
                 Try installing matplotlib.''')    
 
 try:
     import matplotlib.pyplot as plt
 except:
-    warnings.warn('''
-                Cannot import matplotlib.pyplot!
+    warnings.warn('''Cannot import matplotlib.pyplot!
                 Domain.write_map() will not work
                 Try installing matplotlib.''')    
 
 # try to import Nansat parts
 try:
     from nansat_tools import add_logger, initial_bearing, latlongSRS
-except ImportError:
-    warnings.warn('''
-                Cannot import from nansat_tools!
+except:
+    warnings.warn('''Cannot import from nansat_tools!
                 Domain will not work''')
 try:
     from vrt import VRT, GeolocationArray
