@@ -44,7 +44,9 @@ satDict = [\
                 'LUT': ['0:0,255:100', mtsat_calibration_3_8_mum, mtsat_calibration_6_8_mum, mtsat_calibration_10_7_mum]},  
            {'name': 'MET7', 'wavelengths': [795, 6400, 11500], #'scale': [100./255., 0.103, 0.103], 'offset': [0, 5, 5]},
                 'LUT': ['0:0,255:100', meteosat7_lut_VW, meteosat7_lut_IR]},
-           {'name': 'MSG2', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]}
+           {'name': 'MSG1', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]},
+           {'name': 'MSG3', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]},
+           {'name': 'MSG3', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]}
            ];
         
 
@@ -81,7 +83,7 @@ class Mapper(VRT):
         
         path = gdalDataset.GetDescription().split(",")[0].split("(")[1]
         datestamp = gdalDataset.GetDescription().split(",")[3]
-        if satellite == 'MSG2':
+        if satellite[0:3] == 'MSG':
             resolution = 'H'
         else:
             resolution = 'L'

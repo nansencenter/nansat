@@ -131,11 +131,11 @@ class Mapper(VRT):
         ch[4]['wavelength'] = 10.8
         ch[5]['wavelength'] = 12.0
 
-        ch[1]['minmax'] = '400 900'
+        ch[1]['minmax'] = '500 900'
         ch[2]['minmax'] = '0 800'
         ch[3]['minmax'] = '0 800'
         ch[4]['minmax'] = '750 1050'
-        ch[5]['minmax'] = '400 900'
+        ch[5]['minmax'] = '500 900'
 
 
         for bandNo in range(1,6):
