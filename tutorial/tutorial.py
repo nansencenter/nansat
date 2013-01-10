@@ -200,8 +200,6 @@ n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
 # make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
 
-print 'Tutorial completed successfully. Output files are found in folder ' + oPath
-
 # Perform batch averaging of several files
 # 1. Create destination Nansat object with desired projection
 nMosaic = Nansat(domain=dStereo)
@@ -212,3 +210,5 @@ mask = nMosaic['mask']
 # 4. Output averaged data using the mask
 nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
                         mask_array=mask, mask_lut={0:[128,128,128]})
+
+print 'Tutorial completed successfully. Output files are found in folder ' + oPath
