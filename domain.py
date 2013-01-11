@@ -82,13 +82,41 @@ class ProjectionError(Error):
     pass
 
 class Domain():
-    '''Domain is a grid with known dimentions and spatial reference
-
-    The main attribute of Domain is a GDAL VRT Dataset self.vrt.
-    It has such attributes as rasterXsize,
-    rasterYsize, GeoTransform and GeoPorjection, etc which fully describe
-    dimentions and spatial reference of the grid. The VRT dataset is
-    empty - it has no bands.
+    '''Container for geographical reference of a raster
+    
+    d = Domain(options) creates an instance <d> which describes all attributes
+    of geographical reference of a raster:
+    * width and height (number of pixels)
+    * pixel size (e.g. in decimal degrees or in meters)
+    * relation between pixel/line coordinates and geographical coordinates (e.g. linear relaion)
+    * type of data projection (e.g. geographical or stereographic)
+    
+    Core of Domain is a GDAL Dataset. It has no bands, it has only
+    georeference information: rasterXsize, rasterYsize, GeoTransform and Projection
+    or GCPs, etc. which fully describe dimentions and spatial reference of the grid.
+    
+    There are three ways to store geo-reference in a GDAL dataset:
+    * Using GeoTransfrom to define linear relationship between raster pixel/line and
+      geographical X/Y coordinates
+    * Using GCPs (set of Ground Control Points) to define non-linear relationship between
+    	 pixel/line and X/Y
+    * Using Geolocation Array - full grids of X/Y coordinates for each pixel of a raster
+    The relation between X/Y coordinates of the raster and latitude/longitude coordinates is
+    defined by projection type and projection parameters.
+    These pieces of infromation are therefore stored in Domain:
+    Type and parameters of projection +
+    GeoTransform, or
+    GCPs, or
+    GeolocationArrays
+    
+    Domain has methods for basic operations with georefernce information:
+    * creating georeference from input options;
+    * fetching corner, border or full grids of X/Y coordinates;
+    * making map of the georeferenced grid in a PNG or KML file;
+    * and some more...
+    
+    The main attribute of Domain is a VRT object self.vrt. 
+    Nansat inherits from Domain and adds bands to self.vrt
     '''
 
     def __init__(self, srs=None, ext=None, ds=None, lon=None, lat=None, name='', logLevel=None):
