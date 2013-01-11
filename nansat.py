@@ -99,12 +99,26 @@ class GDALError(Error):
     pass
 
 class Nansat(Domain):
-    '''Main of Nansat
+    '''Container for geospatial data, performs all high-level operations
 
-    Construct Nansat object that consist of
-        basic dataset information (fileName, dataset, metadata etc..),
-        VRT file which points to orignal file with satellite data and
-        is saved in an XML format in memory (GDAL VSI).
+    n = Nansat(fileName) opens the file with satellite or model data for
+    reading, adds scientific metadata to bands,  prepares the data for further handling.
+
+    The instance of Nansat class (the object <n>) contains information
+    about geographical reference of the data (e.g raster size, pixel
+    resolution, type of projection, etc) and about bands with values of
+    geophysical variables (e.g. water leaving radiance, normalized radar
+    cross section, chlrophyll concentraion, etc). The object <n> has methods  
+    for high-level operations with data. E.g.:
+    * reading data from file (Nansat.__getitem__);
+    * visualization (Nansat.write_figure);
+    * changing geographical reference (Nansat.reproject);
+    * exporting (Nansat.export)
+    * and much more...
+
+    Nansat inherits from Domain (container of geo-reference information)
+    Nansat uses instance of VRT (wraper around GDAL VRT-files)
+    Nansat uses instance of Figure (collection of methods for visualization) 
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
                  array=None, parameters=None, logLevel=30):
