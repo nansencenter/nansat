@@ -7,23 +7,24 @@ import inspect, os
 
 from nansat import Nansat, Domain
 
-# Setting environment variables, the script directory
+# input and output file names
 iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+iFileName = os.path.join(iPath, 'gcps.tif')
+print 'Input file: ', iFileName
+oFileName = os.path.join(iPath, 'tmpdata', 'output_')
+print 'Output file prefix: ', oFileName
 
-oPath = iPath + '/tmpdata'
-fileName = '/gcps.tif'
-oFileName = oPath + fileName
+# Open an input file
+# Create a Nansat object <n> for futher high-level operations
+n = Nansat(iFileName)
 
-# create Nansat object
-n = Nansat(iPath + fileName, logLevel=10)
-
-# create nNansat object faster
-n = Nansat(iPath + fileName, mapperName='generic', logLevel=10)
+# Open an input file, specify which Mapper to use, set logging level
+n = Nansat(iFileName, mapperName='generic', logLevel=10)
 
 # list bands and georeference of the object
 print 'Raw Nansat:', n
 
-# get dictionary with all bands metadata
+# get dictionary with metadata from all bands 
 print 'Bands:', n.bands()
 
 # get size of the object (Y and X dimensions, to follow Numpy style)
@@ -88,7 +89,7 @@ n.write_figure(oFileName + '_large.png', clim='hist', cmapName='gray')
 n.resize()
 
 # make KML file with image borders (to be opened in Googe Earth)
-n.write_kml(kmlFileName=oPath + fileName + '_preview.kml')
+n.write_kml(kmlFileName=oFileName + '_preview.kml')
 
 # make image with map of the file location
 n.write_map(oFileName + '_map.png')
@@ -211,4 +212,4 @@ mask = nMosaic['mask']
 nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
                         mask_array=mask, mask_lut={0:[128,128,128]})
 
-print 'Tutorial completed successfully. Output files are found in folder ' + oPath
+print 'Tutorial completed successfully. Output files are found here:' + oFileName
