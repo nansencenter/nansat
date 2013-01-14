@@ -67,7 +67,7 @@ except ImportError:
                     Nansat, Vrt, Domain and nansat_tools will not work
                     Try installing GDAL.''')
 
-## used in domain, vrt and figure
+## used in nansat, domain, vrt and figure
 try:
     import numpy as np
 except ImportError:
@@ -153,8 +153,27 @@ except ImportError:
 
 LOG_LEVEL = 30
 
-latlongSRS = osr.SpatialReference()
-latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
+try:
+    latlongSRS = osr.SpatialReference()
+    latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
+except:
+    warnings.warn('Cannot generate latlongSRS. Nansat will not work!')
+
+class Error(Exception):
+    '''Base class for exceptions in this module.'''
+    pass
+
+class OptionError(Error):
+    '''Error for improper options (arguments) '''
+    pass
+
+class ProjectionError(Error):
+    '''Cannot get the projection'''
+    pass
+
+class GDALError(Error):
+    '''Error from GDAL '''
+    pass
 
 class Node(object):
     '''

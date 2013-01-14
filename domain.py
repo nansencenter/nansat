@@ -26,18 +26,6 @@ except ImportError:
     warnings.warn(''' Cannot import vrt!
                     domain will not work.''')
 
-class Error(Exception):
-    '''Base class for exceptions in this module.'''
-    pass
-
-class OptionError(Error):
-    '''Error for improper options (arguments) '''
-    pass
-
-class ProjectionError(Error):
-    '''Cannot get the projection'''
-    pass
-
 class Domain():
     '''Container for geographical reference of a raster
 

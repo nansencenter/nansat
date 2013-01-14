@@ -20,7 +20,7 @@ from nansat_tools import *
 
 # import nansat parts
 try:
-    from domain import Domain, Error, OptionError
+    from domain import Domain
 except ImportError:
     warnings.warn('''Cannot import Domain!
                     Nansat will not work.''')
@@ -60,10 +60,6 @@ else:
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.DLL'):
         print "Cannot find 'gdal_PIXFUN.dll'. Compile pixelfunctions !!"
 
-class GDALError(Error):
-    '''Error from GDAL '''
-    pass
-
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
 
@@ -86,9 +82,10 @@ class Nansat(Domain):
     Nansat uses instance of VRT (wraper around GDAL VRT-files)
     Nansat uses instance of Figure (collection of methods for visualization)
     '''
+
     def __init__(self, fileName="", mapperName="", domain=None,
                  array=None, parameters=None, logLevel=30):
-        '''Construct Nansat object
+        '''Open file
 
         Open GDAL dataset,
         Read metadata,
