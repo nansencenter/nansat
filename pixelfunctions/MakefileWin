@@ -1,0 +1,23 @@
+# nmake -f MaiefileWin
+# NB : Copy gdal_i.lib in this folder!!
+
+cc = cl
+link = link
+rm = del
+TARGET = gdal_PIXFUN
+
+$(TARGET).dll : pixelfunctions.obj pixfunplugin.obj gdal_i.lib
+	$(link) -nologo -DLL pixelfunctions.obj pixfunplugin.obj gdal_i.lib -out:$(TARGET).dll -implib:$(TARGET).lib
+
+pixelfunctions.obj : pixelfunctions.c
+	$(cc) -nologo -c pixelfunctions.c
+
+pixfunplugin.obj : pixfunplugin.c
+	$(cc) -nologo -c pixfunplugin.c
+
+clean :
+    $(rm) $(TARGET).dll
+    $(rm) $(TARGET).exp
+    $(rm) $(TARGET).lib
+    $(rm) $(TARGET).def
+    $(rm) *.obj
