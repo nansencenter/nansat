@@ -1,5 +1,5 @@
 # Name:    vrt.py
-# Purpose: Top class of Nansat mappers
+# Purpose: Contains GeolocationArray and VRT classes
 #
 # Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 #
@@ -48,7 +48,14 @@ except:
                 VRT will not work''')
 
 class GeolocationArray():
-    '''Container for GEOLOCATION ARRAY data'''
+    '''Container for GEOLOCATION ARRAY data
+    
+    Keeps references to bands with X and Y coordinates, offset and step
+    of pixel and line. All information is stored in dictionary self.d
+    
+    Instance of GeolocationArray is used in VRT and ususaly created in
+    a Mapper.
+    '''
     def __init__(self, xVRT=None, yVRT=None, xBand=1, yBand=1,
                         srs="",
                         lineOffset=0, lineStep=1, pixelOffset=0, pixelStep=1,
@@ -111,12 +118,38 @@ class GeolocationArray():
 
 
 class VRT():
-    '''VRT dataset management
+    '''Wraper around GDAL VRT-file
 
-    Used in Domain and Nansat
-    Perfroms all peration on VRT datasets: creation, copying, modification,
-    writing, etc.
-    All mappers inherit from VRT
+    The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
+    information and information ABOUT each band including band metadata, reference
+    to the bands in the source file.
+    VRT-class perfroms all operation on VRT-files: create, copy, modify,
+    read, write, add band, add GeoTransform, SetProjection, etc. It uses
+    either GDAL methods for these operations (e.g. Create, AddBand,
+    SetMetadata, AutoCreateWarpedVRT, etc.) or reads/writes the XML-file
+    directly (e.g. remove_geotransform, create_warped_vrt, etc).
+    
+    The core of the VRT object is GDAL dataset <self.dataset> generated
+    by the GDAL VRT-Driver. The respective VRT-file is located in /vismem
+    and has random name.
+
+			GDAL data model doesn't have place for geolocaion arrays therefore 
+			VRT-object has instance of GeolocationArray self.geolocationArray-
+			an object to keep information about Geolocation Arrays:
+			reference to file with source data, pixel and line step and offset, etc.
+    
+    Domain has an instance of VRT-class <self.vrt>. It keeps only geo-
+    reference information.
+
+    All Mappers inherit from VRT. When Nansat opens file it loops through
+    list of mappers, selects the one appropriate for the input file,
+    and creates an instance of Mapper. But each Mapper has only a
+    constructor, other methods are from VRT.
+
+    Nansat has two instances of Mapper-class (<=VRT-class): self.raw and
+    self.vrt. One holds VRT-file in original projection (derived from the
+    input file), another - in modified projection.
+    
     '''
     ComplexSource = Template('''
             <$SourceType>
