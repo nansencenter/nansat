@@ -4,7 +4,7 @@
 # Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 #
 # Created:     18.02.2012
-# Copyright:   (c) NERSC 2012
+# Copyright:   (c) NERSC 2013
 # Licence:
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,64 +17,81 @@
 # http://www.gnu.org/licenses/
 
 # import standard modules
-## used in nansat_tools
-import copy
-## used in vrt
-import datetime
-## used in nansat
-import dateutil.parser
-## used in vrt
-from dateutil.parser import parse
-## used in nansat
-import glob
-## used in nansat
-import inspect
-## used in vrt and nansat_tools
-import logging
-## used in figure
-from math import floor, log10
-## used in nansat_tools
-from math import atan2, sin, cos, radians, degrees
-## used in nansat, vrt, figure
-import os
+
 ## used in domain and nansat_tools
 import os.path
-## used in nansat
-import pdb
-## used in vrt
-from random import choice
-## used in domain and nansat_tools
 import re
-## used in vrt
-from string import Template, ascii_uppercase, digits
+
+## used in nansat, vrt, figure
+import os
+
+## used in vrt and nansat_tools
+import logging
+
 ## used in domain
+from math import atan2, sin, cos, radians, degrees
 import string
-## used in nansat
-import sys
-## used in nansat_tools
-import warnings
-## used in nansat_tools
-import xml.dom.minidom as xdm
-## used in domain
 from xml.etree.ElementTree import ElementTree
 
-# try to import additional modules
-## used in nansat, figure
-try:
-    from matplotlib import cm
-except:
-    warnings.warn('''
-                Cannot import matplotlib.cm!
-                Nansat.write_geotiffimage and Figure will not work.
-                Try installing matplotlib.''')
+## used in nansat
+import dateutil.parser
+import glob
+import inspect
+import pdb
+import sys
 
-## used in domain, figure
+## used in vrt
+import datetime
+from dateutil.parser import parse
+from random import choice
+from string import Template, ascii_uppercase, digits
+
+## used in figure
+from math import floor, log10
+
+## used in nansat_tools
+import copy
+import warnings
+import xml.dom.minidom as xdm
+
+# try to import additional modules
+## used in domain, nansat, vrt and nansat_tools
+try:
+    from osgeo import gdal, osr
+except ImportError:
+    try:
+        import gdal, osr
+    except ImportError:
+        warnings.warn('''
+                    Cannot import GDAL!
+                    Nansat, Vrt, Domain and nansat_tools will not work
+                    Try installing GDAL.''')
+
+## used in domain, vrt and figure
+try:
+    import numpy as np
+except ImportError:
+    warnings.warn('''
+                Cannot import numpy!
+                Domain, Figure and Vrt will not work.
+                Try installing numpy.''')
+
+## used in domain and figure
 try:
     import matplotlib.pyplot as plt
 except:
     warnings.warn('''
                 Cannot import matplotlib.pyplot!
                 Domain.write_map() and Figure will not work
+                Try installing matplotlib.''')
+
+## used in nansat and figure
+try:
+    from matplotlib import cm
+except:
+    warnings.warn('''
+                Cannot import matplotlib.cm!
+                Nansat.write_geotiffimage and Figure will not work.
                 Try installing matplotlib.''')
 
 ## used in domain
@@ -86,7 +103,6 @@ except:
                 Domain.write_map() will not work
                 Try installing matplotlib.''')
 
-## used in domain
 try:
     from mpl_toolkits.basemap import Basemap
 except:
@@ -94,15 +110,6 @@ except:
                 Cannot import mpl_toolkits.basemap.Basemap!
                 Domain.write_map() will not work
                 Try installing Basemap.''')
-
-## used in domain, vrt, figure
-try:
-    import numpy as np
-except ImportError:
-    warnings.warn('''
-                Cannot import numpy!
-                Domain, Figure and Vrt will not work.
-                Try installing numpy.''')
 
 ## used in nansat
 try:
@@ -122,19 +129,6 @@ except ImportError:
                 Figure.create_legend will not work.
                 Try installing numpy.''')
 
-## used in nansat, vrt nansat_tools and domain
-try:
-    from osgeo import gdal, osr
-except ImportError:
-    try:
-        import gdal, osr
-    except ImportError:
-        warnings.warn('''
-                    Cannot import GDAL!
-                    Nansat, Vrt, Domain and nansat_tools will not work
-                    Try installing GDAL.''')
-
-## used in figure
 try:
     import Image
     import ImageDraw
