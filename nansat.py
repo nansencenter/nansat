@@ -16,64 +16,26 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-# import standard modules
-import inspect, os
-import sys
-import glob
-import dateutil.parser
-import warnings
-import pdb
+from nansat_tools import *
 
-# try to import additional modules
-try:
-    import numpy as np
-except:
-    warnings.warn('''Cannot import numpy!
-                Nansat will not work.
-                Try installing numpy.''')
-
-try:
-    from matplotlib import cm
-except:
-    warnings.warn('''Cannot import matplotlib.cm!
-                Nansat.write_geotiffimage will not work.
-                Try installing matplotlib.''')
-try:
-    from numpy import arange
-except:
-    warnings.warn('''Cannot import numpy.arange!
-                Nansat.write_geotiffimage will not work.
-                Try installing numpy.''')
-
-try:
-    from osgeo import gdal
-except:
-    warnings.warn('''Cannot import GDAL!
-                Domain will not work.
-                Try installing GDAL.''')    
-
-
-# try to import Nansat parts
+# import nansat parts
 try:
     from domain import Domain, Error, OptionError
-except:
-    warnings.warn('''Cannot import Domain! Nansat will not work''')
-
-try:    
-    from vrt import VRT
-except:
-    warnings.warn('''Cannot import VRT! Nansat will not work''')
+except ImportError:
+    warnings.warn('''Cannot import Domain!
+                    Nansat will not work.''')
 
 try:
     from figure import Figure
-except:
-    warnings.warn('''Cannot import Figure! Nansat will not work''')
+except ImportError:
+    warnings.warn('''Cannot import Figure!
+                    Nansat will not work.''')
 
-try:    
-    from nansat_tools import add_logger, Node
-except:
-    warnings.warn('''Cannot import from nansat_tools! \
-                    Nansat will not work''')
+try:
+    from vrt import VRT
+except ImportError:
+    warnings.warn('''Cannot import VRT!
+                Nansat will not work.''')
 
 # Force GDAL to raise exceptions
 try:
@@ -84,6 +46,7 @@ except:
 
 # Setting environment variables, the script directory
 nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.append(nansathome)
 sys.path.append(nansathome + '/mappers/')
 if not os.environ.has_key('GDAL_DRIVER_PATH'):
     os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
@@ -92,7 +55,10 @@ if not os.environ.has_key('GDAL_DRIVER_PATH'):
 # Similar could be implemented for windows (checking if DLL-file exists)
 if not sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
-        os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
+        print "Cannot find 'gdal_PIXFUN.so'. Compile pixelfunctions !!"
+else:
+    if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.DLL'):
+        print "Cannot find 'gdal_PIXFUN.dll'. Compile pixelfunctions !!"
 
 class GDALError(Error):
     '''Error from GDAL '''
@@ -108,7 +74,7 @@ class Nansat(Domain):
     about geographical reference of the data (e.g raster size, pixel
     resolution, type of projection, etc) and about bands with values of
     geophysical variables (e.g. water leaving radiance, normalized radar
-    cross section, chlrophyll concentraion, etc). The object <n> has methods  
+    cross section, chlrophyll concentraion, etc). The object <n> has methods
     for high-level operations with data. E.g.:
     * reading data from file (Nansat.__getitem__);
     * visualization (Nansat.write_figure);
@@ -118,7 +84,7 @@ class Nansat(Domain):
 
     Nansat inherits from Domain (container of geo-reference information)
     Nansat uses instance of VRT (wraper around GDAL VRT-files)
-    Nansat uses instance of Figure (collection of methods for visualization) 
+    Nansat uses instance of Figure (collection of methods for visualization)
     '''
     def __init__(self, fileName="", mapperName="", domain=None,
                  array=None, parameters=None, logLevel=30):
@@ -1150,7 +1116,7 @@ class Nansat(Domain):
         try:
             gdalDataset = gdal.Open(self.fileName)
         except RuntimeError:
-            print ('GDAL could not open ' + self.fileName + 
+            print ('GDAL could not open ' + self.fileName +
                     ', trying to read with Nansat mappers...')
             gdalDataset = None
         if gdalDataset is not None:
@@ -1162,6 +1128,7 @@ class Nansat(Domain):
         #pdb.set_trace()
         # Import Mapper
         tmpVRT = None
+
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
             # Stripping off eventual 'mapper_' and '.py' and converting to lowercase

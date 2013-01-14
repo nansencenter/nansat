@@ -15,16 +15,147 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
-from math import atan2, sin, cos, radians, degrees
-from scipy import mod
 
-import xml.dom.minidom as xdm
-from os import path
-import logging
+# import standard modules
+## used in nansat_tools
 import copy
+## used in vrt
+import datetime
+## used in nansat
+import dateutil.parser
+## used in vrt
+from dateutil.parser import parse
+## used in nansat
+import glob
+## used in nansat
+import inspect
+## used in vrt and nansat_tools
+import logging
+## used in figure
+from math import floor, log10
+## used in nansat_tools
+from math import atan2, sin, cos, radians, degrees
+## used in nansat, vrt, figure
+import os
+## used in domain and nansat_tools
+import os.path
+## used in nansat
+import pdb
+## used in vrt
+from random import choice
+## used in domain and nansat_tools
 import re
+## used in vrt
+from string import Template, ascii_uppercase, digits
+## used in domain
+import string
+## used in nansat
+import sys
+## used in nansat_tools
+import warnings
+## used in nansat_tools
+import xml.dom.minidom as xdm
+## used in domain
+from xml.etree.ElementTree import ElementTree
 
-import osr
+# try to import additional modules
+## used in nansat, figure
+try:
+    from matplotlib import cm
+except:
+    warnings.warn('''
+                Cannot import matplotlib.cm!
+                Nansat.write_geotiffimage and Figure will not work.
+                Try installing matplotlib.''')
+
+## used in domain, figure
+try:
+    import matplotlib.pyplot as plt
+except:
+    warnings.warn('''
+                Cannot import matplotlib.pyplot!
+                Domain.write_map() and Figure will not work
+                Try installing matplotlib.''')
+
+## used in domain
+try:
+    from matplotlib.patches import Polygon
+except:
+    warnings.warn('''
+                Cannot import matplotlib.patches.Polygon!
+                Domain.write_map() will not work
+                Try installing matplotlib.''')
+
+## used in domain
+try:
+    from mpl_toolkits.basemap import Basemap
+except:
+    warnings.warn('''
+                Cannot import mpl_toolkits.basemap.Basemap!
+                Domain.write_map() will not work
+                Try installing Basemap.''')
+
+## used in domain, vrt, figure
+try:
+    import numpy as np
+except ImportError:
+    warnings.warn('''
+                Cannot import numpy!
+                Domain, Figure and Vrt will not work.
+                Try installing numpy.''')
+
+## used in nansat
+try:
+    from numpy import arange
+except ImportError:
+    warnings.warn('''
+                Cannot import numpy.arange!
+                Nansat.write_geotiffimage will not work.
+                Try installing numpy.''')
+
+## used in figure
+try:
+    from numpy import outer
+except ImportError:
+    warnings.warn('''
+                Cannot import numpy.outer!
+                Figure.create_legend will not work.
+                Try installing numpy.''')
+
+## used in nansat, vrt nansat_tools and domain
+try:
+    from osgeo import gdal, osr
+except ImportError:
+    try:
+        import gdal, osr
+    except ImportError:
+        warnings.warn('''
+                    Cannot import GDAL!
+                    Nansat, Vrt, Domain and nansat_tools will not work
+                    Try installing GDAL.''')
+
+## used in figure
+try:
+    import Image
+    import ImageDraw
+    import ImageFont
+except ImportError:
+    try:
+        from PIL import Image, ImabeDraw, ImageFont
+    except ImportError:
+        warnings.warn('''
+                    Cannot import PIL!
+                    Figure will not work
+                    Try installing PIL.''')
+
+## used in nansat_tools
+try:
+    from scipy import mod
+except ImportError:
+    warnings.warn('''
+                    Cannot import scipy.mod!
+                    nansat_toolds will not work
+                    Try installing scipy.''')
 
 LOG_LEVEL = 30
 
@@ -36,46 +167,46 @@ class Node(object):
     Rapidly assemble XML using minimal coding.
 
     By Bruce Eckel, (c)2006 MindView Inc. www.MindView.net
-    Permission is granted to use or modify without payment as 
+    Permission is granted to use or modify without payment as
     long as this copyright notice is retained.
-    
-    Everything is a Node, and each Node can either have a value 
-    or subnodes. Subnodes can be appended to Nodes using '+=', 
+
+    Everything is a Node, and each Node can either have a value
+    or subnodes. Subnodes can be appended to Nodes using '+=',
     and a group of Nodes can be strung together using '+'.
-    
-    Create a node containing a value by saying 
+
+    Create a node containing a value by saying
     Node("tag", "value")
     You can also give attributes to the node in the constructor:
     Node("tag", "value", attr1 = "attr1", attr2 = "attr2")
     or without a value:
     Node("tag", attr1 = "attr1", attr2 = "attr2")
-    
-    To produce xml from a finished Node n, say n.xml() (for 
+
+    To produce xml from a finished Node n, say n.xml() (for
     nicely formatted output) or n.rawxml().
-    
-    You can read and modify the attributes of an xml Node using 
+
+    You can read and modify the attributes of an xml Node using
     getAttribute(), setAttribute(), or delAttribute().
-    
+
     You can find the value of the first subnode with tag == "tag"
     by saying n["tag"]. If there are multiple instances of n["tag"],
     this will only find the first one, so you should use node() or
     nodeList() to narrow your search down to a Node that only has
     one instance of n["tag"] first.
-    
+
     You can replace the value of the first subnode with tag == "tag"
     by saying n["tag"] = newValue. The same issues exist as noted
     in the above paragraph.
-    
-    You can find the first node with tag == "tag" by saying 
-    node("tag"). If there are multiple nodes with the same tag 
+
+    You can find the first node with tag == "tag" by saying
+    node("tag"). If there are multiple nodes with the same tag
     at the same level, use nodeList("tag").
-    
-    The Node class is also designed to create a kind of "domain 
-    specific language" by subclassing Node to create Node types 
+
+    The Node class is also designed to create a kind of "domain
+    specific language" by subclassing Node to create Node types
     specific to your problem domain.
-    
+
     This implementation uses xml.dom.minidom which is available
-    in the standard Python 2.4 library. However, it can be 
+    in the standard Python 2.4 library. However, it can be
     retargeted to use other XML libraries without much effort.
     '''
 
@@ -249,7 +380,7 @@ class Node(object):
         a string representation of an XML doc, or a dom.
         '''
         if isinstance(dom, str):
-            if path.exists(dom):
+            if os.path.exists(dom):
                 # parse input file
                 dom = xdm.parse(dom)
             else:

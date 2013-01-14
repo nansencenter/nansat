@@ -18,45 +18,8 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 #------------------------------------------------------------------------------
-# import standard modules
-import os
-from math import floor, log10
-import warnings
 
-# try to import additional modules
-try:
-    import numpy as np
-except:
-    warnings.warn('''Cannot import numpy!
-                Domain will not work.
-                Try installing numpy.''')
-
-try:    
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-except:
-    warnings.warn('''Cannot import from matplotlib!
-                Figure() will not work
-                Try installing matplotlib.''')    
-
-try:
-    import Image
-    import ImageDraw
-    import ImageFont
-except ImportError:
-    try:
-        from PIL import Image, ImabeDraw, ImageFont
-    except ImportError:
-        warnings.warn('''Cannot import from PIL!
-                Figure() will not work
-                Try installing matplotlib.''')    
-        
-# try to import Nansat parts
-try:
-    from nansat_tools import add_logger
-except:
-    warnings.warn('''Cannot import from nansat_tools!
-                Figure will not work''')
+from nansat_tools import *
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
@@ -93,6 +56,8 @@ class Figure():
             longName and units.
 
         '''
+        from nansat_tools import add_logger
+
         self.logger = add_logger('Nansat')
 
         # if 2D array is given, reshape to 3D

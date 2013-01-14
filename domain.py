@@ -17,57 +17,14 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-# import standard modules
-import os.path
-import re
-import string
-import warnings
-from xml.etree.ElementTree import ElementTree
+from nansat_tools import *
 
-# try to import additional modules
-try:
-    import numpy as np
-except:
-    warnings.warn('''Cannot import numpy!
-                Domain will not work.
-                Try installing numpy.''')
-
-try:
-    from osgeo import gdal, osr
-except:
-    warnings.warn('''Cannot import GDAL!
-                Domain will not work
-                Try installing GDAL.''')    
-try:
-    from mpl_toolkits.basemap import Basemap
-except:
-    warnings.warn('''Cannot import mpl_toolkits.basemap.Basemap!
-                Domain.write_map() will not work
-                Try installing Basemap.''')    
-try:
-    from matplotlib.patches import Polygon
-except:
-    warnings.warn('''Cannot import matplotlib.patches.Polygon!
-                Domain.write_map() will not work
-                Try installing matplotlib.''')    
-
-try:
-    import matplotlib.pyplot as plt
-except:
-    warnings.warn('''Cannot import matplotlib.pyplot!
-                Domain.write_map() will not work
-                Try installing matplotlib.''')    
-
-# try to import Nansat parts
-try:
-    from nansat_tools import add_logger, initial_bearing, latlongSRS
-except:
-    warnings.warn('''Cannot import from nansat_tools!
-                Domain will not work''')
+# import nansat parts
 try:
     from vrt import VRT, GeolocationArray
-except:
-    warnings.warn('''Cannot import VRT! Domain will not work''')
+except ImportError:
+    warnings.warn(''' Cannot import vrt!
+                    domain will not work.''')
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -83,18 +40,18 @@ class ProjectionError(Error):
 
 class Domain():
     '''Container for geographical reference of a raster
-    
+
     d = Domain(options) creates an instance <d> which describes all attributes
     of geographical reference of a raster:
     * width and height (number of pixels)
     * pixel size (e.g. in decimal degrees or in meters)
     * relation between pixel/line coordinates and geographical coordinates (e.g. linear relaion)
     * type of data projection (e.g. geographical or stereographic)
-    
+
     Core of Domain is a GDAL Dataset. It has no bands, it has only
     georeference information: rasterXsize, rasterYsize, GeoTransform and Projection
     or GCPs, etc. which fully describe dimentions and spatial reference of the grid.
-    
+
     There are three ways to store geo-reference in a GDAL dataset:
     * Using GeoTransfrom to define linear relationship between raster pixel/line and
       geographical X/Y coordinates
@@ -108,14 +65,14 @@ class Domain():
     GeoTransform, or
     GCPs, or
     GeolocationArrays
-    
+
     Domain has methods for basic operations with georefernce information:
     * creating georeference from input options;
     * fetching corner, border or full grids of X/Y coordinates;
     * making map of the georeferenced grid in a PNG or KML file;
     * and some more...
-    
-    The main attribute of Domain is a VRT object self.vrt. 
+
+    The main attribute of Domain is a VRT object self.vrt.
     Nansat inherits from Domain and adds bands to self.vrt
     '''
 
@@ -192,6 +149,8 @@ class Domain():
         [http://spatialreference.org/]
         [http://www.gdal.org/ogr/osr_tutorial.html]
         '''
+
+        #from nansat_tools import add_logger, initial_bearing, latlongSRS
 
         # set default attributes
         self.logger = add_logger('Nansat', logLevel)
@@ -965,11 +924,11 @@ class Domain():
                                         pColor='r', pLine='k', pAlpha=0.5,
                                         padding=0.):
         ''' Create an image with a map of the domain
-    
+
         Uses Basemap to create a World Map
         Adds a semitransparent patch with outline of the Domain
         Writes to an image file
-    
+
         Parameters
         ----------
             outputFileName : string
@@ -1010,11 +969,11 @@ class Domain():
             except:
                 print 'Domain/Nansat object is not given and lat/lon vectors=None'
                 return
-            
+
         # convert vectors to numpy arrays
         lonVec = np.array(lonVec)
         latVec = np.array(latVec)
-    
+
         # estimate mean/min/max values of lat/lon of the shown area
         # (real lat min max +/- latBorder) and (real lon min max +/- lonBorder)
         minLon = max(-180, lonVec.min() - lonBorder)
@@ -1023,7 +982,7 @@ class Domain():
         maxLat = min(90, latVec.max() + latBorder)
         meanLon = lonVec.mean()
         meanLat = latVec.mean()
-    
+
         # generate template map (can be also tmerc)
         f = plt.figure(num=1, figsize=figureSize, dpi=dpi)
         bmap = Basemap(projection=projection,
@@ -1031,30 +990,30 @@ class Domain():
                        llcrnrlon=minLon, llcrnrlat=minLat,
                        urcrnrlon=maxLon, urcrnrlat=maxLat,
                        resolution=resolution)
-    
+
         # add content: coastline, continents, meridians, parallels
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
         bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
         bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
-        
+
         # convert input lat/lon vectors to arrays of vectors with one row if only
         # one vector was given
         if len(lonVec.shape) == 1:
             lonVec = lonVec.reshape(1, lonVec.shape[0])
             latVec = latVec.reshape(1, latVec.shape[0])
-    
+
         for lonSubVec, latSubVec in zip(lonVec, latVec):
             # convert lat/lons to map units
             mapX, mapY = bmap(list(lonSubVec.flat), list(latSubVec.flat))
-    
+
             # from x/y vectors create a Patch to be added to map
             boundary = Polygon(zip(mapX, mapY), alpha=pAlpha, ec=pLine, fc=pColor)
-    
+
             # add patch to the map
             plt.gca().add_patch(boundary)
             plt.gca().set_aspect('auto')
-    
+
         # save figure and close
         plt.savefig(outputFileName, bbox_inches='tight',
                                     dpi=dpi,

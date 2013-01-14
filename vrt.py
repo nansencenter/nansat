@@ -16,43 +16,14 @@
 # GNU General Public License for more details:
 # http://www.gnu.org/licenses/
 
-# import standard modules
-import os.path
-from string import Template, ascii_uppercase, digits
-from random import choice
-import datetime
-from dateutil.parser import parse
-import logging
-import warnings
-
-# try to import additional modules
-try:
-    import numpy as np
-except:
-    warnings.warn('''Cannot import numpy!
-                Domain will not work.
-                Try installing numpy.''')
-
-try:
-    from osgeo import gdal, osr
-except:
-    warnings.warn('''Cannot import GDAL!
-                Domain will not work.
-                Try installing GDAL.''')    
-
-# try to import Nansat parts
-try:
-    from nansat_tools import add_logger, Node, latlongSRS
-except:
-    warnings.warn('''Cannot import from nansat_tools!
-                VRT will not work''')
+from nansat_tools import *
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
-    
+
     Keeps references to bands with X and Y coordinates, offset and step
     of pixel and line. All information is stored in dictionary self.d
-    
+
     Instance of GeolocationArray is used in VRT and ususaly created in
     a Mapper.
     '''
@@ -128,16 +99,16 @@ class VRT():
     either GDAL methods for these operations (e.g. Create, AddBand,
     SetMetadata, AutoCreateWarpedVRT, etc.) or reads/writes the XML-file
     directly (e.g. remove_geotransform, create_warped_vrt, etc).
-    
+
     The core of the VRT object is GDAL dataset <self.dataset> generated
     by the GDAL VRT-Driver. The respective VRT-file is located in /vismem
     and has random name.
 
-			GDAL data model doesn't have place for geolocaion arrays therefore 
+			GDAL data model doesn't have place for geolocaion arrays therefore
 			VRT-object has instance of GeolocationArray self.geolocationArray-
 			an object to keep information about Geolocation Arrays:
 			reference to file with source data, pixel and line step and offset, etc.
-    
+
     Domain has an instance of VRT-class <self.vrt>. It keeps only geo-
     reference information.
 
@@ -149,7 +120,7 @@ class VRT():
     Nansat has two instances of Mapper-class (<=VRT-class): self.raw and
     self.vrt. One holds VRT-file in original projection (derived from the
     input file), another - in modified projection.
-    
+
     '''
     ComplexSource = Template('''
             <$SourceType>
@@ -160,7 +131,7 @@ class VRT():
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
                 <SrcRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
-                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>                
+                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -229,6 +200,8 @@ class VRT():
             self.vrtDriver: GDAL Driver
 
         '''
+        from nansat_tools import add_logger, Node, latlongSRS
+
         # essential attributes
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
@@ -238,7 +211,7 @@ class VRT():
         fileNameWKV = os.path.join(os.path.dirname(
                                     os.path.realpath(__file__)), "wkv.xml")
         self.wkvNode0 = Node.create(fileNameWKV)
-        
+
         # default empty geolocation array of source
         srcGeolocationArray = GeolocationArray()
         if vrtDataset is not None:
@@ -271,7 +244,7 @@ class VRT():
                 lonVRT = VRT(array=lon)
                 # create source geolocation array
                 srcGeolocationArray = GeolocationArray(xVRT=lonVRT, yVRT=latVRT)
-                
+
             # create VRT dataset (empty or with a band from array)
             if array is None:
                 self.dataset = self.vrtDriver.Create(self.fileName,
@@ -335,7 +308,7 @@ class VRT():
         Modifies:
         ---------
             Adds bands to the self.dataset based on info in metaDict
-        
+
         See Also
         --------
         VRT._create_band()
@@ -391,11 +364,11 @@ class VRT():
                               'ScaleRatio': 0.0001},
                              {'name': 'LAT', 'wkv': 'latitude'})
             vrt._create_band({'SourceFilename': filename, 'SourceBand': 2},
-                             {'suffix': '670', 'wkv': 'brightness_temperature'})                 
+                             {'suffix': '670', 'wkv': 'brightness_temperature'})
             vrt._create_band([{'SourceFilename': filename, 'SourceBand': 1},
                               {'SourceFilename': filename, 'SourceBand': 1}],
                              {'PixelFunctionType': 'NameOfPixelFunction'})
-            
+
         '''
         self.logger.debug('INPUTS: %s, %s " ' % (str(src), str(dst)))
         # Make sure src is list, ready for loop
@@ -405,11 +378,11 @@ class VRT():
             srcs = src
         else:
              AttributeError("Wrong src!")
-        
+
         # Check if dst is given, or create empty dict
         if dst is None:
             dst = {}
-            
+
         # process all sources: check, set defaults, make XML
         srcDefaults = {
                      'SourceBand': 1,
@@ -464,7 +437,7 @@ class VRT():
             # in common case
             options = []
         self.logger.debug('Options of AddBand: %s', str(options))
-        
+
         # set destination dataType (if not given in input parameters)
         if 'dataType' not in dst:
             if (len(srcs) > 1 or float(srcs[0]['ScaleRatio']) != 1.0 or
@@ -479,7 +452,7 @@ class VRT():
                 self.logger.debug('Set dst[dataType]: %d'  % src['DataType'])
                 #otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
-        
+
         # Set destination name
         # get short_name from WKV.XML
         dstWKV = dst.get('wkv', '')
@@ -494,7 +467,7 @@ class VRT():
             if len(dstSuffix) > 0:
                 dstSuffix = '_' + dstSuffix
             dst['name'] = wkvShortName + dstSuffix
-        
+
         # create list of available bands (to prevent duplicate names)
         bandNames = []
         for iBand in range(self.dataset.RasterCount):
@@ -533,7 +506,7 @@ class VRT():
                 metadataSRC['source_%d' % i] = src['XML']
 
             dstRasterBand.SetMetadata(metadataSRC, 'vrt_sources')
-            
+
         # set metadata from WKV
         dstRasterBand = self._put_metadata(dstRasterBand, wkvDict)
 
@@ -827,14 +800,14 @@ class VRT():
             if node0.node("SrcGeoLocTransformer"):
                 node0.node("BlockXSize").value = str(rasterXSize)
                 node0.node("BlockYSize").value = str(rasterYSize)
-                
+
             if blockSize is not None:
                 node0.node("BlockXSize").value = str(blockSize)
                 node0.node("BlockYSize").value = str(blockSize)
-            
+
             if WorkingDataType is not None:
                 node0.node('WorkingDataType').value = WorkingDataType
-        
+
         """
         # TODO: test thoroughly and implement later
         if srcSRS is not None and dstSRS is not None:
@@ -848,7 +821,7 @@ class VRT():
             giptNode += rtNode
             print 'node0.xml()', node0.xml()
         """
-            
+
         self.write_xml(str(node0.rawxml()))
 
     def _remove_geotransform(self):
@@ -901,7 +874,7 @@ class VRT():
     def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                                 xSize=0, ySize=0, blockSize=None,
                                 geoTransform=None,
-                                use_geolocationArray=True, use_gcps=True, 
+                                use_geolocationArray=True, use_gcps=True,
                                 use_geotransform=True,
                                 dstGCPs=[], dstGeolocationArray=None,
                                 WorkingDataType=None):
@@ -974,7 +947,7 @@ class VRT():
 
         # srs to be used in AutoCreateWarpedVRT
         acwvSRS = dstSRS
-        
+
         # if destination GCPs are given: create and add fake GCPs to src
         if len(dstGCPs) > 0:
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
@@ -1059,7 +1032,7 @@ class VRT():
         node1 = node0.node("GDALWarpOptions")
         node1.node('SourceDataset').value = '/vsimem/' + rawFileName
         warpedVRT.write_xml(str(node0.rawxml()))
-        
+
         return warpedVRT
 
     def _create_fake_gcps(self, gcps):
@@ -1105,10 +1078,10 @@ class VRT():
             # swap coordinates in GCPs:
             # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
             fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine, 0, srcPixel, srcLine))
-            #g.GCPX = 
-            #g.GCPY = 
-            #g.GCPPixel = 
-            #g.GCPLine = 
+            #g.GCPX =
+            #g.GCPY =
+            #g.GCPPixel =
+            #g.GCPLine =
 
         # create 'fake' STEREO projection for 'fake' GCPs of SRC image
         srsString = ("+proj=stere +lon_0=0 +lat_0=0 +k=1 "
@@ -1187,7 +1160,7 @@ class VRT():
         geolocArray = self.dataset.GetMetadata('GEOLOCATION')
         x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
         y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
-        numy, numx = x.shape 
+        numy, numx = x.shape
         PIXEL_OFFSET = int(geolocArray['PIXEL_OFFSET'])
         PIXEL_STEP = int(geolocArray['PIXEL_STEP'])
         LINE_OFFSET = int(geolocArray['LINE_OFFSET'])
@@ -1196,8 +1169,8 @@ class VRT():
         lines  = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy-1)*LINE_STEP, numy)
         # Make GCPs
         GCPs = []
-        # Subsample (if requested), but use linspace to 
-        # make sure endpoints are contained 
+        # Subsample (if requested), but use linspace to
+        # make sure endpoints are contained
         for p in np.around(np.linspace(0, len(pixels)-1, numx/stepX)):
             for l in np.around(np.linspace(0, len(lines)-1, numy/stepY)):
                 g = gdal.GCP(float(x[l,p]), float(y[l,p]), 0, pixels[p], lines[l])
@@ -1211,8 +1184,8 @@ class VRT():
         ''' Copy geoloctation data from given VRT to a figure file
 
         Useful for adding geolocation information to figure
-        files produced e.g. by Figure class, which contain 
-        no geolocation. 
+        files produced e.g. by Figure class, which contain
+        no geolocation.
         Analogue to utility gdalcopyproj.py.
 
         Parameters
