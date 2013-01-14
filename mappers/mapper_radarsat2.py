@@ -1,14 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:        nansat_mapper_radarsat2
+# Name:        mapper_radarsat2
 # Purpose:     Mapping for Radarsat2 data
-#
-# Author:      knutfd
-# Modified:	Morten Wergeland Hansen
-#
-# Created:     29.11.2011
-# Copyright:   (c) NERSC 2011
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Created:     13.12.2011
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 
 from numpy import mod
 

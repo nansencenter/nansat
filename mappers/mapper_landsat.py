@@ -1,13 +1,10 @@
-#-------------------------------------------------------------------------------
 # Name:        mapper_landsat
 # Purpose:     Mapping for LANDSAT.tar.gz
-#
-# Author:      antonk
-#
-# Created:     04.07.2012
-# Copyright:   (c) NERSC 2012
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Created:     13.12.2011
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 from vrt import VRT
 import tarfile
 

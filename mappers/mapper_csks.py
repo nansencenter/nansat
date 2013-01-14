@@ -1,15 +1,9 @@
-#-------------------------------------------------------------------------------
 # Name:         mapper_CSKS.py
 # Purpose:      Mapper for Cosmo-Skymed SAR data
-#
-# Author:       Morten Wergeland Hansen
-# Modified:	Morten Wergeland Hansen
-#
-# Created:	17.10.2012
-# Last modified:15.11.2012 16:04
-# Copyright:    (c) NERSC
-# License:      
-#-------------------------------------------------------------------------------
+# Created:      13.12.2011
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 
 from dateutil.parser import parse
 from struct import unpack

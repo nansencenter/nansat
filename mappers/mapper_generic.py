@@ -1,13 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
-#
-# Author:      asumak
-#
-# Created:     29.06.2012
-# Copyright:   (c) asumak 2012
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Name:         mapper_generic.py
+# Purpose:      Generic Mapper for L3/L4 satellite or modeling data
+# Created:      29.06.2012
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 from vrt import *
 from nansat_tools import Node, latlongSRS
 import numpy as np

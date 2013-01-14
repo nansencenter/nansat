@@ -1,20 +1,19 @@
 # Name:    nansat_tools.py
-# Purpose: General functions/tools used within the Nansat toolbox
-#
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
-#
-# Created:     18.02.2012
-# Copyright:   (c) NERSC 2013
+# Purpose: collection of libraries used in NANSAT modules
+# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad,
+#               Morten W. Hansen, Alexander Myasoyedov,
+#               Dmitry Petrenko, Evgeny Morozov
+# Created:      29.06.2011
+# Copyright:    (c) NERSC 2011 - 2013
 # Licence:
-# This program is free software: you can redistribute it and/or modify
+# This file is part of NANSAT.
+# NANSAT is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, version 3 of the License.
-#
+# http://www.gnu.org/licenses/gpl-3.0.html
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details:
-# http://www.gnu.org/licenses/
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # import standard modules
 

@@ -1,12 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:        mapper_smi
-# Purpose:     Mapping for HMODISA Level-3 Standard Mapped Image from OBPG
-#
-# Author:      antonk
-#
-# Created:     29.11.2011
-# Copyright:   (c) NERSC 2012
-#-------------------------------------------------------------------------------
+# Name:         mapper_globcolour_l3m
+# Purpose:      Mapping for L3 mapped GLOBCOLOUR data
+# Created:      2012
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 import datetime
 import os.path
 import glob

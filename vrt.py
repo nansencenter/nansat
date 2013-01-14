@@ -1,20 +1,19 @@
-# Name:    vrt.py
-# Purpose: Contains GeolocationArray and VRT classes
-#
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
-#
-# Created:     29.06.2011
-# Copyright:   (c) NERSC 2012
+# Name:    nansat.py
+# Purpose: Container of VRT and GeolocationDomain classes
+# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad,
+#               Morten W. Hansen, Alexander Myasoyedov,
+#               Dmitry Petrenko, Evgeny Morozov
+# Created:      29.06.2011
+# Copyright:    (c) NERSC 2011 - 2013
 # Licence:
-# This program is free software: you can redistribute it and/or modify
+# This file is part of NANSAT.
+# NANSAT is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, version 3 of the License.
-#
+# http://www.gnu.org/licenses/gpl-3.0.html
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details:
-# http://www.gnu.org/licenses/
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 from nansat_tools import *
 

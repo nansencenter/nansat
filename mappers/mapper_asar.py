@@ -1,13 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:        nansat_mapper_asar
-# Purpose:     Mapping for Envisat ASAR-L1 data
-#
-# Author:      Knut-Frode
-#
-# Created:     13.12.2011
-# Copyright:
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Name:         mapper_asar.py
+# Purpose:      Mapper for Envisat/ASAR data
+# Created:      13.12.2011
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 from vrt import VRT
 from envisat import Envisat
 import numpy as np

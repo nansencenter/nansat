@@ -1,12 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:        mapper_op
+# Name:        mapper_ocean_prodcutivity
 # Purpose:     Mapping for MODIS and SeaWiFS Level-3 from Ocean Productivity website (Oregon State University) 
-#
-# Author:      Dmitry Petrenko
-#
 # Created:     24.10.2012
-# Copyright:   (c) NERSC 2012
-#-------------------------------------------------------------------------------
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 import datetime
 import os.path
 import glob

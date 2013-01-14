@@ -1,13 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:        mapper_modisL1
-# Purpose:     Mapping for MODIS-L1 data
-#
-# Author:      antonk
-#
+# Name:        mapper_obpg_l2
+# Purpose:     Mapping for L2 data from the OBPG web-site
 # Created:     13.12.2011
-# Copyright:   (c) NERSC 2011
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 from vrt import GeolocationArray, VRT, gdal, osr
 from datetime import datetime, timedelta
 

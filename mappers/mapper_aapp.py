@@ -1,13 +1,9 @@
-#-------------------------------------------------------------------------------
-# Name:        mapper_aapp.py
-# Purpose:     Mapping for AAPP output
-#
-# Author:      Knut-Frode
-#
-# Created:     08.11.2012
-# Copyright:   
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Name:         mapper_aapp.py
+# Purpose:      Mapping for AAPP output
+# Created:      27.06.2012
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 
 # Description of file format:
 # http://research.metoffice.gov.uk/research/interproj/nwpsaf/aapp/NWPSAF-MF-UD-003_Formats.pdf (page 8-)

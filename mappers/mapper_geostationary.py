@@ -1,13 +1,9 @@
-#-------------------------------------------------------------------------------
-# Name:        mapper_geostationary.py
-# Purpose:     Generic mappier for all geostationary satellites in Eumetcast format
-#
-# Author:      Knut-Frode
-#
-# Created:     27.06.2012
-# Copyright:   
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Name:         mapper_geostationary.py
+# Purpose:      Generic mappier for all geostationary satellites in Eumetcast format
+# Created:      27.06.2012
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 
 from numpy import array, arange
 from datetime import datetime

@@ -1,13 +1,10 @@
-#-------------------------------------------------------------------------------
 # Name:        nansat_mapper_merisL1
 # Purpose:     Mapping for Meris-L1 data
-#
-# Author:      antonk
-#
-# Created:     29.11.2011
-# Copyright:   (c) asumak 2011
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Created:     13.12.2011
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 from vrt import VRT
 from envisat import Envisat
 
