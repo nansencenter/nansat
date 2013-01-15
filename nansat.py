@@ -49,7 +49,7 @@ nansathome = os.path.dirname(os.path.abspath(inspect.getfile(
                 inspect.currentframe())))
 sys.path.append(nansathome)
 sys.path.append(nansathome + '/mappers/')
-if not os.environ.has_key('GDAL_DRIVER_PATH'):
+if not 'GDAL_DRIVER_PATH' in os.environ:
     os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
 # Compile pixelfunctions if not already done.
@@ -59,6 +59,7 @@ if not sys.platform.startswith('win'):
 else:
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.DLL'):
         print "Cannot find 'gdal_PIXFUN.dll'. Compile pixelfunctions !!"
+
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -130,7 +131,7 @@ class Nansat(Domain):
             name of object (for writing KML)
         '''
         # check the arguments
-        if fileName=="" and domain is None:
+        if fileName == "" and domain is None:
             raise OptionError("Either fileName or domain is required.")
 
         # create logger
@@ -174,7 +175,6 @@ class Nansat(Domain):
             if array is not None:
                 # add a band from array
                 self.add_band(array=array, parameters=parameters)
-
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
@@ -295,7 +295,7 @@ class Nansat(Domain):
         # add VRT with the band to the dictionary
         # (not to loose the VRT object and VRT file in memory)
         self.addedBands[bandName] = vrt2add
-        self.raw.dataset.FlushCache() # required after adding bands
+        self.raw.dataset.FlushCache()  # required after adding bands
         # copy raw VRT object to the current vrt
         self.vrt = self.raw.copy()
 
@@ -308,7 +308,7 @@ class Nansat(Domain):
         '''
         b = {}
         for iBand in range(self.vrt.dataset.RasterCount):
-            b[iBand+1] = self.get_metadata(bandID=iBand+1)
+            b[iBand + 1] = self.get_metadata(bandID=iBand + 1)
 
         return b
 
@@ -393,7 +393,7 @@ class Nansat(Domain):
                 bandMetadata['NETCDF_VARNAME'] = bandMetadata["name"]
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
-                                    % (iBand+1))
+                                    % (iBand + 1))
             # remove unwanted metadata from bands
             for rmMeta in rmMetadata:
                 try:
@@ -451,8 +451,8 @@ class Nansat(Domain):
             return
 
         # get current shape
-        rasterYSize  = float(self.shape()[0])
-        rasterXSize  = float(self.shape()[1])
+        rasterYSize = float(self.shape()[0])
+        rasterXSize = float(self.shape()[1])
 
         # estimate factor if width or height is given
         if width is not None:
@@ -736,7 +736,7 @@ class Nansat(Domain):
             gamma, float, >0
                 2, coefficient for tone curve udjustment
             subsetArraySize, int
-                100000, size of the subset array which is used to get histogram.
+                100000, size of the subset array which is used to get histogram
             numOfColor, int
                 250, number of colors for use of the palette.
                 254th is black and 255th is white.
@@ -750,7 +750,7 @@ class Nansat(Domain):
             titleString, string
                 '', title of legend (1st line)
             caption, string
-                '', caption of the legend (2nd line, usually long name and units)
+                '', caption of the legend (2nd line, e.g. long name and units)
             fontSize, int
                 12, size of the font of title, caption and ticks
             logarithm : boolean, defult = False
@@ -767,7 +767,7 @@ class Nansat(Domain):
             mask_lut: dictionary
                 Look-Up-Table with colors for masking land, clouds etc. Used
                 tgether            with mask_array:
-                {0, [0, 0, 0, ], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
+                {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
                 index 0 - will have black color
                     1 - dark gray
                     2 - light gray
@@ -975,7 +975,7 @@ class Nansat(Domain):
             colormap = 'jet'
         try:
             cmap = cm.get_cmap(colormap, 256)
-            cmap = cmap(arange(256))*255
+            cmap = cmap(arange(256)) * 255
             colorTable = gdal.ColorTable()
             for i in range(cmap.shape[0]):
                 colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
@@ -988,7 +988,7 @@ class Nansat(Domain):
                 fileName, band.XSize, band.YSize,
                 1, gdal.GDT_Byte, ['COMPRESS=LZW'])
         data = self.__getitem__(bandNo)
-        scaledData = ((data-bMin)/(bMax-bMin)) * 255
+        scaledData = ((data - bMin) / (bMax - bMin)) * 255
         outDataset.GetRasterBand(1).WriteArray(scaledData)
         outDataset.GetRasterBand(1).SetMetadata(band.GetMetadata())
         try:
@@ -1170,7 +1170,7 @@ class Nansat(Domain):
             tmpVRT = VRT(gdalDataset=gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
                 tmpVRT._create_band({'SourceFilename': self.fileName,
-                                     'SourceBand': iBand+1})
+                                     'SourceBand': iBand + 1})
                 tmpVRT.dataset.FlushCache()
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
@@ -1213,7 +1213,8 @@ class Nansat(Domain):
             bandsMeta = self.bands()
             for b in bandsMeta:
                 for key in bandID:
-                    if key in bandsMeta[b] and bandID[key] == bandsMeta[b][key]:
+                    if (key in bandsMeta[b] and
+                            bandID[key] == bandsMeta[b][key]):
                         bandNumber = b
                         break
 
@@ -1235,7 +1236,7 @@ class Nansat(Domain):
                 **kwargs):
         '''Mosaic input files. If images overlap, calculate average
 
-        Convert all input files into Nansat objects, reproject onto the 
+        Convert all input files into Nansat objects, reproject onto the
         Domain of the current object, get bands, from each object,
         calculate average and STD, add averaged bands (and STD) to the current
         object.
@@ -1304,7 +1305,8 @@ class Nansat(Domain):
             # the line below is for debugging
             #n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
             try:
-                n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
+                n = nClass(f, logLevel=self.logger.level,
+                              mapperName=mapperName)
             except:
                 self.logger.error('Unable to open %s' % f)
                 continue
