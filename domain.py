@@ -27,36 +27,36 @@ except ImportError:
 class Domain():
     '''Container for geographical reference of a raster
 
-    d = Domain(options) creates an instance <d> which describes all attributes
-    of geographical reference of a raster:
-    * width and height (number of pixels)
-    * pixel size (e.g. in decimal degrees or in meters)
-    * relation between pixel/line coordinates and geographical coordinates (e.g. linear relaion)
-    * type of data projection (e.g. geographical or stereographic)
+    A Domain object describes all attributes of geographical reference of a raster:
+      * width and height (number of pixels)
+      * pixel size (e.g. in decimal degrees or in meters)
+      * relation between pixel/line coordinates and geographical coordinates 
+            (e.g. a linear relation)
+      * type of data projection (e.g. geographical or stereographic)
 
-    Core of Domain is a GDAL Dataset. It has no bands, it has only
+    The core of Domain is a GDAL Dataset. It has no bands, but only 
     georeference information: rasterXsize, rasterYsize, GeoTransform and Projection
     or GCPs, etc. which fully describe dimentions and spatial reference of the grid.
 
     There are three ways to store geo-reference in a GDAL dataset:
-    * Using GeoTransfrom to define linear relationship between raster pixel/line and
-      geographical X/Y coordinates
-    * Using GCPs (set of Ground Control Points) to define non-linear relationship between
+      * Using GeoTransfrom to define linear relationship between raster pixel/line and
+        geographical X/Y coordinates
+      * Using GCPs (set of Ground Control Points) to define non-linear relationship between
     	 pixel/line and X/Y
-    * Using Geolocation Array - full grids of X/Y coordinates for each pixel of a raster
-    The relation between X/Y coordinates of the raster and latitude/longitude coordinates is
-    defined by projection type and projection parameters.
-    These pieces of infromation are therefore stored in Domain:
-    Type and parameters of projection +
-    GeoTransform, or
-    GCPs, or
-    GeolocationArrays
+      * Using Geolocation Array - full grids of X/Y coordinates for each pixel of a raster
+    The relation between X/Y coordinates of the raster and latitude/longitude 
+    coordinates is defined by projection type and projection parameters.
+    These pieces of information are therefore stored in Domain:
+      * Type and parameters of projection +
+        * GeoTransform, or
+        * GCPs, or
+        * GeolocationArrays
 
-    Domain has methods for basic operations with georefernce information:
-    * creating georeference from input options;
-    * fetching corner, border or full grids of X/Y coordinates;
-    * making map of the georeferenced grid in a PNG or KML file;
-    * and some more...
+    Domain has methods for basic operations with georeference information:
+      * creating georeference from input options;
+      * fetching corner, border or full grids of X/Y coordinates;
+      * making map of the georeferenced grid in a PNG or KML file;
+      * and some more...
 
     The main attribute of Domain is a VRT object self.vrt.
     Nansat inherits from Domain and adds bands to self.vrt
@@ -69,8 +69,11 @@ class Domain():
             Size, extent and satial reference is given by strings
         d = Domain(ds=GDALDataset):
             Size, extent and spatial reference is copied from input GDAL dataset
-        d = Domain(lon=lonGrid, lat=latGrig)
-            Size, extent and satial reference is given by two grids
+        d = Domain(srs, ds=GDALDataset):
+            Spatial reference is given by srs, but size and extent is determined 
+            from input GDAL dataset
+        d = Domain(lon=lonGrid, lat=latGrid)
+            Size, extent and spatial reference is given by two grids
 
         Parameters:
         ----------
@@ -146,12 +149,8 @@ class Domain():
         self.logger.debug('srs: %s' % srs)
         self.logger.debug('ext: %s' % ext)
 
-        # test option when only dataset is given
-        if ds is not None:
-            self.vrt = VRT(gdalDataset=ds)
-
-        # test option when proj4 and extent string are given
-        elif (srs is not None and ext is not None):
+        # First decode srs if given
+        if srs is not None:
             # if XML-file and domain name is given - read that file
             if isinstance(srs, str) and os.path.isfile(srs):
                 srs, ext, self.name = self._from_xml(srs, ext)
@@ -180,7 +179,29 @@ class Domain():
             # test success of WKT
             if status > 0 or dstWKT == "":
                 raise ProjectionError("srs (%s) is wrong" % (srs))
+ 
 
+        # If too much information is given
+        if ds is not None and srs is not None and ext is not None:
+            raise ProjectionError('Ambiguous specification of both '
+                'dataset, srs- and ext-strings.')
+
+        # If only a dataset is given
+        elif ds is not None and srs is None and ext is None:
+            self.vrt = VRT(gdalDataset=ds)
+
+        # If both dataset and srs are given (but not ext), 
+        #   we use AutoCreateWarpedVRT to determine bounds and resolution
+        elif ds is not None and srs is not None and ext is None:
+            tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, dstWKT)
+            if tmpVRT is None:
+                raise ProjectionError('Could not warp the given dataset'
+                    ' to the given SRS.')
+            else:
+                self.vrt = VRT(gdalDataset=tmpVRT)
+
+        # If proj4 and extent string are given (but not dataset)
+        elif (srs is not None and ext is not None):
             # create full dictionary of parameters
             extentDic = self._create_extentDic(ext)
 
@@ -200,7 +221,7 @@ class Domain():
             self.vrt = VRT(lat=lat, lon=lon)
         else:
             raise OptionError("'dataset' or 'srsString and extentString' "
-                              "are required")
+                              "or 'dataset and srsString' are required")
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
