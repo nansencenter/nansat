@@ -1,9 +1,13 @@
-# Name:        mapper_ncep
-# Purpose:     Mapping for NCEP GFS model data
-# Created:     13.12.2011
+# Name:         mapper_ncep
+# Purpose:      Nansat mapping for NCEP GFS model data
+# Author:       Knut-Frode Dagestad
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+#
+# Made for GRIB files downloaded from http://nomads.ncep.noaa.gov/
+# NB: Band numbers is hardcoded for band subsets extracted at NERSC,
+# mapper will not work for other NCEP GFS files before made more generic
 
 from vrt import VRT, datetime
 
