@@ -15,6 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+# import standard and additional libraries
 from nansat_tools import *
 
 # import nansat parts
@@ -43,15 +44,15 @@ except:
     warnings.warn('''GDAL will not raise exceptions.
                     Probably GDAL is not installed''')
 
-# Setting environment variables, the script directory
-nansathome = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+# Set environment variables, the script directory
+nansathome = os.path.dirname(os.path.abspath(inspect.getfile(
+                inspect.currentframe())))
 sys.path.append(nansathome)
 sys.path.append(nansathome + '/mappers/')
 if not os.environ.has_key('GDAL_DRIVER_PATH'):
     os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
-# Compiling pixelfunctions if not already done.
-# Similar could be implemented for windows (checking if DLL-file exists)
+# Compile pixelfunctions if not already done.
 if not sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
         print "Cannot find 'gdal_PIXFUN.so'. Compile pixelfunctions !!"
@@ -63,7 +64,8 @@ class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
 
     n = Nansat(fileName) opens the file with satellite or model data for
-    reading, adds scientific metadata to bands,  prepares the data for further handling.
+    reading, adds scientific metadata to bands,  prepares the data for
+    further handling.
 
     The instance of Nansat class (the object <n>) contains information
     about geographical reference of the data (e.g raster size, pixel
@@ -84,24 +86,31 @@ class Nansat(Domain):
 
     def __init__(self, fileName="", mapperName="", domain=None,
                  array=None, parameters=None, logLevel=30):
-        '''Open file
+        '''Create Nansat object
 
-        Open GDAL dataset,
-        Read metadata,
-        Generate GDAL VRT file with mapping of variables in memory
-        Create logger
+        if <fileName> is given:
+            Open GDAL dataset,
+            Read metadata,
+            Generate GDAL VRT file with mapping of variables in memory
+            Create logger
+            Create Nansat object for perfroming high-level operations
+        if <domain> and <array> are given:
+            Create VRT object from data in <array>
+            Add geolocation from <domain>
 
         Parameters
         ----------
         fileName : string
             location of the file
         mapperName : string, optional
-            "ASAR", "hirlam", "merisL1", "merisL2", "ncep", "radarsat2",
-            "seawifsL2" are currently available.  (27.01.2012)
-        domain : domain object
+            name of the mapper from nansat/mappers dir. E.g.
+            "ASAR", "hirlam", "merisL1", "merisL2", etc.
+        domain : Domain object
+            Geo-reference of a new raster
         array : numpy array
+            Firts band of a new raster
         parameters: dictionary
-            metadata for array band
+            Metadata for the 1st band of a new raster,e.g. name, wkv, units,...
         logLevel: int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
 
@@ -111,9 +120,9 @@ class Nansat(Domain):
             list of available working mappers
         self.fileName : file name
             set file name given by the argument
-        self.raw : VRT object
+        self.raw : Mapper(VRT) object
             set VRT object with VRT dataset with mapping of variables
-        self.vrt : VRT object
+        self.vrt : Mapper(VRT) object
             Copy of self.raw
         self.logger: logging.Logger
             logger for output debugging info
@@ -150,21 +159,17 @@ class Nansat(Domain):
         self.name = os.path.basename(fileName)
         self.path = os.path.dirname(fileName)
 
-        self.latVRT = None
-        self.lonVRT = None
-
-        # create self from a file using mapper or...
+        # create self.raw from a file using mapper or...
         if fileName != "":
             # Make original VRT object with mapping of variables
             self.raw = self._get_mapper(mapperName)
             # Set current VRT object
             self.vrt = self.raw.copy()
-        # create using array, domain, and parameters
+        # ...create using array, domain, and parameters
         else:
             # Get vrt from domain
             self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # Set current VRT object
-            #self.vrt = self.raw.copy()
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             if array is not None:
                 # add a band from array
@@ -211,7 +216,8 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, fileName=None, vrt=None, bandID=1, array=None, parameters=None, resamplingAlg=1):
+    def add_band(self, fileName=None, vrt=None, bandID=1, array=None,
+                    parameters=None, resamplingAlg=1):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -223,11 +229,11 @@ class Nansat(Domain):
 
         Parameters
         ----------
-            fileName: name of the file to add band from
-            vrt: VRT object to add band from
-            bandID: number of the band from fileName or from vrt to be added
+            fileName: string, name of the file, source of band
+            vrt: VRT, source of band
+            bandID: int, number of the band in fileName or in vrt
             array : Numpy array with band data
-            parameters: dictionary with band parameters: wkv, name, etc.
+            parameters: dictionary, band metadata: wkv, name, etc.
             resamplingAlg: 0, 1, 2 stands for nearest, bilinear, cubic
 
         Modifies
@@ -273,7 +279,8 @@ class Nansat(Domain):
             else:
                 # create VRT from resized array
                 srcVRT = VRT(array=array)
-                vrt2add = srcVRT.resized(self.shape()[1], self.shape()[0],
+                vrt2add = srcVRT.resized(self.shape()[1],
+                                         self.shape()[0],
                                          resamplingAlg)
             # set parameters
             bandNumber = 1
@@ -305,26 +312,22 @@ class Nansat(Domain):
 
         return b
 
-    def export(self, fileName, rmMetadata=[], addGeolocArray=True, addGCPs=True, driver='netCDF'):
-        '''Create a netCDF file
+    def export(self, fileName, rmMetadata=[], addGeolocArray=True,
+                                              addGCPs=True, driver='netCDF'):
+        '''Export Nansat object into netCDF or GTiff file
 
         Parameters
         ----------
             fileName: output file name
             rmMetadata: list with metadata names to remove before export.
                 e.g. ['name', 'colormap', 'source', 'sourceBands']
-            addGeolocArray: flag to add geolocation array datasets. True.
-            addGCPs: flag to add GCPs. True
+            addGeolocArray: Boolean, add geolocation array datasets? [True].
+            addGCPs: Boolean, add GCPs? [True]
             driver: Which GDAL driver (format) to use [netCDF]
 
         Modifies
         --------
             Create a netCDF file
-
-            self.vrt.dataset : VRT dataset of VRT object
-                dataType in each VRTRasterBand is modified from GDAL dataType
-                to netCDF dataType. The subelements "Offset" and "Scale"
-                are added for each VRTRasterBand if need be.
 
         !! NB !!
         --------
@@ -338,7 +341,7 @@ class Nansat(Domain):
             --> "if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);"
 
         '''
-        # if <bands> are not specified use all bands and make full copy
+        # temporary VRT for exporting
         exportVRT = self.vrt.copy()
 
         # Change the element from GDAL datatype to NetCDF data type
@@ -372,11 +375,14 @@ class Nansat(Domain):
 
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
-        exportVRT.dataset.SetMetadataItem('NANSAT_Projection', srs.replace(",", "|").replace('"', "&"))
+        exportVRT.dataset.SetMetadataItem('NANSAT_Projection',
+                            srs.replace(",", "|").replace('"', "&"))
 
         # add GeoTransform metadata
-        geoTransformStr = str(self.vrt.dataset.GetGeoTransform()).replace(',','|')
-        exportVRT.dataset.SetMetadataItem('NANSAT_GeoTransform', geoTransformStr)
+        geoTransformStr = str(self.vrt.dataset.GetGeoTransform()).replace(',',
+                                                                          '|')
+        exportVRT.dataset.SetMetadataItem('NANSAT_GeoTransform',
+                                          geoTransformStr)
 
         # manage metadata for each band
         for iBand in range(exportVRT.dataset.RasterCount):
@@ -405,7 +411,7 @@ class Nansat(Domain):
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
-        # Create a NetCDF file
+        # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                             exportVRT.dataset)
@@ -418,8 +424,8 @@ class Nansat(Domain):
         (width, calulated height) or (calculated width, height).
         self.vrt is rewritten to the the downscaled sizes.
         If GCPs are given in a dataset, they are also rewritten.
-        If resize() is called without any parameters resizing/reprojection is
-        cancelled.
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
 
 
         Parameters
@@ -463,7 +469,9 @@ class Nansat(Domain):
 
         if eResampleAlg > 0:
             # apply affine transformation using reprojection
-            self.vrt = self.vrt.resized(newRasterXSize, newRasterYSize, eResampleAlg)
+            self.vrt = self.vrt.resized(newRasterXSize,
+                                        newRasterYSize,
+                                        eResampleAlg)
         else:
             # simply modify VRT rasterX/Ysize and GCPs
             # Get XML content from VRT-file
@@ -479,8 +487,10 @@ class Nansat(Domain):
                 for sourceName in ["ComplexSource", "SimpleSource"]:
                     for iNode2 in iNode1.nodeList(sourceName):
                         iNodeDstRect = iNode2.node("DstRect")
-                        iNodeDstRect.replaceAttribute("xSize", str(newRasterXSize))
-                        iNodeDstRect.replaceAttribute("ySize", str(newRasterYSize))
+                        iNodeDstRect.replaceAttribute("xSize",
+                                            str(newRasterXSize))
+                        iNodeDstRect.replaceAttribute("ySize",
+                                            str(newRasterYSize))
                 # if method=-1, overwrite "ComplexSource" to "AveragedSource"
                 if eResampleAlg == -1:
                     iNode1.replaceTag("ComplexSource", "AveragedSource")
@@ -502,12 +512,11 @@ class Nansat(Domain):
             self.vrt.write_xml(str(node0.rawxml()))
 
     def get_GDALRasterBand(self, bandID=1):
-        ''' Get a GDALRasterBand of a given Nansat object.
+        ''' Get a GDALRasterBand of a given Nansat object specified by the
+        argument.
 
-        Get a GDALRasterBand specified by the argument.
-
-        If a bandID is given, secify a bandID based on it.
-        Otherwise check if the given bandID is proper.
+        If str is given find corresponding band number
+        If int is given check if band with this number exists.
         Get a GDALRasterBand from vrt.
 
         Parameters
@@ -518,12 +527,12 @@ class Nansat(Domain):
 
         Returns
         -------
-            self.vrt.dataset.GetRasterBand: a GDAL RasterBand
+            GDAL RasterBand
 
         Example
         -------
-            b = get_GDALRasterBand(1)
-            b = get_GDALRasterBand('sigma0')
+            b = n.get_GDALRasterBand(1)
+            b = n.get_GDALRasterBand('sigma0')
         '''
         # get band number
         bandNumber = self._get_band_number(bandID)
@@ -561,7 +570,8 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None, WorkingDataType=None):
+    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
+                                                    WorkingDataType=None):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -585,7 +595,6 @@ class Nansat(Domain):
         See Also
         --------
             http://www.gdal.org/gdalwarp.html
-
         '''
         # dereproject
         self.vrt = self.raw.copy()
@@ -672,7 +681,8 @@ class Nansat(Domain):
             watermask = Nansat(domain=self, array=watermaskArray)
         else:
             # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W', logLevel=self.logger.level)
+            watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W',
+                                logLevel=self.logger.level)
             # reproject on self or given Domain
             if dstDomain is None:
                 watermask.reproject(self)
@@ -682,7 +692,6 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, **kwargs):
-
         ''' Save a raster band to a figure in grapfical format.
 
         Get numpy array from the band(s) and band information specified
@@ -704,7 +713,8 @@ class Nansat(Domain):
                 specified file is crated. otherwise, "png" file is created.
                 if None, the figure object is returned.
                 if True, the figure is shown
-            bands : integer or string or list (elements are integer or string), default = 1
+            bands : integer or string or list (elements are integer or string),
+                    default = 1
                 the size of the list has to be 1 or 3.
                 if the size is 3, RGB image is created based on the
                 three bands.
@@ -749,10 +759,11 @@ class Nansat(Domain):
             legend: boolean, default = False
                 if True, information as textString, colorbar, longName and
                 units are added in the figure.
-            mask_array: 2D numpy array, int, the shape should be equal array.shape
-                If given this array is used for masking land, clouds, etc on the
-                output image. Value of the array are indeces. LUT from mask_lut is
-                used for coloring upon this indeces.
+            mask_array: 2D numpy array, int, the shape should be equal
+                array.shape. If given this array is used for masking land,
+                clouds, etc on the output image. Value of the array are
+                indeces. LUT from mask_lut is used for coloring upon this
+                indeces.
             mask_lut: dictionary
                 Look-Up-Table with colors for masking land, clouds etc. Used
                 tgether            with mask_array:
@@ -771,16 +782,17 @@ class Nansat(Domain):
             logoSize: list of two int
                 desired X,Y size of logo. If None - original size is used
             latGrid : numpy array
-                full size array with latitudes. Used for adding lat/lon grid lines
+                full size array with latitudes. For adding lat/lon grid lines
             lonGrid : numpy array
-                full size array with longitudes. Used for adding lat/lon grid lines
+                full size array with longitudes. For adding lat/lon grid lines
             latlonGridSpacing : int
                 number of lat/lon grid lines to show
             latlonLabels: int
                 number of lat/lon labels to show along each side.
             transparency: int
-                transparency of the image background(mask), set for PIL alpha mask in Figure.save()
-                default transparency is None
+                transparency of the image background(mask), set for PIL alpha
+                mask in Figure.save()
+                default: None
 
             Advanced parameters:
             --------------------
@@ -835,7 +847,8 @@ class Nansat(Domain):
         # write an image to png with transparent Mask set to color
         transparency=[0,0,0], following PIL alpha mask
         n.write_figure(fileName='transparent.png', bands=[3],
-               transparentMask=True, mask_array=wmArray, mask_lut={0: [0,0,0]},
+               transparentMask=True, mask_array=wmArray,
+               mask_lut={0: [0,0,0]},
                clim=[0,0.15], cmapName='gray', transparency=[0,0,0])
 
         See also
@@ -1084,14 +1097,15 @@ class Nansat(Domain):
     def _get_mapper(self, mapperName):
         ''' Create VRT file in memory (VSI-file) with variable mapping
 
-        If mapperName is given, it is added as the first in the self.mapperList
-        Loop over all availble mappers in mapperList to get the matching one.
+        If mapperName is given only this mapper will be used,
+        else loop over all availble mappers in mapperList to get the
+        matching one.
         In the loop:
             If the specific error appears the mapper is not used
             and the next mapper is tested.
             Otherwise the mapper returns VRT.
         If type of the sensor is identified, add mapping variables.
-        If all mapper do not fit, simply copy the input DS into a VSI/VRT
+        If all mappers fail, make simple copy of the input DS into a VSI/VRT
 
         Parameters
         ----------
@@ -1104,9 +1118,7 @@ class Nansat(Domain):
 
         Raises
         --------
-            GDALError: occurs if input file cannot be opened with Nansat
             Error: occurs if given mapper cannot open the input file
-
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
         try:
@@ -1121,14 +1133,14 @@ class Nansat(Domain):
         else:
             metadata = None
 
-        #pdb.set_trace()
-        # Import Mapper
         tmpVRT = None
 
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
-            # Stripping off eventual 'mapper_' and '.py' and converting to lowercase
-            mapperName = mapperName.replace('mapper_', '').replace('.py', '').lower()
+            # Stripping off eventual 'mapper_' and '.py' and converting
+            # to lowercase
+            mapperName = mapperName.replace('mapper_',
+                                            '').replace('.py', '').lower()
             try:
                 mapper_module = __import__('mapper_' + mapperName)
             except ImportError:
@@ -1176,7 +1188,7 @@ class Nansat(Domain):
     def _get_band_number(self, bandID):
         '''Return absolute band number
 
-        Check if given band_id is valid
+        Check if given bandID is valid
         Return absolute number of the band in the VRT
 
         Parameters
@@ -1219,11 +1231,13 @@ class Nansat(Domain):
 
         return bandNumber
 
-    def mosaic(self, files=[], bands=[], reproject=True, maskName='mask', **kwargs):
+    def mosaic(self, files=[], bands=[], reproject=True, maskName='mask',
+                **kwargs):
         '''Mosaic input files. If images overlap, calculate average
 
-        Convert all input files into Nansat objects, reproject, get bands,
-        put bands into a 3D cube, average, add averaged bands to the current
+        Convert all input files into Nansat objects, reproject onto the 
+        Domain of the current object, get bands, from each object,
+        calculate average and STD, add averaged bands (and STD) to the current
         object.
 
         mosaic() tries to get band 'mask' from the input files. The mask
@@ -1231,9 +1245,9 @@ class Nansat(Domain):
             0:   nodata
             1:   clouds
             2:   land
-            64: values
+            64:  valid pixel
         If it gets that band (which can be provided by some mappers or Nansat
-        childs, e.g.  ModisL2NRT) it uses it to select averagable pixels
+        childs, e.g.  ModisL2Image) it uses it to select averagable pixels
         (i.e. where mask == 64).
         If it cannot locate the band 'mask' is assumes that all pixels are
         averagebale except for thouse out of swath after reprojection.
@@ -1247,8 +1261,16 @@ class Nansat(Domain):
                 list of input files
             bands: list
                 list of names/band_numbers to be processed
-            nClass: child of Nansat
-                The class to be used to read input files
+            reproject: boolean, [True]
+                reproject input files?
+            maskName: str, ['mask']
+                name of the mask in input files
+            nClass: child of Nansat, [Nansat]
+                This class is used to read input files
+            mapperName: str, ['']
+                This mapper is used to read input files
+            eResampleAlg: int, [0]
+                agorithm for reprojection, see Nansat.reproject()
         '''
         # get Nansat child class for opening file
         nClass = kwargs.get('nClass', Nansat)
@@ -1303,7 +1325,9 @@ class Nansat(Domain):
                 except:
                     self.logger.error('Unable to reproject %s' % f)
                     continue
-
+            # if mask was not received from projected image
+            # create zeros (out of swath) for blocking this image from
+            # averaging
             if mask is None:
                 mask = np.zeros(n.shape()).astype('int8')
 
@@ -1334,8 +1358,11 @@ class Nansat(Domain):
             # get average
             avg = avgMat[b] / cntMat
             # calculate STD
-            # STD = sqrt(sum((x-M)^2)/n) = sqrt((sum(x^2) - 2*mean(x)*sum(x) + sum(mean(x)^2))/n)
-            stdMat[b] = np.sqrt((stdMat[b] - 2.0 * avg * avgMat[b] + np.square(avg) * cntMat) / cntMat)
+            # STD = sqrt(sum((x-M)^2)/n) = (sqrt((sum(x^2) -
+            #                                2*mean(x)*sum(x) +
+            #                                sum(mean(x)^2))/n))
+            stdMat[b] = np.sqrt((stdMat[b] - 2.0 * avg * avgMat[b] +
+                                np.square(avg) * cntMat) / cntMat)
             # set std
             avgMat[b] = avg
 
@@ -1353,7 +1380,7 @@ class Nansat(Domain):
             self.add_band(array=stdMat[b], parameters={'name': b + '_std'})
 
     def process(self, opts=None):
-        '''Default L2 processing of Nansat object. Empty. Overloaded.'''
+        '''Default L2 processing of Nansat object. Overloaded in childs.'''
 
     def export_band(self, fileName, bandID=1, driver='netCDF'):
         '''Export only one band of the Nansat object
@@ -1365,9 +1392,9 @@ class Nansat(Domain):
         -----------
         fileName: str
             name of the output file
-        bandID: int or str
+        bandID: int or str, [1]
             number of name of the band
-        driver:
+        driver: str, ['netCDF']
             name of the GDAL Driver (format) to use
         '''
         # get array from self
