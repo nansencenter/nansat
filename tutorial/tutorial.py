@@ -156,6 +156,11 @@ dFromGrids = Domain(lon=lonGrid, lat=latGrid)
 n2.reproject(dFromGrids)
 n2.write_figure(fileName=oFileName + '_proj_on_grid.png', bands=[1,2,3], clim='hist')
 
+# reproject onto automatically generated domain
+dstDomainAuto = Domain(srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", ds=n.raw.dataset)
+n.reproject(dstDomainAuto)
+n.write_figure(fileName=oFileName + '_proj_1auto.png', bands=[1,2,3], clim='hist')
+
 # export all data into NetCDF format
 n.export(oFileName + '_0.nc')
 

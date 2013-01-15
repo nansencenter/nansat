@@ -99,7 +99,7 @@ class Domain():
                     AUTHORITY["EPSG","9108"]],
                 AUTHORITY["EPSG","4326"]]'
         ext : string
-            several gdalwarp options + additional options
+            some gdalwarp options + additional options
             [http://www.gdal.org/gdalwarp.html]
             Specifies extent, resolution / size
             Available options: (("-te" or "-lle") and ("-tr" or "-ts"))
@@ -149,7 +149,12 @@ class Domain():
         self.logger.debug('srs: %s' % srs)
         self.logger.debug('ext: %s' % ext)
 
-        # First decode srs if given
+        # If too much information is given raise error
+        if ds is not None and srs is not None and ext is not None:
+            raise OptionError('Ambiguous specification of both '
+                              'dataset, srs- and ext-strings.')
+
+        # if srs is given, convert it to WKT
         if srs is not None:
             # if XML-file and domain name is given - read that file
             if isinstance(srs, str) and os.path.isfile(srs):
@@ -180,19 +185,20 @@ class Domain():
             if status > 0 or dstWKT == "":
                 raise ProjectionError("srs (%s) is wrong" % (srs))
  
+        # choose between input opitons:
+        # ds
+        # ds and srs
+        # srs and ext
+        # lon and lat
 
-        # If too much information is given
-        if ds is not None and srs is not None and ext is not None:
-            raise ProjectionError('Ambiguous specification of both '
-                'dataset, srs- and ext-strings.')
-
-        # If only a dataset is given
-        elif ds is not None and srs is None and ext is None:
+        # if only a dataset is given:
+        #     copy geo-reference from the dataset
+        if ds is not None and srs is None:
             self.vrt = VRT(gdalDataset=ds)
 
-        # If both dataset and srs are given (but not ext), 
-        #   we use AutoCreateWarpedVRT to determine bounds and resolution
-        elif ds is not None and srs is not None and ext is None:
+        # If dataset and srs are given (but not ext):
+        #   use AutoCreateWarpedVRT to determine bounds and resolution
+        elif ds is not None and srs is not None:
             tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, dstWKT)
             if tmpVRT is None:
                 raise ProjectionError('Could not warp the given dataset'
@@ -201,7 +207,7 @@ class Domain():
                 self.vrt = VRT(gdalDataset=tmpVRT)
 
         # If proj4 and extent string are given (but not dataset)
-        elif (srs is not None and ext is not None):
+        elif srs is not None and ext is not None:
             # create full dictionary of parameters
             extentDic = self._create_extentDic(ext)
 
@@ -216,7 +222,7 @@ class Domain():
             self.vrt = VRT(srcGeoTransform=geoTransform, srcProjection=dstWKT,
                                            srcRasterXSize=rasterXSize,
                                            srcRasterYSize=rasterYSize)
-        elif (lat is not None and lon is not None):
+        elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT(lat=lat, lon=lon)
         else:
