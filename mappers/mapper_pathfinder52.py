@@ -1,6 +1,6 @@
 # Name:        mapper_pathfinder52
 # Purpose:     Mapping for NOAA AVHRR PATHFINDER52 DATA
-# Created:     13.12.2011
+# Authors:      Anton Korosov, Dmitry Petrenko
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
