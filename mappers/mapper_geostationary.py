@@ -33,18 +33,30 @@ meteosat7_offset = array(5) # varies between 5 and 6
 meteosat7_lut_IR = arrays2LUTString(meteosat7_IR_radiances/meteosat7_IR_calibration - meteosat7_offset, meteosat7_temperatures)
 meteosat7_lut_VW = arrays2LUTString(meteosat7_VW_radiances/meteosat7_VW_calibration - meteosat7_offset, meteosat7_temperatures)
 
+MSG_wavelengths = [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400, 700]
+MSG_scale = [100, 100, 100, 1, 1, 1, 1, 1, 1, 1, 1, 100]
+MSG_offset = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
 satDict = [\
            {'name': 'GOES13', 'wavelengths': [700, 10700, 3900, 6600],
-                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., (340.-170.)/1023.], 'offset': [0, 170, 170, 170]}, 
+                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., 
+                    (340.-170.)/1023.], 'offset': [0, 170, 170, 170]}, 
            {'name': 'GOES15', 'wavelengths': [700, 10700, 3900, 6600],
-                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., (340.-170.)/1023.], 'offset': [0, 170, 170, 170]},
-           {'name': 'MTSAT2', 'NODATA': [255, 255, 255, 255], 'wavelengths': [700, 3800, 6800, 10800], # 12mum ch not supported
-                'LUT': ['0:0,255:100', mtsat_calibration_3_8_mum, mtsat_calibration_6_8_mum, mtsat_calibration_10_7_mum]},  
-           {'name': 'MET7', 'wavelengths': [795, 6400, 11500], #'scale': [100./255., 0.103, 0.103], 'offset': [0, 5, 5]},
+                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., 
+                (340.-170.)/1023.], 'offset': [0, 170, 170, 170]},
+           {'name': 'MTSAT2', 'NODATA': [255, 255, 255, 255], 
+                'wavelengths': [700, 3800, 6800, 10800], # 12mum ch not supported
+                'LUT': ['0:0,255:100', mtsat_calibration_3_8_mum, 
+                    mtsat_calibration_6_8_mum, mtsat_calibration_10_7_mum]},  
+           {'name': 'MET7', 'wavelengths': [795, 6400, 11500], 
+                #'scale': [100./255., 0.103, 0.103], 'offset': [0, 5, 5]},
                 'LUT': ['0:0,255:100', meteosat7_lut_VW, meteosat7_lut_IR]},
-           {'name': 'MSG1', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]},
-           {'name': 'MSG2', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]},
-           {'name': 'MSG3', 'wavelengths': [600, 800, 1600, 3900, 6200, 7300, 8700, 9700, 10800, 12000, 13400]}
+           {'name': 'MSG1', 'wavelengths': MSG_wavelengths,
+                'scale': MSG_scale, 'offset': MSG_offset},
+           {'name': 'MSG2', 'wavelengths': MSG_wavelengths,
+                'scale': MSG_scale, 'offset': MSG_offset},
+           {'name': 'MSG3', 'wavelengths': MSG_wavelengths,
+                'scale': MSG_scale, 'offset': MSG_offset}
            ];
         
 
@@ -83,16 +95,19 @@ class Mapper(VRT):
         datestamp = gdalDataset.GetDescription().split(",")[3]
         if satellite[0:3] == 'MSG':
             resolution = 'H'
+            dataType = 'T' # Brightness temperatures and reflectances
         else:
             resolution = 'L'
+            dataType = 'N' # Counts, for manual calibration
 
         metaDict = []
         for i, wavelength in enumerate(wavelengths):
-            if wavelength > 1000:
+            if wavelength > 2000:
                 standard_name = 'brightness_temperature'
             else:
                 standard_name = 'albedo'
-            bandSource = 'MSG('+path+','+resolution+','+satellite+','+datestamp+','+str(i+1)+',Y,N,1,1)'
+            bandSource = 'MSG('+path+','+resolution+','+satellite+','+datestamp+\
+                        ','+str(i+1)+',Y,' + dataType + ',1,1)'
             try:
                 gdal.Open(bandSource)
             except:
@@ -115,22 +130,37 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # For Meteosat7 ch1 has higher resolution than ch2 and ch3
-        # If ch1 is opened, ch2 and ch3 is blown up to this size,
-        # if ch2 or ch3 is opened, ch1 is reduced to this size
-        if satellite == 'MET7':
+        # and for MSG, channel 12 (HRV) has higher resolution than the other channels
+        # If the high resolution channel is opened, the low res channels are
+        # blown up to this size. If a low res channel is opened, the high res channels 
+        # are reduced to this size.
+        if satellite == 'MET7' or satellite[0:3] == 'MSG':
             node0 = Node.create(self.read_xml())
             bands = node0.nodeList("VRTRasterBand")
-            if self.dataset.RasterXSize == 5032: # High res ch1 is opened
-                newSrcXSize = u'2532'
-                newSrcYSize = u'2500'
-                bands = bands[1:] # Ch2 anc ch2 should be modified
-            if self.dataset.RasterXSize == 2532: # Low res ch is opened
-                newSrcXSize = u'5032'
-                newSrcYSize = u'5000'
-                bands = [bands[0]] # Only ch1 needs to be modified
+            if satellite == 'MET7':
+                if self.dataset.RasterXSize == 5032: # High res ch1 is opened
+                    newSrcXSize = u'2532'
+                    newSrcYSize = u'2500'
+                    bands = bands[1:] # Ch2 and ch3 should be modified
+                if self.dataset.RasterXSize == 2532: # Low res ch is opened
+                    newSrcXSize = u'5032'
+                    newSrcYSize = u'5000'
+                    bands = [bands[0]] # Only ch1 needs to be modified
+            elif satellite[0:3] == 'MSG':
+                if self.dataset.RasterXSize == 11136: # High res ch1 is opened
+                    newSrcXSize = u'3712'
+                    newSrcYSize = u'3712'
+                    bands = bands[0:10] # Channels 1-11 should be modified
+                if self.dataset.RasterXSize == 3712: # Low res ch is opened
+                    newSrcXSize = u'11136'
+                    newSrcYSize = u'11136'
+                    bands = [bands[11]] # Only ch12 needs to be modified
+
             for band in bands:
-                band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].setAttribute("xSize", newSrcXSize)
-                band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].setAttribute("ySize", newSrcYSize)
+                band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].\
+                        setAttribute("xSize", newSrcXSize)
+                band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].\
+                        setAttribute("ySize", newSrcYSize)
             self.write_xml(str(node0.rawxml()))
 
         # Set time
