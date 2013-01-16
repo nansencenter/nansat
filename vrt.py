@@ -1,6 +1,6 @@
 # Name:    nansat.py
 # Purpose: Container of VRT and GeolocationDomain classes
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad,
+# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
 # Created:      29.06.2011
@@ -31,7 +31,9 @@ class GeolocationArray():
                  xBand=1, yBand=1, srs="", lineOffset=0, lineStep=1,
                  pixelOffset=0, pixelStep=1, dataset=None):
         '''Create GeolocationArray object from input parameters
+
         Parameters:
+        -----------
             xVRT: VRT-object or str
                 VRT with array of x-coordinates OR string with dataset source
             yVRT: VRT-object or str
@@ -44,8 +46,11 @@ class GeolocationArray():
             pixelOffset: int: offset of first pixel
             pixelStep: step of pixels
             dataset: GDAL dataset to take geolocation arrays from
+
         Modifies:
+        ---------
             All input parameters are copied to self
+
         '''
         # dictionary with all metadata
         self.d = {}
@@ -173,8 +178,8 @@ class VRT():
         Create VRT dataset (self.dataset) based on these parameters
         Adds logger
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
             gdalDataset: GDAL Dataset
                 source dataset of geo-reference
             vrtDataset: GDAL VRT Dataset
@@ -183,11 +188,11 @@ class VRT():
                 source matrix with data
             srcGeoTransform: GDALGeoTransform
                 parameter of geo-reference
-            srcProjection, GDALProjection
+            srcProjection: GDALProjection
                 parameter of geo-reference
-            srcRasterXSize, INT
+            srcRasterXSize: INT
                 parameter of geo-reference
-            srcRasterYSize, INT
+            srcRasterYSize: INT
                 parameter of geo-reference
             srcMetadata: GDAL Metadata
                 all global metadata
@@ -314,9 +319,10 @@ class VRT():
         ---------
             Adds bands to the self.dataset based on info in metaDict
 
-        See Also
-        --------
+        See Also:
+        ---------
         VRT._create_band()
+
         '''
         for bandDict in metaDict:
             src = bandDict['src']
@@ -562,13 +568,13 @@ class VRT():
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         wkvName: string
             value of 'wkv' key in metaDict
 
-        Returns
-        -------
+        Returns:
+        --------
         wkvDict: dictionay
             WKV corresponds to the given wkv_name
 
@@ -599,6 +605,7 @@ class VRT():
         --------
         rasterBand: GDALRasterBand
             destination band with metadata
+
         '''
         self.logger.debug('Put: %s ' % str(metadataDict))
         for key in metadataDict:
@@ -609,9 +616,9 @@ class VRT():
     def create_dataset_from_array(self, array):
         '''Create a dataset with a band from an array
 
-        Writes contents of the array into flat binary file (VSI)
-        Writes VRT file with RawRastesrBand, which points to the binary file
-        Opens the VRT file as self.dataset with GDAL
+        Write contents of the array into flat binary file (VSI)
+        Write VRT file with RawRastesrBand, which points to the binary file
+        Open the VRT file as self.dataset with GDAL
 
         Parameters:
         -----------
@@ -622,6 +629,7 @@ class VRT():
             binary file is written (VSI)
             VRT file is written (VSI)
             self.dataset is opened
+
         '''
         arrayDType = array.dtype.name
         arrayShape = array.shape
@@ -671,10 +679,11 @@ class VRT():
         '''Read XML content of the VRT dataset
 
         Returns:
+        --------
             vsiFileContent: string
                 XMl Content which is read from the VSI file
-        '''
 
+        '''
         # write dataset content into VRT-file
         self.dataset.FlushCache()
         #read from the vsi-file
@@ -694,11 +703,15 @@ class VRT():
         '''Write XML content into a VRT dataset
 
         Parameters:
+        -----------
             vsiFileContent: string, optional
                 XML Content of the VSI file to write
+
         Modifies:
+        ---------
             self.dataset
                 If XML content was written, self.dataset is re-opened
+
         '''
         #write to the vsi-file
 
@@ -731,11 +744,14 @@ class VRT():
         ''' Add GEOLOCATION ARRAY to the VRT
 
         Parameters:
+        -----------
             geolocationArray: GeolocationArray object
 
         Modifes:
-            add geolocationArray to self
+        --------
+            Add geolocationArray to self
             Sets GEOLOCATION ARRAY metadata
+
         '''
         self.geolocationArray = geolocationArray
 
@@ -746,6 +762,7 @@ class VRT():
         '''Resize VRT
 
         Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
+
         Parameters:
         -----------
             xSize, ySize: int
@@ -756,6 +773,7 @@ class VRT():
         Returns:
         --------
             Resized VRT object
+
         '''
         # modify GeoTransform: set resolution from new X/Y size
         geoTransform = (0,
@@ -783,17 +801,17 @@ class VRT():
                            srcSRS=None, dstSRS=None, WorkingDataType=None):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
 
-        Parameters
-        ----------
-            rasterXSize: integer
+        Parameters:
+        -----------
+            rasterXSize: int
                 desired X size of warped image
-            rasterYSize: integer
+            rasterYSize: int
                 desired Y size of warped image
             geoTransform: tuple of 6 integers
                 desired GeoTransform size of the warped image
 
-        Modifies
-        --------
+        Modifies:
+        ---------
             XML of the self VRT file: size and geotranform is updated
 
         '''
@@ -853,11 +871,14 @@ class VRT():
 
     def _add_gcp_metadata(self):
         '''Add GCPs to metadata (required e.g. by Nansat.export())
+
         Creates string representation of GCPs line/pixel/X/Y
-        Add these string to metadata
+        Adds these string to metadata
 
         Modifies:
-            Adds self.vrd.dataset.Metadata
+        ---------
+            Add self.vrd.dataset.Metadata
+
         '''
         gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
         gcps = self.dataset.GetGCPs()
@@ -976,6 +997,7 @@ class VRT():
         Returns:
         --------
         warpedVRT: VRT object with WarpedVRT
+
         '''
         # VRT to be warped
         srcVRT = self.copy()
@@ -1093,12 +1115,13 @@ class VRT():
         -----------
         gcps: list
             GDAL GCPs
+
         Returns:
         --------
         gcps: dict
             {'gcps': list with GDAL GCPs, 'srs': fake stereo WKT}
-        '''
 
+        '''
         # get source SRS (either Projection or GCPProjection)
         srcWKT = self.dataset.GetProjection()
         if srcWKT == '':
@@ -1144,19 +1167,19 @@ class VRT():
         Create latlong GCPs projection
 
         Parameters:
-        ===========
-        lat : Numpy grid
+        -----------
+        lat: Numpy grid
             array of latitudes
-        lon : Numpy grid
+        lon: Numpy grid
             array of longitudes (should be the same size as lat)
-        numOfGCPs : int, optional, default = 100
+        numOfGCPs: int, optional, default = 100
             number of GCPs to create
 
         Returns:
-        ========
-        gcsp : List with GDAL GCPs
-        '''
+        --------
+        gcsp: List with GDAL GCPs
 
+        '''
         # estimate step of GCPs
         gcpSize = np.sqrt(numOfGCPs)
         step0 = max(1, int(float(lat.shape[0]) / gcpSize))
@@ -1190,8 +1213,8 @@ class VRT():
         is solved:
         http://trac.osgeo.org/gdal/ticket/4907
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         stepX : integer, optional (default 1)
         stepY : integer, optional (default 1)
             If density of GCPs is too high, warping speed increases
@@ -1199,13 +1222,12 @@ class VRT():
             stepX and stepY can be adjusted to reduce density of GCPs
             (always keeping the ones around boundaries)
 
-        Modifies
-        --------
+        Modifies:
+        ---------
         self.GCPs are added
         self.geolocationArray is removed
 
         '''
-
         geolocArray = self.dataset.GetMetadata('GEOLOCATION')
         x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
         y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
@@ -1240,13 +1262,12 @@ class VRT():
         no geolocation.
         Analogue to utility gdalcopyproj.py.
 
-        Parameters
-        ----------
-        fileName : string
+        Parameters:
+        -----------
+        fileName: string
             Name of file to which the geolocation data shall be written
 
         '''
-
         figDataset = gdal.Open(fileName, gdal.GA_Update)
         figDataset.SetGeoTransform(self.dataset.GetGeoTransform())
         figDataset.SetProjection(self.dataset.GetProjection())
