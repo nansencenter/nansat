@@ -17,6 +17,7 @@
 
 from nansat_tools import *
 
+
 # import nansat parts
 try:
     from vrt import VRT, GeolocationArray
@@ -24,27 +25,31 @@ except ImportError:
     warnings.warn(''' Cannot import vrt!
                     domain will not work.''')
 
+
 class Domain():
     '''Container for geographical reference of a raster
 
-    A Domain object describes all attributes of geographical reference of a raster:
+    A Domain object describes all attributes of geographical
+    reference of a raster:
       * width and height (number of pixels)
       * pixel size (e.g. in decimal degrees or in meters)
-      * relation between pixel/line coordinates and geographical coordinates 
-            (e.g. a linear relation)
+      * relation between pixel/line coordinates and geographical
+        coordinates (e.g. a linear relation)
       * type of data projection (e.g. geographical or stereographic)
 
-    The core of Domain is a GDAL Dataset. It has no bands, but only 
-    georeference information: rasterXsize, rasterYsize, GeoTransform and Projection
-    or GCPs, etc. which fully describe dimentions and spatial reference of the grid.
+    The core of Domain is a GDAL Dataset. It has no bands, but only
+    georeference information: rasterXsize, rasterYsize, GeoTransform and
+    Projection or GCPs, etc. which fully describe dimentions and spatial
+    reference of the grid.
 
     There are three ways to store geo-reference in a GDAL dataset:
-      * Using GeoTransfrom to define linear relationship between raster pixel/line and
-        geographical X/Y coordinates
-      * Using GCPs (set of Ground Control Points) to define non-linear relationship between
-    	 pixel/line and X/Y
-      * Using Geolocation Array - full grids of X/Y coordinates for each pixel of a raster
-    The relation between X/Y coordinates of the raster and latitude/longitude 
+      * Using GeoTransfrom to define linear relationship between raster
+        pixel/line and geographical X/Y coordinates
+      * Using GCPs (set of Ground Control Points) to define non-linear
+        relationship between pixel/line and X/Y
+      * Using Geolocation Array - full grids of X/Y coordinates for
+        each pixel of a raster
+    The relation between X/Y coordinates of the raster and latitude/longitude
     coordinates is defined by projection type and projection parameters.
     These pieces of information are therefore stored in Domain:
       * Type and parameters of projection +
@@ -62,15 +67,18 @@ class Domain():
     Nansat inherits from Domain and adds bands to self.vrt
     '''
 
-    def __init__(self, srs=None, ext=None, ds=None, lon=None, lat=None, name='', logLevel=None):
+    def __init__(self, srs=None, ext=None, ds=None, lon=None,
+                 lat=None, name='', logLevel=None):
         '''Create Domain from GDALDataset or string options or lat/lon grids
 
         d = Domain(srs, ext)
-            Size, extent and satial reference is given by strings
+            Size, extent and spatial reference is given by strings
         d = Domain(ds=GDALDataset):
-            Size, extent and spatial reference is copied from input GDAL dataset
+            Size, extent and spatial reference is copied from input
+            GDAL dataset
         d = Domain(srs, ds=GDALDataset):
-            Spatial reference is given by srs, but size and extent is determined 
+            Spatial reference is given by srs, but size and extent is
+            determined
             from input GDAL dataset
         d = Domain(lon=lonGrid, lat=latGrid)
             Size, extent and spatial reference is given by two grids
@@ -82,9 +90,11 @@ class Domain():
             PROJ4:
             string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
             "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
-            "+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs"
+            "+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10
+             +no_defs"
             EPSG:
-            integer with EPSG number, [http://spatialreference.org/], e.g. 4326
+            integer with EPSG number, [http://spatialreference.org/],
+            e.g. 4326
             WKT:
             string with Well Know Text of SRS. E.g.:
             'GEOGCS["WGS 84",
@@ -119,28 +129,26 @@ class Domain():
         logLevel: int, optional, default=30
             level of logging
 
-        Raises
-        ------
+        Raises:
+        -------
         ProjectionError: occurs when Projection() is empty
             despite it is required for creating extentDic.
         OptionError: occures when the arguments are not proper.
 
-        Modifies
-        --------
+        Modifies:
+        ---------
         self.vrt.datasetset: dataset in memory
             dataset is created based on the input arguments
 
-        See Also
-        --------
+        See Also:
+        ---------
         Nansat.reproject()
         [http://www.gdal.org/gdalwarp.html]
         [http://trac.osgeo.org/proj/]
         [http://spatialreference.org/]
         [http://www.gdal.org/ogr/osr_tutorial.html]
+
         '''
-
-        #from nansat_tools import add_logger, initial_bearing, latlongSRS
-
         # set default attributes
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
@@ -184,7 +192,7 @@ class Domain():
             # test success of WKT
             if status > 0 or dstWKT == "":
                 raise ProjectionError("srs (%s) is wrong" % (srs))
- 
+
         # choose between input opitons:
         # ds
         # ds and srs
@@ -201,8 +209,9 @@ class Domain():
         elif ds is not None and srs is not None:
             tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, dstWKT)
             if tmpVRT is None:
-                raise ProjectionError('Could not warp the given dataset'
-                    ' to the given SRS.')
+                raise ProjectionError('''
+                                      Could not warp the given dataset
+                                      to the given SRS.''')
             else:
                 self.vrt = VRT(gdalDataset=tmpVRT)
 
@@ -216,12 +225,13 @@ class Domain():
                 extentDic = self._convert_extentDic(dstWKT, extentDic)
 
             # get size/extent from the created extet dictionary
-            [geoTransform, rasterXSize,
-                           rasterYSize] = self._get_geotransform(extentDic)
+            [geoTransform,
+             rasterXSize, rasterYSize] = self._get_geotransform(extentDic)
             # create VRT object with given geo-reference parameters
-            self.vrt = VRT(srcGeoTransform=geoTransform, srcProjection=dstWKT,
-                                           srcRasterXSize=rasterXSize,
-                                           srcRasterYSize=rasterYSize)
+            self.vrt = VRT(srcGeoTransform=geoTransform,
+                           srcProjection=dstWKT,
+                           srcRasterXSize=rasterXSize,
+                           srcRasterYSize=rasterYSize)
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT(lat=lat, lon=lon)
@@ -234,8 +244,8 @@ class Domain():
     def __repr__(self):
         '''Creates string with basic info about the Domain object
 
-        Modifies
-        --------
+        Modifies:
+        ---------
         Print size, projection and corner coordinates
 
         '''
@@ -244,27 +254,31 @@ class Domain():
         prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
         corners = self.get_corners()
         outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
-                                 self.vrt.dataset.RasterYSize)
+                                         self.vrt.dataset.RasterYSize)
         outStr += '-' * 40 + '\n'
         outStr += 'Projection:\n'
         outStr += prettyWKT + '\n'
         outStr += '-' * 40 + '\n'
         outStr += 'Corners (lon, lat):\n'
         outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
-                corners[1][0], corners[0][2], corners[1][2])
+                                                           corners[1][0],
+                                                           corners[0][2],
+                                                           corners[1][2])
         outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
-                corners[1][1], corners[0][3], corners[1][3])
+                                                           corners[1][1],
+                                                           corners[0][3],
+                                                           corners[1][3])
         return outStr
 
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         '''Write KML file with domains
 
-        Convert XML-file with domains into KML-file for GoogleEart
+        Convert XML-file with domains into KML-file for GoogleEarth
         or
         Write KML-file with the current Domain
 
-        Parameters
-        ----------
+        Parameters:
+        -----------
         xmlFileName: string, optional
             Name of the XML-file to convert. If only this value is given
             - kmlFileName=xmlFileName+'.kml'
@@ -335,21 +349,26 @@ class Domain():
 
         Examples
         ---------
-        # First of all, reproject an image into Lat/Lon WGS84 (Simple Cylindrical) projection
+        # First of all, reproject an image into Lat/Lon WGS84
+          (Simple Cylindrical) projection
         # 1. Cancel previous reprojection
         # 2. Get corners of the image and the pixel resolution
-        # 3. Create Domain with stereographic projection, corner coordinates and resolution 1000m
+        # 3. Create Domain with stereographic projection,
+        #    corner coordinates and resolution 1000m
         # 4. Reproject
         # 5. Write image
         # 6. Write KML for the image
         n.reproject() # 1.
         lons, lats = n.get_corners() # 2.
         srsString = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
-        extentString = '-lle %f %f %f %f -ts 3000 3000' % (min(lons), min(lats), max(lons), max(lats))
+        extentString = '-lle %f %f %f %f -ts 3000 3000'
+        % (min(lons), min(lats), max(lons), max(lats))
         d = Domain(srs=srsString, ext=extentString) # 3.
         n.reproject(d) # 4.
-        n.write_figure(fileName=figureName, bands=[3], clim=[0,0.15], cmapName='gray', transparency=0) # 5.
-        n.write_kml_image(kmlFileName=oPath + fileName + '.kml', kmlFigureName=figureName) # 6.
+        n.write_figure(fileName=figureName, bands=[3], clim=[0,0.15],
+                       cmapName='gray', transparency=0) # 5.
+        n.write_kml_image(kmlFileName=oPath + fileName + '.kml',
+                          kmlFigureName=figureName) # 6.
 
         '''
 
@@ -363,7 +382,8 @@ class Domain():
             raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
 
         if kmlFigureName is None:
-            raise OptionError('kmlFigureName(%s) is not specified' % (kmlFigureName))
+            raise OptionError('kmlFigureName(%s) is not specified'
+                              % (kmlFigureName))
 
         # open KML, write header
         kmlFile = file(kmlFileName, 'wt')
@@ -412,16 +432,18 @@ class Domain():
         # if the vrt dataset has geolocationArray
         if len(self.vrt.geolocationArray.d) > 0:
             longitude = self.vrt.geolocationArray.xVRT.dataset.ReadAsArray()
-            latitude =  self.vrt.geolocationArray.yVRT.dataset.ReadAsArray()
+            latitude = self.vrt.geolocationArray.yVRT.dataset.ReadAsArray()
         else:
             # create empty grids
-            longitude = np.zeros([self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize], 'float32')
-            latitude = np.zeros([self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize], 'float32')
+            longitude = np.zeros([self.vrt.dataset.RasterYSize,
+                                  self.vrt.dataset.RasterXSize], 'float32')
+            latitude = np.zeros([self.vrt.dataset.RasterYSize,
+                                 self.vrt.dataset.RasterXSize], 'float32')
             # fill row-wise
             for i in range(self.vrt.dataset.RasterXSize):
                 [lo, la] = self._transform_points(
-                                    [i] * self.vrt.dataset.RasterYSize,
-                                    range(self.vrt.dataset.RasterYSize))
+                           [i] * self.vrt.dataset.RasterYSize,
+                           range(self.vrt.dataset.RasterYSize))
                 longitude[:, i] = lo
                 latitude[:, i] = la
 
@@ -513,9 +535,10 @@ class Domain():
             elm_str = str(str_tr[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 3 or elms_str[2] == "-":
-                raise OptionError("Domain._create_extentDic(): "
-                                  "-tr is used as "
-                                  "'-tr xResolution yResolution'")
+                raise OptionError('''
+                                    Domain._create_extentDic():
+                                    -tr is used as
+                                    "-tr xResolution yResolution"''')
             # Add the key and value to extentDic
             extentString = extentString.replace(str_tr[0], "")
             trElem = str(str_tr).split(None)
@@ -551,16 +574,18 @@ class Domain():
                 extentDic[tskey] = elements
 
         # Find -te text
-        str_te = re.findall('-te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
-                            '+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
+        str_te = re.findall('''
+                            -te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s
+                            +[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?''',
                             extentString)
         if str_te != []:
             # Check the number of -te elements
             elm_str = str(str_te[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 5:
-                raise OptionError("Domain._create_extentDic(): "
-                                  "-te is used as '-te xMin yMin xMax yMax'")
+                raise OptionError('''
+                                  Domain._create_extentDic():
+                                  -te is used as "-te xMin yMin xMax yMax"''')
             # Add the key and value to extentDic
             extentString = extentString.replace(str_te[0], "")
             teElem = str(str_te).split(None)
@@ -582,9 +607,10 @@ class Domain():
             elm_str = str(str_lle[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 5:
-                raise OptionError("Domain._create_extentDic(): "
-                                  "-lle is used as "
-                                  "'-lle lonWest lonEast latNorth latSouth'")
+                raise OptionError('''
+                                  Domain._create_extentDic():
+                                  -lle is used as
+                                  "-lle lonWest lonEast latNorth latSouth"''')
             # Add the key and value to extentDic
             extentString = extentString.replace(str_lle[0], "")
             lleElem = str(str_lle).split(None)
@@ -600,25 +626,31 @@ class Domain():
         result = re.search("\S", extentString)
 
         # if there are unnecessary letters, give an error
-        if result != None:
-            raise OptionError("Domain._create_extentDic(): "
-                              "extentString is not redable : ", extentString)
+        if result is not None:
+            raise OptionError('''
+                              Domain._create_extentDic():
+                              extentString is not redable : ''',
+                              extentString)
 
         # check if one of "-te" and "-lle" is given
         if ("lle" not in extentDic) and ("te" not in extentDic):
-            raise OptionError("Domain._create_extentDic(): "
-                              "'-lle' or '-te' is required.")
+            raise OptionError('''
+                              Domain._create_extentDic():
+                              "-lle" or "-te" is required.''')
         elif ("lle" in extentDic) and ("te" in extentDic):
-            raise OptionError("Domain._create_extentDic(): "
-                              "'-lle' or '-te' should be chosen.")
+            raise OptionError('''
+                              Domain._create_extentDic():
+                              "-lle" or "-te" should be chosen.''')
 
         # check if one of "-ts" and "-tr" is given
         if ("ts" not in extentDic) and ("tr" not in extentDic):
-            raise OptionError("Domain._create_extentDic(): "
-                              "'-ts' or '-tr' is required.")
+            raise OptionError('''
+                              Domain._create_extentDic():
+                              "-ts" or "-tr" is required.''')
         elif ("ts" in extentDic) and ("tr" in extentDic):
-            raise OptionError("Domain._create_extentDic(): "
-                              "'-ts' or '-tr' should be chosen.")
+            raise OptionError('''
+                              Domain._create_extentDic():
+                              "-ts" or "-tr" should be chosen.''')
         return extentDic
 
     def _from_xml(self, srsString, extentString):
@@ -696,9 +728,9 @@ class Domain():
 
         # coumpund vectors of pixels (col) and lines (row)
         colVector = (rcVector1[0] + [sizes[0]] * len(rcVector1[1]) +
-                    rcVector2[0] + [0] * len(rcVector1[1]))
+                     rcVector2[0] + [0] * len(rcVector1[1]))
         rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] +
-                    [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
+                     [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
 
         return self._transform_points(colVector, rowVector)
 
@@ -747,8 +779,8 @@ class Domain():
 
         '''
         lonList, latList = self.get_border()
-        polyCont = ','.join(str(lon) + ' ' + str(lat) \
-                   for lon, lat in zip(lonList, latList))
+        polyCont = ','.join(str(lon) + ' ' + str(lat) for lon, lat
+                            in zip(lonList, latList))
         wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
         return wktPolygon
 
@@ -874,7 +906,8 @@ class Domain():
         # create transformer
         transformer = gdal.Transformer(self.vrt.dataset, None,
                                        ['SRC_SRS=' + srcWKT,
-                                       'DST_SRS=' + dstWKT])#,'METHOD=GCP_TPS'])
+                                       'DST_SRS=' + dstWKT])
+                                       #,'METHOD=GCP_TPS'])
 
         # use the transformer to convert pixel/line into lat/lon
         latVector = []
@@ -914,8 +947,8 @@ class Domain():
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
         startlon, startlat = self._transform_points([mid_x], [mid_y1])
         endlon, endlat = self._transform_points([mid_x], [mid_y2])
-        bearing_center = initial_bearing(
-                    startlon[0], startlat[0], endlon[0], endlat[0])
+        bearing_center = initial_bearing(startlon[0], startlat[0],
+                                         endlon[0], endlat[0])
         return bearing_center
 
     def shape(self):
@@ -928,14 +961,11 @@ class Domain():
         '''
         return self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
 
-    def write_map(self, outputFileName, lonVec = None, latVec=None,
-                                        lonBorder=10., latBorder=10.,
-                                        figureSize=(6, 6), dpi=50,
-                                        projection='cyl', resolution='c',
-                                        continetsColor='coral',
-                                        meridians=10, parallels=10,
-                                        pColor='r', pLine='k', pAlpha=0.5,
-                                        padding=0.):
+    def write_map(self, outputFileName,
+                  lonVec=None, latVec=None, lonBorder=10., latBorder=10.,
+                  figureSize=(6, 6), dpi=50, projection='cyl', resolution='c',
+                  continetsColor='coral', meridians=10, parallels=10,
+                  pColor='r', pLine='k', pAlpha=0.5, padding=0.):
         ''' Create an image with a map of the domain
 
         Uses Basemap to create a World Map
@@ -980,7 +1010,9 @@ class Domain():
                 # get lon/lat from Domain/Nansat object
                 lonVec, latVec = self.get_border()
             except:
-                print 'Domain/Nansat object is not given and lat/lon vectors=None'
+                print '''
+                        Domain/Nansat object is not given
+                        and lat/lon vectors=None'''
                 return
 
         # convert vectors to numpy arrays
@@ -1010,8 +1042,8 @@ class Domain():
         bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
         bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
 
-        # convert input lat/lon vectors to arrays of vectors with one row if only
-        # one vector was given
+        # convert input lat/lon vectors to arrays of vectors with one row
+        # if only one vector was given
         if len(lonVec.shape) == 1:
             lonVec = lonVec.reshape(1, lonVec.shape[0])
             latVec = latVec.reshape(1, latVec.shape[0])
@@ -1021,7 +1053,8 @@ class Domain():
             mapX, mapY = bmap(list(lonSubVec.flat), list(latSubVec.flat))
 
             # from x/y vectors create a Patch to be added to map
-            boundary = Polygon(zip(mapX, mapY), alpha=pAlpha, ec=pLine, fc=pColor)
+            boundary = Polygon(zip(mapX, mapY),
+                               alpha=pAlpha, ec=pLine, fc=pColor)
 
             # add patch to the map
             plt.gca().add_patch(boundary)
@@ -1029,6 +1062,5 @@ class Domain():
 
         # save figure and close
         plt.savefig(outputFileName, bbox_inches='tight',
-                                    dpi=dpi,
-                                    pad_inches=padding)
+                    dpi=dpi, pad_inches=padding)
         plt.close('all')

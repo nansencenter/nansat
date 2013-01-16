@@ -17,6 +17,7 @@
 
 from nansat_tools import *
 
+
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
 
@@ -124,9 +125,8 @@ class Figure():
 
         # set fonts for Legend
         self.fontFileName = os.path.join(os.path.dirname(
-                                     os.path.realpath(__file__)),
-                                     'fonts/DejaVuSans.ttf')
-
+                                         os.path.realpath(__file__)),
+                                         'fonts/DejaVuSans.ttf')
 
     def apply_logarithm(self, **kwargs):
         '''Apply a tone curve to the array
@@ -147,12 +147,12 @@ class Figure():
 
         # apply logarithm/gamme correction to pixel values
         for iBand in range(self.array.shape[0]):
-            self.array[iBand, :, :] = ((
-                np.power((self.array[iBand, :, :] - self.d['cmin'][iBand]) /
-                        (self.d['cmax'][iBand] - self.d['cmin'][iBand]),
-                                      (1.0 / self.d['gamma']))) *
-                        ((self.d['cmax'][iBand] - self.d['cmin'][iBand])) +
-                                      self.d['cmin'][iBand])
+            self.array[iBand, :, :] = (
+                (np.power((self.array[iBand, :, :] - self.d['cmin'][iBand]) /
+                         (self.d['cmax'][iBand] - self.d['cmin'][iBand]),
+                          (1.0 / self.d['gamma']))) *
+                (self.d['cmax'][iBand] - self.d['cmin'][iBand]) +
+                self.d['cmin'][iBand])
 
     def apply_mask(self, **kwargs):
         '''Apply mask for coloring land, clouds, etc
@@ -248,7 +248,7 @@ class Figure():
                                 logoLocation[dim + 0] -
                                 logoSize[dim + 0])
                 box[dim + 2] = (self.pilImg.size[dim + 0] +
-                               logoLocation[dim + 0])
+                                logoLocation[dim + 0])
 
         self.pilImg = self.pilImg.convert("RGB")
         self.pilImg.paste(logoImg, tuple(box))
@@ -287,8 +287,10 @@ class Figure():
         # get number of grid lines
         llSpacing = self.d['latlonGridSpacing']
         # get vectors for grid lines
-        latVec = np.linspace(self.d['latGrid'].min(), self.d['latGrid'].max(), llSpacing)
-        lonVec = np.linspace(self.d['lonGrid'].min(), self.d['lonGrid'].max(), llSpacing)
+        latVec = np.linspace(self.d['latGrid'].min(),
+                             self.d['latGrid'].max(), llSpacing)
+        lonVec = np.linspace(self.d['lonGrid'].min(),
+                             self.d['lonGrid'].max(), llSpacing)
         latI = np.zeros(self.d['latGrid'].shape, 'int8')
         lonI = np.zeros(self.d['latGrid'].shape, 'int8')
         # convert lat/lon to indeces
@@ -347,7 +349,6 @@ class Figure():
             draw.text((0, 10+latI[i]), '%4.2f' % lat, fill=255, font=font)
             draw.text((50+lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
 
-
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
 
@@ -396,9 +397,10 @@ class Figure():
                     cumhist = hist.cumsum()
                     cumhist /= cumhist[-1]
                     clim[0][iBand] = bins[len(cumhist[cumhist <
-                               (1 - ratioList[iBand]) / 2])]
+                                              (1 - ratioList[iBand]) / 2])]
                     clim[1][iBand] = bins[len(cumhist[cumhist <
-                               1 - ((1 - ratioList[iBand]) / 2)])]
+                                              1 - ((1 - ratioList[iBand]) /
+                                                   2)])]
         return clim
 
     def clip(self, **kwargs):
@@ -441,11 +443,12 @@ class Figure():
         self._set_defaults(kwargs)
 
         for iBand in range(self.array.shape[0]):
-            self.array[iBand, :, :] = (
-                    (self.array[iBand, :, :].astype('float32') -
-                     self.d['cmin'][iBand]) *
-                    (self.d['numOfColor'] - 1) /
-                    (self.d['cmax'][iBand] - self.d['cmin'][iBand]))
+            self.array[iBand, :, :] = ((self.array[iBand, :, :].\
+                                        astype('float32') -
+                                        self.d['cmin'][iBand]) *
+                                       (self.d['numOfColor'] - 1) /
+                                       (self.d['cmax'][iBand] -
+                                        self.d['cmin'][iBand]))
 
         self.array = self.array.astype(np.uint8)
 
@@ -493,36 +496,37 @@ class Figure():
             pilImgCbar = Image.fromarray(np.uint8(bar))
             # paste the colorbar pilImage on Legend pilImage
             self.pilImgLegend.paste(pilImgCbar,
-                               (int(self.pilImgLegend.size[0] *
-                               self.d['CBAR_LOCATION_X']),
-                                int(self.pilImgLegend.size[1] *
-                                self.d['CBAR_LOCATION_Y'])))
+                                    (int(self.pilImgLegend.size[0] *
+                                     self.d['CBAR_LOCATION_X']),
+                                     int(self.pilImgLegend.size[1] *
+                                     self.d['CBAR_LOCATION_Y'])))
             # create a scale for the colorbar
             scaleLocation = np.linspace(0, 1, self.d['numOfTicks'])
             scaleArray = scaleLocation
             if self.d['logarithm']:
                 scaleArray = (np.power(scaleArray, (1.0 / self.d['gamma'])))
             scaleArray = (scaleArray * (self.d['cmax'][0] -
-                        self.d['cmin'][0]) + self.d['cmin'][0])
+                          self.d['cmin'][0]) + self.d['cmin'][0])
             scaleArray = map(self._round_number, scaleArray)
             # draw scales and lines on the legend pilImage
             for iTick in range(self.d['numOfTicks']):
                 coordX = int(scaleLocation[iTick] *
-                             self.pilImgLegend.size[0] * self.d['CBAR_WIDTH'] +
+                             self.pilImgLegend.size[0] *
+                             self.d['CBAR_WIDTH'] +
                              int(self.pilImgLegend.size[0] *
-                               self.d['CBAR_LOCATION_X']))
+                             self.d['CBAR_LOCATION_X']))
 
                 box = (coordX, int(self.pilImgLegend.size[1] *
-                        self.d['CBAR_LOCATION_Y']),
+                                   self.d['CBAR_LOCATION_Y']),
                        coordX, int(self.pilImgLegend.size[1] *
-                       (self.d['CBAR_LOCATION_Y'] +
-                       self.d['CBAR_HEIGHT'])) - 1)
+                                  (self.d['CBAR_LOCATION_Y'] +
+                                   self.d['CBAR_HEIGHT'])) - 1)
                 draw.line(box, fill=black)
                 box = (coordX - self.d['CBAR_LOCATION_ADJUST_X'],
                        int(self.pilImgLegend.size[1] *
-                          (self.d['CBAR_LOCATION_Y'] +
-                           self.d['CBAR_HEIGHT'])) +
-                           self.d['CBAR_LOCATION_ADJUST_Y'])
+                           (self.d['CBAR_LOCATION_Y'] +
+                            self.d['CBAR_HEIGHT'])) +
+                       self.d['CBAR_LOCATION_ADJUST_Y'])
                 draw.text(box, scaleArray[iTick], fill=black, font=font)
 
         # draw longname and units
@@ -534,10 +538,10 @@ class Figure():
         if self.d['titleString'] != "":
             # write text each line onto pilImgCanvas
             textHeight = int(self.pilImgLegend.size[1] *
-                        self.d['TEXT_LOCATION_Y'])
+                             self.d['TEXT_LOCATION_Y'])
             for line in self.d['titleString'].splitlines():
                 draw.text((int(self.pilImgLegend.size[0] *
-                            self.d['TEXT_LOCATION_X']),
+                               self.d['TEXT_LOCATION_X']),
                            textHeight), line, fill=black, font=font)
                 text = draw.textsize(line, font=font)
                 textHeight += text[1]
@@ -569,16 +573,16 @@ class Figure():
         # if legend is created, expand array with empty space below the data
         if self.pilImgLegend is not None:
             appendArray = 255 * np.ones((self.array.shape[0],
-                                       self.pilImgLegend.size[1],
-                                       self.width), 'uint8')
+                                         self.pilImgLegend.size[1],
+                                         self.width), 'uint8')
             self.array = np.append(self.array, appendArray, 1)
 
         # create a new PIL image from three bands (RGB) or from one (palette)
         if self.array.shape[0] == 3:
-            self.pilImg = Image.merge("RGB", (
-                            Image.fromarray(self.array[0, :, :]),
-                            Image.fromarray(self.array[1, :, :]),
-                            Image.fromarray(self.array[2, :, :])))
+            self.pilImg = Image.merge("RGB",
+                                      (Image.fromarray(self.array[0, :, :]),
+                                       Image.fromarray(self.array[1, :, :]),
+                                       Image.fromarray(self.array[2, :, :])))
         else:
             self.pilImg = Image.fromarray(self.array[0, :, :])
             self.pilImg.putpalette(self.palette)
@@ -619,8 +623,9 @@ class Figure():
         # modify default parameters
         self._set_defaults(kwargs)
 
-        # if the image is reprojected it has 0 values we replace them with mask before creating PIL Image
-        self.reprojMask = self.array[0,:,:] == 0
+        # if the image is reprojected it has 0 values
+        # we replace them with mask before creating PIL Image
+        self.reprojMask = self.array[0, :, :] == 0
 
         # clip values to min/max
         self.clip()
@@ -678,7 +683,9 @@ class Figure():
         newData = list()
 
         for item in datas:
-            if item[0] == self.d['transparency'][0] and item[1] == self.d['transparency'][1]  and item[2] == self.d['transparency'][2] :
+            if (item[0] == self.d['transparency'][0] and
+                item[1] == self.d['transparency'][1] and
+                item[2] == self.d['transparency'][2]):
                 newData.append((255, 255, 255, 0))
             else:
                 newData.append(item)
@@ -687,7 +694,7 @@ class Figure():
 
         # The alphaMask is set in process() before clip() the Image
         img = np.array(self.pilImg)
-        img[:,:,3][self.reprojMask] = 0
+        img[:, :, 3][self.reprojMask] = 0
         self.pilImg = Image.fromarray(np.uint8(img))
 
     def save(self, fileName, **kwargs):
@@ -719,7 +726,7 @@ class Figure():
             self.pilImg = self.pilImg.convert("RGB")
 
         if self.d['transparency'] is not None:
-             self.makeTransparentColor()
+            self.makeTransparentColor()
 
         self.pilImg.save(fileName)
 
@@ -792,7 +799,7 @@ class Figure():
         array = array[array > array.min()]
         array = array[array < array.max()]
         step = max(int(round(float(len(array)) /
-                float(self.d['subsetArraySize']))), 1.0)
+                       float(self.d['subsetArraySize']))), 1.0)
         arraySubset = array[::step]
         hist, bins, patches = plt.hist(arraySubset, bins=100)
         return hist.astype(float), bins
@@ -810,7 +817,7 @@ class Figure():
 
         '''
         frmts = {-2: "%.2f", -1: "%.1f", 0: "%.2f",
-                  1: "%.1f", 2: "%d", 3: "%d"}
+                 1: "%.1f", 2: "%d", 3: "%d"}
         if val == 0:
             frmt = "%d"
         else:
