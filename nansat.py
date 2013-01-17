@@ -1360,11 +1360,13 @@ class Nansat(Domain):
             # create zeros (out of swath) for blocking this image from
             # averaging
             if mask is None:
+                self.logger.error('No mask in reprojected file %s!' % f)
                 mask = np.zeros(n.shape()).astype('int8')
+                
 
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
-            cntMatTmp[mask == 64] = 1
+            cntMatTmp[mask > 2] = 1
             cntMat += cntMatTmp
             # add data to mask matrix (maximum of 0, 1, 2, 64)
             maskMat[0, :, :] = mask
@@ -1377,7 +1379,7 @@ class Nansat(Domain):
                 a = n[b]
                 if a is not None:
                     # mask invalid data
-                    a[mask < 64] = 0
+                    a[mask <= 2] = 0
                     # sum of valid values and squares
                     avgMat[b] += a
                     stdMat[b] += np.square(a)
@@ -1399,7 +1401,9 @@ class Nansat(Domain):
 
         # calculate mask (max of 0, 1, 2, 64)
         maskMat = maskMat.max(0)
-
+        # if old 'valid' mask was applied in files, replace with new mask
+        maskMat[maskMat == 128] = 64
+        
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
