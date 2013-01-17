@@ -34,9 +34,9 @@ class Figure():
         -----------
         array: numpy array (2D or 3D)
             dataset from Nansat
-        kwargs1: dictionary
+        kwargs: dictionary
             parameters that are used for all operations.
-                See Nansat.write_figure
+            See Nansat.write_figure()
 
         Modifies:
         ---------
@@ -440,7 +440,6 @@ class Figure():
         Modifies:
         ---------
             self.array: numpy array (=>uint8)
-
         '''
         # modify default values
         self._set_defaults(kwargs)
@@ -467,7 +466,6 @@ class Figure():
         Modifies:
         ---------
         self.legend: PIL image
-
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -568,7 +566,6 @@ class Figure():
         self.pilImg: PIL image
             PIL image with / without the legend
         self.array: replace to None
-
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -621,7 +618,6 @@ class Figure():
         self.palette
         self.pilImgLegend
         self.pilImg
-
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -668,13 +664,9 @@ class Figure():
         if self.d['logoFileName'] is not None:
             self.add_logo()
 
-    def makeTransparentColor(self):
+    def _make_transparent_color(self):
         ''' makes colors specified by self.d['transparency']
         and self.reprojMask (if the image is reprojected) transparent
-
-        Parameters:
-        ----------
-        self
 
         Modifies:
         --------
@@ -709,14 +701,11 @@ class Figure():
         ----------
         fileName: string
             name of outputfile
-        transparency: int
-            transparency of the image background, set for PIL in Figure.save()
-            default transparent color is 0
+        Any of Figure.__init__() parameters
 
         Modifies:
         --------
         self.pilImg: None
-
         '''
         # modify default values
         self._set_defaults(kwargs)
@@ -729,7 +718,7 @@ class Figure():
             self.pilImg = self.pilImg.convert("RGB")
 
         if self.d['transparency'] is not None:
-            self.makeTransparentColor()
+            self._make_transparent_color()
 
         self.pilImg.save(fileName)
 
@@ -743,7 +732,6 @@ class Figure():
         Modifies:
         --------
         self.palette: numpy array (uint8)
-
         '''
         # create a colorList from matplotlib colormap name
         try:
@@ -796,7 +784,6 @@ class Figure():
         --------
         hist: numpy array
         bins: numpy array
-
         '''
         array = self.array[iBand, :, :].flatten()
         array = array[array > array.min()]
@@ -817,7 +804,6 @@ class Figure():
         Returns:
         --------
         string
-
         '''
         frmts = {-2: "%.2f", -1: "%.1f", 0: "%.2f",
                  1: "%.1f", 2: "%d", 3: "%d"}
@@ -846,7 +832,6 @@ class Figure():
         Modifies:
         ---------
         self.d
-
         '''
         for key in kwargs:
             if key in self.d:

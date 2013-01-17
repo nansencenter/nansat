@@ -199,6 +199,10 @@ class VRT():
             geolocationArray: GeolocationArray
                 object with info on geolocation array
                 and VRTs with x/y datasets
+            lon: Numpy array
+                grid with longitudes
+            lat: Numpy array
+                grid with latitudes
 
         Modifies:
         ---------
@@ -300,7 +304,15 @@ class VRT():
             pass
 
     def _make_filename(self, extention="vrt"):
-        '''Create random VSI file name'''
+        '''Create random VSI file name
+        Parameters:
+        -----------
+        extention: string
+            extension of the file
+        Returns:
+        -----------
+        random file name
+        '''
         allChars = ascii_uppercase + digits
         randomChars = ''.join(choice(allChars) for x in range(10))
         return '/vsimem/%s.%s' % (randomChars, extention)
@@ -333,15 +345,16 @@ class VRT():
 
     def _create_band(self, src, dst=None):
         ''' Add band to self.dataset:
+        
         Get parameters of the source band(s) from input
         Generate source XML for the VRT, add options of creating
-        AddBand
+        Call GDALDataset.AddBand
         Set source and options
         Add metadata
 
         Input:
         ------
-            src: dict with parameters of sources
+            src: dict with parameters of sources:
                 SourceFilename
                 SourceBand
                 ScaleRatio
@@ -676,13 +689,11 @@ class VRT():
         self.write_xml(contents)
 
     def read_xml(self):
-        '''Read XML content of the VRT dataset
+        '''Read XML content of the VRT-file
 
         Returns:
         --------
-            vsiFileContent: string
-                XMl Content which is read from the VSI file
-
+            string, XMl Content which is read from the VSI file
         '''
         # write dataset content into VRT-file
         self.dataset.FlushCache()
@@ -711,7 +722,6 @@ class VRT():
         ---------
             self.dataset
                 If XML content was written, self.dataset is re-opened
-
         '''
         #write to the vsi-file
 
@@ -724,7 +734,7 @@ class VRT():
         self.dataset = gdal.Open(self.fileName)
 
     def export(self, fileName):
-        '''Export VRT file as XML into <fileName>'''
+        '''Export VRT file as XML into given <fileName>'''
         self.vrtDriver.CreateCopy(fileName, self.dataset)
 
     def copy(self):
@@ -751,7 +761,6 @@ class VRT():
         --------
             Add geolocationArray to self
             Sets GEOLOCATION ARRAY metadata
-
         '''
         self.geolocationArray = geolocationArray
 
@@ -773,7 +782,6 @@ class VRT():
         Returns:
         --------
             Resized VRT object
-
         '''
         # modify GeoTransform: set resolution from new X/Y size
         geoTransform = (0,
@@ -809,6 +817,11 @@ class VRT():
                 desired Y size of warped image
             geoTransform: tuple of 6 integers
                 desired GeoTransform size of the warped image
+            blockSize: int
+                value of tag <blockSize> in the VRT-file
+            WorkingDataType: str
+                value of tag <WorkingDataType> in the VRT-file
+            
 
         Modifies:
         ---------
@@ -860,7 +873,11 @@ class VRT():
         self.write_xml(str(node0.rawxml()))
 
     def _remove_geotransform(self):
-        '''Remove GeoTransfomr from VRT Object'''
+        '''Remove GeoTransfomr from VRT Object
+        Modifies:
+        ---------
+            The tag <GeoTransform> is revoved from the VRT-file
+        '''
         # read XML content from VRT
         tmpVRTXML = self.read_xml()
         # find and remove GeoTransform
