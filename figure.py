@@ -1,6 +1,6 @@
 # Name:    figure.py
 # Purpose: Container of Figure class
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad,
+# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
 # Created:      29.06.2011

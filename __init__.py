@@ -1,6 +1,6 @@
 # Name: __init__.py
 # Purpose: Use the current folder as a package
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad,
+# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
 # Created:      29.06.2011

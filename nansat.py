@@ -1,7 +1,7 @@
 # Name:    nansat.py
 # Name:  nansat.py
 # Purpose: Container of Nansat class
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad,
+# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
 # Created:      29.06.2011
@@ -54,14 +54,14 @@ if not 'GDAL_DRIVER_PATH' in os.environ:
     os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
 
 # Compile pixelfunctions if not already done.
-if not sys.platform.startswith('win'):
-    if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
-        print "Cannot find 'gdal_PIXFUN.so'. Compile pixelfunctions !!"
-else:
+if sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.DLL'):
         print "Cannot find 'gdal_PIXFUN.dll'. Compile pixelfunctions !!"
-
-
+else:
+    if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
+        print "Cannot find 'gdal_PIXFUN.so'. Compiling pixelfunctions..."
+        os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
+    
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
 
