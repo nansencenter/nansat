@@ -59,7 +59,8 @@ try:
     from osgeo import gdal, osr
 except ImportError:
     try:
-        import gdal, osr
+        import gdal
+        import osr
     except ImportError:
         warnings.warn('''
                     Cannot import GDAL!
@@ -154,25 +155,31 @@ LOG_LEVEL = 30
 
 try:
     latlongSRS = osr.SpatialReference()
-    latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
+    latlongSRS.ImportFromProj4('''+proj=latlong +ellps=WGS84
+                               +datum=WGS84 +no_defs''')
 except:
     warnings.warn('Cannot generate latlongSRS. Nansat will not work!')
+
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
     pass
 
+
 class OptionError(Error):
     '''Error for improper options (arguments) '''
     pass
+
 
 class ProjectionError(Error):
     '''Cannot get the projection'''
     pass
 
+
 class GDALError(Error):
     '''Error from GDAL '''
     pass
+
 
 class Node(object):
     '''
@@ -220,11 +227,13 @@ class Node(object):
     This implementation uses xml.dom.minidom which is available
     in the standard Python 2.4 library. However, it can be
     retargeted to use other XML libraries without much effort.
+
     '''
 
     def __init__(self, tag, value=None, **attributes):
         '''Everything is a Node. The XML is maintained as (very efficient)
         Python objects until an XML representation is needed.
+
         '''
         self.tag = tag.strip()
         self.attributes = attributes
@@ -261,8 +270,11 @@ class Node(object):
         return False
 
     def delNode(self, tag):
-        ''' Recursively find the all subnodes with this tag and remove from
-        self.children. '''
+        '''
+        Recursively find the all subnodes with this tag and remove
+        from self.children.
+
+        '''
         for i, child in enumerate(self.children):
             if child.node(tag):
                 self.children.pop(i)
@@ -277,6 +289,7 @@ class Node(object):
         children of a node. If you went another level down,
         the results would be ambiguous, so the user must
         choose the node to iterate over.
+
         '''
         return [n for n in self.children if n.tag == tag]
 
@@ -306,7 +319,8 @@ class Node(object):
     def insert(self, contents):
         dom2 = xdm.parseString(contents)
         dom1 = xdm.parseString(self.dom().toxml())
-        dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0], True))
+        dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0],
+                                                       True))
         contents = str(dom1.toxml())
         if contents.find("<?") != -1 and contents.find("?>"):
             contents = contents[contents.find("?>")+2:]
@@ -318,6 +332,7 @@ class Node(object):
         Recursively find the first subnode with this tag.
         If you want duplicate subnodes with this tag, use
         nodeList().
+
         '''
         subnode = self.node(tag)
         if not subnode:
@@ -328,9 +343,10 @@ class Node(object):
         '''
         Replace the value of the first subnode containing "tag"
         with a new value, using operator[].
+
         '''
-        assert isinstance(newValue, str), ("Value %s must be a string" %
-                                            str(newValue))
+        assert isinstance(newValue, str), ("Value %s must be a string"
+                                           % str(newValue))
         subnode = self.node(tag)
         if not subnode:
             raise KeyError
@@ -366,13 +382,14 @@ class Node(object):
         '''
         Lazily create a minidom from the information stored
         in this Node object.
+
         '''
         element = Node.doc.createElement(self.tag)
         for key, val in self.attributes.items():
             element.setAttribute(key, val)
         if self.value:
-            assert not self.children, ("cannot have value and children: %s" %
-                                                                    str(self))
+            assert not self.children, ("cannot have value and children: %s"
+                                       % str(self))
             element.appendChild(Node.doc.createTextNode(self.value))
         else:
             for child in self.children:
@@ -390,6 +407,7 @@ class Node(object):
         '''
         Create a Node representation, given either
         a string representation of an XML doc, or a dom.
+
         '''
         if isinstance(dom, str):
             if os.path.exists(dom):
@@ -419,6 +437,7 @@ class Node(object):
                     node += subnode
         return node
 
+
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
         to point2 (lon2, lat2)
@@ -427,17 +446,18 @@ def initial_bearing(lon1, lat1, lon2, lat2):
 
         Parameters
         ----------
-        lon1, lat1: float
+        lon1, lat1 : float
             longitude and latitude of start point
-        lon2, lat2: float
+        lon2, lat2 : float
             longitude and latitude of end point
 
         Returns
         -------
-        initial_bearing: float
+        initial_bearing : float
             The initial bearing (azimuth direction) when heading out
-            from the start point towards the end point along a
-            great circle.'''
+            from the start point towards the end point along a great circle.
+
+        '''
         rlon1 = radians(lon1)
         rlat1 = radians(lat1)
         rlon2 = radians(lon2)
@@ -452,15 +472,19 @@ def initial_bearing(lon1, lat1, lon2, lat2):
 def add_logger(logName='', logLevel=None):
     ''' Creates and returns logger with default formatting for Nansat
 
-    Parameters:
+    Parameters
     -----------
-        logName: string, optional
-            Name of the logger
+    logName : string, optional
+        Name of the logger
 
-    Returns:
+    Returns
     --------
-        logging.logger
-        See also: http://docs.python.org/howto/logging.html
+    logging.logger
+
+    See also
+    --------
+    http://docs.python.org/howto/logging.html
+
     '''
     global LOG_LEVEL
     if logLevel is not None:
@@ -476,7 +500,8 @@ def add_logger(logName='', logLevel=None):
         # create console handler and set level to debug
         ch = logging.StreamHandler()
         # create formatter
-        formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|%(funcName)s|%(message)s',
+        formatter = logging.Formatter('''%(asctime)s|%(levelno)s|%(module)s|
+                                        %(funcName)s|%(message)s''',
                                       datefmt='%I:%M:%S')
         # add formatter to ch
         ch.setFormatter(formatter)
@@ -486,4 +511,3 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(LOG_LEVEL)
 
     return logger
-

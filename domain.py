@@ -83,9 +83,9 @@ class Domain():
         d = Domain(lon=lonGrid, lat=latGrid)
             Size, extent and spatial reference is given by two grids
 
-        Parameters:
+        Parameters
         ----------
-        srs: PROJ4 or EPSG or WKT
+        srs : PROJ4 or EPSG or WKT
             Specifies spatial reference system (SRS)
             PROJ4:
             string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
@@ -108,7 +108,7 @@ class Domain():
                 UNIT["degree",0.0174532925199433,
                     AUTHORITY["EPSG","9108"]],
                 AUTHORITY["EPSG","4326"]]'
-        ext: string
+        ext : string
             some gdalwarp options + additional options
             [http://www.gdal.org/gdalwarp.html]
             Specifies extent, resolution / size
@@ -119,28 +119,28 @@ class Domain():
             -ts sizex sizey
             -te xmin ymin xmax ymax
             -lle lonmin latmin lonmax latmax
-        ds: GDAL dataset
-        lat: Numpy array
+        ds : GDAL dataset
+        lat : Numpy array
             Grid with latitudes
-        lon: Numpy array
+        lon : Numpy array
             Grid with longitudes
-        name: string, optional
+        name : string, optional
             Name to be added to the Domain object
-        logLevel: int, optional, default=30
+        logLevel : int, optional, default=30
             level of logging
 
-        Raises:
+        Raises
         -------
-        ProjectionError: occurs when Projection() is empty
+        ProjectionError : occurs when Projection() is empty
             despite it is required for creating extentDic.
-        OptionError: occures when the arguments are not proper.
+        OptionError : occures when the arguments are not proper.
 
-        Modifies:
+        Modifies
         ---------
-        self.vrt.datasetset: dataset in memory
+        self.vrt.datasetset : dataset in memory
             dataset is created based on the input arguments
 
-        See Also:
+        See Also
         ---------
         Nansat.reproject()
         [http://www.gdal.org/gdalwarp.html]
@@ -244,9 +244,9 @@ class Domain():
     def __repr__(self):
         '''Creates string with basic info about the Domain object
 
-        Modifies:
+        Modifies
         ---------
-            Print size, projection and corner coordinates
+        Print size, projection and corner coordinates
 
         '''
         toPrettyWKT = osr.SpatialReference()
@@ -276,13 +276,13 @@ class Domain():
         Convert XML-file with domains into KML-file for GoogleEarth
         or write KML-file with the current Domain
 
-        Parameters:
+        Parameters
         -----------
-        xmlFileName: string, optional
+        xmlFileName : string, optional
             Name of the XML-file to convert. If only this value is given
             - kmlFileName=xmlFileName+'.kml'
 
-        kmlFileName: string, optional
+        kmlFileName : string, optional
             Name of the KML-file to generate from the current Domain
 
         '''
@@ -339,14 +339,14 @@ class Domain():
 
         Write Domain Image into KML-file for GoogleEarth
 
-        Parameters:
+        Parameters
         -----------
-        kmlFileName: string, optional
+        kmlFileName : string, optional
             Name of the KML-file to generate from the current Domain
-        kmlFigureName: string, optional
+        kmlFigureName : string, optional
             Name of the projected image stored in .png format
 
-        Examples:
+        Examples
         ---------
         # First of all, reproject an image into Lat/Lon WGS84
           (Simple Cylindrical) projection
@@ -420,11 +420,11 @@ class Domain():
         If GEOLOCATION is present in the self.vrt.dataset then grids are read
         from the geolocation bands.
 
-        Returns:
+        Returns
         --------
-        longitude: numpy array
+        longitude : numpy array
             grid with longitudes
-        latitude: numpy array
+        latitude : numpy array
             grid with latitudes
 
         '''
@@ -457,16 +457,16 @@ class Domain():
         system given by WKT.
         Add key "te" and the converted values into the extentDic.
 
-        Parameters:
+        Parameters
         -----------
-        dstWKT: WKT
+        dstWKT : WKT
             destination WKT
-        extentDic: dictionary
+        extentDic : dictionary
             dictionary with "lle" key
 
-        Returns:
+        Returns
         --------
-        extentDic: dictionary
+        extentDic : dictionary
             input dictionary + "te" key and its values
 
         '''
@@ -506,22 +506,22 @@ class Domain():
         If it is proper, create a dictionary
         Otherwise, raise the error.
 
-        Parameters:
+        Parameters
         -----------
-        extentString: string
+        extentString : string
             "-te xMin yMin xMax yMax",
             "-tr xResolution yResolution",
             "-ts width height",
             "-lle lonWest lonEast latNorth latSouth"
 
-        Returns:
+        Returns
         --------
-        extentDic: dictionary
+        extentDic : dictionary
             has key ("te" or "lle") and ("tr" or "ts") and their values.
 
-        Raises:
+        Raises
         -------
-        OptionError: occurs when the extentString is improper
+        OptionError : occurs when the extentString is improper
 
         '''
         extentDic = {}
@@ -655,26 +655,26 @@ class Domain():
     def _from_xml(self, srsString, extentString):
         ''' Read strings from the given xml file
 
-        Parameters:
+        Parameters
         -----------
-        srsString: file name
+        srsString : file name
             name of the input XML-file
-        extentString: string
+        extentString : string
             name of the domain
 
-        Returns:
+        Returns
         --------
-        srsString: string
+        srsString : string
             proj4 string of the destination
-        extentString: string
+        extentString : string
             extent string of the destination
-        name: string
+        name : string
             domain name
 
-        Raises:
+        Raises
         -------
-        OptionError: occures when the given extentString is not
-        in the XML-file
+        OptionError : occures when the given extentString is not in
+            the XML-file
 
          '''
         # open file
@@ -700,14 +700,14 @@ class Domain():
     def get_border(self, nPoints=10):
         '''Generate two vectors with values of lat/lon for the border of domain
 
-        Parameters:
+        Parameters
         -----------
-        nPoints: int, optional
+        nPoints : int, optional
             Number of points on each border
 
-        Returns:
+        Returns
         --------
-        lonVec, latVec: lists
+        lonVec, latVec : lists
             vectors with lon/lat values for each point at the border
 
         '''
@@ -736,9 +736,9 @@ class Domain():
     def _get_border_kml(self):
         '''Generate Placemark entry for KML
 
-        Returns:
+        Returns
         --------
-        kmlEntry: String
+        kmlEntry : String
             String with the Placemark entry
 
         '''
@@ -771,9 +771,9 @@ class Domain():
         '''Creates string with WKT representation of the border polygon
         (this method is not used. Delete??)
 
-        Returns:
+        Returns
         --------
-        WKTPolygon: string
+        WKTPolygon : string
             string with WKT representation of the border polygon
 
         '''
@@ -786,9 +786,9 @@ class Domain():
     def get_corners(self):
         '''Get coordinates of corners of the Domain
 
-        Returns:
+        Returns
         --------
-        lonVec, latVec: lists
+        lonVec, latVec : lists
             vectors with lon/lat values for each corner
 
         '''
@@ -803,23 +803,23 @@ class Domain():
         the new coordinates and raster size are calculated based on
         the given extentDic.
 
-        Parameters:
+        Parameters
         -----------
-        extentDic: dictionary
+        extentDic : dictionary
             includes "te" key and "ts" or "tr" key
 
-        Raises:
+        Raises
         -------
-        OptionError: occurs when maxX - minX < 0 or maxY - minY < 0
-        OptionError: occurs when the given resolution is larger than
+        OptionError : occurs when maxX - minX < 0 or maxY - minY < 0
+        OptionError : occurs when the given resolution is larger than
                      width or height.
 
-        Returns:
+        Returns
         --------
-        coordinate: list with 6 float
+        coordinate : list with 6 float
             GeoTransform
 
-        rasterSize: list with two int
+        rasterSize : list with two int
             rasterXSize and rasterYSize
 
         '''
@@ -862,13 +862,13 @@ class Domain():
         Get projection from GetProjection() or GetGCPProjection().
         If both are empty, raise error
 
-        Return:
+        Return
         -------
-        projection: projection or GCPprojection
+        projection : projection or GCPprojection
 
-        Raises:
+        Raises
         -------
-        ProjectionError: occurrs when the projection is empty.
+        ProjectionError : occurrs when the projection is empty.
 
         '''
         #get projection or GCPProjection
@@ -885,14 +885,14 @@ class Domain():
     def _transform_points(self, colVector, rowVector):
         '''Transform given lists of X,Y coordinates into lat/lon
 
-        Parameters:
+        Parameters
         -----------
-        colVector: lists
+        colVector : lists
             X and Y coordinates with any coordinate system
 
-        Returns:
+        Returns
         --------
-        lonVector, latVector: lists
+        lonVector, latVector : lists
             X and Y coordinates in degree of lat/lon
 
         '''
@@ -928,9 +928,9 @@ class Domain():
         The upward azimuth direction will be the satellite flight
         direction (bearing) for unprojected satellite images.
 
-        Returns:
+        Returns
         --------
-        bearing_center: float
+        bearing_center : float
             The upwards azimuth direction (bearing) in the center of
             the domain.
             NOTE: for longer domains especially at high latitudes
@@ -953,9 +953,9 @@ class Domain():
     def shape(self):
         '''Return Numpy-like shape of Domain object (ySize, xSize)
 
-        Returns:
+        Returns
         --------
-        shape: tuple of two INT
+        shape : tuple of two INT
             Numpy-like shape of Domain object (ySize, xSize)
 
         '''
@@ -972,37 +972,37 @@ class Domain():
         Adds a semitransparent patch with outline of the Domain
         Writes to an image file
 
-        Parameters:
+        Parameters
         -----------
-            outputFileName: string
-                name of the output file name
-            lonBorder: float
-                10, horisontal border around patch (degrees of longitude)
-            latBorder: float
-                10, vertical border around patch (degrees of latitude)
-            figureSize: tuple of two integers
-                (6, 6), size of the generated figure in inches
-            dpi: integer
-                50, resolution of the output figure (size 6,6 and dpi 50
-                produces 300 x 300 figure)
-            projection: string, one of Basemap projections
-                'cyl', projection of the map
-            resolution: string, 'c', 'h', ...
-                'c', crude, resolution of the map.
-            continetsColor: string or any matplotlib color representation
-                'coral', color of continets
-            meridians: int
-                10, number of meridians to draw
-            parallels: int
-                10, number of parallels to draw
-            pColor: string or any matplotlib color representation
-                'r', color of the Domain patch
-            pLine:  string or any matplotlib color representation
-                'k', color of the Domain outline
-            pAlpha: float 0 - 1
-                0.5, transparency of Domain patch
-            padding: float
-                0., width of white padding around the map
+        outputFileName : string
+            name of the output file name
+        lonBorder : float
+            10, horisontal border around patch (degrees of longitude)
+        latBorder : float
+            10, vertical border around patch (degrees of latitude)
+        figureSize : tuple of two integers
+            (6, 6), size of the generated figure in inches
+        dpi: int
+            50, resolution of the output figure (size 6,6 and dpi 50
+            produces 300 x 300 figure)
+        projection : string, one of Basemap projections
+            'cyl', projection of the map
+        resolution : string, 'c', 'h', ...
+            'c', crude, resolution of the map.
+        continetsColor : string or any matplotlib color representation
+            'coral', color of continets
+        meridians : int
+            10, number of meridians to draw
+        parallels : int
+            10, number of parallels to draw
+        pColor : string or any matplotlib color representation
+            'r', color of the Domain patch
+        pLine : string or any matplotlib color representation
+            'k', color of the Domain outline
+        pAlpha : float 0 - 1
+            0.5, transparency of Domain patch
+        padding : float
+            0., width of white padding around the map
 
         '''
         # if lat/lon vectors are not given as input

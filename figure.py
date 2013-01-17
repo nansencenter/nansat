@@ -30,24 +30,24 @@ class Figure():
     def __init__(self, array, **kwargs):
         ''' Set attributes
 
-        Parameters:
+        Parameters
         -----------
-        array: numpy array (2D or 3D)
+        array : numpy array (2D or 3D)
             dataset from Nansat
-        kwargs: dictionary
+        kwargs : dictionary
             parameters that are used for all operations.
             See Nansat.write_figure()
 
-        Modifies:
+        Modifies
         ---------
-        self.d, dictionary
+        self.d : dictionary
             all default parameters are set here. If kwargs1 or **kwargs are
             given, the default parameters are modified
-        self.sizeX, self.sizeY: int
+        self.sizeX, self.sizeY : int
             width and height of the image
-        self.pilImg: PIL image
+        self.pilImg : PIL image
             figure
-        self.pilImgLegend: PIL image
+        self.pilImgLegend : PIL image
             if pilImgLegend is None, legend is not added to the figure
             if it is replaced, pilImgLegend includes text string, color-bar,
             longName and units.
@@ -134,13 +134,13 @@ class Figure():
         After the normalization of the values from 0 to 1, logarithm is applied
         Then the values are converted to the normal scale.
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
-        self.array: numpy array
+        self.array : numpy array
 
         '''
         # modify default parameters
@@ -165,13 +165,13 @@ class Figure():
         apply_mask should be called only after convert_palettesize
         (i.e. to uint8 data)
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
-        self.array: numpy array
+        self.array : numpy array
 
         '''
         # modify default parameters
@@ -208,11 +208,11 @@ class Figure():
         Pan using the given location
         Paste into pilImg
 
-        Parameters:
+        Parameters
         ----------
         Any of Figure__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
         self.pilImg
 
@@ -263,7 +263,7 @@ class Figure():
         Convert to maks
         Add mask to PIL
 
-        Parameters:
+        Parameters
         ----------
         Any of Figure__init__() parameters:
         latGrid : numpy array
@@ -273,9 +273,9 @@ class Figure():
         latlonGridSpacing : int
             number of lines to draw
 
-        Modifies:
+        Modifies
         ---------
-            self.pilImg
+        self.pilImg
 
         '''
         # modify default values
@@ -315,14 +315,14 @@ class Figure():
         Get lat/lon for these labels from latGrid, lonGrid
         Print lables to PIL
 
-        Parameters:
+        Parameters
         ----------
         Figure__init__() parameters:
         latGrid : numpy array
         lonGrid : numpy array
-        latlonLabels: int
+        latlonLabels : int
 
-        Modifies:
+        Modifies
         ---------
         self.pilImg
 
@@ -360,11 +360,11 @@ class Figure():
         Then get rid of (1.0-ratio)/2 from the both sides and
         return the minimum and maximum values.
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure.__init__() parameters
 
-        Returns:
+        Returns
         --------
         clim : numpy array 2D ((3x2) or (1x2))
             minimum and maximum pixel values for each band
@@ -412,14 +412,14 @@ class Figure():
         if pixel value < cmin, replaced to cmin.
         if pixel value > cmax, replaced to cmax.
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure.__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
-        self.array: numpy array
-        self.d['cmin'], self.d['cmax']: allowed min/max values
+        self.array : numpy array
+        self.d['cmin'], self.d['cmax'] : allowed min/max values
 
         '''
         # modify default parameters
@@ -433,13 +433,14 @@ class Figure():
     def convert_palettesize(self, **kwargs):
         '''Convert self.array to palette color size in uint8
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure.__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
-            self.array: numpy array (=>uint8)
+        self.array : numpy array (=>uint8)
+
         '''
         # modify default values
         self._set_defaults(kwargs)
@@ -459,13 +460,14 @@ class Figure():
 
         PIL image includes colorbar, caption, and titelString.
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure.__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
-        self.legend: PIL image
+        self.legend : PIL image
+
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -557,15 +559,16 @@ class Figure():
             self.array is extended before create the pilImag and
             then paste pilImgLegend onto it.
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure.__init__() parameters
 
-        Modifies:
+        Modifies
         ---------
-        self.pilImg: PIL image
+        self.pilImg : PIL image
             PIL image with / without the legend
-        self.array: replace to None
+        self.array : replace to None
+
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -607,17 +610,18 @@ class Figure():
         #. Create PIL image
         #. Add logo if required
 
-        Parameters:
+        Parameters
         -----------
         Any of Figure.__init__() parameters
 
-        Modifies:
+        Modifies
         --------
         self.d
         self.array
         self.palette
         self.pilImgLegend
         self.pilImg
+
         '''
         # modify default parameters
         self._set_defaults(kwargs)
@@ -668,10 +672,11 @@ class Figure():
         ''' makes colors specified by self.d['transparency']
         and self.reprojMask (if the image is reprojected) transparent
 
-        Modifies:
+        Modifies
         --------
         self.pilImg : PIL image
             Adds transparency to PIL image
+
         '''
         self.pilImg = self.pilImg.convert("RGBA")
         datas = self.pilImg.getdata()
@@ -697,15 +702,16 @@ class Figure():
 
         If given extension is JPG, convert the image mode from Palette to RGB
 
-        Parameters:
+        Parameters
         ----------
-        fileName: string
+        fileName : string
             name of outputfile
         Any of Figure.__init__() parameters
 
-        Modifies:
+        Modifies
         --------
-        self.pilImg: None
+        self.pilImg : None
+
         '''
         # modify default values
         self._set_defaults(kwargs)
@@ -729,9 +735,10 @@ class Figure():
         it means 6 colors are possible to use for other purposes.
         the last palette (255) is white and the second last (254) is black.
 
-        Modifies:
+        Modifies
         --------
-        self.palette: numpy array (uint8)
+        self.palette : numpy array (uint8)
+
         '''
         # create a colorList from matplotlib colormap name
         try:
@@ -776,14 +783,15 @@ class Figure():
     def _get_histogram(self, iBand):
         '''Create a subset array and return the histogram.
 
-        Parameters:
+        Parameters
         -----------
-        iBand: int
+        iBand : int
 
         Returns
         --------
-        hist: numpy array
-        bins: numpy array
+        hist : numpy array
+        bins : numpy array
+
         '''
         array = self.array[iBand, :, :].flatten()
         array = array[array > array.min()]
@@ -797,13 +805,14 @@ class Figure():
     def _round_number(self, val):
         '''Return writing format for scale on the colorbar
 
-        Parameters:
+        Parameters
         ----------
-        val: int / float / exponential
+        val : int / float / exponential
 
-        Returns:
+        Returns
         --------
         string
+
         '''
         frmts = {-2: "%.2f", -1: "%.1f", 0: "%.2f",
                  1: "%.1f", 2: "%d", 3: "%d"}
@@ -824,14 +833,15 @@ class Figure():
         Look throught default parameters (self.d) and given parameters (kwargs)
         and paste value from input if the key matches
 
-        Parameters:
+        Parameters
         ----------
-        kwargs: dictionary
+        kwargs : dictionary
             parameter names and values
 
-        Modifies:
+        Modifies
         ---------
         self.d
+
         '''
         for key in kwargs:
             if key in self.d:
