@@ -485,8 +485,8 @@ class VRT():
         # create list of available bands (to prevent duplicate names)
         bandNames = []
         for iBand in range(self.dataset.RasterCount):
-            bandNames.append(
-                   self.dataset.GetRasterBand(iBand+1).GetMetadataItem("name"))
+            bandNames.append(self.dataset.GetRasterBand(
+                                            iBand + 1).GetMetadataItem("name"))
 
         # if name is not given add 'band_00N'
         if "name" not in dst:
@@ -664,7 +664,7 @@ class VRT():
 
         self.logger.debug('DataType: %s', dataType)
 
-        lineOffset = str(int(pixelOffset)*arrayShape[1])
+        lineOffset = str(int(pixelOffset) * arrayShape[1])
         contents = self.RawRasterBandSource.substitute(XSize=arrayShape[1],
                                                        YSize=arrayShape[0],
                                                        DataType=dataType,
@@ -908,9 +908,9 @@ class VRT():
                 #split string into chunks
                 numberOfChunks = int(float(len(gspString)) / chunkLength)
                 chunki = 0
-                for chunki in range(0, numberOfChunks+1):
+                for chunki in range(0, numberOfChunks + 1):
                     chunk = gspString[(chunki * chunkLength):
-                                      min(((chunki+1) * chunkLength),
+                                      min(((chunki + 1) * chunkLength),
                                       len(gspString))]
                     # add chunk to metadata
                     self.dataset.SetMetadataItem('NANSAT_%s_%03d'
@@ -1244,8 +1244,8 @@ class VRT():
         GCPs = []
         # Subsample (if requested), but use linspace to
         # make sure endpoints are contained
-        for p in np.around(np.linspace(0, len(pixels)-1, numx/stepX)):
-            for l in np.around(np.linspace(0, len(lines)-1, numy/stepY)):
+        for p in np.around(np.linspace(0, len(pixels) - 1, numx / stepX)):
+            for l in np.around(np.linspace(0, len(lines) - 1, numy / stepY)):
                 g = gdal.GCP(float(x[l, p]), float(y[l, p]), 0,
                              pixels[p], lines[l])
                 GCPs.append(g)

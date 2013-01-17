@@ -341,16 +341,16 @@ class Figure():
         # get number of labels; step of lables
         llLabels = self.d['latlonLabels']
         llShape = self.d['latGrid'].shape
-        latI = range(0, llShape[0], (llShape[0]/llLabels)-1)
-        lonI = range(0, llShape[1], (llShape[1]/llLabels)-1)
+        latI = range(0, llShape[0], (llShape[0] / llLabels) - 1)
+        lonI = range(0, llShape[1], (llShape[1] / llLabels) - 1)
         # get lons/lats from first row/column
         #lats = self.d['latGrid'][latI, 0]
         #lons = self.d['lonGrid'][0, lonI]
         for i in range(len(latI)):
             lat = self.d['latGrid'][latI[i], 0]
             lon = self.d['lonGrid'][0, lonI[i]]
-            draw.text((0, 10+latI[i]), '%4.2f' % lat, fill=255, font=font)
-            draw.text((50+lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
+            draw.text((0, 10 + latI[i]), '%4.2f' % lat, fill=255, font=font)
+            draw.text((50 + lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
 
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
