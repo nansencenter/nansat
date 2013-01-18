@@ -61,7 +61,7 @@ class Mapper(VRT):
             simSubDatasets = simSupDataset.GetSubDatasets()
             simWKV = None
             for simSubDataset in simSubDatasets:
-                if '_mean ' in simSubDataset[1]:
+                if '_mean'  in simSubDataset[0]:
                     simValidSupDataset = simSupDataset
                     simGdalDataset = gdal.Open(simSubDataset[0])
                     simBandMetadata = simGdalDataset.GetRasterBand(1).GetMetadata()
@@ -114,7 +114,7 @@ class Mapper(VRT):
             if '_flags ' in simSubDataset[1]:
                 print '    mask simSubDataset', simSubDataset[1]
                 flags = gdal.Open(simSubDataset[0]).ReadAsArray()
-                mask = np.ones(flags.shape) * 128
+                mask = np.ones(flags.shape) * 64
                 mask[np.bitwise_and(flags, np.power(2, 0)) > 0] = 1
                 mask[np.bitwise_and(flags, np.power(2, 3)) > 0] = 2
 

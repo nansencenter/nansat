@@ -117,7 +117,7 @@ n.write_map(oFileName + '_map.png')
 # -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
 # 2. Reproject the Nansat object
 # 3. Make simple image
-dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", "-lle 25 70 35 72 -ts 2000 2000")
+dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", "-te 25 70 35 72 -ts 2000 2000")
 dLatlong.write_map(oFileName + '_latlong_map.png')
 print 'Latlong Domain:', dLatlong
 n.reproject(dLatlong)

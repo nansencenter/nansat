@@ -500,8 +500,8 @@ def add_logger(logName='', logLevel=None):
         # create console handler and set level to debug
         ch = logging.StreamHandler()
         # create formatter
-        formatter = logging.Formatter('''%(asctime)s|%(levelno)s|%(module)s|
-                                        %(funcName)s|%(message)s''',
+        formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|'
+                                        '%(funcName)s|%(message)s',
                                       datefmt='%I:%M:%S')
         # add formatter to ch
         ch.setFormatter(formatter)

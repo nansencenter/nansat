@@ -626,9 +626,8 @@ class Domain():
 
         # if there are unnecessary letters, give an error
         if result is not None:
-            raise OptionError('''
-                              Domain._create_extentDic():
-                              extentString is not redable : ''',
+            raise OptionError('Domain._create_extentDic():'
+                              'extentString is not redable :',
                               extentString)
 
         # check if one of "-te" and "-lle" is given
@@ -767,9 +766,8 @@ class Domain():
 
         return kmlEntry
 
-    def _get_border_polygon(self):
+    def get_border_polygon(self):
         '''Creates string with WKT representation of the border polygon
-        (this method is not used. Delete??)
 
         Returns
         --------
