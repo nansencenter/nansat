@@ -424,8 +424,13 @@ class Figure():
         '''
         # modify default parameters
         self._set_defaults(kwargs)
-
+        
         for iBand in range(self.array.shape[0]):
+            # if clipping integer matrix, make clipping ranges valid
+            if self.array.dtype in ['int8', 'uint8', 'int16', 'uint16']:
+                self.d['cmin'][iBand] = np.ceil(self.d['cmin'][iBand])
+                self.d['cmin'][iBand] = np.floor(self.d['cmin'][iBand])
+
             self.array[iBand, :, :] = np.clip(self.array[iBand, :, :],
                                               self.d['cmin'][iBand],
                                               self.d['cmax'][iBand])
@@ -446,12 +451,11 @@ class Figure():
         self._set_defaults(kwargs)
 
         for iBand in range(self.array.shape[0]):
-            self.array[iBand, :, :] = ((self.array[iBand, :, :].\
-                                        astype('float32') -
-                                        self.d['cmin'][iBand]) *
-                                       (self.d['numOfColor'] - 1) /
-                                       (self.d['cmax'][iBand] -
-                                        self.d['cmin'][iBand]))
+            self.array[iBand, :, :] = (
+                (self.array[iBand, :, :].astype('float32') -
+                 self.d['cmin'][iBand]) *
+                (self.d['numOfColor'] - 1) /
+                (self.d['cmax'][iBand] - self.d['cmin'][iBand]))
 
         self.array = self.array.astype(np.uint8)
 
@@ -800,6 +804,7 @@ class Figure():
                        float(self.d['subsetArraySize']))), 1.0)
         arraySubset = array[::step]
         hist, bins, patches = plt.hist(arraySubset, bins=100)
+        plt.close()
         return hist.astype(float), bins
 
     def _round_number(self, val):
