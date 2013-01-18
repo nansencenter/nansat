@@ -22,8 +22,8 @@ from nansat_tools import *
 try:
     from vrt import VRT, GeolocationArray
 except ImportError:
-    warnings.warn(''' Cannot import vrt!
-                    domain will not work.''')
+    warnings.warn('Cannot import vrt!'
+                  'domain will not work.')
 
 
 class Domain():
@@ -89,9 +89,9 @@ class Domain():
             Specifies spatial reference system (SRS)
             PROJ4:
             string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
-            "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
-            "+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10
-             +no_defs"
+            '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
+            '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10
+             +no_defs'
             EPSG:
             integer with EPSG number, [http://spatialreference.org/],
             e.g. 4326
@@ -112,9 +112,9 @@ class Domain():
             some gdalwarp options + additional options
             [http://www.gdal.org/gdalwarp.html]
             Specifies extent, resolution / size
-            Available options: (("-te" or "-lle") and ("-tr" or "-ts"))
-            (e.g. "-lle -10 30 55 60 -ts 1000 1000" or
-            "-te 100 2000 300 10000 -tr 300 200")
+            Available options: (('-te' or '-lle') and ('-tr' or '-ts'))
+            (e.g. '-lle -10 30 55 60 -ts 1000 1000' or
+            '-te 100 2000 300 10000 -tr 300 200')
             -tr resolutionx resolutiony
             -ts sizex sizey
             -te xmin ymin xmax ymax
@@ -190,8 +190,8 @@ class Domain():
             # create WKT
             dstWKT = sr.ExportToWkt()
             # test success of WKT
-            if status > 0 or dstWKT == "":
-                raise ProjectionError("srs (%s) is wrong" % (srs))
+            if status > 0 or dstWKT == '':
+                raise ProjectionError('srs (%s) is wrong' % (srs))
 
         # choose between input opitons:
         # ds
@@ -209,9 +209,8 @@ class Domain():
         elif ds is not None and srs is not None:
             tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, dstWKT)
             if tmpVRT is None:
-                raise ProjectionError('''
-                                      Could not warp the given dataset
-                                      to the given SRS.''')
+                raise ProjectionError('Could not warp the given dataset'
+                                      'to the given SRS.')
             else:
                 self.vrt = VRT(gdalDataset=tmpVRT)
 
@@ -221,7 +220,7 @@ class Domain():
             extentDic = self._create_extentDic(ext)
 
             # convert -lle to -te
-            if "lle" in extentDic.keys():
+            if 'lle' in extentDic.keys():
                 extentDic = self._convert_extentDic(dstWKT, extentDic)
 
             # get size/extent from the created extet dictionary
@@ -236,8 +235,8 @@ class Domain():
             # create self.vrt from given lat/lon
             self.vrt = VRT(lat=lat, lon=lon)
         else:
-            raise OptionError("'dataset' or 'srsString and extentString' "
-                              "or 'dataset and srsString' are required")
+            raise OptionError('"dataset" or "srsString and extentString" '
+                              'or "dataset and srsString" are required')
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
@@ -291,7 +290,7 @@ class Domain():
             # if only input XML-file is given - convert it to KML
 
             # open XML, get all domains
-            xmlFile = file(xmlFileName, "rb")
+            xmlFile = file(xmlFileName, 'rb')
             kmlFileName = xmlFileName + '.kml'
             xmlDomains = ElementTree(file=xmlFile).getroot()
             xmlFile.close()
@@ -359,7 +358,7 @@ class Domain():
         # 6. Write KML for the image
         n.reproject() # 1.
         lons, lats = n.get_corners() # 2.
-        srsString = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
+        srsString = '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
         extentString = '-lle %f %f %f %f -ts 3000 3000'
         % (min(lons), min(lats), max(lons), max(lats))
         d = Domain(srs=srsString, ext=extentString) # 3.
@@ -455,19 +454,19 @@ class Domain():
         Create osr.CoordinateTransformation based on these SRSs and
         convert given values in degrees to the destination coordinate
         system given by WKT.
-        Add key "te" and the converted values into the extentDic.
+        Add key 'te' and the converted values into the extentDic.
 
         Parameters
         -----------
         dstWKT : WKT
             destination WKT
         extentDic : dictionary
-            dictionary with "lle" key
+            dictionary with 'lle' key
 
         Returns
         --------
         extentDic : dictionary
-            input dictionary + "te" key and its values
+            input dictionary + 'te' key and its values
 
         '''
         # Set destination SRS from dstWKT
@@ -476,23 +475,23 @@ class Domain():
 
         coorTrans = osr.CoordinateTransformation(latlongSRS, dstSRS)
 
-        # convert lat/lon given by "lle" to the target coordinate system and
-        # add key "te" and the converted values to extentDic
-        x1, y1, z1 = coorTrans.TransformPoint(extentDic["lle"][0],
-                                              extentDic["lle"][3])
-        x2, y2, z2 = coorTrans.TransformPoint(extentDic["lle"][2],
-                                              extentDic["lle"][3])
-        x3, y3, z3 = coorTrans.TransformPoint(extentDic["lle"][2],
-                                              extentDic["lle"][1])
-        x4, y4, z4 = coorTrans.TransformPoint(extentDic["lle"][0],
-                                              extentDic["lle"][1])
+        # convert lat/lon given by 'lle' to the target coordinate system and
+        # add key 'te' and the converted values to extentDic
+        x1, y1, z1 = coorTrans.TransformPoint(extentDic['lle'][0],
+                                              extentDic['lle'][3])
+        x2, y2, z2 = coorTrans.TransformPoint(extentDic['lle'][2],
+                                              extentDic['lle'][3])
+        x3, y3, z3 = coorTrans.TransformPoint(extentDic['lle'][2],
+                                              extentDic['lle'][1])
+        x4, y4, z4 = coorTrans.TransformPoint(extentDic['lle'][0],
+                                              extentDic['lle'][1])
 
         minX = min([x1, x2, x3, x4])
         maxX = max([x1, x2, x3, x4])
         minY = min([y1, y2, y3, y4])
         maxY = max([y1, y2, y3, y4])
 
-        extentDic["te"] = [minX, minY, maxX, maxY]
+        extentDic['te'] = [minX, minY, maxX, maxY]
 
         return extentDic
 
@@ -500,24 +499,24 @@ class Domain():
         '''Create a dictionary from extentString
 
         Check if extentString is proper.
-            * "-te" and "-lle" take 4 numbers.
-            * "-ts" and "-tr" take 2 numbers.
-            * the combination should be ("-te" or "-lle") and ("-ts" or "-tr")
+            * '-te' and '-lle' take 4 numbers.
+            * '-ts' and '-tr' take 2 numbers.
+            * the combination should be ('-te' or '-lle') and ('-ts' or '-tr')
         If it is proper, create a dictionary
         Otherwise, raise the error.
 
         Parameters
         -----------
         extentString : string
-            "-te xMin yMin xMax yMax",
-            "-tr xResolution yResolution",
-            "-ts width height",
-            "-lle lonWest lonEast latNorth latSouth"
+            '-te xMin yMin xMax yMax',
+            '-tr xResolution yResolution',
+            '-ts width height',
+            '-lle lonWest lonEast latNorth latSouth'
 
         Returns
         --------
         extentDic : dictionary
-            has key ("te" or "lle") and ("tr" or "ts") and their values.
+            has key ('te' or 'lle') and ('tr' or 'ts') and their values.
 
         Raises
         -------
@@ -533,20 +532,19 @@ class Domain():
             # Check the number of -tr elements
             elm_str = str(str_tr[0].rstrip())
             elms_str = elm_str.split(None)
-            if len(elms_str) != 3 or elms_str[2] == "-":
-                raise OptionError('''
-                                    Domain._create_extentDic():
-                                    -tr is used as
-                                    "-tr xResolution yResolution"''')
+            if len(elms_str) != 3 or elms_str[2] == '-':
+                raise OptionError('Domain._create_extentDic():'
+                                  '-tr is used as'
+                                  '"-tr xResolution yResolution"')
             # Add the key and value to extentDic
-            extentString = extentString.replace(str_tr[0], "")
+            extentString = extentString.replace(str_tr[0], '')
             trElem = str(str_tr).split(None)
-            trkey = trElem[0].translate(string.maketrans("", ""), "[]-'")
-            if trkey != "":
+            trkey = trElem[0].translate(string.maketrans('', ''), "[]-'")
+            if trkey != '':
                 elements = []
                 for i in range(2):
                     elements.append(float(trElem[i + 1].\
-                                          translate(string.maketrans("", ""),
+                                          translate(string.maketrans('', ''),
                                           "[]'")))
                 extentDic[trkey] = elements
 
@@ -557,43 +555,41 @@ class Domain():
             # Check the number of -ts elements
             elm_str = str(str_ts[0].rstrip())
             elms_str = elm_str.split(None)
-            if len(elms_str) != 3 or elms_str[2] == "-":
-                raise OptionError("Domain._create_extentDic(): "
-                                  "-ts is used as '-ts width height'")
+            if len(elms_str) != 3 or elms_str[2] == '-':
+                raise OptionError('Domain._create_extentDic(): '
+                                  '"-ts" is used as "-ts width height"')
             # Add the key and value to extentDic
-            extentString = extentString.replace(str_ts[0], "")
+            extentString = extentString.replace(str_ts[0], '')
             tsElem = str(str_ts).split(None)
-            tskey = tsElem[0].translate(string.maketrans("", ""), "[]-'")
-            if tskey != "":
+            tskey = tsElem[0].translate(string.maketrans('', ''), "[]-'")
+            if tskey != '':
                 elements = []
                 for i in range(2):
                     elements.append(float(tsElem[i + 1].\
-                                          translate(string.maketrans("", ""),
+                                          translate(string.maketrans('', ''),
                                           "[]'")))
                 extentDic[tskey] = elements
 
         # Find -te text
-        str_te = re.findall('''
-                            -te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s
-                            +[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?''',
+        str_te = re.findall('-te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
+                            '+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
                             extentString)
         if str_te != []:
             # Check the number of -te elements
             elm_str = str(str_te[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 5:
-                raise OptionError('''
-                                  Domain._create_extentDic():
-                                  -te is used as "-te xMin yMin xMax yMax"''')
+                raise OptionError('Domain._create_extentDic():'
+                                  '-te is used as "-te xMin yMin xMax yMax"')
             # Add the key and value to extentDic
-            extentString = extentString.replace(str_te[0], "")
+            extentString = extentString.replace(str_te[0], '')
             teElem = str(str_te).split(None)
-            tekey = teElem[0].translate(string.maketrans("", ""), "[]-'")
-            if tekey != "":
+            tekey = teElem[0].translate(string.maketrans('', ''), "[]-'")
+            if tekey != '':
                 elements = []
                 for i in range(4):
                     elements.append(float(teElem[i + 1].\
-                                          translate(string.maketrans("", ""),
+                                          translate(string.maketrans('', ''),
                                           "[]'")))
                 extentDic[tekey] = elements
 
@@ -606,49 +602,43 @@ class Domain():
             elm_str = str(str_lle[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 5:
-                raise OptionError('''
-                                  Domain._create_extentDic():
-                                  -lle is used as
-                                  "-lle lonWest lonEast latNorth latSouth"''')
+                raise OptionError('Domain._create_extentDic():'
+                                  '-lle is used as '
+                                  '"-lle lonWest lonEast latNorth latSouth"')
             # Add the key and value to extentDic
-            extentString = extentString.replace(str_lle[0], "")
+            extentString = extentString.replace(str_lle[0], '')
             lleElem = str(str_lle).split(None)
-            llekey = lleElem[0].translate(string.maketrans("", ""), "[]-'")
-            if llekey != "":
+            llekey = lleElem[0].translate(string.maketrans('', ''), "[]-'")
+            if llekey != '':
                 elements = []
                 for i in range(4):
                     elements.append(float(lleElem[i + 1].\
-                                          translate(string.maketrans("", ""),
+                                          translate(string.maketrans('', ''),
                                           "[]'")))
                 extentDic[llekey] = elements
 
-        result = re.search("\S", extentString)
-
+        result = re.search('\S', extentString)
         # if there are unnecessary letters, give an error
         if result is not None:
             raise OptionError('Domain._create_extentDic():'
                               'extentString is not redable :',
                               extentString)
 
-        # check if one of "-te" and "-lle" is given
-        if ("lle" not in extentDic) and ("te" not in extentDic):
-            raise OptionError('''
-                              Domain._create_extentDic():
-                              "-lle" or "-te" is required.''')
-        elif ("lle" in extentDic) and ("te" in extentDic):
-            raise OptionError('''
-                              Domain._create_extentDic():
-                              "-lle" or "-te" should be chosen.''')
+        # check if one of '-te' and '-lle' is given
+        if ('lle' not in extentDic) and ('te' not in extentDic):
+            raise OptionError('Domain._create_extentDic():'
+                              '"-lle" or "-te" is required.')
+        elif ('lle' in extentDic) and ('te' in extentDic):
+            raise OptionError('Domain._create_extentDic():'
+                              '"-lle" or "-te" should be chosen.')
 
-        # check if one of "-ts" and "-tr" is given
-        if ("ts" not in extentDic) and ("tr" not in extentDic):
-            raise OptionError('''
-                              Domain._create_extentDic():
-                              "-ts" or "-tr" is required.''')
-        elif ("ts" in extentDic) and ("tr" in extentDic):
-            raise OptionError('''
-                              Domain._create_extentDic():
-                              "-ts" or "-tr" should be chosen.''')
+        # check if one of '-ts' and '-tr' is given
+        if ('ts' not in extentDic) and ('tr' not in extentDic):
+            raise OptionError('Domain._create_extentDic():'
+                              '"-ts" or "-tr" is required.')
+        elif ('ts' in extentDic) and ('tr' in extentDic):
+            raise OptionError('Domain._create_extentDic():'
+                              '"-ts" or "-tr" should be chosen.')
         return extentDic
 
     def _from_xml(self, srsString, extentString):
@@ -677,7 +667,7 @@ class Domain():
 
          '''
         # open file
-        fd = file(srsString, "rb")
+        fd = file(srsString, 'rb')
         # get root element
         domains = ElementTree(file=fd).getroot()
         fd.close()
@@ -692,7 +682,7 @@ class Domain():
                 extentString = domain.find('extentString').text
                 break
             if domain == list(domains)[-1]:
-                raise OptionError("extentString is improper")
+                raise OptionError('extentString is improper')
 
         return srsString, extentString, name
 
@@ -778,7 +768,7 @@ class Domain():
         lonList, latList = self.get_border()
         polyCont = ','.join(str(lon) + ' ' + str(lat) for lon, lat
                             in zip(lonList, latList))
-        wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
+        wktPolygon = 'PolygonFromText("POLYGON((%s))")' % polyCont
         return wktPolygon
 
     def get_corners(self):
@@ -804,7 +794,7 @@ class Domain():
         Parameters
         -----------
         extentDic : dictionary
-            includes "te" key and "ts" or "tr" key
+            includes 'te' key and 'ts' or 'tr' key
 
         Raises
         -------
@@ -822,30 +812,30 @@ class Domain():
 
         '''
         # recalculate GeoTransform based on extent option
-        minX = extentDic["te"][0]
-        minY = extentDic["te"][1]
-        maxX = extentDic["te"][2]
-        maxY = extentDic["te"][3]
+        minX = extentDic['te'][0]
+        minY = extentDic['te'][1]
+        maxX = extentDic['te'][2]
+        maxY = extentDic['te'][3]
         cornerX = minX
         cornerY = maxY
         width = maxX - minX
         height = maxY - minY
         if width <= 0 or height <= 0:
-            raise OptionError("The extent is illegal. "
-                              "'-te xMin yMin xMax yMax' ")
+            raise OptionError('The extent is illegal. '
+                              '"-te xMin yMin xMax yMax" ')
 
-        if "tr" in extentDic.keys():
-            resolutionX = extentDic["tr"][0]
-            resolutionY = -(extentDic["tr"][1])
+        if 'tr' in extentDic.keys():
+            resolutionX = extentDic['tr'][0]
+            resolutionY = -(extentDic['tr'][1])
             if (width < resolutionX or height < resolutionY):
-                raise OptionError("'-tr' is too large. "
-                                  "width is " + width +
-                                  "  height is " + height)
+                raise OptionError('"-tr" is too large. '
+                                  'width is %s, height is %s '
+                                  % (str(width), str(height)))
             rasterXSize = width / resolutionX
             rasterYSize = abs(height / resolutionY)
         else:
-            rasterXSize = extentDic["ts"][0]
-            rasterYSize = extentDic["ts"][1]
+            rasterXSize = extentDic['ts'][0]
+            rasterYSize = extentDic['ts'][1]
             resolutionX = width / rasterXSize
             resolutionY = -abs(height / rasterYSize)
 
@@ -871,11 +861,11 @@ class Domain():
         '''
         #get projection or GCPProjection
         projection = dataset.GetProjection()
-        if projection == "":
+        if projection == '':
             projection = dataset.GetGCPProjection()
 
         #test projection
-        if projection == "":
+        if projection == '':
             raise ProjectionError('Empty projection in input dataset!')
 
         return projection
@@ -1009,9 +999,8 @@ class Domain():
                 # get lon/lat from Domain/Nansat object
                 lonVec, latVec = self.get_border()
             except:
-                print '''
-                        Domain/Nansat object is not given
-                        and lat/lon vectors=None'''
+                print('Domain/Nansat object is not given'
+                      'and lat/lon vectors=None')
                 return
 
         # convert vectors to numpy arrays

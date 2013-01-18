@@ -23,27 +23,27 @@ from nansat_tools import *
 try:
     from domain import Domain
 except ImportError:
-    warnings.warn('''Cannot import Domain!
-                    Nansat will not work.''')
+    warnings.warn('Cannot import Domain!'
+                  'Nansat will not work.')
 
 try:
     from figure import Figure
 except ImportError:
-    warnings.warn('''Cannot import Figure!
-                    Nansat will not work.''')
+    warnings.warn('Cannot import Figure!'
+                  'Nansat will not work.')
 
 try:
     from vrt import VRT
 except ImportError:
-    warnings.warn('''Cannot import VRT!
-                Nansat will not work.''')
+    warnings.warn('Cannot import VRT!'
+                  'Nansat will not work.')
 
 # Force GDAL to raise exceptions
 try:
     gdal.UseExceptions()
 except:
-    warnings.warn('''GDAL will not raise exceptions.
-                    Probably GDAL is not installed''')
+    warnings.warn('GDAL will not raise exceptions.'
+                  'Probably GDAL is not installed')
 
 # Set environment variables, the script directory
 nansathome = os.path.dirname(os.path.abspath(inspect.getfile(
@@ -56,10 +56,10 @@ if not 'GDAL_DRIVER_PATH' in os.environ:
 # Compile pixelfunctions if not already done.
 if sys.platform.startswith('win'):
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.DLL'):
-        print "Cannot find 'gdal_PIXFUN.dll'. Compile pixelfunctions !!"
+        print 'Cannot find "gdal_PIXFUN.dll". Compile pixelfunctions !!'
 else:
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
-        print "Cannot find 'gdal_PIXFUN.so'. Compiling pixelfunctions..."
+        print 'Cannot find "gdal_PIXFUN.so". Compiling pixelfunctions...'
         os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
 
 
@@ -87,7 +87,7 @@ class Nansat(Domain):
     Nansat uses instance of Figure (collection of methods for visualization)
     '''
 
-    def __init__(self, fileName="", mapperName="", domain=None,
+    def __init__(self, fileName='', mapperName='', domain=None,
                  array=None, parameters=None, logLevel=30):
         '''Create Nansat object
 
@@ -107,7 +107,7 @@ class Nansat(Domain):
             location of the file
         mapperName : string, optional
             name of the mapper from nansat/mappers dir. E.g.
-            "ASAR", "hirlam", "merisL1", "merisL2", etc.
+            'ASAR', 'hirlam', 'merisL1', 'merisL2', etc.
         domain : Domain object
             Geo-reference of a new raster
         array : numpy array
@@ -134,8 +134,8 @@ class Nansat(Domain):
 
         '''
         # check the arguments
-        if fileName == "" and domain is None:
-            raise OptionError("Either fileName or domain is required.")
+        if fileName == '' and domain is None:
+            raise OptionError('Either fileName or domain is required.')
 
         # create logger
         self.logger = add_logger('Nansat', logLevel)
@@ -164,7 +164,7 @@ class Nansat(Domain):
         self.path = os.path.dirname(fileName)
 
         # create self.raw from a file using mapper or...
-        if fileName != "":
+        if fileName != '':
             # Make original VRT object with mapping of variables
             self.raw = self._get_mapper(mapperName)
             # Set current VRT object
@@ -343,8 +343,8 @@ class Nansat(Domain):
 
         It is possible to fix it by changing
         line.4605 in GDAL/frmts/netcdf/netcdfdataset.cpp :
-        "if( nBands > 1 ) sprintf(szBandName,"%s%d",tmpMetadata,iBand);"
-        --> "if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);"
+        'if( nBands > 1 ) sprintf(szBandName,"%s%d",tmpMetadata,iBand);'
+        --> 'if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);'
 
         '''
         # temporary VRT for exporting
@@ -352,13 +352,13 @@ class Nansat(Domain):
 
         # Change the element from GDAL datatype to NetCDF data type
         node0 = Node.create(exportVRT.read_xml())
-        for iBand in node0.nodeList("VRTRasterBand"):
-            dataType = iBand.getAttribute("dataType")
-            dataType = {"UInt16": "Int16", "CInt16": "Int16",
-                        "UInt32": "Int32",
-                        "CFloat32": "Float32", "CFloat64": "Float64"
+        for iBand in node0.nodeList('VRTRasterBand'):
+            dataType = iBand.getAttribute('dataType')
+            dataType = {'UInt16': 'Int16', 'CInt16': 'Int16',
+                        'UInt32': 'Int32',
+                        'CFloat32': 'Float32', 'CFloat64': 'Float64'
                         }.get(dataType, dataType)
-            iBand.replaceAttribute("dataType", dataType)
+            iBand.replaceAttribute('dataType', dataType)
         exportVRT.write_xml(str(node0.rawxml()))
 
         # add bands with geolocation arrays to the VRT
@@ -382,8 +382,8 @@ class Nansat(Domain):
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
         exportVRT.dataset.SetMetadataItem('NANSAT_Projection',
-                                          srs.replace(",",
-                                                      "|").replace('"', "&"))
+                                          srs.replace(',',
+                                                      '|').replace('"', '&'))
 
         # add GeoTransform metadata
         geoTransformStr = str(self.vrt.dataset.GetGeoTransform()).replace(',',
@@ -397,7 +397,7 @@ class Nansat(Domain):
             bandMetadata = band.GetMetadata()
             # set NETCDF_VARNAME
             try:
-                bandMetadata['NETCDF_VARNAME'] = bandMetadata["name"]
+                bandMetadata['NETCDF_VARNAME'] = bandMetadata['name']
             except:
                 self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
                                     % (iBand + 1))
@@ -406,8 +406,8 @@ class Nansat(Domain):
                 try:
                     bandMetadata.pop(rmMeta)
                 except:
-                    self.logger.info('''Unable to remove metadata
-                                     %s from band %d''' % (rmMeta, iBand + 1))
+                    self.logger.info('Unable to remove metadata'
+                                     '%s from band %d' % (rmMeta, iBand + 1))
             band.SetMetadata(bandMetadata)
         # remove unwanted global metadata
         globMetadata = exportVRT.dataset.GetMetadata()
@@ -450,7 +450,7 @@ class Nansat(Domain):
 
         Modifies
         ---------
-        self.vrt.dataset: VRT dataset of VRT object
+        self.vrt.dataset : VRT dataset of VRT object
             raster size are modified to downscaled size.
             If GCPs are given in the dataset, they are also overwritten.
 
@@ -489,34 +489,34 @@ class Nansat(Domain):
             node0 = Node.create(vrtXML)
 
             # replace rasterXSize in <VRTDataset>
-            node0.replaceAttribute("rasterXSize", str(newRasterXSize))
-            node0.replaceAttribute("rasterYSize", str(newRasterYSize))
+            node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+            node0.replaceAttribute('rasterYSize', str(newRasterYSize))
 
             # replace xSize in <DstRect> of each source
-            for iNode1 in node0.nodeList("VRTRasterBand"):
-                for sourceName in ["ComplexSource", "SimpleSource"]:
+            for iNode1 in node0.nodeList('VRTRasterBand'):
+                for sourceName in ['ComplexSource', 'SimpleSource']:
                     for iNode2 in iNode1.nodeList(sourceName):
-                        iNodeDstRect = iNode2.node("DstRect")
-                        iNodeDstRect.replaceAttribute("xSize",
+                        iNodeDstRect = iNode2.node('DstRect')
+                        iNodeDstRect.replaceAttribute('xSize',
                                                       str(newRasterXSize))
-                        iNodeDstRect.replaceAttribute("ySize",
+                        iNodeDstRect.replaceAttribute('ySize',
                                                       str(newRasterYSize))
-                # if method=-1, overwrite "ComplexSource" to "AveragedSource"
+                # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
                 if eResampleAlg == -1:
-                    iNode1.replaceTag("ComplexSource", "AveragedSource")
-                    iNode1.replaceTag("SimpleSource", "AveragedSource")
+                    iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                    iNode1.replaceTag('SimpleSource', 'AveragedSource')
 
             # Edit GCPs to correspond to the downscaled size
-            if node0.node("GCPList"):
-                for iNode in node0.node("GCPList").nodeList("GCP"):
-                    pxl = float(iNode.getAttribute("Pixel")) * factor
+            if node0.node('GCPList'):
+                for iNode in node0.node('GCPList').nodeList('GCP'):
+                    pxl = float(iNode.getAttribute('Pixel')) * factor
                     if pxl > float(rasterXSize):
                         pxl = rasterXSize
-                    iNode.replaceAttribute("Pixel", str(pxl))
-                    lin = float(iNode.getAttribute("Line")) * factor
+                    iNode.replaceAttribute('Pixel', str(pxl))
+                    lin = float(iNode.getAttribute('Line')) * factor
                     if lin > float(rasterYSize):
                         lin = rasterYSize
-                    iNode.replaceAttribute("Line", str(lin))
+                    iNode.replaceAttribute('Line', str(lin))
 
             # Write the modified elemements into VRT
             self.vrt.write_xml(str(node0.rawxml()))
@@ -572,10 +572,10 @@ class Nansat(Domain):
 
         for b in bands:
             # print band number, name
-            outString += "Band : %d %s\n" % (b, bands[b].get('name', ''))
+            outString += 'Band : %d %s\n' % (b, bands[b].get('name', ''))
             # print band metadata
             for i in bands[b]:
-                outString += "  %s: %s\n" % (i, bands[b][i])
+                outString += '  %s: %s\n' % (i, bands[b][i])
         if doPrint:
             # print to screeen
             print outString
@@ -728,9 +728,9 @@ class Nansat(Domain):
         Parameters
         -----------
         fileName : string, optional
-            Output file name. if one of extensions "png", "PNG", "tif",
-            "TIF", "bmp", "BMP", "jpg", "JPG", "jpeg", "JPEG" is included,
-            specified file is crated. otherwise, "png" file is created.
+            Output file name. if one of extensions 'png', 'PNG', 'tif',
+            'TIF', 'bmp', 'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG' is included,
+            specified file is crated. otherwise, 'png' file is created.
             if None, the figure object is returned.
             if True, the figure is shown
         bands : integer or string or list (elements are integer or string),
@@ -783,7 +783,7 @@ class Nansat(Domain):
                 indeces.
             mask_lut : dictionary
                 Look-Up-Table with colors for masking land, clouds etc. Used
-                tgether            with mask_array:
+                tgether with mask_array:
                 {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
                 index 0 - will have black color
                       1 - dark gray
@@ -838,7 +838,7 @@ class Nansat(Domain):
             NAME_LOCATION_Y :
                 0.3, title  offset Y relative to legend height
             DEFAULT_EXTENSION : string
-                ".png"
+                '.png'
         --------------------------------------------------
 
         Modifies
@@ -906,7 +906,7 @@ class Nansat(Domain):
             for i, iBand in enumerate(bands):
                 try:
                     defValue = (self.vrt.dataset.GetRasterBand(iBand).
-                                GetMetadataItem("minmax").split(" "))
+                                GetMetadataItem('minmax').split(' '))
                 except:
                     clim = 'hist'
                     break
@@ -937,8 +937,8 @@ class Nansat(Domain):
         else:
             # get longName and units from vrt
             band = self.get_GDALRasterBand(bands[0])
-            longName = band.GetMetadata().get("long_name", '')
-            units = band.GetMetadata().get("units", '')
+            longName = band.GetMetadata().get('long_name', '')
+            units = band.GetMetadata().get('units', '')
 
             # make caption from longname, units
             caption = longName + ' [' + units + ']'
@@ -1041,9 +1041,9 @@ class Nansat(Domain):
             band = self.get_GDALRasterBand(i + 1)
             try:
                 time.append(dateutil.parser.parse(
-                            band.GetMetadataItem("time")))
+                            band.GetMetadataItem('time')))
             except:
-                self.logger.debug("Band " + str(i + 1) + " has no time")
+                self.logger.debug('Band ' + str(i + 1) + ' has no time')
                 time.append(None)
 
         if bandID is not None:
@@ -1135,7 +1135,7 @@ class Nansat(Domain):
 
         Parameters
         -----------
-        mapperName : string, optional (e.g. "ASAR" or "merisL2")
+        mapperName : string, optional (e.g. 'ASAR' or 'merisL2')
 
         Returns
         --------
@@ -1207,7 +1207,7 @@ class Nansat(Domain):
         return tmpVRT
 
     def _get_pixelValue(self, val, defVal):
-        if val == "":
+        if val == '':
             return defVal
         else:
             return val
@@ -1254,9 +1254,9 @@ class Nansat(Domain):
 
         # if no bandNumber found - raise error
         if bandNumber == 0:
-            raise OptionError("Cannot find band %s! "
-                              "bandNumber is from 1 to %s" %
-                              (str(bandID), self.vrt.dataset.RasterCount))
+            raise OptionError('Cannot find band %s! '
+                              'bandNumber is from 1 to %s'
+                              % (str(bandID), self.vrt.dataset.RasterCount))
 
         return bandNumber
 

@@ -108,7 +108,7 @@ class Figure():
         self.d['TEXT_LOCATION_Y'] = 0.1
         self.d['NAME_LOCATION_X'] = 0.1
         self.d['NAME_LOCATION_Y'] = 0.3
-        self.d['DEFAULT_EXTENSION'] = ".png"
+        self.d['DEFAULT_EXTENSION'] = '.png'
 
         # default values which are set when input values are not correct
         self._cmapName = 'jet'
@@ -120,8 +120,8 @@ class Figure():
         self.pilImg = None
         self.pilImgLegend = None
 
-        self.extensionList = ["png", "PNG", "tif", "TIF", "bmp",
-                              "BMP", "jpg", "JPG", "jpeg", "JPEG"]
+        self.extensionList = ['png', 'PNG', 'tif', 'TIF', 'bmp',
+                              'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
         # set fonts for Legend
         self.fontFileName = os.path.join(os.path.dirname(
@@ -251,7 +251,7 @@ class Figure():
                 box[dim + 2] = (self.pilImg.size[dim + 0] +
                                 logoLocation[dim + 0])
 
-        self.pilImg = self.pilImg.convert("RGB")
+        self.pilImg = self.pilImg.convert('RGB')
         self.pilImg.paste(logoImg, tuple(box))
 
     def add_latlon_grids(self, **kwargs):
@@ -476,7 +476,7 @@ class Figure():
         font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
 
         # create a pilImage for the legend
-        self.pilImgLegend = Image.new("P", (self.width,
+        self.pilImgLegend = Image.new('P', (self.width,
                                       int(self.height *
                                       self.d['LEGEND_HEIGHT'])), 255)
         draw = ImageDraw.Draw(self.pilImgLegend)
@@ -538,7 +538,7 @@ class Figure():
         draw.text(box, str(self.d['caption']), fill=black, font=font)
 
         # if titleString is given, draw it
-        if self.d['titleString'] != "":
+        if self.d['titleString'] != '':
             # write text each line onto pilImgCanvas
             textHeight = int(self.pilImgLegend.size[1] *
                              self.d['TEXT_LOCATION_Y'])
@@ -582,7 +582,7 @@ class Figure():
 
         # create a new PIL image from three bands (RGB) or from one (palette)
         if self.array.shape[0] == 3:
-            self.pilImg = Image.merge("RGB",
+            self.pilImg = Image.merge('RGB',
                                       (Image.fromarray(self.array[0, :, :]),
                                        Image.fromarray(self.array[1, :, :]),
                                        Image.fromarray(self.array[2, :, :])))
@@ -678,7 +678,7 @@ class Figure():
             Adds transparency to PIL image
 
         '''
-        self.pilImg = self.pilImg.convert("RGBA")
+        self.pilImg = self.pilImg.convert('RGBA')
         datas = self.pilImg.getdata()
         newData = list()
 
@@ -716,12 +716,12 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
 
-        if not((fileName.split(".")[-1] in self.extensionList)):
+        if not((fileName.split('.')[-1] in self.extensionList)):
             fileName = fileName + self.d['DEFAULT_EXTENSION']
 
-        fileExtension = fileName.split(".")[-1]
-        if fileExtension in ["jpg", "JPG", "jpeg", "JPEG"]:
-            self.pilImg = self.pilImg.convert("RGB")
+        fileExtension = fileName.split('.')[-1]
+        if fileExtension in ['jpg', 'JPG', 'jpeg', 'JPEG']:
+            self.pilImg = self.pilImg.convert('RGB')
 
         if self.d['transparency'] is not None:
             self._make_transparent_color()
@@ -814,16 +814,16 @@ class Figure():
         string
 
         '''
-        frmts = {-2: "%.2f", -1: "%.1f", 0: "%.2f",
-                 1: "%.1f", 2: "%d", 3: "%d"}
+        frmts = {-2: '%.2f', -1: '%.1f', 0: '%.2f',
+                 1: '%.1f', 2: '%d', 3: '%d'}
         if val == 0:
-            frmt = "%d"
+            frmt = '%d'
         else:
             digit = floor(log10(abs(val)))
             if digit in frmts:
                 frmt = frmts[digit]
             else:
-                frmt = "%4.2e"
+                frmt = '%4.2e'
 
         return str(frmt % val)
 

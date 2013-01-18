@@ -62,72 +62,64 @@ except ImportError:
         import gdal
         import osr
     except ImportError:
-        warnings.warn('''
-                    Cannot import GDAL!
-                    Nansat, Vrt, Domain and nansat_tools will not work
-                    Try installing GDAL.''')
+        warnings.warn('Cannot import GDAL!'
+                      'Nansat, Vrt, Domain and nansat_tools will not work'
+                      'Try installing GDAL.')
 
 ## used in nansat, domain, vrt and figure
 try:
     import numpy as np
 except ImportError:
-    warnings.warn('''
-                Cannot import numpy!
-                Domain, Figure and Vrt will not work.
-                Try installing numpy.''')
+    warnings.warn('Cannot import numpy!'
+                  'Domain, Figure and Vrt will not work.'
+                  'Try installing numpy.')
 
 ## used in domain and figure
 try:
     import matplotlib.pyplot as plt
 except:
-    warnings.warn('''
-                Cannot import matplotlib.pyplot!
-                Domain.write_map() and Figure will not work
-                Try installing matplotlib.''')
+    warnings.warn('Cannot import matplotlib.pyplot!'
+                  'Domain.write_map() and Figure will not work'
+                  'Try installing matplotlib.')
 
 ## used in nansat and figure
 try:
     from matplotlib import cm
 except:
-    warnings.warn('''
-                Cannot import matplotlib.cm!
-                Nansat.write_geotiffimage and Figure will not work.
-                Try installing matplotlib.''')
+    warnings.warn('Cannot import matplotlib.cm!'
+                  'Nansat.write_geotiffimage and Figure will not work.'
+                  'Try installing matplotlib.')
 
 ## used in domain
 try:
     from matplotlib.patches import Polygon
 except:
-    warnings.warn('''
-                Cannot import matplotlib.patches.Polygon!
-                Domain.write_map() will not work
-                Try installing matplotlib.''')
+    warnings.warn('Cannot import matplotlib.patches.Polygon!'
+                  'Domain.write_map() will not work'
+                  'Try installing matplotlib.')
 
 try:
     from mpl_toolkits.basemap import Basemap
 except:
-    warnings.warn('''
-                Cannot import mpl_toolkits.basemap.Basemap!
-                Domain.write_map() will not work
-                Try installing Basemap.''')
+    warnings.warn('Cannot import mpl_toolkits.basemap.Basemap!'
+                  'Domain.write_map() will not work'
+                  'Try installing Basemap.')
 
 ## used in nansat
 try:
     from numpy import arange
 except ImportError:
-    warnings.warn('''
-                Cannot import numpy.arange!
-                Nansat.write_geotiffimage will not work.
-                Try installing numpy.''')
+    warnings.warn('Cannot import numpy.arange!'
+                  'Nansat.write_geotiffimage will not work.'
+                  'Try installing numpy.')
 
 ## used in figure
 try:
     from numpy import outer
 except ImportError:
-    warnings.warn('''
-                Cannot import numpy.outer!
-                Figure.create_legend will not work.
-                Try installing numpy.''')
+    warnings.warn('Cannot import numpy.outer!'
+                  'Figure.create_legend will not work.'
+                  'Try installing numpy.')
 
 try:
     import Image
@@ -137,26 +129,24 @@ except ImportError:
     try:
         from PIL import Image, ImabeDraw, ImageFont
     except ImportError:
-        warnings.warn('''
-                    Cannot import PIL!
-                    Figure will not work
-                    Try installing PIL.''')
+        warnings.warn('Cannot import PIL!'
+                      'Figure will not work'
+                      'Try installing PIL.')
 
 ## used in nansat_tools
 try:
     from scipy import mod
 except ImportError:
-    warnings.warn('''
-                    Cannot import scipy.mod!
-                    nansat_toolds will not work
-                    Try installing scipy.''')
+    warnings.warn('Cannot import scipy.mod!'
+                  'nansat_toolds will not work'
+                  'Try installing scipy.')
 
 LOG_LEVEL = 30
 
 try:
     latlongSRS = osr.SpatialReference()
-    latlongSRS.ImportFromProj4('''+proj=latlong +ellps=WGS84
-                               +datum=WGS84 +no_defs''')
+    latlongSRS.ImportFromProj4('+proj=latlong +ellps=WGS84'
+                               '+datum=WGS84 +no_defs')
 except:
     warnings.warn('Cannot generate latlongSRS. Nansat will not work!')
 
@@ -194,11 +184,11 @@ class Node(object):
     and a group of Nodes can be strung together using '+'.
 
     Create a node containing a value by saying
-    Node("tag", "value")
+    Node('tag', 'value')
     You can also give attributes to the node in the constructor:
-    Node("tag", "value", attr1 = "attr1", attr2 = "attr2")
+    Node('tag', 'value', attr1 = 'attr1', attr2 = 'attr2')
     or without a value:
-    Node("tag", attr1 = "attr1", attr2 = "attr2")
+    Node('tag', attr1 = 'attr1', attr2 = 'attr2')
 
     To produce xml from a finished Node n, say n.xml() (for
     nicely formatted output) or n.rawxml().
@@ -206,22 +196,22 @@ class Node(object):
     You can read and modify the attributes of an xml Node using
     getAttribute(), setAttribute(), or delAttribute().
 
-    You can find the value of the first subnode with tag == "tag"
-    by saying n["tag"]. If there are multiple instances of n["tag"],
+    You can find the value of the first subnode with tag == 'tag'
+    by saying n['tag']. If there are multiple instances of n['tag'],
     this will only find the first one, so you should use node() or
     nodeList() to narrow your search down to a Node that only has
-    one instance of n["tag"] first.
+    one instance of n['tag'] first.
 
-    You can replace the value of the first subnode with tag == "tag"
-    by saying n["tag"] = newValue. The same issues exist as noted
+    You can replace the value of the first subnode with tag == 'tag'
+    by saying n['tag'] = newValue. The same issues exist as noted
     in the above paragraph.
 
-    You can find the first node with tag == "tag" by saying
-    node("tag"). If there are multiple nodes with the same tag
-    at the same level, use nodeList("tag").
+    You can find the first node with tag == 'tag' by saying
+    node('tag'). If there are multiple nodes with the same tag
+    at the same level, use nodeList('tag').
 
-    The Node class is also designed to create a kind of "domain
-    specific language" by subclassing Node to create Node types
+    The Node class is also designed to create a kind of 'domain
+    specific language' by subclassing Node to create Node types
     specific to your problem domain.
 
     This implementation uses xml.dom.minidom which is available
@@ -322,8 +312,8 @@ class Node(object):
         dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0],
                                                        True))
         contents = str(dom1.toxml())
-        if contents.find("<?") != -1 and contents.find("?>"):
-            contents = contents[contents.find("?>")+2:]
+        if contents.find('<?') != -1 and contents.find('?>'):
+            contents = contents[contents.find('?>')+2:]
         return contents
 
     def __getitem__(self, tag):
@@ -341,11 +331,11 @@ class Node(object):
 
     def __setitem__(self, tag, newValue):
         '''
-        Replace the value of the first subnode containing "tag"
+        Replace the value of the first subnode containing 'tag'
         with a new value, using operator[].
 
         '''
-        assert isinstance(newValue, str), ("Value %s must be a string"
+        assert isinstance(newValue, str), ('Value %s must be a string'
                                            % str(newValue))
         subnode = self.node(tag)
         if not subnode:
@@ -354,7 +344,7 @@ class Node(object):
 
     def __iadd__(self, other):
         ''' Add child nodes using operator += '''
-        assert isinstance(other, Node), "Tried to += " + str(other)
+        assert isinstance(other, Node), 'Tried to += ' + str(other)
         self.children.append(other)
         return self
 
@@ -364,11 +354,11 @@ class Node(object):
 
     def __str__(self):
         ''' Display this object (for debugging) '''
-        result = self.tag + "\n"
+        result = self.tag + '\n'
         for k, v in self.attributes.items():
-            result += "    attribute: %s = %s\n" % (k, v)
+            result += '    attribute: %s = %s\n' % (k, v)
         if self.value:
-            result += "    value: [%s]" % self.value
+            result += '    value: [%s]' % self.value
         return result
 
     # The following are the only methods that rely on the underlying
@@ -388,7 +378,7 @@ class Node(object):
         for key, val in self.attributes.items():
             element.setAttribute(key, val)
         if self.value:
-            assert not self.children, ("cannot have value and children: %s"
+            assert not self.children, ('cannot have value and children: %s'
                                        % str(self))
             element.appendChild(Node.doc.createTextNode(self.value))
         else:
@@ -416,13 +406,13 @@ class Node(object):
             else:
                 # Strip all extraneous whitespace so that
                 # text input is handled consistently:
-                dom = re.sub("\s+", " ", dom)
-                dom = dom.replace("> ", ">")
-                dom = dom.replace(" <", "<")
+                dom = re.sub('\s+', ' ', dom)
+                dom = dom.replace('> ', '>')
+                dom = dom.replace(' <', '<')
                 return Node.create(xdm.parseString(dom))
         if dom.nodeType == dom.DOCUMENT_NODE:
             return Node.create(dom.childNodes[0])
-        if dom.nodeName == "#text":
+        if dom.nodeName == '#text':
             return
         node = Node(dom.nodeName)
         if dom.attributes:
@@ -501,7 +491,7 @@ def add_logger(logName='', logLevel=None):
         ch = logging.StreamHandler()
         # create formatter
         formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|'
-                                        '%(funcName)s|%(message)s',
+                                      '%(funcName)s|%(message)s',
                                       datefmt='%I:%M:%S')
         # add formatter to ch
         ch.setFormatter(formatter)
