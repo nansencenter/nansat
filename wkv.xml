@@ -1,0 +1,328 @@
+<all_wkvs multiple="true">
+    <wkv>
+        <standard_name>radar_brightness_coefficient</standard_name>
+        <long_name>Reflectivity per unit area in slant range</long_name>
+        <short_name>beta0</short_name>
+        <units>m/m</units>
+        <minmax>0 0.1</minmax>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_backwards_scattering_coefficient_of_radar_wave</standard_name>
+        <long_name>Normalized Radar Cross Section</long_name>
+        <short_name>sigma0</short_name>
+        <units>m/m</units>
+        <minmax>0 0.1</minmax>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>grayscale</standard_name>
+        <long_name>grayscale</long_name>
+        <units>1</units>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>albedo</standard_name>
+        <long_name>Albedo</long_name>
+        <short_name>albedo</short_name>
+        <units>percent</units>
+        <minmax>0 100</minmax>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>eastward_wind</standard_name>
+        <long_name>Eastward wind velocity</long_name>
+        <short_name>U</short_name>
+        <units>m s-1</units>
+        <minmax>-10 10</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>northward_wind</standard_name>
+        <long_name>Northward wind velocity</long_name>
+        <short_name>V</short_name>
+        <units>m s-1</units>
+        <minmax>-10 10</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>wind_speed</standard_name>
+        <long_name>Wind speed</long_name>
+        <short_name>W</short_name>
+        <units>m s-1</units>
+        <minmax>0 18</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>wind_to_direction</standard_name>
+        <long_name>Wind direction (towards)</long_name>
+        <short_name>D</short_name>
+        <units>degrees</units>
+        <minmax>0 360</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>wind_from_direction</standard_name>
+        <long_name>Wind direction (from)</long_name>
+        <short_name>D</short_name>
+        <units>degrees</units>
+        <minmax>0 360</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water</standard_name>
+        <long_name>Upward spectral radiance</long_name>
+        <short_name>nLw</short_name>
+        <units>W m-2 m-1 sr-1</units>
+        <minmax>0.000 500</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air</standard_name>
+        <long_name>Reflectance</long_name>
+        <short_name>Rrs</short_name>
+        <units>sr-1</units>
+        <minmax>0.000 0.05</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water</standard_name>
+        <long_name>Reflectance</long_name>
+        <short_name>Rrsw</short_name>
+        <units>sr-1</units>
+        <minmax>0.000 0.05</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>mass_concentration_of_chlorophyll_a_in_sea_water</standard_name>
+        <long_name>Chlorophyll-a</long_name>
+        <short_name>chlor_a</short_name>
+        <units>kg m-3</units>
+        <minmax>0.001 15.000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sea_surface_temperature</standard_name>
+        <long_name>Sea Surface Temperature</long_name>
+        <short_name>SST</short_name>
+        <units>celsius</units>
+        <minmax>10 25</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sea_surface_salinity</standard_name>
+        <long_name>Sea Surface Salinity</long_name>
+        <short_name>SSS</short_name>
+        <units>psu</units>
+        <minmax>30 40</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter</standard_name>
+        <long_name>Yellow Substance Absorption</long_name>
+        <short_name>cdom_a</short_name>
+        <units>m-1</units>
+        <minmax>0.000 2.000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>mass_concentration_of_dissolved_organic_carbon_in_sea_water</standard_name>
+        <long_name>Dissolved Organic Carbon</long_name>
+        <short_name>doc</short_name>
+        <units>kg m-3</units>
+        <minmax>0.001 10.000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>mass_concentration_of_suspended_matter_in_sea_water</standard_name>
+        <long_name>Inorganic Suspended Matter</long_name>
+        <short_name>tsm</short_name>
+        <units>kg m-3</units>
+        <minmax>0.001 5.000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water</standard_name>
+        <long_name>Kd_490</long_name>
+        <short_name>Kd</short_name>
+        <units>m-1</units>
+        <minmax>0.000 2.000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sensor_zenith_angle</standard_name>
+        <long_name>Sensor Zenith Angle</long_name>
+        <short_name>sat_zenith</short_name>
+        <units>degrees</units>
+        <minmax>0 90</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sensor_azimuth_angle</standard_name>
+        <long_name>Sensor Azimuth Angle</long_name>
+        <short_name>sat_azimuth</short_name>
+        <units>degrees</units>
+        <minmax>0 360</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>solar_zenith_angle</standard_name>
+        <long_name>Solar Zenith Angle</long_name>
+        <short_name>sol_zenith</short_name>
+        <units>degrees</units>
+        <minmax>0 90</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>solar_azimuth_angle</standard_name>
+        <long_name>Solar Azimuth Angle</long_name>
+        <short_name>sol_azimuth</short_name>
+        <units>degrees</units>
+        <minmax>0 360</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>angle_of_incidence</standard_name>
+        <long_name>Incidence Angle</long_name>
+        <short_name>incidence_angle</short_name>
+        <units>degrees</units>
+        <minmax>0 90</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>quality_flags</standard_name>
+        <long_name>Quality Flags</long_name>
+        <short_name>flags</short_name>
+        <units>1</units>
+        <minmax>0 1</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>air_temperature</standard_name>
+        <long_name>Air Temperature</long_name>
+        <short_name>T</short_name>
+        <units>celsius</units>
+        <minmax>10 30</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+        <wkv>
+        <standard_name>brightness_temperature</standard_name>
+        <long_name>Brightness Temperature</long_name>
+        <short_name>BT</short_name>
+        <units>kelvin</units>
+        <minmax>230 330</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>land_binary_mask</standard_name>
+        <long_name>Land mask</long_name>
+        <short_name>landmask</short_name>
+        <units></units>
+        <minmax>0 1</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>latitude</standard_name>
+        <long_name>Latitude</long_name>
+        <short_name>latitude</short_name>
+        <units>deg N</units>
+        <minmax>-90 90</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>longitude</standard_name>
+        <long_name>Longitude</long_name>
+        <short_name>longitude</short_name>
+        <units>deg E</units>
+        <minmax>-180 180</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_geostrophic_eastward_sea_water_velocity</standard_name>
+        <long_name>Eastward Geostrophic Current</long_name>
+        <short_name>U</short_name>
+        <units>cm s-1</units>
+        <minmax>-20 20</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_geostrophic_northward_sea_water_velocity</standard_name>
+        <long_name>Northward Geostrophic Current</long_name>
+        <short_name>V</short_name>
+        <units>cm s-1</units>
+        <minmax>-20 20</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sea_surface_height_above_sea_level</standard_name>
+        <long_name>Sea Surface Anomaly</long_name>
+        <short_name>SSA</short_name>
+        <units>m</units>
+        <minmax>-100 100</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sea_surface_height_above_geoid</standard_name>
+        <long_name>Sea Surface Height</long_name>
+        <short_name>SSH</short_name>
+        <units>cm</units>
+        <minmax>-100 100</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sea_ice_area_fraction</standard_name>
+        <long_name>Sea Ice Concentration</long_name>
+        <short_name>ice_conc</short_name>
+        <units>%</units>
+        <minmax>0 100</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>net_primary_productivity_of_carbon</standard_name>
+        <long_name>Net Primary Production</long_name>
+        <short_name>npp</short_name>
+        <units>kg m-2 s-1</units>
+        <minmax>0 10000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>toa_outgoing_spectral_radiance</standard_name>
+        <long_name>top of atmosphere emitted toward outer space per unit wavenumber or as a function of wavenumber radiative flux in a particular direction, per unit of solid angle</long_name>
+        <short_name>L</short_name>
+        <units>mW m-2 sr-1 (cm-1)-1</units>
+        <minmax>0.000 1000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>instantaneous_photosynthetically_available_radiation</standard_name>
+        <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
+        <short_name>PAR</short_name>
+        <units>enstain m-2 s-1</units>
+        <minmax>0 0.0024</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles</standard_name>
+        <long_name>Particle backscatter</long_name>
+        <short_name>bbp</short_name>
+        <units>m-1</units>
+        <minmax>0 0.1</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>sea_surface_skin_temperature</standard_name>
+        <long_name>Sea Surface Temperature</long_name>
+        <short_name>SST</short_name>
+        <units>kelvin</units>
+        <minmax>280 300</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>photosynthetically_available_radiation</standard_name>
+        <long_name>Photosynthetically Available Radiation</long_name>
+        <short_name>PAR</short_name>
+        <units>enstain m-2 day-1</units>
+        <minmax>0 80</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+</all_wkvs>
