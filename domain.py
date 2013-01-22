@@ -768,7 +768,8 @@ class Domain():
         lonList, latList = self.get_border()
         polyCont = ','.join(str(lon) + ' ' + str(lat) for lon, lat
                             in zip(lonList, latList))
-        wktPolygon = 'PolygonFromText("POLYGON((%s))")' % polyCont
+        # outer quotes have to be double and inner - single!
+        wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
         return wktPolygon
 
     def get_corners(self):

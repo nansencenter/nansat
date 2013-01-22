@@ -25,8 +25,8 @@ class Mapper(VRT):
         print tarNames
         metaDict = []
         for tarName in tarNames:
-            if tarName[0] == 'L' and (tarName[-4:] == '.TIF' or
-                                      tarName[-4:] == '.tif'):
+            if ((tarName[0] == 'L' or tarName[0] == 'M') and
+               (tarName[-4:] == '.TIF' or tarName[-4:] == '.tif')):
                 print tarName
                 bandNo = tarName[-6:-4]
                 metaDict.append({
