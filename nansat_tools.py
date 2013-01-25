@@ -28,7 +28,7 @@ import os
 import logging
 
 ## used in domain
-from math import atan2, sin, cos, radians, degrees
+from math import atan2, sin, pi, cos, acos, radians, degrees, copysign
 import string
 from xml.etree.ElementTree import ElementTree
 

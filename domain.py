@@ -766,8 +766,13 @@ class Domain():
 
         '''
         lonList, latList = self.get_border()
-        polyCont = ','.join(str(lon) + ' ' + str(lat) for lon, lat
-                            in zip(lonList, latList))
+        
+        # apply > 180 deg correction to longitudes
+        for ilon, lon in enumerate(lonList):
+            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180, sin(lon * pi / 180.))
+            
+        polyCont = ','.join(str(lon) + ' ' + str(lat)
+                            for lon, lat in zip(lonList, latList))
         # outer quotes have to be double and inner - single!
         wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
         return wktPolygon
