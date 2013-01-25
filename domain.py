@@ -1053,3 +1053,41 @@ class Domain():
         plt.savefig(outputFileName, bbox_inches='tight',
                     dpi=dpi, pad_inches=padding)
         plt.close('all')
+
+
+    def reproject_GCPs(self, srsString):
+        '''Reproject all GCPs to a new spatial reference system
+        
+        Necessary before warping an image if the given GCPs
+        are in a coordinate system which has a singularity 
+        in (or near) the destination area (e.g. poles for lonlat GCPs)
+        
+        Parameters
+        ----------
+        srsString : string
+            SRS given as Proj4 string
+
+        Modifies
+        --------
+            Reprojects all GCPs to new SRS and updates GCPProjection
+        '''
+         
+        # Make tranformer from GCP SRS to destination SRS
+        dstSRS = osr.SpatialReference()
+        dstSRS.ImportFromProj4(srsString)
+        srcSRS = osr.SpatialReference()
+        srcGCPProjection = self.vrt.dataset.GetGCPProjection()
+        srcSRS.ImportFromWkt(srcGCPProjection)
+        transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
+
+        # Reproject all GCPs
+        srcGCPs = self.vrt.dataset.GetGCPs()
+        dstGCPs = []
+        for srcGCP in srcGCPs:
+            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX, srcGCP.GCPY, srcGCP.GCPZ)
+            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel, srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
+            dstGCPs.append(dstGCP)
+
+        # Update dataset
+        self.vrt.dataset.SetGCPs(dstGCPs, dstSRS.ExportToWkt())
+

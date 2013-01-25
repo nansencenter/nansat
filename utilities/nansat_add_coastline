@@ -25,7 +25,7 @@ except:
     Usage()
 
 # Currently only implemented for lonlat-projection (Plate Carree)
-if n.vrt.dataset.GetProjection()[0:5] != 'GEOGR':
+if n.vrt.dataset.GetProjection()[0:4] != 'GEOG':
     sys.exit('Utility currently only implemented for datasets with '\
            'geographical (lonlat / Plate Carree) coordiante systems')
 
