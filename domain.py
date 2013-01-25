@@ -1081,12 +1081,12 @@ class Domain():
         dstSRS = osr.SpatialReference()
         dstSRS.ImportFromProj4(srsString)
         srcSRS = osr.SpatialReference()
-        srcGCPProjection = self.vrt.dataset.GetGCPProjection()
+        srcGCPProjection = self.raw.dataset.GetGCPProjection()
         srcSRS.ImportFromWkt(srcGCPProjection)
         transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
 
         # Reproject all GCPs
-        srcGCPs = self.vrt.dataset.GetGCPs()
+        srcGCPs = self.raw.dataset.GetGCPs()
         dstGCPs = []
         for srcGCP in srcGCPs:
             (x, y, z) = transformer.TransformPoint(srcGCP.GCPX, srcGCP.GCPY, srcGCP.GCPZ)
@@ -1094,5 +1094,5 @@ class Domain():
             dstGCPs.append(dstGCP)
 
         # Update dataset
+        self.raw.dataset.SetGCPs(dstGCPs, dstSRS.ExportToWkt())
         self.vrt.dataset.SetGCPs(dstGCPs, dstSRS.ExportToWkt())
-
