@@ -19,7 +19,7 @@ dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
 dataSetQualityIndicatorOffset = 114
 recordLength = 22016
 headerLength = recordLength
-imageOffset = headerLength + 1262
+imageOffset = headerLength + 1264
 
 
 class Mapper(VRT):
@@ -48,6 +48,7 @@ class Mapper(VRT):
         if missingScanLines != 0:
             print('WARNING: Missing scanlines: ' + str(missingScanLines))
 
+
         ##################
         # Read time
         ##################
@@ -58,13 +59,92 @@ class Mapper(VRT):
         time = datetime.datetime(year,1,1) + datetime.timedelta(dayofyear-1, 
                         milliseconds=millisecondsOfDay)
 
+        ##################################
+        # Read calibration information
+        ##################################
+        #IRcalibration = {}
+        #fp.seek(202)
+        #avh_h_irttcoef=[]
+        #for i in range(24):
+        #    avh_h_irttcoef.append(int(struct.unpack('<H', fp.read(2))[0]))
+        ##print avh_h_irttcoef
+        #avh_h_albcnv=[]
+        #for i in range(6):
+        #    avh_h_albcnv.append(int(struct.unpack('<l', fp.read(4))[0]))
+        ##print avh_h_albcnv
+        #fp.seek(280)
+        #avh_h_radtempcnv = np.zeros((3,3))
+        #for IRchannelNo in range(3):
+        #    for coeffNo in range(3):
+        #        avh_h_radtempcnv[IRchannelNo, coeffNo] = \
+        #                int(struct.unpack('<l', fp.read(4))[0])
+        #print avh_h_radtempcnv
+        #IRcalibration['centralWavenumber'] = avh_h_radtempcnv[:,0] / [1E2, 1E3, 1E3]
+        #IRcalibration['c1'] = avh_h_radtempcnv[:,1] / 1E5
+        #IRcalibration['c2'] = avh_h_radtempcnv[:,2] / 1E6
+
+        ########################################################
+        # Read visible calibration coefficients per scanline
+        # - for channels 1, 2, 3A 
+        ########################################################
+        #for scanline in range(1):
+        #    avh_calvis=np.zeros((3,3,5))
+        #    fp.seek(headerLength + recordLength*scanline + 48)
+        #    for VISchannel in range(3):
+        #        for sets in range(3):
+        #            for coeff in range(5):
+        #                avh_calvis[sets, VISchannel, coeff] = \
+        #                    int(struct.unpack('<l', fp.read(4))[0])
+        #    print avh_calvis
+        #    print '----'
+
+        ########################################################
+        # Read IR calibration coefficients per scanline
+        # - for channels 3B, 4, 5 
+        ########################################################
+        #for scanline in range(1):
+        #    avh_calir=np.zeros((2,3,3))
+        #    fp.seek(headerLength + recordLength*scanline + 228)
+        #    for IRchannelNo in range(3):
+        #        for setNo in range(2):
+        #            for coeffNo in range(3):
+        #                avh_calir[setNo, IRchannelNo, coeffNo] = \
+        #                    int(struct.unpack('<l', fp.read(4))[0])
+
+        #avh_filler2 = np.zeros(3)
+        #for fillerNo in range(3):
+        #    avh_filler2[fillerNo] = int(struct.unpack('<l', fp.read(4))[0])
+
+        #setNo = 0 # Use operational set (the only available)
+        #a = np.zeros((3,3))
+        #for IRchannelNo in range(3):
+        #    for coeffNo in range(3):
+        #        # NB: apparently stored "backwards", therefore 2-coeffNo
+        #        a[IRchannelNo, 2-coeffNo] = avh_calir[setNo, IRchannelNo, coeffNo] \
+        #                                 / np.power(10, avh_filler2[coeffNo])
+        #
+        ###########################
+        # Apply calibration
+        ###########################
+        #C = 410
+        #for IRchannelNo in range(3):
+        #    Ne = a[IRchannelNo,0] + a[IRchannelNo,1]*C + a[IRchannelNo,2]*C*C
+        #    vC = IRcalibration['centralWavenumber'][IRchannelNo]
+        #    c1 = -IRcalibration['c1'][IRchannelNo] # Note minus
+        #    c2 = IRcalibration['c2'][IRchannelNo]
+            #print '-----'
+            #print a[IRchannelNo,:]
+            #print vC, c1, c2
+            #TeStar = c2*vC/np.log(1 + (c1*vC*vC*vC)/Ne)
+            #Te = c1 + c2*TeStar
+            #print Ne, TeStar, Te
+            #print '-----'
+        #sys.exit('stop')
+
         ###########################
         # Make Geolocation Arrays
         ###########################
-        factor = 1 # Now reduction is rather done when creating GCPs below
-
-        # Note that some lines at the end will be missing, could matter for small images!
-        srcRasterYSize = int(numCalibratedScanLines/factor)
+        srcRasterYSize = numCalibratedScanLines
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
         self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
@@ -77,7 +157,7 @@ class Mapper(VRT):
                         'DataType': gdal.GDT_Int32,
                         'ImageOffset' : headerLength + 640 + (lonlatNo-1)*4,
                         'PixelOffset' : 8,
-                        'LineOffset' : recordLength*factor,
+                        'LineOffset' : recordLength,
                         'ByteOrder' : 'LSB'},
                     'dst': {}})
 
@@ -99,7 +179,7 @@ class Mapper(VRT):
 
         GeolocObject = GeolocationArray(xVRT=self.GeolocVRT, yVRT=self.GeolocVRT,
                     xBand=2, yBand=1, # x = lon, y = lat
-                    lineOffset=0, pixelOffset=25, lineStep=factor, pixelStep=40)
+                    lineOffset=0, pixelOffset=25, lineStep=1, pixelStep=40)
 
         #######################
         # Initialize dataset
@@ -127,11 +207,11 @@ class Mapper(VRT):
         ch[4]['wavelength'] = 10.8
         ch[5]['wavelength'] = 12.0
 
-        ch[1]['minmax'] = '500 900'
-        ch[2]['minmax'] = '0 800'
+        ch[1]['minmax'] = '0 700'
+        ch[2]['minmax'] = '0 700'
         ch[3]['minmax'] = '0 800'
-        ch[4]['minmax'] = '750 1050'
-        ch[5]['minmax'] = '500 900'
+        ch[4]['minmax'] = '400 1000'
+        ch[5]['minmax'] = '400 1000'
 
 
         for bandNo in range(1,6):
