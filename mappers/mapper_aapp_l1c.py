@@ -160,10 +160,10 @@ class Mapper(VRT):
 
             if bandNo < firstIRband:
                 wkv = 'albedo'
-                minmax = '0 65'
+                minmax = '0 60'
             else:
                 wkv = 'brightness_temperature'
-                minmax = '310 210'
+                minmax = '290 210'
 
             metaDict.append({'src': {
                                 'SourceFilename': self.RawBandsVRT.fileName,
