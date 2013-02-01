@@ -193,7 +193,8 @@ class Mapper(VRT):
         # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
         # are here converted to GCPs. Only a subset of GCPs is added, 
         # significantly increasing speed when using -tps warping
-        self.convert_GeolocationArray2GPCs(4, 40)
+        reductionFactor = 2
+        self.convert_GeolocationArray2GPCs(1*reductionFactor, 40*reductionFactor)
 
         ##################
         # Create bands
