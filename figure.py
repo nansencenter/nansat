@@ -17,6 +17,7 @@
 
 from nansat_tools import *
 
+import pdb
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
@@ -27,7 +28,7 @@ class Figure():
     convert to uint8, append legend, save to a file
     '''
 
-    def __init__(self, array, **kwargs):
+    def __init__(self, nparray, **kwargs):
         ''' Set attributes
 
         Parameters
@@ -54,6 +55,10 @@ class Figure():
 
         '''
         from nansat_tools import add_logger
+
+        # make a copy of nparray (otherwise a new reference to the same data is
+        # created and the original input data is destroyed at process())
+        array = np.array(nparray)
 
         self.logger = add_logger('Nansat')
 
@@ -91,7 +96,7 @@ class Figure():
 
         self.d['latGrid'] = None
         self.d['lonGrid'] = None
-        self.d['latlonGridSpacing'] = 10
+        self.d['nGridLines'] = 10
         self.d['latlonLabels'] = 0
 
         self.d['transparency'] = None
@@ -270,7 +275,7 @@ class Figure():
             array with values of latitudes
         lonGrid : numpy array
             array with values of longitudes
-        latlonGridSpacing : int
+        nGridLines : int
             number of lines to draw
 
         Modifies
@@ -283,11 +288,11 @@ class Figure():
         # test availability of grids
         if (self.d['latGrid'] is None or
             self.d['lonGrid'] is None or
-            self.d['latlonGridSpacing'] is None or
-            self.d['latlonGridSpacing'] == 0):
+            self.d['nGridLines'] is None or
+            self.d['nGridLines'] == 0):
             return
         # get number of grid lines
-        llSpacing = self.d['latlonGridSpacing']
+        llSpacing = self.d['nGridLines']
         # get vectors for grid lines
         latVec = np.linspace(self.d['latGrid'].min(),
                              self.d['latGrid'].max(), llSpacing)
@@ -307,6 +312,28 @@ class Figure():
         latI[latI != 0] = 1
         # add mask to the image
         self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
+
+    def quiver(self, lenX, lenY, **kwargs):
+        '''Add arrows to the image
+        
+        Parameters:
+        -----------
+        lenX: relative length along x-axis (0<=lenX<=1)
+        lenY: relative length along y-axis (0<=lenY<=1)
+        lenMax: maximum length in number of pixels of the arrows
+
+        The arrows are scaled relative to lenMax as lenX*lenMax
+
+        '''
+        if kwargs.has_key('lenMax'):
+            lenMax = kwargs['lenMax']
+        else:
+            lenMax = np.shape(self.array)[2]/35
+
+        #ax.quiver(X[::dd,::dd],Y[::dd,::dd],dirRange[::dd,::dd],dirAzim[::dd,::dd],scale=50,color='w')
+        arrows = np.zeros(self.array.shape(), 'int8')
+
+        self.apply_mask(mask_array=arrows, mask_lut={1: [255, 255, 255]})
 
     def add_latlon_labels(self, **kwargs):
         '''Add lat/lon labels along upper and left side
@@ -462,7 +489,7 @@ class Figure():
     def create_legend(self, **kwargs):
         ''' self.legend is replaced from None to PIL image
 
-        PIL image includes colorbar, caption, and titelString.
+        PIL image includes colorbar, caption, and titleString.
 
         Parameters
         -----------
@@ -660,7 +687,7 @@ class Figure():
             self.create_legend()
 
         # create PIL image ready for saving
-        self.create_pilImage()
+        self.create_pilImage(**kwargs)
 
         # add labels with lats/lons
         if (self.d['latGrid'] is not None and
@@ -832,15 +859,15 @@ class Figure():
 
         return str(frmt % val)
 
-    def _set_defaults(self, kwargs):
+    def _set_defaults(self, dict):
         '''Check input params and set defaut values
 
-        Look throught default parameters (self.d) and given parameters (kwargs)
+        Look throught default parameters (self.d) and given parameters (dict)
         and paste value from input if the key matches
 
         Parameters
         ----------
-        kwargs : dictionary
+        dict : dictionary
             parameter names and values
 
         Modifies
@@ -848,6 +875,6 @@ class Figure():
         self.d
 
         '''
-        for key in kwargs:
+        for key in dict:
             if key in self.d:
-                self.d[key] = kwargs[key]
+                self.d[key] = dict[key]
