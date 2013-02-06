@@ -94,7 +94,7 @@ class GeolocationArray():
 
 
 class VRT():
-    '''Wraper around GDAL VRT-file
+    '''Wrapper around GDAL VRT-file
 
     The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
     information and information ABOUT each band including band metadata,
@@ -243,7 +243,8 @@ class VRT():
                 srcRasterXSize = gdalDataset.RasterXSize
                 srcRasterYSize = gdalDataset.RasterYSize
 
-                srcMetadata = gdalDataset.GetMetadata()
+                if not srcMetadata:
+                    srcMetadata = gdalDataset.GetMetadata()
                 # get source geolocation array
                 srcGeolocationArray = GeolocationArray(dataset=gdalDataset)
             elif lat is not None and lon is not None:
