@@ -1,6 +1,6 @@
 # Name:         mapper_generic.py
 # Purpose:      Generic Mapper for L3/L4 satellite or modeling data
-# Authors:      Asuka Yamakava, Anton Korosov
+# Authors:      Asuka Yamakava, Anton Korosov, Morten Wergeland Hansen
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
@@ -12,6 +12,20 @@ import numpy as np
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
 
+        # Remove 'NC_GLOBAL#GDAL_' from keys in gdalDataset
+        tmp = {}
+        geoMetadata = {}
+        for key in gdalMetadata.keys():
+            try:
+                tmp[key.split('NC_GLOBAL#GDAL_')[1]] = gdalMetadata[key]
+                if 'NANSAT' in key:
+                    geoMetadata[key.split('NC_GLOBAL#GDAL_NANSAT_')[1]] = gdalMetadata[key]
+                    val = tmp.pop(key.split('NC_GLOBAL#GDAL_')[1])
+            except:
+                continue
+
+        gdalMetadata = tmp
+        
         rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
 
         # Get file names from dataset or subdataset
@@ -51,6 +65,7 @@ class Mapper(VRT):
                         subBand = subDataset.GetRasterBand(iBand+1)
                         bandMetadata = subBand.GetMetadata_Dict()
                         sourceBands = iBand + 1
+                        #sourceBands = i*subDataset.RasterCount + iBand + 1
 
                         # generate src metadata
                         src = {'SourceFilename': fileName, 'SourceBand': sourceBands}
@@ -73,7 +88,7 @@ class Mapper(VRT):
                         dst = bandMetadata
                         # set wkv and bandname
                         dst['wkv'] = bandMetadata.get('standard_name', '')
-                        bandName = bandMetadata.get('NETCDF_VARNAME', '')
+                        bandName = bandMetadata.get('NETCDF_VARNAME', '') # could we also use bandMetadata.get('name')?
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('dods_variable', '')
                         if len(bandName) > 0:
@@ -88,18 +103,18 @@ class Mapper(VRT):
                         metaDict.append({'src': src, 'dst': dst})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, firstSubDataset)
+        VRT.__init__(self, firstSubDataset, srcMetadata=gdalMetadata)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # if projetcion was not set automatically:
-        #       get projection from GDAL_NANSAT_Projection
         if len(projection) == 0:
-            projection = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_Projection', '')
-        # if no projection was found in dataset or metadata:
-        #       generate WGS84 by default
+            # projection was not set automatically
+            # get projection from GCPProjection
+            projection = geoMetadata.get('GCPProjection', '')
         if len(projection) == 0:
+            # no projection was found in dataset or metadata:
+            # generate WGS84 by default
             projection = latlongSRS.ExportToWkt()
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
@@ -108,7 +123,7 @@ class Mapper(VRT):
         gcpCount = firstSubDataset.GetGCPCount()
         if gcpCount == 0:
             # if no GCPs in input dataset: try to add GCPs from metadata
-            gcpCount = self.add_gcps_from_metadata(gdalMetadata)
+            gcpCount = self.add_gcps_from_metadata(geoMetadata)
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
@@ -118,7 +133,7 @@ class Mapper(VRT):
             #   Set Nansat Geotransform if it is not set automatically
             geoTransform = self.dataset.GetGeoTransform()
             if len(geoTransform) == 0:
-                geoTransformStr = gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_GeoTransform', '(0|1|0|0|0|0|1)')
+                geoTransformStr = geoMetadata.get('GeoTransform', '(0|1|0|0|0|0|1)')
                 geoTransform = eval(geoTransformStr.replace('|', ','))
                 self.dataset.SetGeoTransform(geoTransform)
 
@@ -126,7 +141,7 @@ class Mapper(VRT):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
         return projection.replace("|",",").replace("&",'"')
 
-    def add_gcps_from_metadata(self, gdalMetadata):
+    def add_gcps_from_metadata(self, geoMetadata):
         '''Get GCPs from strings in metadata and insert in dataset'''
         gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
         gcpAllValues = []
@@ -134,14 +149,14 @@ class Mapper(VRT):
         for i, gcpName in enumerate(gcpNames):
             # scan throught metadata and find how many lines with each GCP
             gcpLineCount = 0
-            for metaDataItem in gdalMetadata:
+            for metaDataItem in geoMetadata:
                 if gcpName in metaDataItem:
                     gcpLineCount += 1
             # concat all lines
             gcpString = ''
             for n in range(0, gcpLineCount):
-                gcpLineName = 'NC_GLOBAL#GDAL_NANSAT_%s_%03d' % (gcpName, n)
-                gcpString += gdalMetadata[gcpLineName]
+                gcpLineName = '%s_%03d' % (gcpName, n)
+                gcpString += geoMetadata[gcpLineName]
             # convert strings to floats
             gcpString = gcpString.strip().replace(' ','')
             gcpValues = []
@@ -160,7 +175,7 @@ class Mapper(VRT):
 
         if len(gcps) > 0:
             # get GCP projection and repare
-            projection = self.repare_projection(gdalMetadata.get('NC_GLOBAL#GDAL_NANSAT_GCPProjection', ''))
+            projection = self.repare_projection(geoMetadata.get('GCPProjection', ''))
             # add GCPs to dataset
             self.dataset.SetGCPs(gcps, projection)
             self._remove_geotransform()
