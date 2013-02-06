@@ -346,6 +346,9 @@ class Nansat(Domain):
         'if( nBands > 1 ) sprintf(szBandName,"%s%d",tmpMetadata,iBand);'
         --> 'if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);'
 
+        CreateCopy fails in case the band name has special characters,
+        e.g. the slash in 'HH/VV'. 
+
         '''
         # temporary VRT for exporting
         exportVRT = self.vrt.copy()
