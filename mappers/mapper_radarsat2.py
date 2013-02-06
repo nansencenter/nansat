@@ -6,10 +6,13 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from numpy import mod
+from xml.dom import minidom
+from math import asin
 
 from vrt import *
 from domain import Domain
 import tarfile
+import zipfile
 
 try:
     from osgeo import gdal
@@ -52,13 +55,8 @@ class Mapper(VRT):
                 s0datasetPol = s0dataset.GetRasterBand(1).GetMetadata()['POLARIMETRIC_INTERP']
                 for i in range(1, s0dataset.RasterCount+1):
                     polString = s0dataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP']
-                    ''' 
-                    Make complex bands if the SAR data is of type 10, and 
-                    adjust methods to also work for complex numbers... 
-                    '''
-                    #if s0dataset.GetRasterBand(i).DataType==10:
-                    #    suffix = polString+'_complex'
-                    #else:
+                    # The nansat data will be complex if the SAR data is of type 10
+                    dtype = s0dataset.GetRasterBand(i).DataType
                     suffix = polString
                     pol.append(polString)
                     metaDict.append(
@@ -77,58 +75,26 @@ class Mapper(VRT):
                     if polString==s0datasetPol:
                         b0datasetBand = j
         
-        # add Sigma0 and Beta0 bands with metadata
-        # and corresponding values to the empty VRT
+        # Add Sigma0 bands with metadata
         self._create_bands(metaDict)
 
-        #This doesn't work - the resulting array is still complex, but with
-        #real part equal to its absolute value and the imaginary part equal to
-        #zero....
-        ##use ModulePixelFunc to calculate absolute sigma0 if data is complex!
-        #metaDict = []
-        #if s0dataset.GetRasterBand(1).DataType==10:
-        #    # make new bands
-        #    for i in range(1, s0dataset.RasterCount+1):
-        #        polString = s0dataset.GetRasterBand(i).GetMetadata()['POLARIMETRIC_INTERP']
-        #        suffix = polString
-        #        metaDict.append(
-        #                {'src': {'SourceFilename': self.fileName,
-        #                    'SourceBand': i,
-        #                    'DataType': s0dataset.GetRasterBand(i).DataType},
-        #                'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 
-        #                    'suffix': suffix,
-        #                    'PixelFunctionType': 'ModulePixelFunc',
-        #                    #'dataType': 6, # src and dst datatypes must be the same and complex
-        #                    'polarization': polString}})
-
-        #self._create_bands(metaDict)
-
-
-        ##############################################################
-        # Adding derived band (incidence angle) calculated
-        # using pixel function "BetaSigmaToIncidence":
-        #      incidence = arcsin(sigma0/beta0)*180/pi
-        ##############################################################
-
-        # bruk enten sigma0 fra pixelfunksjon eller en omregning (ny
-        # pikselfunksjon) med komplekse tall fra originalfil  - isafall blir
-        # inci og kompleks, men det trenger ikke bety noe sa lenge de andre
-        # bandene ogsa er komplekse...
-
+        # Add derived band (incidence angle) calculated using pixel function
+        # "BetaSigmaToIncidence" (note that the result will be complex if dtype
+        # is 10):
         src = [{'SourceFilename': b0datasetName,
-                'SourceBand':  b0datasetBand,
-                'DataType': 6},
-                {'SourceFilename': s0datasetName,
-                'SourceBand': 1, 
-                'DataType': 1}]
+                    'SourceBand':  b0datasetBand,
+                    'DataType': dtype},
+                    {'SourceFilename': s0datasetName,
+                    'SourceBand': 1, 
+                    'DataType': dtype}]
         dst = {'wkv': 'angle_of_incidence',
-                    'PixelFunctionType': 'BetaSigmaToIncidence',
-                    'dataType': 6,
-                    'name': 'incidence_angle'}
+                        'PixelFunctionType': 'BetaSigmaToIncidence',
+                        'dataType': dtype,
+                        'name': 'incidence_angle'}
             
         self._create_band(src,dst)
         self.dataset.FlushCache()
-
+            
         ###################################################################
         # Add sigma0_VV - pixel function of sigma0_HH and beta0_HH
         # incidence angle is calculated within pixel function

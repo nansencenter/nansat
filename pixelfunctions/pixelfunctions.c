@@ -776,9 +776,45 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 	if (nSources != 2) return CE_Failure;
 	#define PI 3.14159265;
 
-	/* ---- Set pixels ---- */
-	for( iLine = 0; iLine < nYSize; iLine++ )
-	{
+        printf("%d",eSrcType);
+
+        if (GDALDataTypeIsComplex( eSrcType ))
+        {
+            double b0Real, b0Imag;
+            double s0Real, s0Imag;
+            void *b0pReal = papoSources[0];
+            void *s0pReal = papoSources[1];
+            void *b0pImag = ((GByte *)papoSources[0])
+                        + GDALGetDataTypeSize( eSrcType ) / 8 / 2;
+            void *s0pImag = ((GByte *)papoSources[1])
+                        + GDALGetDataTypeSize( eSrcType ) / 8 / 2;
+
+            /* ---- Set pixels ---- */
+            for( iLine = 0, ii = 0; iLine < nYSize; ++iLine ) {
+                for( iCol = 0; iCol < nXSize; ++iCol, ++ii ) {
+
+                    /* Source raster pixels may be obtained with SRCVAL macro */
+                    b0Real = SRCVAL(b0pReal, eSrcType, ii);
+                    b0Imag = SRCVAL(b0pImag, eSrcType, ii);
+                    s0Real = SRCVAL(s0pReal, eSrcType, ii);
+                    s0Imag = SRCVAL(s0pImag, eSrcType, ii);
+
+                    beta0 = b0Real*b0Real + b0Imag*b0Imag;
+                    sigma0 = s0Real*s0Real + s0Imag*s0Imag;
+
+		    if (beta0 != 0) incidence = asin(sigma0/beta0)*180/PI
+		    else incidence = 0;
+
+		    GDALCopyWords(&incidence, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+                }
+            }
+        } else {
+
+	    /* ---- Set pixels ---- */
+	    for( iLine = 0; iLine < nYSize; iLine++ )
+	    {
 		for( iCol = 0; iCol < nXSize; iCol++ )
 		{
 			ii = iLine * nXSize + iCol;
@@ -789,14 +825,17 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 			if (beta0 != 0) incidence = asin(sigma0/beta0)*180/PI
 			else incidence = 0;
 
+                        //printf("%.2f\t", incidence);
+
 			GDALCopyWords(&incidence, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
-	}
+	    }
+        }
 
 	/* ---- Return success ---- */
-return CE_None;
+        return CE_None;
 }
 
 
@@ -919,7 +958,7 @@ CPLErr Sigma0HHBetaToSigma0VV(void **papoSources, int nSources, void *pData,
 
 	/* ---- Init ---- */
 	if (nSources != 2) return CE_Failure;
-    /*fprintf("nSources: %d\n", nSources);*/
+        /*fprintf("nSources: %d\n", nSources);*/
 
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
@@ -931,25 +970,25 @@ CPLErr Sigma0HHBetaToSigma0VV(void **papoSources, int nSources, void *pData,
 			sigma0HH = SRCVAL(papoSources[0], eSrcType, ii);
 			beta0 = SRCVAL(papoSources[1], eSrcType, ii);
             
-            /* get incidence angle first */
-			if (beta0 != 0){
-                incidence = asin(sigma0HH/beta0);
-            } else {
-                incidence = 0;
-            }
-            
-			/* Polarisation ratio from Thompson et al. with alpha=1 */
-			factor = pow( (1 + 2 * pow(tan(incidence), 2)) / (1 + 1 * pow(tan(incidence), 2)), 2);
-			sigma0VV = sigma0HH * factor;
+                        /* get incidence angle first */
+	                if (beta0 != 0){
+                            incidence = asin(sigma0HH/beta0);
+                        } else {
+                            incidence = 0;
+                        }
+                        
+	                /* Polarisation ratio from Thompson et al. with alpha=1 */
+	                factor = pow( (1 + 2 * pow(tan(incidence), 2)) / (1 + 1 * pow(tan(incidence), 2)), 2);
+	                sigma0VV = sigma0HH * factor;
 
-			GDALCopyWords(&sigma0VV, GDT_Float64, 0,
-			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
-			              eBufType, nPixelSpace, 1);
+	                GDALCopyWords(&sigma0VV, GDT_Float64, 0,
+	            	            ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+	            		    eBufType, nPixelSpace, 1);
 		}
 	}
 
 	/* ---- Return success ---- */
-return CE_None;
+        return CE_None;
 }
 
 
