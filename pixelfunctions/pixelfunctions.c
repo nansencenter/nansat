@@ -776,7 +776,7 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 	if (nSources != 2) return CE_Failure;
 	#define PI 3.14159265;
 
-        printf("%d",eSrcType);
+        //printf("%d",eSrcType);
 
         if (GDALDataTypeIsComplex( eSrcType ))
         {
