@@ -64,6 +64,8 @@ class Mapper(VRT):
                     for iBand in range(subDataset.RasterCount):
                         subBand = subDataset.GetRasterBand(iBand+1)
                         bandMetadata = subBand.GetMetadata_Dict()
+                        if 'PixelFunctionType' in bandMetadata:
+                            bandMetadata.pop('PixelFunctionType')
                         sourceBands = iBand + 1
                         #sourceBands = i*subDataset.RasterCount + iBand + 1
 
