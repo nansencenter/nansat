@@ -163,6 +163,9 @@ class Mapper(VRT):
                         setAttribute("ySize", newSrcYSize)
             self.write_xml(str(node0.rawxml()))
 
+        # Set global metadata
+        self.dataset.SetMetadata({'satID': satellite})
+
         # Set time
         self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
         

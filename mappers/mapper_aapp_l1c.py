@@ -201,6 +201,8 @@ class Mapper(VRT):
         self.RawBandsVRT._create_bands(RawMetaDict)
         self._create_bands(metaDict)
         
+        self.dataset.SetMetadata({'satID': str(satID)})
+
         # Adding valid time to dataset
         self._set_time(time)
 
