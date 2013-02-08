@@ -12,7 +12,7 @@ import numpy as np
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
 
-        # Remove 'NC_GLOBAL#' and 'NC_GLOBAL#GDAL_' and 'NANSAT_' from keys in gdalDataset
+        # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}
         for key in gdalMetadata.keys():

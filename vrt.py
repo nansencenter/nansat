@@ -773,6 +773,20 @@ class VRT():
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata(geolocationArray.d, 'GEOLOCATION')
 
+    def remove_geolocationArray(self):
+        ''' Remove GEOLOCATION ARRAY from the VRT
+
+        Modifes
+        --------
+        Set self.geolocationArray to None
+        Sets GEOLOCATION ARRAY metadata to ''
+
+        '''
+        self.geolocationArray.d = {}
+
+        # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
+        self.dataset.SetMetadata('', 'GEOLOCATION')
+        
     def resized(self, xSize, ySize, eResampleAlg=1):
         '''Resize VRT
 

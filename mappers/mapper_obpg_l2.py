@@ -145,13 +145,17 @@ class Mapper(VRT):
         lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
         
-        # add geolocation array
-        self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
-
         # ==== ADD GCPs and Pojection ====        
         # get lat/lon matrices
         longitude = xVRT.dataset.GetRasterBand(1).ReadAsArray()
         latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
+
+        # add geolocation array
+        if (    longitude.min() >= -180 and longitude.max() <= 180 and
+                latitude.min() >= -90 and latitude.max() <= 90):
+            self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
+        else:
+            self.remove_geolocationArray()
 
         # estimate step of GCPs
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
@@ -164,12 +168,13 @@ class Mapper(VRT):
         for i0 in range(0, latitude.shape[0], step0):
             for i1 in range(0, latitude.shape[1], step1):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
-                gcp = gdal.GCP(float(longitude[i0, i1]),
-                               float(latitude[i0, i1]),
-                               0, i1 * pixelStep, i0 * lineStep)
-                self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-                gcps.append(gcp)
-                k += 1
+                lon = float(longitude[i0, i1])
+                lat = float(latitude[i0, i1])
+                if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
+                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep, i0 * lineStep)
+                    self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+                    gcps.append(gcp)
+                    k += 1
         
         # append GCPs and lat/lon projection to the vsiDataset
         latlongSRS = osr.SpatialReference()

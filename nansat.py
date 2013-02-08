@@ -1263,7 +1263,7 @@ class Nansat(Domain):
 
         return bandNumber
 
-    def mosaic(self, files=[], bands=[], reproject=True, maskName='mask',
+    def mosaic(self, files=[], bands=[], doReproject=True, maskName='mask',
                **kwargs):
         '''Mosaic input files. If images overlap, calculate average
 
@@ -1293,7 +1293,7 @@ class Nansat(Domain):
             list of input files
         bands : list
             list of names/band_numbers to be processed
-        reproject : boolean, [True]
+        doReproject : boolean, [True]
             reproject input files?
         maskName : str, ['mask']
             name of the mask in input files
@@ -1347,11 +1347,12 @@ class Nansat(Domain):
             try:
                 mask = n[maskName]
             except:
-                self.logger.error('Cannot get mask')
+                self.logger.error('Cannot get mask from %s' % f)
                 mask = 64 * np.ones(n.shape()).astype('int8')
                 n.add_band(array=mask, parameters={'name': maskName})
+                raise
 
-            if reproject:
+            if doReproject:
                 # reproject image and get reprojected mask
                 try:
                     n.reproject(self, eResampleAlg=eResampleAlg)
@@ -1366,7 +1367,6 @@ class Nansat(Domain):
                 self.logger.error('No mask in reprojected file %s!' % f)
                 mask = np.zeros(n.shape()).astype('int8')
                 
-
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
             cntMatTmp[mask > 2] = 1
@@ -1379,7 +1379,11 @@ class Nansat(Domain):
             for b in bands:
                 self.logger.debug('    Adding %s to sum' % b)
                 # get projected data from Nansat object
-                a = n[b]
+                a = None
+                try:
+                    a = n[b]
+                except:
+                    self.logger.error('%s is not in %s' % (b, n.fileName))
                 if a is not None:
                     # mask invalid data
                     a[mask <= 2] = 0
