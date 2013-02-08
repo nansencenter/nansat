@@ -12,19 +12,17 @@ import numpy as np
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
 
-        # Remove 'NC_GLOBAL#GDAL_' from keys in gdalDataset
-        tmp = {}
+        # Remove 'NC_GLOBAL#' and 'NC_GLOBAL#GDAL_' and 'NANSAT_' from keys in gdalDataset
+        tmpGdalMetadata = {}
         geoMetadata = {}
         for key in gdalMetadata.keys():
-            try:
-                tmp[key.split('NC_GLOBAL#GDAL_')[1]] = gdalMetadata[key]
-                if 'NANSAT' in key:
-                    geoMetadata[key.split('NC_GLOBAL#GDAL_NANSAT_')[1]] = gdalMetadata[key]
-                    val = tmp.pop(key.split('NC_GLOBAL#GDAL_')[1])
-            except:
-                continue
+            newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
+            if 'NANSAT_' in newKey:
+                geoMetadata[newKey.replace('NANSAT_', '')] = gdalMetadata[key]
+            else:
+                tmpGdalMetadata[newKey] = gdalMetadata[key]
 
-        gdalMetadata = tmp
+        gdalMetadata = tmpGdalMetadata
         
         rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
 
