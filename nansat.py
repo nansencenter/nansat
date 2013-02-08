@@ -1390,6 +1390,8 @@ class Nansat(Domain):
                     # sum of valid values and squares
                     avgMat[b] += a
                     stdMat[b] += np.square(a)
+            # destroy
+            n = None
 
         # average products
         cntMat[cntMat == 0] = 1
