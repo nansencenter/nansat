@@ -1350,7 +1350,6 @@ class Nansat(Domain):
                 self.logger.error('Cannot get mask from %s' % f)
                 mask = 64 * np.ones(n.shape()).astype('int8')
                 n.add_band(array=mask, parameters={'name': maskName})
-                raise
 
             if doReproject:
                 # reproject image and get reprojected mask
