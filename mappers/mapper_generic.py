@@ -24,7 +24,7 @@ class Mapper(VRT):
 
         gdalMetadata = tmpGdalMetadata
         
-        rmMetadatas = ['NETCDF_VARNAME', '_FillValue', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
+        rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
 
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
