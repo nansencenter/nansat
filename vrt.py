@@ -565,7 +565,7 @@ class VRT():
         '''
         # Make sure time is a list with one datetime element per band
         numBands = self.dataset.RasterCount
-        if isinstance(time, datetime.datetime):
+        if isinstance(time, datetime.datetime) or isinstance(time, datetime.date):
             time = [time]
         if len(time) == 1:
             time = time * numBands
@@ -577,7 +577,7 @@ class VRT():
         # Store time as metadata key 'time' in each band
         for i in range(numBands):
             self.dataset.GetRasterBand(i + 1).SetMetadataItem('time',
-                                       str(time[i].isoformat(' ')))
+                                       str(time[i].isoformat()))
 
         return
 

@@ -712,7 +712,8 @@ class Nansat(Domain):
 
         return watermask
 
-    def write_figure(self, fileName=None, bands=1, clim=None, **kwargs):
+    def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
+                    **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -743,10 +744,13 @@ class Nansat(Domain):
             Then the first element is Red, the second is Green,
             and the third is Blue.
         clim : list with two elements or 'hist' to specify range of colormap
-        None (default) : min/max values are fetched from WKV, fallback-'hist'
-        [min, max] : min and max are numbers, or
+            None (default) : min/max values are fetched from WKV,fallback-'hist'
+            [min, max] : min and max are numbers, or
             [[min, min, min], [max, max, max]]: three bands used
-        'hist' : a histogram is used to calculate min and max values
+            'hist' : a histogram is used to calculate min and max values
+        addDate : boolean
+            False (default) : no date will be aded to the caption
+            True : the first time of the object will be added to the caption
         **kwargs : parameters for Figure(). See below:
         ---------- Figure.__init__() parameters: -----------
             cmin : number (int ot float) or [number, number, number]
@@ -945,6 +949,11 @@ class Nansat(Domain):
 
             # make caption from longname, units
             caption = longName + ' [' + units + ']'
+        
+        # add DATE to caption
+        if addDate:
+            caption += self.get_time()[0].strftime(' %Y-%m-%d')
+        
         self.logger.info('caption: %s ' % caption)
 
         # == PROCESS figure ==
