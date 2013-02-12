@@ -1,19 +1,32 @@
-#-------------------------------------------------------------------------------
-# Name:        nansatmap
-# Purpose:
-#
-# Author:      asumak
-#
-# Created:     06.02.2013
-# Copyright:   (c) asumak 2013
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# Name:    nansat_map.py
+# Purpose: Container of NansatMap class
+# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
+#               Morten W. Hansen, Alexander Myasoyedov,
+#               Dmitry Petrenko, Evgeny Morozov
+# Created:      29.06.2011
+# Copyright:    (c) NERSC 2011 - 2013
+# Licence:
+# This file is part of NANSAT.
+# NANSAT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+# http://www.gnu.org/licenses/gpl-3.0.html
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 from nansat_tools import *
-import time
 
-class NansatMap():
+class NansatMap(Basemap):
+    '''Perform opeartions with graphical files: create,
+    add legend and geolocation_grids, save.
 
+    NansatMap instance is created in the Nansat.write_map method.
+    The methods below are applied consequently in order to get projection,
+    generate a basemap from array(s), add legend and geolocation grids,
+    save to a file.
+
+    '''
     def __init__(self, domain, **kwargs):
         ''' Set attributes
         Get proj4 from the given domain and convert the proj4 projection to
@@ -29,7 +42,6 @@ class NansatMap():
         ---------
         self.lon, self.lat : numpy arrays
             lat and lon of the domain in degrees
-        self.map : basemap object
         self.x, self.y :numpy arrays
             map projection coordinates
         self.fig : figure
@@ -37,7 +49,14 @@ class NansatMap():
         self.colorbar : boolean
             if colorbar is True, it is possible to put colorbar.
             e.g. contour_plots(contour_style='fill'), put_color()
-        self.mpl : matplotlib
+        self.mpl : list
+            elements are matplotlib.contour.QuadContourSet instance,
+                         matplotlib.quiver.Quiver instance or
+                         matplotlib.collections.QuadMesh object
+
+        See also
+        ----------
+        http://matplotlib.org/basemap/api/basemap_api.html
 
         '''
         # get proj4
@@ -45,7 +64,6 @@ class NansatMap():
         projection = domain._get_projection(domain.vrt.dataset)
         spatialRef.ImportFromWkt(projection)
         proj4 = spatialRef.ExportToProj4()
-        print proj4
 
         # convert proj4 to basemap projection
         projStr = proj4.split(' ')[0][6:]
@@ -88,57 +106,18 @@ class NansatMap():
         self.d['llcrnrlat'] = None
         self.d['urcrnrlon'] = None
         self.d['urcrnrlat'] = None
-        self.d['llcrnrx'] = None
-        self.d['llcrnry'] = None
-        self.d['urcrnrx'] = None
-        self.d['urcrnry'] = None
-        self.d['width'] = None
-        self.d['height'] = None
         self.d['projection'] = projection
-        self.d['resolution'] = 'c'
-        self.d['area_thresh'] = None
-        self.d['rsphere'] = 6370997.0
-        self.d['lat_ts'] = None
-        self.d['lat_0'] = None
-        self.d['lat_1'] = None
-        self.d['lat_2'] = None
-        self.d['lon_0'] = None
-        self.d['lon_1'] = None
-        self.d['lon_2'] = None
-        self.d['k_0'] = None
-        self.d['no_rot'] = None
-        self.d['suppress_ticks'] = True
-        self.d['satellite_height'] = 35786000
-        self.d['boundinglat'] = None
-        self.d['fix_aspect'] = True
-        self.d['anchor'] = 'C'
-        self.d['celestial'] = False
-        self.d['round'] = False
-        self.d['ax'] = None
+        # fillcontinents
         self.d['continentColor'] = '#999999'
         self.d['lakeColor'] = '#99ffff'
-        self.d['continentStyle'] = None
+        self.d['continent'] = True
         # figure
         self.d['fignum'] = 1
-        self.d['figsize'] = None
-        self.d['dpi'] = None
-        self.d['facecolor'] = None
-        self.d['edgecolor'] = None
-        self.d['linewidth'] = 0.0
-        self.d['frameon'] = True
-        self.d['subplotpars'] = None
         # pcolormesh
         self.d['color_data'] = None
-        self.d['cmap'] = plt.cm.jet
-        self.d['norm'] = None
-        self.d['vmin'] = None
-        self.d['vmax'] = None
-        self.d['shading'] = 'flat'
-        self.d['edgecolors'] = None
-        self.d['alpha'] = None
         # contour_plots
         self.d['contour_data'] = None
-        self.d['contour_style'] = 'line'
+        self.d['contour_style'] = 'line' # 'fill' or 'line'
         self.d['contour_smoothing'] = False
         self.d['contour_mode'] = 'gaussian'
         self.d['contour_alpha'] = None
@@ -186,7 +165,7 @@ class NansatMap():
         self.d['gaussian_mode'] = 'reflect'
         self.d['gaussian_cval'] = 0.0
         # quiver_plots
-        self.d['quiver_data'] = [None, None]
+        self.d['quiver_data'] = None
         self.d['quivectors'] = 30
         # legend (title)
         self.d['title'] = ''
@@ -206,10 +185,7 @@ class NansatMap():
         self.d['lon_labels'] = [False, False, True, False]
 
         # set lon and lat attributes from nansat
-        print "getting geolocation grids..."
-        start_time = time.time()
         self.lon, self.lat = domain.get_geolocation_grids()
-        print "Completed get_geolocation_grids", time.time() - start_time
 
         # set llcrnrlat and urcrnrlat and
         # if required, modify them from -90. to 90.
@@ -222,60 +198,24 @@ class NansatMap():
         # modify the default values using input values
         self._set_defaults(kwargs)
 
-        print "creating basemap..."
-        start_time = time.time()
-        # create basemap object
-        self.map = Basemap(llcrnrlon=self.d['llcrnrlon'],
-                           llcrnrlat=self.d['llcrnrlat'],
-                           urcrnrlon=self.d['urcrnrlon'],
-                           urcrnrlat=self.d['urcrnrlat'],
-                           llcrnrx=self.d['llcrnrx'],
-                           llcrnry=self.d['llcrnry'],
-                           urcrnrx=self.d['urcrnrx'],
-                           urcrnry=self.d['urcrnry'],
-                           width=self.d['width'],
-                           height=self.d['height'],
-                           projection=self.d['projection'],
-                           resolution=self.d['resolution'],
-                           area_thresh=self.d['area_thresh'],
-                           rsphere=self.d['rsphere'],
-                           lat_ts=self.d['lat_ts'],
-                           lat_0=self.d['lat_0'],
-                           lat_1=self.d['lat_1'],
-                           lat_2=self.d['lat_2'],
-                           lon_0=self.d['lon_0'],
-                           lon_1=self.d['lon_1'],
-                           lon_2=self.d['lon_2'],
-                           k_0=self.d['k_0'],
-                           no_rot=self.d['no_rot'],
-                           suppress_ticks=self.d['suppress_ticks'],
-                           satellite_height=self.d['satellite_height'],
-                           boundinglat=self.d['boundinglat'],
-                           fix_aspect=self.d['fix_aspect'],
-                           anchor=self.d['anchor'],
-                           celestial=self.d['celestial'],
-                           round=self.d['round'],
-                           ax=self.d['ax'])
-        print "Completed basemap", time.time() - start_time
-        # convert to map projection coords and set them to x and y
-        self.x, self.y = self.map(self.lon, self.lat)
+        Basemap.__init__(self,
+                         llcrnrlon=self.d['llcrnrlon'],
+                         llcrnrlat=self.d['llcrnrlat'],
+                         urcrnrlon=self.d['urcrnrlon'],
+                         urcrnrlat=self.d['urcrnrlat'],
+                         projection=self.d['projection'],
+                         **kwargs)
 
-        # create figure
+        # convert to map projection coords and set them to x and y
+        self.x, self.y = self(self.lon, self.lat)
+
+        # create figure and set it as an attribute
         plt.close()
-        print "creating figure..."
-        start_time = time.time()
-        self.fig = plt.figure( num=self.d['fignum'],
-                               figsize=self.d['figsize'],
-                               dpi=self.d['dpi'],
-                               facecolor=self.d['facecolor'],
-                               edgecolor=self.d['edgecolor'],
-                               linewidth=self.d['linewidth'],
-                               frameon=self.d['frameon'],
-                               subplotpars=self.d['subplotpars'])
-        print "Completed figure", time.time() - start_time
+        self.fig = plt.figure(num=self.d['fignum'], **kwargs)
+
         # set attributes
-        self.colorbar = False
-        self.mpl = None
+        self.colorbar = None
+        self.mpl = []
 
     def contour_plots(self, data=None, **kwargs):
         '''Draw contour plots
@@ -293,19 +233,19 @@ class NansatMap():
 
         Modifies
         ---------
-        self.mpl : matplotlib
+        self.mpl : list
+            append QuadContourSet instance
 
-        see also:
+        see also
         ---------
         http://docs.scipy.org/doc/scipy/reference/ndimage.html
-        http://matplotlib.org/basemap/api/basemap_api.html
 
         '''
         # modify default parameter
         self._set_defaults(kwargs)
         # if direct argument 'data' is None, set from kwargs.
         if data is None:
-            data =self.d.clear['contour_data']
+            data =self.d['contour_data']
 
         # smooth data
         if self.d['contour_smoothing']:
@@ -317,7 +257,7 @@ class NansatMap():
                     center = (self.d['convolve_weightSize'] - 1) / 2
                     for i in range(-(center), center+1, 1):
                         for j in range(-(center), center+1, 1):
-                            weights[i][j] /= math.pow(2.0, max(abs(i),abs(j)))
+                            weights[i][j] /= pow(2.0, max(abs(i),abs(j)))
                     self.d['convolve_weights'] = weights
                 data = ndimage.convolve(data,
                                         weights=self.d['convolve_weights'],
@@ -343,7 +283,7 @@ class NansatMap():
                                                cval=self.d['gaussian_cval'])
         if self.d['contour_style']=='fill':
             # draw filled contour
-            self.mpl = self.map.contourf(self.x, self.y, data,
+            self.mpl.append(self.contourf(self.x, self.y, data,
                                    colors=self.d['contour_colors'],
                                    alpha=self.d['contour_alpha'],
                                    cmap=self.d['contour_cmap'],
@@ -359,12 +299,11 @@ class NansatMap():
                                    yunits=self.d['contour_yunits'],
                                    antialiased=self.d['contour_antialiased'],
                                    nchunk=self.d['contour_nchunk'],
-                                   hatches=self.d['contour_hatches'])
-
-            self.colorbar = True
+                                   hatches=self.d['contour_hatches']))
+            self.colorbar = len(self.mpl)-1
         else:
             # draw contour lines
-            self.mpl = self.map.contour(self.x, self.y, data,
+            self.mpl.append(self.contour(self.x, self.y, data,
                                    colors=self.d['contour_colors'],
                                    alpha=self.d['contour_alpha'],
                                    cmap=self.d['contour_cmap'],
@@ -380,11 +319,10 @@ class NansatMap():
                                    yunits=self.d['contour_yunits'],
                                    antialiased=self.d['contour_antialiased'],
                                    linewidths=self.d['contour_linewidths'],
-                                   linestyles=self.d['contour_linestyles'])
-
+                                   linestyles=self.d['contour_linestyles']))
             # add values for the contour lines
             if self.d['contour_label']:
-                plt.clabel(self.mpl,
+                plt.clabel(self.mpl[-1],
                            inline=self.d['contour_inline'],
                            fontsize=self.d['contour_linesfontsize'])
 
@@ -399,7 +337,8 @@ class NansatMap():
 
         Modifies
         ---------
-        self.mpl : matplotlib
+        self.mpl : list
+            append matplotlib.quiver.Quiver instance
 
         Raises
         --------
@@ -422,8 +361,8 @@ class NansatMap():
         dataY2 = data[1][::step0, ::step1]
         lon2 = self.lon[::step0, ::step1]
         lat2 = self.lat[::step0, ::step1]
-        x2, y2 = self.map(lon2, lat2)
-        self.mpl = self.map.quiver(x2, y2, dataX2, dataY2)
+        x2, y2 = self(lon2, lat2)
+        self.mpl.append(self.quiver(x2, y2, dataX2, dataY2))
 
     def put_color(self, data=None, **kwargs):
         '''Make a pseudo-color plot over the map
@@ -435,7 +374,8 @@ class NansatMap():
 
         Modifies
         ---------
-        self.mpl : matplotlib
+        self.mpl : list
+            append matplotlib.collections.QuadMesh object
 
         '''
         # modify default parameter
@@ -444,74 +384,8 @@ class NansatMap():
         if data is None:
             data = self.d['color_data']
         # Plot a quadrilateral mesh.
-        self.mpl = self.map.pcolormesh(self.x, self.y, data,
-                            cmap=self.d['cmap'], norm=self.d['norm'],
-                            vmin=self.d['vmin'], vmax=self.d['vmax'],
-                            shading=self.d['shading'],
-                            edgecolors=self.d['edgecolors'],
-                            alpha=self.d['alpha'])
-        self.colorbar = True
-
-    def draw_continent(self, **kwargs):
-        '''Draw continent
-
-        Parameters
-        ----------
-        Any of NansatMap.__init__() parameters
-        self.d['continentStyle'] takes 'mask', 'bluemarble' or 'fill'.
-        If it is not either None, 'mask' or 'bluemarble', then 'fill'.
-
-        Modifies
-        ---------
-        self.map : basemap
-
-        NB: Unfortunately, the 'fill' method does not always do the right thing.
-            Matplotlib always tries to fill the inside of a polygon.
-            Under certain situations, what is the inside of a coastline
-            polygon can be ambiguous, and the outside may be filled
-            instead of the inside. In these situations, the recommended
-            workaround is to use the 'mask'.
-            But Landmask and Bluemarble image cannot be overlaid on top of
-            other images due to limitations in matplotlib image handling.
-
-        '''
-        # modify default parameters
-        self._set_defaults(kwargs)
-
-        # draw continent
-        if self.d['continentStyle']=='mask':
-            self.map.drawlsmask(self.d['continentColor'], self.d['lakeColor'],
-                                lakes=True)
-        elif self.d['continentStyle']=='bluemarble':
-            self.map.bluemarble()
-        else:
-            self.map.fillcontinents(color=self.d['continentColor'],
-                                    lake_color=self.d['lakeColor'])
-
-    def draw_geoCoordinates(self, **kwargs):
-        '''Add longitude and latitude
-
-        Parameters
-        ----------
-        Any of NansatMap.__init__() parameters
-
-        Modifies
-        ---------
-        self.map : basemap
-
-        '''
-        # modify default parameters
-        self._set_defaults(kwargs)
-
-        # draw lat and lon
-        self.map.drawparallels(np.arange(self.lat.min(), self.lat.max(),
-                               (self.lat.max()-self.lat.min())/self.d['lat_num']),
-                               labels=self.d['lat_labels'],
-                               fontsize=self.d['lat_fontsize'])
-        self.map.drawmeridians(np.arange(self.lon.min(), self.lon.max(),
-                               (self.lon.max()-self.lon.min())/self.d['lon_num']),
-                               labels=self.d['lon_labels'],
-                               fontsize=self.d['lon_fontsize'])
+        self.mpl.append(self.pcolormesh(self.x, self.y, data, **kwargs))
+        self.colorbar = len(self.mpl)-1
 
     def add_legend(self, **kwargs):
         '''Add color bar and title
@@ -524,8 +398,8 @@ class NansatMap():
         # modify default parameters
         self._set_defaults(kwargs)
         # add colorbar and reduce font size
-        if self.colorbar and self.d['colorbar']:
-            cbar = self.fig.colorbar(self.mpl,
+        if self.colorbar is not None and self.d['colorbar']:
+            cbar = self.fig.colorbar(self.mpl[self.colorbar],
                                      orientation=self.d['colorbar_orientation'],
                                      pad=self.d['colorbar_pad'])
             imaxes = plt.gca()
@@ -555,26 +429,33 @@ class NansatMap():
         # modify default parameters
         self._set_defaults(kwargs)
 
-        # if d['contour_data'] is not None, draw contour plots.
-        if self.d['contour_data'] is not None:
-            self.contour_plots()
-
-        # if d['quiver_data'] is not None, draw quiver plots.
-        if self.d['quiver_data'] is not None:
-            self.quiver_plots()
-
         # if d['color_data'] is not None, put colors on the map
         if self.d['color_data'] is not None:
             self.put_color()
 
-        # if d['continentStyle'] is 'mask', 'bluemarble' or 'fill',
-        # then draw continets
-        if self.d['continentStyle'] is not None:
-            self.draw_continent()
+        # if d['contour_data'] is not None, draw contour plots.
+        if self.d['contour_data'] is not None:
+            self.contour_plots()
+
+        #if d['quiver_data'] is not None, draw quiver plots.
+        if self.d['quiver_data'] is not None:
+            self.quiver_plots()
+
+        # if d['continent'] is True, then draw continets
+        if self.d['continent']:
+            self.fillcontinents(color=self.d['continentColor'],
+                                lake_color=self.d['lakeColor'])
 
         # if d['geocoordinates'] is True, then draw geoCoordinates
         if self.d['geocoordinates']:
-            self.draw_geoCoordinates()
+            self.drawparallels(np.arange(self.lat.min(), self.lat.max(),
+                               (self.lat.max()-self.lat.min())/self.d['lat_num']),
+                               labels=self.d['lat_labels'],
+                               fontsize=self.d['lat_fontsize'])
+            self.drawmeridians(np.arange(self.lon.min(), self.lon.max(),
+                               (self.lon.max()-self.lon.min())/self.d['lon_num']),
+                               labels=self.d['lon_labels'],
+                               fontsize=self.d['lon_fontsize'])
 
         # if d['colorbar'] is True or d['title'] is not empty, then add legend
         if self.d['colorbar'] or self.d['title'] != '':
@@ -590,7 +471,6 @@ class NansatMap():
 
         '''
         self.fig.savefig(fileName)
-        #plt.show()
 
     def _set_defaults(self, kwargs):
         '''Check input params and set defaut values
