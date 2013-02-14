@@ -58,7 +58,7 @@ class Mapper(VRT):
             return str(s) if s<=1 else int2bitstring(s>>1) + str(s&1)
         fp.seek(headerLength + 20)
         scanlinebitFirstline = int(struct.unpack('<L', fp.read(4))[0])
-        fp.seek(headerLength + recordLength*(numScanLines-1) + 20)
+        fp.seek(headerLength + recordLength*(numCalibratedScanLines-2) + 20)
         scanlinebitLastline = int(struct.unpack('<L', fp.read(4))[0])
 
         if int2bitstring(scanlinebitFirstline)[-1] == '0':
@@ -201,7 +201,10 @@ class Mapper(VRT):
         self.RawBandsVRT._create_bands(RawMetaDict)
         self._create_bands(metaDict)
         
-        self.dataset.SetMetadata({'satID': str(satID)})
+        globalMetadata = {}
+        globalMetadata['satID'] = str(satID)
+        globalMetadata['daytime'] = str(int(startsWith3A))
+        self.dataset.SetMetadata(globalMetadata)
 
         # Adding valid time to dataset
         self._set_time(time)
