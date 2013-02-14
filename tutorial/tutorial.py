@@ -21,14 +21,19 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
 
-from nansat import Nansat, Domain
+from nansat import Nansat, Domain, NansatMap
 
 # input and output file names
+'''
 iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 iFileName = os.path.join(iPath, 'gcps.tif')
 print 'Input file: ', iFileName
 oFileName = os.path.join(iPath, 'tmpdata', 'output_')
 print 'Output file prefix: ', oFileName
+'''
+
+iFileName = 'c:/Users/asumak/Data/input/NCEP_GRIB/gfs.t06z.master.grbf03'
+oFileName = 'c:/Users/asumak/Data/output/tutorial'
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
@@ -40,7 +45,7 @@ n = Nansat(iFileName, mapperName='generic', logLevel=10)
 # list bands and georeference of the object
 print 'Raw Nansat:', n
 
-# get dictionary with metadata from all bands 
+# get dictionary with metadata from all bands
 print 'Bands:', n.bands()
 
 # get size of the object (Y and X dimensions, to follow Numpy style)
@@ -232,5 +237,59 @@ mask = nMosaic['mask']
 # 4. Output averaged data using the mask
 nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
                         mask_array=mask, mask_lut={0:[128,128,128]})
+
+# ------------------------- NansatMap Usage --------------------------------- #
+
+# Create a Nansat object (n)
+n = Nansat(iFileName)
+# Get data from 1st, 2nd and 3rd bands as numpy array (u,v and w)
+u = n[1]; v = n[2]; w = n[3]
+
+# Create a NansatMap object from the Nansat object (n)
+nMap = NansatMap(n)
+
+# 1. Draw the contour_plots (line)
+# 2. Draw continent
+# 3. Save to a file
+nMap.contour_plots(w)                                       # 1
+nMap.process()                                              # 2
+nMap.save(oFileName+'.png')                                 # 3
+# or
+nMap.process(contour_data=w)                                # 1 & 2
+nMap.save(oFileName+'.png')                                 # 3
+
+# 1. Smooth the data and draw the contour plots (line) and the labels
+# 2. Draw continent and write the title
+nMap.contour_plots(w, contour_smoothing=True,
+                   contour_label=True, contour_linesfontsize=8)     # 1
+nMap.process(title='NCEP wind speed and direction',
+             title_fontsize=15)                                     # 2
+# or
+nMap.process(contour_data=w, contour_smoothing=True,
+             contour_label=True, contour_linesfontsize=8,
+             title='NCEP wind speed and direction',
+             title_fontsize=15)                                     # 1 & 2
+
+# 1. Draw contour_plots (fill)
+# 2. Draw continent and color bar
+nMap.contour_plots(w, contour_smoothing=True, contour_style='fill')     # 1
+nMap.process(colorbar_fontsize=8)                                       # 2
+# or
+nMap.process(contour_data=w, contour_smoothing=True,
+             contour_style='fill', colorbar_fontsize=8)             # 1 & 2
+
+# 1. Make a pseudo-color plot over the map
+# 2. Draw quiver_plots
+# 3. Draw continent and geocoordinate grids and add the color bar
+# 4. Show the map
+nMap.put_color(w)                                                   # 1
+nMap.quiver_plots([u, v])                                           # 2
+nMap.process(geocoordinates=True, lat_fontsize=8, lon_fontsize=8)   # 3
+plt.show()                                                          # 4
+# or
+nMap.process(color_data=w, quituiver_data=[u, v],
+             geocoordinates=True, lat_fontsize=8, lon_fontsize=8)  # 1, 2 & 3
+plt.show()                                                         # 4
+
 
 print 'Tutorial completed successfully. Output files are found here:' + oFileName
