@@ -239,6 +239,7 @@ class Domain():
                               'or "dataset and srsString" are required')
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
+        self.extentDic = extentDic
 
     def __repr__(self):
         '''Creates string with basic info about the Domain object

@@ -962,7 +962,8 @@ class VRT():
                           use_geolocationArray=True, use_gcps=True,
                           use_geotransform=True,
                           dstGCPs=[], dstGeolocationArray=None,
-                          WorkingDataType=None):
+                          WorkingDataType=None,
+                          tps=False):
         ''' Create VRT object with WarpedVRT
 
         Modifies the input VRT according to the input options
@@ -1104,6 +1105,11 @@ class VRT():
         warpedVRT._modify_warped_XML(xSize, ySize,
                                      geoTransform, blockSize, WorkingDataType)
 
+        # apply thin-spline-transformation option
+        if use_gcps and tps:
+            tmpVRTXML = warpedVRT.read_xml()
+            tmpVRTXML = tmpVRTXML.replace('GCPTransformer', 'TPSTransformer')
+            warpedVRT.write_xml(tmpVRTXML)
         """
         # TODO: implement the below option for proper handling stereo
         # projections over the pole get source projection from GCPs or
