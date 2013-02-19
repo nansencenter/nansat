@@ -231,6 +231,7 @@ class Domain():
                            srcProjection=dstWKT,
                            srcRasterXSize=rasterXSize,
                            srcRasterYSize=rasterYSize)
+            self.extentDic = extentDic
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT(lat=lat, lon=lon)
@@ -239,7 +240,6 @@ class Domain():
                               'or "dataset and srsString" are required')
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
-        self.extentDic = extentDic
 
     def __repr__(self):
         '''Creates string with basic info about the Domain object

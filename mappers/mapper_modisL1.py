@@ -131,3 +131,4 @@ class Mapper(VRT):
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
         productTime = gdalMetadata["RANGEENDINGTIME"]
         self._set_time(parse(productDate+' '+productTime))
+        self.remove_geolocationArray()
