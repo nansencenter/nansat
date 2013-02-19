@@ -133,9 +133,9 @@ except ImportError:
                       'Figure will not work'
                       'Try installing PIL.')
 
-## used in nansat_tools
+## used in nansat_tools and nansatmap
 try:
-    from scipy import mod
+    from scipy import mod, ndimage
 except ImportError:
     warnings.warn('Cannot import scipy.mod!'
                   'nansat_toolds will not work'

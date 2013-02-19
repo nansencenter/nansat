@@ -33,9 +33,14 @@ except ImportError:
     warnings.warn('''Cannot import Figure! Nansat will not work''')
 
 try:
+    from nansatmap import Nansatmap
+except ImportError:
+    warnings.warn('''Cannot import Nansatmap!''')
+
+try:
     from nansat_tools import np, plt, Basemap
 except ImportError:
     warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
     
-__all__ = ['Nansat', 'Domain', 'Figure', 'np', 'plt', 'Basemap']
+__all__ = ['Nansat', 'Domain', 'Figure', 'np', 'plt', 'Basemap', 'Nansatmap']
 

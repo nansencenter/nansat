@@ -17,7 +17,7 @@
 
 from nansat_tools import *
 
-class NansatMap(Basemap):
+class Nansatmap(Basemap):
     '''Perform opeartions with graphical files: create,
     add legend and geolocation_grids, save.
 
