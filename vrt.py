@@ -734,7 +734,6 @@ class VRT():
         gdal.VSIFWriteL(vsiFileContent,
                         len(vsiFileContent), 1, vsiFile)
         gdal.VSIFCloseL(vsiFile)
-
         # re-open self.dataset with new content
         self.dataset = gdal.Open(self.fileName)
 
@@ -752,7 +751,6 @@ class VRT():
             # shallow copy (only geometadata)
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
-
         return vrt
 
     def add_geolocationArray(self, geolocationArray=GeolocationArray()):
@@ -786,7 +784,7 @@ class VRT():
 
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
-        
+
     def resized(self, xSize, ySize, eResampleAlg=1):
         '''Resize VRT
 
@@ -1291,7 +1289,7 @@ class VRT():
         # Make GCPs
         GCPs = []
         # Subsample (if requested), but use linspace to
-        # make sure endpoints are contained
+        # make sure endpoints are ntained
         for p in np.around(np.linspace(0, len(pixels) - 1, numx / stepX)):
             for l in np.around(np.linspace(0, len(lines) - 1, numy / stepY)):
                 g = gdal.GCP(float(x[l, p]), float(y[l, p]), 0,
@@ -1322,3 +1320,20 @@ class VRT():
         if len(gcps) != 0:
             figDataset.SetGCPs(gcps, self.dataset.GetGCPProjection())
         figDataset = None  # Close and write output file
+
+    def delete_band(self, bandNum):
+        ''' Delete a band from the given VRT
+
+        Parameters
+        ----------
+        bandNum : int
+            band number
+
+        '''
+        node0 = Node.create(self.read_xml())
+        node0.delNode('VRTRasterBand', options={'band':bandNum})
+        self.write_xml(str(node0.rawxml()))
+
+
+
+
