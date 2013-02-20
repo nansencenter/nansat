@@ -48,6 +48,11 @@ from string import Template, ascii_uppercase, digits
 ## used in figure
 from math import floor, log10
 
+## used in nansat_map
+from mpl_toolkits.basemap import Basemap
+import scipy.ndimage as ndimage
+from math import pow
+
 ## used in nansat_tools
 import copy
 import warnings
@@ -259,15 +264,26 @@ class Node(object):
                 return result
         return False
 
-    def delNode(self, tag):
+    def delNode(self, tag, options=None):
         '''
         Recursively find the all subnodes with this tag and remove
         from self.children.
 
+        options : dictionary
+            if there are several same tags, specify a node by their attributes.
+
         '''
         for i, child in enumerate(self.children):
-            if child.node(tag):
+            if child.node(tag) and options is None:
                 self.children.pop(i)
+            elif child.node(tag):
+                for j, jKey in enumerate(options.keys()):
+                    try:
+                        if child.getAttribute(jKey) == str(options[jKey]) \
+                        and len(options.keys()) == j+1:
+                            self.children.pop(i)
+                    except:
+                        break
             else:
                 child.delNode(tag)
 
