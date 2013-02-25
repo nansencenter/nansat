@@ -1,9 +1,13 @@
-# Name:         mapper_kmssL1
-# Purpose:      Mapping for KMSS-L1 data
-# Authors:      Evgeny Morozov
-# Licence:      This file is part of NANSAT. You can redistribute it or modify
-#               under the terms of GNU General Public License, v.3
-#               http://www.gnu.org/licenses/gpl-3.0.html
+#-------------------------------------------------------------------------------
+# Name:        mapper_kmssL1
+# Purpose:     Mapping for KMSS-L1 data
+#
+# Author:      evgenym(me)
+#
+# Created:     01.08.2012
+# Copyright:   (c) NERSC 2012
+# Licence:     <your licence>
+#-------------------------------------------------------------------------------
 
 from datetime import datetime
 from numpy import mod
@@ -23,9 +27,13 @@ class Mapper(VRT):
         ''' Create VRT '''
         product = gdalDataset.GetDriver().LongName
 
-        raise AttributeError("Not_KMSS_tiff");
+        #raise AttributeError("Not_KMSS_tiff");
         if product!= 'GeoTIFF':
-            raise AttributeError("Not_KMSS_tiff");
+            raise AttributeError("Not_GeoTIFF");
+        if cmp(fileName[-3:], 'tif')!= 0:
+			raise AttributeError("for NTSOMZ GeoTIFF extension must be tif");
+        if gdalDataset.RasterCount!= 3:
+			raise AttributeError("Not_NTSOMZ_KMSS_geotiff! does not have 3 bands!");
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1},
