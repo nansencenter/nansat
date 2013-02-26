@@ -347,22 +347,48 @@ class Nansat(Domain):
         --> 'if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);'
 
         CreateCopy fails in case the band name has special characters,
-        e.g. the slash in 'HH/VV'. 
+        e.g. the slash in 'HH/VV'.
 
         '''
         # temporary VRT for exporting
         exportVRT = self.vrt.copy()
+        exportVRT.real = []
+        exportVRT.imag = []
 
-        # Change the element from GDAL datatype to NetCDF data type
+        # Find complex data band
+        complexBands = []
         node0 = Node.create(exportVRT.read_xml())
         for iBand in node0.nodeList('VRTRasterBand'):
             dataType = iBand.getAttribute('dataType')
-            dataType = {'UInt16': 'Int16', 'CInt16': 'Int16',
-                        'UInt32': 'Int32',
-                        'CFloat32': 'Float32', 'CFloat64': 'Float64'
-                        }.get(dataType, dataType)
-            iBand.replaceAttribute('dataType', dataType)
-        exportVRT.write_xml(str(node0.rawxml()))
+            if dataType[0] == 'C':
+                complexBands.append(int(iBand.getAttribute('band')))
+
+        # if data includes complex data,
+        # create two bands from real and imaginary data arrays
+        if len(complexBands) != 0:
+            for i in complexBands:
+                bandMetadataR = self.get_metadata(bandID=i)
+                bandMetadataR.pop('dataType')
+                try:
+                    bandMetadataR.pop('PixelFunctionType')
+                except:
+                    pass
+                # Copy metadata and modify 'name' for real and imag bands
+                bandMetadataI = bandMetadataR.copy()
+                bandMetadataR['name'] = bandMetadataR.pop('name')+'_real'
+                bandMetadataI['name'] = bandMetadataI.pop('name')+'_imag'
+                # Create bands from the real and imaginary numbers
+                exportVRT.real.append(VRT(array=self[i].real))
+                exportVRT.imag.append(VRT(array=self[i].imag))
+                metaDict = [{'src': {'SourceFilename': exportVRT.real[-1].fileName,
+                             'SourceBand':  1},
+                             'dst': bandMetadataR},
+                            {'src': {'SourceFilename': exportVRT.imag[-1].fileName,
+                             'SourceBand':  1},
+                             'dst': bandMetadataI}]
+                exportVRT._create_bands(metaDict)
+            # delete the complex bands
+            exportVRT.delete_bands(complexBands)
 
         # add bands with geolocation arrays to the VRT
         if addGeolocArray and len(exportVRT.geolocationArray.d) > 0:
@@ -371,7 +397,6 @@ class Nansat(Domain):
                  'SourceBand': int(self.vrt.geolocationArray.d['X_BAND'])},
                 {'wkv': 'longitude',
                  'name': 'GEOLOCATION_X_DATASET'})
-
             exportVRT._create_band(
                 {'SourceFilename': self.vrt.geolocationArray.d['Y_DATASET'],
                  'SourceBand': int(self.vrt.geolocationArray.d['Y_BAND'])},
@@ -412,6 +437,7 @@ class Nansat(Domain):
                     self.logger.info('Unable to remove metadata'
                                      '%s from band %d' % (rmMeta, iBand + 1))
             band.SetMetadata(bandMetadata)
+
         # remove unwanted global metadata
         globMetadata = exportVRT.dataset.GetMetadata()
         for rmMeta in rmMetadata:
@@ -420,6 +446,7 @@ class Nansat(Domain):
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
+
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
@@ -950,11 +977,11 @@ class Nansat(Domain):
 
             # make caption from longname, units
             caption = longName + ' [' + units + ']'
-        
+
         # add DATE to caption
         if addDate:
             caption += self.get_time()[0].strftime(' %Y-%m-%d')
-        
+
         self.logger.info('caption: %s ' % caption)
 
         # == PROCESS figure ==
@@ -1375,7 +1402,7 @@ class Nansat(Domain):
             if mask is None:
                 self.logger.error('No mask in reprojected file %s!' % f)
                 mask = np.zeros(n.shape()).astype('int8')
-                
+
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
             cntMatTmp[mask > 2] = 1
@@ -1421,7 +1448,7 @@ class Nansat(Domain):
         maskMat = maskMat.max(0)
         # if old 'valid' mask was applied in files, replace with new mask
         maskMat[maskMat == 128] = 64
-        
+
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')

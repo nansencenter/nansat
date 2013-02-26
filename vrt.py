@@ -1334,6 +1334,17 @@ class VRT():
         node0.delNode('VRTRasterBand', options={'band':bandNum})
         self.write_xml(str(node0.rawxml()))
 
+    def delete_bands(self, bandNums):
+        ''' Delete bands
 
+        Parameters
+        ----------
+        bandNums : list
+            elements are int
 
+        '''
+        bandNums.sort()
+        bandNums.reverse()
+        for iBand in bandNums:
+            self.delete_band(iBand)
 

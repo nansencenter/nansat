@@ -11,6 +11,16 @@ import numpy as np
 
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+        # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
+        tmpGdalMetadata = {}
+        geoMetadata = {}
+        for key in gdalMetadata.keys():
+            newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
+            if 'NANSAT_' in newKey:
+                geoMetadata[newKey.replace('NANSAT_', '')] = gdalMetadata[key]
+            else:
+                tmpGdalMetadata[newKey] = gdalMetadata[key]
+        gdalMetadata = tmpGdalMetadata
 
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
@@ -23,7 +33,7 @@ class Mapper(VRT):
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
 
         gdalMetadata = tmpGdalMetadata
-        
+
         rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
 
         # Get file names from dataset or subdataset
@@ -82,7 +92,7 @@ class Mapper(VRT):
                             src['ScaleOffset'] = scaleOffset
                         # sate DataType
                         src['DataType'] = subBand.DataType
-                        
+
                         # generate dst metadata
                         # get all metadata from input band
                         dst = bandMetadata
@@ -108,6 +118,42 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
+        # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
+        # using pixelfunctions
+        rmBands = []
+        for iBand in range(self.dataset.RasterCount):
+            iBandName = self.dataset.GetRasterBand(iBand+1).GetMetadataItem('name')
+            # find real data band
+            if iBandName.find("_real") != -1:
+                realBand = iBand
+                realDtype = self.dataset.GetRasterBand(realBand+1).GetMetadataItem('DataType')
+                bandName = iBandName.replace(iBandName.split('_')[-1], '')[0:-1]
+                for jBand in range(self.dataset.RasterCount):
+                    jBandName = self.dataset.GetRasterBand(jBand+1).GetMetadataItem('name')
+                    # find an imaginary data band corresponding to the real data band
+                    # and create complex data band from the bands
+                    if jBandName.find(bandName+'_imag') != -1:
+                        imagBand = jBand
+                        imagDtype = self.dataset.GetRasterBand(imagBand+1).GetMetadataItem('DataType')
+                        dst = self.dataset.GetRasterBand(imagBand+1).GetMetadata()
+                        dst['name'] = bandName
+                        dst['PixelFunctionType'] ='ComplexData'
+                        dst['dataType'] = 10
+                        src = [{'SourceFilename': fileNames[realBand],
+                                'SourceBand':  1,
+                                'DataType': realDtype},
+                               {'SourceFilename': fileNames[imagBand],
+                                 'SourceBand': 1,
+                                 'DataType': imagDtype}]
+                        self._create_band(src, dst)
+                        self.dataset.FlushCache()
+                        rmBands.append(realBand+1)
+                        rmBands.append(imagBand+1)
+
+        # Delete real and imaginary bands
+        if len(rmBands) != 0:
+            self.delete_bands(rmBands)
+
         if len(projection) == 0:
             # projection was not set automatically
             # get projection from GCPProjection
@@ -129,7 +175,7 @@ class Mapper(VRT):
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
             self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
         elif gcpCount == 0:
-            # if no GCPs found and not GEOLOCATION ARRAY set: 
+            # if no GCPs found and not GEOLOCATION ARRAY set:
             #   Set Nansat Geotransform if it is not set automatically
             geoTransform = self.dataset.GetGeoTransform()
             if len(geoTransform) == 0:
