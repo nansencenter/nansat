@@ -1,12 +1,10 @@
 #-------------------------------------------------------------------------------
 # Name:        mapper_kmssL1
 # Purpose:     Mapping for KMSS-L1 data
-#
-# Author:      evgenym(me)
-#
-# Created:     01.08.2012
-# Copyright:   (c) NERSC 2012
-# Licence:     <your licence>
+# Author:      Evgeny Morozov
+# Licence:     This file is part of NANSAT. You can redistribute it or modify
+#              under the terms of GNU General Public License, v.3
+#              http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
 
 from datetime import datetime
@@ -27,7 +25,6 @@ class Mapper(VRT):
         ''' Create VRT '''
         product = gdalDataset.GetDriver().LongName
 
-        #raise AttributeError("Not_KMSS_tiff");
         if product!= 'GeoTIFF':
             raise AttributeError("Not_GeoTIFF");
         if cmp(fileName[-3:], 'tif')!= 0:
