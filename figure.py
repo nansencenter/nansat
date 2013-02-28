@@ -17,8 +17,6 @@
 
 from nansat_tools import *
 
-import pdb
-
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
 
@@ -74,8 +72,8 @@ class Figure():
 
         # set default values of ALL params of Figure
         self.d = {}
-        self.d['cmin'] = 0.
-        self.d['cmax'] = 1.
+        self.d['cmin'] = [0.]
+        self.d['cmax'] = [1.]
         self.d['gamma'] = 2.
         self.d['subsetArraySize'] = 100000
         self.d['numOfColor'] = 250
@@ -315,7 +313,7 @@ class Figure():
 
     def quiver(self, lenX, lenY, **kwargs):
         '''Add arrows to the image
-        
+
         Parameters:
         -----------
         lenX: relative length along x-axis (0<=lenX<=1)
@@ -451,7 +449,7 @@ class Figure():
         '''
         # modify default parameters
         self._set_defaults(kwargs)
-        
+
         for iBand in range(self.array.shape[0]):
             # if clipping integer matrix, make clipping ranges valid
             if self.array.dtype in ['int8', 'uint8', 'int16', 'uint16']:
@@ -756,7 +754,6 @@ class Figure():
 
         if self.d['transparency'] is not None:
             self._make_transparent_color()
-
         self.pilImg.save(fileName)
 
     def _create_palette(self):
@@ -877,4 +874,8 @@ class Figure():
         '''
         for key in dict:
             if key in self.d:
-                self.d[key] = dict[key]
+                if key in ['cmin', 'cmax'] and type(dict[key])!=list:
+                    self.d[key] = [dict[key]]
+                else:
+                    self.d[key] = dict[key]
+
