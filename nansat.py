@@ -1239,7 +1239,7 @@ class Nansat(Domain):
         nMap = Nansatmap(self, **kwargs)
 
         # Process the Nansatmap
-        nMap.process(**kwargs)
+        nMap.process()
 
         # Save to a image file or Show
         if fileName is not None:
