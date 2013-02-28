@@ -113,6 +113,11 @@ class Nansatmap(Basemap):
         self.d['continent'] = True
         # figure
         self.d['fignum'] = 1
+        self.d['figsize'] = None
+        self.d['dpi'] = None
+        self.d['facecolor'] = None
+        self.d['edgecolor'] = None
+        self.d['frameon'] = True
         # pcolormesh
         self.d['color_data'] = None
         # contour_plots
@@ -120,9 +125,8 @@ class Nansatmap(Basemap):
         self.d['contour_style'] = 'line' # 'fill' or 'line'
         self.d['contour_smoothing'] = False
         self.d['contour_mode'] = 'gaussian'
-        self.d['contour_alpha'] = None
         self.d['contour_label'] = False
-         # contourf & contour
+        # contourf & contour
         self.d['contour_colors'] = None
         self.d['contour_alpha'] = None
         self.d['contour_cmap'] = None
@@ -142,7 +146,7 @@ class Nansatmap(Basemap):
         self.d['contour_linestyles'] = None
         # contour line label
         self.d['contour_linesfontsize'] = 3
-        self.d['contour_inline'] = 1
+        self.d['contour_inline'] = True
         # contourf
         self.d['contour_nchunk'] = 0
         self.d['contour_hatches'] = None
@@ -183,6 +187,8 @@ class Nansatmap(Basemap):
         self.d['lon_num'] = 5
         self.d['lon_fontsize'] = 4
         self.d['lon_labels'] = [False, False, True, False]
+        # save
+        self.d['DEFAULT_EXTENSION'] = '.png'
 
         # set lon and lat attributes from nansat
         self.lon, self.lat = domain.get_geolocation_grids()
@@ -195,8 +201,13 @@ class Nansatmap(Basemap):
         self.d['llcrnrlon'] = self.lon.min()
         self.d['urcrnrlon'] = self.lon.max()
 
+        self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
+                              'ps', 'raw', 'svg', 'svgz']
+
         # modify the default values using input values
-        self._set_defaults(kwargs)
+        kwargs = self._set_defaults(kwargs)
+        if kwargs is None:
+            kwargs = {}
 
         Basemap.__init__(self,
                          llcrnrlon=self.d['llcrnrlon'],
@@ -211,7 +222,12 @@ class Nansatmap(Basemap):
 
         # create figure and set it as an attribute
         plt.close()
-        self.fig = plt.figure(num=self.d['fignum'], **kwargs)
+        self.fig = plt.figure(num=self.d['fignum'],
+                              figsize=self.d['figsize'],
+                              dpi=self.d['dpi'],
+                              facecolor=self.d['facecolor'],
+                              edgecolor=self.d['edgecolor'],
+                              frameon=self.d['frameon'])
 
         # set attributes
         self.colorbar = None
@@ -470,6 +486,9 @@ class Nansatmap(Basemap):
             name of outputfile
 
         '''
+        if not((fileName.split('.')[-1] in self.extensionList)):
+            fileName = fileName + self.d['DEFAULT_EXTENSION']
+
         self.fig.savefig(fileName)
 
     def _set_defaults(self, kwargs):
@@ -483,16 +502,17 @@ class Nansatmap(Basemap):
         kwargs : dictionary
             parameter names and values
 
+        Returns
+        --------
+        kwargs : dictionary
+
         Modifies
         ---------
         self.d
 
         '''
-        for key in kwargs:
-            if key in self.d:
-                self.d[key] = kwargs[key]
-
-
-
-
-
+        keys = kwargs.keys()
+        for iKey in keys:
+            if iKey in self.d:
+                self.d[iKey] = kwargs.pop(iKey)
+        return kwargs

@@ -38,6 +38,12 @@ except ImportError:
     warnings.warn('Cannot import VRT!'
                   'Nansat will not work.')
 
+try:
+    from nansatmap import Nansatmap
+except ImportError:
+    warnings.warn('Cannot import Nansatmap!'
+                  'Nansat will not work.')
+
 # Force GDAL to raise exceptions
 try:
     gdal.UseExceptions()
@@ -1061,6 +1067,206 @@ class Nansat(Domain):
             print colorTable
         outDataset = None
         self.vrt.copyproj(fileName)
+
+    def write_nansatmap(self, fileName=None, **kwargs):
+        ''' Save a raster band to a figure in graphical format.
+
+        Parameters
+        -----------
+        fileName : string, optional
+            Output file name. if one of extensions 'png', 'emf', 'eps', 'pdf',
+            'rgba', 'ps', 'raw', 'svg', 'svgz' is included,
+            specified file is crated. otherwise, 'png' file is created.
+            if None, the Nansatmap object is returned.
+            if True, the Nansatmap is shown
+
+        **kwargs : parameters for Nansatmap(). See below:
+        ---------- Nansatmap.__init__() parameters: -----------
+            llcrnrlon : float
+                longitude of lower left hand corner (degrees).
+            llcrnrlat : float
+                latitude of lower left hand corner (degrees).
+            urcrnrlon : float
+                longitude of upper right hand corner (degrees).
+            urcrnrlat : float
+                latitude of upper right hand corner (degrees).
+
+            <fillcontinents>
+            continentColor : string
+                color to fill continents (default ='#999999')
+            lakeColor : string
+                color to fill inland lakes (default ='#99ffff')
+            continent : boolean
+                If True, draw continent. (default = True)
+
+            <figure>
+            fignum : int (default = 1)
+            figsize : (int/float, int/float)
+               width x height in inches
+            dpi : int/float
+                resolution
+            facecolor : string
+                the background color
+            edgecolor : string
+                the border color
+            frameon : boolean (default = True)
+
+            <pcolormesh>
+            color_data : 2D array, band name or band number
+                data for fill color.
+
+            <contour_plots>
+            contour_data : 2D array, band name or band number
+                data for contour plots
+            contour_style : 'fill' or 'line' (default is 'line')
+                Type of contour plots
+            contour_smoothing : boolean (default is False)
+                If True, smoothing algorithm is appied to the contour_data.
+            contour_mode : 'gaussian', 'convolve', 'fourier_gaussian' or 'spline'
+                Type of smoothing algorithm
+            contour_label : boolean (default is False)
+                If True and contour_style is 'line', add values
+                for the contour lines
+            contour_linesfontsize : int (default is 3)
+                fontsize of contour line labels
+            contour_inline : boolean (default is True)
+                If True, the underlying contour is removed
+            contour_colors : string (mpl_colors)
+            contour_alpha : float
+            contour_cmap : Colormap
+            contour_norm : Normalize instance
+            contour_vmin, contour_vmax : scalar
+            contour_levels : list
+            contour_origin : 'None', 'upper', 'lower' or 'image'
+            contour_extent : 'None' or (x0, x1, y0, y1)
+            contour_locator : 'None' or ticker.Locator subclass
+            contour_extend : 'neither', both', 'min', 'max' (default is 'neither')
+            contour_xunits, contour_yunits : 'None' or registered units
+            contour_antialiased : boolean (default is True)
+            contour_linewidths : 'None', number or tuple of numbers
+            contour_linestyles : 'None', 'solid', 'dashed', 'dashdot' or 'dotted'
+            contour_nchunk : int
+            contour_hatches : 'None' or list
+            see >> http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.contour
+
+            <smooothing algorithm - convolve>
+            convolve_weightSize : int (default is 7)
+                size of weight matrix (matrix size is (int x int))
+            convolve_weights : numpy 2D array
+            convolve_mode : 'reflect', 'constant', 'nearest', 'mirror' or 'wrap'
+            convolve_cval : scalar
+            convolve_origin : scalar
+            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.convolve.html#scipy.ndimage.filters.convolve
+            <smooothing algorithm - fourier_gaussian>
+            fourier_sigma : float or sequence
+            fourier_n : int
+            fourier_axis : int
+            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.fourier.fourier_gaussian.html#scipy.ndimage.fourier.fourier_gaussian
+            <smooothing algorithm - spline>
+            spline_order : int
+            spline_axis : int
+            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.spline_filter1d.html#scipy.ndimage.interpolation.spline_filter1d
+            <smooothing algorithm - gaussian filter>
+            gaussian_sigma : scalar or sequence of scalars
+            gaussian_order : 0, 1, 2, 3 or sequence from same set
+            gaussian_mode : 'reflect', 'constant', 'nearest', 'mirror' or 'wrap'
+            gaussian_cval : scalar
+            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html#scipy.ndimage.filters.gaussian_filter
+
+            <quiver_plots>
+            quiver_data : list, elements are 2D array, band name or band number
+                data for quiver plots
+            quivectors : int (default is 30)
+                number of quivers on a line
+
+            <legend - title>
+            title : string
+            title_fontsize : int (default is 7)
+            <legend - color bar>
+            colorbar : boolean (default is True)
+                if True, add colorbar
+            colorbar_orientation : 'horizontal'(default) or 'vertical'
+            colorbar_pad : float (default is 0.01)
+                padding between colorbar and image
+            colorbar_fontsize : int (default is 6)
+
+            <draw_geoCoordinates>
+            geocoordinates : False
+            lat_num : int (default is 5)
+            lat_fontsize : int (default is 4)
+            lat_labels : list of 4 boolean (default is [True, False, False, False])
+                location of latitude. [left, right, top, bottom]
+            lon_num : int (default is 5)
+            lon_fontsize : int (default is 4)
+            lon_labels : list of 4 boolean (default is [False, False, True, False])
+                location of longitude. [left, right, top, bottom]
+
+        Modifies
+        ---------
+        if fileName is specified, creates nansatmap file
+
+        Returns
+        -------
+        Nansatmap object
+
+        Example
+        --------
+        # write contour line and save the image
+        n.write_nansatmap('test.jpg', contour_data=n[3])
+        # put colors and write quiverplots
+        n.write_nansatmap('test.jpg', color_data=n[3],
+            quituiver_data=[n[1], n[2]], geocoordinates=True,
+            lat_fontsize=8, lon_fontsize=8)
+
+        See also
+        --------
+        Nansatmap()
+        http://matplotlib.org/basemap/api/basemap_api.html#mpl_toolkits.basemap.Basemap
+
+        '''
+        # if data is given by band number or name, get the array
+        for keyName in ['color_data', 'contour_data', 'quiver_data']:
+            if keyName in kwargs.keys():
+                if type(kwargs[keyName])==list:
+                    for i, iValue in enumerate(kwargs[keyName]):
+                        if type(iValue)==str or type(iValue)==int:
+                            kwargs[keyName][i] = self._get_array(iValue)
+                else:
+                    if type(kwargs[keyName])==str or type(kwargs[keyName])==int:
+                        kwargs[keyName] = self._get_array(kwargs[keyName])
+
+        # Create Nansatmap object
+        nMap = Nansatmap(self, **kwargs)
+
+        # Process the Nansatmap
+        nMap.process(**kwargs)
+
+        # Save to a image file or Show
+        if fileName is not None:
+            if type(fileName)==bool and fileName:
+                plt.show()
+            elif type(fileName)==str:
+                nMap.save(fileName)
+
+        return nMap
+
+    def _get_array(self, bandID):
+        ''' Get array from band number or name
+
+        Parameters
+        ----------
+        bandID : int or str
+            band number or name
+
+        Return
+        -------
+        numpy array
+
+        '''
+        if type(bandID) == str:
+            bandID = self._get_band_number(bandID)
+
+        return self[bandID]
 
     def get_time(self, bandID=None):
         ''' Get time for dataset and/or its bands
