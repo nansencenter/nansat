@@ -456,15 +456,18 @@ class Figure():
                 self.d['cmin'][iBand] = np.ceil(self.d['cmin'][iBand])
                 self.d['cmin'][iBand] = np.floor(self.d['cmin'][iBand])
 
+            # Clipping, allowing for reversed colorscale (cmin > cmax)
+            clipMin = np.min([self.d['cmin'][iBand], self.d['cmax'][iBand]])
+            clipMax = np.max([self.d['cmin'][iBand], self.d['cmax'][iBand]])
             self.array[iBand, :, :] = np.clip(self.array[iBand, :, :],
-                                              self.d['cmin'][iBand],
-                                              self.d['cmax'][iBand])
+                                              clipMin, clipMax)
 
     def convert_palettesize(self, **kwargs):
         '''Convert self.array to palette color size in uint8
 
         Parameters
         -----------
+
         Any of Figure.__init__() parameters
 
         Modifies
