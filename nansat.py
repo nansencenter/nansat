@@ -1696,3 +1696,127 @@ class Nansat(Domain):
         tmpNansat.set_metadata(bandMetadata, bandID=1)
         # export
         tmpNansat.export(fileName, driver=driver)
+
+    def create_shapefile(self, geometry):
+        '''Create a shapefile in memory and add given geometry
+
+        Parameters
+        ----------
+        geometry : ogr.geometry object
+
+        Returns
+        --------
+        shapefile with geometry
+
+        '''
+        # Create a shapefile in memory
+        shape = ogr.GetDriverByName('Memory').CreateDataSource('wrk')
+
+        # Add a layer
+        if geometry.GetGeometryName() == 'LINESTRING':
+            lyr = shape.CreateLayer('line', None, ogr.wkbLineString)
+        elif geometry.GetGeometryName() == 'POLYGON':
+            lyr = shape.CreateLayer('polygon', None, ogr.wkbPolygon)
+        else:
+            lyr = shape.CreateLayer('point', None, ogr.wkbPoint)
+
+        # add Geometry to the layer
+        feature = ogr.Feature(lyr.GetLayerDefn())
+        feature.SetGeometryDirectly(geometry)
+        lyr.CreateFeature(feature)
+
+        return shape
+
+    def create_mask_from_shapefile(self, shapefile):
+        '''Create mask raster band from vector file
+
+        Parameters
+        ----------
+        shapefile : ogr.dataset
+
+        Returns
+        --------
+        mask : numpy array
+            mask array
+
+        '''
+        # Create a raster in memory
+        raster = gdal.GetDriverByName('MEM').Create('',
+                                                self.vrt.dataset.RasterXSize,
+                                                self.vrt.dataset.RasterYSize,
+                                                1, gdal.GDT_Int16 )
+        # fill the band with 0
+        raster.GetRasterBand(1).Fill(0)
+
+        # get extent
+        lon, lat = self.get_geolocation_grids()
+        xmin = min(lon.flatten())
+        xmax = max(lon.flatten())
+        ymin= min(lat.flatten())
+        ymax = max(lat.flatten())
+
+        # compute resolutions
+        xres=(xmax-xmin)/float(self.vrt.dataset.RasterXSize)
+        yres=(ymax-ymin)/float(self.vrt.dataset.RasterYSize)
+        # Create geotransform
+        geoTrans=(xmin, xres, 0, ymax, 0, -yres)
+
+        ## if the points are given by row and column
+        ##geoTrans = (0, 1, 0, ds.RasterYSize, 0, -1)
+
+        # set GeoTransform
+        raster.SetGeoTransform(geoTrans)
+
+        # set projection
+        projection = self._get_projection(self.vrt.dataset)
+        raster.SetProjection(projection)
+
+        # Burn the shapefile to the raster (burn value = 1 )
+        lyr = shapefile.GetLayer(0)
+        err = gdal.RasterizeLayer(raster, [1], lyr, burn_values = [1])
+        #raster.FlushCache()
+
+        # Create mask from the raster
+        maskArray = raster.GetRasterBand(1).ReadAsArray()
+        mask = (maskArray==1)
+
+        return mask
+
+    def get_transect(self, points=None, shapefileName = None,
+                     spacing = 1, band=1):
+        '''Get transect from two poins and retun the values by numpy array
+
+        Parameters
+        ----------
+        points : tiple has two points
+            i.e. ((lon1, lat1),(lon2, lat2))
+        shapefileName : string
+            location of the shapefile
+        spacing : int
+            space of the retuned array
+        band : int
+            band number
+
+        Returns
+        --------
+        numpy array : values of the transect
+
+        '''
+        # create shapefile
+        if shapefileName is None:
+            # Add linestrings
+            geom = ogr.Geometry(type=ogr.wkbLineString)
+            for iPoint in points:
+                geom.AddPoint(iPoint[0], iPoint[1])
+            shapefile = self.create_shapefile(geom)
+        else:
+            shapefile = ogr.Open(shapefileName)
+
+        # create mask array
+        mask = self.create_mask_from_shapefile(shapefile)
+
+        # apply the mask to the underlying data
+        data = self[band]
+        transect = data[mask]
+
+        return transect[0:-1:spacing]

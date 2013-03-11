@@ -61,11 +61,12 @@ import xml.dom.minidom as xdm
 # try to import additional modules
 ## used in domain, nansat, vrt and nansat_tools
 try:
-    from osgeo import gdal, osr
+    from osgeo import gdal, osr, ogr
 except ImportError:
     try:
         import gdal
         import osr
+        import ogr
     except ImportError:
         warnings.warn('Cannot import GDAL!'
                       'Nansat, Vrt, Domain and nansat_tools will not work'
