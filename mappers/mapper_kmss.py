@@ -23,6 +23,7 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=10):
         ''' Create VRT '''
+        raise AttributeError("Not KMSS");
         product = gdalDataset.GetDriver().LongName
 
         if product!= 'GeoTIFF':
