@@ -25,7 +25,10 @@ class Mapper(VRT):
         ''' Create VRT '''
         raise AttributeError("Not KMSS");
         product = gdalDataset.GetDriver().LongName
-
+        if cmp(fileName[0:4], '101_')!= 0:
+            if cmp(fileName[0:4], '102_')!= 0:
+                raise AttributeError("NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'");
+        
         if product!= 'GeoTIFF':
             raise AttributeError("Not_GeoTIFF");
         if cmp(fileName[-3:], 'tif')!= 0:
