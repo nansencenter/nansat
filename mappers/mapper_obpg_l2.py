@@ -5,8 +5,9 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import GeolocationArray, VRT, gdal, osr
+from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
 from datetime import datetime, timedelta
+from math import ceil
 
 class Mapper(VRT):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
@@ -28,7 +29,7 @@ class Mapper(VRT):
         
         titles = ['HMODISA Level-2 Data', 'MERIS Level-2 Data']
         # should raise error in case of not obpg_l2 file
-        title = gdalMetadata["Title"];
+        title = gdalMetadata["Title"]
         assert title in titles, 'obpg_l2 BAD MAPPER'
 
         # get subdataset and parse to VRT.__init__() for retrieving geo-metadata
@@ -129,20 +130,20 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # make lon/lat VRT objects
-        for subDataset in subDatasets:
-            if 'longitude' in subDataset[1]:
-                xDatasetSource = subDataset[0]
-                xDataset = gdal.Open(xDatasetSource)
-                xVRT = VRT(vrtDataset=xDataset)
-            if 'latitude' in subDataset[1]:
-                yDatasetSource = subDataset[0]
-                yDataset = gdal.Open(yDatasetSource)
-                yVRT = VRT(vrtDataset=yDataset)
+        geolocationMetadata = gdalSubDataset.GetMetadata('GEOLOCATION')
+        xDatasetSource = geolocationMetadata['X_DATASET']
+        xDatasetBand = geolocationMetadata['X_BAND']
+        xDataset = gdal.Open(xDatasetSource)
+        xVRT = VRT(vrtDataset=xDataset)
 
+        yDatasetSource = geolocationMetadata['Y_DATASET']
+        yDatasetBand = geolocationMetadata['Y_BAND']
+        yDataset = gdal.Open(yDatasetSource)
+        yVRT = VRT(vrtDataset=yDataset)
+        
         # estimate pixel/line step
-        pixelStep = int(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize))
-        lineStep = int(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize))
+        pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize)))
+        lineStep = int(ceil(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize)))
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
         
         # ==== ADD GCPs and Pojection ====        
@@ -177,10 +178,7 @@ class Mapper(VRT):
                     k += 1
         
         # append GCPs and lat/lon projection to the vsiDataset
-        latlongSRS = osr.SpatialReference()
-        latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
-        latlongSRSWKT = latlongSRS.ExportToWkt()
-        self.dataset.SetGCPs(gcps, latlongSRSWKT)
+        self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
         
         # set TIME
         startYear = int(gdalMetadata['Start Year'])
