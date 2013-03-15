@@ -147,8 +147,6 @@ except ImportError:
                   'nansat_toolds will not work'
                   'Try installing scipy.')
 
-LOG_LEVEL = 30
-
 try:
     latlongSRS = osr.SpatialReference()
     latlongSRS.ImportFromProj4('+proj=latlong +ellps=WGS84'
@@ -493,13 +491,12 @@ def add_logger(logName='', logLevel=None):
     http://docs.python.org/howto/logging.html
 
     '''
-    global LOG_LEVEL
     if logLevel is not None:
-        LOG_LEVEL = logLevel
+        os.environ['LOG_LEVEL'] = str(logLevel)
     # create (or take already existing) logger
     # with default logging level WARNING
     logger = logging.getLogger(logName)
-    logger.setLevel(LOG_LEVEL)
+    logger.setLevel(int(os.environ['LOG_LEVEL']))
 
     # if logger already exits, default stream handler has been already added
     # otherwise create and add a new handler
@@ -515,6 +512,6 @@ def add_logger(logName='', logLevel=None):
         # add ch to logger
         logger.addHandler(ch)
 
-    logger.handlers[0].setLevel(LOG_LEVEL)
+    logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger

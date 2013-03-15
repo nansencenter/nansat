@@ -210,8 +210,6 @@ class VRT():
         self.vrtDriver : GDAL Driver
 
         '''
-        from nansat_tools import add_logger, Node, latlongSRS
-
         # essential attributes
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
