@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
 
-from nansat import Nansat, Domain
-from nansat_map import NansatMap
+from nansat import Nansat, Domain, Nansatmap
+#from nansat_map import NansatMap
 
 # input and output file names
 iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -20,7 +20,7 @@ n = Nansat(iFileName)
 u = n[1]; v = n[2]; w = n[3]
 
 # Create a NansatMap object from the Nansat object (n)
-nMap = NansatMap(n)
+nMap = Nansatmap(n)
 
 # 1. Draw the contour_plots (line)
 # 2. Draw continent
