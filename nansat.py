@@ -18,7 +18,7 @@
 
 # import standard and additional libraries
 from nansat_tools import *
-
+import math
 # import nansat parts
 try:
     from domain import Domain
@@ -619,7 +619,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, tps=False, use_geolocationArray=True):
+                  WorkingDataType=None, tps=False):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -672,7 +672,6 @@ class Nansat(Domain):
                     ySize=dstDomain.vrt.dataset.RasterYSize,
                     blockSize=blockSize,
                     geoTransform=dstDomain.vrt.dataset.GetGeoTransform(),
-                    use_geolocationArray=use_geolocationArray,
                     WorkingDataType=WorkingDataType,
                     tps=tps)
 
@@ -1069,7 +1068,9 @@ class Nansat(Domain):
         outDataset = None
         self.vrt.copyproj(fileName)
 
-    def write_nansatmap(self, fileName=None, **kwargs):
+    def write_nansatmap( self, fileName=None, contour=None, contourf=None,
+                         quiver=None, mesh=None, color_bar=False,
+                         grid=False, landmask=True, **kwargs ):
         ''' Save a raster band to a figure in graphical format.
 
         Parameters
@@ -1080,127 +1081,23 @@ class Nansat(Domain):
             specified file is crated. otherwise, 'png' file is created.
             if None, the Nansatmap object is returned.
             if True, the Nansatmap is shown
-
-        **kwargs : parameters for Nansatmap(). See below:
-        ---------- Nansatmap.__init__() parameters: -----------
-            llcrnrlon : float
-                longitude of lower left hand corner (degrees).
-            llcrnrlat : float
-                latitude of lower left hand corner (degrees).
-            urcrnrlon : float
-                longitude of upper right hand corner (degrees).
-            urcrnrlat : float
-                latitude of upper right hand corner (degrees).
-
-            <fillcontinents>
-            continentColor : string
-                color to fill continents (default ='#999999')
-            lakeColor : string
-                color to fill inland lakes (default ='#99ffff')
-            continent : boolean
-                If True, draw continent. (default = True)
-
-            <figure>
-            fignum : int (default = 1)
-            figsize : (int/float, int/float)
-               width x height in inches
-            dpi : int/float
-                resolution
-            facecolor : string
-                the background color
-            edgecolor : string
-                the border color
-            frameon : boolean (default = True)
-
-            <pcolormesh>
-            color_data : 2D array, band name or band number
-                data for fill color.
-
-            <contour_plots>
-            contour_data : 2D array, band name or band number
-                data for contour plots
-            contour_style : 'fill' or 'line' (default is 'line')
-                Type of contour plots
-            contour_smoothing : boolean (default is False)
-                If True, smoothing algorithm is appied to the contour_data.
-            contour_mode : 'gaussian', 'convolve', 'fourier_gaussian' or 'spline'
-                Type of smoothing algorithm
-            contour_label : boolean (default is False)
-                If True and contour_style is 'line', add values
-                for the contour lines
-            contour_linesfontsize : int (default is 3)
-                fontsize of contour line labels
-            contour_inline : boolean (default is True)
-                If True, the underlying contour is removed
-            contour_colors : string (mpl_colors)
-            contour_alpha : float
-            contour_cmap : Colormap
-            contour_norm : Normalize instance
-            contour_vmin, contour_vmax : scalar
-            contour_levels : list
-            contour_origin : 'None', 'upper', 'lower' or 'image'
-            contour_extent : 'None' or (x0, x1, y0, y1)
-            contour_locator : 'None' or ticker.Locator subclass
-            contour_extend : 'neither', both', 'min', 'max' (default is 'neither')
-            contour_xunits, contour_yunits : 'None' or registered units
-            contour_antialiased : boolean (default is True)
-            contour_linewidths : 'None', number or tuple of numbers
-            contour_linestyles : 'None', 'solid', 'dashed', 'dashdot' or 'dotted'
-            contour_nchunk : int
-            contour_hatches : 'None' or list
-            see >> http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.contour
-
-            <smooothing algorithm - convolve>
-            convolve_weightSize : int (default is 7)
-                size of weight matrix (matrix size is (int x int))
-            convolve_weights : numpy 2D array
-            convolve_mode : 'reflect', 'constant', 'nearest', 'mirror' or 'wrap'
-            convolve_cval : scalar
-            convolve_origin : scalar
-            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.convolve.html#scipy.ndimage.filters.convolve
-            <smooothing algorithm - fourier_gaussian>
-            fourier_sigma : float or sequence
-            fourier_n : int
-            fourier_axis : int
-            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.fourier.fourier_gaussian.html#scipy.ndimage.fourier.fourier_gaussian
-            <smooothing algorithm - spline>
-            spline_order : int
-            spline_axis : int
-            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.interpolation.spline_filter1d.html#scipy.ndimage.interpolation.spline_filter1d
-            <smooothing algorithm - gaussian filter>
-            gaussian_sigma : scalar or sequence of scalars
-            gaussian_order : 0, 1, 2, 3 or sequence from same set
-            gaussian_mode : 'reflect', 'constant', 'nearest', 'mirror' or 'wrap'
-            gaussian_cval : scalar
-            see >> http://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.filters.gaussian_filter.html#scipy.ndimage.filters.gaussian_filter
-
-            <quiver_plots>
-            quiver_data : list, elements are 2D array, band name or band number
-                data for quiver plots
-            quivectors : int (default is 30)
-                number of quivers on a line
-
-            <legend - title>
-            title : string
-            title_fontsize : int (default is 7)
-            <legend - color bar>
-            colorbar : boolean (default is True)
-                if True, add colorbar
-            colorbar_orientation : 'horizontal'(default) or 'vertical'
-            colorbar_pad : float (default is 0.01)
-                padding between colorbar and image
-            colorbar_fontsize : int (default is 6)
-
-            <draw_geoCoordinates>
-            geocoordinates : False
-            lat_num : int (default is 5)
-            lat_fontsize : int (default is 4)
-            lat_labels : list of 4 boolean (default is [True, False, False, False])
-                location of latitude. [left, right, top, bottom]
-            lon_num : int (default is 5)
-            lon_fontsize : int (default is 4)
-            lon_labels : list of 4 boolean (default is [False, False, True, False])
-                location of longitude. [left, right, top, bottom]
+        contour : numpy 2D array, int or string
+            input data, band number or band name
+        contourf : numpy 2D array, int or string
+            input data, band number or band name
+        quiver : list of numpy 2D array, int or string
+            (e.g. [array, array], [int, str], etc...)
+            input data, band number or band name
+        mesh : numpy 2D array, int or string
+            input data, band number or band name
+        color_bar : bool
+            add color bar?
+        grid : bool
+            draw grid?
+        landmask : bool
+            draw continents?
+        **kwargs : parameters for nansatmap().
+            See nansatmap.py
 
         Modifies
         ---------
@@ -1213,11 +1110,10 @@ class Nansat(Domain):
         Example
         --------
         # write contour line and save the image
-        n.write_nansatmap('test.jpg', contour_data=n[3])
+        n.write_nansatmap('test.jpg', contour=n[3])
         # put colors and write quiverplots
-        n.write_nansatmap('test.jpg', color_data=n[3],
-            quituiver_data=[n[1], n[2]], geocoordinates=True,
-            lat_fontsize=8, lon_fontsize=8)
+        n.write_nansatmap('test.jpg', mesh=1, quiver=['east_wind','north_wind'],
+                          grid=True, color_bar=True)
 
         See also
         --------
@@ -1226,30 +1122,126 @@ class Nansat(Domain):
 
         '''
         # if data is given by band number or name, get the array
-        for keyName in ['color_data', 'contour_data', 'quiver_data']:
-            if keyName in kwargs.keys():
-                if type(kwargs[keyName])==list:
-                    for i, iValue in enumerate(kwargs[keyName]):
-                        if type(iValue)==str or type(iValue)==int:
-                            kwargs[keyName][i] = self._get_array(iValue)
+        for dataVar in ['contour', 'contourf', 'mesh', 'quiver']:
+            if locals()[dataVar] is not None:
+                if type(locals()[dataVar])==list:
+                    listData = []
+                    for i, iValue in enumerate(locals()[dataVar]):
+                        if type(locals()[dataVar][i])==str or \
+                           type(locals()[dataVar][i])==int:
+                            listData.append(self._get_array(
+                                            locals()[dataVar][i]))
+                    if listData != []:
+                        globals()[dataVar] = listData
                 else:
-                    if type(kwargs[keyName])==str or type(kwargs[keyName])==int:
-                        kwargs[keyName] = self._get_array(kwargs[keyName])
+                    if type(locals()[dataVar])==str or \
+                       type(locals()[dataVar])==int:
+                        globals()[dataVar] = self._get_array(locals()[dataVar])
 
         # Create Nansatmap object
-        nMap = Nansatmap(self, **kwargs)
+        argKeys = ['lcrnrlon', 'llcrnrlat', 'urcrnrlon', 'urcrnrlat',
+                   'llcrnrx', 'llcrnry', 'urcrnrx', 'urcrnry',
+                   'width', 'height', 'projection', 'resolution',
+                   'area_thresh', 'rsphere', 'lat_ts',
+                   'lat_1', 'lat_2', 'lat_0', 'lon_0', 'lon_1', 'lon_2',
+                   'k_0', 'no_rot', 'suppress_ticks', 'satellite_height',
+                   'boundinglat', 'fix_aspect', 'anchor', 'celestial',
+                   'round', 'ax', 'num', 'figsize', 'dpi',
+                   'facecolor', 'edgecolor', 'frameon']
+        kwargs1 = self._pickup_args(kwargs, argKeys)
+        nMap = Nansatmap(self, **kwargs1)
 
-        # Process the Nansatmap
-        nMap.process()
+        # draw filled contour plot
+        if contourf is not None:
+            argKeys = ['smooth', 'mode', 'colors', 'alpha', 'cmap', 'norm',
+                       'vmin', 'vmax', 'levels', 'origin', 'extent',
+                       'locator', 'extend', 'xunits', 'yunits', 'antialiased',
+                       'nchunk', 'hatches']
+            kwargs1 = self._pickup_args(kwargs, argKeys)
+            if type(contourf) != np.ndarray:
+                contourf = globals()['contourf']
+            nMap.contourf(contourf, **kwargs1)
+
+        # draw black smooth contour plot with labels
+        if contour is not None:
+            argKeys = ['smooth','contourFontsize','contourColors', 'alpha',
+                       'cmap', 'norm', 'vmin', 'vmax', 'levels', 'origin',
+                       'extent', 'locator', 'extend', 'xunits', 'yunits',
+                       'antialiased', 'linewidths', 'linestyles']
+            kwargs1 = self._pickup_args(kwargs, argKeys)
+            if 'contourFontsize' in kwargs1.keys():
+                kwargs1['fontsize'] = kwargs1.pop('contourFontsize')
+            if 'contourColors' in kwargs1.keys():
+                kwargs1['colors'] = kwargs1.pop('contourColors')
+            if type(contour) != np.ndarray:
+                contour = globals()['contour']
+            nMap.contour(contour, **kwargs1)
+
+        # pseudo-color plot over the map
+        if mesh is not None:
+            argKeys = ['cmap', 'norm', 'vmin', 'vmax', 'vmin', 'shading',
+                       'edgecolors', 'alpha', 'agg_filter', 'animated',
+                       'antialiased', 'array', 'axes', 'clim', 'clip_box',
+                       'clip_on', 'clip_path', 'cmap', 'meshColor', 'colorbar',
+                       'contains', 'edgecolor', 'facecolor', 'figure', 'gid',
+                       'hatch', 'label', 'linestyle', 'linewidth', 'lod',
+                       'norm', 'offset_position', 'offsets', 'paths',
+                       'picker', 'pickradius', 'rasterized', 'snap',
+                       'transform', 'url', 'urls', 'visible', 'zorder']
+            kwargs1 = self._pickup_args(kwargs, argKeys)
+            if 'meshColor' in kwargs1.keys():
+                kwargs1['color'] = kwargs1.pop('meshColor')
+            if type(mesh) != np.ndarray:
+                mesh = globals()['mesh']
+            nMap.pcolormesh(mesh, **kwargs1)
+
+        # quiver plot
+        if quiver is not None:
+            if type(quiver)==list and len(quiver)==2:
+                argKeys = ['quivectors']
+                kwargs1 = self._pickup_args(kwargs, argKeys)
+                if type(quiver[0]) != np.ndarray:
+                    quiver = globals()['quiver']
+                nMap.quiver(quiver[0], quiver[1], **kwargs1)
+            else:
+                self.logger.warning('"quiver" mast be a list of two numpy arrays.')
+
+        # add colorbar
+        if color_bar:
+            argKeys = ['orientation', 'pad', 'cbarFontsize']
+            kwargs1 = self._pickup_args(kwargs, argKeys)
+            if 'cbarFontsize' in kwargs1.keys():
+                kwargs1['fontsize'] = kwargs1.pop('cbarFontsize')
+            nMap.add_colorbar(**kwargs1)
+
+        # add geocoordinates
+        if grid:
+            argKeys = ['gridFontsize', 'lat_num', 'lon_num',
+                       'lat_labels', 'lon_labels']
+            kwargs1 = self._pickup_args(kwargs, argKeys)
+            if 'gridFontsize' in kwargs1.keys():
+                kwargs1['fontsize'] = kwargs1.pop('gridFontsize')
+            nMap.drawgrid(**kwargs1)
 
         # Save to a image file or Show
         if fileName is not None:
+            argKeys = ['color', 'lake_color', 'ax', 'zorder', 'alpha']
+            kwargs1 = self._pickup_args(kwargs, argKeys)
             if type(fileName)==bool and fileName:
+                if landmask:
+                    nMap.draw_continents(**kwargs1)
                 plt.show()
             elif type(fileName)==str:
-                nMap.save(fileName)
+                nMap.save(fileName, landmask, **kwargs1)
 
         return nMap
+
+    def _pickup_args(self, allkwargs, keys):
+        kwargs = {}
+        for iArg in keys:
+            if iArg in allkwargs.keys():
+                kwargs[iArg] = allkwargs[iArg]
+        return kwargs
 
     def _get_array(self, bandID):
         ''' Get array from band number or name
@@ -1698,7 +1690,7 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def create_shapefile(self, geometry):
+    def create_shapefile(self, geometry, latlon=True):
         '''Create a shapefile in memory and add given geometry
 
         Parameters
@@ -1721,70 +1713,78 @@ class Nansat(Domain):
         else:
             lyr = shape.CreateLayer('point', None, ogr.wkbPoint)
 
-        # add Geometry to the layer
+        # add field to the layer
+        field = ogr.FieldDefn( "latlon", ogr.OFTString )
+        lyr.CreateField (field)
+
+        # add Geometry and field to the layer
         feature = ogr.Feature(lyr.GetLayerDefn())
         feature.SetGeometryDirectly(geometry)
+        feature.SetField('latlon', str(latlon))
         lyr.CreateFeature(feature)
 
         return shape
 
-    def create_mask_from_shapefile(self, shapefile):
+    def create_mask_from_shapefile(self, ogrDs, layerNum=0):
         '''Create mask raster band from vector file
 
         Parameters
         ----------
-        shapefile : ogr.dataset
+        ogrDs : ogr.dataset
 
         Returns
         --------
-        mask : numpy array
-            mask array
+        raster : raster dataset
+            gdal dataset (MEM)
 
         '''
+        # get layer
+        lyr = ogrDs.GetLayer(layerNum)
+
         # Create a raster in memory
         raster = gdal.GetDriverByName('MEM').Create('',
                                                 self.vrt.dataset.RasterXSize,
                                                 self.vrt.dataset.RasterYSize,
-                                                1, gdal.GDT_Int16 )
+                                                1, gdal.GDT_Byte )
+
+        if 'latlon' in lyr[0].keys() and lyr[0]['latlon']!='True':
+            raster.GetRasterBand(1).SetMetadataItem('latlon', 'False')
+        else:
+            raster.GetRasterBand(1).SetMetadataItem('latlon', 'True')
+
         # fill the band with 0
         raster.GetRasterBand(1).Fill(0)
+        features = lyr.GetLayerDefn()
+        for iFeature in range(lyr.GetFeatureCount()):
+            # if the points are given by row and column
+            if 'latlon' in lyr[iFeature].keys() and lyr[iFeature]['latlon']!='True':
+                geoTrans = (0, 1, 0, self.vrt.dataset.RasterYSize, 0, -1)
+            else:
+                # get extent
+                lon, lat = self.get_geolocation_grids()
+                xmin = min(lon.flatten())
+                xmax = max(lon.flatten())
+                ymin= min(lat.flatten())
+                ymax = max(lat.flatten())
 
-        # get extent
-        lon, lat = self.get_geolocation_grids()
-        xmin = min(lon.flatten())
-        xmax = max(lon.flatten())
-        ymin= min(lat.flatten())
-        ymax = max(lat.flatten())
-
-        # compute resolutions
-        xres=(xmax-xmin)/float(self.vrt.dataset.RasterXSize)
-        yres=(ymax-ymin)/float(self.vrt.dataset.RasterYSize)
-        # Create geotransform
-        geoTrans=(xmin, xres, 0, ymax, 0, -yres)
-
-        ## if the points are given by row and column
-        ##geoTrans = (0, 1, 0, ds.RasterYSize, 0, -1)
+                # compute resolutions
+                xres=(xmax-xmin)/float(self.vrt.dataset.RasterXSize)
+                yres=(ymax-ymin)/float(self.vrt.dataset.RasterYSize)
+                # Create geotransform
+                geoTrans=(xmin, xres, 0, ymax, 0, -yres)
+                # set projection
+                projection = self._get_projection(self.vrt.dataset)
+                raster.SetProjection(projection)
 
         # set GeoTransform
         raster.SetGeoTransform(geoTrans)
 
-        # set projection
-        projection = self._get_projection(self.vrt.dataset)
-        raster.SetProjection(projection)
-
         # Burn the shapefile to the raster (burn value = 1 )
-        lyr = shapefile.GetLayer(0)
         err = gdal.RasterizeLayer(raster, [1], lyr, burn_values = [1])
-        #raster.FlushCache()
+        return raster
 
-        # Create mask from the raster
-        maskArray = raster.GetRasterBand(1).ReadAsArray()
-        mask = (maskArray==1)
-
-        return mask
-
-    def get_transect(self, points=None, shapefileName = None,
-                     spacing = 1, band=1):
+    def get_transect(self, points=None, shapefileName=None, latlon=True,
+                     spacing=1, band=1, layerNum=0):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1809,15 +1809,19 @@ class Nansat(Domain):
             geom = ogr.Geometry(type=ogr.wkbLineString)
             for iPoint in points:
                 geom.AddPoint(iPoint[0], iPoint[1])
-            shapefile = self.create_shapefile(geom)
+            ogrDs = self.create_shapefile(geom, latlon)
         else:
-            shapefile = ogr.Open(shapefileName)
+            ogrDs = ogr.Open(shapefileName)
 
         # create mask array
-        mask = self.create_mask_from_shapefile(shapefile)
+        maskDs = self.create_mask_from_shapefile(ogrDs, layerNum)
+        mask = maskDs.GetRasterBand(1).ReadAsArray()
 
         # apply the mask to the underlying data
         data = self[band]
-        transect = data[mask]
+        transect = data[(mask==1)]
 
         return transect[0:-1:spacing]
+
+
+
