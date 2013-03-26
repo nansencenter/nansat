@@ -102,21 +102,6 @@ class Nansatmap(Basemap):
 
         # set default values of ALL params of NansatMap
         self.d = {}
-        self.d['llcrnrlon'] = None
-        self.d['llcrnrlat'] = None
-        self.d['urcrnrlon'] = None
-        self.d['urcrnrlat'] = None
-        self.d['projection'] = projection
-        # fillcontinents
-        self.d['continentColor'] = '#999999'
-        self.d['lakeColor'] = '#99ffff'
-        # figure
-        self.d['fignum'] = 1
-        self.d['figsize'] = None
-        self.d['dpi'] = None
-        self.d['facecolor'] = None
-        self.d['edgecolor'] = None
-        self.d['frameon'] = True
         # convolve
         self.d['convolve_weightSize'] = 7
         self.d['convolve_weights'] = None
@@ -141,52 +126,66 @@ class Nansatmap(Basemap):
         # set lon and lat attributes from nansat
         self.lon, self.lat = domain.get_geolocation_grids()
 
-        # set llcrnrlat and urcrnrlat and
-        # if required, modify them from -90. to 90.
-        self.d['llcrnrlat'] = max(self.lat.min(), -90.)
-        self.d['urcrnrlat'] = min(self.lat.max(), 90.)
-        # set llcrnrlon and urcrnrlon from self.lon
-        self.d['llcrnrlon'] = self.lon.min()
-        self.d['urcrnrlon'] = self.lon.max()
-
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 
-        # modify the default values using input values
-        kwargs = self._set_defaults(kwargs)
-        if kwargs is None:
-            kwargs = {}
+        # set llcrnrlat, urcrnrlat, llcrnrlon and urcrnrlon to kwargs.
+        # if required, modify them from -90. to 90.
+        if not('llcrnrlat' in kwargs.keys()):
+            kwargs['llcrnrlat'] = max(self.lat.min(), -90.)
+        if not('urcrnrlat' in kwargs.keys()):
+            kwargs['urcrnrlat'] = min(self.lat.max(), 90.)
+        if not('llcrnrlon' in kwargs.keys()):
+            kwargs['llcrnrlon'] = self.lon.min()
+        if not('urcrnrlon' in kwargs.keys()):
+            kwargs['urcrnrlon'] = self.lon.max()
 
-        Basemap.__init__(self,
-                         llcrnrlon=self.d['llcrnrlon'],
-                         llcrnrlat=self.d['llcrnrlat'],
-                         urcrnrlon=self.d['urcrnrlon'],
-                         urcrnrlat=self.d['urcrnrlat'],
-                         projection=self.d['projection'],
-                         **kwargs)
+        # separate kwarge of plt.figure() from kwargs
+        figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor', 'frameon']
+        figKwargs = {}
+        for iArg in figArgs:
+            if iArg in kwargs.keys():
+                figKwargs[iArg] = kwargs.pop(iArg)
+
+        Basemap.__init__(self, **kwargs)
 
         # convert to map projection coords and set them to x and y
         self.x, self.y = self(self.lon, self.lat)
 
         # create figure and set it as an attribute
         plt.close()
-        self.fig = plt.figure(num=self.d['fignum'],
-                              figsize=self.d['figsize'],
-                              dpi=self.d['dpi'],
-                              facecolor=self.d['facecolor'],
-                              edgecolor=self.d['edgecolor'],
-                              frameon=self.d['frameon'])
+        self.fig = plt.figure(**figKwargs)
 
         # set attributes
         self.colorbar = None
         self.mpl = []
 
     def smooth(self, idata, mode, **kwargs):
-        '''Smooth data for contour plots'''
-        
+        '''Smooth data for contour() and contourf()
+
+        idata is smoothed by convolve, fourier_gaussian, spline or
+        gaussian (default). If contour_mode is 'convolve' and weight is None,
+        the weight matrix is created automatically.
+
+        Parameters
+        -----------
+        idata : numpy 2D array
+            Input data
+        mode : string
+            'convolve','fourier','spline' or 'gaussian'
+
+        Returns
+        ---------
+        odata : numpy 2D array
+
+        See also
+        ----------
+        http://docs.scipy.org/doc/scipy/reference/ndimage.html
+
+        '''
         # modify default parameter
         self._set_defaults(kwargs)
-        
+
         if mode == 'convolve':
             # if weight is None, create a weight matrix
             if self.d['convolve_weights'] is None:
@@ -221,12 +220,11 @@ class Nansatmap(Basemap):
                                            cval=self.d['gaussian_cval'])
         return odata
 
-    def contour(self, data, smooth=False, mode='gaussian', label=True, inline=True, fontsize=3, **kwargs):
+    def contour(self, data, smooth=False, mode='gaussian',
+                label=True, inline=True, fontsize=3, **kwargs):
         '''Draw lined contour plots
-        If contour_smoothing is True, data is smoothed by convolve,
-        fourier_gaussian, spline or gaussian (default).
-        If contour_mode is 'convolve' and weight is None,
-        the weight matrix is created automatically.
+
+        If smooth is True, data is smoothed. Then draw lined contour.
 
         Parameters
         ----------
@@ -249,10 +247,6 @@ class Nansatmap(Basemap):
         self.mpl : list
             append QuadContourSet instance
 
-        see also
-        ---------
-        http://docs.scipy.org/doc/scipy/reference/ndimage.html
-
         '''
         # smooth data
         if smooth:
@@ -260,24 +254,18 @@ class Nansatmap(Basemap):
 
         # draw contour lines
         self.mpl.append(Basemap.contour(self, self.x, self.y, data, **kwargs))
-        
+
         # add lables to the contour lines
         if label:
-            plt.clabel(self.mpl[-1],
-                       inline=inline,
-                       fontsize=fontsize)
+            plt.clabel(self.mpl[-1], inline=inline, fontsize=fontsize)
 
     def contourf(self, data, smooth=False, mode='gaussian', **kwargs):
         '''Draw filled contour plots
 
-        If contour_smoothing is True, data is smoothed by convolve,
-        fourier_gaussian, spline or gaussian (default).
-        If contour_mode is 'convolve' and weight is None,
-        the weight matrix is created automatically.
+        If smooth is True, data is smoothed. Then draw lined contour.
 
         Parameters
         ----------
-        data : numpy 2D array
         data : numpy 2D array
             Input data
         smooth : Boolean
@@ -291,19 +279,15 @@ class Nansatmap(Basemap):
         self.mpl : list
             append QuadContourSet instance
 
-        see also
-        ---------
-        http://docs.scipy.org/doc/scipy/reference/ndimage.html
-
         '''
         # smooth data
         if smooth:
             data = self.smooth(data, mode, **kwargs)
-            
+
         # draw filled contour
         self.mpl.append(Basemap.contourf(self, self.x, self.y, data, **kwargs))
         self.colorbar = len(self.mpl)-1
-                           
+
     def quiver(self, dataX, dataY, quivectors=30, **kwargs):
         '''Draw quiver plots
 
@@ -321,10 +305,6 @@ class Nansatmap(Basemap):
         ---------
         self.mpl : list
             append matplotlib.quiver.Quiver instance
-
-        Raises
-        --------
-        TypeError : occurs if data is not a list or len(data) is not two
 
         '''
         # subsample for quiver plot
@@ -356,39 +336,38 @@ class Nansatmap(Basemap):
         self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
         self.colorbar = len(self.mpl)-1
 
-    def add_colorbar(self, orientation='horisontal', pad=0.01, fontsize=6):
-        
-        '''Add color bar and title
+    def add_colorbar(self, fontsize=6, **kwargs):
+        '''Add color bar
 
         Parameters
         ----------
-        orientation : str
-            'horisontal', 'vertical'
-        pad : float
         fontsize : int
+        Parameters for matplotlib.pyplot.colorbar
 
         Modifies
         ---------
         Adds colorbar to self.fig
-        
+
         '''
+        if kwargs is None:
+            kwargs = {}
+        if not ('orientation' in kwargs.keys()):
+            kwargs['orientation'] = 'horisontal'
+        if not ('pad' in kwargs.keys()):
+            kwargs['pad'] = 0.01
+
         # add colorbar and set font size
         if self.colorbar is not None:
-            cbar = self.fig.colorbar(self.mpl[self.colorbar],
-                                     orientation=orientation,
-                                     pad=pad)
+            cbar = self.fig.colorbar(self.mpl[self.colorbar], **kwargs)
             imaxes = plt.gca()
             plt.axes(cbar.ax)
             plt.xticks(fontsize=fontsize)
             plt.axes(imaxes)
 
-    def drawgrid(self, fontsize=10, lat_num=5, lon_num=5, lat_labels=[True,False,False,False], lon_labels=[False,False,True,False]):
-        '''Prepare map for saving and save
-
-        #. Draw continents if required
-        #. Add geo-coordinates if required
-        #. Add colorBar / title if required
-        #. Save self.fig to a physical file
+    def drawgrid(self, fontsize=10, lat_num=5, lon_num=5,
+                 lat_labels=[True,False,False,False],
+                 lon_labels=[False,False,True,False]):
+        '''Draw and label parallels (lat and lon lines) for values (in degrees)
 
         Parameters
         -----------
@@ -401,7 +380,7 @@ class Nansatmap(Basemap):
             Location of latitude labels
         lon_labels : list of Bool
             Location of longitude labels
-            
+
         See also: Basemap.drawparallels(), Basemap.drawmeridians()
 
         '''
@@ -413,14 +392,28 @@ class Nansatmap(Basemap):
                            (self.lon.max() - self.lon.min()) / lon_num),
                            labels=lon_labels,
                            fontsize=fontsize)
-    
-    def save(self, fileName, landmask=True, **kwargs):
-        '''Prepare map for saving and save
 
-        #. Draw continents if required
-        #. Add geo-coordinates if required
-        #. Add colorBar / title if required
-        #. Save self.fig to a physical file
+    def draw_continents(self, **kwargs):
+        ''' Draw continents
+
+        Parameters
+        ----------
+        Parameters for basemap.fillcontinents
+
+        '''
+
+        if kwargs is None:
+            kwargs = {}
+        if not ('color' in kwargs.keys()):
+            kwargs['color'] = '#999999'
+        if not ('lake_color' in kwargs.keys()):
+            kwargs['lake_color'] = '#99ffff'
+
+        # draw continets
+        self.fillcontinents(**kwargs)
+
+    def save(self, fileName, landmask=True, **kwargs):
+        '''Draw continents and save
 
         Parameters
         -----------
@@ -428,16 +421,11 @@ class Nansatmap(Basemap):
             name of outputfile
         landmask : Boolean
             Draw landmask?
-        Any of NansatMap.__init__() parameters
+        Parameters for basemap.fillcontinents
 
         '''
-        # modify default parameters
-        self._set_defaults(kwargs)
-
-        # draw continets
         if landmask:
-            self.fillcontinents(color=self.d['continentColor'],
-                                lake_color=self.d['lakeColor'])
+            self.draw_continents(**kwargs)
 
         # set default extension
         if not((fileName.split('.')[-1] in self.extensionList)):
