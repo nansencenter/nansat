@@ -17,7 +17,6 @@
 
 from nansat_tools import *
 
-
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
 
@@ -135,8 +134,8 @@ class VRT():
                 <ScaleOffset>$ScaleOffset</ScaleOffset>
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
-                <SrcRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
-                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
+                <SrcRect xOff="0" yOff="0" xSize="$srcXSize" ySize="$srcYSize"/>
+                <DstRect xOff="0" yOff="0" xSize="$dstXSize" ySize="$dstYSize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -210,6 +209,8 @@ class VRT():
         self.vrtDriver : GDAL Driver
 
         '''
+        from nansat_tools import add_logger, Node, latlongSRS
+
         # essential attributes
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
@@ -444,8 +445,10 @@ class VRT():
                                         ScaleOffset=src['ScaleOffset'],
                                         ScaleRatio=src['ScaleRatio'],
                                         LUT=src['LUT'],
-                                        xSize=self.dataset.RasterXSize,
-                                        ySize=self.dataset.RasterYSize)
+                                        srcXSize=self.dataset.RasterXSize,
+                                        srcYSize=self.dataset.RasterYSize,
+                                        dstXSize=self.dataset.RasterXSize,
+                                        dstYSize=self.dataset.RasterYSize)
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
@@ -1345,4 +1348,66 @@ class VRT():
         bandNums.reverse()
         for iBand in bandNums:
             self.delete_band(iBand)
+
+    def set_subsetMask(self, maskDs, xOff, yOff, dstXSize, dstYSize):
+        ''' Add maskband and modify xml to proper size
+
+        Parameters
+        ----------
+        maskDs : dataset
+            gdal dataset (mask)
+        xOff, yOff : int
+            offset of the subset based on the underlying dataset
+        dstXSize, dstYSize : int
+            size of the subset data
+
+        '''
+        # create empty maskband
+        self.dataset.CreateMaskBand(gdal.GMF_PER_DATASET)
+        self.dataset = self.vrtDriver.CreateCopy(self.fileName, self.dataset)
+
+        # get source bandsize
+        srcXSize= self.dataset.RasterXSize
+        srcYSize= self.dataset.RasterYSize
+
+        # read xml and create the node
+        XML = self.read_xml()
+        node0 = Node.create(XML)
+
+        # replace the rastersize to the masked raster size
+        node0.replaceAttribute('rasterXSize', str(dstXSize))
+        node0.replaceAttribute('rasterYSize', str(dstYSize))
+
+        # replace source band data to masked band data
+        for iNode in node0.nodeList('VRTRasterBand'):
+            node1 = iNode.node('ComplexSource').node('SrcRect')
+            node1.replaceAttribute('xOff', str(xOff))
+            node1.replaceAttribute('yOff', str(yOff))
+            node1.replaceAttribute('xSize', str(dstXSize))
+            node1.replaceAttribute('ySize', str(dstYSize))
+            node1 = iNode.node('ComplexSource').node('DstRect')
+            node1.replaceAttribute('xSize', str(dstXSize))
+            node1.replaceAttribute('ySize', str(dstYSize))
+
+        # create contents for mask band
+        contents = self.ComplexSource.substitute(SourceType='SimpleSource',
+                                                 Dataset=maskDs.GetDescription(),
+                                                 SourceBand='mask,1',
+                                                 NODATA = '',
+                                                 ScaleOffset = '',
+                                                 ScaleRatio = '',
+                                                 LUT = '',
+                                                 srcXSize=srcXSize,
+                                                 srcYSize=srcYSize,
+                                                 dstXSize=dstXSize,
+                                                 dstYSize=dstYSize )
+
+        # add mask band contents to xml
+        contents = node0.node('MaskBand').node('VRTRasterBand').insert(contents)
+        node0.node('MaskBand').delNode('VRTRasterBand')
+        contents = node0.insert(contents, 'MaskBand')
+
+        # write contents
+        self.write_xml(contents)
+
 

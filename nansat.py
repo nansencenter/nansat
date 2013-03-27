@@ -1699,7 +1699,8 @@ class Nansat(Domain):
 
         Returns
         --------
-        shapefile with geometry
+        shape : vector dataset
+            ogr dataset with geometry (Memory)
 
         '''
         # Create a shapefile in memory
@@ -1730,7 +1731,9 @@ class Nansat(Domain):
 
         Parameters
         ----------
-        ogrDs : ogr.dataset
+        ogrDs : ogr dataset
+        layerNum : int
+            mask layer number
 
         Returns
         --------
@@ -1747,7 +1750,8 @@ class Nansat(Domain):
                                                 self.vrt.dataset.RasterYSize,
                                                 1, gdal.GDT_Byte )
 
-        if 'latlon' in lyr[0].keys() and lyr[0]['latlon']!='True':
+        # set metadata
+        if 'latlon' in lyr[layerNum].keys() and lyr[layerNum]['latlon']!='True':
             raster.GetRasterBand(1).SetMetadataItem('latlon', 'False')
         else:
             raster.GetRasterBand(1).SetMetadataItem('latlon', 'True')
@@ -1756,9 +1760,10 @@ class Nansat(Domain):
         raster.GetRasterBand(1).Fill(0)
         features = lyr.GetLayerDefn()
         for iFeature in range(lyr.GetFeatureCount()):
-            # if the points are given by row and column
-            if 'latlon' in lyr[iFeature].keys() and lyr[iFeature]['latlon']!='True':
+            # if the points in pixel/line
+            if raster.GetRasterBand(1).GetMetadataItem('latlon')!='True':
                 geoTrans = (0, 1, 0, self.vrt.dataset.RasterYSize, 0, -1)
+            # if the points in lat/lon
             else:
                 # get extent
                 lon, lat = self.get_geolocation_grids()
@@ -1766,7 +1771,6 @@ class Nansat(Domain):
                 xmax = max(lon.flatten())
                 ymin= min(lat.flatten())
                 ymax = max(lat.flatten())
-
                 # compute resolutions
                 xres=(xmax-xmin)/float(self.vrt.dataset.RasterXSize)
                 yres=(ymax-ymin)/float(self.vrt.dataset.RasterYSize)
@@ -1781,34 +1785,43 @@ class Nansat(Domain):
 
         # Burn the shapefile to the raster (burn value = 1 )
         err = gdal.RasterizeLayer(raster, [1], lyr, burn_values = [1])
+
         return raster
 
-    def get_transect(self, points=None, shapefileName=None, latlon=True,
-                     spacing=1, band=1, layerNum=0):
+    def get_transect(self, points, shapefileName=None,
+                     spacing=1, band=1, layerNum=0, latlon=True,):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
         ----------
         points : tiple has two points
-            i.e. ((lon1, lat1),(lon2, lat2))
+            i.e. ((lon1, lat1),(lon2, lat2)) or ((row1, col1),(row2, col2))
         shapefileName : string
             location of the shapefile
         spacing : int
             space of the retuned array
         band : int
             band number
+        layerNum : int
+            mask layer number (if shapefileName is given)
+        latlon : bool
+            If the points in lat/lon, then True.
+            If the points in pixel/line, then False.
 
         Returns
         --------
         numpy array : values of the transect
 
         '''
-        # create shapefile
+        # create shapefile and get the dataset
         if shapefileName is None:
             # Add linestrings
             geom = ogr.Geometry(type=ogr.wkbLineString)
             for iPoint in points:
-                geom.AddPoint(iPoint[0], iPoint[1])
+                if latlon:
+                    geom.AddPoint(iPoint[0], iPoint[1])
+                else:
+                    geom.AddPoint(iPoint[0], self.vrt.dataset.RasterYSize-iPoint[1])
             ogrDs = self.create_shapefile(geom, latlon)
         else:
             ogrDs = ogr.Open(shapefileName)
@@ -1816,12 +1829,113 @@ class Nansat(Domain):
         # create mask array
         maskDs = self.create_mask_from_shapefile(ogrDs, layerNum)
         mask = maskDs.GetRasterBand(1).ReadAsArray()
-
+        '''
+        if latlon:
+            mask = maskDs.GetRasterBand(1).ReadAsArray()
+        else:
+            mask = maskDs.GetRasterBand(1).ReadAsArray()[::-1]
+        '''
         # apply the mask to the underlying data
         data = self[band]
         transect = data[(mask==1)]
 
         return transect[0:-1:spacing]
 
+    def get_subset(self, points, shapefileName=None, band=1, layerNum=0,
+                   latlon=True):
+        '''Extract a subset
 
+        If shapefileName is None,
+        create a shapefile which has a layer with the given 4 points.
+        Create a Gtiff mask dataset from the shapefile.
+        Add the mask to the Nansat object.
+        Set the new geoTransform / GCPs.
+
+        Parameters
+        ----------
+        points : tiple has two points
+            i.e. ((lon1, lat1), (lon2, lat2)) or ((row1, col1), (row2, col2))
+        shapefileName : string
+            location of the shapefile
+        band : int or str
+            band number or band name
+        layerNum : int
+            mask layer number
+        latlon : bool
+            If the points in lat/lon, then True.
+            If the points in pixel/line, then False.
+
+        Modifies
+        ---------
+        self : set a subset maskband
+
+        '''
+        # if bandname is given, get band number
+        if type(band) == str:
+            band = self._get_band_number(band)
+
+        # create shapefile and get the dataset
+        if shapefileName is None:
+            geomRing = ogr.Geometry(type=ogr.wkbLinearRing)
+            geomRing.AddPoint(points[0][0], points[0][1])
+            geomRing.AddPoint(points[1][0], points[0][1])
+            geomRing.AddPoint(points[1][0], points[1][1])
+            geomRing.AddPoint(points[0][0], points[1][1])
+            geomRing.AddPoint(points[0][0], points[0][1])
+
+            geomPolygon = ogr.Geometry(type=ogr.wkbPolygon)
+            geomPolygon.AddGeometryDirectly(geomRing)
+
+            ogrDs = self.create_shapefile(geomPolygon, latlon)
+        else:
+            ogrDs = ogr.Open(shapefileName)
+
+        # create a raster from shapefile and write it to GTiff file.
+        maskDs = self.create_mask_from_shapefile(ogrDs, layerNum)
+        maskDs = gdal.GetDriverByName('GTiff').CreateCopy(self.fileName +'.tif.msk', maskDs, 0)
+
+        # get destination(subset) band size
+        maskArray = maskDs.GetRasterBand(1).ReadAsArray()
+        dstXSize = int( max(np.ma.where(maskArray==1)[1])
+                       -min(np.ma.where(maskArray==1)[1])+1)
+        dstYSize = int( max(np.ma.where(maskArray==1)[0])
+                       -min(np.ma.where(maskArray==1)[0])+1)
+
+        # get offsets of the subset data on the source data
+        xOff = min(np.ma.where(maskArray==1)[1])
+        if 'latlon' in maskDs.GetRasterBand(1).GetMetadata_Dict().keys() and \
+                    maskDs.GetRasterBand(1).GetMetadataItem('latlon') == 'True':
+            yOff = min(np.ma.where(maskArray==1)[0])
+        else:
+            yOff = self.vrt.dataset.RasterYSize - max(np.ma.where(maskArray==1)[0]) - 1
+
+        # modify vrt of the masked dataset
+        self.vrt.set_subsetMask(maskDs, xOff, yOff, dstXSize, dstYSize)
+
+        # Set new GeoTransform
+        geoTransform = list(self.vrt.dataset.GetGeoTransform())
+        if geoTransform != [0.0, 1.0, 0.0, 0.0, 0.0, 1.0]:
+            geoTransform[0] = geoTransform[0] + geoTransform[1] * xOff
+            geoTransform[3] = geoTransform[3] + geoTransform[5] * yOff
+            self.vrt.dataset.SetGeoTransform((geoTransform[0], geoTransform[1], 0,
+                                          geoTransform[3], 0, geoTransform[5]))
+
+        # set new GCPs
+        srcGCPs = self.vrt.dataset.GetGCPs()
+        if len(srcGCPs) > 0:
+            dstGCPs = []
+            Id = 0
+            for iGCP in srcGCPs:
+                if xOff <= iGCP.GCPPixel and iGCP.GCPPixel <= (xOff + dstXSize) and \
+                   yOff <= iGCP.GCPLine and iGCP.GCPLine <= (yOff + dstYSize):
+                    Id += 1
+                    dstGCP = gdal.GCP(iGCP.GCPX,
+                                      iGCP.GCPY,
+                                      iGCP.GCPZ,
+                                      iGCP.GCPPixel - xOff,
+                                      iGCP.GCPLine - yOff,
+                                      iGCP.Info, str(Id))
+                    dstGCPs.append(dstGCP)
+            projection = self.vrt.dataset.GetGCPProjection()
+            self.vrt.dataset.SetGCPs(dstGCPs, projection)
 
