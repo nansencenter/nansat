@@ -996,7 +996,19 @@ class Nansat(Domain):
         # == finally SAVE to a image file or SHOW ==
         if fileName is not None:
             if type(fileName) == bool and fileName:
-                fig.pilImg.show()
+                if __IPYTHON__:
+                    from matplotlib.pyplot import imshow, show
+                    from numpy import array
+                    sz = fig.pilImg.size
+                    image = array(fig.pilImg.im)
+                    if fig.pilImg.getbands() == ('P',):
+                        image.resize(sz[0], sz[1])
+                    elif fig.pilImg.getbands() == ('R', 'G', 'B'):
+                        image.resize(sz[0], sz[1], 3)
+                    imshow(image)
+                    show()
+                else:
+                    fig.pilImg.show()
             elif type(fileName) == str:
                 fig.save(fileName, **kwargs)
                 # If tiff image, convert to GeoTiff
