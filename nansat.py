@@ -905,7 +905,7 @@ class Nansat(Domain):
         # write an image to png with transparent Mask set to color
         transparency=[0,0,0], following PIL alpha mask
         n.write_figure(fileName='transparent.png', bands=[3],
-               transparentMask=True, mask_array=wmArray,
+               mask_array=wmArray,
                mask_lut={0: [0,0,0]},
                clim=[0,0.15], cmapName='gray', transparency=[0,0,0])
 
