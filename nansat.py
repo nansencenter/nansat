@@ -1285,24 +1285,6 @@ class Nansat(Domain):
                 kwargs[iArg] = allkwargs[iArg]
         return kwargs
 
-    def _get_array(self, bandID):
-        ''' Get array from band number or name
-
-        Parameters
-        ----------
-        bandID : int or str
-            band number or name
-
-        Return
-        -------
-        numpy array
-
-        '''
-        if type(bandID) == str:
-            bandID = self._get_band_number(bandID)
-
-        return self[bandID]
-
     def get_time(self, bandID=None):
         ''' Get time for dataset and/or its bands
 
@@ -1830,58 +1812,52 @@ class Nansat(Domain):
 
         return raster
 
-    def get_transect(self, points, shapefileName=None,
-                     spacing=1, band=1, layerNum=0, latlon=True,):
+    def get_transect(self, points, num=100, bandID=1, latlon=True):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
         ----------
         points : tiple has two points
             i.e. ((lon1, lat1),(lon2, lat2)) or ((row1, col1),(row2, col2))
-        shapefileName : string
-            location of the shapefile
-        spacing : int
-            space of the retuned array
-        band : int
-            band number
-        layerNum : int
-            mask layer number (if shapefileName is given)
+        num : int
+            number of elements of transect
+        bandID : int or string
+            band number or band Name
         latlon : bool
             If the points in lat/lon, then True.
             If the points in pixel/line, then False.
 
         Returns
         --------
-        numpy array : values of the transect
+        transect : numpy array
+            values of the transect
 
         '''
-        # create shapefile and get the dataset
-        if shapefileName is None:
-            # Add linestrings
-            geom = ogr.Geometry(type=ogr.wkbLineString)
-            for iPoint in points:
-                if latlon:
-                    geom.AddPoint(iPoint[0], iPoint[1])
-                else:
-                    geom.AddPoint(iPoint[0], self.vrt.dataset.RasterYSize-iPoint[1])
-            ogrDs = self.create_shapefile(geom, latlon)
-        else:
-            ogrDs = ogr.Open(shapefileName)
-
-        # create mask array
-        maskDs = self.create_mask_from_shapefile(ogrDs, layerNum)
-        mask = maskDs.GetRasterBand(1).ReadAsArray()
-        '''
+        point0, point1 = points[0], points[1]
+        # if points in degree, convert them into pix/lin
         if latlon:
-            mask = maskDs.GetRasterBand(1).ReadAsArray()
-        else:
-            mask = maskDs.GetRasterBand(1).ReadAsArray()[::-1]
-        '''
-        # apply the mask to the underlying data
-        data = self[band]
-        transect = data[(mask==1)]
+            # get SRS
+            srs = self._get_projection(self.vrt.dataset)
+            # the transformer converts lat/lon to pixel/line
+            transformer = gdal.Transformer(self.vrt.dataset, None,
+                                              ['SRC_SRS=' + srs,
+                                               'DST_SRS=' +
+                                               latlongSRS.ExportToWkt()])
+            # convert lon/lat into pix/lin
+            succ, point0 = transformer.TransformPoint(1, points[0][0], points[0][1])
+            succ, point1 = transformer.TransformPoint(1, points[1][0], points[1][1])
 
-        return transect[0:-1:spacing]
+        # get sequential coordinates on pix/lin between two points
+        x = np.linspace(point0[1], point1[1], num).astype(int)
+        y = np.linspace(point0[0], point1[0], num).astype(int)
+
+        # get data
+        if type(bandID) == str:
+            bandID = self._get_band_number(bandID)
+        data = self[bandID]
+        # extract values
+        transect = data[x, y]
+        return transect
 
     def get_subset(self, points, shapefileName=None, band=1, layerNum=0,
                    latlon=True):
