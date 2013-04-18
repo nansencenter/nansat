@@ -1082,7 +1082,8 @@ class Nansat(Domain):
 
     def write_nansatmap( self, fileName=None, contour=None, contourf=None,
                          quiver=None, mesh=None, color_bar=False,
-                         grid=False, landmask=True, **kwargs ):
+                         cbar_num_of_ticks=7, cbar_round_decimals=0,
+                         grid=False, landmask=True, **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Parameters
@@ -1104,6 +1105,10 @@ class Nansat(Domain):
             input data, band number or band name
         color_bar : bool
             add color bar?
+        cbar_num_of_ticks : int
+            number of ticks on the colorbar
+        cbar_round_decimals : int
+            decimals of scale on the colorbar
         grid : bool
             draw grid?
         landmask : bool
@@ -1137,25 +1142,46 @@ class Nansat(Domain):
         for dataVar in ['contour', 'contourf', 'mesh', 'quiver']:
             if locals()[dataVar] is not None:
                 if type(locals()[dataVar])==list:
-                    listData = []
-                    for i, iValue in enumerate(locals()[dataVar]):
-                        if type(locals()[dataVar][i])==str or \
-                           type(locals()[dataVar][i])==int:
-                            listData.append(self._get_array(
-                                            locals()[dataVar][i]))
-                    if listData != []:
-                        globals()[dataVar] = listData
+                    if type(locals()[dataVar][0]) != np.ndarray:
+                        listData = []
+                        for i, iValue in enumerate(locals()[dataVar]):
+                            if type(locals()[dataVar][i])==str:
+                                bandNum = self._get_band_number(locals()[dataVar])
+                            if type(locals()[dataVar][i])==int:
+                                bandNum = locals()[dataVar][i]
+                            listData.append(self[bandNum])
+                        if listData != []:
+                            globals()[dataVar] = listData
+
+                elif type(locals()[dataVar]) == np.ndarray and dataVar+'Valid' in kwargs:
+                        globals()[dataVar+'Valid'] = kwargs.pop(dataVar+'Valid')
+
+                elif type(locals()[dataVar]) != np.ndarray:
+                    if type(locals()[dataVar])==str:
+                        bandNum = self._get_band_number(locals()[dataVar])
+                    elif type(locals()[dataVar])==int:
+                        bandNum = locals()[dataVar]
+                    # set Variable
+                    globals()[dataVar] = self[bandNum]
+                    # set varlid min and max values for colorbar ticks
+                    if dataVar+'Valid' in kwargs:
+                        globals()[dataVar+'Valid'] = kwargs.pop(dataVar+'Valid')
+                    else:
+                        try:
+                            globals()[dataVar+'Valid'] = [
+                            float(self.vrt.dataset.GetRasterBand(bandNum).GetMetadataItem('valid_min')),
+                            float(self.vrt.dataset.GetRasterBand(bandNum).GetMetadataItem('valid_max'))]
+                        except:
+                            globals()[dataVar+'Valid'] = None
                 else:
-                    if type(locals()[dataVar])==str or \
-                       type(locals()[dataVar])==int:
-                        globals()[dataVar] = self._get_array(locals()[dataVar])
+                    globals()[dataVar+'Valid'] = None
 
         # Create Nansatmap object
         argKeys = ['lcrnrlon', 'llcrnrlat', 'urcrnrlon', 'urcrnrlat',
                    'llcrnrx', 'llcrnry', 'urcrnrx', 'urcrnry',
                    'width', 'height', 'projection', 'resolution',
                    'area_thresh', 'rsphere', 'lat_ts',
-                   'lat_1', 'lat_2', 'lat_0', 'lon_0', 'lon_1', 'lon_2',
+                   'lat_0', 'lat_1', 'lat_2', 'lon_0', 'lon_1', 'lon_2',
                    'k_0', 'no_rot', 'suppress_ticks', 'satellite_height',
                    'boundinglat', 'fix_aspect', 'anchor', 'celestial',
                    'round', 'ax', 'num', 'figsize', 'dpi',
@@ -1172,7 +1198,9 @@ class Nansat(Domain):
             kwargs1 = self._pickup_args(kwargs, argKeys)
             if type(contourf) != np.ndarray:
                 contourf = globals()['contourf']
-            nMap.contourf(contourf, **kwargs1)
+
+            nMap.contourf(contourf, contourfValid, cbar_num_of_ticks,
+                          cbar_round_decimals, **kwargs1)
 
         # draw black smooth contour plot with labels
         if contour is not None:
@@ -1180,18 +1208,21 @@ class Nansat(Domain):
                        'cmap', 'norm', 'vmin', 'vmax', 'levels', 'origin',
                        'extent', 'locator', 'extend', 'xunits', 'yunits',
                        'antialiased', 'linewidths', 'linestyles']
+
             kwargs1 = self._pickup_args(kwargs, argKeys)
+
             if 'contourFontsize' in kwargs1.keys():
                 kwargs1['fontsize'] = kwargs1.pop('contourFontsize')
             if 'contourColors' in kwargs1.keys():
                 kwargs1['colors'] = kwargs1.pop('contourColors')
             if type(contour) != np.ndarray:
                 contour = globals()['contour']
-            nMap.contour(contour, **kwargs1)
+            nMap.contour(contour, contourValid, cbar_num_of_ticks,
+                         cbar_round_decimals, **kwargs1)
 
         # pseudo-color plot over the map
         if mesh is not None:
-            argKeys = ['cmap', 'norm', 'vmin', 'vmax', 'vmin', 'shading',
+            argKeys = ['cmap', 'norm', 'vmin', 'vmax', 'shading',
                        'edgecolors', 'alpha', 'agg_filter', 'animated',
                        'antialiased', 'array', 'axes', 'clim', 'clip_box',
                        'clip_on', 'clip_path', 'cmap', 'meshColor', 'colorbar',
@@ -1205,7 +1236,7 @@ class Nansat(Domain):
                 kwargs1['color'] = kwargs1.pop('meshColor')
             if type(mesh) != np.ndarray:
                 mesh = globals()['mesh']
-            nMap.pcolormesh(mesh, **kwargs1)
+            nMap.pcolormesh(mesh, meshValid, **kwargs1)
 
         # quiver plot
         if quiver is not None:
@@ -1245,7 +1276,6 @@ class Nansat(Domain):
                 plt.show()
             elif type(fileName)==str:
                 nMap.save(fileName, landmask, **kwargs1)
-
         return nMap
 
     def _pickup_args(self, allkwargs, keys):
@@ -1905,6 +1935,8 @@ class Nansat(Domain):
         # create a raster from shapefile and write it to GTiff file.
         maskDs = self.create_mask_from_shapefile(ogrDs, layerNum)
         maskDs = gdal.GetDriverByName('GTiff').CreateCopy(self.fileName +'.tif.msk', maskDs, 0)
+        ##maskDs = gdal.GetDriverByName('VRT').CreateCopy(self.fileName +'.tif.msk', maskDs, 0)
+
 
         # get destination(subset) band size
         maskArray = maskDs.GetRasterBand(1).ReadAsArray()
@@ -1923,6 +1955,8 @@ class Nansat(Domain):
 
         # modify vrt of the masked dataset
         self.vrt.set_subsetMask(maskDs, xOff, yOff, dstXSize, dstYSize)
+        """test"""
+        #self.vrt.export('c:/Users/asumak/Data/output/subset.vrt')
 
         # Set new GeoTransform
         geoTransform = list(self.vrt.dataset.GetGeoTransform())

@@ -16,6 +16,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 from nansat_tools import *
+from matplotlib import colors
 
 class Nansatmap(Basemap):
     '''Perform opeartions with graphical files: create,
@@ -157,6 +158,7 @@ class Nansatmap(Basemap):
         self.fig = plt.figure(**figKwargs)
 
         # set attributes
+        self.cmap = cm.jet
         self.colorbar = None
         self.mpl = []
 
@@ -220,7 +222,31 @@ class Nansatmap(Basemap):
                                            cval=self.d['gaussian_cval'])
         return odata
 
-    def contour(self, data, smooth=False, mode='gaussian',
+    def get_interval(self, validValues, ticks, decimals):
+        ''' Create colorbar scale
+
+        Parameters
+        ----------
+        validValues : list with two scalars (e.g. [min, max])
+            minimum and maximum valid values
+        ticks : int
+            number of ticks on the colorbar
+        decimals : int
+            decimals of scale on the colorbar
+
+        Returns
+        -------
+        interval : numpy array
+
+        '''
+        step = (validValues[1]-validValues[0]) / ticks
+        interval = np.append(np.around(np.arange(validValues[0], validValues[1], step),
+                             decimals=decimals),
+                             np.around(validValues[1], decimals=decimals))
+        return interval
+
+    def contour(self, data, validValues=None, ticks=7, decimals=0,
+                smooth=False, mode='gaussian',
                 label=True, inline=True, fontsize=3, **kwargs):
         '''Draw lined contour plots
 
@@ -230,6 +256,12 @@ class Nansatmap(Basemap):
         ----------
         data : numpy 2D array
             Input data
+        validValues : list with two scalars (e.g. [min, max])
+            minimum and maximum valid values
+        ticks : int
+            number of ticks on the colorbar
+        decimals : int
+            decimals of scale on the colorbar
         smooth : Boolean
             Apply smoothing?
         mode : string
@@ -252,14 +284,24 @@ class Nansatmap(Basemap):
         if smooth:
             data = self.smooth(data, mode, **kwargs)
 
+        # if data include NaN, set validValues and Replace Nan to a number
+        if np.any(np.isnan(data.flatten())):
+            data, validValues = self._nan_to_num(data, validValues)
+
         # draw contour lines
-        self.mpl.append(Basemap.contour(self, self.x, self.y, data, **kwargs))
+        if  validValues is None:
+            self.mpl.append(Basemap.contour(self, self.x, self.y, data, **kwargs))
+        else:
+            # Create a colorbar interval, if validValues is given
+            interval = self.get_interval(validValues, ticks, decimals)
+            self.mpl.append(Basemap.contour(self, self.x, self.y, data, interval, **kwargs))
 
         # add lables to the contour lines
         if label:
             plt.clabel(self.mpl[-1], inline=inline, fontsize=fontsize)
 
-    def contourf(self, data, smooth=False, mode='gaussian', **kwargs):
+    def contourf(self, data, validValues=None, ticks=7, decimals=0,
+                 smooth=False, mode='gaussian', **kwargs):
         '''Draw filled contour plots
 
         If smooth is True, data is smoothed. Then draw lined contour.
@@ -268,10 +310,18 @@ class Nansatmap(Basemap):
         ----------
         data : numpy 2D array
             Input data
+        validValues : list with two scalars (e.g. [min, max])
+            minimum and maximum valid values
+        ticks : int
+            number of ticks on the colorbar
+        decimals : int
+            decimals of scale on the colorbar
         smooth : Boolean
             Apply smoothing?
         mode : string
             'gaussian', 'spline', 'fourier', 'convolve'
+        interval : numpy array
+            tick for colorbar
         Parameters for Nansatmap.smooth()
 
         Modifies
@@ -280,12 +330,69 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
+        # if cmap is given, set to self.cmap
+        if 'cmap' in kwargs.keys():
+            self.cmap = kwargs.pop('cmap')
+
         # smooth data
         if smooth:
             data = self.smooth(data, mode, **kwargs)
 
+        # if data include NaN, set validValues and Replace Nan to a number
+        if np.any(np.isnan(data.flatten())):
+            data, validValues = self._nan_to_num(data, validValues)
+
         # draw filled contour
-        self.mpl.append(Basemap.contourf(self, self.x, self.y, data, **kwargs))
+        if  validValues is None:
+            self.mpl.append(Basemap.contourf(self, self.x, self.y, data,
+                                             cmap=self.cmap, **kwargs))
+        else:
+            # if validValues is given create a colorbar interval
+            interval = self.get_interval(validValues, ticks, decimals)
+            # !!NB!! filled color is ">" validValues[0]. validValues[0] is not inclueded.
+            #        Adjust the data with validValues[0] by adding a small value.
+            #        Should be modified.
+            if str(data.dtype)[0:3] == 'int':
+                data[data==validValues[0]] = validValues[0] + 1
+            else:
+                data[data==validValues[0]] = validValues[0] + (validValues[1]-validValues[0])/10000
+            self.mpl.append(Basemap.contourf(self, self.x, self.y, data,
+                                         interval, cmap=self.cmap, **kwargs))
+        self.colorbar = len(self.mpl)-1
+
+    def pcolormesh(self, data, validValues=None, **kwargs):
+        '''Make a pseudo-color plot over the map
+
+        Parameters
+        ----------
+        data : numpy 2D array
+            Input data
+        validValues : list with two scalars (e.g. [min, max])
+            minimum and maximum valid values
+        Parameters for Basemap.pcolormesh
+
+        Modifies
+        ---------
+        self.mpl : list
+            append matplotlib.collections.QuadMesh object
+
+        '''
+        # if data includes NaN, set validValues and Replace Nan to a number
+        if np.any(np.isnan(data.flatten())):
+            data, validValues = self._nan_to_num(data, validValues)
+
+        # if validValues is not None, apply mask with interval "validValues"
+        if validValues is not None:
+            mask = np.logical_or(data <= validValues[0], data >= validValues[1])
+            data = np.ma.array(data, mask=mask)
+            # set vmin and vmax if validValues is given
+            if not ('vmin' in kwargs.keys()):
+                kwargs['vmin'] = validValues[0]
+            if not ('vmax' in kwargs.keys()):
+                kwargs['vmax'] = validValues[1]
+
+        # Plot a quadrilateral mesh.
+        self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
         self.colorbar = len(self.mpl)-1
 
     def quiver(self, dataX, dataY, quivectors=30, **kwargs):
@@ -307,6 +414,9 @@ class Nansatmap(Basemap):
             append matplotlib.quiver.Quiver instance
 
         '''
+        # if Nan is included, apply mask
+        dataX = np.ma.array(dataX, mask=np.isnan(dataX))
+        dataY = np.ma.array(dataY, mask=np.isnan(dataY))
         # subsample for quiver plot
         step0 = dataX.shape[0]/quivectors
         step1 = dataX.shape[1]/quivectors
@@ -316,25 +426,6 @@ class Nansatmap(Basemap):
         lat2 = self.lat[::step0, ::step1]
         x2, y2 = self(lon2, lat2)
         self.mpl.append(Basemap.quiver(self, x2, y2, dataX2, dataY2, **kwargs))
-
-    def pcolormesh(self, data, **kwargs):
-        '''Make a pseudo-color plot over the map
-
-        Parameters
-        ----------
-        data : numpy 2D array
-            Input data
-        Parameters for Basemap.pcolormesh
-
-        Modifies
-        ---------
-        self.mpl : list
-            append matplotlib.collections.QuadMesh object
-
-        '''
-        # Plot a quadrilateral mesh.
-        self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
-        self.colorbar = len(self.mpl)-1
 
     def add_colorbar(self, fontsize=6, **kwargs):
         '''Add color bar
@@ -358,7 +449,7 @@ class Nansatmap(Basemap):
 
         # add colorbar and set font size
         if self.colorbar is not None:
-            cbar = self.fig.colorbar(self.mpl[self.colorbar], **kwargs)
+            cbar = self.fig.colorbar(self.mpl[self.colorbar],**kwargs)
             imaxes = plt.gca()
             plt.axes(cbar.ax)
             plt.xticks(fontsize=fontsize)
@@ -430,8 +521,27 @@ class Nansatmap(Basemap):
         # set default extension
         if not((fileName.split('.')[-1] in self.extensionList)):
             fileName = fileName + self.d['DEFAULT_EXTENSION']
-
         self.fig.savefig(fileName)
+
+    def _nan_to_num(self, data, validValues):
+        ''' NaN is replaced to a number and set validValues.
+
+        Parameters
+        -----------
+        data : numpy array
+        validValues : None or list with two scalars
+
+        returns
+        --------
+        data : numpy array
+        validValues : list with two scalars (min and max of valid values)
+
+        '''
+        if validValues is None:
+            validValues = [np.nanmin(data.flatten()), np.nanmax(data.flatten())]
+        data[np.isnan(data)] = validValues[0] - 999999
+
+        return data, validValues
 
     def _set_defaults(self, kwargs):
         '''Check input params and set defaut values
