@@ -19,6 +19,8 @@
 # import standard and additional libraries
 from nansat_tools import *
 import math
+import struct
+
 # import nansat parts
 try:
     from domain import Domain
@@ -1714,113 +1716,14 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def create_shapefile(self, geometry, latlon=True):
-        '''Create a shapefile in memory and add given geometry
-
-        Parameters
-        ----------
-        geometry : ogr.geometry object
-
-        Returns
-        --------
-        shape : vector dataset
-            ogr dataset with geometry (Memory)
-
-        '''
-        # Create a shapefile in memory
-        shape = ogr.GetDriverByName('Memory').CreateDataSource('wrk')
-
-        # Add a layer
-        if geometry.GetGeometryName() == 'LINESTRING':
-            lyr = shape.CreateLayer('line', None, ogr.wkbLineString)
-        elif geometry.GetGeometryName() == 'POLYGON':
-            lyr = shape.CreateLayer('polygon', None, ogr.wkbPolygon)
-        else:
-            lyr = shape.CreateLayer('point', None, ogr.wkbPoint)
-
-        # add field to the layer
-        field = ogr.FieldDefn( "latlon", ogr.OFTString )
-        lyr.CreateField (field)
-
-        # add Geometry and field to the layer
-        feature = ogr.Feature(lyr.GetLayerDefn())
-        feature.SetGeometryDirectly(geometry)
-        feature.SetField('latlon', str(latlon))
-        lyr.CreateFeature(feature)
-
-        return shape
-
-    def create_mask_from_shapefile(self, ogrDs, layerNum=0):
-        '''Create mask raster band from vector file
-
-        Parameters
-        ----------
-        ogrDs : ogr dataset
-        layerNum : int
-            mask layer number
-
-        Returns
-        --------
-        raster : raster dataset
-            gdal dataset (MEM)
-
-        '''
-        # get layer
-        lyr = ogrDs.GetLayer(layerNum)
-
-        # Create a raster in memory
-        raster = gdal.GetDriverByName('MEM').Create('',
-                                                self.vrt.dataset.RasterXSize,
-                                                self.vrt.dataset.RasterYSize,
-                                                1, gdal.GDT_Byte )
-
-        # set metadata
-        if 'latlon' in lyr[layerNum].keys() and lyr[layerNum]['latlon']!='True':
-            raster.GetRasterBand(1).SetMetadataItem('latlon', 'False')
-        else:
-            raster.GetRasterBand(1).SetMetadataItem('latlon', 'True')
-
-        # fill the band with 0
-        raster.GetRasterBand(1).Fill(0)
-        features = lyr.GetLayerDefn()
-        for iFeature in range(lyr.GetFeatureCount()):
-            # if the points in pixel/line
-            if raster.GetRasterBand(1).GetMetadataItem('latlon')!='True':
-                geoTrans = (0, 1, 0, self.vrt.dataset.RasterYSize, 0, -1)
-            # if the points in lat/lon
-            else:
-                # get extent
-                lon, lat = self.get_geolocation_grids()
-                xmin = min(lon.flatten())
-                xmax = max(lon.flatten())
-                ymin= min(lat.flatten())
-                ymax = max(lat.flatten())
-                # compute resolutions
-                xres=(xmax-xmin)/float(self.vrt.dataset.RasterXSize)
-                yres=(ymax-ymin)/float(self.vrt.dataset.RasterYSize)
-                # Create geotransform
-                geoTrans=(xmin, xres, 0, ymax, 0, -yres)
-                # set projection
-                projection = self._get_projection(self.vrt.dataset)
-                raster.SetProjection(projection)
-
-        # set GeoTransform
-        raster.SetGeoTransform(geoTrans)
-
-        # Burn the shapefile to the raster (burn value = 1 )
-        err = gdal.RasterizeLayer(raster, [1], lyr, burn_values = [1])
-
-        return raster
-
-    def get_transect(self, points, num=100, bandID=1, latlon=True):
+    def get_transect(self, points, bandID=1, latlon=True):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
         ----------
-        points : tiple has two points
-            i.e. ((lon1, lat1),(lon2, lat2)) or ((row1, col1),(row2, col2))
-        num : int
-            number of elements of transect
+        points : tuple with one or more points
+            i.e. ((lon1, lat1),(lon2, lat2),(lon3, lat3), ...) or
+                 ((row1, col1),(row2, col2),(row3, col3), ...)
         bandID : int or string
             band number or band Name
         latlon : bool
@@ -1833,131 +1736,43 @@ class Nansat(Domain):
             values of the transect
 
         '''
-        point0, point1 = points[0], points[1]
-        # if points in degree, convert them into pix/lin
-        if latlon:
-            # get SRS
-            srs = self._get_projection(self.vrt.dataset)
-            # the transformer converts lat/lon to pixel/line
-            transformer = gdal.Transformer(self.vrt.dataset, None,
-                                              ['SRC_SRS=' + srs,
-                                               'DST_SRS=' +
-                                               latlongSRS.ExportToWkt()])
-            # convert lon/lat into pix/lin
-            succ, point0 = transformer.TransformPoint(1, points[0][0], points[0][1])
-            succ, point1 = transformer.TransformPoint(1, points[1][0], points[1][1])
+        pl = np.array([[],[]])
 
-        # get sequential coordinates on pix/lin between two points
-        x = np.linspace(point0[1], point1[1], num).astype(int)
-        y = np.linspace(point0[0], point1[0], num).astype(int)
+        for iPoint in range(len(points)-1):
+            # if one point is given
+            if type(points[iPoint]) != tuple:
+                points = ((points[0], points[1]), (points[0], points[1]))
+            point0, point1 = points[iPoint], points[iPoint+1]
+            # if points in degree, convert them into pix/lin
+            if latlon:
+                if iPoint == 0:
+                    # get SRS
+                    srs = self._get_projection(self.vrt.dataset)
+                    # the transformer converts lat/lon to pixel/line
+                    transformer = gdal.Transformer(self.vrt.dataset, None,
+                                                      ['SRC_SRS=' + srs,
+                                                       'DST_SRS=' +
+                                                       latlongSRS.ExportToWkt()])
+                # convert lon/lat into pix/lin
+                succ, point0 = transformer.TransformPoint(1, points[iPoint][0],   points[iPoint][1])
+                succ, point1 = transformer.TransformPoint(1, points[iPoint+1][0], points[iPoint+1][1])
+            # compute Euclidean distance between point0 and point1
+            length = int(np.hypot(point0[0]-point1[0], point0[1]-point1[1]))
+            # if one point is given
+            if length == 0:
+                length = 1
+            # get sequential coordinates on pix/lin between two points
+            pl = np.append(pl,
+                           [list(np.linspace(point0[1], point1[1], length).astype(int)),
+                            list(np.linspace(point0[0], point1[0], length).astype(int))],
+                           axis=1)
 
         # get data
         if type(bandID) == str:
             bandID = self._get_band_number(bandID)
         data = self[bandID]
+
         # extract values
-        transect = data[x, y]
+        transect = data[list(pl[0]), list(pl[1])]
+
         return transect
-
-    def get_subset(self, points, shapefileName=None, band=1, layerNum=0,
-                   latlon=True):
-        '''Extract a subset
-
-        If shapefileName is None,
-        create a shapefile which has a layer with the given 4 points.
-        Create a Gtiff mask dataset from the shapefile.
-        Add the mask to the Nansat object.
-        Set the new geoTransform / GCPs.
-
-        Parameters
-        ----------
-        points : tiple has two points
-            i.e. ((lon1, lat1), (lon2, lat2)) or ((row1, col1), (row2, col2))
-        shapefileName : string
-            location of the shapefile
-        band : int or str
-            band number or band name
-        layerNum : int
-            mask layer number
-        latlon : bool
-            If the points in lat/lon, then True.
-            If the points in pixel/line, then False.
-
-        Modifies
-        ---------
-        self : set a subset maskband
-
-        '''
-        # if bandname is given, get band number
-        if type(band) == str:
-            band = self._get_band_number(band)
-
-        # create shapefile and get the dataset
-        if shapefileName is None:
-            geomRing = ogr.Geometry(type=ogr.wkbLinearRing)
-            geomRing.AddPoint(points[0][0], points[0][1])
-            geomRing.AddPoint(points[1][0], points[0][1])
-            geomRing.AddPoint(points[1][0], points[1][1])
-            geomRing.AddPoint(points[0][0], points[1][1])
-            geomRing.AddPoint(points[0][0], points[0][1])
-
-            geomPolygon = ogr.Geometry(type=ogr.wkbPolygon)
-            geomPolygon.AddGeometryDirectly(geomRing)
-
-            ogrDs = self.create_shapefile(geomPolygon, latlon)
-        else:
-            ogrDs = ogr.Open(shapefileName)
-
-        # create a raster from shapefile and write it to GTiff file.
-        maskDs = self.create_mask_from_shapefile(ogrDs, layerNum)
-        maskDs = gdal.GetDriverByName('GTiff').CreateCopy(self.fileName +'.tif.msk', maskDs, 0)
-        ##maskDs = gdal.GetDriverByName('VRT').CreateCopy(self.fileName +'.tif.msk', maskDs, 0)
-
-
-        # get destination(subset) band size
-        maskArray = maskDs.GetRasterBand(1).ReadAsArray()
-        dstXSize = int( max(np.ma.where(maskArray==1)[1])
-                       -min(np.ma.where(maskArray==1)[1])+1)
-        dstYSize = int( max(np.ma.where(maskArray==1)[0])
-                       -min(np.ma.where(maskArray==1)[0])+1)
-
-        # get offsets of the subset data on the source data
-        xOff = min(np.ma.where(maskArray==1)[1])
-        if 'latlon' in maskDs.GetRasterBand(1).GetMetadata_Dict().keys() and \
-                    maskDs.GetRasterBand(1).GetMetadataItem('latlon') == 'True':
-            yOff = min(np.ma.where(maskArray==1)[0])
-        else:
-            yOff = self.vrt.dataset.RasterYSize - max(np.ma.where(maskArray==1)[0]) - 1
-
-        # modify vrt of the masked dataset
-        self.vrt.set_subsetMask(maskDs, xOff, yOff, dstXSize, dstYSize)
-        """test"""
-        #self.vrt.export('c:/Users/asumak/Data/output/subset.vrt')
-
-        # Set new GeoTransform
-        geoTransform = list(self.vrt.dataset.GetGeoTransform())
-        if geoTransform != [0.0, 1.0, 0.0, 0.0, 0.0, 1.0]:
-            geoTransform[0] = geoTransform[0] + geoTransform[1] * xOff
-            geoTransform[3] = geoTransform[3] + geoTransform[5] * yOff
-            self.vrt.dataset.SetGeoTransform((geoTransform[0], geoTransform[1], 0,
-                                          geoTransform[3], 0, geoTransform[5]))
-
-        # set new GCPs
-        srcGCPs = self.vrt.dataset.GetGCPs()
-        if len(srcGCPs) > 0:
-            dstGCPs = []
-            Id = 0
-            for iGCP in srcGCPs:
-                if xOff <= iGCP.GCPPixel and iGCP.GCPPixel <= (xOff + dstXSize) and \
-                   yOff <= iGCP.GCPLine and iGCP.GCPLine <= (yOff + dstYSize):
-                    Id += 1
-                    dstGCP = gdal.GCP(iGCP.GCPX,
-                                      iGCP.GCPY,
-                                      iGCP.GCPZ,
-                                      iGCP.GCPPixel - xOff,
-                                      iGCP.GCPLine - yOff,
-                                      iGCP.Info, str(Id))
-                    dstGCPs.append(dstGCP)
-            projection = self.vrt.dataset.GetGCPProjection()
-            self.vrt.dataset.SetGCPs(dstGCPs, projection)
-
