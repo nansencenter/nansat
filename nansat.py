@@ -1674,15 +1674,19 @@ class Nansat(Domain):
         # if old 'valid' mask was applied in files, replace with new mask
         maskMat[maskMat == 128] = 64
 
+        # get metadata from the last image
+        bandsMetadata = n.bands()
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
         self.add_band(array=maskMat, parameters={'name': maskName})
-        # add averaged bands
+        # add averaged bands with metadata
         for b in bands:
             self.logger.debug('    %s' % b)
-            self.add_band(array=avgMat[b], parameters={'name': b})
-            self.add_band(array=stdMat[b], parameters={'name': b + '_std'})
+            parameters = bandsMetadata[b]
+            self.add_band(array=avgMat[b], parameters=parameters)
+            parameters['name'] = b + '_std'
+            self.add_band(array=stdMat[b], parameters=parameters)
 
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Overloaded in childs.'''
