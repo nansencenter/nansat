@@ -177,6 +177,25 @@ class GDALError(Error):
     pass
 
 
+class PointBrowser():
+    '''
+    Click on points and get the X-Y coordinates.
+
+    '''
+    def __init__(self, data):
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111)
+        self.ax.imshow(data)
+        self.points = []
+
+    def onclick(self, event):
+        if event.xdata is not None and event.ydata is not None:
+            self.points.append((event.xdata, event.ydata))
+
+    def get_points(self):
+        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        plt.show()
+
 class Node(object):
     '''
     Rapidly assemble XML using minimal coding.
@@ -526,3 +545,5 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(LOG_LEVEL)
 
     return logger
+
+
