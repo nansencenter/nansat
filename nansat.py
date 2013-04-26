@@ -18,8 +18,6 @@
 
 # import standard and additional libraries
 from nansat_tools import *
-import math
-import struct
 
 # import nansat parts
 try:
@@ -69,7 +67,6 @@ else:
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
         print 'Cannot find "gdal_PIXFUN.so". Compiling pixelfunctions...'
         os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
-
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -1720,63 +1717,253 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def get_transect(self, points, bandID=1, latlon=True):
+    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
         ----------
-        points : tuple with one or more points
+        points : tuple with one or more points or shape file name
             i.e. ((lon1, lat1),(lon2, lat2),(lon3, lat3), ...) or
-                 ((row1, col1),(row2, col2),(row3, col3), ...)
-        bandID : int or string
-            band number or band Name
+                 ((col1, row1),(col2, row2),(col3, row3), ...)
+        bandID : list of int or string
+            elements of the list are band number or band Name
         latlon : bool
             If the points in lat/lon, then True.
             If the points in pixel/line, then False.
+        transect : bool
+            If True, get all transact values
+            If False, get values of points
+        returnOGR: bool
+            If True, then return numpy array
+            If False, return OGR object
+        layerNum: int
+            If shapefile is given as points, it is the number of the layer
 
         Returns
         --------
-        transect : numpy array
-            values of the transect
+        transect : numpy array or OGR object
+            values of the transect or OGR object with the transect values
 
         '''
-        pl = np.array([[],[]])
+        # if shapefile is given, get corner points from it
+        if type(points) == str:
+            points, latlon = self._get_corner_points(points, latlon, layerNum)
 
-        for iPoint in range(len(points)-1):
+        # if points is not given, get points from GUI ...
+        if points is None:
+            firstBand =bandList[0]
+            if type(firstBand) == str:
+                firstBand = self._get_band_number(firstBand)
+            browser = PointBrowser(self[firstBand])
+            browser.get_points()
+            points = browser.points
+            latlon = False
+
+        # get wkt
+        wkt = self._get_projection(self.vrt.dataset)
+
+        pl = np.array([[],[]])
+        transformer = None
+        for iPoint in range(len(points)):
             # if one point is given
             if type(points[iPoint]) != tuple:
-                points = ((points[0], points[1]), (points[0], points[1]))
-            point0, point1 = points[iPoint], points[iPoint+1]
+                point0 = (points[0], points[1])
+                point1 = (points[0], points[1])
+            # if we want points ...
+            elif not transect:
+                point0 = (points[iPoint][0], points[iPoint][1])
+                point1 = (points[iPoint][0], points[iPoint][1])
+            # if we want a transect ...
+            else:
+                try:
+                    point0 = points[iPoint]
+                    point1 = points[iPoint+1]
+                except:
+                    break
             # if points in degree, convert them into pix/lin
             if latlon:
                 if iPoint == 0:
-                    # get SRS
-                    srs = self._get_projection(self.vrt.dataset)
-                    # the transformer converts lat/lon to pixel/line
+                    # create transformer which converts lon/lat into pixel/line
                     transformer = gdal.Transformer(self.vrt.dataset, None,
-                                                      ['SRC_SRS=' + srs,
-                                                       'DST_SRS=' +
-                                                       latlongSRS.ExportToWkt()])
+                                                  ['SRC_SRS=' + wkt,
+                                                   'DST_SRS=' +
+                                                   latlongSRS.ExportToWkt()])
                 # convert lon/lat into pix/lin
-                succ, point0 = transformer.TransformPoint(1, points[iPoint][0],   points[iPoint][1])
-                succ, point1 = transformer.TransformPoint(1, points[iPoint+1][0], points[iPoint+1][1])
+                succ, point0 = transformer.TransformPoint(1, point0[0], point0[1], 0)
+                succ, point1 = transformer.TransformPoint(1, point1[0], point1[1], 0)
             # compute Euclidean distance between point0 and point1
             length = int(np.hypot(point0[0]-point1[0], point0[1]-point1[1]))
-            # if one point is given
+            # if a point is given
             if length == 0:
                 length = 1
             # get sequential coordinates on pix/lin between two points
             pl = np.append(pl,
-                           [list(np.linspace(point0[1], point1[1], length).astype(int)),
-                            list(np.linspace(point0[0], point1[0], length).astype(int))],
+                           [list(np.linspace(point0[0], point1[0], length).astype(int)),
+                            list(np.linspace(point0[1], point1[1], length).astype(int))],
                            axis=1)
-
+        transect = []
         # get data
-        if type(bandID) == str:
-            bandID = self._get_band_number(bandID)
-        data = self[bandID]
+        for iBand in bandList:
+            if type(iBand) == str:
+                iBand = self._get_band_number(iBand)
+            data = self[iBand]
+            # extract values
+            transect.append(data[list(pl[1]), list(pl[0])])
+        if returnOGR:
+            return self.create_ogrDs(pl, wkt, transformer, bandList, transect)
+        else:
+            return transect
 
-        # extract values
-        transect = data[list(pl[0]), list(pl[1])]
+    def create_ogrDs(self, points, wkt=None, transformer=None, fieldNames=None, fieldValues=None):
+        '''Create OGR dataset with geometry of given points
 
-        return transect
+        Parameters
+        ----------
+        points : list of coordinates
+            e.g. [[x1, x2, x3, ...],[y1, y2, y3, ...]]
+        wkt : string (SRS WKT)
+            spatial reference system of data
+        transformer : Transformer object
+            transformer to convert lon/lat to pix/lin
+        fieldNames : list
+            elements are names of fields (band name or band number)
+        fieldValues : list
+            elements are transect values in each band
+
+        Returns
+        --------
+        ogrDs : OGR object
+            ogr dataset with geometry (coordinates) and transect values
+
+        '''
+        # if transformer is None, create transformer to converts pix/lin into lon/lat
+        if transformer is None:
+            transformer = gdal.Transformer(self.vrt.dataset, None,
+                                          ['SRC_SRS=' + wkt,
+                                           'DST_SRS=' +
+                                           latlongSRS.ExportToWkt()])
+        # create srs from wkt
+        srs = osr.SpatialReference()
+        srs.ImportFromWkt(wkt)
+
+        # add filedName of pixel and line coordinates
+        fieldNames.append('X (pixel)')
+        fieldNames.append('Y (line)')
+        # add filedValue of pixel and line coordinates
+        fieldValues = np.append(fieldValues, [points[0]], axis=0)
+        fieldValues = np.append(fieldValues, [points[1]], axis=0)
+        fieldValues = np.array(fieldValues)
+
+        # Create a shapefile in memory
+        ogrDs = ogr.GetDriverByName('Memory').CreateDataSource('wrk')
+        # Add a layer
+        lyr = ogrDs.CreateLayer('transect', srs, ogr.wkbPoint)
+
+        # set fields to the layer
+        for iFieldName in fieldNames:
+            field = ogr.FieldDefn(str(iFieldName), ogr.OFTReal)
+            lyr.CreateField(field)
+
+        # add feature to the layer
+        for i in range(len(points[0])):
+            # create geometry
+            geometry = ogr.Geometry(type=ogr.wkbPoint)
+            # convert pix/lin into lon/lat
+            succ, point = transformer.TransformPoint(0, points[0][i], points[1][i])
+            # set lat/lon coordinate
+            geometry.SetPoint_2D(0, point[0], point[1])
+            geometry.AssignSpatialReference(srs)
+            # add feature (geometry) and set the value of the each field
+            self._add_feature(lyr, geometry, fieldNames, fieldValues.T[i])
+        return ogrDs
+
+    def _add_feature(self, lyr, geometry, fieldNames=None, fieldValues=None):
+        ''' Add a feature (geometry and fields) to the layer
+
+        Parameters
+        ----------
+        lyr : layer object
+        geometry : geometry object
+        fieldNames : list with string elements
+            names of fields
+        fieldValues : list of scalar
+            value of each field
+
+        Modifies
+        ---------
+        lyr : add a feature (geometry and field values)
+
+        '''
+        # create feature and set geometry to the feature
+        feature = ogr.Feature(lyr.GetLayerDefn())
+        feature.SetGeometryDirectly(geometry)
+        for i, iFieldName in enumerate(fieldNames):
+            feature.SetField(str(iFieldName), float(fieldValues[i]))
+        # set feature to the layer
+        lyr.CreateFeature(feature)
+        # clean up feature
+        feature.Destroy()
+
+    def _get_corner_points(self, fileName, latlon, layerNum=0):
+        '''Get corner points form shapefile
+
+        !!NB!!
+        if shapefile has SRS, assume that geometry is lon/lat
+        if not, assume that the geometry in pix/lin is given
+        Muptipolygon is not supported
+
+        Parameters
+        ----------
+        fileName : file name of a shape file
+        latlon : bool
+        layerNum : int
+            number of layer which has point/line/polygon data
+
+        Returns
+        --------
+        points : tuple or None
+            elements of tuple are X-Y coordinates
+
+        '''
+        # open shapefile and get layer and srs from layer
+        ogrDs = ogr.Open(fileName)
+        lyr = ogrDs.GetLayer(layerNum)
+        srs = lyr.GetSpatialRef()
+
+        points = []
+        for feature in lyr:
+            geom = feature.GetGeometryRef()
+            # if srs is None, get srs
+            if geom is not None and srs is None:
+                srs = geom.GetSpatialReference()
+                # if srs is given, assume geometry is in lat/lon,
+                if srs is None:
+                    latlon = False
+                else:
+                    latlon = True
+            # get corner points from geometry
+            if geom is not None and (geom.GetGeometryType() == ogr.wkbPoint or
+                                     geom.GetGeometryType() == ogr.wkbPoint25D):
+                p = geom.GetPoints()[0]
+                points.append((p[0], p[1]))
+            elif geom is not None and (geom.GetGeometryType() == ogr.wkbLineString or
+                                       geom.GetGeometryType() == ogr.wkbLineString25D):
+                for iPoint in range(geom.GetPointCount()):
+                    p = geom.GetPoints()[iPoint]
+                    points.append((p[0], p[1]))
+            elif geom is not None and (geom.GetGeometryType() == ogr.wkbPolygon or
+                                       geom.GetGeometryType() == ogr.wkbPolygon25D):
+                ring = geom.GetGeometryRef(0)
+                for iPoint in range(ring.GetPointCount()):
+                    p = ring.GetPoint(iPoint)
+                    points.append((p[0], p[1]))
+            # if shapefile has no geometry or multipolygon, give warning
+            else:
+                print 'No supported geometry in shape file. (multi-ploygon is not supported)'
+        if points == []:
+            points = None
+        else:
+            points = tuple(points)
+
+        return points, latlon
+
