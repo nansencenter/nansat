@@ -1873,36 +1873,16 @@ class Nansat(Domain):
             # set lat/lon coordinate
             geometry.SetPoint_2D(0, point[0], point[1])
             geometry.AssignSpatialReference(srs)
-            # add feature (geometry) and set the value of the each field
-            self._add_feature(lyr, geometry, fieldNames, fieldValues.T[i])
+            # create feature and set geometry to the feature
+            feature = ogr.Feature(lyr.GetLayerDefn())
+            feature.SetGeometryDirectly(geometry)
+            for j, jFieldName in enumerate(fieldNames):
+                feature.SetField(str(jFieldName), float(fieldValues.T[i][j]))
+            # set feature to the layer
+            lyr.CreateFeature(feature)
+            # clean up feature
+            feature.Destroy()
         return ogrDs
-
-    def _add_feature(self, lyr, geometry, fieldNames=None, fieldValues=None):
-        ''' Add a feature (geometry and fields) to the layer
-
-        Parameters
-        ----------
-        lyr : layer object
-        geometry : geometry object
-        fieldNames : list with string elements
-            names of fields
-        fieldValues : list of scalar
-            value of each field
-
-        Modifies
-        ---------
-        lyr : add a feature (geometry and field values)
-
-        '''
-        # create feature and set geometry to the feature
-        feature = ogr.Feature(lyr.GetLayerDefn())
-        feature.SetGeometryDirectly(geometry)
-        for i, iFieldName in enumerate(fieldNames):
-            feature.SetField(str(iFieldName), float(fieldValues[i]))
-        # set feature to the layer
-        lyr.CreateFeature(feature)
-        # clean up feature
-        feature.Destroy()
 
     def _get_corner_points(self, fileName, latlon, layerNum=0):
         '''Get corner points form shapefile
