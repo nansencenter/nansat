@@ -45,13 +45,8 @@ from dateutil.parser import parse
 from random import choice
 from string import Template, ascii_uppercase, digits
 
-## used in figure
-from math import floor, log10
-
-## used in nansat_map
-from mpl_toolkits.basemap import Basemap
-import scipy.ndimage as ndimage
-from math import pow
+## used in figure, nansat_map
+from math import floor, log10, pow
 
 ## used in nansat_tools
 import copy

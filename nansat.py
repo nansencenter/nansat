@@ -1586,8 +1586,8 @@ class Nansat(Domain):
             avgMat[b] = np.zeros((dstShape[0], dstShape[1]))
             stdMat[b] = np.zeros((dstShape[0], dstShape[1]))
 
-        cntMat = np.zeros((dstShape[0], dstShape[1]), 'uint16')
-        maskMat = np.zeros((2, dstShape[0], dstShape[1]))
+        cntMat = np.zeros((dstShape[0], dstShape[1]), 'float16')
+        maskMat = np.zeros((2, dstShape[0], dstShape[1]), 'int8')
 
         # for all input files
         for i, f in enumerate(files):
@@ -1601,6 +1601,9 @@ class Nansat(Domain):
             except:
                 self.logger.error('Unable to open %s' % f)
                 continue
+
+            # get metadata from the image (only last img metadata is kept)
+            bandsMetadata = n.bands()
 
             # add mask band [0: nodata, 1: cloud, 2: land, 64: data]
             try:
@@ -1626,7 +1629,7 @@ class Nansat(Domain):
                 mask = np.zeros(n.shape()).astype('int8')
 
             # add data to counting matrix
-            cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'uint16')
+            cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
             cntMatTmp[mask > 2] = 1
             cntMat += cntMatTmp
             # add data to mask matrix (maximum of 0, 1, 2, 64)
@@ -1652,7 +1655,7 @@ class Nansat(Domain):
             n = None
 
         # average products
-        cntMat[cntMat == 0] = 1
+        cntMat[cntMat == 0] = np.nan
         for b in bands:
             self.logger.debug('    Averaging %s' % b)
             # get average
@@ -1671,16 +1674,19 @@ class Nansat(Domain):
         # if old 'valid' mask was applied in files, replace with new mask
         maskMat[maskMat == 128] = 64
 
-        # get metadata from the last image
-        bandsMetadata = n.bands()
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'name': maskName})
+        self.add_band(array=maskMat, parameters={'name': maskName, 'long_name': 'L2-mask', 'standard_name': 'mask'})
         # add averaged bands with metadata
         for b in bands:
             self.logger.debug('    %s' % b)
-            parameters = bandsMetadata[b]
+
+            # get metadata of this band
+            for bm in bandsMetadata:
+                if bandsMetadata[bm]['name'] == b:
+                    parameters = bandsMetadata[bm]
+
             self.add_band(array=avgMat[b], parameters=parameters)
             parameters['name'] = b + '_std'
             self.add_band(array=stdMat[b], parameters=parameters)
