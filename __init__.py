@@ -42,7 +42,12 @@ try:
 except ImportError:
     warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
 
+try:
+    from mosaic import Mosaic
+except ImportError:
+    warnings.warn('''Cannot import Mosaic! Mosaic will not work''')
+
 os.environ['LOG_LEVEL'] = '30'
 
-__all__ = ['Nansat', 'Domain', 'Figure', 'Nansatmap', 'np', 'plt', 'Basemap']
+__all__ = ['Nansat', 'Domain', 'Figure', 'Nansatmap', 'np', 'plt', 'Basemap', 'Mosaic']
 

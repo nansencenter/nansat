@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
 
-from nansat import Nansat, Domain
+from nansat import Nansat, Domain, Mosaic
 
 # input and output file names
 iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -224,9 +224,9 @@ n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_pr
 
 # Perform batch averaging of several files
 # 1. Create destination Nansat object with desired projection
-nMosaic = Nansat(domain=dStereo)
+nMosaic = Mosaic(domain=dStereo)
 # 2. Perfom averaging
-nMosaic.mosaic(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
+nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
 # 3. Get mask of non-valid pixels
 mask = nMosaic['mask']
 # 4. Output averaged data using the mask
