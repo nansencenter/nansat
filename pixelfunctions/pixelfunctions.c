@@ -32,6 +32,11 @@
 #include <stdio.h> 
 #include <stdlib.h>
 
+void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace);
+        
 CPLErr RealPixelFunc(void **papoSources, int nSources, void *pData,
                      int nXSize, int nYSize,
                      GDALDataType eSrcType, GDALDataType eBufType,
@@ -1132,11 +1137,33 @@ CPLErr ComplexData(void **papoSources, int nSources, void *pData,
 return CE_None;
 }
 
-
+/************************************************************************/
+/*                       Convert Rrs to Rrsw                            */
+/************************************************************************/
+/* scientifc function */
 double NormReflectanceToRemSensReflectanceFunction(double *b){
     return b[0] / (0.52 + 1.7 * b[0]);
 }
 
+/* pixel function */
+CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunction(NormReflectanceToRemSensReflectanceFunction,
+        papoSources, nSources,  pData,
+        nXSize, nYSize,
+        eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+/************************************************************************/
+/* Generic Pixel Function is called from a pixel function and calls 
+ * corresponding scientific function */
+/************************************************************************/
 void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
@@ -1165,26 +1192,6 @@ void GenericPixelFunction(double f(double*), void **papoSources, int nSources, v
 	}
 
 }
-
-/************************************************************************/
-/*                       Convert Rrs to Rrsw                            */
-/************************************************************************/
-
-CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace)
-{
-
-GenericPixelFunction(NormReflectanceToRemSensReflectanceFunction,
-    papoSources, nSources,  pData,
-    nXSize, nYSize,
-    eSrcType, eBufType,
-    nPixelSpace, nLineSpace);
-
-return CE_None;
-}
-
 /************************************************************************/
 /*                     GDALRegisterDefaultPixelFunc()                   */
 /************************************************************************/
