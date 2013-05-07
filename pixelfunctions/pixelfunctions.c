@@ -1133,6 +1133,38 @@ return CE_None;
 }
 
 
+double NormReflectanceToRemSensReflectanceFunction(double *b){
+    return b[0] / (0.52 + 1.7 * b[0]);
+}
+
+void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol, iSrc;
+	double *bVal, result;
+    bVal = malloc(nSources * sizeof (double));
+    
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+            for (iSrc = 0; iSrc < nSources; iSrc ++)
+                bVal[iSrc] = SRCVAL(papoSources[iSrc], eSrcType, ii);
+
+			result = f(bVal);
+
+			GDALCopyWords(&result, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+}
 
 /************************************************************************/
 /*                       Convert Rrs to Rrsw                            */
@@ -1143,26 +1175,13 @@ CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, voi
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace)
 {
-	int ii, iLine, iCol;
-	double rrs, rrsw;
 
-	/* ---- Set pixels ---- */
-	for( iLine = 0; iLine < nYSize; iLine++ )
-	{
-		for( iCol = 0; iCol < nXSize; iCol++ )
-		{
-			ii = iLine * nXSize + iCol;
-			/* Source raster pixels may be obtained with SRCVAL macro */
-			rrs = SRCVAL(papoSources[0], eSrcType, ii);
-			rrsw = rrs / (0.52 + 1.7 * rrs);
+GenericPixelFunction(NormReflectanceToRemSensReflectanceFunction,
+    papoSources, nSources,  pData,
+    nXSize, nYSize,
+    eSrcType, eBufType,
+    nPixelSpace, nLineSpace);
 
-			GDALCopyWords(&rrsw, GDT_Float64, 0,
-			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
-			              eBufType, nPixelSpace, 1);
-		}
-	}
-
-	/* ---- Return success ---- */
 return CE_None;
 }
 
