@@ -767,11 +767,11 @@ class Domain():
 
         '''
         lonList, latList = self.get_border()
-        
+
         # apply > 180 deg correction to longitudes
         for ilon, lon in enumerate(lonList):
             lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180, sin(lon * pi / 180.))
-            
+
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
         # outer quotes have to be double and inner - single!
@@ -877,13 +877,15 @@ class Domain():
 
         return projection
 
-    def _transform_points(self, colVector, rowVector):
+    def _transform_points(self, colVector, rowVector, DstToSrc=0):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
         -----------
         colVector : lists
             X and Y coordinates with any coordinate system
+        DstToSrc : 0 or 1
+            1 for inverse transformation, 0 for forward transformation.
 
         Returns
         --------
@@ -908,7 +910,7 @@ class Domain():
         lonVector = []
         for pixel, line in zip(colVector, rowVector):
             try:
-                succ, point = transformer.TransformPoint(0, pixel, line)
+                succ, point = transformer.TransformPoint(DstToSrc, pixel, line)
                 lonVector.append(point[0])
                 latVector.append(point[1])
             except:
@@ -1063,11 +1065,11 @@ class Domain():
 
     def reproject_GCPs(self, srsString):
         '''Reproject all GCPs to a new spatial reference system
-        
+
         Necessary before warping an image if the given GCPs
-        are in a coordinate system which has a singularity 
+        are in a coordinate system which has a singularity
         in (or near) the destination area (e.g. poles for lonlat GCPs)
-        
+
         Parameters
         ----------
         srsString : string
@@ -1077,7 +1079,7 @@ class Domain():
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
         '''
-         
+
         # Make tranformer from GCP SRS to destination SRS
         dstSRS = osr.SpatialReference()
         dstSRS.ImportFromProj4(srsString)
