@@ -79,7 +79,7 @@ wm = n.watermask()
 wmArray = wm[1]
 
 # write figure with land overlay (gray color) and apply brightness gamma correction
-n.write_figure(oFileName + '_land.png', clim='hist', mask_array=wmArray, mask_lut={0: [128, 128, 128]}, logarithm=True, gamma=3)
+n.write_figure(oFileName + '_land.png', clim='hist', mask_array=wmArray, mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
 
 # add logo to image to the lower left corner
 # (make sure file is in the current folder)

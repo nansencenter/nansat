@@ -271,7 +271,7 @@ class Mosaic(Nansat):
                 continue
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
-            cntMatTmp[mask > 2] = 1
+            cntMatTmp[mask == 64] = 1
             cntMat += cntMatTmp
             # add data to mask matrix (maximum of 0, 1, 2, 64)
             maskMat[0, :, :] = mask
@@ -288,7 +288,7 @@ class Mosaic(Nansat):
                     self.logger.error('%s is not in %s' % (b, n.fileName))
                 if a is not None:
                     # mask invalid data
-                    a[mask <= 2] = 0
+                    a[mask < 64] = 0
                     # sum of valid values and squares
                     avgMat[b] += a
                     stdMat[b] += np.square(a)
@@ -327,6 +327,9 @@ class Mosaic(Nansat):
 
             # get metadata of this band from the last image
             parameters = lastN.get_metadata(bandID=b)
+            parameters.pop('dataType')
+            parameters.pop('SourceBand')
+            parameters.pop('SourceFilename')
             # add band and std with metadata
             self.add_band(array=avgMat[b], parameters=parameters)
             parameters['name'] = parameters['name'] + '_std'

@@ -429,6 +429,7 @@ class Figure():
                     clim[1][iBand] = bins[len(cumhist[cumhist <
                                               1 - ((1 - ratioList[iBand]) /
                                                    2)])]
+        self.color_limits = clim
         return clim
 
     def clip(self, **kwargs):
