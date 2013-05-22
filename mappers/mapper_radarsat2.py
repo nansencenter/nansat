@@ -1,6 +1,6 @@
 # Name:         mapper_radarsat2
 # Purpose:      Nansat mapping for Radarsat2 data
-# Authors:      Knut-Frode Dagestad, Morten W. Hansen, Anton Korosov
+# Authors:      Morten W. Hansen, Knut-Frode Dagestad, Anton Korosov
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
