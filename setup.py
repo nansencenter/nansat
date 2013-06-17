@@ -39,7 +39,7 @@ myNansatDir = os.getcwd()
 #                       Set environment variables
 #------------------------------------------------------------------------------#
 dicDir = {'PYTHONPATH':"\\mappers", 'GDAL_DRIVER_PATH':"\\pixelfunctions"}
-
+'''
 for iKey in dicDir.keys():
     # check if iKey (environment variable) exist
     command = ("set %s" %iKey)
@@ -70,7 +70,7 @@ for iKey in dicDir.keys():
         #process = Popen(command, cwd=path, shell=True, stdout=subprocess.PIPE)
         process = Popen(command, shell=True, stdout=subprocess.PIPE)
         process.stdout.close()
-
+'''
 '''
 path = "/Home/asumak/package/"
 #path = myDir
@@ -101,7 +101,7 @@ for iKey in dicDir.keys():
 #------------------------------------------------------------------------------#
 #                               Copy files
 #------------------------------------------------------------------------------#
-
+'''
 from distutils.core import setup
 setup(
     name=NAME,
@@ -120,3 +120,4 @@ setup(
     packages = {NAME, NAME + '.mappers'},
     package_data={NAME: ['wkv.xml', "fonts/*.ttf", "pixelfunctions/*"]},
     )
+'''
