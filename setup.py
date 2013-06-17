@@ -32,8 +32,8 @@ ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 #myDir = os.environ.get("HOME")
-myNansatDir = str(os).split(" ")[-1][1:].replace("os.pyc'>","site-packages\\"+NAME)
-print myNansatDir
+#myNansatDir = str(os).split(" ")[-1][1:].replace("os.pyc'>","site-packages\\"+NAME)
+myNansatDir = os.getcwd()
 
 #------------------------------------------------------------------------------#
 #                       Set environment variables
@@ -61,10 +61,11 @@ for iKey in dicDir.keys():
             # command to replace oldfolder to (oldfolder+addFolder)
             command = ('setx %s %s;%s'% (iKey, oldPath, newPath))
             print ''
+            print 'oldpath : ', oldPath
             print iKey, ' : not resgistered'
         else:
-            command=''
-    if command != "":
+            command = ''
+    if command != '':
         print command
         #process = Popen(command, cwd=path, shell=True, stdout=subprocess.PIPE)
         process = Popen(command, shell=True, stdout=subprocess.PIPE)
@@ -100,6 +101,7 @@ for iKey in dicDir.keys():
 #------------------------------------------------------------------------------#
 #                               Copy files
 #------------------------------------------------------------------------------#
+
 from distutils.core import setup
 setup(
     name=NAME,
