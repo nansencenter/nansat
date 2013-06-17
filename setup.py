@@ -101,7 +101,6 @@ for iKey in dicDir.keys():
 #------------------------------------------------------------------------------#
 #                               Copy files
 #------------------------------------------------------------------------------#
-'''
 from distutils.core import setup
 setup(
     name=NAME,
@@ -120,4 +119,3 @@ setup(
     packages = {NAME, NAME + '.mappers'},
     package_data={NAME: ['wkv.xml', "fonts/*.ttf", "pixelfunctions/*"]},
     )
-'''
