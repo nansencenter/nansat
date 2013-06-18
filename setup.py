@@ -12,6 +12,7 @@
 import os
 from subprocess import Popen
 import subprocess
+import sys
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -31,73 +32,68 @@ MICRO               = 0
 ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
-#myDir = os.environ.get("HOME")
-#myNansatDir = str(os).split(" ")[-1][1:].replace("os.pyc'>","site-packages\\"+NAME)
+osName = sys.platform
 myNansatDir = os.getcwd()
+""" !! NB: How to do for Mac ??  """
+if not('win' in osName):
+    myHomeDir = os.environ.get("HOME")
+    index = myNansatDir.rfind(myHomeDir)
+    myNansatDir = myNansatDir[index:]
+
 
 #------------------------------------------------------------------------------#
 #                       Set environment variables
 #------------------------------------------------------------------------------#
-dicDir = {'PYTHONPATH':"\\mappers", 'GDAL_DRIVER_PATH':"\\pixelfunctions"}
-'''
-for iKey in dicDir.keys():
-    # check if iKey (environment variable) exist
-    command = ("set %s" %iKey)
-    val = Popen(command, shell=True, stdout=subprocess.PIPE)
-    stdout_value = val.communicate()[0]
-    # if iKey does not exists
-    if stdout_value == "":
-        # command to add new environment variable
-        myNansatDir = myNansatDir.replace("/","\\")
-        command = ("setx %s %s%s" % ( iKey, myNansatDir, dicDir[iKey]))
-        print ''
-        print iKey, ' : does not exist'
-    # if iKey exist
-    else:
-        # if the folder is not registered yet
-        if stdout_value.find(myNansatDir + dicDir[iKey]) == -1:
-            oldPath = stdout_value.replace("/","\\").rstrip().split('=')[1]
-            newPath = (myNansatDir + dicDir[iKey]).replace("/","\\")
-            # command to replace oldfolder to (oldfolder+addFolder)
-            command = ('setx %s %s;%s'% (iKey, oldPath, newPath))
-            print ''
-            print 'oldpath : ', oldPath
-            print iKey, ' : not resgistered'
+if 'win' in osName:
+    dicDir = {'PYTHONPATH':"\\mappers", 'GDAL_DRIVER_PATH':"\\pixelfunctions"}
+    for iKey in dicDir.keys():
+        # check if iKey (environment variable) exist
+        command = ("set %s" %iKey)
+        val = Popen(command, shell=True, stdout=subprocess.PIPE)
+        stdout_value = val.communicate()[0]
+        # if iKey does not exists
+        if stdout_value == "":
+            # command to add new environment variable
+            myNansatDir = myNansatDir.replace("/","\\")
+            command = ("setx %s %s%s" % ( iKey, myNansatDir, dicDir[iKey]))
+        # if iKey exist
         else:
-            command = ''
-    if command != '':
-        print command
-        #process = Popen(command, cwd=path, shell=True, stdout=subprocess.PIPE)
-        process = Popen(command, shell=True, stdout=subprocess.PIPE)
-        process.stdout.close()
-'''
-'''
-path = "/Home/asumak/package/"
-#path = myDir
+            # if the folder is not registered yet
+            if stdout_value.find(myNansatDir + dicDir[iKey]) == -1:
+                oldPath = stdout_value.replace("/","\\").rstrip().split('=')[1]
+                newPath = (myNansatDir + dicDir[iKey]).replace("/","\\")
+                # command to replace oldfolder to (oldfolder+addFolder)
+                command = ('setx %s %s;%s'% (iKey, oldPath, newPath))
+            else:
+                command = ''
+        if command != '':
+            process = Popen(command, shell=True, stdout=subprocess.PIPE)
+            process.stdout.close()
+    """ !! NB: How to do for Mac ??  """
+else:
+    dicDir = {'PYTHONPATH':"/mappers", 'GDAL_DRIVER_PATH':"/pixelfunctions"}
+    for iKey in dicDir.keys():
+        # check if iKey (environment variable) exist
+        command = ("grep '%s' .bashrc" %iKey)
+        val = Popen(command, cwd=myHomeDir, shell=True, stdout=subprocess.PIPE)
+        stdout_value = val.communicate()[0]
+        # if iKey does not exists
+        if stdout_value =="":
+            # command to add new environment variable
+            command = ("echo 'export %s=%s%s' >> .bashrc" % ( iKey, myNansatDir, dicDir[iKey]))
+        # if iKey exist
+        else:
+            # if the folder is not registered yet
+            if stdout_value.find(myNansatDir + dicDir[iKey]) == -1:
+                oldFolder = stdout_value.rstrip()
+                addFolder = (myNansatDir + dicDir[iKey])
+                command = ('echo "export %s=\$%s:%s" >> .bashrc' % (iKey, iKey, addFolder))
+            else:
+                command = ""
+        if command != "":
+            process = Popen(command, cwd=myHomeDir, shell=True, stdout=subprocess.PIPE)
+            process.stdout.close()
 
-dicDir = {'PYTHONPATH':"/mappers", 'GDAL_DRIVER_PATH':"/pixelfunctions"}
-for iKey in dicDir.keys():
-    # check if iKey (environment variable) exist
-    command = ("grep '%s' .bashrc" %iKey)
-    val = Popen(command, cwd=path, shell=True, stdout=subprocess.PIPE)
-    stdout_value = val.communicate()[0]
-    # if iKey does not exists
-    if stdout_value =="":
-        # command to add new environment variable
-        command = ("echo 'export %s = %s%s' >> .bashrc" % ( iKey, myNansatDir, dicDir[iKey]))
-    # if iKey exist
-    else:
-        # if the folder is not registered yet
-        if stdout_value.find(myNansatDir + dicDir[iKey]) == -1:
-            oldFolder = stdout_value.replace("/","\/").rstrip()
-            addFolder = (myNansatDir + dicDir[iKey]).replace("/","\/")
-            # command to replace oldfolder to (oldfolder+addFolder)
-            command = ('sed -i -e "s/%s/%s:%s/g" .bashrc' % (oldFolder, oldFolder, addFolder))
-        else:
-            command = ""
-    if command != "":
-        Popen(command, cwd=path, shell=True)
-'''
 #------------------------------------------------------------------------------#
 #                               Copy files
 #------------------------------------------------------------------------------#
