@@ -7,6 +7,7 @@
 # Created:     17.06.2013
 # Copyright:   (c) asumak 2012
 # Licence:     <your licence>
+# =========  !! NB !! HOW TO DO FOR MAC USERS??  ==========
 #-------------------------------------------------------------------------------
 
 import os
@@ -85,9 +86,7 @@ else:
         else:
             # if the folder is not registered yet
             if stdout_value.find(myNansatDir + dicDir[iKey]) == -1:
-                oldFolder = stdout_value.rstrip()
-                addFolder = (myNansatDir + dicDir[iKey])
-                command = ('echo "export %s=\$%s:%s" >> .bashrc' % (iKey, iKey, addFolder))
+                command = ('echo "export %s=\$%s:%s" >> .bashrc' % (iKey, iKey, myNansatDir + dicDir[iKey]))
             else:
                 command = ""
         if command != "":
