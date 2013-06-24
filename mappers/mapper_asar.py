@@ -43,7 +43,7 @@ class Mapper(VRT, Envisat):
         except:
             self.logger.warning('Cannot get calibrationConst')
             gotCalibration = False
-        
+
 
         # add dictionary for raw counts
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
@@ -57,20 +57,63 @@ class Mapper(VRT, Envisat):
                                  'dst': {'name':  adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name'),
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}
                                 })
-    
+
             # add dictionary for sigma0
             metaDict.append({'src': [{'SourceFilename': fileName,
                                       'SourceBand': 1,
                                       'ScaleRatio': np.sqrt(1.0/calibrationConst)},
                                      {'SourceFilename': self.adsVRTs[0].fileName,
                                       'SourceBand': 1}],
-    
-                            'dst': { 'wkv':  'surface_backwards_scattering_coefficient_of_radar_wave',
+
+                            'dst': { 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                                      'PixelFunctionType': 'RawcountsIncidenceToSigma0',
                                      'polarization': polarization,
                                      'suffix': polarization,
                                      'pass': gdalMetadata['SPH_PASS'],
                                      'dataType': 6}})
+
+
+            # add dicrtionary for water
+            if polarization=='HH':
+                metaDict.append({'src': [{'SourceFilename': fileName,
+                                      'SourceBand': 1,
+                                      'ScaleRatio': np.sqrt(1.0/calibrationConst)},
+                                     {'SourceFilename': self.adsVRTs[0].fileName,
+                                     'SourceBand': 1}],
+                                 'dst': {'name':'water',
+                                     'wkv':  'water',
+                                     'PixelFunctionType': 'WaterHH',
+                                     'polarization': polarization,
+                                     'suffix': polarization,
+                                     'dataType': 6}})
+
+            elif polarization=='VV':
+                metaDict.append({'src': [{'SourceFilename': fileName,
+                                      'SourceBand': 1,
+                                      'ScaleRatio': np.sqrt(1.0/calibrationConst)},
+                                     {'SourceFilename': self.adsVRTs[0].fileName,
+                                     'SourceBand': 1}],
+                                 'dst': {'name':'water',
+                                     'wkv':  'water',
+                                     'PixelFunctionType': 'WaterVV',
+                                     'polarization': polarization,
+                                     'suffix': polarization,
+                                     'dataType': 6}})
+
+            # add dicrtionary for ice
+            metaDict.append({'src': [{'SourceFilename': fileName,
+                                  'SourceBand': 1,
+                                  'ScaleRatio': np.sqrt(1.0/calibrationConst)},
+                                 {'SourceFilename': self.adsVRTs[0].fileName,
+                                 'SourceBand': 1}],
+                             'dst': {'name':'ice',
+                                 'wkv':  'ice',
+                                 'PixelFunctionType': 'Ice',
+                                 'polarization': polarization,
+                                 'suffix': polarization,
+                                 'dataType': 6}})
+
+
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

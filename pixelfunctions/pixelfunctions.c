@@ -32,11 +32,6 @@
 #include <stdio.h> 
 #include <stdlib.h>
 
-void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace);
-        
 CPLErr RealPixelFunc(void **papoSources, int nSources, void *pData,
                      int nXSize, int nYSize,
                      GDALDataType eSrcType, GDALDataType eBufType,
@@ -1137,42 +1132,20 @@ CPLErr ComplexData(void **papoSources, int nSources, void *pData,
 return CE_None;
 }
 
-/************************************************************************/
-/*                       Convert Rrs to Rrsw                            */
-/************************************************************************/
-/* scientifc function */
-double NormReflectanceToRemSensReflectanceFunction(double *b){
-    return b[0] / (0.52 + 1.7 * b[0]);
-}
-
-/* pixel function */
-CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace){
-
-    GenericPixelFunction(NormReflectanceToRemSensReflectanceFunction,
-        papoSources, nSources,  pData,
-        nXSize, nYSize,
-        eSrcType, eBufType,
-        nPixelSpace, nLineSpace);
-    
-    return CE_None;
-}
-
-/************************************************************************/
-/* Generic Pixel Function is called from a pixel function and calls 
- * corresponding scientific function */
-/************************************************************************/
-void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
+CPLErr WaterHH(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize, 
+		GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace)
 {
-	int ii, iLine, iCol, iSrc;
-	double *bVal, result;
-    bVal = malloc(nSources * sizeof (double));
-    
+
+	int ii, iLine, iCol;
+	double raw_counts, incidence_angle, sigma0;
+	double adfPixVal, constant;
+	#define PI 3.14159265;
+
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -1180,18 +1153,149 @@ void GenericPixelFunction(double f(double*), void **papoSources, int nSources, v
 		{
 			ii = iLine * nXSize + iCol;
 			/* Source raster pixels may be obtained with SRCVAL macro */
-            for (iSrc = 0; iSrc < nSources; iSrc ++)
-                bVal[iSrc] = SRCVAL(papoSources[iSrc], eSrcType, ii);
-
-			result = f(bVal);
-
-			GDALCopyWords(&result, GDT_Float64, 0,
+			raw_counts = SRCVAL(papoSources[0], eSrcType, ii);
+			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii);
+			incidence_angle *= PI;
+			incidence_angle /= 180.0;
+			sigma0 = pow(raw_counts, 2.0) * sin(incidence_angle);
+			
+			constant = 31.0*PI;
+			constant /= 180.0;
+			adfPixVal = sigma0 * pow((tan(incidence_angle)/tan(constant)), 4.0);
+			
+			GDALCopyWords(&adfPixVal, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
 	}
 
+	/* ---- Return success ---- */
+return CE_None;
 }
+
+
+CPLErr WaterVV(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize, 
+		GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+
+	int ii, iLine, iCol;
+	double raw_counts, incidence_angle, sigma0;
+	double adfPixVal, constant;
+	#define PI 3.14159265;
+
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			raw_counts = SRCVAL(papoSources[0], eSrcType, ii);
+			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii);
+			incidence_angle *= PI;
+			incidence_angle /= 180.0;
+			sigma0 = pow(raw_counts, 2.0) * sin(incidence_angle);
+			
+			constant = 31.0*PI;
+			constant /= 180.0;
+			adfPixVal = sigma0 * pow((sin(incidence_angle)/sin(constant)), 4.0);
+			
+			GDALCopyWords(&adfPixVal, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+	/* ---- Return success ---- */
+return CE_None;
+}
+
+CPLErr Ice(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize, 
+		GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+
+	int ii, iLine, iCol;
+	double raw_counts, incidence_angle, sigma0;
+	double adfPixVal, constant;
+	#define PI 3.14159265;
+
+	/* ---- Init ---- */
+	if (nSources != 2) return CE_Failure;
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			raw_counts = SRCVAL(papoSources[0], eSrcType, ii);
+			incidence_angle = SRCVAL(papoSources[1], eSrcType, ii);
+			incidence_angle *= PI;
+			incidence_angle /= 180.0;
+			sigma0 = pow(raw_counts, 2.0) * sin(incidence_angle);
+			
+			constant = 31.0*PI;
+			constant /= 180.0;
+			adfPixVal = sigma0 * pow((tan(incidence_angle)/tan(constant)), 1.5);
+			
+			GDALCopyWords(&adfPixVal, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+	/* ---- Return success ---- */
+return CE_None;
+}
+
+
+
+
+
+
+
+
+
+/************************************************************************/
+/*                       Convert Rrs to Rrsw                            */
+/************************************************************************/
+
+CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int ii, iLine, iCol;
+	double rrs, rrsw;
+
+	/* ---- Set pixels ---- */
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+			ii = iLine * nXSize + iCol;
+			/* Source raster pixels may be obtained with SRCVAL macro */
+			rrs = SRCVAL(papoSources[0], eSrcType, ii);
+			rrsw = rrs / (0.52 + 1.7 * rrs);
+
+			GDALCopyWords(&rrsw, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+
+	/* ---- Return success ---- */
+return CE_None;
+}
+
 /************************************************************************/
 /*                     GDALRegisterDefaultPixelFunc()                   */
 /************************************************************************/
@@ -1257,6 +1361,10 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_SBI", RawcountsToSigma0_CosmoSkymed_SBI);
     GDALAddDerivedBandPixelFunc("ComplexData", ComplexData);
     GDALAddDerivedBandPixelFunc("NormReflectanceToRemSensReflectance", NormReflectanceToRemSensReflectance);    
+	GDALAddDerivedBandPixelFunc("Ice", Ice);
+	GDALAddDerivedBandPixelFunc("WaterHH", WaterHH);
+	GDALAddDerivedBandPixelFunc("WaterVV", WaterVV);
+
 
     return CE_None;
 }
