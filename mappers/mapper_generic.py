@@ -22,18 +22,6 @@ class Mapper(VRT):
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
 
-        # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
-        tmpGdalMetadata = {}
-        geoMetadata = {}
-        for key in gdalMetadata.keys():
-            newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
-            if 'NANSAT_' in newKey:
-                geoMetadata[newKey.replace('NANSAT_', '')] = gdalMetadata[key]
-            else:
-                tmpGdalMetadata[newKey] = gdalMetadata[key]
-
-        gdalMetadata = tmpGdalMetadata
-
         rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
 
         # Get file names from dataset or subdataset
