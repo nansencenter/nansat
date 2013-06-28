@@ -32,6 +32,11 @@
 #include <stdio.h> 
 #include <stdlib.h>
 
+void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace);
+        
 CPLErr RealPixelFunc(void **papoSources, int nSources, void *pData,
                      int nXSize, int nYSize,
                      GDALDataType eSrcType, GDALDataType eBufType,
@@ -1257,25 +1262,42 @@ return CE_None;
 }
 
 
-
-
-
-
-
-
-
 /************************************************************************/
 /*                       Convert Rrs to Rrsw                            */
 /************************************************************************/
+/* scientifc function */
+double NormReflectanceToRemSensReflectanceFunction(double *b){
+    return b[0] / (0.52 + 1.7 * b[0]);
+}
 
+/* pixel function */
 CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunction(NormReflectanceToRemSensReflectanceFunction,
+        papoSources, nSources,  pData,
+        nXSize, nYSize,
+        eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+/************************************************************************/
+/* Generic Pixel Function is called from a pixel function and calls 
+ * corresponding scientific function */
+/************************************************************************/
+void GenericPixelFunction(double f(double*), void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace)
 {
-	int ii, iLine, iCol;
-	double rrs, rrsw;
-
+	int ii, iLine, iCol, iSrc;
+	double *bVal, result;
+    bVal = malloc(nSources * sizeof (double));
+    
 	/* ---- Set pixels ---- */
 	for( iLine = 0; iLine < nYSize; iLine++ )
 	{
@@ -1283,19 +1305,18 @@ CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, voi
 		{
 			ii = iLine * nXSize + iCol;
 			/* Source raster pixels may be obtained with SRCVAL macro */
-			rrs = SRCVAL(papoSources[0], eSrcType, ii);
-			rrsw = rrs / (0.52 + 1.7 * rrs);
+            for (iSrc = 0; iSrc < nSources; iSrc ++)
+                bVal[iSrc] = SRCVAL(papoSources[iSrc], eSrcType, ii);
 
-			GDALCopyWords(&rrsw, GDT_Float64, 0,
+			result = f(bVal);
+
+			GDALCopyWords(&result, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
 	}
 
-	/* ---- Return success ---- */
-return CE_None;
 }
-
 /************************************************************************/
 /*                     GDALRegisterDefaultPixelFunc()                   */
 /************************************************************************/
@@ -1364,7 +1385,6 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
 	GDALAddDerivedBandPixelFunc("Ice", Ice);
 	GDALAddDerivedBandPixelFunc("WaterHH", WaterHH);
 	GDALAddDerivedBandPixelFunc("WaterVV", WaterVV);
-
 
     return CE_None;
 }
