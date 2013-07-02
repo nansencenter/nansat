@@ -162,6 +162,7 @@ class Mapper(VRT):
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
             self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
+
         elif gcpCount == 0:
             # if no GCPs found and not GEOLOCATION ARRAY set:
             #   Set Nansat Geotransform if it is not set automatically
@@ -170,6 +171,9 @@ class Mapper(VRT):
                 geoTransformStr = geoMetadata.get('GeoTransform', '(0|1|0|0|0|0|1)')
                 geoTransform = eval(geoTransformStr.replace('|', ','))
                 self.dataset.SetGeoTransform(geoTransform)
+
+        if 'start_date' in gdalMetadata:
+            self._set_time(parse(gdalMetadata['start_date']))
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''

@@ -23,21 +23,21 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, product[0:4])
 
         metaDict = [
-        {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '412'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  2}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '443'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  3}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '490'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  4}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '510'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  5}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '560'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  6}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '620'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  7}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '665'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  8}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '680'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  9}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '708'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 10}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '753'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 11}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '761'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 12}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '778'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 13}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '864'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 14}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '849'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water', 'wavelength': '900'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '413'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '443'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  3}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '490'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  4}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '510'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  5}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '560'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  6}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '620'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  7}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '665'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  8}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '681'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand':  9}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '709'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 10}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '753'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 11}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '761'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 12}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '778'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 13}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '864'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 14}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '849'}},
+        {'src': {'SourceFilename': fileName, 'SourceBand': 15}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '900'}},
         {'src': {'SourceFilename': fileName, 'SourceBand': 16, 'DataType': 1}, 'dst': {'wkv': 'quality_flags', 'suffix': 'l1'}}
         ]
 
@@ -74,4 +74,4 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        #self.add_geolocation_from_ads(gdalDataset, step=1)
+        self.add_geolocation_from_ads(gdalDataset, step=1)

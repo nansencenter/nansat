@@ -32,6 +32,7 @@ class Mosaic(Nansat):
     d['nClass'] = Nansat
     d['mapperName'] = ''
     d['eResampleAlg'] = 0
+    d['period'] = None, None
 
     def _set_defaults(self, dict):
         '''Check input params and set defaut values
@@ -79,6 +80,22 @@ class Mosaic(Nansat):
             self.logger.error('Unable to open %s' % f)
             n = None
         
+        # check if image is out of period
+        if n is not None:
+            ntime = n.get_time()
+            if (self.d['period'][0] is not None and
+                                 len(ntime) > 0 and
+                     ntime[0] < self.d['period'][0]):
+                self.logger.info('%s is taken prior the period' % f)
+                print '%s is taken prior the period' % f
+                n = None
+            if (self.d['period'][1] is not None and
+                                 len(ntime) > 0 and
+                     ntime[0] > self.d['period'][1]):
+                self.logger.info('%s is taken after the period' % f)
+                print '%s is taken after the period' % f
+                n = None
+
         return n
         
     def _get_layer_mask(self, n, doReproject, maskName):
@@ -143,7 +160,10 @@ class Mosaic(Nansat):
         mask : Numpy array with L2-mask
         '''
         n = self._get_layer_image(f)
-        mask = self._get_layer_mask(n, doReproject, maskName)
+        if n is not None:
+            mask = self._get_layer_mask(n, doReproject, maskName)
+        else:
+            mask = None
                 
         return n, mask
 
@@ -242,6 +262,14 @@ class Mosaic(Nansat):
             agorithm for reprojection, see Nansat.reproject()
 
         '''
+        # check inputs
+        if len(files) == 0:
+            self.logger.error('No input files given!')
+            return
+        if len(bands) == 0:
+            self.logger.error('No input bands given!')
+            return
+
         # modify default values
         self._set_defaults(kwargs)
 
@@ -267,7 +295,12 @@ class Mosaic(Nansat):
 
             # get image and mask
             n, mask = self._get_layer(f, doReproject, maskName)
-            if n is None:
+
+            if n is not None:
+                # keep last image opened
+                lastN = self._get_layer_image(f) 
+            else:
+                # skip processing of invalid image
                 continue
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
@@ -294,8 +327,6 @@ class Mosaic(Nansat):
                     stdMat[b] += np.square(a)
             # destroy
             n = None
-        # keep last image opened
-        lastN = self._get_layer_image(f) 
 
         # average products
         cntMat[cntMat == 0] = np.nan
@@ -312,7 +343,7 @@ class Mosaic(Nansat):
             # set std
             avgMat[b] = avg
 
-        # calculate mask (max of 0, 1, 2, 64)
+        # calculate mask (max of 0, 1, 2, 4, 64)
         maskMat = maskMat.max(0)
         # if old 'valid' mask was applied in files, replace with new mask
         maskMat[maskMat == 128] = 64

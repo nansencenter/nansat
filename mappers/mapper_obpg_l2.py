@@ -53,6 +53,8 @@ class Mapper(VRT):
         'sst':        {'src': {}, 'dst': {'wkv': 'sea_surface_temperature'}},
         'l2_flags':   {'src': {'SourceType': 'SimpleSource', 'DataType': 4},
                        'dst': {'wkv': 'quality_flags', 'dataType': 4}},
+        'qual_sst':   {'src': {'SourceType': 'SimpleSource', 'DataType': 4},
+                       'dst': {'wkv': 'quality_flags', 'name': 'qual_sst', 'dataType': 4}},
         'latitude':   {'src': {}, 'dst': {'wkv': 'latitude'}},
         'longitude':  {'src': {}, 'dst': {'wkv': 'longitude'}},
         }

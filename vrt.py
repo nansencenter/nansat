@@ -91,7 +91,6 @@ class GeolocationArray():
         self.d['PIXEL_OFFSET'] = str(pixelOffset)
         self.d['PIXEL_STEP'] = str(pixelStep)
 
-
 class VRT():
     '''Wrapper around GDAL VRT-file
 
@@ -209,8 +208,6 @@ class VRT():
         self.vrtDriver : GDAL Driver
 
         '''
-        from nansat_tools import add_logger, Node, latlongSRS
-
         # essential attributes
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename()
@@ -754,7 +751,7 @@ class VRT():
                       geolocationArray=self.geolocationArray)
         return vrt
 
-    def add_geolocationArray(self, geolocationArray=GeolocationArray()):
+    def add_geolocationArray(self, geolocationArray=None):
         ''' Add GEOLOCATION ARRAY to the VRT
 
         Parameters
@@ -767,10 +764,13 @@ class VRT():
         Sets GEOLOCATION ARRAY metadata
 
         '''
+        if geolocationArray is None:
+            geolocationArray = GeolocationArray()
         self.geolocationArray = geolocationArray
 
-        # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
-        self.dataset.SetMetadata(geolocationArray.d, 'GEOLOCATION')
+        # add GEOLOCATION ARRAY metadata  if geolocationArray is not empty
+        if len(geolocationArray.d) > 0:
+            self.dataset.SetMetadata(geolocationArray.d, 'GEOLOCATION')
 
     def remove_geolocationArray(self):
         ''' Remove GEOLOCATION ARRAY from the VRT
