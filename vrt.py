@@ -433,6 +433,7 @@ class VRT():
                 src['DataType'] = srcRasterBand.DataType
                 self.logger.debug('SRC[DataType]: %d' % src['DataType'])
 
+            srcDs = gdal.Open(src['SourceFilename'])
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
                                         Dataset=src['SourceFilename'],
@@ -442,10 +443,11 @@ class VRT():
                                         ScaleOffset=src['ScaleOffset'],
                                         ScaleRatio=src['ScaleRatio'],
                                         LUT=src['LUT'],
-                                        srcXSize=self.dataset.RasterXSize,
-                                        srcYSize=self.dataset.RasterYSize,
-                                        dstXSize=self.dataset.RasterXSize,
-                                        dstYSize=self.dataset.RasterYSize)
+                                        srcXSize=srcDs.RasterXSize,
+                                        srcYSize=srcDs.RasterYSize,
+                                        dstXSize=srcDs.RasterXSize,
+                                        dstYSize=srcDs.RasterYSize,
+                                        )
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:

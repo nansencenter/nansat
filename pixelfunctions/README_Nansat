@@ -22,3 +22,40 @@ common operations such as:
 I have tested it, and can confirm that it works like charm!
 
 Knut-Frode
+
+
+*Usage of GenericPixelFunctionPixelLine
+This is generic pixel function for one pixel band, one line band and full size band(s).
+From the 1st to (N-2)th bands (papoSource) must be full size bands (XSize x YSize). The second and the last bands must be a line band and a pixel band respectively.
+Here N is total number of bands.
+
+!!N.B.!!
+Order of bands may be not same as written order in mappers.
+
+e.g. 
+------------------------------------------------------------
+'src': [ {'SourceFilename': self.adsVRTs[0].fileName,
+'SourceBand': 1},
+         {'SourceFilename': self.calibrationVRT.fileName,
+           'SourceBand': 1},
+         {'SourceFilename': fileName, 'SourceBand': 1}]
+--------------------------------------------------------------
+The 1st band is line, 2nd is pixel and the last one is full size band in this example. But in the pixelfunctions, the 1st is full size, 2nd is line and the 3rd is pixel band. I do not know how the order is changed. It is good to check with vrt file since the order of vrt file is same as pixelfunction.
+
+*Usage of GenericPixelFunctionLine
+This is generic pixel function for one line band and full size band(s).
+From the 1st to (N-1)th bands (papoSource) must be full size bands (XSize x YSize) and the second is a line band.
+Here N is total number of bands.
+Asuka
+
+
+
+
+
+
+
+
+
+
+
+

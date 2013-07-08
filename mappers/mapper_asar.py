@@ -44,12 +44,20 @@ class Mapper(VRT, Envisat):
             self.logger.warning('Cannot get calibrationConst')
             gotCalibration = False
 
-
         # add dictionary for raw counts
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'name': 'RawCounts_%s' % polarization}}]
 
+
         if gotCalibration:
+            # create one pixel band with calibrationConst value and add it to dictionary
+            array = np.ones((2,2)) * calibrationConst
+            self.calibrationVRT = VRT(array=array)
+            metaDict.append({'src': {'SourceFilename': self.calibrationVRT.fileName,
+                                     'SourceBand': 1},
+                             'dst': {'name':  'calibrationConst'}
+                            })
+
             # add dictionary for IncidenceAngle (and other ADS variables)
             for adsVRT in self.adsVRTs:
                 metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
@@ -59,12 +67,12 @@ class Mapper(VRT, Envisat):
                                 })
 
             # add dictionary for sigma0
-            metaDict.append({'src': [{'SourceFilename': fileName,
-                                      'SourceBand': 1,
-                                      'ScaleRatio': np.sqrt(1.0/calibrationConst)},
-                                     {'SourceFilename': self.adsVRTs[0].fileName,
-                                      'SourceBand': 1}],
-
+            metaDict.append({'src': [ {'SourceFilename': self.adsVRTs[0].fileName,
+                                      'SourceBand': 1},
+                                      {'SourceFilename': self.calibrationVRT.fileName,
+                                      'SourceBand': 1},
+                                      {'SourceFilename': fileName,
+                                       'SourceBand': 1}],
                             'dst': { 'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                                      'PixelFunctionType': 'RawcountsIncidenceToSigma0',
                                      'polarization': polarization,
@@ -73,46 +81,48 @@ class Mapper(VRT, Envisat):
                                      'dataType': 6}})
 
 
+            # add dicrtionary for ice
+            metaDict.append({'src': [{'SourceFilename': self.adsVRTs[0].fileName,
+                                      'SourceBand': 1},
+                                     {'SourceFilename': self.calibrationVRT.fileName,
+                                      'SourceBand': 1},
+                                     {'SourceFilename': fileName,
+                                      'SourceBand': 1}],
+                             'dst': {'name':'ice',
+                                     'wkv':  'ice',
+                                     'PixelFunctionType': 'Sigma0NormalizedIce',
+                                     'polarization': polarization,
+                                     'suffix': polarization,
+                                     'dataType': 6}})
+
             # add dicrtionary for water
             if polarization=='HH':
-                metaDict.append({'src': [{'SourceFilename': fileName,
-                                      'SourceBand': 1,
-                                      'ScaleRatio': np.sqrt(1.0/calibrationConst)},
-                                     {'SourceFilename': self.adsVRTs[0].fileName,
-                                     'SourceBand': 1}],
+                metaDict.append({'src': [{'SourceFilename': self.adsVRTs[0].fileName,
+                                        'SourceBand': 1},
+                                        {'SourceFilename': self.calibrationVRT.fileName,
+                                        'SourceBand': 1},
+                                        {'SourceFilename': fileName,
+                                        'SourceBand': 1}],
                                  'dst': {'name':'water',
-                                     'wkv':  'water',
-                                     'PixelFunctionType': 'WaterHH',
-                                     'polarization': polarization,
-                                     'suffix': polarization,
-                                     'dataType': 6}})
+                                        'wkv':  'water',
+                                        'PixelFunctionType': 'Sigma0HHNormalizedWater',
+                                        'polarization': polarization,
+                                        'suffix': polarization,
+                                        'dataType': 6}})
 
             elif polarization=='VV':
-                metaDict.append({'src': [{'SourceFilename': fileName,
-                                      'SourceBand': 1,
-                                      'ScaleRatio': np.sqrt(1.0/calibrationConst)},
-                                     {'SourceFilename': self.adsVRTs[0].fileName,
-                                     'SourceBand': 1}],
+                metaDict.append({'src': [{'SourceFilename': self.adsVRTs[0].fileName,
+                                        'SourceBand': 1},
+                                        {'SourceFilename': self.calibrationVRT.fileName,
+                                        'SourceBand': 1},
+                                        {'SourceFilename': fileName,
+                                        'SourceBand': 1}],
                                  'dst': {'name':'water',
-                                     'wkv':  'water',
-                                     'PixelFunctionType': 'WaterVV',
-                                     'polarization': polarization,
-                                     'suffix': polarization,
-                                     'dataType': 6}})
-
-            # add dicrtionary for ice
-            metaDict.append({'src': [{'SourceFilename': fileName,
-                                  'SourceBand': 1,
-                                  'ScaleRatio': np.sqrt(1.0/calibrationConst)},
-                                 {'SourceFilename': self.adsVRTs[0].fileName,
-                                 'SourceBand': 1}],
-                             'dst': {'name':'ice',
-                                 'wkv':  'ice',
-                                 'PixelFunctionType': 'Ice',
-                                 'polarization': polarization,
-                                 'suffix': polarization,
-                                 'dataType': 6}})
-
+                                        'wkv':  'water',
+                                        'PixelFunctionType': 'Sigma0VVNormalizedWater',
+                                        'polarization': polarization,
+                                        'suffix': polarization,
+                                        'dataType': 6}})
 
 
         # add bands with metadata and corresponding values to the empty VRT

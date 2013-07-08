@@ -523,7 +523,7 @@ class Nansat(Domain):
             # apply affine transformation using reprojection
             self.vrt = self.vrt.resized(newRasterXSize,
                                         newRasterYSize,
-                                        eResampleAlg)
+                                        eResampleAlg=eResampleAlg)
         else:
             # simply modify VRT rasterX/Ysize and GCPs
             # Get XML content from VRT-file
@@ -539,10 +539,14 @@ class Nansat(Domain):
                 for sourceName in ['ComplexSource', 'SimpleSource']:
                     for iNode2 in iNode1.nodeList(sourceName):
                         iNodeDstRect = iNode2.node('DstRect')
-                        iNodeDstRect.replaceAttribute('xSize',
+                        # if band is line or pixel band, do not change the size
+                        if int(iNodeDstRect.getAttribute('xSize')) > 2:
+                            iNodeDstRect.replaceAttribute('xSize',
                                                       str(newRasterXSize))
-                        iNodeDstRect.replaceAttribute('ySize',
+                        if int(iNodeDstRect.getAttribute('ySize')) > 2:
+                            iNodeDstRect.replaceAttribute('ySize',
                                                       str(newRasterYSize))
+
                 # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
                 if eResampleAlg == -1:
                     iNode1.replaceTag('ComplexSource', 'AveragedSource')
@@ -562,6 +566,7 @@ class Nansat(Domain):
 
             # Write the modified elemements into VRT
             self.vrt.write_xml(str(node0.rawxml()))
+
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -929,6 +934,12 @@ class Nansat(Domain):
         else:
             bands = [self._get_band_number(bands)]
 
+        # if cmin / cmax is scalar, convert to a list
+        for ikey in ['cmin', 'cmax']:
+            if ikey in kwargs:
+                if not isinstance(kwargs[ikey], list):
+                    kwargs[ikey] = [kwargs[ikey]]
+
         # == create 3D ARRAY ==
         array = None
         for band in bands:
@@ -995,6 +1006,17 @@ class Nansat(Domain):
             caption += self.get_time()[0].strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
+
+        # modify clim if cmin and cmax are given as the arguments
+        if 'cmin' in kwargs.keys():
+            for i in range(len(kwargs['cmin'])):
+                if kwargs['cmin'][i] > clim[0][i]:
+                    clim[0][i] = kwargs['cmin'][i]
+
+        if 'cmax' in kwargs.keys():
+            for i in range(len(kwargs['cmax'])):
+                if kwargs['cmax'][i] < clim[1][i]:
+                    clim[1][i] = kwargs['cmax'][i]
 
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
