@@ -80,8 +80,7 @@ class GeolocationArray():
         # proj4 to WKT
         if srs == '':
             sr = osr.SpatialReference()
-            sr.ImportFromProj4('+proj=latlong +ellps=WGS84 '
-                               '+datum=WGS84 +no_defs')
+            sr.ImportFromProj4('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
             srs = sr.ExportToWkt()
         self.d['SRS'] = srs
         self.d['X_BAND'] = str(xBand)

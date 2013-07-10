@@ -146,8 +146,8 @@ LOG_LEVEL = 30
 
 try:
     latlongSRS = osr.SpatialReference()
-    latlongSRS.ImportFromProj4('+proj=latlong +ellps=WGS84'
-                               '+datum=WGS84 +no_defs')
+    latlongSRS.ImportFromProj4('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+
 except:
     warnings.warn('Cannot generate latlongSRS. Nansat will not work!')
 
