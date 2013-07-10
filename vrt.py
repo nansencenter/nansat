@@ -659,6 +659,10 @@ class VRT():
         self.logger.debug('arrayDType: %s', arrayDType)
 
         #create conents of VRT-file pointing to the binary file
+        """ !! N.B. !! numpy array does not have complex32 datatype.
+        Therefore, if data is complex32, the arrayDType will be complex64.
+        Here if arrayDType is complex64, CFloat32 is retuned to dataType.
+        But it is not sure it always works fine. """
         dataType = {'uint8': 'Byte',
                     'int8': 'Byte',
                     'uint16': 'UInt16',
@@ -667,7 +671,7 @@ class VRT():
                     'int32': 'Int32',
                     'float32': 'Float32',
                     'float64': 'Float64',
-                    'complex64': 'CFloat64'}.get(str(arrayDType))
+                    'complex64': 'CFloat32'}.get(str(arrayDType))
 
         pixelOffset = {'Byte': '1',
                        'UInt16': '2',
@@ -676,7 +680,8 @@ class VRT():
                        'Int32': '4',
                        'Float32': '4',
                        'Float64': '8',
-                       'CFloat64': '8'}.get(dataType)
+                       'CFloat32': '8',
+                       'CFloat64': '8',}.get(dataType)
 
         self.logger.debug('DataType: %s', dataType)
 
