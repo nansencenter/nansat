@@ -512,7 +512,7 @@ class Domain():
             '-te xMin yMin xMax yMax',
             '-tr xResolution yResolution',
             '-ts width height',
-            '-lle lonWest lonEast latNorth latSouth'
+            '-lle minlon minlat maxlon maxlat'
 
         Returns
         --------
@@ -605,7 +605,7 @@ class Domain():
             if len(elms_str) != 5:
                 raise OptionError('Domain._create_extentDic():'
                                   '-lle is used as '
-                                  '"-lle lonWest lonEast latNorth latSouth"')
+                                  '"-lle minlon minlat maxlon maxlat"')
             # Add the key and value to extentDic
             extentString = extentString.replace(str_lle[0], '')
             lleElem = str(str_lle).split(None)
