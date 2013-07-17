@@ -14,10 +14,12 @@ class Mapper(VRT):
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}
+        origin_is_nansat = False
         for key in gdalMetadata.keys():
             newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
             if 'NANSAT_' in newKey:
                 geoMetadata[newKey.replace('NANSAT_', '')] = gdalMetadata[key]
+                origin_is_nansat = True
             else:
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
@@ -90,7 +92,16 @@ class Mapper(VRT):
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('dods_variable', '')
                         if len(bandName) > 0:
-                            dst['name'] = bandName
+                            if origin_is_nansat:
+                                # remove digits added by gdal in exporting to
+                                # netcdf...
+                                if bandName[-1:].isdigit():
+                                    bandName=bandName[:-1]
+                                if bandName[-1:].isdigit():
+                                    bandName=bandName[:-1]
+                                dst['name'] = bandName
+                            else:
+                                dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
                         for rmMetadata in rmMetadatas:
