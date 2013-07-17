@@ -18,7 +18,7 @@ from vrt import VRT, GeolocationArray
 class Mapper(VRT):
     ''' Mapper for Level-3 Standard Mapped Image from
     http://oceancolor.gsfc.nasa.gov'''
-    
+
     # detect wkv from metadata 'Parameter'
     param2wkv = {
     'Chlorophyll a concentration': 'mass_concentration_of_chlorophyll_a_in_sea_water',
@@ -29,23 +29,23 @@ class Mapper(VRT):
     'Sea Surface Temperature': 'sea_surface_temperature',
     'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
     'Particle backscatter at 443 nm': 'volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles',
-    'Chlorophyll a concentration, Garver-Siegel-Maritorena Model': 'mass_concentration_of_chlorophyll_a_in_sea_water', 
+    'Chlorophyll a concentration, Garver-Siegel-Maritorena Model': 'mass_concentration_of_chlorophyll_a_in_sea_water',
     'Photosynthetically Available Radiation': 'photosynthetically_available_radiation',
     }
-    
+
     def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' OBPG L3 VRT '''
 
         if 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
             raise AttributeError("OBPG L3 Standard Mapped Image BAD MAPPER")
-        
+
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         simFilesMask = os.path.join(iDir, iFileName)
         simFiles = glob.glob(simFilesMask + iFileExt[0:6] + '*')
         #print 'simFilesMask, simFiles', simFilesMask, simFiles
-        
+
         metaDict = []
         for simFile in simFiles:
             #print 'simFile', simFile
@@ -67,7 +67,7 @@ class Mapper(VRT):
             else:
                 # get SourceFilename from dataset
                 tmpSourceFilename = simFile
-            
+
             # open subdataset with GDAL
             #print 'tmpSourceFilename', tmpSourceFilename
             tmpGdalDataset = gdal.Open(tmpSourceFilename)
@@ -84,7 +84,7 @@ class Mapper(VRT):
                 simSourceFilename = tmpSourceFilename
                 simGdalDataset = tmpGdalDataset
                 simGdalMetadata = tmpGdalMetadata
-                
+
             # get WKV from the similar file
             #print 'simParameter', simParameter
             for param in self.param2wkv:
@@ -117,7 +117,7 @@ class Mapper(VRT):
                     'wavelength': simWavelength,
                     'PixelFunctionType': 'NormReflectanceToRemSensReflectance',
                     }
-            
+
             # append entry to metaDict
             metaDict.append(metaEntry)
             if metaEntry2 is not None:
@@ -141,11 +141,10 @@ class Mapper(VRT):
         numberOfLines = int(simGdalMetadata.get('Number of Lines', simGdalMetadata.get('Number_of_Lines', 1)))
         #longitudeStep = float(simGdalMetadata['Longitude Step'])
         VRT.__init__(self, srcGeoTransform=(-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
-                           srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+                           srcProjection=gdalDataset.GetProjection(),
                            srcRasterXSize=numberOfColumns,
                            srcRasterYSize=numberOfLines
                     )
-                           
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
