@@ -37,6 +37,11 @@ void GenericPixelFunction(double f(double*), void **papoSources,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace);
 
+void GenericPixelFunctionPixel(double f(double*), void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace);
+
 void GenericPixelFunctionLine(double f(double*), void **papoSources, 
 		int nSources, void *pData, int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
@@ -1159,7 +1164,7 @@ CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, voi
 }
 
 
-CPLErr RawcountsIncidenceToSigma0(void **papoSources, 
+CPLErr RawcountsIncidenceToSigma0_FromLine(void **papoSources, 
 		int nSources, void *pData, int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace){
@@ -1172,8 +1177,21 @@ CPLErr RawcountsIncidenceToSigma0(void **papoSources,
     return CE_None;
 }
 
+CPLErr RawcountsIncidenceToSigma0(void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
 
-CPLErr Sigma0NormalizedIce(void **papoSources, 
+    GenericPixelFunctionPixel(RawcountsIncidenceToSigma0Function,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+
+CPLErr Sigma0NormalizedIce_FromLine(void **papoSources, 
 		int nSources, void *pData, int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace){
@@ -1186,7 +1204,20 @@ CPLErr Sigma0NormalizedIce(void **papoSources,
     return CE_None;
 }
 
-CPLErr Sigma0VVNormalizedWater(void **papoSources, 
+CPLErr Sigma0NormalizedIce(void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunctionPixel(Sigma0NormalizedIceFunction,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+CPLErr Sigma0VVNormalizedWater_FromLine(void **papoSources, 
 		int nSources, void *pData, int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace){
@@ -1199,12 +1230,38 @@ CPLErr Sigma0VVNormalizedWater(void **papoSources,
     return CE_None;
 }
 
-CPLErr Sigma0HHNormalizedWater(void **papoSources, 
+CPLErr Sigma0VVNormalizedWater(void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunctionPixel(Sigma0VVNormalizedWaterFunction,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+CPLErr Sigma0HHNormalizedWater_FromLine(void **papoSources, 
 		int nSources, void *pData, int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace){
 
     GenericPixelFunctionPixelLine(Sigma0HHNormalizedWaterFunction,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+CPLErr Sigma0HHNormalizedWater(void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunctionPixel(Sigma0HHNormalizedWaterFunction,
         papoSources, nSources, pData,
         nXSize, nYSize, eSrcType, eBufType,
         nPixelSpace, nLineSpace);
@@ -1238,6 +1295,37 @@ void GenericPixelFunction(double f(double*), void **papoSources,
             for (iSrc = 0; iSrc < nSources; iSrc ++)
                 bVal[iSrc] = SRCVAL(papoSources[iSrc], eSrcType, ii);
 
+			result = f(bVal);
+
+			GDALCopyWords(&result, GDT_Float64, 0,
+			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			              eBufType, nPixelSpace, 1);
+		}
+	}
+}
+
+// From the 1st to (N-1)th bands are full size (XSize x YSize), 
+// and the last band is a one-pixel band (1 x 1).
+void GenericPixelFunctionPixel(double f(double*), void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace)
+{
+	int iLine, iCol, iSrc;
+	double *bVal, result;
+    bVal = malloc(nSources * sizeof (double));
+    
+	/* ---- Set pixels ---- */
+	/* Set the first value form one-pixel band */
+	bVal[0] = SRCVAL(papoSources[nSources-1], eSrcType, 0);
+	for( iLine = 0; iLine < nYSize; iLine++ )
+	{
+		for( iCol = 0; iCol < nXSize; iCol++ )
+		{
+            for (iSrc = 1; iSrc < nSources; iSrc ++)
+				/* Source raster pixels may be obtained with SRCVAL macro */
+				bVal[iSrc] = SRCVAL(papoSources[iSrc-1], eSrcType, iLine * nXSize + iCol);
+						
 			result = f(bVal);
 
 			GDALCopyWords(&result, GDT_Float64, 0,
@@ -1372,13 +1460,17 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
     GDALAddDerivedBandPixelFunc("Sigma0HHBetaToSigma0VV", Sigma0HHBetaToSigma0VV);
-    GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
+    GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0_FromLine", RawcountsIncidenceToSigma0_FromLine);
+	 GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_QLK", RawcountsToSigma0_CosmoSkymed_QLK);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_SBI", RawcountsToSigma0_CosmoSkymed_SBI);
     GDALAddDerivedBandPixelFunc("ComplexData", ComplexData);
     GDALAddDerivedBandPixelFunc("NormReflectanceToRemSensReflectance", NormReflectanceToRemSensReflectance);    
+	GDALAddDerivedBandPixelFunc("Sigma0NormalizedIce_FromLine", Sigma0NormalizedIce_FromLine);
 	GDALAddDerivedBandPixelFunc("Sigma0NormalizedIce", Sigma0NormalizedIce);
+	GDALAddDerivedBandPixelFunc("Sigma0HHNormalizedWater_FromLine", Sigma0HHNormalizedWater_FromLine);
 	GDALAddDerivedBandPixelFunc("Sigma0HHNormalizedWater", Sigma0HHNormalizedWater);
+	GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater_FromLine", Sigma0VVNormalizedWater_FromLine);
 	GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater", Sigma0VVNormalizedWater);
 
     return CE_None;
