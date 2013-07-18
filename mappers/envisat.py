@@ -10,6 +10,7 @@ import struct
 from vrt import VRT, GeolocationArray
 import gdal
 import numpy as np
+import scipy.ndimage
 from scipy.interpolate import interp1d
 
 class Envisat():
@@ -167,12 +168,20 @@ class Envisat():
         #get only values required for the mapper
         return [allGADSValues[i] for i in indeces]
 
-    def create_VRT_from_ADS(self, adsName, lineSize):
+    def create_VRT_from_ADS(self, adsName, lineSize=None, zoomSize=500,
+                            interp1dMethod='cubic' ,lineBand=True):
         ''' Create VRT with a band from Envisat ADS metadata
 
         Read offsets of the <adsName> ADS.
-        Read 1D vector of binary values from ADS from file.
-        Interpolate The array (1D vector) to Xsize.
+        If lineBan is True:
+            Read 1D vector of binary values from ADS from file.
+            interpolate The array (1D vector) to Xsize.
+        if lineBan is False:
+            Read 'last_line_...' ADS (in case of ASAR).
+	        Zoom array with ADS data to <zoomSize>. Zooming is needed to create
+	        smooth matrices. Array is zoomed to small size because it is stred in
+	        memory. Later the VRT with zoomed array is VRT.resized() in order to
+	        match the size of the Nansat onject.
         Create VRT from the ADS array.
 
         Parameters
@@ -181,8 +190,18 @@ class Envisat():
                 name of variable from ADS to read. should match allADSParams
             lineSize :  int
                 length of a line (XSize)
+            zoomSize : int, optional, 500
+                size, to which original matrix from ADSR is zoomed using
+                scipy.zoom
+            interp1dMethod : str or int
+                Specifies the kind of interp1d as a string ('linear',
+                'nearest', 'zero', 'slinear', 'quadratic', 'cubic') or as an
+                integer specifying the order of the spline interpolator to use.
+            lineBand : bool
+                if True, make a one-line band.
+                Otherwise, create a full-size band
 
-        Returns:
+        Returns
         ---------
             adsVrt : VRT, vrt with a band created from ADS array
 
@@ -197,24 +216,50 @@ class Envisat():
         # create an array whose elements are fetched from ADS
         array = np.array([])
 
+        # if lineBand is True, get only the first ADS
+        if lineBand:
+            adsHeight = 1
+        else:
+            adsHeight = self.dsOffsetDict["NUM_DSR"]
         # read sequence of 1D arrays from ADS
-        lineOffset = (self.dsOffsetDict['DS_OFFSET'] +
-                      adsParams['offset'] +
-                      self.dsOffsetDict["DSR_SIZE"])
-        binaryLine = self.read_binary_line(lineOffset, fmtString, adsWidth)
-        array = np.append(array, binaryLine)
+        for i in range(adsHeight):
+            lineOffset = (self.dsOffsetDict['DS_OFFSET'] +
+                          adsParams['offset'] +
+                          self.dsOffsetDict["DSR_SIZE"] * i)
+            binaryLine = self.read_binary_line(lineOffset, fmtString, adsWidth)
+            array = np.append(array, binaryLine)
 
-        # interpolate array to lineSize (rater xSize)
-        x = np.linspace(0, lineSize, len(array))
-        spline = interp1d(x, array, kind='cubic')
-        x = np.arange(lineSize)
-        array = spline(x)
-        array = np.append(array, array).reshape(2, lineSize)
+        # read 'last_line_...'
+        if lineBand is False and self.prodType == 'ASA_':
+            adsName = adsName.replace('first_line', 'last_line')
+            adsParams = self.allADSParams['list'][adsName]
+            lineOffset = (self.dsOffsetDict['DS_OFFSET'] +
+                          adsParams['offset'] +
+                          self.dsOffsetDict["DSR_SIZE"] * i)
+            binaryLine = self.read_binary_line(lineOffset, fmtString, adsWidth)
+            array = np.append(array, binaryLine)
+            adsHeight += 1
 
         # adjust the scale
         if '(10)^-6' in adsParams['units']:
             array /= 1000000.0
             adsParams['units'] = adsParams['units'].replace('(10)^-6 ', '')
+
+        # create 1D array for a one-line band
+        if lineBand:
+            # interpolate array to lineSize (xSize)
+            x = np.linspace(0, lineSize, len(array))
+            spline = interp1d(x, array, kind=interp1dMethod)
+            x = np.arange(lineSize)
+            array = spline(x)
+            array = np.append(array, array).reshape(2, lineSize)
+        # create 2D array for a full-size band
+        else:
+            # reshape the array into 2D matrix
+            array = array.reshape(adsHeight, adsWidth)
+            # zoom the array
+            array = scipy.ndimage.interpolation.zoom(array,
+                                zoomSize / float(adsHeight), order=1)
 
         # create VRT from the array
         adsVrt = VRT(array=array)
@@ -224,35 +269,60 @@ class Envisat():
 
         return adsVrt
 
-    def get_ads_vrts(self, gdalDataset, adsNames):
+    def get_ads_vrts(self, gdalDataset, adsNames, zoomSize=500, step=1, lineBand=[True]):
         '''Create list with VRTs with zoomed and resized ADS arrays
 
         For given names of varaibles (which should match self.allADSParams):
             Get VRT with zoomed ADS array
             Get resized VRT
-        Input:
-        ------
+
+        Parameters
+        ----------
             gdalDataset: GDAL Dataset
                 input dataset
             adsNames: list with strings
                 names of varaiables from self.allADSParams['list']
-        Returns:
+            zoomSize : int, optional, 500
+                size, to which original matrix from ADSR is zoomed using
+                scipy.zoom
+            step : int
+                step, at which data will be given
+            lineBand : list with bool elements
+                the length is same as len(adsNames)
+                if True, make a one-line band.
+                Otherwise, create a full-size band
+
+        Returns
         --------
             adsVRTs: list with VRT
                 list with resized VRT with zoomed arrays
         '''
 
+        # if lineBand is given by a bool, make a list with same length as adsNames
+        if lineBand is bool:
+            lineBand = [lineBand]* len(adsNames)
+
+        XSize = gdalDataset.RasterXSize
+        YSize = gdalDataset.RasterYSize
+
         # list with VRT with arrays of lon/lat
         adsVRTs = []
-        for adsName in adsNames:
-            # create VRT with array from ADS
-            adsVRTs.append(self.create_VRT_from_ADS(adsName,
-                                                    gdalDataset.RasterXSize))
+        for iBand, adsName in enumerate(adsNames):
+            if lineBand[iBand]:
+                # create VRT with a one-line band from ADS
+                adsVRTs.append(self.create_VRT_from_ADS(adsName, lineSize=XSize,
+                                                        lineBand=lineBand[iBand]))
+            else:
+                # create VRT with a full-size band from ADS
+                adsVRTs.append(self.create_VRT_from_ADS(adsName, zoomSize=zoomSize,
+                                                        lineBand=lineBand[iBand]))
+                # resize the VRT to match <step>
+                adsVRTs[-1] = adsVRTs[-1].resized(XSize/step, YSize/step)
 
         return adsVRTs
 
 
-    def add_geolocation_from_ads(self, gdalDataset):
+    def add_geolocation_from_ads(self, gdalDataset, zoomSize=500, step=1, lineBand=True):
         ''' Add geolocation domain metadata to the dataset
 
         Get VRTs with zoomed arrays of lon and lat
@@ -262,13 +332,21 @@ class Envisat():
         ----------
             gdalDataset: GDAL Dataset
                 input dataset
+            zoomSize : int, optional, 500
+                size, to which original matrix from ADSR is zoomed using
+                scipy.zoom
+            step : int
+                step, at which data will be given
+            lineBand : bool
+                if True, make a one-line band.
+                Otherwise, create a full-size band
 
-        Modifies:
+        Modifies
         ---------
             Adds Geolocation Array metadata
         '''
         # get VRTs with lon and lat
-        xyVRTs = self.get_ads_vrts(gdalDataset, self.lonlatNames)
+        xyVRTs = self.get_ads_vrts(gdalDataset, self.lonlatNames, zoomSize, step, lineBand)
 
         # Add geolocation domain metadata to the dataset
         self.add_geolocationArray(GeolocationArray(xVRT=xyVRTs[0],
@@ -276,7 +354,11 @@ class Envisat():
                       xBand=1, yBand=1,
                       srs=gdalDataset.GetGCPProjection(),
                       lineOffset=0,
-                      pixelOffset=0))
+                      lineStep=step,
+                      pixelOffset=0,
+                      pixelStep=step))
+
+
 
 
 #m = MERIS()
