@@ -10,7 +10,7 @@ from nansat_tools import Node, latlongSRS
 import numpy as np
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30, **kwargs):
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}
@@ -54,6 +54,8 @@ class Mapper(VRT):
             # take bands whose sizes are same as the first band.
             if (subDataset.RasterXSize == firstXSize and
                         subDataset.RasterYSize == firstYSize):
+                if projection == '':
+                    projection = subDataset.GetProjection()
                 if 'GEOLOCATION_X_DATASET' in fileName or 'longitude' in fileName:
                     xDatasetSource = fileName
                 elif 'GEOLOCATION_Y_DATASET' in fileName or 'latitude' in fileName:
