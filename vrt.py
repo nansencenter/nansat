@@ -165,7 +165,7 @@ class VRT():
                  srcGCPProjection='',
                  srcMetadata='',
                  geolocationArray=None,
-                 lat=None, lon=None):
+                 lat=None, lon=None, **kwargs):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
         If vrtDataset is given, creates full copy of VRT content
@@ -200,6 +200,25 @@ class VRT():
         lat : Numpy array
             grid with latitudes
 
+        Parameters (**kwargs)
+        ---------------------
+        use_geolocationArray : Boolean (True)
+            Use geolocation array in input dataset (if present) for warping
+        use_gcps : Boolean (True)
+            Use GCPs in input dataset (if present) for warping
+        use_geotransform : Boolean (True)
+            Use GeoTransform in input dataset for warping or make artificial
+            GeoTransform : (0, 1, 0, srcVRT.xSize, -1)
+        eResampleAlg : int (GDALResampleAlg)
+            0 : NearestNeighbour,
+            1 : Bilinear,
+            2 : Cubic,
+            3 : CubicSpline,
+            4 : Lancoz
+        tps :  bool (False)
+        WorkingDataType : (None)
+        blockSize : (None)
+
         Modifies
         ---------
         self.dataset : GDAL VRT dataset
@@ -212,11 +231,21 @@ class VRT():
         self.fileName = self._make_filename()
         self.vrtDriver = gdal.GetDriverByName('VRT')
 
+        # set default values of ALL params of VRT
+        self.d = {}
+        self.d['eResampleAlg'] = 0
+        self.d['use_geolocationArray'] = True
+        self.d['use_gcps'] = True
+        self.d['use_geotransform'] = True
+        self.d['WorkingDataType'] = None
+        self.d['tps'] = False
+        self.d['blockSize'] = None
+        self.d = set_defaults(self.d, kwargs)
+
         # open and parse wkv.xml
         fileNameWKV = os.path.join(os.path.dirname(
                                    os.path.realpath(__file__)), 'wkv.xml')
         self.wkvNode0 = Node.create(fileNameWKV)
-
         # default empty geolocation array of source
         srcGeolocationArray = GeolocationArray()
         if vrtDataset is not None:
@@ -234,7 +263,6 @@ class VRT():
                 srcProjection = gdalDataset.GetProjection()
                 srcGCPs = gdalDataset.GetGCPs()
                 srcGCPProjection = gdalDataset.GetGCPProjection()
-
                 srcRasterXSize = gdalDataset.RasterXSize
                 srcRasterYSize = gdalDataset.RasterYSize
 
@@ -658,10 +686,6 @@ class VRT():
         self.logger.debug('arrayDType: %s', arrayDType)
 
         #create conents of VRT-file pointing to the binary file
-        """ !! N.B. !! numpy array does not have complex32 datatype.
-        Therefore, if data is complex32, the arrayDType will be complex64.
-        Here if arrayDType is complex64, CFloat32 is retuned to dataType.
-        But it is not sure it always works fine. """
         dataType = {'uint8': 'Byte',
                     'int8': 'Byte',
                     'uint16': 'UInt16',
@@ -670,7 +694,8 @@ class VRT():
                     'int32': 'Int32',
                     'float32': 'Float32',
                     'float64': 'Float64',
-                    'complex64': 'CFloat32'}.get(str(arrayDType))
+                    'complex64': 'CFloat32',
+                    'complex128': 'CFloat64',}.get(str(arrayDType))
 
         pixelOffset = {'Byte': '1',
                        'UInt16': '2',
@@ -680,7 +705,7 @@ class VRT():
                        'Float32': '4',
                        'Float64': '8',
                        'CFloat32': '8',
-                       'CFloat64': '8',}.get(dataType)
+                       'CFloat64': '16',}.get(dataType)
 
         self.logger.debug('DataType: %s', dataType)
 
@@ -733,7 +758,6 @@ class VRT():
 
         '''
         #write to the vsi-file
-
         vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
         gdal.VSIFWriteL(vsiFileContent,
                         len(vsiFileContent), 1, vsiFile)
@@ -792,7 +816,7 @@ class VRT():
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
-    def resized(self, xSize, ySize, eResampleAlg=1):
+    def resized(self, xSize, ySize, **kwargs):
         '''Resize VRT
 
         Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
@@ -801,6 +825,9 @@ class VRT():
         -----------
         xSize, ySize : int
             new size of the VRT object
+
+        Parameters (**kwargs)
+        ----------------------
         eResampleAlg : GDALResampleAlg
             see also gdal.AutoCreateWarpedVRT
 
@@ -809,6 +836,10 @@ class VRT():
         VRT object : Resized VRT object
 
         '''
+        # modify the default values using input values
+        self.d['eResampleAlg'] = 1
+        self.d = set_defaults(self.d, kwargs)
+
         # modify GeoTransform: set resolution from new X/Y size
         geoTransform = (0,
                         float(self.dataset.RasterXSize) / float(xSize),
@@ -823,7 +854,7 @@ class VRT():
                                            use_geolocationArray=False,
                                            use_gcps=False,
                                            use_geotransform=False,
-                                           eResampleAlg=eResampleAlg)
+                                           eResampleAlg=self.d['eResampleAlg'])
         # add source VRT (self) to the warpedVRT
         # in order not to loose RAW file from self
         warpedVRT.srcVRT = self
@@ -831,8 +862,8 @@ class VRT():
         return warpedVRT
 
     def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0,
-                           geoTransform=None, blockSize=None,
-                           srcSRS=None, dstSRS=None, WorkingDataType=None):
+                           geoTransform=None, srcSRS=None, dstSRS=None,
+                           **kwargs):
         ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
 
         Parameters
@@ -843,16 +874,24 @@ class VRT():
             desired Y size of warped image
         geoTransform : tuple of 6 ints
             desired GeoTransform size of the warped image
-        blockSize : int
-            value of tag <blockSize> in the VRT-file
+
+        Parameters (**kwargs)
+        ---------------------
         WorkingDataType : str
             value of tag <WorkingDataType> in the VRT-file
+        blockSize : int
+            value of tag <blockSize> in the VRT-file
 
         Modifies
         ---------
         XML of the self VRT file : size and geotranform is updated
 
         '''
+        # modify the default values using input values
+        self.d['blockSize'] = None
+        self.d['WorkingDataType'] = None
+        self.d = set_defaults(self.d, kwargs)
+
         warpedXML = self.read_xml()
 
         node0 = Node.create(warpedXML)
@@ -874,12 +913,12 @@ class VRT():
                 node0.node('BlockXSize').value = str(rasterXSize)
                 node0.node('BlockYSize').value = str(rasterYSize)
 
-            if blockSize is not None:
-                node0.node('BlockXSize').value = str(blockSize)
-                node0.node('BlockYSize').value = str(blockSize)
+            if self.d['blockSize'] is not None:
+                node0.node('BlockXSize').value = str(self.d['blockSize'])
+                node0.node('BlockYSize').value = str(self.d['blockSize'])
 
-            if WorkingDataType is not None:
-                node0.node('WorkingDataType').value = WorkingDataType
+            if self.d['WorkingDataType'] is not None:
+                node0.node('WorkingDataType').value = self.d['WorkingDataType']
 
         """
         # TODO: test thoroughly and implement later
@@ -961,14 +1000,9 @@ class VRT():
                                                  % (gcpNames[i], chunki),
                                                  chunk)
 
-    def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
-                          xSize=0, ySize=0, blockSize=None,
-                          geoTransform=None,
-                          use_geolocationArray=True, use_gcps=True,
-                          use_geotransform=True,
-                          dstGCPs=[], dstGeolocationArray=None,
-                          WorkingDataType=None,
-                          tps=False):
+    def create_warped_vrt(self, dstSRS=None, xSize=0, ySize=0,
+                          geoTransform=None, dstGCPs=[],
+                          dstGeolocationArray=None, **kwargs):
         ''' Create VRT object with WarpedVRT
 
         Modifies the input VRT according to the input options
@@ -1004,7 +1038,7 @@ class VRT():
         warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False,
-                                             use_gcps=False.,
+                                             use_gcps=False,
                                              use_geotransform=false)
 
         If destination image has GCPs (provided in <dstGCPs>): fake GCPs for
@@ -1015,17 +1049,10 @@ class VRT():
         If destination image has geolocation array (provided in
         <dstGeolocationArray>):this geolocation array is added to the WarpedVRT
 
-
         Parameters
         -----------
         dstSRS : string
             WKT of the destination projection
-        eResampleAlg : int (GDALResampleAlg)
-            0 : NearestNeighbour,
-            1 : Bilinear,
-            2 : Cubic,
-            3 : CubicSpline,
-            4 : Lancoz
         xSize, ySize : int
             width and height of the destination rasetr
         geoTransform : tuple with 6 floats
@@ -1034,6 +1061,9 @@ class VRT():
             GCPs of the destination image
         dstGeolocationArray : GeolocationArray object
             Geolocation array of the destination object
+
+        Parameters (**kwargs)
+        ---------------------
         use_geolocationArray : Boolean (True)
             Use geolocation array in input dataset (if present) for warping
         use_gcps : Boolean (True)
@@ -1041,12 +1071,31 @@ class VRT():
         use_geotransform : Boolean (True)
             Use GeoTransform in input dataset for warping or make artificial
             GeoTransform : (0, 1, 0, srcVRT.xSize, -1)
+        eResampleAlg : int (GDALResampleAlg) (0)
+            0 : NearestNeighbour,
+            1 : Bilinear,
+            2 : Cubic,
+            3 : CubicSpline,
+            4 : Lancoz
+        tps :  bool (False)
+        WorkingDataType : (None)
+        blockSize : (None)
 
         Returns
         --------
         warpedVRT : VRT object with WarpedVRT
 
         '''
+        # modify the default values using input values
+        self.d['use_geolocationArray'] = True
+        self.d['use_gcps'] = True
+        self.d['use_geotransform'] = True
+        self.d['eResampleAlg'] = 0
+        self.d['tps'] = False
+        self.d['WorkingDataType'] = None
+        self.d['blockSize'] = None
+        self.d = set_defaults(self.d, kwargs)
+
         # VRT to be warped
         srcVRT = self.copy()
 
@@ -1058,24 +1107,24 @@ class VRT():
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
-            use_geolocationArray = False
+            self.d['use_geolocationArray'] = False
             acwvSRS = None
 
         # prepare VRT.dataset for warping.
         # Select if GEOLOCATION Array,
         # or GCPs, or GeoTransform from the original
         # dataset are used
-        if len(self.geolocationArray.d) > 0 and use_geolocationArray:
+        if len(self.geolocationArray.d) > 0 and self.d['use_geolocationArray']:
             # use GEOLOCATION ARRAY by default
             # (remove GCP and GeoTransform)
             srcVRT.dataset.SetGCPs([], '')
             srcVRT._remove_geotransform()
-        elif len(srcVRT.dataset.GetGCPs()) > 0 and use_gcps:
+        elif len(srcVRT.dataset.GetGCPs()) > 0 and self.d['use_gcps']:
             # fallback to GCPs
             # (remove GeolocationArray and GeoTransform)
             srcVRT.dataset.SetMetadata('', 'GEOLOCATION')
             srcVRT._remove_geotransform()
-        elif use_geotransform:
+        elif self.d['use_geotransform']:
             # fallback to GeoTransform in input VRT
             # (remove GeolocationArray and GCP)
             srcVRT.dataset.SetMetadata('', 'GEOLOCATION')
@@ -1091,11 +1140,11 @@ class VRT():
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
-                                             acwvSRS, eResampleAlg)
+                                             acwvSRS, self.d['eResampleAlg'])
         # TODO: implement the below option for proper handling of
         # stereo projections
         # warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, '',
-        #                                      dstSRS, eResampleAlg)
+        #                                      dstSRS, self.d['eResampleAlg'])
 
         # check if Warped VRT was created
         if warpedVRT is None:
@@ -1108,10 +1157,12 @@ class VRT():
         # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
         warpedVRT._modify_warped_XML(xSize, ySize,
-                                     geoTransform, blockSize, WorkingDataType)
+                                     geoTransform,
+                                     self.d['blockSize'],
+                                     self.d['WorkingDataType'])
 
         # apply thin-spline-transformation option
-        if use_gcps and tps:
+        if self.d['use_gcps'] and self.d['tps']:
             tmpVRTXML = warpedVRT.read_xml()
             tmpVRTXML = tmpVRTXML.replace('GCPTransformer', 'TPSTransformer')
             warpedVRT.write_xml(tmpVRTXML)
@@ -1415,5 +1466,4 @@ class VRT():
 
         # write contents
         self.write_xml(contents)
-
 

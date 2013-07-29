@@ -100,7 +100,7 @@ class Nansat(Domain):
     '''
 
     def __init__(self, fileName='', mapperName='', domain=None,
-                 array=None, parameters=None, logLevel=30):
+                 array=None, parameters=None, logLevel=30, **kwargs):
         '''Create Nansat object
 
         if <fileName> is given:
@@ -128,6 +128,39 @@ class Nansat(Domain):
             Metadata for the 1st band of a new raster,e.g. name, wkv, units,...
         logLevel : int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
+
+        Parameters (**kwargs)
+        ---------------------
+        -- VRT
+        eResampleAlg = 0
+        use_geolocationArray = True
+        use_gcps = True
+        use_geotransform = True
+        WorkingDataType = None
+        tps = False
+        blockSize = None
+        -- mapper_envisat
+        envisat_zoomSize = 500
+        envisat_step = 1
+        -- mapper_obpg_l2
+        obpg_l2_GCP_COUNT = 10
+        -- mapper_pathfinder52
+        pathfinder52_minQual = 4
+        -- mapper_viirs_l1
+        viirs_l1_GCP_COUNT0 = 5
+        viirs_l1_GCP_COUNT1 = 20
+        viirs_l1_pixelStep = 1
+        viirs_l1_lineStep = 1
+        -- mapper_aster_l1a
+        aster_l1a_bandNames = ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N']
+        aster_l1a_bandWaves = [560, 660, 820]
+        -- mapper_case2reg
+        case2regKwargs_wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
+        -- mapper_generic
+        generic_rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio',
+                               'ScaleOffset', 'dods_variable']
+
+
 
         Creates
         --------
@@ -178,7 +211,7 @@ class Nansat(Domain):
         # create self.raw from a file using mapper or...
         if fileName != '':
             # Make original VRT object with mapping of variables
-            self.raw = self._get_mapper(mapperName)
+            self.raw = self._get_mapper(mapperName, **kwargs)
             # Set current VRT object
             self.vrt = self.raw.copy()
         # ...create using array, domain, and parameters
@@ -1414,7 +1447,7 @@ class Nansat(Domain):
             metaReceiverRAW.SetMetadataItem(key, value)
             metaReceiverVRT.SetMetadataItem(key, value)
 
-    def _get_mapper(self, mapperName):
+    def _get_mapper(self, mapperName, **kwargs):
         ''' Create VRT file in memory (VSI-file) with variable mapping
 
         If mapperName is given only this mapper will be used,
@@ -1466,7 +1499,8 @@ class Nansat(Domain):
                 mapper_module = __import__('mapper_' + mapperName)
             except ImportError:
                 raise Error('Mapper ' + mapperName + ' not in PYTHONPATH')
-            tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset, metadata)
+            tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
+                                          metadata, **kwargs)
             self.mapper = mapperName
         else:
             # We test all mappers, import one by one
@@ -1477,8 +1511,8 @@ class Nansat(Domain):
                 try:
                     mapper_module = __import__(iMapper)
                     #create a Mapper object and get VRT dataset from it
-                    tmpVRT = mapper_module.Mapper(self.fileName,
-                                                  gdalDataset, metadata)
+                    tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
+                                                  metadata, **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper
                     break
