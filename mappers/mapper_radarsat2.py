@@ -89,7 +89,7 @@ class Mapper(VRT):
                     'DataType': dtype}]
         dst = {'wkv': 'angle_of_incidence',
                         'PixelFunctionType': 'BetaSigmaToIncidence',
-                        'dataType': dtype,
+                        'dataType': 6,
                         'name': 'incidence_angle'}
 
         self._create_band(src, dst)
