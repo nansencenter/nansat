@@ -554,4 +554,27 @@ def add_logger(logName='', logLevel=None):
 
     return logger
 
+def set_defaults(dictionary, newParm):
+        '''Check input params and set defaut values
+
+        Look throught default parameters (self.d) and given parameters (dict)
+        and paste value from input if the key matches
+
+        Parameters
+        ----------
+        dict : dictionary
+            parameter names and values
+
+        Modifies
+        ---------
+        self.d
+
+        '''
+        for key in newParm:
+            if key in dictionary:
+                dictionary[key] = newParm[key]
+
+        return dictionary
+
+
 
