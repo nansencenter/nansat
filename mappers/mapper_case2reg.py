@@ -6,35 +6,46 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from vrt import *
-from nansat_tools import Node, latlongSRS
+from nansat_tools import Node, latlongSRS, set_defaults
 import numpy as np
 import mapper_generic as mg
 
 class Mapper(mg.Mapper):
     '''Mapping for the BEAM/Visat output of Case2Regional algorithm'''
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         fPathName, fExt = os.path.splitext(fileName)
         fPath, fName = os.path.split(fPathName)
         # get all metadata using the GENERIC Mapper
         if fExt == '.nc' and 'MER_' in fName and 'N1_C2IOP' in fName:
             mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
-            
+
         #add metadata for Rrs bands
         rrsDict = self._get_wkv('surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air')
-        wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]
-        
+
+        self.d= {'wavelengths' : [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
+
+        # choose kwargs for envisat
+        case2regKwargs = {}
+        for key in kwargs:
+            if key.startswith('case2regKwargs'):
+                keyName = key.replace('case2regKwargs_', '')
+                case2regKwargs[keyName] = kwargs[key]
+
+        # modify the default values using input values
+        self.d = set_defaults(self.d, case2regKwargs)
+
         for bi in range(1, 1+self.dataset.RasterCount):
             b = self.dataset.GetRasterBand(bi)
             bMetadata = b.GetMetadata()
             rawName = bMetadata.get('name', '')
             if 'reflec_' in rawName:
                 refNumber = int(rawName.split('_')[1])
-                wavelength = wavelengths[refNumber]
+                wavelength = self.d['wavelengths'][refNumber]
                 b.SetMetadataItem('name', 'Rrs_' + str(wavelength))
                 b.SetMetadataItem('wavelength', str(wavelength))
                 for rrsKey in rrsDict:
                     b.SetMetadata(rrsKey, rrsDict[rrsKey])
-                
+
                 src = [{
                     'SourceFilename': b.GetMetadataItem('SourceFilename'),
                     'SourceBand':  b.GetMetadataItem('SourceBand'),
@@ -47,3 +58,4 @@ class Mapper(mg.Mapper):
                 self._create_band(src, dst)
 
         self.dataset.FlushCache()
+

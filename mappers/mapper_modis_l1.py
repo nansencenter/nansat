@@ -10,31 +10,31 @@ from vrt import VRT, gdal, parse
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MODIS_L1 VRT '''
         #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
         gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
-       
+
         #list of available modis names:resolutions
         modisResolutions = {'MYD02QKM':250, 'MOD02QKM':250,
                             'MYD02HKM':500, 'MOD02HKM':500,
-                            'MYD021KM':1000, 'MOD021KM':1000};
-        
+                            'MYD021KM':1000, 'MOD021KM':1000}
+
         #should raise error in case of not MODIS_L1
-        mResolution = modisResolutions[gdalMetadata["SHORTNAME"]];
+        mResolution = modisResolutions[gdalMetadata["SHORTNAME"]]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset)
-       
+        VRT.__init__(self, gdalSubDataset, **kwargs)
+
         subDsString = 'HDF4_EOS:EOS_SWATH:"%s":MODIS_SWATH_Type_L1B:%s'
-                
+
         #provide all mappings
         metaDict250SF = ['EV_250_RefSB']
         metaDict250 = [
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '645'}},
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_RefSB'), 'SourceBand': 2}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '858'}}
-        ];
-        
+        ]
+
         metaDict500SF = ['EV_250_Aggr500_RefSB', 'EV_500_RefSB']
         metaDict500 = [
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_250_Aggr500_RefSB'), 'SourceBand': 1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '645'}},
@@ -44,7 +44,7 @@ class Mapper(VRT):
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 3}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1240'}},
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 4}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '1640'}},
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_500_RefSB'), 'SourceBand': 5}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '2130'}}
-        ];
+        ]
 
         metaDict1000SF = ['EV_250_Aggr1km_RefSB', 'EV_500_Aggr1km_RefSB', 'EV_1KM_RefSB', 'EV_1KM_Emissive']
         metaDict1000 = [
@@ -89,21 +89,21 @@ class Mapper(VRT):
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 14}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '13635'}},
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 15}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '13935'}},
         {'src': {'SourceFilename': subDsString % (fileName, 'EV_1KM_Emissive'), 'SourceBand': 16}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '14235'}}
-        ];
+        ]
 
         # get proper mapping depending on resolution
         metaDict = {
             250: metaDict250,
             500: metaDict500,
             1000: metaDict1000,
-        }[mResolution];
+        }[mResolution]
         # get proper mapping depending on resolution
         metaDictSF = {
             250: metaDict250SF,
             500: metaDict500SF,
             1000: metaDict1000SF,
-        }[mResolution];
-        
+        }[mResolution]
+
         # read all scales/offsets
         rScales = {}
         rOffsets = {}
@@ -113,7 +113,7 @@ class Mapper(VRT):
             rScales[dsName] = map(float, ds.GetMetadataItem('radiance_scales').split(','))
             rOffsets[dsName] = map(float, ds.GetMetadataItem('radiance_offsets').split(','))
             self.logger.debug('radiance_scales: %s' % str(rScales))
-            
+
         # add 'band_name' to 'parameters'
         for bandDict in metaDict:
             SourceFilename = bandDict['src']['SourceFilename']
@@ -124,7 +124,7 @@ class Mapper(VRT):
             self.logger.debug('band, scale, offset: %s_%d %s %s' % (SourceFilename, SourceBand, scale, offset))
             bandDict['src']['ScaleRatio'] = scale
             bandDict['src']['ScaleOffset'] = offset
-            
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 

@@ -24,7 +24,7 @@ import pdb
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create Radarsat2 VRT '''
         fPathName, fExt = os.path.splitext(fileName)
 
@@ -38,10 +38,10 @@ class Mapper(VRT):
 
         #if it is not RADARSAT-2, return
         if product != 'RADARSAT-2':
-            raise AttributeError("RADARSAT-2 BAD MAPPER");
+            raise AttributeError("RADARSAT-2 BAD MAPPER")
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset);
+        VRT.__init__(self, gdalDataset, **kwargs)
 
         #define dictionary of metadata and band specific parameters
         pol = []
@@ -64,7 +64,7 @@ class Mapper(VRT):
                             'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
                             'SourceBand': i,
                             'DataType': s0dataset.GetRasterBand(i).DataType},
-                        'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave', 
+                        'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                             'suffix': suffix,
                             'polarization': polString}})
             if dataset[1]=='Beta Nought calibrated':
@@ -74,7 +74,7 @@ class Mapper(VRT):
                     polString = b0dataset.GetRasterBand(j).GetMetadata()['POLARIMETRIC_INTERP']
                     if polString==s0datasetPol:
                         b0datasetBand = j
-        
+
         # Add Sigma0 bands with metadata
         self._create_bands(metaDict)
 
@@ -85,22 +85,22 @@ class Mapper(VRT):
                     'SourceBand':  b0datasetBand,
                     'DataType': dtype},
                     {'SourceFilename': s0datasetName,
-                    'SourceBand': 1, 
+                    'SourceBand': 1,
                     'DataType': dtype}]
         dst = {'wkv': 'angle_of_incidence',
                         'PixelFunctionType': 'BetaSigmaToIncidence',
                         'dataType': dtype,
                         'name': 'incidence_angle'}
-            
-        self._create_band(src,dst)
+
+        self._create_band(src, dst)
         self.dataset.FlushCache()
-            
+
         ###################################################################
         # Add sigma0_VV - pixel function of sigma0_HH and beta0_HH
         # incidence angle is calculated within pixel function
         # It is assummed that HH is the first band in sigma0 and beta0 sub datasets
         ###################################################################
-        if 'VV' not in pol and 'HH' in pol:        
+        if 'VV' not in pol and 'HH' in pol:
             s0datasetNameHH = pol.index('HH')+1
             src = [{'SourceFilename': s0datasetName,
                     'SourceBand':  s0datasetNameHH,
@@ -121,7 +121,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('SAR_look_direction', str(mod(
             Domain(ds=gdalDataset).upwards_azimuth_direction()
             + 90, 360)))
-        
+
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
         self.logger.info('Valid time: %s', str(validTime))

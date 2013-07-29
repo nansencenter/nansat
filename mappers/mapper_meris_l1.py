@@ -11,16 +11,16 @@ from envisat import Envisat
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MER1 VRT '''
         # get ENVISAT MPH_PRODUCT
         product = gdalMetadata.get("MPH_PRODUCT")
-        
+
         if product[0:9] != "MER_FRS_1" and product[0:9] != "MER_RR__1":
             raise AttributeError("MERIS_L1 BAD MAPPER")
-         
+
         # init ADS parameters
-        Envisat.__init__(self, fileName, product[0:4])
+        Envisat.__init__(self, fileName, product[0:4], **kwargs)
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '413'}},
@@ -47,15 +47,15 @@ class Mapper(VRT, Envisat):
                 bandDict['src']['DataType'] = 2  # default for meris L1 DataType UInt16
             if bandDict['dst'].has_key('wavelength'):
                 bandDict['dst']['suffix'] = bandDict['dst']['wavelength']
-        
+
         # get scaling GADS from header
-        scales = self.read_scaling_gads(range(7, 22));
+        scales = self.read_scaling_gads(range(7, 22))
         # set scale factor to the band metadata (only radiances)
         for i, bandDict in enumerate(metaDict[:-1]):
             bandDict['src']['ScaleRatio'] = str(scales[i])
 
         # get list with resized VRTs from ADS
-        self.adsVRTs = self.get_ads_vrts(gdalDataset, ['sun zenith angles', "sun azimuth angles", "zonal winds", "meridional winds"])
+        self.adsVRTs = self.get_ads_vrts(gdalDataset, ['sun zenith angles', 'sun azimuth angles', 'zonal winds', 'meridional winds'])
         # add bands from the ADS VRTs
         for adsVRT in self.adsVRTs:
             metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
@@ -65,7 +65,7 @@ class Mapper(VRT, Envisat):
                             })
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        VRT.__init__(self, gdalDataset, **kwargs)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -74,4 +74,4 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        self.add_geolocation_from_ads(gdalDataset, step=1)
+        self.add_geolocation_from_ads(gdalDataset)

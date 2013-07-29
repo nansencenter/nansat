@@ -8,48 +8,45 @@
 from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS, parse
 from datetime import datetime, timedelta
 from math import ceil
+from nansat_tools import set_defaults
 
 class Mapper(VRT):
     ''' Mapper for ASTER L1A VNIR data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
-        # number of GCPs along each dimention
-        GCP_COUNT = 10
-        
         # check if it is ASTER L1A
         assert 'AST_L1A_' in fileName
         shortName = gdalMetadata['INSTRUMENTSHORTNAME']
         assert shortName == 'ASTER'
-        
-        bandNames = [
-        'VNIR_Band1',
-        'VNIR_Band2',
-        'VNIR_Band3N']
-        """
-        'VNIR_Band3B',
-        'SWIR_Band4',
-        'SWIR_Band5',
-        'SWIR_Band6',
-        'SWIR_Band7',
-        'SWIR_Band8',
-        'SWIR_Band9',
-        'TIR_Band10',
-        'TIR_Band11',
-        'TIR_Band12',
-        'TIR_Band13',
-        'TIR_Band14',
-        ]
-        """
-        bandWaves = [560, 660, 820]
-        #, 820, 1650, 2165, 2205, 2260, 2330, 2395, 8300, 8650, 9100, 10600, 11300]
-        
+
         subDatasets = gdalDataset.GetSubDatasets()
-        
+
+        self.d = {'GCP_COUNT' : 10,         # number of GCPs along each dimention
+                  'bandNames' : ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
+                  'bandWaves' : [560, 660, 820]}
+        '''
+        'VNIR_Band3B' : 820, 'SWIR_Band4' : 1650, 'SWIR_Band5' : 2165,
+        'SWIR_Band6' : 2205, 'SWIR_Band7' : 2260, 'SWIR_Band8' : 2330,
+        'SWIR_Band9' : 2395, 'TIR_Band10' : 8300, 'TIR_Band11' : 8650,
+        'TIR_Band12' : 9100, 'TIR_Band13' : 10600, 'TIR_Band14' : 11300
+        '''
+
+        # set kwargs
+        asterL1aKwargs = {}
+        for key in kwargs:
+            if key.startswith('aster_l1a'):
+                keyName = key.replace('aster_l1a_', '')
+                asterL1aKwargs[keyName] = kwargs[key]
+
+        # modify the default values using input values
+        self.d = set_defaults(self.d, asterL1aKwargs)
+
         # find datasets for each band and generate metaDict
         metaDict = []
         bandDatasetMask = 'HDF4_EOS:EOS_SWATH:"%s":%s:ImageData'
-        for bandName, bandWave in zip(bandNames, bandWaves):
+        for bandName, bandWave in zip(self.d['bandNames'],
+                                      self.d['bandWaves']):
             metaEntry = {
                 'src': {
                     'SourceFilename': bandDatasetMask % (fileName, bandName),
@@ -63,14 +60,14 @@ class Mapper(VRT):
                     },
                 }
             metaDict.append(metaEntry)
-        
+
         # create empty VRT dataset with geolocation only
         gdalSubDataset = gdal.Open(metaDict[0]['src']['SourceFilename'])
-        VRT.__init__(self, gdalSubDataset)
-                
+        VRT.__init__(self, gdalSubDataset, **kwargs)
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
-                
+
         # find largest lon/lat subdatasets
         latShape0 = 0
         for subDataset in subDatasets:
@@ -86,22 +83,22 @@ class Mapper(VRT):
                     lonSubDS = subDataset[0]
         self.logger.debug(latSubDS)
         self.logger.debug(lonSubDS)
-        
+
         # get lat/lon matrices
         xDataset = gdal.Open(lonSubDS)
         yDataset = gdal.Open(latSubDS)
-        
+
         longitude = xDataset.ReadAsArray()
         latitude = yDataset.ReadAsArray()
-        
-        step0 = longitude.shape[0] / GCP_COUNT
-        step1 = longitude.shape[1] / GCP_COUNT
-        
+
+        step0 = longitude.shape[0] / self.d['GCP_COUNT']
+        step1 = longitude.shape[1] / self.d['GCP_COUNT']
+
         # estimate pixel/line step
         pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize)))
         lineStep = int(ceil(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize)))
         self.logger.debug('steps: %d %d %d %d' % (step0, step1, pixelStep, lineStep))
-        
+
         # generate list of GCPs
         gcps = []
         k = 0
@@ -117,6 +114,6 @@ class Mapper(VRT):
                     k += 1
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
-        
+
         self._set_time(parse(gdalMetadata['FIRSTPACKETTIME']))
-        
+

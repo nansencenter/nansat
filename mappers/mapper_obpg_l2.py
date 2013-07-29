@@ -8,25 +8,37 @@
 from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
 from datetime import datetime, timedelta
 from math import ceil
+from nansat_tools import set_defaults
 
 class Mapper(VRT):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
-    
+
     TODO:
     * Test on SeaWIFS
     * Test on MODIS Terra
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
         # number of GCPs along each dimention
-        GCP_COUNT = 10
+        self.d = {'GCP_COUNT' : 10}
+
+        # init ADS parameters
+        obpgL2Kwargs = {}
+        for key in kwargs:
+            if key.startswith('obpg_l2_'):
+                keyName = key.replace('obpg_l2_', '')
+                obpgL2Kwargs[keyName] = kwargs[key]
+
+        # modify the default values using input values
+        self.d = set_defaults(self.d, obpgL2Kwargs)
+
         """
         Title=
         Title=HMODISA Level-2 Data
         Title=MERIS Level-2 Data
         """
-        
+
         titles = ['HMODISA Level-2 Data', 'MERIS Level-2 Data']
         # should raise error in case of not obpg_l2 file
         title = gdalMetadata["Title"]
@@ -40,8 +52,8 @@ class Mapper(VRT):
                 gdalSubDataset = gdal.Open(subDataset[0])
                 break
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset)
-        
+        VRT.__init__(self, gdalSubDataset, **kwargs)
+
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
         # dictionary for all possible bands
@@ -58,7 +70,7 @@ class Mapper(VRT):
         'latitude':   {'src': {}, 'dst': {'wkv': 'latitude'}},
         'longitude':  {'src': {}, 'dst': {'wkv': 'longitude'}},
         }
-        
+
         # loop through available bands and generate metaDict (non fixed)
         metaDict = []
         bandNo = 0
@@ -77,7 +89,7 @@ class Mapper(VRT):
                 subBandName = subDatasetName.split('_')[0]
 
             self.logger.debug('subBandName, wavelength: %s %s' % (subBandName, str(wavelength)))
-            
+
             if subBandName in allBandsDict:
                 # get name, slope, intercept
                 self.logger.debug('name: %s' % subBandName)
@@ -98,7 +110,7 @@ class Mapper(VRT):
                 # add dst from allBandsDict
                 for dstKey in allBandsDict[subBandName]['dst']:
                     metaEntry['dst'][dstKey] = allBandsDict[subBandName]['dst'][dstKey]
-                
+
                 # add wavelength, band name to dst
                 if wavelength is not None:
                     metaEntry['dst']['suffix'] = str(wavelength)
@@ -108,7 +120,7 @@ class Mapper(VRT):
                 self.logger.debug('metaEntry: %d => %s' % (bandNo, str(metaEntry)))
                 metaDict.append(metaEntry)
                 bandNo += 1
-                
+
                 if subBandName == 'Rrs':
                     metaEntryRrsw = {
                         'src': [{
@@ -128,7 +140,7 @@ class Mapper(VRT):
                     self.logger.debug('metaEntry: %d => %s' % (bandNo, str(metaEntryRrsw)))
                     metaDict.append(metaEntryRrsw)
                     bandNo += 1
-                    
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
@@ -142,13 +154,13 @@ class Mapper(VRT):
         yDatasetBand = geolocationMetadata['Y_BAND']
         yDataset = gdal.Open(yDatasetSource)
         yVRT = VRT(vrtDataset=yDataset)
-        
+
         # estimate pixel/line step
         pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize)))
         lineStep = int(ceil(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize)))
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
-        
-        # ==== ADD GCPs and Pojection ====        
+
+        # ==== ADD GCPs and Pojection ====
         # get lat/lon matrices
         longitude = xVRT.dataset.GetRasterBand(1).ReadAsArray()
         latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
@@ -156,15 +168,20 @@ class Mapper(VRT):
         # add geolocation array
         if (    longitude.min() >= -180 and longitude.max() <= 180 and
                 latitude.min() >= -90 and latitude.max() <= 90):
-            self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource, pixelStep=pixelStep, lineStep=lineStep))
+            self.add_geolocationArray(GeolocationArray(xDatasetSource,
+                                                       yDatasetSource,
+                                                       pixelStep=pixelStep,
+                                                       lineStep=lineStep))
         else:
             self.remove_geolocationArray()
 
         # estimate step of GCPs
-        step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
-        step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT))
-        self.logger.debug('gcpCount: %d %d %f %d %d', latitude.shape[0], latitude.shape[1], GCP_COUNT, step0, step1)
-        
+        step0 = max(1, int(float(latitude.shape[0]) / self.d['GCP_COUNT']))
+        step1 = max(1, int(float(latitude.shape[1]) / self.d['GCP_COUNT']))
+        self.logger.debug('gcpCount: %d %d %f %d %d',
+                          latitude.shape[0], latitude.shape[1],
+                          self.d['GCP_COUNT'], step0, step1)
+
         # generate list of GCPs
         gcps = []
         k = 0
@@ -175,13 +192,15 @@ class Mapper(VRT):
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
                     gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep, i0 * lineStep)
-                    self.logger.debug('%d %d %d %f %f', k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+                    self.logger.debug('%d %d %d %f %f',
+                                      k, gcp.GCPPixel, gcp.GCPLine,
+                                      gcp.GCPX, gcp.GCPY)
                     gcps.append(gcp)
                     k += 1
-        
+
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
-        
+
         # set TIME
         startYear = int(gdalMetadata['Start Year'])
         startDay =  int(gdalMetadata['Start Day'])

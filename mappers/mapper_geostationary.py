@@ -39,16 +39,16 @@ MSG_offset = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 satDict = [\
            {'name': 'GOES13', 'wavelengths': [700, 10700, 3900, 6600],
-                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., 
-                    (340.-170.)/1023.], 'offset': [0, 170, 170, 170]}, 
+                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023.,
+                    (340.-170.)/1023.], 'offset': [0, 170, 170, 170]},
            {'name': 'GOES15', 'wavelengths': [700, 10700, 3900, 6600],
-                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023., 
+                'scale': [100./1023., (340.-170.)/1023., (340.-170.)/1023.,
                 (340.-170.)/1023.], 'offset': [0, 170, 170, 170]},
-           {'name': 'MTSAT2', 'NODATA': [255, 255, 255, 255], 
+           {'name': 'MTSAT2', 'NODATA': [255, 255, 255, 255],
                 'wavelengths': [700, 3800, 6800, 10800], # 12mum ch not supported
-                'LUT': ['0:0,255:100', mtsat_calibration_3_8_mum, 
-                    mtsat_calibration_6_8_mum, mtsat_calibration_10_7_mum]},  
-           {'name': 'MET7', 'wavelengths': [795, 6400, 11500], 
+                'LUT': ['0:0,255:100', mtsat_calibration_3_8_mum,
+                    mtsat_calibration_6_8_mum, mtsat_calibration_10_7_mum]},
+           {'name': 'MET7', 'wavelengths': [795, 6400, 11500],
                 #'scale': [100./255., 0.103, 0.103], 'offset': [0, 5, 5]},
                 'LUT': ['0:0,255:100', meteosat7_lut_VW, meteosat7_lut_IR]},
            {'name': 'MSG1', 'wavelengths': MSG_wavelengths,
@@ -58,12 +58,12 @@ satDict = [\
            {'name': 'MSG3', 'wavelengths': MSG_wavelengths,
                 'scale': MSG_scale, 'offset': MSG_offset}
            ];
-        
+
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Geostationary satellite data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         satellite = gdalDataset.GetDescription().split(",")[2]
 
         for sat in satDict:
@@ -90,7 +90,7 @@ class Mapper(VRT):
 
         if wavelengths is None:
             raise AttributeError("No Eumetcast geostationary satellite");
-        
+
         path = gdalDataset.GetDescription().split(",")[0].split("(")[1]
         datestamp = gdalDataset.GetDescription().split(",")[3]
         if satellite[0:3] == 'MSG':
@@ -122,9 +122,9 @@ class Mapper(VRT):
                 src['ScaleOffset'] = str(bandOffset)
             metaDict.append({'src': src, 'dst': dst})
 
-                      
+
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset);
+        VRT.__init__(self, gdalDataset, **kwargs)
 
         # Create bands
         self._create_bands(metaDict)
@@ -132,7 +132,7 @@ class Mapper(VRT):
         # For Meteosat7 ch1 has higher resolution than ch2 and ch3
         # and for MSG, channel 12 (HRV) has higher resolution than the other channels
         # If the high resolution channel is opened, the low res channels are
-        # blown up to this size. If a low res channel is opened, the high res channels 
+        # blown up to this size. If a low res channel is opened, the high res channels
         # are reduced to this size.
         if satellite == 'MET7' or satellite[0:3] == 'MSG':
             node0 = Node.create(self.read_xml())
@@ -168,5 +168,5 @@ class Mapper(VRT):
 
         # Set time
         self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
-        
+
         return

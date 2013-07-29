@@ -15,7 +15,7 @@ import gdal, osr
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Cosmo-Skymed '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata ):
+    def __init__(self, fileName, gdalDataset, gdalMetadata , **kwargs):
         ''' Create CSKS VRT '''
 
         if fileName[0:4] != "CSKS":
@@ -62,21 +62,21 @@ class Mapper(VRT):
         gcp = gdal.GCP(float(top_left_lon), float(top_left_lat), 0, 0, subDataset.RasterYSize)
         gcps.append( gcp )
         #self.logger.debug('%d %d %d %f %f', 2, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(top_right_lon), float(top_right_lat), 
+        gcp = gdal.GCP(float(top_right_lon), float(top_right_lat),
                 0, subDataset.RasterXSize, subDataset.RasterYSize)
         gcps.append( gcp )
         #self.logger.debug('%d %d %d %f %f', 3, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(center_lon), float(center_lat),
-                0, int(np.round(subDataset.RasterXSize/2.)), 
+                0, int(np.round(subDataset.RasterXSize/2.)),
                 int(round(subDataset.RasterYSize/2.)))
         gcps.append( gcp )
         #self.logger.debug('%d %d %d %f %f', 4, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        
+
         # append GCPs and lat/lon projection to the vsiDataset
         latlongSRS = osr.SpatialReference()
-        latlongSRS.ImportFromProj4("+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs")
+        latlongSRS.ImportFromProj4("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
         latlongSRSWKT = latlongSRS.ExportToWkt()
-        
+
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, srcRasterXSize=subDataset.RasterXSize,
                 srcRasterYSize=subDataset.RasterYSize,
@@ -123,13 +123,13 @@ class Mapper(VRT):
 
                 #print Ftot
 
-                src = [{'SourceFilename': self.fileName, 
+                src = [{'SourceFilename': self.fileName,
                             'DataType': gdal.GDT_Float32,
-                            'SourceBand': 2*i+1, 'ScaleRatio': np.sqrt(Ftot)}, 
-                                { 'SourceFilename': self.fileName, 
-                                    'DataType': gdal.GDT_Float32, 
+                            'SourceBand': 2*i+1, 'ScaleRatio': np.sqrt(Ftot)},
+                                { 'SourceFilename': self.fileName,
+                                    'DataType': gdal.GDT_Float32,
                                     'SourceBand': 2*i+2, 'ScaleRatio': np.sqrt(Ftot)}]
-                dst = {'wkv': 
+                dst = {'wkv':
                         'surface_backwards_scattering_coefficient_of_radar_wave',
                         'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
                         'polarisation': gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
@@ -139,7 +139,7 @@ class Mapper(VRT):
                         #'pass': gdalMetadata[''] - I can't find this in the metadata...
 
                 self._create_band(src,dst)
-        
+
                 self.dataset.FlushCache()
 
 

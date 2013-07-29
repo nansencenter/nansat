@@ -11,14 +11,13 @@ from envisat import Envisat
 class Mapper(VRT, Envisat):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         product = gdalMetadata["MPH_PRODUCT"]
 
         if product[0:9] != "MER_FRS_2" and product[0:9] != "MER_RR__2":
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
-        # init ADS parameters
-        Envisat.__init__(self, fileName, product[0:4])
+        Envisat.__init__(self, fileName, product[0:4], **kwargs)
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'}},
@@ -74,7 +73,7 @@ class Mapper(VRT, Envisat):
                             })
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset);
+        VRT.__init__(self, gdalDataset, **kwargs)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -83,4 +82,4 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        self.add_geolocation_from_ads(gdalDataset, step=1)
+        self.add_geolocation_from_ads(gdalDataset)

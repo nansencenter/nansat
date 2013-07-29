@@ -21,19 +21,19 @@ from domain import Domain
 class Mapper(VRT):
     ''' VRT with mapping of WKV for KMSS TOA tiff data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=10):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=10,  **kwargs):
         ''' Create VRT '''
         product = gdalDataset.GetDriver().LongName
         if cmp(os.path.split(fileName)[1][0:4], '101_')!= 0:
             if cmp(os.path.split(fileName)[1][0:4], '102_')!= 0:
-                raise AttributeError("NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'");
-        
+                raise AttributeError("NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'")
+
         if product!= 'GeoTIFF':
-            raise AttributeError("Not_GeoTIFF");
+            raise AttributeError("Not_GeoTIFF")
         if cmp(fileName[-3:], 'tif')!= 0:
-			raise AttributeError("for NTSOMZ GeoTIFF extension must be tif");
+			raise AttributeError("for NTSOMZ GeoTIFF extension must be tif")
         if gdalDataset.RasterCount!= 3:
-			raise AttributeError("Not_NTSOMZ_KMSS_geotiff! does not have 3 bands!");
+			raise AttributeError("Not_NTSOMZ_KMSS_geotiff! does not have 3 bands!")
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1},
@@ -53,7 +53,7 @@ class Mapper(VRT):
                 bandDict['dst']['name'] = 'toa_radiance_' + bandDict['dst']['wavelength']
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset);
+        VRT.__init__(self, gdalDataset,  **kwargs)
 
          # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

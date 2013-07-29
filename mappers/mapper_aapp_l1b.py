@@ -13,7 +13,7 @@ import struct
 import datetime
 from vrt import *
 
-satIDs = {4: 'NOAA-15',2: 'NOAA-16', 6: 'NOAA-17',7: 'NOAA-18', 8: 'NOAA-19', 
+satIDs = {4: 'NOAA-15',2: 'NOAA-16', 6: 'NOAA-17',7: 'NOAA-18', 8: 'NOAA-19',
           11: 'Metop-B (Metop-1)', 12: 'Metop-A (Metop-2)', 13: 'Metop-C (Metop-3)'}
 dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
 dataSetQualityIndicatorOffset = 114
@@ -25,8 +25,8 @@ imageOffset = headerLength + 1264
 class Mapper(VRT):
     ''' VRT with mapping of WKV for AVHRR L1B output from AAPP '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
-    
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+
         ########################################
         # Read metadata from binary file
         ########################################
@@ -56,7 +56,7 @@ class Mapper(VRT):
         year = int(struct.unpack('<H', fp.read(2))[0])
         dayofyear = int(struct.unpack('<H', fp.read(2))[0])
         millisecondsOfDay = int(struct.unpack('<l', fp.read(4))[0])
-        time = datetime.datetime(year,1,1) + datetime.timedelta(dayofyear-1, 
+        time = datetime.datetime(year,1,1) + datetime.timedelta(dayofyear-1,
                         milliseconds=millisecondsOfDay)
 
         ##################################
@@ -85,7 +85,7 @@ class Mapper(VRT):
 
         ########################################################
         # Read visible calibration coefficients per scanline
-        # - for channels 1, 2, 3A 
+        # - for channels 1, 2, 3A
         ########################################################
         #for scanline in range(1):
         #    avh_calvis=np.zeros((3,3,5))
@@ -100,7 +100,7 @@ class Mapper(VRT):
 
         ########################################################
         # Read IR calibration coefficients per scanline
-        # - for channels 3B, 4, 5 
+        # - for channels 3B, 4, 5
         ########################################################
         #for scanline in range(1):
         #    avh_calir=np.zeros((2,3,3))
@@ -185,13 +185,17 @@ class Mapper(VRT):
         # Initialize dataset
         #######################
         # create empty VRT dataset with geolocation only (from Geolocation Array)
-        VRT.__init__(self, srcRasterXSize=2048, srcRasterYSize=numCalibratedScanLines, 
-                        geolocationArray=GeolocObject, srcProjection=GeolocObject.d['SRS'])
+        VRT.__init__(self,
+                     srcRasterXSize=2048,
+                     srcRasterYSize=numCalibratedScanLines,
+                     geolocationArray=GeolocObject,
+                     srcProjection=GeolocObject.d['SRS'],
+                     **kwargs)
 
         # Since warping quality is horrible using geolocation arrays
         # which are much smaller than raster bands (due to a bug in GDAL:
         # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
-        # are here converted to GCPs. Only a subset of GCPs is added, 
+        # are here converted to GCPs. Only a subset of GCPs is added,
         # significantly increasing speed when using -tps warping
         reductionFactor = 2
         self.convert_GeolocationArray2GPCs(1*reductionFactor, 40*reductionFactor)
@@ -234,7 +238,7 @@ class Mapper(VRT):
                                 "unit": "1"}})
 
         self._create_bands(metaDict)
-        
+
         # Adding valid time to dataset
         self._set_time(time)
 

@@ -6,7 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from vrt import *
-from nansat_tools import Node, latlongSRS
+from nansat_tools import Node, latlongSRS, set_defaults
 import numpy as np
 
 class Mapper(VRT):
@@ -24,7 +24,21 @@ class Mapper(VRT):
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
 
-        rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio', 'ScaleOffset', 'dods_variable']
+        self.d = {'rmMetadatas' : ['NETCDF_VARNAME',
+                                   '_Unsigned',
+                                   'ScaleRatio',
+                                   'ScaleOffset',
+                                   'dods_variable']}
+
+        # choose kwargs for generic
+        genericKwargs = {}
+        for key in kwargs:
+            if key.startswith('generic'):
+                keyName = key.replace('generic_', '')
+                genericKwargs[keyName] = kwargs[key]
+
+        # modify the default values using input values
+        self.d = set_defaults(self.d, genericKwargs)
 
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
@@ -106,7 +120,7 @@ class Mapper(VRT):
                                 dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
-                        for rmMetadata in rmMetadatas:
+                        for rmMetadata in self.d['rmMetadatas']:
                             if rmMetadata in dst:
                                 dst.pop(rmMetadata)
 

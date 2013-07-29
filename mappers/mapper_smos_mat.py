@@ -14,7 +14,7 @@ from scipy.io import loadmat
 class Mapper(VRT):
     ''' MApper for Matlab files with SMOS data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create SMOS VRT '''
         # check extension
         fName = os.path.split(fileName)[1]
@@ -23,8 +23,8 @@ class Mapper(VRT):
             # load file
             matFile = loadmat(fileName)
         else:
-            AttributeError("SMOS BAD MAPPER");
-            
+            AttributeError("SMOS BAD MAPPER")
+
         # get geolocation
         geolocArray = matFile['geolocation'][0]
         srcProj4 = '+proj=stere +lon_0=%f +lat_0=%f +datum=WGS84 +ellps=WGS84 +units=km +no_defs' % (geolocArray[0], geolocArray[1])
@@ -40,12 +40,13 @@ class Mapper(VRT):
         VRT.__init__(self, srcGeoTransform=srcGeotransform,
                             srcProjection=srcProjection,
                             srcRasterXSize=srcRasterXSize,
-                            srcRasterYSize=srcRasterYSize)
-        
+                            srcRasterYSize=srcRasterYSize,
+                            **kwargs)
+
         # add the following variables
         varNames = ['SSS1', 'SSS2', 'SSS3', 'SST',
-                    'Sigma_SSS1', 'Sigma_SSS2', 'Sigma_SSS3', 
-                    'Control_Flags_1', 'Control_Flags_2', 'Control_Flags_3', 'Control_Flags_4', 
+                    'Sigma_SSS1', 'Sigma_SSS2', 'Sigma_SSS3',
+                    'Control_Flags_1', 'Control_Flags_2', 'Control_Flags_3', 'Control_Flags_4',
                     'Science_Flags_1', 'Science_Flags_2', 'Science_Flags_3', 'Science_Flags_4']
         self.varVRTs = {}
         metaDict = []
@@ -55,7 +56,7 @@ class Mapper(VRT):
             metaDict.append(
             {'src': {'SourceFilename': self.varVRTs[varName].fileName, 'sourceBand':  1},
              'dst': {'name': varName}})
-        
+
         # create mask
         cloudBits = [2, 3, 4, 5, 6]
         maxSigma = 3.0
@@ -75,8 +76,7 @@ class Mapper(VRT):
         {'src': {'SourceFilename': self.varVRTs['mask'].fileName, 'sourceBand':  1},
          'dst': {'name': 'mask'}})
 
-
         self.logger.debug('metaDict: %s' % metaDict)
-        
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
