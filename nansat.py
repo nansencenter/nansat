@@ -522,6 +522,8 @@ class Nansat(Domain):
                 3 : CubicSpline,
                 4 : Lancoz
                 if eResampleAlg > 0 : VRT.resized() is used
+                (Although the default is -1 (Average),
+                 if fileName start from 'ASA_', the default is 0 (NN).)
 
         Modifies
         ---------
@@ -530,6 +532,12 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
+        # if fileName start from 'ASA_' and eResampleAlg is default (Average),
+        # then change eResampleAlg to 0 (NearestNeighbour)
+        fileName = self.fileName.split('/')[-1].split('\\')[-1]
+        if fileName.startswith('ASA_') and eResampleAlg == -1:
+            eResampleAlg = 0
+
         # resize back to original size/setting
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
@@ -572,14 +580,10 @@ class Nansat(Domain):
                 for sourceName in ['ComplexSource', 'SimpleSource']:
                     for iNode2 in iNode1.nodeList(sourceName):
                         iNodeDstRect = iNode2.node('DstRect')
-                        # if band is line or pixel band, do not change the size
-                        if int(iNodeDstRect.getAttribute('xSize')) > 2:
-                            iNodeDstRect.replaceAttribute('xSize',
+                        iNodeDstRect.replaceAttribute('xSize',
                                                       str(newRasterXSize))
-                        if int(iNodeDstRect.getAttribute('ySize')) > 2:
-                            iNodeDstRect.replaceAttribute('ySize',
+                        iNodeDstRect.replaceAttribute('ySize',
                                                       str(newRasterYSize))
-
                 # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
                 if eResampleAlg == -1:
                     iNode1.replaceTag('ComplexSource', 'AveragedSource')
