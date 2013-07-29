@@ -17,27 +17,30 @@ class Mapper(VRT, Envisat):
             http://envisat.esa.int/handbooks/asar/CNTR6-6-9.htm#eph.asar.asardf.asarrec.ASAR_Geo_Grid_ADSR
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, caliblation='one-line'):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+        '''
+        Parameters (**kwargs)
+        ---------------------
+        ASA_full_incAng : bool (default False)
+            if True, use full-size incidence angle band.
+            if False, use one-line incidence angle band.
+        '''
 
         product = gdalMetadata.get("MPH_PRODUCT")
-
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
-        # init ADS parameters
-        Envisat.__init__(self, fileName, product[0:4])
+        Envisat.__init__(self, fileName, product[0:4], **kwargs)
 
         # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
         polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
 
         # Create VRTdataset with small VRTRawRasterbands
         self.adsVRTs = self.get_ads_vrts(gdalDataset,
-                                         ["first_line_incidenceAngle",
-                                          "first_line_incidenceAngle"],
-                                          lineBand=[True, False])
+                                         ["first_line_incidenceAngle"])
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        VRT.__init__(self, gdalDataset, **kwargs)
 
         # get calibration constant
         gotCalibration = True
@@ -52,58 +55,34 @@ class Mapper(VRT, Envisat):
                      'dst': {'name': 'RawCounts_%s' % polarization}}]
 
         if gotCalibration:
-            # create one pixel band with calibrationConst value and add it to dictionary
-            array = np.ones((2,2)) * calibrationConst
-            self.calibrationVRT = VRT(array=array)
-            metaDict.append({'src': {'SourceFilename': self.calibrationVRT.fileName,
-                                     'SourceBand': 1},
-                             'dst': {'name': 'calibrationConst'}
-                            })
-
-            # add dictionary for IncidenceAngle (and other ADS variables)
-            for adsVRT in self.adsVRTs:
-                metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
-                                         'SourceBand': 1},
-                                 'dst': {'name':  adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name'),
-                                         'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}
-                                })
-
             # add dicrtionary for sigma0, ice and water
             names = ['sigma0', 'ice', 'water']
             wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
-                    'ice','water']
+                    'ice', 'water']
             sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
-            if caliblation == 'one-line':
-                adsBandNo = 0
-                sourceFileNames = [self.adsVRTs[adsBandNo].fileName,
-                                   self.calibrationVRT.fileName,
-                                   fileName]
-                pixelFunctionTypes = ['RawcountsIncidenceToSigma0_FromLine',
-                                      'Sigma0NormalizedIce_FromLine']
-                if polarization=='HH':
-                    pixelFunctionTypes.append('Sigma0HHNormalizedWater_FromLine')
-                elif polarization=='VV':
-                    pixelFunctionTypes.append('Sigma0VVNormalizedWater_FromLine')
-            else:
-                adsBandNo = 1
-                sourceFileNames = [fileName,
-                                   self.calibrationVRT.fileName,
-                                   self.adsVRTs[adsBandNo].fileName,]
-                pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
-                                      'Sigma0NormalizedIce']
-                if polarization=='HH':
-                    pixelFunctionTypes.append('Sigma0HHNormalizedWater')
-                elif polarization=='VV':
-                    pixelFunctionTypes.append('Sigma0VVNormalizedWater')
+            sourceFileNames = [fileName,
+                               self.adsVRTs[0].fileName]
 
+            pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
+                                  'Sigma0NormalizedIce']
+            if polarization=='HH':
+                pixelFunctionTypes.append('Sigma0HHNormalizedWater')
+            elif polarization=='VV':
+                pixelFunctionTypes.append('Sigma0VVNormalizedWater')
+
+            # add pixelfunction bands to metaDict
             for iPixFunc in range(len(pixelFunctionTypes)):
-                metaDict.append({'src': [{'SourceFilename': sourceFileNames[0],
-                                          'SourceBand': 1},
-                                         {'SourceFilename': sourceFileNames[1],
-                                          'SourceBand': 1},
-                                         {'SourceFilename': sourceFileNames[2],
-                                          'SourceBand': 1}],
+                srcFiles = []
+                for iFileName in sourceFileNames:
+                    sourceFile = {'SourceFilename': iFileName,
+                                  'SourceBand': 1}
+                    # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                    if iFileName == fileName:
+                        sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst)
+                    srcFiles.append(sourceFile)
+
+                metaDict.append({'src': srcFiles,
                                  'dst': {'name':names[iPixFunc],
                                          'wkv': wkt[iPixFunc],
                                          'PixelFunctionType': pixelFunctionTypes[iPixFunc],
@@ -119,4 +98,4 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        #self.add_geolocation_from_ads(gdalDataset, step=1)
+        #self.add_geolocation_from_ads(gdalDataset)
