@@ -22,7 +22,7 @@ class Mapper(mg.Mapper):
         #add metadata for Rrs bands
         rrsDict = self._get_wkv('surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air')
 
-        self.d= {'wavelengths' : [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
+        kwDict= {'wavelengths' : [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
 
         # choose kwargs for envisat
         case2regKwargs = {}
@@ -32,7 +32,7 @@ class Mapper(mg.Mapper):
                 case2regKwargs[keyName] = kwargs[key]
 
         # modify the default values using input values
-        self.d = set_defaults(self.d, case2regKwargs)
+        kwDict = set_defaults(kwDict, case2regKwargs)
 
         for bi in range(1, 1+self.dataset.RasterCount):
             b = self.dataset.GetRasterBand(bi)
@@ -40,7 +40,7 @@ class Mapper(mg.Mapper):
             rawName = bMetadata.get('name', '')
             if 'reflec_' in rawName:
                 refNumber = int(rawName.split('_')[1])
-                wavelength = self.d['wavelengths'][refNumber]
+                wavelength = kwDict['wavelengths'][refNumber]
                 b.SetMetadataItem('name', 'Rrs_' + str(wavelength))
                 b.SetMetadataItem('wavelength', str(wavelength))
                 for rrsKey in rrsDict:

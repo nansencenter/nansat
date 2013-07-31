@@ -24,7 +24,7 @@ class Mapper(VRT):
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
 
-        self.d = {'rmMetadatas' : ['NETCDF_VARNAME',
+        kwDict = {'rmMetadatas' : ['NETCDF_VARNAME',
                                    '_Unsigned',
                                    'ScaleRatio',
                                    'ScaleOffset',
@@ -38,7 +38,7 @@ class Mapper(VRT):
                 genericKwargs[keyName] = kwargs[key]
 
         # modify the default values using input values
-        self.d = set_defaults(self.d, genericKwargs)
+        kwDict = set_defaults(kwDict, genericKwargs)
 
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
@@ -120,7 +120,7 @@ class Mapper(VRT):
                                 dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
-                        for rmMetadata in self.d['rmMetadatas']:
+                        for rmMetadata in kwDict['rmMetadatas']:
                             if rmMetadata in dst:
                                 dst.pop(rmMetadata)
 

@@ -80,20 +80,11 @@ class Envisat():
         self.allADSParams = self.allADSParams[prodType]
         self.dsOffsetDict = self.read_offset_from_header(self.allADSParams['name'])
         self.lonlatNames  = self.lonlatNames[prodType]
-
         # create dictionary of envisat parameters
         self.d = {'zoomSize' : 500,
-                  'step' : 1}
-
-        # choose kwargs for envisat
-        envisatKwargs = {}
-        for key in kwargs:
-            if key.startswith('envisat'):
-                keyName = key.replace('envisat_', '')
-                envisatKwargs[keyName] = kwargs[key]
-
+                  'step': 1}
         # modify the default values using input values
-        self.d = set_defaults(self.d, envisatKwargs)
+        self.d = set_defaults(self.d, kwargs)
 
     def _set_envisat_time(self, gdalMetadata):
         ''' Get time from metadata, set time to VRT'''
@@ -256,13 +247,11 @@ class Envisat():
         # zoom the array
         array = scipy.ndimage.interpolation.zoom(array,
                             self.d['zoomSize'] / float(adsHeight), order=1)
-
         # create VRT from the array
         adsVrt = VRT(array=array)
         # add "name" and "units" to band metadata
         bandMetadata = {"name" : adsName, "units" : adsParams['units']}
         adsVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)
-
         return adsVrt
 
     def get_ads_vrts(self, gdalDataset, adsNames, **kwargs):
@@ -294,7 +283,6 @@ class Envisat():
         '''
         # modify the default values using input values
         self.d = set_defaults(self.d, kwargs)
-
         XSize = gdalDataset.RasterXSize
         YSize = gdalDataset.RasterYSize
 
@@ -303,8 +291,7 @@ class Envisat():
 
         for iBand, adsName in enumerate(adsNames):
             # create VRT with a full-size band from ADS
-            adsVRTs.append(self.create_VRT_from_ADS(adsName,
-                                                zoomSize=self.d['zoomSize']))
+            adsVRTs.append(self.create_VRT_from_ADS(adsName,**kwargs))
             # resize the VRT to match <step>
             adsVRTs[-1] = adsVRTs[-1].resized(XSize/self.d['step'],
                                               YSize/self.d['step'])
@@ -336,10 +323,8 @@ class Envisat():
         '''
         # modify the default values using input values
         self.d = set_defaults(self.d, kwargs)
-
         # get VRTs with lon and lat
-        xyVRTs = self.get_ads_vrts(gdalDataset, self.lonlatNames,
-                                   self.d['zoomSize'], self.d['step'])
+        xyVRTs = self.get_ads_vrts(gdalDataset, self.lonlatNames, **kwargs)
 
         # Add geolocation domain metadata to the dataset
         self.add_geolocationArray(GeolocationArray(xVRT=xyVRTs[0],

@@ -26,7 +26,7 @@ class Mapper(VRT):
         viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240, 1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]
 
         # create dictionary of viirsL1 parameters
-        self.d = { 'GCP_COUNT0' : 5,
+        kwDict = { 'GCP_COUNT0' : 5,
                    'GCP_COUNT1' : 20,
                    'pixelStep' : 1,
                    'lineStep' : 1}
@@ -39,7 +39,7 @@ class Mapper(VRT):
                 viirsL1Kwargs[keyName] = kwargs[key]
 
         # modify the default values using input values
-        self.d = set_defaults(self.d, viirsL1Kwargs)
+        kwDict = set_defaults(kwDict, viirsL1Kwargs)
 
         # create empty VRT dataset with geolocation only
         xDatasetSource = 'HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude' % fileName
@@ -81,7 +81,7 @@ class Mapper(VRT):
         #self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
         #"""
         # estimate pixel/line step
-        self.logger.debug('pixel/lineStep %f %f' % (self.d['pixelStep'], self.d['lineStep']))
+        self.logger.debug('pixel/lineStep %f %f' % (kwDict['pixelStep'], kwDict['lineStep']))
 
         # ==== ADD GCPs and Pojection ====
         # get lat/lon matrices
@@ -89,11 +89,11 @@ class Mapper(VRT):
         latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
 
         # estimate step of GCPs
-        step0 = max(1, int(float(latitude.shape[0]) / self.d['GCP_COUNT0']))
-        step1 = max(1, int(float(latitude.shape[1]) / self.d['GCP_COUNT1']))
+        step0 = max(1, int(float(latitude.shape[0]) / kwDict['GCP_COUNT0']))
+        step1 = max(1, int(float(latitude.shape[1]) / kwDict['GCP_COUNT1']))
         self.logger.debug('gcpCount: %d %d %d %d, %d %d',
                           latitude.shape[0], latitude.shape[1],
-                          self.d['GCP_COUNT0'], self.d['GCP_COUNT1'],
+                          kwDict['GCP_COUNT0'], kwDict['GCP_COUNT1'],
                           step0, step1)
 
         # generate list of GCPs
@@ -106,8 +106,8 @@ class Mapper(VRT):
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
                     gcp = gdal.GCP(lon, lat, 0,
-                                   i1 * self.d['pixelStep'],
-                                   i0 * self.d['lineStep'])
+                                   i1 * kwDict['pixelStep'],
+                                   i0 * kwDict['lineStep'])
                     self.logger.debug('%d %d %d %f %f',
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)

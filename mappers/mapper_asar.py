@@ -25,13 +25,20 @@ class Mapper(VRT, Envisat):
             if True, use full-size incidence angle band.
             if False, use one-line incidence angle band.
         '''
-
         product = gdalMetadata.get("MPH_PRODUCT")
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
-        Envisat.__init__(self, fileName, product[0:4], **kwargs)
+        kwDict = {'geolocation' : False}
+        # choose kwargs for envisat and asar and change keyname
+        for key in kwargs:
+            if key.startswith('envisat') or key.startswith('asar'):
+                keyName = key.replace('envisat_', '').replace('asar_', '')
+                kwDict[keyName] = kwargs[key]
+            else:
+                kwDict[key] = kwargs[key]
 
+        Envisat.__init__(self, fileName, product[0:4], **kwDict)
         # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
         polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
 
@@ -40,7 +47,7 @@ class Mapper(VRT, Envisat):
                                          ["first_line_incidenceAngle"])
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset, **kwDict)
 
         # get calibration constant
         gotCalibration = True
@@ -98,4 +105,5 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        #self.add_geolocation_from_ads(gdalDataset)
+        if self.d['geolocation']:
+            self.add_geolocation_from_ads(gdalDataset)

@@ -19,8 +19,17 @@ class Mapper(VRT, Envisat):
         if product[0:9] != "MER_FRS_1" and product[0:9] != "MER_RR__1":
             raise AttributeError("MERIS_L1 BAD MAPPER")
 
+        kwDict = {'geolocation' : True}
+        # choose kwargs for envisat and asar and change keyname
+        for key in kwargs:
+            if key.startswith('envisat') or key.startswith('meris'):
+                keyName = key.replace('envisat_', '').replace('meris_', '')
+                kwDict[keyName] = kwargs[key]
+            else:
+                kwDict[key] = kwargs[key]
+
         # init ADS parameters
-        Envisat.__init__(self, fileName, product[0:4], **kwargs)
+        Envisat.__init__(self, fileName, product[0:4], **kwDict)
 
         metaDict = [
         {'src': {'SourceFilename': fileName, 'SourceBand':  1}, 'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '413'}},
@@ -65,7 +74,7 @@ class Mapper(VRT, Envisat):
                             })
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset, **kwDict)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -74,4 +83,5 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        self.add_geolocation_from_ads(gdalDataset)
+        if self.d['geolocation']:
+            self.add_geolocation_from_ads(gdalDataset)

@@ -27,7 +27,7 @@ class Mapper(vrt.VRT):
         metaDict = []
         sstName = ''
 
-        self.d = {'minQual' : 4}
+        kwDict = {'minQual' : 4}
         # set kwargs
         pathfinder52Kwargs = {}
         for key in kwargs:
@@ -35,7 +35,7 @@ class Mapper(vrt.VRT):
                 keyName = key.replace('pathfinder52_', '')
                 pathfinder52Kwargs[keyName] = kwargs[key]
 
-        self.d = set_defaults(self.d, pathfinder52Kwargs)
+        kwDict = set_defaults(kwDict, pathfinder52Kwargs)
 
         for subDataset in subDatasets:
             subDatasetName = subDataset[0].split(':')[2]
@@ -77,8 +77,8 @@ class Mapper(vrt.VRT):
         if qualName != '':
             qualDataset = vrt.gdal.Open(qualName)
             qualArray = qualDataset.ReadAsArray()
-            qualArray[qualArray < self.d['minQual']] = 1
-            qualArray[qualArray >= self.d['minQual']] = 128
+            qualArray[qualArray < kwDict['minQual']] = 1
+            qualArray[qualArray >= kwDict['minQual']] = 128
             self.maskVRT = vrt.VRT(array=qualArray.astype('int8'))
             metaDict.append(
                             {'src': {'SourceFilename': self.maskVRT.fileName,

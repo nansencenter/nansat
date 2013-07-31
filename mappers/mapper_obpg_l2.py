@@ -21,7 +21,7 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
         # number of GCPs along each dimention
-        self.d = {'GCP_COUNT' : 10}
+        kwDict = {'GCP_COUNT' : 10}
 
         # init ADS parameters
         obpgL2Kwargs = {}
@@ -31,7 +31,7 @@ class Mapper(VRT):
                 obpgL2Kwargs[keyName] = kwargs[key]
 
         # modify the default values using input values
-        self.d = set_defaults(self.d, obpgL2Kwargs)
+        kwDict = set_defaults(kwDict, obpgL2Kwargs)
 
         """
         Title=
@@ -176,11 +176,11 @@ class Mapper(VRT):
             self.remove_geolocationArray()
 
         # estimate step of GCPs
-        step0 = max(1, int(float(latitude.shape[0]) / self.d['GCP_COUNT']))
-        step1 = max(1, int(float(latitude.shape[1]) / self.d['GCP_COUNT']))
+        step0 = max(1, int(float(latitude.shape[0]) / kwDict['GCP_COUNT']))
+        step1 = max(1, int(float(latitude.shape[1]) / kwDict['GCP_COUNT']))
         self.logger.debug('gcpCount: %d %d %f %d %d',
                           latitude.shape[0], latitude.shape[1],
-                          self.d['GCP_COUNT'], step0, step1)
+                          kwDict['GCP_COUNT'], step0, step1)
 
         # generate list of GCPs
         gcps = []

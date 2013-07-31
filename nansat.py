@@ -142,6 +142,10 @@ class Nansat(Domain):
         -- mapper_envisat
         envisat_zoomSize = 500
         envisat_step = 1
+        -- mapper_asar
+        asar_geolocation = False
+        -- mapper_meris
+        meris_geolocation = True
         -- mapper_obpg_l2
         obpg_l2_GCP_COUNT = 10
         -- mapper_pathfinder52
@@ -159,8 +163,6 @@ class Nansat(Domain):
         -- mapper_generic
         generic_rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio',
                                'ScaleOffset', 'dods_variable']
-
-
 
         Creates
         --------
@@ -425,6 +427,7 @@ class Nansat(Domain):
                 # Create bands from the real and imaginary numbers
                 exportVRT.real.append(VRT(array=self[i].real))
                 exportVRT.imag.append(VRT(array=self[i].imag))
+
                 metaDict = [{'src': {'SourceFilename': exportVRT.real[-1].fileName,
                              'SourceBand':  1},
                              'dst': bandMetadataR},

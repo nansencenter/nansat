@@ -232,14 +232,17 @@ class VRT():
         self.vrtDriver = gdal.GetDriverByName('VRT')
 
         # set default values of ALL params of VRT
-        self.d = {}
-        self.d['eResampleAlg'] = 0
-        self.d['use_geolocationArray'] = True
-        self.d['use_gcps'] = True
-        self.d['use_geotransform'] = True
-        self.d['WorkingDataType'] = None
-        self.d['tps'] = False
-        self.d['blockSize'] = None
+        self.d = {
+        'eResampleAlg' : 0,
+        'use_geolocationArray' : True,
+        'use_gcps' : True,
+        'use_geotransform' : True,
+        'WorkingDataType' : None,
+        'tps' : False,
+        'blockSize' : None,
+        'zoomSize' : 500,
+        'step' : 1,
+        'geolocation' : True}
         self.d = set_defaults(self.d, kwargs)
 
         # open and parse wkv.xml

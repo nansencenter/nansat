@@ -22,7 +22,7 @@ class Mapper(VRT):
 
         subDatasets = gdalDataset.GetSubDatasets()
 
-        self.d = {'GCP_COUNT' : 10,         # number of GCPs along each dimention
+        kwDict = {'GCP_COUNT' : 10,         # number of GCPs along each dimention
                   'bandNames' : ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
                   'bandWaves' : [560, 660, 820]}
         '''
@@ -40,13 +40,13 @@ class Mapper(VRT):
                 asterL1aKwargs[keyName] = kwargs[key]
 
         # modify the default values using input values
-        self.d = set_defaults(self.d, asterL1aKwargs)
+        kwDict = set_defaults(kwDict, asterL1aKwargs)
 
         # find datasets for each band and generate metaDict
         metaDict = []
         bandDatasetMask = 'HDF4_EOS:EOS_SWATH:"%s":%s:ImageData'
-        for bandName, bandWave in zip(self.d['bandNames'],
-                                      self.d['bandWaves']):
+        for bandName, bandWave in zip(kwDict['bandNames'],
+                                      kwDict['bandWaves']):
             metaEntry = {
                 'src': {
                     'SourceFilename': bandDatasetMask % (fileName, bandName),
@@ -91,8 +91,8 @@ class Mapper(VRT):
         longitude = xDataset.ReadAsArray()
         latitude = yDataset.ReadAsArray()
 
-        step0 = longitude.shape[0] / self.d['GCP_COUNT']
-        step1 = longitude.shape[1] / self.d['GCP_COUNT']
+        step0 = longitude.shape[0] / kwDict['GCP_COUNT']
+        step1 = longitude.shape[1] / kwDict['GCP_COUNT']
 
         # estimate pixel/line step
         pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize)))
