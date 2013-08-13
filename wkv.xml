@@ -16,6 +16,22 @@
         <colormap>gray</colormap>
     </wkv>
     <wkv>
+        <standard_name>surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice</standard_name>
+        <long_name>Normalized Radar Cross Section</long_name>
+        <short_name>sigma0</short_name>
+        <units>m/m</units>
+        <minmax>0 0.1</minmax>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water</standard_name>
+        <long_name>Normalized Radar Cross Section</long_name>
+        <short_name>sigma0</short_name>
+        <units>m/m</units>
+        <minmax>0 0.1</minmax>
+        <colormap>gray</colormap>
+    </wkv>
+    <wkv>
         <standard_name>grayscale</standard_name>
         <long_name>grayscale</long_name>
         <units>1</units>
