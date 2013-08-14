@@ -63,9 +63,10 @@ class Mapper(VRT, Envisat):
 
         if gotCalibration:
             # add dicrtionary for sigma0, ice and water
-            names = ['sigma0', 'ice', 'water']
+            names = ['sigma0', 'sigma0_normalized_ice', 'sigma0_normalized_water']
             wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
-                    'ice', 'water']
+                    'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
+                    'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
             sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
             sourceFileNames = [fileName,
