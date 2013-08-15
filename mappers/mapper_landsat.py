@@ -53,7 +53,7 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # for 8th band of LANDSAT8. it is a double size band.
+        # 8th band of LANDSAT8 is a double size band. Reduce the size to same as the 1st band.
         if len(sizeDiffBands) != 0:
             vrtXML = self.read_xml()
             node0 = Node.create(vrtXML)
