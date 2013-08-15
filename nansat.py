@@ -1541,12 +1541,6 @@ class Nansat(Domain):
 
         return tmpVRT
 
-    def _get_pixelValue(self, val, defVal):
-        if val == '':
-            return defVal
-        else:
-            return val
-
     def _get_band_number(self, bandID):
         '''Return absolute band number
 
