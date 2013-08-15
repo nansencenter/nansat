@@ -39,7 +39,7 @@ class Mapper(VRT):
         Title=MERIS Level-2 Data
         """
 
-        titles = ['HMODISA Level-2 Data', 'MERIS Level-2 Data']
+        titles = ['HMODISA Level-2 Data', 'MODISA Level-2 Data', 'MERIS Level-2 Data']
         # should raise error in case of not obpg_l2 file
         title = gdalMetadata["Title"]
         assert title in titles, 'obpg_l2 BAD MAPPER'
