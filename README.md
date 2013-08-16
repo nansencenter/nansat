@@ -15,5 +15,5 @@ See https://svn.nersc.no/nansat/wiki/Nansat/Install/Nansat
 
 or:
 
-# Ubuntu
+## Ubuntu
 
