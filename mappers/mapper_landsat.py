@@ -17,7 +17,7 @@ except ImportError:
     import gdal
 
 class Mapper(VRT):
-    ''' Mapper for LANDSAT3,4,5,6,7.tar.gz files'''
+    ''' Mapper for LANDSAT3,4,5,6,7,8.tar.gz files'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create LANDSAT VRT '''
@@ -53,6 +53,7 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
+        # 8th band of LANDSAT8 is a double size band. Reduce the size to same as the 1st band.
         if len(sizeDiffBands) != 0:
             vrtXML = self.read_xml()
             node0 = Node.create(vrtXML)
