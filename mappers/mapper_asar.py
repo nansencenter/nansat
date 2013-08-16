@@ -7,6 +7,7 @@
 
 from vrt import VRT
 from envisat import Envisat
+from domain import Domain
 import numpy as np
 
 class Mapper(VRT, Envisat):
@@ -59,11 +60,11 @@ class Mapper(VRT, Envisat):
 
         # add dictionary for raw counts
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
-                     'dst': {'name': 'RawCounts_%s' % polarization}}]
+                     'dst': {'short_name': 'RawCounts'}}]
 
         if gotCalibration:
             # add dicrtionary for sigma0, ice and water
-            names = ['sigma0', 'sigma0_normalized_ice', 'sigma0_normalized_water']
+            short_names = ['sigma0', 'sigma0_normalized_ice', 'sigma0_normalized_water']
             wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
@@ -91,7 +92,7 @@ class Mapper(VRT, Envisat):
                     srcFiles.append(sourceFile)
 
                 metaDict.append({'src': srcFiles,
-                                 'dst': {'name':names[iPixFunc],
+                                 'dst': {'short_name': short_names[iPixFunc],
                                          'wkv': wkt[iPixFunc],
                                          'PixelFunctionType': pixelFunctionTypes[iPixFunc],
                                          'polarization': polarization,
@@ -108,3 +109,13 @@ class Mapper(VRT, Envisat):
         # add geolocation arrays
         if self.d['geolocation']:
             self.add_geolocation_from_ads(gdalDataset)
+
+        # Add SAR look direction to metadata domain
+        # Note that this is the look direction in the center of the domain. For
+        # longer domains, especially at high latitudes, the azimuth direction
+        # may vary a lot over the domain, and using the center angle will be a
+        # coarse approximation.
+        self.dataset.SetMetadataItem('SAR_center_look_direction', str(np.mod(
+            Domain(ds=gdalDataset).upwards_azimuth_direction()
+            + 90, 360)))
+
