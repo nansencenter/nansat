@@ -20,6 +20,10 @@ or:
 <pre><code>
 sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
 sudo apt-get install gdal-bin
+<<<<<<< HEAD
+=======
+sudo apt-get install libgdal-dev
+>>>>>>> develop
 sudo apt-get install libgeos-dev
 sudo apt-get install libgeos-3.3.8
 sudo apt-get install build-essential (?)
@@ -52,4 +56,7 @@ The build may complain that there is no lgeos. In that case make a symbolic
 link to libgeos-3.3.8.so called libgeos.so. If you work in a virtualenv, make
 symbolic links to gdal and  osgeo in <virtualenv>/lib/python2.7/site-packages.
 
-
+Finally:
+<code><pre>
+pip install requirements.txt
+</code></pre>
