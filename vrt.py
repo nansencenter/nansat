@@ -242,7 +242,8 @@ class VRT():
         'blockSize' : None,
         'zoomSize' : 500,
         'step' : 1,
-        'geolocation' : True}
+        'geolocation' : False,
+        'full_incAng' : True}
         self.d = set_defaults(self.d, kwargs)
 
         # open and parse wkv.xml
