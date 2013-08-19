@@ -1892,5 +1892,5 @@ class Nansat(Domain):
             NansatOGR.set_layer(lonlatCoord=[lonVector, latVector], pixlinCoord=pixlinCoord, fieldNames=map(str, bandList), fieldValues=transect)
             return NansatOGR
         else:
-            return transect, [lonVector, latVector]
+            return transect, [lonVector, latVector], pixlinCoord
 
