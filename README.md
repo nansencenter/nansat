@@ -20,7 +20,10 @@ or:
 <pre><code>
 sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
 sudo apt-get install gdal-bin
+<<<<<<< HEAD
+=======
 sudo apt-get install libgdal-dev
+>>>>>>> develop
 sudo apt-get install libgeos-dev
 sudo apt-get install libgeos-3.3.8
 sudo apt-get install build-essential (?)
