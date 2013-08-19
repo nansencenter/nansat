@@ -30,7 +30,8 @@ class Mapper(VRT, Envisat):
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
-        kwDict = {'full_incAng' : True}
+        kwDict = {'geolocation' : False,
+                  'full_incAng' : True}
         # choose kwargs for envisat and asar and change keyname
         for key in kwargs:
             if key.startswith('envisat') or key.startswith('asar'):
@@ -61,6 +62,13 @@ class Mapper(VRT, Envisat):
         # add dictionary for raw counts
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'short_name': 'RawCounts'}}]
+
+        if self.d['full_incAng']:
+            for adsVRT in self.adsVRTs:
+                metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
+                                         'SourceBand': 1},
+                                 'dst': {'name':  adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').split('_')[-1],
+                                         'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
 
         if gotCalibration:
             # add dicrtionary for sigma0, ice and water
@@ -107,7 +115,8 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        if self.d['full_incAng']:
+
+        if self.d['geolocation']:
             self.add_geolocation_from_ads(gdalDataset)
 
         # Add SAR look direction to metadata domain
