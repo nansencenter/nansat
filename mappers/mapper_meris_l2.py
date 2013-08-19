@@ -16,9 +16,8 @@ class Mapper(VRT, Envisat):
 
         Parameters (**kwargs)
         ---------------------
-        full_incAng : bool (default False)
-            if True, use full-size incidence angle band.
-            if False, use one-line incidence angle band.
+        geolocation : bool (default True)
+            if True, add 'geoloection'
         '''
 
         product = gdalMetadata["MPH_PRODUCT"]
@@ -26,7 +25,7 @@ class Mapper(VRT, Envisat):
         if product[0:9] != "MER_FRS_2" and product[0:9] != "MER_RR__2":
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
-        kwDict = {'full_incAng' : True}
+        kwDict = {'geolocation' : True}
         # choose kwargs for envisat and asar and change keyname
         for key in kwargs:
             if key.startswith('envisat') or key.startswith('meris'):
@@ -100,5 +99,5 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        if self.d['full_incAng']:
+        if self.d['geolocation']:
             self.add_geolocation_from_ads(gdalDataset)
