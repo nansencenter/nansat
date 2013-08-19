@@ -84,9 +84,101 @@ class Figure():
         -----------
         array : numpy array (2D or 3D)
             dataset from Nansat
-        kwargs : dictionary
-            parameters that are used for all operations.
-            See Nansat.write_figure()
+
+        cmin : number (int ot float) or [number, number, number]
+            0, minimum value of varibale in the matrix to be shown
+        cmax : number (int ot float) or [number, number, number]
+            1, minimum value of varibale in the matrix to be shown
+        gamma : float, >0
+            2, coefficient for tone curve udjustment
+        subsetArraySize : int
+            100000, size of the subset array which is used to get histogram
+        numOfColor : int
+            250, number of colors for use of the palette.
+            254th is black and 255th is white.
+        cmapName : string
+            'jet', name of Matplotlib colormaps
+            see --> http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+        ratio : float, [0 1]
+            1.0, ratio of pixels which are used to write the figure
+        numOfTicks : int
+            5, number of ticks on a colorbar
+        titleString : string
+            '', title of legend (1st line)
+        caption : string
+            '', caption of the legend (2nd line, e.g. long name and units)
+        fontSize : int
+            12, size of the font of title, caption and ticks
+        logarithm : boolean, defult = False
+            If True, tone curve is used to convert pixel values.
+            If False, linear.
+        legend : boolean, default = False
+            if True, information as textString, colorbar, longName and
+            units are added in the figure.
+        mask_array : 2D numpy array, int, the shape should be equal
+            array.shape. If given this array is used for masking land,
+            clouds, etc on the output image. Value of the array are
+            indeces. LUT from mask_lut is used for coloring upon this
+            indeces.
+        mask_lut : dictionary
+            Look-Up-Table with colors for masking land, clouds etc. Used
+            tgether with mask_array:
+            {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
+            index 0 - will have black color
+                  1 - dark gray
+                  2 - light gray
+                  3 - blue
+        logoFileName : string
+            name of the file with logo
+        logoLocation : list of two int, default = [0,0]
+            X and Y offset of the image
+            If positive - offset is from left, upper edge
+            If Negative - from right, lower edge
+            Offset is calculated from the entire image legend inclusive
+        logoSize : list of two int
+            desired X,Y size of logo. If None - original size is used
+        latGrid : numpy array
+            full size array with latitudes. For adding lat/lon grid lines
+        lonGrid : numpy array
+            full size array with longitudes. For adding lat/lon grid lines
+        latlonGridSpacing : int
+            number of lat/lon grid lines to show
+        latlonLabels : int
+            number of lat/lon labels to show along each side.
+        transparency : int
+            transparency of the image background(mask), set for PIL alpha
+            mask in Figure.save()
+        default : None
+
+        Advanced parameters
+        --------------------
+        LEGEND_HEIGHT : float, [0 1]
+            0.1, legend height relative to image height
+        CBAR_HEIGHTMIN : int
+            5, minimum colorbar height, pixels
+        CBAR_HEIGHT : float, [0 1]
+            0.15,  colorbar height relative to image height
+        CBAR_WIDTH : float [0 1]
+            0.8, colorbar width  relative to legend width
+        CBAR_LOCATION_X : float [0 1]
+            0.1, colorbar offset X  relative to legend width
+        CBAR_LOCATION_Y : float [0 1]
+            0.5,  colorbar offset Y  relative to legend height
+        CBAR_LOCATION_ADJUST_X : int
+            5,  colorbar offset X, pixels
+        CBAR_LOCATION_ADJUST_Y : int
+            3,  colorbar offset Y, pixels
+        TEXT_LOCATION_X : float, [0 1]
+            0.1, caption offset X relative to legend width
+        TEXT_LOCATION_Y : float, [0 1]
+            0.1, caption offset Y relative to legend height
+        NAME_LOCATION_X : float, [0 1]
+            0.1, title offset X relative to legend width
+        NAME_LOCATION_Y :
+            0.3, title  offset Y relative to legend height
+        DEFAULT_EXTENSION : string
+            '.png'
+        --------------------------------------------------
 
         Modifies
         ---------
