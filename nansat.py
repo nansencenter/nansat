@@ -994,7 +994,7 @@ class Nansat(Domain):
         # == PREPARE cmin/cmax ==
         # check if cmin and cmax are given as the arguments
         if 'cmin' in kwargs.keys() and 'cmax' in kwargs.keys():
-            clim = [kwargs['cmax'], kwargs['cmax']]
+            clim = [kwargs['cmin'], kwargs['cmax']]
         
         # try to get clim from WKV if it is not given as the argument
         # if failed clim will be evaluated from histogram
