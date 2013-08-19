@@ -975,12 +975,6 @@ class Nansat(Domain):
         else:
             bands = [self._get_band_number(bands)]
 
-        # if cmin / cmax is scalar, convert to a list
-        for ikey in ['cmin', 'cmax']:
-            if ikey in kwargs:
-                if not isinstance(kwargs[ikey], list):
-                    kwargs[ikey] = [kwargs[ikey]]
-
         # == create 3D ARRAY ==
         array = None
         for band in bands:
@@ -998,7 +992,11 @@ class Nansat(Domain):
         array = None
 
         # == PREPARE cmin/cmax ==
-        # try to get clim from WKV if it is not given
+        # check if cmin and cmax are given as the arguments
+        if 'cmin' in kwargs.keys() and 'cmax' in kwargs.keys():
+            clim = [kwargs['cmin'], kwargs['cmax']]
+        
+        # try to get clim from WKV if it is not given as the argument
         # if failed clim will be evaluated from histogram
         if clim is None:
             clim = [[], []]
@@ -1047,17 +1045,6 @@ class Nansat(Domain):
             caption += self.get_time()[0].strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
-
-        # modify clim if cmin and cmax are given as the arguments
-        if 'cmin' in kwargs.keys():
-            for i in range(len(kwargs['cmin'])):
-                if kwargs['cmin'][i] > clim[0][i]:
-                    clim[0][i] = kwargs['cmin'][i]
-
-        if 'cmax' in kwargs.keys():
-            for i in range(len(kwargs['cmax'])):
-                if kwargs['cmax'][i] < clim[1][i]:
-                    clim[1][i] = kwargs['cmax'][i]
 
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
