@@ -1821,8 +1821,13 @@ class Nansat(Domain):
 
         Returns
         --------
-        transect : list or OGR object
-            values of the transect or OGR object with the transect values
+        if returnOGR:
+            transect : OGR object with points coordinates and values
+        else:
+            transect : list or 
+                values of the transect or OGR object with the transect values
+            [lonVector, latVector] : list with longitudes, latitudes
+            pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
         # if shapefile is given, get corner points from it
