@@ -22,7 +22,7 @@ class Mapper(VRT, Envisat):
         '''
         Parameters (**kwargs)
         ---------------------
-        ASA_full_incAng : bool (default False)
+        full_incAng : bool (default False)
             if True, use full-size incidence angle band.
             if False, use one-line incidence angle band.
         '''
@@ -30,7 +30,7 @@ class Mapper(VRT, Envisat):
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
-        kwDict = {'geolocation' : False}
+        kwDict = {'full_incAng' : True}
         # choose kwargs for envisat and asar and change keyname
         for key in kwargs:
             if key.startswith('envisat') or key.startswith('asar'):
@@ -107,7 +107,7 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        if self.d['geolocation']:
+        if self.d['full_incAng']:
             self.add_geolocation_from_ads(gdalDataset)
 
         # Add SAR look direction to metadata domain
