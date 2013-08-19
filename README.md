@@ -46,6 +46,7 @@ Nansat requires basemap, which must be compiled. Check the installation
 directory of libgeos (dpkg -L libgeos-3.3.8). Download basemap from
 http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/ and
 compile (in the virtualenv):
+
 <pre><code>
 export GEOS_DIR=/usr/lib
 python setup.py build 
@@ -57,6 +58,7 @@ link to libgeos-3.3.8.so called libgeos.so. If you work in a virtualenv, make
 symbolic links to gdal and  osgeo in <virtualenv>/lib/python2.7/site-packages.
 
 Finally:
+
 <code><pre>
 pip install requirements.txt
 </code></pre>
