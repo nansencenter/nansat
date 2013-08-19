@@ -9,15 +9,24 @@ from vrt import VRT
 from envisat import Envisat
 
 class Mapper(VRT, Envisat):
-    ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR) '''
+    ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+        ''' Create MER2 VRT
+
+        Parameters (**kwargs)
+        ---------------------
+        full_incAng : bool (default False)
+            if True, use full-size incidence angle band.
+            if False, use one-line incidence angle band.
+        '''
+
         product = gdalMetadata["MPH_PRODUCT"]
 
         if product[0:9] != "MER_FRS_2" and product[0:9] != "MER_RR__2":
             raise AttributeError("MERIS_L2 BAD MAPPER")
 
-        kwDict = {'geolocation' : True}
+        kwDict = {'full_incAng' : True}
         # choose kwargs for envisat and asar and change keyname
         for key in kwargs:
             if key.startswith('envisat') or key.startswith('meris'):
@@ -91,5 +100,5 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # add geolocation arrays
-        if self.d['geolocation']:
+        if self.d['full_incAng']:
             self.add_geolocation_from_ads(gdalDataset)
