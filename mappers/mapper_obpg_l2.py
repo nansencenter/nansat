@@ -17,7 +17,7 @@ class Mapper(VRT):
     * Test on MODIS Terra
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, GCP_COUNT=10):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, GCP_COUNT=10, **kwargs):
         ''' Create VRT
         Parameters
         ----------

@@ -18,7 +18,7 @@ class Mapper(vrt.VRT):
     * remote files
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4, **kwargs):
         ''' Create VRT '''
 
         assert 'AVHRR_Pathfinder-PFV5.2' in fileName, 'pathfinder52 BAD MAPPER'

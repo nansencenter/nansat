@@ -25,7 +25,7 @@ imageOffset = headerLength + 1264
 class Mapper(VRT):
     ''' VRT with mapping of WKV for AVHRR L1B output from AAPP '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
 
         ########################################
         # Read metadata from binary file

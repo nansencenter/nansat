@@ -243,7 +243,7 @@ class Envisat():
 
         return adsVrt
 
-    def get_ads_vrts(self, gdalDataset, adsNames, zoomSize=500, step=1):
+    def get_ads_vrts(self, gdalDataset, adsNames, zoomSize=500, step=1, **kwargs):
         '''Create list with VRTs with zoomed and resized ADS arrays
 
         For given names of varaibles (which should match self.allADSParams):
@@ -266,14 +266,13 @@ class Envisat():
         '''
         XSize = gdalDataset.RasterXSize
         YSize = gdalDataset.RasterYSize
-
         # list with VRT with arrays of lon/lat
         adsVRTs = []
         for adsName in adsNames:
             # create VRT with array from ADS
             adsVRTs.append(self.create_VRT_from_ADS(adsName, zoomSize))
             # resize the VRT to match <step>
-            adsVRTs[-1] = adsVRTs[-1].resized(XSize/step, YSize/step)
+            adsVRTs[-1] = adsVRTs[-1].resized(XSize/step, YSize/step, **kwargs)
 
         return adsVRTs
 

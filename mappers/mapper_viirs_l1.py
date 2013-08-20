@@ -15,7 +15,7 @@ class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1, lineStep= 1 ):
+                 GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1, lineStep= 1, **kwargs):
         ''' Create VIIRS VRT '''
 
         assert 'GMTCO_npp_' in fileName, 'viirs_l1 BAD MAPPER'

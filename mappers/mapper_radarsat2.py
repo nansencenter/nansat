@@ -24,7 +24,7 @@ import pdb
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create Radarsat2 VRT '''
         fPathName, fExt = os.path.splitext(fileName)
 

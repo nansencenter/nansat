@@ -658,10 +658,6 @@ class VRT():
         self.logger.debug('arrayDType: %s', arrayDType)
 
         #create conents of VRT-file pointing to the binary file
-        """ !! N.B. !! numpy array does not have complex32 datatype.
-        Therefore, if data is complex32, the arrayDType will be complex64.
-        Here if arrayDType is complex64, CFloat32 is retuned to dataType.
-        But it is not sure it always works fine. """
         dataType = {'uint8': 'Byte',
                     'int8': 'Byte',
                     'uint16': 'UInt16',
@@ -670,7 +666,8 @@ class VRT():
                     'int32': 'Int32',
                     'float32': 'Float32',
                     'float64': 'Float64',
-                    'complex64': 'CFloat32'}.get(str(arrayDType))
+                    'complex64': 'CFloat32',
+                    'complex128': 'CFloat64'}.get(str(arrayDType))
 
         pixelOffset = {'Byte': '1',
                        'UInt16': '2',
@@ -680,7 +677,7 @@ class VRT():
                        'Float32': '4',
                        'Float64': '8',
                        'CFloat32': '8',
-                       'CFloat64': '8',}.get(dataType)
+                       'CFloat64': '16',}.get(dataType)
 
         self.logger.debug('DataType: %s', dataType)
 
@@ -792,8 +789,11 @@ class VRT():
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
-    def resized(self, xSize, ySize, eResampleAlg=1):
-        '''Resize VRT
+    def resized(self, xSize, ySize, use_geolocationArray=False,
+                use_gcps=False, use_geotransform=False,
+                eResampleAlg=1, **kwargs):
+
+        ''' Resize VRT
 
         Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
 
@@ -820,10 +820,11 @@ class VRT():
         # update size and GeoTranform in XML of the warped VRT object
         warpedVRT = self.create_warped_vrt(xSize=xSize, ySize=ySize,
                                            geoTransform=geoTransform,
-                                           use_geolocationArray=False,
-                                           use_gcps=False,
-                                           use_geotransform=False,
+                                           use_geolocationArray=use_geolocationArray,
+                                           use_gcps=use_gcps,
+                                           use_geotransform=use_geotransform,
                                            eResampleAlg=eResampleAlg)
+
         # add source VRT (self) to the warpedVRT
         # in order not to loose RAW file from self
         warpedVRT.srcVRT = self

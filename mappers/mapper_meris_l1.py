@@ -12,7 +12,7 @@ class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 geolocation=False, zoomSize=500, step=1):
+                 geolocation=False, zoomSize=500, step=1, **kwargs):
 
         ''' Create MER1 VRT
 

@@ -11,7 +11,7 @@ import os.path
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MOD44W produc (MODIS watermask at 250 m)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
 
         fileBaseName = os.path.basename(fileName)

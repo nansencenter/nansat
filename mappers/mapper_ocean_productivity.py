@@ -33,7 +33,7 @@ class Mapper(VRT):
     'particle_backscatter_at_443_nm': 'bbp_443',
     }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Ocean Productivity website VRT '''
 
         if ('IDL' not in gdalMetadata['Projection Category'] and 'Source' not in gdalMetadata and '-9999' not in gdalMetadata['Hole Value']):

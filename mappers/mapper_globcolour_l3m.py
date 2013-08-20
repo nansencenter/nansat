@@ -36,7 +36,7 @@ class Mapper(VRT):
     'CDM_mean': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
     }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' GLOBCOLOR L3M VRT '''
 
         print "=>%s<=" % gdalMetadata['NC_GLOBAL#title']

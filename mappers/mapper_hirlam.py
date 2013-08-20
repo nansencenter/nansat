@@ -10,7 +10,7 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for HIRLAM '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
 
         if gdalDataset.GetGeoTransform()[0:5] != (-12.1, 0.2, 0.0, 81.95, 0.0):
             raise AttributeError("HIRLAM BAD MAPPER");

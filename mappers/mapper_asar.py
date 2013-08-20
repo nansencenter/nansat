@@ -19,7 +19,7 @@ class Mapper(VRT, Envisat):
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 full_incAng=True, geolocation=False, zoomSize=500, step=1):
+                 full_incAng=True, geolocation=False, zoomSize=500, step=1, **kwargs):
 
         '''
         Parameters
@@ -57,7 +57,7 @@ class Mapper(VRT, Envisat):
         # Create VRTdataset with small VRTRawRasterbands
         self.adsVRTs = self.get_ads_vrts(gdalDataset,
                                          ["first_line_incidenceAngle"],
-                                         zoomSize=zoomSize, step=step)
+                                         zoomSize=zoomSize, step=step, **kwargs)
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)

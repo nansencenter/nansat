@@ -10,7 +10,7 @@ from vrt import VRT, gdal, parse
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MODIS_L1 VRT '''
         #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
         gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])

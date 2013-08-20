@@ -1339,18 +1339,6 @@ class Nansat(Domain):
         Error : occurs if given mapper cannot open the input file
 
         '''
-        # key names of kwargs used in each mapper
-        kwargKeys = {'asar'      : ['full_incAng', 'geolocation', 'zoomSize', 'step'],
-                     'aster_l1a' : ['GCP_COUNT', 'bandNames', 'bandWaves'],
-                     'case2reg'  : ['wavelengths'],
-                     'generic'   : ['rmMetadatas'],
-                     'aster_l1a' : ['GCP_COUNT', 'bandNames', 'bandWaves'],
-                     'meris_l1'  : ['geolocation', 'zoomSize', 'step'],
-                     'meris_l2'  : ['geolocation', 'zoomSize', 'step'],
-                     'obpg_l2'   : ['GCP_COUNT'],
-                     'pathfinder52' : ['minQual'],
-                     'aster_l1a' : ['GCP_COUNT0', 'GCP_COUNT1', 'pixelStep', 'lineStep']}
-
         # open GDAL dataset. It will be parsed to all mappers for testing
         try:
             gdalDataset = gdal.Open(self.fileName)
@@ -1372,28 +1360,17 @@ class Nansat(Domain):
             # to lowercase
             mapperName = mapperName.replace('mapper_',
                                             '').replace('.py', '').lower()
-            # choose kwargs which are suit for a mapper
-            if mapperName in kwargKeys.keys():
-                kwargs1 = self._pickup_args(kwargs, kwargKeys[mapperName])
-            else:
-                kwargs1 = {}
-             # create VRT
+            # create VRT
             try:
                 mapper_module = __import__('mapper_' + mapperName)
             except ImportError:
                 raise Error('Mapper ' + mapperName + ' not in PYTHONPATH')
             tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
-                                          metadata, **kwargs1)
+                                          metadata, **kwargs)
             self.mapper = mapperName
         else:
             # We test all mappers, import one by one
             for iMapper in self.mapperList:
-                # choose kwargs which are suit for a mapper
-                mapperName = iMapper.replace('mapper_', '').replace('.py','')
-                if mapperName in kwargKeys.keys():
-                    kwargs1 = self._pickup_args(kwargs, kwargKeys[mapperName])
-                else:
-                    kwargs1 = {}
                 # get rid of .py extension
                 iMapper = iMapper.replace('.py', '')
                 self.logger.debug('Trying %s...' % iMapper)
@@ -1401,7 +1378,7 @@ class Nansat(Domain):
                     mapper_module = __import__(iMapper)
                     # create a Mapper object and get VRT dataset from it
                     tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
-                                                  metadata, **kwargs1)
+                                                  metadata, **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper
                     break
