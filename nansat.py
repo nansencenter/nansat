@@ -130,41 +130,6 @@ class Nansat(Domain):
         logLevel : int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
 
-        Parameters (**kwargs)
-        ---------------------
-        -- VRT
-        eResampleAlg = 0
-        use_geolocationArray = True
-        use_gcps = True
-        use_geotransform = True
-        WorkingDataType = None
-        tps = False
-        blockSize = None
-        -- mapper_envisat
-        envisat_zoomSize = 500
-        envisat_step = 1
-        -- mapper_asar
-        asar_geolocation = False
-        -- mapper_meris
-        meris_geolocation = True
-        -- mapper_obpg_l2
-        obpg_l2_GCP_COUNT = 10
-        -- mapper_pathfinder52
-        pathfinder52_minQual = 4
-        -- mapper_viirs_l1
-        viirs_l1_GCP_COUNT0 = 5
-        viirs_l1_GCP_COUNT1 = 20
-        viirs_l1_pixelStep = 1
-        viirs_l1_lineStep = 1
-        -- mapper_aster_l1a
-        aster_l1a_bandNames = ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N']
-        aster_l1a_bandWaves = [560, 660, 820]
-        -- mapper_case2reg
-        case2regKwargs_wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
-        -- mapper_generic
-        generic_rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio',
-                               'ScaleOffset', 'dods_variable']
-
         Creates
         --------
         self.mapperList : list of file names
@@ -900,7 +865,7 @@ class Nansat(Domain):
         # check if cmin and cmax are given as the arguments
         if 'cmin' in kwargs.keys() and 'cmax' in kwargs.keys():
             clim = [kwargs['cmin'], kwargs['cmax']]
-        
+
         # try to get clim from WKV if it is not given as the argument
         # if failed clim will be evaluated from histogram
         if clim is None:
@@ -1716,7 +1681,7 @@ class Nansat(Domain):
         if returnOGR:
             transect : OGR object with points coordinates and values
         else:
-            transect : list or 
+            transect : list or
                 values of the transect or OGR object with the transect values
             [lonVector, latVector] : list with longitudes, latitudes
             pixlinCoord : numpy array with pixels and lines coordinates
