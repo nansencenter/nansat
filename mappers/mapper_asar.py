@@ -19,7 +19,7 @@ class Mapper(VRT, Envisat):
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 full_incAng=True, geolocation=False, zoomSize=500, step=1):
+                 full_incAng=True, geolocation=False, zoomSize=500, step=1, **kwargs):
 
         '''
         Parameters

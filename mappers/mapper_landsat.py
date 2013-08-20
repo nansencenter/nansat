@@ -19,7 +19,7 @@ except ImportError:
 class Mapper(VRT):
     ''' Mapper for LANDSAT3,4,5,6,7,8.tar.gz files'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create LANDSAT VRT '''
         # try to open .tar or .tar.gz or .tgz file with tar
         tarFile = tarfile.open(fileName)

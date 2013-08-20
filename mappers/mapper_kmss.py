@@ -21,7 +21,7 @@ from domain import Domain
 class Mapper(VRT):
     ''' VRT with mapping of WKV for KMSS TOA tiff data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
         product = gdalDataset.GetDriver().LongName
         if cmp(os.path.split(fileName)[1][0:4], '101_')!= 0:

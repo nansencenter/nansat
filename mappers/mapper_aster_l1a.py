@@ -15,7 +15,7 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata,
                  GCP_COUNT = 10,
                  bandNames = ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
-                 bandWaves = [560, 660, 820]):
+                 bandWaves = [560, 660, 820], **kwargs):
         ''' Create VRT
 
         Parameters

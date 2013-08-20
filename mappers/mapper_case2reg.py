@@ -13,7 +13,8 @@ import mapper_generic as mg
 class Mapper(mg.Mapper):
     '''Mapping for the BEAM/Visat output of Case2Regional algorithm'''
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]):
+                 wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864],
+                 **kwargs):
 
         fPathName, fExt = os.path.splitext(fileName)
         fPath, fName = os.path.split(fPathName)

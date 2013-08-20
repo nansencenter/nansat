@@ -12,7 +12,8 @@ import numpy as np
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
                  rmMetadatas = ['NETCDF_VARNAME', '_Unsigned',
-                                'ScaleRatio', 'ScaleOffset', 'dods_variable']):
+                                'ScaleRatio', 'ScaleOffset', 'dods_variable'],
+                 **kwargs):
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}

@@ -14,7 +14,7 @@ from scipy.io import loadmat
 class Mapper(VRT):
     ''' MApper for Matlab files with SMOS data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create SMOS VRT '''
         # check extension
         fName = os.path.split(fileName)[1]

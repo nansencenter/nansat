@@ -63,7 +63,7 @@ satDict = [\
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Geostationary satellite data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         satellite = gdalDataset.GetDescription().split(",")[2]
 
         for sat in satDict:

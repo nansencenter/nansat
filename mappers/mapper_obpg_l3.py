@@ -30,7 +30,7 @@ class Mapper(VRT):
     'Photosynthetically Available Radiation': 'photosynthetically_available_radiation',
     }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' OBPG L3 VRT '''
 
         if 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
