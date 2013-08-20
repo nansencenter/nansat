@@ -21,7 +21,7 @@ from domain import Domain
 class Mapper(VRT):
     ''' VRT with mapping of WKV for KMSS TOA tiff data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=10,  **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=10):
         ''' Create VRT '''
         product = gdalDataset.GetDriver().LongName
         if cmp(os.path.split(fileName)[1][0:4], '101_')!= 0:
@@ -53,7 +53,7 @@ class Mapper(VRT):
                 bandDict['dst']['name'] = 'toa_radiance_' + bandDict['dst']['wavelength']
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset,  **kwargs)
+        VRT.__init__(self, gdalDataset)
 
          # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

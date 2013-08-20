@@ -14,7 +14,7 @@ from vrt import VRT, datetime
 class Mapper(VRT):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create NCEP VRT '''
 
         if gdalDataset.GetGeoTransform() != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or gdalDataset.RasterCount != 9: # Not water proof
@@ -55,7 +55,7 @@ class Mapper(VRT):
                     ]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

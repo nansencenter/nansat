@@ -8,11 +8,8 @@
 import datetime
 import os.path
 import glob
-
 import gdal
-
 import numpy as np
-
 from vrt import VRT, GeolocationArray
 
 class Mapper(VRT):
@@ -33,7 +30,7 @@ class Mapper(VRT):
     'Photosynthetically Available Radiation': 'photosynthetically_available_radiation',
     }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' OBPG L3 VRT '''
 
         if 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
@@ -143,9 +140,7 @@ class Mapper(VRT):
         VRT.__init__(self, srcGeoTransform=(-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
                            srcProjection=gdalDataset.GetProjection(),
                            srcRasterXSize=numberOfColumns,
-                           srcRasterYSize=numberOfLines,
-                           **kwargs
-                    )
+                           srcRasterYSize=numberOfLines)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

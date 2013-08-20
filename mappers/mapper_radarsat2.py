@@ -24,7 +24,7 @@ import pdb
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create Radarsat2 VRT '''
         fPathName, fExt = os.path.splitext(fileName)
 
@@ -41,7 +41,7 @@ class Mapper(VRT):
             raise AttributeError("RADARSAT-2 BAD MAPPER")
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset)
 
         #define dictionary of metadata and band specific parameters
         pol = []

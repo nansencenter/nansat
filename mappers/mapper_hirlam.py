@@ -10,7 +10,7 @@ from vrt import *
 class Mapper(VRT):
     ''' VRT with mapping of WKV for HIRLAM '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
 
         if gdalDataset.GetGeoTransform()[0:5] != (-12.1, 0.2, 0.0, 81.95, 0.0):
             raise AttributeError("HIRLAM BAD MAPPER");
@@ -27,7 +27,7 @@ class Mapper(VRT):
                     ]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset)
 
         # Create bands
         self._create_bands(metaDict)
