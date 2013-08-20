@@ -33,7 +33,7 @@ class Mapper(VRT):
     'particle_backscatter_at_443_nm': 'bbp_443',
     }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Ocean Productivity website VRT '''
 
         if ('IDL' not in gdalMetadata['Projection Category'] and 'Source' not in gdalMetadata and '-9999' not in gdalMetadata['Hole Value']):
@@ -105,9 +105,7 @@ class Mapper(VRT):
         VRT.__init__(self, srcGeoTransform=(-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
                            srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
                            srcRasterXSize=numberOfColumns,
-                           srcRasterYSize=numberOfLines,
-                           **kwargs
-                    )
+                           srcRasterYSize=numberOfLines)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

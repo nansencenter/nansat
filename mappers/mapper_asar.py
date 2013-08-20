@@ -18,38 +18,49 @@ class Mapper(VRT, Envisat):
             http://envisat.esa.int/handbooks/asar/CNTR6-6-9.htm#eph.asar.asardf.asarrec.ASAR_Geo_Grid_ADSR
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 full_incAng=True, geolocation=False, zoomSize=500, step=1):
+
         '''
-        Parameters (**kwargs)
-        ---------------------
-        full_incAng : bool (default False)
-            if True, use full-size incidence angle band.
-            if False, use one-line incidence angle band.
+        Parameters
+        -----------
+        fileName : string
+
+        gdalDataset : gdal dataset
+
+        gdalMetadata : gdal metadata
+
+        full_incAng : bool (default is True)
+            if True, add full size incedence angle
+
+        geolocation : bool (default is False)
+            if True, add gdal geolocation
+
+        zoomSize: int (used in envisat.py)
+            size, to which the ADS array will be zoomed using scipy
+            array of this size will be stored in memory
+
+        step: int (used in envisat.py)
+            step of pixel and line in GeolocationArrays. lat/lon grids are
+            generated at that step
         '''
+
         product = gdalMetadata.get("MPH_PRODUCT")
         if product[0:4] != "ASA_":
             raise AttributeError("ASAR_L1 BAD MAPPER")
 
-        kwDict = {'geolocation' : False,
-                  'full_incAng' : True}
-        # choose kwargs for envisat and asar and change keyname
-        for key in kwargs:
-            if key.startswith('envisat') or key.startswith('asar'):
-                keyName = key.replace('envisat_', '').replace('asar_', '')
-                kwDict[keyName] = kwargs[key]
-            else:
-                kwDict[key] = kwargs[key]
+        Envisat.__init__(self, fileName, product[0:4])
 
-        Envisat.__init__(self, fileName, product[0:4], **kwDict)
         # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
         polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
 
         # Create VRTdataset with small VRTRawRasterbands
         self.adsVRTs = self.get_ads_vrts(gdalDataset,
-                                         ["first_line_incidenceAngle"])
+                                         ["first_line_incidenceAngle"],
+                                         zoomSize=zoomSize, step=step)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwDict)
+        VRT.__init__(self, gdalDataset)
 
         # get calibration constant
         gotCalibration = True
@@ -63,7 +74,7 @@ class Mapper(VRT, Envisat):
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'short_name': 'RawCounts'}}]
 
-        if self.d['full_incAng']:
+        if full_incAng:
             for adsVRT in self.adsVRTs:
                 metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
                                          'SourceBand': 1},
@@ -116,8 +127,9 @@ class Mapper(VRT, Envisat):
 
         # add geolocation arrays
 
-        if self.d['geolocation']:
-            self.add_geolocation_from_ads(gdalDataset)
+        if geolocation:
+            self.add_geolocation_from_ads(gdalDataset,
+                                          zoomSize=zoomSize, step=step)
 
         # Add SAR look direction to metadata domain
         # Note that this is the look direction in the center of the domain. For

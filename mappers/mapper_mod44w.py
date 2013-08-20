@@ -11,7 +11,7 @@ import os.path
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MOD44W produc (MODIS watermask at 250 m)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' Create VRT '''
 
         fileBaseName = os.path.basename(fileName)
@@ -22,7 +22,7 @@ class Mapper(VRT):
                      'dst': {'wkv': 'land_binary_mask'}}]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

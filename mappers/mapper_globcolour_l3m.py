@@ -36,7 +36,7 @@ class Mapper(VRT):
     'CDM_mean': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
     }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata):
         ''' GLOBCOLOR L3M VRT '''
 
         print "=>%s<=" % gdalMetadata['NC_GLOBAL#title']
@@ -126,7 +126,7 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         simGdalDataset.SetProjection('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
-        VRT.__init__(self, simGdalDataset, **kwargs)
+        VRT.__init__(self, simGdalDataset)
 
 
         # add bands with metadata and corresponding values to the empty VRT

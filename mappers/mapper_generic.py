@@ -6,11 +6,13 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from vrt import *
-from nansat_tools import Node, latlongSRS, set_defaults
+from nansat_tools import Node, latlongSRS
 import numpy as np
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
+                 rmMetadatas = ['NETCDF_VARNAME', '_Unsigned',
+                                'ScaleRatio', 'ScaleOffset', 'dods_variable']):
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}
@@ -23,22 +25,6 @@ class Mapper(VRT):
             else:
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
-
-        kwDict = {'rmMetadatas' : ['NETCDF_VARNAME',
-                                   '_Unsigned',
-                                   'ScaleRatio',
-                                   'ScaleOffset',
-                                   'dods_variable']}
-
-        # choose kwargs for generic
-        genericKwargs = {}
-        for key in kwargs:
-            if key.startswith('generic'):
-                keyName = key.replace('generic_', '')
-                genericKwargs[keyName] = kwargs[key]
-
-        # modify the default values using input values
-        kwDict = set_defaults(kwDict, genericKwargs)
 
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
@@ -120,7 +106,7 @@ class Mapper(VRT):
                                 dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
-                        for rmMetadata in kwDict['rmMetadatas']:
+                        for rmMetadata in rmMetadatas:
                             if rmMetadata in dst:
                                 dst.pop(rmMetadata)
 
