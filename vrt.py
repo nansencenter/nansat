@@ -964,12 +964,12 @@ class VRT():
 
     def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                           xSize=0, ySize=0, blockSize=None,
-                          geoTransform=None,
+                          geoTransform=None, WorkingDataType=None,
+                          tps=False,
                           use_geolocationArray=True, use_gcps=True,
                           use_geotransform=True,
-                          dstGCPs=[], dstGeolocationArray=None,
-                          WorkingDataType=None,
-                          tps=False):
+                          dstGCPs=[], dstGeolocationArray=None, **kwargs):
+
         ''' Create VRT object with WarpedVRT
 
         Modifies the input VRT according to the input options
