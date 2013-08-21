@@ -176,11 +176,12 @@ class PointBrowser():
     Click on points and get the X-Y coordinates.
 
     '''
-    def __init__(self, data):
+    def __init__(self, data, **kwargs):
         self.fig = plt.figure()
         self.data = data
         self.ax = self.fig.add_subplot(111)
-        self.ax.imshow(self.data, extent=(0, self.data.shape[1], 0, self.data.shape[0]), origin='lower')
+        img = self.ax.imshow(self.data, extent=(0, self.data.shape[1], 0, self.data.shape[0]), origin='lower', **kwargs)
+        self.fig.colorbar(img)
         self.points, = self.ax.plot([], [], '+', ms=12, color='b')
         self.line, = self.ax.plot([], [])
         self.coordinates = []
