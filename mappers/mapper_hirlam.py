@@ -6,6 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from vrt import *
+import numpy
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for HIRLAM '''
@@ -16,14 +17,65 @@ class Mapper(VRT):
             raise AttributeError("HIRLAM BAD MAPPER");
 
         metaDict = [
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 2, 'NODATA': 9999},
-                     'dst': {'wkv': 'eastward_wind', 'name': 'east_wind', 'height': '10 m'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 3, 'NODATA': 9999},
-                     'dst': {'wkv': 'northward_wind', 'name': 'north_wind', 'height': '10 m'}},
-                    {'src': [{'SourceFilename': fileName, 'SourceBand': 2}, {'SourceFilename': fileName, 'SourceBand': 3}],
-                     'dst': {'wkv': 'wind_speed', 'name': 'windspeed', 'height': '10 m', 'PixelFunctionType': 'UVToMagnitude'}},
-                    {'src': [{'SourceFilename': fileName, 'SourceBand': 2}, {'SourceFilename': fileName, 'SourceBand': 2}],
-                     'dst': {'wkv': 'wind_from_direction', 'name': 'winddirection', 'height': '10 m', 'PixelFunctionType': 'UVToDirectionFrom'}}
+                    {'src': {
+                        'SourceFilename': fileName, 
+                        'SourceBand': 2, 
+                        'NODATA': 9999
+                        },
+                     'dst': {
+                         'wkv': 'eastward_wind', 
+                         'name': 'east_wind', 
+                         'height': '10 m'
+                         }
+                     },
+                    {'src': {
+                        'SourceFilename': fileName, 
+                        'SourceBand': 3, 
+                        'NODATA': 9999
+                        },
+                     'dst': {
+                             'wkv': 'northward_wind', 
+                             'name': 'north_wind', 
+                             'height': '10 m'
+                             }
+                     },
+                    {'src': 
+                        [{
+                            'SourceFilename': fileName, 
+                            'SourceBand': 2,
+                            'DataType': gdalDataset.GetRasterBand(2).DataType
+                        }, 
+                        {
+                            'SourceFilename': fileName, 
+                            'SourceBand': 3,
+                            'DataType': gdalDataset.GetRasterBand(3).DataType
+                        }],
+                     'dst': {
+                            'wkv': 'wind_speed', 
+                            'name': 'windspeed', 
+                            'height': '10 m', 
+                            'PixelFunctionType': 'UVToMagnitude',
+                            'NODATA': 9999
+                         }
+                     },
+                    {'src': 
+                        [{
+                            'SourceFilename': fileName, 
+                            'SourceBand': 2,
+                            'DataType': gdalDataset.GetRasterBand(2).DataType
+                        }, {
+                            'SourceFilename': fileName, 
+                            'SourceBand': 3,
+                            'DataType': gdalDataset.GetRasterBand(3).DataType
+                        }],
+                     'dst': {
+                            'wkv': 'wind_from_direction', 
+                            'name': 'winddirection', 
+                            'height': '10 m', 
+                            'PixelFunctionType': 'UVToDirectionFrom',
+                            'NODATA': 9999
+                        }
+                     }
                     ]
 
         # create empty VRT dataset with geolocation only
