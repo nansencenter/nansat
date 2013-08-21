@@ -31,28 +31,49 @@ class Mapper(VRT):
                      'dst': {'wkv': 'northward_wind',
                              'name': 'north_wind',
                              'height': '10 m'}},
-                    {'src': [{'SourceFilename': fileName,
-                              'SourceBand': 8},
-                             {'SourceFilename': fileName,
-                              'SourceBand': 9}],
-                     'dst': {'wkv': 'wind_speed',
-                             'PixelFunctionType': 'UVToMagnitude',
-                             'name': 'windspeed',
-                             'height': '2 m'}},
-                    {'src': [{'SourceFilename': fileName,
-                              'SourceBand': 8},
-                             {'SourceFilename': fileName,
-                              'SourceBand': 9}],
-                     'dst': {'wkv': 'wind_from_direction',
-                             'PixelFunctionType': 'UVToDirectionFrom',
-                             'name': 'winddirection',
-                             'height': '2 m'}},
-                    {'src': {'SourceFilename': fileName,
-                             'SourceBand': 6},
-                     'dst': {'wkv': 'air_temperature',
-                             'name': 'air_t',
-                             'height': '2 m'}}
-                    ]
+                    {
+                        'src': [{
+                                'SourceFilename': fileName,
+                                'SourceBand': 8,
+                                'DataType': gdalDataset.GetRasterBand(8).DataType
+                            },{
+                                'SourceFilename': fileName,
+                                'SourceBand': 9,
+                                'DataType': gdalDataset.GetRasterBand(9).DataType
+                        }],
+                        'dst': {
+                            'wkv': 'wind_speed',
+                            'PixelFunctionType': 'UVToMagnitude',
+                            'name': 'windspeed',
+                            'height': '2 m'
+                        }
+                    },{
+                        'src': [{
+                                'SourceFilename': fileName,
+                                'SourceBand': 8,
+                                'DataType': gdalDataset.GetRasterBand(8).DataType
+                            },{
+                                'SourceFilename': fileName,
+                                'SourceBand': 9,
+                                'DataType': gdalDataset.GetRasterBand(9).DataType
+                            }],
+                        'dst': {
+                            'wkv': 'wind_from_direction',
+                            'PixelFunctionType': 'UVToDirectionFrom',
+                            'name': 'winddirection',
+                            'height': '2 m'
+                            }
+                    },{
+                        'src': {
+                            'SourceFilename': fileName,
+                            'SourceBand': 6
+                            },
+                        'dst': {
+                            'wkv': 'air_temperature',
+                            'name': 'air_t',
+                            'height': '2 m'
+                            }
+                    }]
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset, **kwargs)
