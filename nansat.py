@@ -1656,7 +1656,7 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0, **kwargs):
+    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0, ratio=1.0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1677,6 +1677,13 @@ class Nansat(Domain):
             If False, return OGR object
         layerNum: int
             If shapefile is given as points, it is the number of the layer
+
+        vmin, vmax : int (optional)
+            minimum and maximum pixel values of an image shown
+            in case points is None.
+
+        ratio : float, [0.0, 1.0] (optional)
+            1.0, ratio of pixels which are used to draw an image
 
         Returns
         --------
@@ -1702,6 +1709,14 @@ class Nansat(Domain):
             if type(firstBand) == str:
                 firstBand = self._get_band_number(firstBand)
             data = self[firstBand]
+
+            # if ratio is give, compute min and max pixel values from histogram
+            if ratio != 1.0:
+                fig = Figure(data, **kwargs)
+                clim = fig.clim_from_histogram(ratio=ratio)
+                kwargs['vmin'] = clim[0][0]
+                kwargs['vmax'] = clim[1][0]
+
             browser = PointBrowser(data, **kwargs)
             browser.get_points()
             points = tuple(browser.coordinates)
