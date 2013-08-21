@@ -124,7 +124,7 @@ class Mapper(VRT):
 
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset)
 
         # Create bands
         self._create_bands(metaDict)

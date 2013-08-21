@@ -10,12 +10,12 @@ from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
 from datetime import datetime, timedelta
 from math import ceil
 from scipy.ndimage.filters import gaussian_filter
-from nansat_tools import set_defaults
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1, lineStep= 1, **kwargs):
         ''' Create VIIRS VRT '''
 
         assert 'GMTCO_npp_' in fileName, 'viirs_l1 BAD MAPPER'
@@ -25,27 +25,11 @@ class Mapper(VRT):
 
         viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240, 1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]
 
-        # create dictionary of viirsL1 parameters
-        kwDict = { 'GCP_COUNT0' : 5,
-                   'GCP_COUNT1' : 20,
-                   'pixelStep' : 1,
-                   'lineStep' : 1}
-
-        # set kwargs
-        viirsL1Kwargs = {}
-        for key in kwargs:
-            if key.startswith('viirs_l1'):
-                keyName = key.replace('viirs_l1_', '')
-                viirsL1Kwargs[keyName] = kwargs[key]
-
-        # modify the default values using input values
-        kwDict = set_defaults(kwDict, viirsL1Kwargs)
-
         # create empty VRT dataset with geolocation only
         xDatasetSource = 'HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude' % fileName
         xDatasetBand = 1
         xDataset = gdal.Open(xDatasetSource)
-        VRT.__init__(self, xDataset, **kwargs)
+        VRT.__init__(self, xDataset)
 
         metaDict = []
         for ifile in ifiles:
@@ -81,7 +65,7 @@ class Mapper(VRT):
         #self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
         #"""
         # estimate pixel/line step
-        self.logger.debug('pixel/lineStep %f %f' % (kwDict['pixelStep'], kwDict['lineStep']))
+        self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
 
         # ==== ADD GCPs and Pojection ====
         # get lat/lon matrices
@@ -89,11 +73,11 @@ class Mapper(VRT):
         latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
 
         # estimate step of GCPs
-        step0 = max(1, int(float(latitude.shape[0]) / kwDict['GCP_COUNT0']))
-        step1 = max(1, int(float(latitude.shape[1]) / kwDict['GCP_COUNT1']))
+        step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT0))
+        step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT1))
         self.logger.debug('gcpCount: %d %d %d %d, %d %d',
                           latitude.shape[0], latitude.shape[1],
-                          kwDict['GCP_COUNT0'], kwDict['GCP_COUNT1'],
+                          GCP_COUNT0, GCP_COUNT1,
                           step0, step1)
 
         # generate list of GCPs
@@ -106,8 +90,7 @@ class Mapper(VRT):
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
                     gcp = gdal.GCP(lon, lat, 0,
-                                   i1 * kwDict['pixelStep'],
-                                   i0 * kwDict['lineStep'])
+                                   i1 * pixelStep, i0 * lineStep)
                     self.logger.debug('%d %d %d %f %f',
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)

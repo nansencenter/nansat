@@ -123,8 +123,7 @@ class Mapper(VRT):
                      srcRasterXSize=2048,
                      srcRasterYSize=numCalibratedScanLines,
                      geolocationArray=GeolocObject,
-                     srcProjection=GeolocObject.d['SRS'],
-                     **kwargs)
+                     srcProjection=GeolocObject.d['SRS'])
 
         # Since warping quality is horrible using geolocation arrays
         # which are much smaller than raster bands (due to a bug in GDAL:

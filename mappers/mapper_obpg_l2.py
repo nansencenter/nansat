@@ -8,7 +8,6 @@
 from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
 from datetime import datetime, timedelta
 from math import ceil
-from nansat_tools import set_defaults
 
 class Mapper(VRT):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
@@ -18,20 +17,13 @@ class Mapper(VRT):
     * Test on MODIS Terra
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
-        ''' Create VRT '''
-        # number of GCPs along each dimention
-        kwDict = {'GCP_COUNT' : 10}
-
-        # init ADS parameters
-        obpgL2Kwargs = {}
-        for key in kwargs:
-            if key.startswith('obpg_l2_'):
-                keyName = key.replace('obpg_l2_', '')
-                obpgL2Kwargs[keyName] = kwargs[key]
-
-        # modify the default values using input values
-        kwDict = set_defaults(kwDict, obpgL2Kwargs)
+    def __init__(self, fileName, gdalDataset, gdalMetadata, GCP_COUNT=10, **kwargs):
+        ''' Create VRT
+        Parameters
+        ----------
+        GCP_COUNT : int
+            number of GCPs along each dimention
+        '''
 
         """
         Title=
@@ -51,8 +43,9 @@ class Mapper(VRT):
             if 'longitude' not in subDataset[1] and 'latitude' not in subDataset[1]:
                 gdalSubDataset = gdal.Open(subDataset[0])
                 break
+
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset, **kwargs)
+        VRT.__init__(self, gdalSubDataset)
 
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
@@ -176,11 +169,11 @@ class Mapper(VRT):
             self.remove_geolocationArray()
 
         # estimate step of GCPs
-        step0 = max(1, int(float(latitude.shape[0]) / kwDict['GCP_COUNT']))
-        step1 = max(1, int(float(latitude.shape[1]) / kwDict['GCP_COUNT']))
+        step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
+        step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT))
         self.logger.debug('gcpCount: %d %d %f %d %d',
                           latitude.shape[0], latitude.shape[1],
-                          kwDict['GCP_COUNT'], step0, step1)
+                          GCP_COUNT, step0, step1)
 
         # generate list of GCPs
         gcps = []

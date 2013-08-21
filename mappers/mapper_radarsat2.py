@@ -41,7 +41,7 @@ class Mapper(VRT):
             raise AttributeError("RADARSAT-2 BAD MAPPER")
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset, **kwargs)
+        VRT.__init__(self, gdalDataset)
 
         #define dictionary of metadata and band specific parameters
         pol = []

@@ -129,41 +129,7 @@ class Nansat(Domain):
             Metadata for the 1st band of a new raster,e.g. name, wkv, units,...
         logLevel : int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
-
-        Parameters (**kwargs)
-        ---------------------
-        -- VRT
-        eResampleAlg = 0
-        use_geolocationArray = True
-        use_gcps = True
-        use_geotransform = True
-        WorkingDataType = None
-        tps = False
-        blockSize = None
-        -- mapper_envisat
-        envisat_zoomSize = 500
-        envisat_step = 1
-        -- mapper_asar
-        asar_geolocation = False
-        -- mapper_meris
-        meris_geolocation = True
-        -- mapper_obpg_l2
-        obpg_l2_GCP_COUNT = 10
-        -- mapper_pathfinder52
-        pathfinder52_minQual = 4
-        -- mapper_viirs_l1
-        viirs_l1_GCP_COUNT0 = 5
-        viirs_l1_GCP_COUNT1 = 20
-        viirs_l1_pixelStep = 1
-        viirs_l1_lineStep = 1
-        -- mapper_aster_l1a
-        aster_l1a_bandNames = ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N']
-        aster_l1a_bandWaves = [560, 660, 820]
-        -- mapper_case2reg
-        case2regKwargs_wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
-        -- mapper_generic
-        generic_rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio',
-                               'ScaleOffset', 'dods_variable']
+        kwargs : additional arguments for mappers
 
         Creates
         --------
@@ -671,7 +637,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, tps=False):
+                  WorkingDataType=None, tps=False, **kwargs):
         ''' Reproject the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
@@ -725,7 +691,7 @@ class Nansat(Domain):
                     blockSize=blockSize,
                     geoTransform=dstDomain.vrt.dataset.GetGeoTransform(),
                     WorkingDataType=WorkingDataType,
-                    tps=tps)
+                    tps=tps, **kwargs)
 
         # set current VRT object
         self.vrt = warpedVRT
@@ -837,102 +803,7 @@ class Nansat(Domain):
         addDate : boolean
             False (default) : no date will be aded to the caption
             True : the first time of the object will be added to the caption
-        **kwargs : parameters for Figure(). See below:
-        ---------- Figure.__init__() parameters: -----------
-            cmin : number (int ot float) or [number, number, number]
-                0, minimum value of varibale in the matrix to be shown
-            cmax : number (int ot float) or [number, number, number]
-                1, minimum value of varibale in the matrix to be shown
-            gamma : float, >0
-                2, coefficient for tone curve udjustment
-            subsetArraySize : int
-                100000, size of the subset array which is used to get histogram
-            numOfColor : int
-                250, number of colors for use of the palette.
-                254th is black and 255th is white.
-            cmapName : string
-                'jet', name of Matplotlib colormaps
-                see --> http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-            ratio : float, [0 1]
-                1.0, ratio of pixels which are used to write the figure
-            numOfTicks : int
-                5, number of ticks on a colorbar
-            titleString : string
-                '', title of legend (1st line)
-            caption : string
-                '', caption of the legend (2nd line, e.g. long name and units)
-            fontSize : int
-                12, size of the font of title, caption and ticks
-            logarithm : boolean, defult = False
-                If True, tone curve is used to convert pixel values.
-                If False, linear.
-            legend : boolean, default = False
-                if True, information as textString, colorbar, longName and
-                units are added in the figure.
-            mask_array : 2D numpy array, int, the shape should be equal
-                array.shape. If given this array is used for masking land,
-                clouds, etc on the output image. Value of the array are
-                indeces. LUT from mask_lut is used for coloring upon this
-                indeces.
-            mask_lut : dictionary
-                Look-Up-Table with colors for masking land, clouds etc. Used
-                tgether with mask_array:
-                {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
-                index 0 - will have black color
-                      1 - dark gray
-                      2 - light gray
-                      3 - blue
-            logoFileName : string
-                name of the file with logo
-            logoLocation : list of two int, default = [0,0]
-                X and Y offset of the image
-                If positive - offset is from left, upper edge
-                If Negative - from right, lower edge
-                Offset is calculated from the entire image legend inclusive
-            logoSize : list of two int
-                desired X,Y size of logo. If None - original size is used
-            latGrid : numpy array
-                full size array with latitudes. For adding lat/lon grid lines
-            lonGrid : numpy array
-                full size array with longitudes. For adding lat/lon grid lines
-            latlonGridSpacing : int
-                number of lat/lon grid lines to show
-            latlonLabels : int
-                number of lat/lon labels to show along each side.
-            transparency : int
-                transparency of the image background(mask), set for PIL alpha
-                mask in Figure.save()
-            default : None
-
-            Advanced parameters
-            --------------------
-            LEGEND_HEIGHT : float, [0 1]
-                0.1, legend height relative to image height
-            CBAR_HEIGHTMIN : int
-                5, minimum colorbar height, pixels
-            CBAR_HEIGHT : float, [0 1]
-                0.15,  colorbar height relative to image height
-            CBAR_WIDTH : float [0 1]
-                0.8, colorbar width  relative to legend width
-            CBAR_LOCATION_X : float [0 1]
-                0.1, colorbar offset X  relative to legend width
-            CBAR_LOCATION_Y : float [0 1]
-                0.5,  colorbar offset Y  relative to legend height
-            CBAR_LOCATION_ADJUST_X : int
-                5,  colorbar offset X, pixels
-            CBAR_LOCATION_ADJUST_Y : int
-                3,  colorbar offset Y, pixels
-            TEXT_LOCATION_X : float, [0 1]
-                0.1, caption offset X relative to legend width
-            TEXT_LOCATION_Y : float, [0 1]
-                0.1, caption offset Y relative to legend height
-            NAME_LOCATION_X : float, [0 1]
-                0.1, title offset X relative to legend width
-            NAME_LOCATION_Y :
-                0.3, title  offset Y relative to legend height
-            DEFAULT_EXTENSION : string
-                '.png'
-        --------------------------------------------------
+        **kwargs : parameters for Figure().
 
         Modifies
         ---------
@@ -975,12 +846,6 @@ class Nansat(Domain):
         else:
             bands = [self._get_band_number(bands)]
 
-        # if cmin / cmax is scalar, convert to a list
-        for ikey in ['cmin', 'cmax']:
-            if ikey in kwargs:
-                if not isinstance(kwargs[ikey], list):
-                    kwargs[ikey] = [kwargs[ikey]]
-
         # == create 3D ARRAY ==
         array = None
         for band in bands:
@@ -998,7 +863,11 @@ class Nansat(Domain):
         array = None
 
         # == PREPARE cmin/cmax ==
-        # try to get clim from WKV if it is not given
+        # check if cmin and cmax are given as the arguments
+        if 'cmin' in kwargs.keys() and 'cmax' in kwargs.keys():
+            clim = [kwargs['cmin'], kwargs['cmax']]
+
+        # try to get clim from WKV if it is not given as the argument
         # if failed clim will be evaluated from histogram
         if clim is None:
             clim = [[], []]
@@ -1047,17 +916,6 @@ class Nansat(Domain):
             caption += self.get_time()[0].strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
-
-        # modify clim if cmin and cmax are given as the arguments
-        if 'cmin' in kwargs.keys():
-            for i in range(len(kwargs['cmin'])):
-                if kwargs['cmin'][i] > clim[0][i]:
-                    clim[0][i] = kwargs['cmin'][i]
-
-        if 'cmax' in kwargs.keys():
-            for i in range(len(kwargs['cmax'])):
-                if kwargs['cmax'][i] < clim[1][i]:
-                    clim[1][i] = kwargs['cmax'][i]
 
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
@@ -1503,6 +1361,7 @@ class Nansat(Domain):
             # to lowercase
             mapperName = mapperName.replace('mapper_',
                                             '').replace('.py', '').lower()
+            # create VRT
             try:
                 mapper_module = __import__('mapper_' + mapperName)
             except ImportError:
@@ -1513,12 +1372,12 @@ class Nansat(Domain):
         else:
             # We test all mappers, import one by one
             for iMapper in self.mapperList:
-                #get rid of .py extension
+                # get rid of .py extension
                 iMapper = iMapper.replace('.py', '')
                 self.logger.debug('Trying %s...' % iMapper)
                 try:
                     mapper_module = __import__(iMapper)
-                    #create a Mapper object and get VRT dataset from it
+                    # create a Mapper object and get VRT dataset from it
                     tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                                   metadata, **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
@@ -1797,7 +1656,7 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0):
+    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1824,12 +1683,13 @@ class Nansat(Domain):
         if returnOGR:
             transect : OGR object with points coordinates and values
         else:
-            transect : list or 
+            transect : list or
                 values of the transect or OGR object with the transect values
             [lonVector, latVector] : list with longitudes, latitudes
             pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
+        data = None
         # if shapefile is given, get corner points from it
         if type(points) == str:
             nansatOGR = Nansatshape(fileName=points)
@@ -1841,7 +1701,8 @@ class Nansat(Domain):
             firstBand =bandList[0]
             if type(firstBand) == str:
                 firstBand = self._get_band_number(firstBand)
-            browser = PointBrowser(self[firstBand])
+            data = self[firstBand]
+            browser = PointBrowser(data, **kwargs)
             browser.get_points()
             points = tuple(browser.coordinates)
             latlon = False
@@ -1889,9 +1750,11 @@ class Nansat(Domain):
         for iBand in bandList:
             if type(iBand) == str:
                 iBand = self._get_band_number(iBand)
-            data = self[iBand]
+            if data is None:
+                data = self[iBand]
             # extract values
             transect.append(data[list(pixlinCoord[1]), list(pixlinCoord[0])].tolist())
+            data = None
         if returnOGR:
             NansatOGR = Nansatshape(wkt=wkt)
             NansatOGR.set_layer(lonlatCoord=[lonVector, latVector], pixlinCoord=pixlinCoord, fieldNames=map(str, bandList), fieldValues=transect)

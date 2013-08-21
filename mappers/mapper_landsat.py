@@ -48,7 +48,7 @@ class Mapper(VRT):
                 sizeDiffBands.append(iFile)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDatasetTmp0, **kwargs)
+        VRT.__init__(self, gdalDatasetTmp0)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)

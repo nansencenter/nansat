@@ -24,7 +24,7 @@ class Mapper(VRT):
         mResolution = modisResolutions[gdalMetadata["SHORTNAME"]]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset, **kwargs)
+        VRT.__init__(self, gdalSubDataset)
 
         subDsString = 'HDF4_EOS:EOS_SWATH:"%s":MODIS_SWATH_Type_L1B:%s'
 

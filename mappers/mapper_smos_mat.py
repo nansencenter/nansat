@@ -40,8 +40,7 @@ class Mapper(VRT):
         VRT.__init__(self, srcGeoTransform=srcGeotransform,
                             srcProjection=srcProjection,
                             srcRasterXSize=srcRasterXSize,
-                            srcRasterYSize=srcRasterYSize,
-                            **kwargs)
+                            srcRasterYSize=srcRasterYSize)
 
         # add the following variables
         varNames = ['SSS1', 'SSS2', 'SSS3', 'SST',

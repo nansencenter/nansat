@@ -41,10 +41,6 @@ class Nansatmap(Basemap):
 
         Modifies
         ---------
-        self.lon, self.lat : numpy arrays
-            lat and lon of the domain in degrees
-        self.x, self.y :numpy arrays
-            map projection coordinates
         self.fig : figure
             matplotlib.pyplot.figure
         self.colorbar : boolean
@@ -60,6 +56,8 @@ class Nansatmap(Basemap):
         http://matplotlib.org/basemap/api/basemap_api.html
 
         '''
+        self.domain = domain
+        
         # get proj4
         spatialRef = osr.SpatialReference()
         projection = domain._get_projection(domain.vrt.dataset)
@@ -100,7 +98,13 @@ class Nansatmap(Basemap):
                         'vandg':'vandg', 'vandg2':'vandg',
                         'vandg3':'vandg', 'vandg4':'vandg',
                      }.get(projStr, 'cyl')
-
+        
+        if projection in ['stere']:
+            lon_0 = float(re.findall('lon_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
+            lat_0 = float(re.findall('lat_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
+            kwargs['lon_0'] = lon_0
+            kwargs['lat_0'] = lat_0
+            
         # set default values of ALL params of NansatMap
         self.d = {}
         # convolve
@@ -124,22 +128,26 @@ class Nansatmap(Basemap):
         # save
         self.d['DEFAULT_EXTENSION'] = '.png'
 
-        # set lon and lat attributes from nansat
-        self.lon, self.lat = domain.get_geolocation_grids()
-
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 
         # set llcrnrlat, urcrnrlat, llcrnrlon and urcrnrlon to kwargs.
         # if required, modify them from -90. to 90.
+        # get min/max lon/lat
+        lonCrn, latCrn = domain.get_corners()
+        self.lonMin = min(lonCrn)
+        self.lonMax = max(lonCrn)
+        self.latMin = max(min(latCrn), -90.)
+        self.latMax = min(max(latCrn), 90.)
+        
         if not('llcrnrlat' in kwargs.keys()):
-            kwargs['llcrnrlat'] = max(self.lat.min(), -90.)
+            kwargs['llcrnrlat'] = self.latMin
         if not('urcrnrlat' in kwargs.keys()):
-            kwargs['urcrnrlat'] = min(self.lat.max(), 90.)
+            kwargs['urcrnrlat'] = self.latMax
         if not('llcrnrlon' in kwargs.keys()):
-            kwargs['llcrnrlon'] = self.lon.min()
+            kwargs['llcrnrlon'] = self.lonMin
         if not('urcrnrlon' in kwargs.keys()):
-            kwargs['urcrnrlon'] = self.lon.max()
+            kwargs['urcrnrlon'] = self.lonMax
 
         # separate kwarge of plt.figure() from kwargs
         figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor', 'frameon']
@@ -148,10 +156,7 @@ class Nansatmap(Basemap):
             if iArg in kwargs.keys():
                 figKwargs[iArg] = kwargs.pop(iArg)
 
-        Basemap.__init__(self, **kwargs)
-
-        # convert to map projection coords and set them to x and y
-        self.x, self.y = self(self.lon, self.lat)
+        Basemap.__init__(self, projection=projection, **kwargs)
 
         # create figure and set it as an attribute
         plt.close()
@@ -161,6 +166,8 @@ class Nansatmap(Basemap):
         self.cmap = cm.jet
         self.colorbar = None
         self.mpl = []
+        self.lon, self.lat, self.x, self.y = None, None, None, None
+        
 
     def smooth(self, idata, mode, **kwargs):
         '''Smooth data for contour() and contourf()
@@ -280,6 +287,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
+        self._create_xy_grids()
         # smooth data
         if smooth:
             data = self.smooth(data, mode, **kwargs)
@@ -330,6 +338,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
+        self._create_xy_grids()
         # if cmap is given, set to self.cmap
         if 'cmap' in kwargs.keys():
             self.cmap = kwargs.pop('cmap')
@@ -392,6 +401,7 @@ class Nansatmap(Basemap):
                 kwargs['vmax'] = validValues[1]
 
         # Plot a quadrilateral mesh.
+        self._create_xy_grids()
         self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
         self.colorbar = len(self.mpl)-1
 
@@ -422,6 +432,7 @@ class Nansatmap(Basemap):
         step1 = dataX.shape[1]/quivectors
         dataX2 = dataX[::step0, ::step1]
         dataY2 = dataY[::step0, ::step1]
+        self._create_lonlat_grids()
         lon2 = self.lon[::step0, ::step1]
         lat2 = self.lat[::step0, ::step1]
         x2, y2 = self(lon2, lat2)
@@ -475,12 +486,12 @@ class Nansatmap(Basemap):
         See also: Basemap.drawparallels(), Basemap.drawmeridians()
 
         '''
-        self.drawparallels(np.arange(self.lat.min(), self.lat.max(),
-                           (self.lat.max() - self.lat.min()) / lat_num),
+        self.drawparallels(np.arange(self.latMin, self.latMax,
+                           (self.latMax - self.latMin) / lat_num),
                            labels=lat_labels,
                            fontsize=fontsize)
-        self.drawmeridians(np.arange(self.lon.min(), self.lon.max(),
-                           (self.lon.max() - self.lon.min()) / lon_num),
+        self.drawmeridians(np.arange(self.lonMin, self.lonMax,
+                           (self.lonMax - self.lonMin) / lon_num),
                            labels=lon_labels,
                            fontsize=fontsize)
 
@@ -568,3 +579,26 @@ class Nansatmap(Basemap):
             if iKey in self.d:
                 self.d[iKey] = kwargs.pop(iKey)
         return kwargs
+
+    def _create_lonlat_grids(self):
+        '''Generate grids with lon/lat coordinates in each cell
+        
+        Modifies
+        ---------
+        self.lon : numpy array with lon coordinates
+        self.lat : numpy array with lat coordinates        
+        '''
+        if self.lon is None or self.lat is None:
+            self.lon, self.lat = self.domain.get_geolocation_grids()
+
+    def _create_xy_grids(self):
+        '''Generate grids with x/y coordinates in each cell
+        
+        Modifies
+        ---------
+        self.x : numpy array with X coordinates
+        self.y : numpy array with Y coordinates        
+        '''
+        self._create_lonlat_grids()
+        if self.x is None or self.y is None:
+            self.x, self.y = self(self.lon, self.lat)

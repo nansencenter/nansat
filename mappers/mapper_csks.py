@@ -15,7 +15,7 @@ import gdal, osr
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Cosmo-Skymed '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata , **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create CSKS VRT '''
 
         if fileName[0:4] != "CSKS":
