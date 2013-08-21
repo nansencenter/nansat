@@ -41,10 +41,6 @@ class Nansatmap(Basemap):
 
         Modifies
         ---------
-        self.lon, self.lat : numpy arrays
-            lat and lon of the domain in degrees
-        self.x, self.y :numpy arrays
-            map projection coordinates
         self.fig : figure
             matplotlib.pyplot.figure
         self.colorbar : boolean
@@ -130,22 +126,21 @@ class Nansatmap(Basemap):
         # save
         self.d['DEFAULT_EXTENSION'] = '.png'
 
-        # set lon and lat attributes from nansat
-        self.lon, self.lat = domain.get_geolocation_grids()
-
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 
         # set llcrnrlat, urcrnrlat, llcrnrlon and urcrnrlon to kwargs.
         # if required, modify them from -90. to 90.
+        lonCrn, latCrn = domain.get_corners()
+        
         if not('llcrnrlat' in kwargs.keys()):
-            kwargs['llcrnrlat'] = max(self.lat.min(), -90.)
+            kwargs['llcrnrlat'] = max(min(latCrn), -90.)
         if not('urcrnrlat' in kwargs.keys()):
-            kwargs['urcrnrlat'] = min(self.lat.max(), 90.)
+            kwargs['urcrnrlat'] = min(max(latCrn), 90.)
         if not('llcrnrlon' in kwargs.keys()):
-            kwargs['llcrnrlon'] = self.lon.min()
+            kwargs['llcrnrlon'] = min(lonCrn)
         if not('urcrnrlon' in kwargs.keys()):
-            kwargs['urcrnrlon'] = self.lon.max()
+            kwargs['urcrnrlon'] = max(lonCrn)
 
         # separate kwarge of plt.figure() from kwargs
         figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor', 'frameon']
@@ -155,9 +150,6 @@ class Nansatmap(Basemap):
                 figKwargs[iArg] = kwargs.pop(iArg)
 
         Basemap.__init__(self, projection=projection, **kwargs)
-
-        # convert to map projection coords and set them to x and y
-        self.x, self.y = self(self.lon, self.lat)
 
         # create figure and set it as an attribute
         plt.close()
