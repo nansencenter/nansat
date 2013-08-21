@@ -100,7 +100,7 @@ class Nansatmap(Basemap):
                         'vandg':'vandg', 'vandg2':'vandg',
                         'vandg3':'vandg', 'vandg4':'vandg',
                      }.get(projStr, 'cyl')
-
+        
         # set default values of ALL params of NansatMap
         self.d = {}
         # convolve
@@ -148,7 +148,7 @@ class Nansatmap(Basemap):
             if iArg in kwargs.keys():
                 figKwargs[iArg] = kwargs.pop(iArg)
 
-        Basemap.__init__(self, **kwargs)
+        Basemap.__init__(self, projection=projection, **kwargs)
 
         # convert to map projection coords and set them to x and y
         self.x, self.y = self(self.lon, self.lat)
