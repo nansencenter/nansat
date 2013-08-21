@@ -1061,15 +1061,22 @@ double Sigma0HHNormalizedWaterFunction(double *b){
 }
 
 double UVToDirectionFromFunction(double *b){
-	double pi = 3.14159265;
         /* Convention 0-360 degrees positive clockwise from north*/
+	double pi = 3.14159265;
+	//return (b[0]==9999 || b[1]==9999) ? 9999 : 180.0 - atan2(-b[0],b[1])*180./pi;
 	return 180.0 - atan2(-b[0],b[1])*180./pi;
 }
 
 double UVToDirectionToFunction(double *b){
-	double pi = 3.14159265;
         /* Convention 0-360 degrees positive clockwise from north*/
+	double pi = 3.14159265;
 	return 360.0 - atan2(-b[0],b[1])*180./pi;
+        /*
+           Below code is hirlam specific - we don't know if the invalid data is
+           actually 9999. One option is to make mapper specific pixelfunctions
+           but for now only return the direction as if all data was good.
+        */
+	//return (b[0]==9999 || b[1]==9999) ? 9999 : 360.0 - atan2(-b[0],b[1])*180./pi;
 }
 
 /* pixel function */
