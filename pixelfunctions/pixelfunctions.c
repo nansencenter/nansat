@@ -879,79 +879,6 @@ return CE_None;
 }
 
 
-CPLErr UVToDirectionTo(void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace)
-{
-	int ii, iLine, iCol;
-	double winddir_to;
-	double u, v;
-	#define PI 3.14159265;
-	#define offset 180.
-
-	/* ---- Init ---- */
-	if (nSources != 2) return CE_Failure;
-
-	/* ---- Set pixels ---- */
-	for( iLine = 0; iLine < nYSize; iLine++ )
-	{
-		for( iCol = 0; iCol < nXSize; iCol++ )
-		{
-			ii = iLine * nXSize + iCol;
-			/* Source raster pixels may be obtained with SRCVAL macro */
-			u = SRCVAL(papoSources[0], eSrcType, ii);
-			v = SRCVAL(papoSources[1], eSrcType, ii);
-
-			winddir_to = atan2(-u,-v)*180/PI; /* Convention 0-360 degrees */
-			winddir_to = winddir_to + 180;    /* Convention 0-360 degrees */
-
-			GDALCopyWords(&winddir_to, GDT_Float64, 0,
-			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
-			              eBufType, nPixelSpace, 1);
-		}
-	}
-
-	/* ---- Return success ---- */
-return CE_None;
-}
-
-CPLErr UVToDirectionFrom(void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace)
-{
-	int ii, iLine, iCol;
-	double winddir_from;
-	double u, v;
-	#define PI 3.14159265;
-
-	/* ---- Init ---- */
-	if (nSources != 2) return CE_Failure;
-
-	/* ---- Set pixels ---- */
-	for( iLine = 0; iLine < nYSize; iLine++ )
-	{
-		for( iCol = 0; iCol < nXSize; iCol++ )
-		{
-			ii = iLine * nXSize + iCol;
-			/* Source raster pixels may be obtained with SRCVAL macro */
-			u = SRCVAL(papoSources[0], eSrcType, ii);
-			v = SRCVAL(papoSources[1], eSrcType, ii);
-
-			winddir_from = atan2(u,v)*180/PI; 	/* Convention 0-360 degrees */
-			winddir_from = winddir_from + 180;  /* Convention 0-360 degrees */
-
-			GDALCopyWords(&winddir_from, GDT_Float64, 0,
-			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
-			              eBufType, nPixelSpace, 1);
-		}
-	}
-
-	/* ---- Return success ---- */
-return CE_None;
-}
-
 
 CPLErr Sigma0HHBetaToSigma0VV(void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
@@ -1133,7 +1060,46 @@ double Sigma0HHNormalizedWaterFunction(double *b){
 	return sigma0 * pow((tan(b[1] * pi / 180.0) / tan(31.0 * pi / 180.0)), 4.0);
 }
 
+double UVToDirectionFromFunction(double *b){
+	double pi = 3.14159265;
+        /* Convention 0-360 degrees positive clockwise from north*/
+	return 180.0 - atan2(-b[0],b[1])*180./pi;
+}
+
+double UVToDirectionToFunction(double *b){
+	double pi = 3.14159265;
+        /* Convention 0-360 degrees positive clockwise from north*/
+	return 360.0 - atan2(-b[0],b[1])*180./pi;
+}
+
 /* pixel function */
+CPLErr UVToDirectionTo(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunction(UVToDirectionToFunction,
+        papoSources, nSources,  pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+CPLErr UVToDirectionFrom(void **papoSources, int nSources, void *pData,
+        int nXSize, int nYSize,
+        GDALDataType eSrcType, GDALDataType eBufType,
+        int nPixelSpace, int nLineSpace){
+    
+    GenericPixelFunction(UVToDirectionFromFunction,
+        papoSources, nSources,  pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+
 CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, void *pData,
         int nXSize, int nYSize,
         GDALDataType eSrcType, GDALDataType eBufType,
