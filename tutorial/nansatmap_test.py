@@ -40,7 +40,17 @@ nMap.pcolormesh(w)
 nMap.quiver(u, v, quivectors=20)
 nMap.save(oFileName+'pcolormesh_quiver.png')
 
-
+# use Nansatmap for converting lon/lat into x/y
+# 1. Create domain over the area of interest in stereographic projection
+extentString = '-lle -10 50 20 70 -tr 1000 1000'
+srsString = '+proj=stere +lon_0=10 +lat_0=60 +k=1 +ellps=WGS84 +datum=WGS84 +no_defs'
+d =Domain(srsString, extentString)
+# 2. Create nansatmap object from tha domain
+nmap = Nansatmap(d)
+# 3. Use the created object to convert from lon/lat into x/y:
+x, y = nmap([0, 2, 4], [63, 64, 65])
+# 4 or from x/y into lon/lat
+lon, lat = nmap(x, y, inverse=True)
 
 
 #n.write_map(grid='w', contour='w', smooth=true, quiver=('u','v'), step=5)
