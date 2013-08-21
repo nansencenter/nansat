@@ -1688,6 +1688,7 @@ class Nansat(Domain):
             pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
+        data = None
         # if shapefile is given, get corner points from it
         if type(points) == str:
             nansatOGR = Nansatshape(fileName=points)
@@ -1699,7 +1700,8 @@ class Nansat(Domain):
             firstBand =bandList[0]
             if type(firstBand) == str:
                 firstBand = self._get_band_number(firstBand)
-            browser = PointBrowser(self[firstBand])
+            data = self[firstBand]
+            browser = PointBrowser(data)
             browser.get_points()
             points = tuple(browser.coordinates)
             latlon = False
@@ -1747,9 +1749,11 @@ class Nansat(Domain):
         for iBand in bandList:
             if type(iBand) == str:
                 iBand = self._get_band_number(iBand)
-            data = self[iBand]
+            if data is None:
+                data = self[iBand]
             # extract values
             transect.append(data[list(pixlinCoord[1]), list(pixlinCoord[0])].tolist())
+            data = None
         if returnOGR:
             NansatOGR = Nansatshape(wkt=wkt)
             NansatOGR.set_layer(lonlatCoord=[lonVector, latVector], pixlinCoord=pixlinCoord, fieldNames=map(str, bandList), fieldValues=transect)
