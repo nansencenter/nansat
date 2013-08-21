@@ -101,6 +101,12 @@ class Nansatmap(Basemap):
                         'vandg3':'vandg', 'vandg4':'vandg',
                      }.get(projStr, 'cyl')
         
+        if projection in ['stere']:
+            lon_0 = float(re.findall('lon_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
+            lat_0 = float(re.findall('lat_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
+            kwargs['lon_0'] = lon_0
+            kwargs['lat_0'] = lat_0
+            
         # set default values of ALL params of NansatMap
         self.d = {}
         # convolve
