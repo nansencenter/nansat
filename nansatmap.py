@@ -287,6 +287,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
+        self._create_xy_grids()
         # smooth data
         if smooth:
             data = self.smooth(data, mode, **kwargs)
@@ -337,6 +338,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
+        self._create_xy_grids()
         # if cmap is given, set to self.cmap
         if 'cmap' in kwargs.keys():
             self.cmap = kwargs.pop('cmap')
@@ -399,6 +401,7 @@ class Nansatmap(Basemap):
                 kwargs['vmax'] = validValues[1]
 
         # Plot a quadrilateral mesh.
+        self._create_xy_grids()
         self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
         self.colorbar = len(self.mpl)-1
 
@@ -429,6 +432,7 @@ class Nansatmap(Basemap):
         step1 = dataX.shape[1]/quivectors
         dataX2 = dataX[::step0, ::step1]
         dataY2 = dataY[::step0, ::step1]
+        self._create_lonlat_grids()
         lon2 = self.lon[::step0, ::step1]
         lat2 = self.lat[::step0, ::step1]
         x2, y2 = self(lon2, lat2)
@@ -595,5 +599,6 @@ class Nansatmap(Basemap):
         self.x : numpy array with X coordinates
         self.y : numpy array with Y coordinates        
         '''
+        self._create_lonlat_grids()
         if self.x is None or self.y is None:
             self.x, self.y = self(self.lon, self.lat)
