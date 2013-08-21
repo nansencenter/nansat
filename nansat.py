@@ -129,6 +129,7 @@ class Nansat(Domain):
             Metadata for the 1st band of a new raster,e.g. name, wkv, units,...
         logLevel : int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
+        kwargs : additional arguments for mappers
 
         Creates
         --------
@@ -1655,7 +1656,7 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0):
+    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1699,7 +1700,7 @@ class Nansat(Domain):
             firstBand =bandList[0]
             if type(firstBand) == str:
                 firstBand = self._get_band_number(firstBand)
-            browser = PointBrowser(self[firstBand])
+            browser = PointBrowser(self[firstBand], **kwargs)
             browser.get_points()
             points = tuple(browser.coordinates)
             latlon = False
