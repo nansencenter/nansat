@@ -56,6 +56,8 @@ class Nansatmap(Basemap):
         http://matplotlib.org/basemap/api/basemap_api.html
 
         '''
+        self.domain = domain
+        
         # get proj4
         spatialRef = osr.SpatialReference()
         projection = domain._get_projection(domain.vrt.dataset)
@@ -131,16 +133,21 @@ class Nansatmap(Basemap):
 
         # set llcrnrlat, urcrnrlat, llcrnrlon and urcrnrlon to kwargs.
         # if required, modify them from -90. to 90.
+        # get min/max lon/lat
         lonCrn, latCrn = domain.get_corners()
+        self.lonMin = min(lonCrn)
+        self.lonMax = max(lonCrn)
+        self.latMin = max(min(latCrn), -90.)
+        self.latMax = min(max(latCrn), 90.)
         
         if not('llcrnrlat' in kwargs.keys()):
-            kwargs['llcrnrlat'] = max(min(latCrn), -90.)
+            kwargs['llcrnrlat'] = self.latMin
         if not('urcrnrlat' in kwargs.keys()):
-            kwargs['urcrnrlat'] = min(max(latCrn), 90.)
+            kwargs['urcrnrlat'] = self.latMax
         if not('llcrnrlon' in kwargs.keys()):
-            kwargs['llcrnrlon'] = min(lonCrn)
+            kwargs['llcrnrlon'] = self.lonMin
         if not('urcrnrlon' in kwargs.keys()):
-            kwargs['urcrnrlon'] = max(lonCrn)
+            kwargs['urcrnrlon'] = self.lonMax
 
         # separate kwarge of plt.figure() from kwargs
         figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor', 'frameon']
@@ -159,6 +166,8 @@ class Nansatmap(Basemap):
         self.cmap = cm.jet
         self.colorbar = None
         self.mpl = []
+        self.lon, self.lat, self.x, self.y = None, None, None, None
+        
 
     def smooth(self, idata, mode, **kwargs):
         '''Smooth data for contour() and contourf()
@@ -473,12 +482,12 @@ class Nansatmap(Basemap):
         See also: Basemap.drawparallels(), Basemap.drawmeridians()
 
         '''
-        self.drawparallels(np.arange(self.lat.min(), self.lat.max(),
-                           (self.lat.max() - self.lat.min()) / lat_num),
+        self.drawparallels(np.arange(self.latMin, self.latMax,
+                           (self.latMax - self.latMin) / lat_num),
                            labels=lat_labels,
                            fontsize=fontsize)
-        self.drawmeridians(np.arange(self.lon.min(), self.lon.max(),
-                           (self.lon.max() - self.lon.min()) / lon_num),
+        self.drawmeridians(np.arange(self.lonMin, self.lonMax,
+                           (self.lonMax - self.lonMin) / lon_num),
                            labels=lon_labels,
                            fontsize=fontsize)
 
@@ -566,3 +575,25 @@ class Nansatmap(Basemap):
             if iKey in self.d:
                 self.d[iKey] = kwargs.pop(iKey)
         return kwargs
+
+    def _create_lonlat_grids(self):
+        '''Generate grids with lon/lat coordinates in each cell
+        
+        Modifies
+        ---------
+        self.lon : numpy array with lon coordinates
+        self.lat : numpy array with lat coordinates        
+        '''
+        if self.lon is None or self.lat is None:
+            self.lon, self.lat = self.domain.get_geolocation_grids()
+
+    def _create_xy_grids(self):
+        '''Generate grids with x/y coordinates in each cell
+        
+        Modifies
+        ---------
+        self.x : numpy array with X coordinates
+        self.y : numpy array with Y coordinates        
+        '''
+        if self.x is None or self.y is None:
+            self.x, self.y = self(self.lon, self.lat)
