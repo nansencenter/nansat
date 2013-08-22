@@ -901,7 +901,7 @@ class VRT():
                           tps=False,
                           use_geolocationArray=True, use_gcps=True,
                           use_geotransform=True,
-                          dstGCPs=[], dstGeolocationArray=None, **kwargs):
+                          dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
 
