@@ -1084,7 +1084,7 @@ class VRT():
             print 'node0.xml()', node0.xml()
         """
         # overwrite XML of the warped VRT file with uprated size and geotranform
-        self.write_xml(str(node0.rawxml()))
+        warpedVRT.write_xml(str(node0.rawxml()))
 
         # apply thin-spline-transformation option
         if use_gcps and tps:
