@@ -892,8 +892,8 @@ class Figure():
 
         '''
         array = self.array[iBand, :, :].flatten()
-        array = array[array > array.min()]
-        array = array[array < array.max()]
+        array = array[array > np.nanmin(array)]
+        array = array[array < np.nanmax(array)]
         step = max(int(round(float(len(array)) /
                        float(self.subsetArraySize))), 1.0)
         arraySubset = array[::step]
