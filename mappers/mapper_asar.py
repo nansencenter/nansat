@@ -76,11 +76,13 @@ class Mapper(VRT, Envisat):
 
         if full_incAng:
             for adsVRT in self.adsVRTs:
+                name = adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').split('_')[-1]
+                #Change band name (e.g. incidenceAngle --> incidence_angle )
+                name = {'incidenceAngle' : 'incidence_angle'}.get(name, name)
                 metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
                                          'SourceBand': 1},
-                                 'dst': {'name':  adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').split('_')[-1],
+                                 'dst': {'name': name,
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
-
         if gotCalibration:
             # add dicrtionary for sigma0, ice and water
             short_names = ['sigma0', 'sigma0_normalized_ice', 'sigma0_normalized_water']
