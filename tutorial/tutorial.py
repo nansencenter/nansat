@@ -27,8 +27,12 @@ from nansat import Nansat, Domain, Mosaic
 iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 iFileName = os.path.join(iPath, 'gcps.tif')
 print 'Input file: ', iFileName
-oFileName = os.path.join(iPath, 'tmpdata', 'output_')
-print 'Output file prefix: ', oFileName
+oPath = os.path.join(iPath, 'tmpdata')
+print 'Output path:', oPath
+if not os.path.exists(oPath):
+    os.mkdir(oPath)
+oFileName = os.path.join(oPath, 'output_')
+print 'Output file:', oFileName
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
