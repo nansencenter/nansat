@@ -223,7 +223,7 @@ class Mosaic(Nansat):
             
         return dataCube, maskMat.max(0)
 
-    def average(self, files=[], bands=[], doReproject=True, maskName='mask',
+    def average(self, files=[], bands=[1], doReproject=True, maskName='mask',
                **kwargs):
         '''Use memory-friendly averaging for mosaicing
         
@@ -369,7 +369,7 @@ class Mosaic(Nansat):
             parameters['name'] = parameters['name'] + '_std'
             self.add_band(array=stdMat[b], parameters=parameters)
 
-    def median(self, files=[], bands=[], doReproject=True, maskName='mask',
+    def median(self, files=[], bands=[1], doReproject=True, maskName='mask',
                **kwargs):
         '''Calculate median of input bands
         
@@ -409,7 +409,7 @@ class Mosaic(Nansat):
 
         self.add_band(array=mask, parameters={'name': 'mask'})
 
-    def latest(self, files=[], bands=[], doReproject=True, maskName='mask',
+    def latest(self, files=[], bands=[1], doReproject=True, maskName='mask',
                **kwargs):
         '''Mosaic by adding the latest image on top without averaging
         
