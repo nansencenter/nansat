@@ -56,7 +56,7 @@ class Mapper(VRT, Envisat):
 
         # Create VRTdataset with small VRTRawRasterbands
         self.adsVRTs = self.get_ads_vrts(gdalDataset,
-                                         ["first_line_incidenceAngle"],
+                                         ["first_line_incidence_angle"],
                                          zoomSize=zoomSize, step=step, **kwargs)
 
         # create empty VRT dataset with geolocation only
@@ -76,12 +76,9 @@ class Mapper(VRT, Envisat):
 
         if full_incAng:
             for adsVRT in self.adsVRTs:
-                name = adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').split('_')[-1]
-                #Change band name (e.g. incidenceAngle --> incidence_angle )
-                name = {'incidenceAngle' : 'incidence_angle'}.get(name, name)
                 metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
                                          'SourceBand': 1},
-                                 'dst': {'name': name,
+                                 'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
         if gotCalibration:
             # add dicrtionary for sigma0, ice and water
