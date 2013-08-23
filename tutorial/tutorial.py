@@ -226,15 +226,4 @@ n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
 # make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
 
-# Perform batch averaging of several files
-# 1. Create destination Nansat object with desired projection
-nMosaic = Mosaic(domain=dStereo)
-# 2. Perfom averaging
-nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
-# 3. Get mask of non-valid pixels
-mask = nMosaic['mask']
-# 4. Output averaged data using the mask
-nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
-                        mask_array=mask, mask_lut={0:[128,128,128]})
-
 print 'Tutorial completed successfully. Output files are found here:' + oFileName
