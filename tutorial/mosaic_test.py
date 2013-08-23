@@ -38,7 +38,7 @@ print 'Output file:', oFileName
 # create targed domain
 domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
 
-# Perform batch averaging of several files
+# Perform averaging of several files
 # 1. Create destination Nansat object with desired projection
 nMosaic = Mosaic(domain=domain)
 # 2. Perfom averaging
@@ -48,4 +48,8 @@ mask = nMosaic['mask']
 # 4. Output averaged data using the mask
 nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
                         mask_array=mask, mask_lut={0:[128,128,128]})
+# 5. Get values of standard deviation from averaging of input files
+L_469_std = nMosaic['L_469_std']
 
+# calculate median from the first band
+nMosaic.median(['gcps.tif', 'stere.tif'])
