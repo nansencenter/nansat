@@ -15,7 +15,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# 
+#
 #
 #
 
@@ -26,10 +26,10 @@ from nansat import *
 
 class Mosaic(Nansat):
     '''Container for mosaicing methods
-    
+
     Mosaic inherits everything from Nansat
-    ''' 
-    
+    '''
+
     # default parameters
     d = {}
     d['nClass'] = Nansat
@@ -62,9 +62,9 @@ class Mosaic(Nansat):
 
     def _get_layer_image(self, f):
         '''Get nansat object from the specifed file
-        
+
         Open file with Nansat
-        
+
         Parameters:
         -----------
         f : string
@@ -82,7 +82,7 @@ class Mosaic(Nansat):
         except:
             self.logger.error('Unable to open %s' % f)
             n = None
-        
+
         # check if image is out of period
         if n is not None:
             ntime = n.get_time()
@@ -100,12 +100,12 @@ class Mosaic(Nansat):
                 n = None
 
         return n
-        
+
     def _get_layer_mask(self, n, doReproject, maskName):
         '''Get mask from input Nansat object
-        
+
         Open files, reproject, get mask and metadata
-        
+
         Parameters:
         -----------
         n : Nansat
@@ -114,7 +114,7 @@ class Mosaic(Nansat):
             Should we reproject input files?
         maskName : string
             Name of the mask in the input file
-        
+
         Returns:
         --------
         mask : Numpy array with L2-mask
@@ -156,7 +156,7 @@ class Mosaic(Nansat):
             Should we reproject input files?
         maskName : string
             Name of the mask in the input file
-        
+
         Returns:
         --------
         n : Nansat object of input file
@@ -167,14 +167,14 @@ class Mosaic(Nansat):
             mask = self._get_layer_mask(n, doReproject, maskName)
         else:
             mask = None
-                
+
         return n, mask
 
     def _get_cube(self, files, band, doReproject, maskName):
         '''Make cube with data from one band of input files
-        
+
         Open files, reproject, get band, insert into cube
-        
+
         Parameter:
         ----------
         files : list of strings
@@ -213,20 +213,20 @@ class Mosaic(Nansat):
             if a is not None:
                 # mask invalid data
                 a[mask <= 2] = np.nan
-            
+
             # add band to the cube
             dataCube[i, :, :] = a
 
             # add data to mask matrix (maximum of 0, 1, 2, 64)
             maskMat[0, :, :] = mask
             maskMat[1, :, :] = maskMat.max(0)
-            
+
         return dataCube, maskMat.max(0)
 
     def average(self, files=[], bands=[], doReproject=True, maskName='mask',
                **kwargs):
         '''Use memory-friendly averaging for mosaicing
-        
+
         Convert all input files into Nansat objects, reproject onto the
         Domain of the current object, get bands, from each object,
         calculate average and STD, add averaged bands (and STD) to the current
@@ -301,7 +301,7 @@ class Mosaic(Nansat):
 
             if n is not None:
                 # keep last image opened
-                lastN = self._get_layer_image(f) 
+                lastN = self._get_layer_image(f)
             else:
                 # skip processing of invalid image
                 continue
@@ -372,7 +372,7 @@ class Mosaic(Nansat):
     def median(self, files=[], bands=[], doReproject=True, maskName='mask',
                **kwargs):
         '''Calculate median of input bands
-        
+
         Memory and CPU greedy method. Generates 3D cube from bands of
         all input images and calculates median. Adds median bands to self
 
@@ -401,7 +401,7 @@ class Mosaic(Nansat):
         for band in bands:
             bandCube, mask = self._get_cube(files, band, doReproject, maskName)
             bandMedian = st.nanmedian(bandCube, axis=0)
-            
+
             # get metadata of this band from the last image
             parameters = lastN.get_metadata(bandID=band)
             # add band and std with metadata
@@ -412,12 +412,12 @@ class Mosaic(Nansat):
     def latest(self, files=[], bands=[], doReproject=True, maskName='mask',
                **kwargs):
         '''Mosaic by adding the latest image on top without averaging
-        
+
         Uses Nansat.get_time() to estimate time of each input file;
         Sorts images by aquisition time;
         Creates date_index band - with mask of coverage of each frame;
         Uses date_index to fill bands of self only with the latest data
-        
+
         Parameters
         -----------
         files : list
@@ -434,7 +434,7 @@ class Mosaic(Nansat):
             This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
-        
+
         '''
         # collect ordinals of times of each input file
         itimes = np.zeros(len(files))
@@ -465,7 +465,7 @@ class Mosaic(Nansat):
             # or serial number of the latest image
             maxIndex[1, :, :] = maxIndex.max(0)
         maxIndex = maxIndex.max(0)
-        
+
         # preallocate 2D matrices for mosaiced data and mask
         self.logger.debug('Allocating 2D matrices')
         avgMat = {}
@@ -499,10 +499,10 @@ class Mosaic(Nansat):
                     # by the serial number of the input file
                     avgMat[b][maxIndex == (i + 1)] = a[maxIndex == (i + 1)]
 
-            # destroy input nansat 
+            # destroy input nansat
             n = None
         # keep last image opened
-        lastN = self._get_layer_image(f) 
+        lastN = self._get_layer_image(f)
 
         self.logger.debug('Adding bands')
         # add mask band
@@ -516,8 +516,8 @@ class Mosaic(Nansat):
             parameters = lastN.get_metadata(bandID=b)
             # add band with metadata
             self.add_band(array=avgMat[b], parameters=parameters)
-        
-        # compose list of dates of input images 
+
+        # compose list of dates of input images
         timeString = ''
         dt = datetime.datetime(1,1,1)
         for i in range(len(itimes)):
