@@ -390,6 +390,8 @@ class Mosaic(Nansat):
             This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
+        period : [datetime0, datetime1]
+            Start and stop date/datetime objects from pyhon datetime. 
 
         '''
         # modify default values
@@ -432,7 +434,9 @@ class Mosaic(Nansat):
             This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
-        
+        period : [datetime0, datetime1]
+            Start and stop date/datetime objects from pyhon datetime. 
+
         '''
         # collect ordinals of times of each input file
         itimes = np.zeros(len(files))
