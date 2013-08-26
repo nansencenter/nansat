@@ -19,20 +19,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-import inspect, os
 
 from nansat import Nansat, Domain, Mosaic
 
-# input and output file names
-iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-iFileName = os.path.join(iPath, 'gcps.tif')
-print 'Input file: ', iFileName
-oPath = os.path.join(iPath, 'tmpdata')
-print 'Output path:', oPath
-if not os.path.exists(oPath):
-    os.mkdir(oPath)
-oFileName = os.path.join(oPath, 'output_')
-print 'Output file:', oFileName
+from testio import testio
+
+iPath, iFileName, oPath, oFileName = testio()
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
@@ -225,5 +217,8 @@ n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
 
 # make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
+
+# run tests of the Mosaic
+import mosaic_test
 
 print 'Tutorial completed successfully. Output files are found here:' + oFileName
