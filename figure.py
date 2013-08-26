@@ -76,7 +76,7 @@ class Figure():
                           'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
     _cmapName = 'jet'
-        
+
     def __init__(self, nparray, **kwargs):
         ''' Set attributes
 
