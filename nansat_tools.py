@@ -128,7 +128,7 @@ try:
     import ImageFont
 except ImportError:
     try:
-        from PIL import Image, ImabeDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageFont
     except ImportError:
         warnings.warn('Cannot import PIL!'
                       'Figure will not work'
