@@ -19,7 +19,6 @@ n = Nansat(iFileName)
 # Get data from 1st, 2nd and 3rd bands as numpy array (u,v and w)
 u = n[1]; v = n[2]; w = n[3]
 
-
 nMap = Nansatmap(n)
 # draw filled contour plot
 nMap.contourf(w)

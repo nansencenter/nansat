@@ -831,73 +831,6 @@ class VRT():
 
         return warpedVRT
 
-    def _modify_warped_XML(self, rasterXSize=0, rasterYSize=0,
-                           geoTransform=None, blockSize=None,
-                           srcSRS=None, dstSRS=None, WorkingDataType=None):
-        ''' Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
-
-        Parameters
-        -----------
-        rasterXSize : int
-            desired X size of warped image
-        rasterYSize : int
-            desired Y size of warped image
-        geoTransform : tuple of 6 ints
-            desired GeoTransform size of the warped image
-        blockSize : int
-            value of tag <blockSize> in the VRT-file
-        WorkingDataType : str
-            value of tag <WorkingDataType> in the VRT-file
-
-        Modifies
-        ---------
-        XML of the self VRT file : size and geotranform is updated
-
-        '''
-        warpedXML = self.read_xml()
-
-        node0 = Node.create(warpedXML)
-
-        if rasterXSize > 0:
-            node0.replaceAttribute('rasterXSize', str(rasterXSize))
-        if rasterYSize > 0:
-            node0.replaceAttribute('rasterYSize', str(rasterYSize))
-
-        if geoTransform is not None:
-            invGeotransform = gdal.InvGeoTransform(geoTransform)
-            # convert proper string style and set to the GeoTransform element
-            node0.node('GeoTransform').value = str(geoTransform).strip('()')
-            node0.node('DstGeoTransform').value = str(geoTransform).strip('()')
-            node0.node('DstInvGeoTransform').value = \
-                                            str(invGeotransform[1]).strip('()')
-
-            if node0.node('SrcGeoLocTransformer'):
-                node0.node('BlockXSize').value = str(rasterXSize)
-                node0.node('BlockYSize').value = str(rasterYSize)
-
-            if blockSize is not None:
-                node0.node('BlockXSize').value = str(blockSize)
-                node0.node('BlockYSize').value = str(blockSize)
-
-            if WorkingDataType is not None:
-                node0.node('WorkingDataType').value = WorkingDataType
-
-        """
-        # TODO: test thoroughly and implement later
-        if srcSRS is not None and dstSRS is not None:
-            rt = self.ReprojectTransformer.substitute(SourceSRS=srcSRS,
-                                                      TargetSRS=dstSRS)
-            print 'rt', rt
-            rtNode = Node.create(rt)
-            print 'rtNode.xml()', rtNode.xml()
-            giptNode = node0.node('GenImgProjTransformer')
-            print 'giptNode', giptNode
-            giptNode += rtNode
-            print 'node0.xml()', node0.xml()
-        """
-
-        self.write_xml(str(node0.rawxml()))
-
     def _remove_geotransform(self):
         '''Remove GeoTransfomr from VRT Object
 
@@ -968,7 +901,7 @@ class VRT():
                           tps=False,
                           use_geolocationArray=True, use_gcps=True,
                           use_geotransform=True,
-                          dstGCPs=[], dstGeolocationArray=None, **kwargs):
+                          dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
 
@@ -1108,8 +1041,50 @@ class VRT():
 
         # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
-        warpedVRT._modify_warped_XML(xSize, ySize,
-                                     geoTransform, blockSize, WorkingDataType)
+
+        # Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
+        warpedXML = warpedVRT.read_xml()
+        node0 = Node.create(warpedXML)
+
+        if xSize > 0:
+            node0.replaceAttribute('rasterXSize', str(xSize))
+        if ySize > 0:
+            node0.replaceAttribute('rasterYSize', str(ySize))
+
+        if geoTransform is not None:
+            invGeotransform = gdal.InvGeoTransform(geoTransform)
+            # convert proper string style and set to the GeoTransform element
+            node0.node('GeoTransform').value = str(geoTransform).strip('()')
+            node0.node('DstGeoTransform').value = str(geoTransform).strip('()')
+            node0.node('DstInvGeoTransform').value = \
+                                            str(invGeotransform[1]).strip('()')
+
+            if node0.node('SrcGeoLocTransformer'):
+                node0.node('BlockXSize').value = str(xSize)
+                node0.node('BlockYSize').value = str(ySize)
+
+            if blockSize is not None:
+                node0.node('BlockXSize').value = str(blockSize)
+                node0.node('BlockYSize').value = str(blockSize)
+
+            if WorkingDataType is not None:
+                node0.node('WorkingDataType').value = WorkingDataType
+
+        """
+        # TODO: test thoroughly and implement later
+        if srcSRS is not None and dstSRS is not None:
+            rt = self.ReprojectTransformer.substitute(SourceSRS=None,
+                                                      TargetSRS=None)
+            print 'rt', rt
+            rtNode = Node.create(rt)
+            print 'rtNode.xml()', rtNode.xml()
+            giptNode = node0.node('GenImgProjTransformer')
+            print 'giptNode', giptNode
+            giptNode += rtNode
+            print 'node0.xml()', node0.xml()
+        """
+        # overwrite XML of the warped VRT file with uprated size and geotranform
+        warpedVRT.write_xml(str(node0.rawxml()))
 
         # apply thin-spline-transformation option
         if use_gcps and tps:
@@ -1125,8 +1100,6 @@ class VRT():
         else:
             srcSRS = srcVRT.dataset.GetGCPProjection()
         # modify the VRT XML file
-        warpedVRT._modify_warped_XML(xSize, ySize, geoTransform,
-                                     blockSize, srcSRS, dstSRS)
         """
 
         # if given, add dst GCPs
