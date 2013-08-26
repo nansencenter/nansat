@@ -23,27 +23,20 @@ import inspect, os
 
 from nansat import Nansat, Domain, Mosaic
 
-# input and output file names
-iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-iFileName = os.path.join(iPath, 'gcps.tif')
-print 'Input file: ', iFileName
-oPath = os.path.join(iPath, 'tmpdata')
-print 'Output path:', oPath
-if not os.path.exists(oPath):
-    os.mkdir(oPath)
-oFileName = os.path.join(oPath, 'output_')
-print 'Output file:', oFileName
+from testio import testio
+iPath, iFileName, oPath, oFileName = testio()
 
+print iPath
 
-# create targed domain
+# Create target domain
 domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
 
-# Perform averaging of several files
+# A. Perform averaging of several files
 # 1. Create destination Nansat object with desired projection
 nMosaic = Mosaic(domain=domain)
 # 2. Perfom averaging
 nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
-# 3. Get mask of non-valid pixels
+# 3. Get mask of valid pixels
 mask = nMosaic['mask']
 # 4. Output averaged data using the mask
 nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
@@ -51,5 +44,10 @@ nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555'
 # 5. Get values of standard deviation from averaging of input files
 L_469_std = nMosaic['L_469_std']
 
-# calculate median from the first band
+
+# B. calculate median from the first band
 nMosaic.median(['gcps.tif', 'stere.tif'])
+
+
+# C. fill the result with the latest image
+nMosaic.latest(['gcps.tif', 'stere.tif'])
