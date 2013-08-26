@@ -20,6 +20,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
+import glob
+import datetime as dt
 
 from nansat import Nansat, Domain, Mosaic
 
@@ -46,8 +48,17 @@ L_469_std = nMosaic['L_469_std']
 
 
 # B. calculate median from the first band
-nMosaic.median(['gcps.tif', 'stere.tif'])
+#nMosaic.median(['gcps.tif', 'stere.tif'])
 
 
 # C. fill the result with the latest image
 nMosaic.latest(['gcps.tif', 'stere.tif'])
+
+# D. Average only files that fall within given period
+# create new Mosaic
+nMosaic = Mosaic(domain=domain, logLevel=0)
+# define period
+period = [dt.datetime(2011, 8, 15, 0, 0), dt.datetime(2011, 8, 15, 23, 59)] 
+# run averaging of only files within period.
+# Only gcps.tif will be averaged since stere.tif has no time information
+nMosaic.average(['gcps.tif', 'stere.tif'], period=period)
