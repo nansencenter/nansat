@@ -91,7 +91,7 @@ wmArray = wm[1]
 # Compute min and max valuse from ratio
 clim = fig.clim_from_histogram(ratio=1.0)
 # Make figure with land overlay (gray color) and apply brightness gamma correction
-figure.process(cmin=clim[0], cmax=clim[1], mask_array=wmArray,
+fig.process(cmin=clim[0], cmax=clim[1], mask_array=wmArray,
                mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
 # save the fig
 fig.save(oFileName + '06_land.png', )
