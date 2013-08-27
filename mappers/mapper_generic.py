@@ -5,6 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
+#import os
 from vrt import *
 from nansat_tools import Node, latlongSRS
 import numpy as np
@@ -26,7 +27,8 @@ class Mapper(VRT):
             else:
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
-
+        fileExt = os.path.splitext(fileName)[1]
+        
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
         if len(subDatasets) == 0:
@@ -95,7 +97,7 @@ class Mapper(VRT):
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('dods_variable', '')
                         if len(bandName) > 0:
-                            if origin_is_nansat:
+                            if origin_is_nansat and fileExt == '.nc':
                                 # remove digits added by gdal in exporting to
                                 # netcdf...
                                 if bandName[-1:].isdigit():
