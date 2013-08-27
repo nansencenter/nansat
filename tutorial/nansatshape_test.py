@@ -1,3 +1,4 @@
+import inspect, os
 import numpy as np
 
 from nansat import Nansat, Domain, Nansatshape
@@ -6,6 +7,13 @@ try:
     from osgeo import gdal, osr, ogr
 except:
     import gdal, osr, ogr
+
+# input and output file names
+iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+iFileName = os.path.join(iPath, 'points.shp')
+print 'Input file: ', iFileName
+oFileName = os.path.join(iPath, 'tmpdata', 'outputmap_')
+print 'Output file prefix: ', oFileName
 
 
 # Create nansatShape object with point geometry
@@ -21,7 +29,8 @@ nansatOGR.create_fields(fieldNames=['string2'], fieldValues=[['SS1','SS3']], fea
 nansatOGR.create_geometry([[80.0],[20.0]], featureID=[5])
 # set field values
 nansatOGR.create_fields(fieldNames=['int', 'string2'], fieldValues=[[60],['SS5']], featureID=[5])
-
+# save to a file
+ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource, oFileName+'01_Points.shp')
 
 # Create a nansatShape object with polygon geometry
 nansatOGR = Nansatshape(wkbStyle=ogr.wkbPolygon)
@@ -30,7 +39,8 @@ nansatOGR.create_geometry([[100, 150, 200, 100, 500, 600, 800, 500],[20, 30, 60,
                            featureID=[0, 0, 0, 0, 1, 1, 1, 1])
 # append a polygon geometry to a new feature
 nansatOGR.create_geometry([[300,700, 750, 300],[80,50, 60, 80]], featureID=[2,2,2,2])
-
+# save to a file
+ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource, oFileName+'02_Polygons.shp')
 
 # Create a nansatShape object with polygon geometry
 nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
@@ -43,6 +53,21 @@ nansatOGR.create_geometry([[300,700, 750],[80,50, 60]], featureID=[2,2,2])
 nansatOGR.create_fields(fieldNames=['int', 'string', 'float', 'string2'], fieldValues=[[100, 200, 300], ['S0','S1','S2'],[1.1, 2.2, 3.3], ['A0','A1','A2'] ])
 # replace specified field
 nansatOGR.create_fields(fieldNames=['int'], fieldValues=[[500]], featureID=[1])
+# save to a file
+ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource, oFileName+'03_Lines.shp')
+
+# Create a nansatShape from shape file
+nansatOGR = Nansatshape(iFileName)
+# Get corner points (geometries of featuers) in the layer
+points, latlon = nansatOGR.get_corner_points(latlon=False)
+# print corner points
+print '-- Corner points --'
+for iPoint in points:
+    print iPoint
+
+
+
+
 
 
 

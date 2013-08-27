@@ -57,7 +57,7 @@ class Nansatmap(Basemap):
 
         '''
         self.domain = domain
-        
+
         # get proj4
         spatialRef = osr.SpatialReference()
         projection = domain._get_projection(domain.vrt.dataset)
@@ -98,13 +98,13 @@ class Nansatmap(Basemap):
                         'vandg':'vandg', 'vandg2':'vandg',
                         'vandg3':'vandg', 'vandg4':'vandg',
                      }.get(projStr, 'cyl')
-        
+
         if projection in ['stere']:
             lon_0 = float(re.findall('lon_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
             lat_0 = float(re.findall('lat_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
             kwargs['lon_0'] = lon_0
             kwargs['lat_0'] = lat_0
-            
+
         # set default values of ALL params of NansatMap
         self.d = {}
         # convolve
@@ -139,7 +139,7 @@ class Nansatmap(Basemap):
         self.lonMax = max(lonCrn)
         self.latMin = max(min(latCrn), -90.)
         self.latMax = min(max(latCrn), 90.)
-        
+
         if not('llcrnrlat' in kwargs.keys()):
             kwargs['llcrnrlat'] = self.latMin
         if not('urcrnrlat' in kwargs.keys()):
@@ -167,7 +167,7 @@ class Nansatmap(Basemap):
         self.colorbar = None
         self.mpl = []
         self.lon, self.lat, self.x, self.y = None, None, None, None
-        
+
 
     def smooth(self, idata, mode, **kwargs):
         '''Smooth data for contour() and contourf()
@@ -582,22 +582,22 @@ class Nansatmap(Basemap):
 
     def _create_lonlat_grids(self):
         '''Generate grids with lon/lat coordinates in each cell
-        
+
         Modifies
         ---------
         self.lon : numpy array with lon coordinates
-        self.lat : numpy array with lat coordinates        
+        self.lat : numpy array with lat coordinates
         '''
         if self.lon is None or self.lat is None:
             self.lon, self.lat = self.domain.get_geolocation_grids()
 
     def _create_xy_grids(self):
         '''Generate grids with x/y coordinates in each cell
-        
+
         Modifies
         ---------
         self.x : numpy array with X coordinates
-        self.y : numpy array with Y coordinates        
+        self.y : numpy array with Y coordinates
         '''
         self._create_lonlat_grids()
         if self.x is None or self.y is None:
