@@ -21,7 +21,10 @@ import inspect, os
 
 from nansat import Nansat, Figure
 
+# Get input and output file names
 from testio import testio
+iPath, iFileName, oPath, oFileName, shpFileName = testio()
+oFileName = oFileName+'figure_'
 
 '''Figrue class creates figure(png, jpg, tif, bmp) from numpy array
 
@@ -34,87 +37,80 @@ from testio import testio
         append legend, save to a file
 
 '''
-# Get input and output file names
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
-oFileName = oFileName+'figure_'
+def main():
+    # Create a Nansat object (n)
+    n = Nansat(iFileName)
+    # get numpy array from the Nansat object
+    array = n[1]
 
-# Create a Nansat object (n)
-n = Nansat(iFileName)
-# get numpy array from the Nansat object
-array = n[1]
+    # Create a Figure object (fig)
+    fig = Figure(array)
+    # Set minimum and maximum values
+    fig.process(cmin=10, cmax=60)
+    # Save the figure
+    fig.save(oFileName+'01_clim.png')
 
-# Create a Figure object (fig)
-fig = Figure(array)
-# Set minimum and maximum values
-fig.process(cmin=10, cmax=60)
-# Save the figure
-fig.save(oFileName+'01_clim.png')
+    # Create a Figure object (fig)
+    fig = Figure(array)
+    # Compute min and max valuse from ratio
+    clim = fig.clim_from_histogram(ratio=1.0)
+    # Set cmin and cmax values
+    fig.process(cmin=clim[0], cmax=clim[1])
+    # Save the figure
+    fig.save(oFileName+'02_clim.png')
 
+    # Create a Figure object (fig)
+    fig = Figure(array)
+    # Make indexed image with legend
+    fig.process(cmin=10, cmax=60, legend=True, titleString='NANSAT figure_test',
+             LEGEND_HEIGHT=0.3, fontSize=10)
+    # Save the figure
+    fig.save(oFileName+'03_title.png')
 
-# Create a Figure object (fig)
-fig = Figure(array)
-# Compute min and max valuse from ratio
-clim = fig.clim_from_histogram(ratio=1.0)
-# Set cmin and cmax values
-fig.process(cmin=clim[0], cmax=clim[1])
-# Save the figure
-fig.save(oFileName+'02_clim.png')
+    # Create a Figure object (fig)
+    fig = Figure(array)
+    # add logo to image to the lower left corner (make sure file is in the current folder)
+    fig.process(cmin=10, cmax=60, logoFileName='nansat_logo_s.png',
+                logoLocation=[10, -35], logoSize=[20, 20],
+                legend=True, LEGEND_HEIGHT=0.3)
+    # Save the figure
+    fig.save(oFileName + '04_logo.png')
 
+    # Create a Figure object (fig)
+    fig = Figure(array)
+    # Get lat/lon arrays from Nansat object (may take some time)
+    lonGrid, latGrid = n.get_geolocation_grids()
+    # Make figure with lat/lon grids
+    fig.process(cmin=10, cmax=60, latGrid=latGrid, lonGrid=lonGrid,
+                latlonGridSpacing=10, latlonLabels=10)
+    # save the fig
+    fig.save(oFileName + '05_latlon.png', )
 
-# Create a Figure object (fig)
-fig = Figure(array)
-# Make indexed image with legend
-fig.process(cmin=10, cmax=60, legend=True, titleString='NANSAT figure_test',
-         LEGEND_HEIGHT=0.3, fontSize=10)
-# Save the figure
-fig.save(oFileName+'03_title.png')
+    # Create a Figure object (fig)
+    fig = Figure(array)
+    # Get Nansat object with watermask
+    wm = n.watermask()
+    # Get array from Nansat object. 0 - land, 1 - water
+    wmArray = wm[1]
+    # Compute min and max valuse from ratio
+    clim = fig.clim_from_histogram(ratio=1.0)
+    # Make figure with land overlay (gray color) and apply brightness gamma correction
+    fig.process(cmin=clim[0], cmax=clim[1], mask_array=wmArray,
+                   mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
+    # save the fig
+    fig.save(oFileName + '06_land.png', )
 
+    # create 3D numpy array
+    array = np.array([array, n[2], n[3]])
+    # Create a Figure object (fig) from 3D array
+    fig = Figure(array)
+    # Compute min and max valuse from ratio
+    clim = fig.clim_from_histogram(ratio=0.9)
+    # Set cmin and cmax values
+    fig.process(cmin=clim[0], cmax=clim[1])
+    # make RGB image from bands 1,2,3 with brightness correction
+    fig.save(oFileName + '07_rgb.png', bands=[1,2,3])
 
-# Create a Figure object (fig)
-fig = Figure(array)
-# add logo to image to the lower left corner (make sure file is in the current folder)
-fig.process(cmin=10, cmax=60, logoFileName='nansat_logo_s.png',
-            logoLocation=[10, -35], logoSize=[20, 20],
-            legend=True, LEGEND_HEIGHT=0.3)
-# Save the figure
-fig.save(oFileName + '04_logo.png')
+    print '\n***figure_test completed successfully. Output files are found here:' + oFileName
 
-
-# Create a Figure object (fig)
-fig = Figure(array)
-# Get lat/lon arrays from Nansat object (may take some time)
-lonGrid, latGrid = n.get_geolocation_grids()
-# Make figure with lat/lon grids
-fig.process(cmin=10, cmax=60, latGrid=latGrid, lonGrid=lonGrid,
-            latlonGridSpacing=10, latlonLabels=10)
-# save the fig
-fig.save(oFileName + '05_latlon.png', )
-
-
-# Create a Figure object (fig)
-fig = Figure(array)
-# Get Nansat object with watermask
-wm = n.watermask()
-# Get array from Nansat object. 0 - land, 1 - water
-wmArray = wm[1]
-# Compute min and max valuse from ratio
-clim = fig.clim_from_histogram(ratio=1.0)
-# Make figure with land overlay (gray color) and apply brightness gamma correction
-fig.process(cmin=clim[0], cmax=clim[1], mask_array=wmArray,
-               mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
-# save the fig
-fig.save(oFileName + '06_land.png', )
-
-
-# create 3D numpy array
-array = np.array([array, n[2], n[3]])
-# Create a Figure object (fig) from 3D array
-fig = Figure(array)
-# Compute min and max valuse from ratio
-clim = fig.clim_from_histogram(ratio=0.9)
-# Set cmin and cmax values
-fig.process(cmin=clim[0], cmax=clim[1])
-# make RGB image from bands 1,2,3 with brightness correction
-fig.save(oFileName + '07_rgb.png', bands=[1,2,3])
-
-print 'figure_test completed successfully. Output files are found here:' + oFileName
+main()

@@ -22,7 +22,11 @@ import inspect, os
 from nansat import Nansat
 from nansat_tools import PointBrowser
 
-''' Pointbrowser class fetch the coordinates of cliked points on the image
+# Get input and output filenames
+from testio import testio
+iPath, iFileName, oPath, oFileName, shpFileName = testio()
+
+''' Pointbrowser class fetches coordinates of cliked points on the image
 
     PointBrowser object is created by a numpy array.
     When get_points() is called, an image is shown automatically.
@@ -30,39 +34,38 @@ from nansat_tools import PointBrowser
     Fetch the coodrdinates of the clicked points.
 
 '''
-# Get input and output filenames
-from testio import testio
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
+def main():
+    # Create a Nansat object (n)
+    n = Nansat(iFileName)
+    # get numpy array from the Nansat object
+    array = n[1]
 
-# Create a Nansat object (n)
-n = Nansat(iFileName)
-# get numpy array from the Nansat object
-array = n[1]
+    # Create browser object
+    browser = PointBrowser(array)
+    # Choose points by clicking the fig
+    browser.get_points()
+    # Get coordinates of the clicked points
+    points = browser.coordinates
+    # Print coordinates
+    print '1: Coordinates of Clicked Points ---'
+    for iPoint in points:
+        print iPoint
+    print ''
 
-# Create browser object
-browser = PointBrowser(array)
-# Choose points by clicking the fig
-browser.get_points()
-# Get coordinates of the clicked points
-points = browser.coordinates
-# Print coordinates
-print '1: Coordinates of Clicked Points ---'
-for iPoint in points:
-    print iPoint
-print ''
+    # Create browser object setting vmin and vmax of the image
+    browser = PointBrowser(array, vmin=10.0, vmax=50.0)
+    # Choose points by clicking the fig
+    browser.get_points()
+    # Get coordinates of the clicked points
+    points = browser.coordinates
+    # Print coordinates
+    print '2: Coordinates of Clicked Points ---'
+    for iPoint in points:
+        print iPoint
 
+    print '\n*** pointbrowser_test completed successfully.'
 
-# Create browser object setting vmin and vmax of the image
-browser = PointBrowser(array, vmin=10.0, vmax=50.0)
-# Choose points by clicking the fig
-browser.get_points()
-# Get coordinates of the clicked points
-points = browser.coordinates
-# Print coordinates
-print '2: Coordinates of Clicked Points ---'
-for iPoint in points:
-    print iPoint
-
+main()
 
 
 
