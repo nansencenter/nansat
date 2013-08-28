@@ -19,6 +19,15 @@
 from nansat_tools import *
 
 class Nansatshape():
+    ''' Nansatshape class read and write ESRI-shape files
+
+        The core of Nansatshape is a OGR. the main functions of the class are
+        1. Create empty object in memory and add data (fields and geometory).
+        2. Open shape file and read the data.
+
+        Nansatshape support points, line and ploygons. (not mupti-polygon)
+
+    '''
     def __init__(self, fileName=None, layerNum=0, layerName='NansatLayer', srs=None, wkt=None, wkbStyle=ogr.wkbPoint):
         '''Create Nansatshape object
 

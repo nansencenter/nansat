@@ -1,25 +1,49 @@
 #!/usr/bin/env python
+# Name:    nansatmap_test.py
+# Purpose: Tutorial for nansatmap class
+# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
+#               Morten W. Hansen, Alexander Myasoyedov,
+#               Dmitry Petrenko, Evgeny Morozov
+# Created:      29.06.2011
+# Copyright:    (c) NERSC 2011 - 2013
+# Licence:
+# This file is part of NANSAT.
+# NANSAT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+# http://www.gnu.org/licenses/gpl-3.0.html
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
 
 from nansat import Nansat, Domain, Nansatmap
-#from nansat_map import NansatMap
 
-# input and output file names
-iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-iFileName = os.path.join(iPath, 'map.tif')
-print 'Input file: ', iFileName
-oFileName = os.path.join(iPath, 'tmpdata', 'outputmap_')
-print 'Output file prefix: ', oFileName
+''' Nansatmap class perform opeartions with graphical files:
+    create, add legend and geolocation_grids, save.
+
+    The core of Nansatmap is Basemap.
+    Nansatmap object is created based on Domain object.
+    This class has methods as: filled contour plot, line contour plot,
+    pseudo-color plot, quiver plot and save.
+
+
+'''
+# Get input and output filenames
+from testio import testio
+iPath, iFileName, oPath, oFileName, shpFileName = testio()
+oFileName = oFileName+'nansatmap_'
 
 # Create a Nansat object (n)
 n = Nansat(iFileName)
 # Get data from 1st, 2nd and 3rd bands as numpy array (u,v and w)
 u = n[1]; v = n[2]; w = n[3]
 
-
+# Create Nansatmap object from nansat (domain) object
 nMap = Nansatmap(n)
 # draw filled contour plot
 nMap.contourf(w)
@@ -30,15 +54,16 @@ nMap.add_colorbar(fontsize=10)
 # add geocoordinates
 nMap.drawgrid()
 # save to a file
-nMap.save(oFileName+'contourf_contour.png', landmask=False)
+nMap.save(oFileName+'01_contourf_contour.png', landmask=False)
 
-
+# Create Nansatmap object from nansat (domain) object
 nMap = Nansatmap(n, resolution='h')
 # pseudo-color plot over the map
 nMap.pcolormesh(w)
 # quiver plot
 nMap.quiver(u, v, quivectors=20)
-nMap.save(oFileName+'pcolormesh_quiver.png')
+# save to a file
+nMap.save(oFileName+'02_pcolormesh_quiver.png')
 
 # use Nansatmap for converting lon/lat into x/y
 # 1. Create domain over the area of interest in stereographic projection
@@ -52,5 +77,6 @@ x, y = nmap([0, 2, 4], [63, 64, 65])
 # 4 or from x/y into lon/lat
 lon, lat = nmap(x, y, inverse=True)
 
-
 #n.write_map(grid='w', contour='w', smooth=true, quiver=('u','v'), step=5)
+
+print 'nansatmap_test completed successfully. Output files are found here:' + oFileName

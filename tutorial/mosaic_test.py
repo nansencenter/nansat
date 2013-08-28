@@ -23,15 +23,20 @@ import inspect, os
 import glob
 import datetime as dt
 
-from nansat import Nansat, Domain, Mosaic
+from nansat import Nansat, Domain #, Mosaic
+from mosaic import Mosaic
 
+# Get input and output filenames
 from testio import testio
-iPath, iFileName, oPath, oFileName = testio()
+iPath, iFileName, oPath, oFileName, shpFileName = testio()
+oFileName = oFileName+'mosaic'
 
 print iPath
 
 # Create target domain
-domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
+#domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
+
+domain = Domain('+proj=longlat +datum=WGS84 +no_defs ' , '-lle 27 70 31 72 -ts 1400 1300')
 
 # A. Perform averaging of several files
 # 1. Create destination Nansat object with desired projection
@@ -41,7 +46,7 @@ nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
 # 3. Get mask of valid pixels
 mask = nMosaic['mask']
 # 4. Output averaged data using the mask
-nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
+nMosaic.write_figure(fileName=oFileName + '.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
                         mask_array=mask, mask_lut={0:[128,128,128]})
 # 5. Get values of standard deviation from averaging of input files
 L_469_std = nMosaic['L_469_std']
@@ -58,7 +63,9 @@ nMosaic.latest(['gcps.tif', 'stere.tif'])
 # create new Mosaic
 nMosaic = Mosaic(domain=domain, logLevel=0)
 # define period
-period = [dt.datetime(2011, 8, 15, 0, 0), dt.datetime(2011, 8, 15, 23, 59)] 
+period = [dt.datetime(2011, 8, 15, 0, 0), dt.datetime(2011, 8, 15, 23, 59)]
 # run averaging of only files within period.
 # Only gcps.tif will be averaged since stere.tif has no time information
 nMosaic.average(['gcps.tif', 'stere.tif'], period=period)
+
+print 'mosaic_test completed successfully. Output files are found here:' + oFileName

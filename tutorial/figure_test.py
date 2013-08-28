@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# Name:    tutorial.py
-# Purpose: Tutorial with list of examples
+# Name:    figure_test.py
+# Purpose: Tutorial for figrue class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
@@ -21,13 +21,22 @@ import inspect, os
 
 from nansat import Nansat, Figure
 
-# input and output file names
-iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-#iFileName = os.path.join(iPath, 'map.tif')
-iFileName = os.path.join(iPath, 'gcps.tif')
-print 'Input file: ', iFileName
-oFileName = os.path.join(iPath, 'tmpdata', 'outputfig_')
-print 'Output file prefix: ', oFileName
+from testio import testio
+
+'''Figrue class creates figure(png, jpg, tif, bmp) from numpy array
+
+    Figure object is created by numpy array.
+    This class consequently create a figrue from 2D numpy array (1band) or
+    an RGB figure from 3D numpy array (3bands)
+
+    This class has fllolowing methods:
+        estimate min/max, apply logarithmic scaling, convert to uint8,
+        append legend, save to a file
+
+'''
+# Get input and output file names
+iPath, iFileName, oPath, oFileName, shpFileName = testio()
+oFileName = oFileName+'figure_'
 
 # Create a Nansat object (n)
 n = Nansat(iFileName)
@@ -58,14 +67,14 @@ fig = Figure(array)
 fig.process(cmin=10, cmax=60, legend=True, titleString='NANSAT figure_test',
          LEGEND_HEIGHT=0.3, fontSize=10)
 # Save the figure
-fig.save(oFileName+'03.png')
+fig.save(oFileName+'03_title.png')
 
 
 # Create a Figure object (fig)
 fig = Figure(array)
 # add logo to image to the lower left corner (make sure file is in the current folder)
 fig.process(cmin=10, cmax=60, logoFileName='nansat_logo_s.png',
-            logoLocation=[10, -10], logoSize=[70, 70],
+            logoLocation=[10, -35], logoSize=[20, 20],
             legend=True, LEGEND_HEIGHT=0.3)
 # Save the figure
 fig.save(oFileName + '04_logo.png')
@@ -107,3 +116,5 @@ clim = fig.clim_from_histogram(ratio=0.9)
 fig.process(cmin=clim[0], cmax=clim[1])
 # make RGB image from bands 1,2,3 with brightness correction
 fig.save(oFileName + '07_rgb.png', bands=[1,2,3])
+
+print 'figure_test completed successfully. Output files are found here:' + oFileName

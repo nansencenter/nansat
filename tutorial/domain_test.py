@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# Name:    tutorial.py
-# Purpose: Tutorial with list of examples
+# Name:    domain_test.py
+# Purpose: Tutorial for Domain class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
@@ -21,18 +21,43 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
 
-from nansat import Nansat, Domain, Mosaic
+from nansat import Nansat, Domain#, Mosaic
+from mosaic import Mosaic
 
-# input and output file names
-iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-iFileName = os.path.join(iPath, 'gcps.tif')
-print 'Input file: ', iFileName
-oPath = os.path.join(iPath, 'tmpdata')
-print 'Output path:', oPath
-if not os.path.exists(oPath):
-    os.mkdir(oPath)
-oFileName = os.path.join(oPath, 'output_')
-print 'Output file:', oFileName
+''' Domain class is a container for geographical reference of a raster
+
+    A Domain object describes all attributes of geographical
+    reference of a raster:
+        width and height, pixel size,
+        relation between pixel/line coordinates and geographical coordinates,
+        type of data projection (e.g. geographical or stereographic)
+
+    The core of Domain is a GDAL Dataset with no bands.
+    It has only georeference information: rasterXsize, rasterYsize,
+    GeoTransform and Projection or GCPs, etc. which fully describe dimentions
+    and spatial reference of the grid.
+
+    There are three ways to store geo-reference in a GDAL dataset:
+      * Using GeoTransfrom
+      * Using GCPs
+      * Using Geolocation Array
+    The relation between X/Y coordinates of the raster and latitude/longitude
+    coordinates is defined by projection type and projection parameters.
+    These pieces of information are therefore stored in Domain:
+      * Type and parameters of projection +
+      * GeoTransform or GCPs or GeolocationArrays
+
+    Domain has methods for basic operations with georeference information:
+      * creating georeference from input options;
+      * fetching corner, border or full grids of X/Y coordinates;
+      * making map of the georeferenced grid in a PNG or KML file;
+      * and some more...
+
+'''
+# Get input and output file names
+from testio import testio
+iPath, iFileName, oPath, oFileName, shpFileName = testio()
+oFileName = oFileName+'domain_'
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
@@ -48,10 +73,10 @@ n = Nansat(iFileName, mapperName='generic', logLevel=10)
 # 2. Reproject the Nansat object
 # 3. Make simple image
 dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", "-te 25 70 35 72 -ts 2000 2000")
-dLatlong.write_map(oFileName + '_latlong_map.png')
+dLatlong.write_map(oFileName + '01_latlong_map.png')
 print 'Latlong Domain:', dLatlong
 n.reproject(dLatlong)
-n.write_figure(oFileName + '_pro_latlon.png')
+n.write_figure(oFileName + '02_pro_latlon.png')
 
 # Reprojected image into stereographic projection
 # 1. Cancel previous reprojection
@@ -66,36 +91,37 @@ meanLat = sum(lats, 0.0) / 4.
 srsString = "+proj=stere +lon_0=%f +lat_0=%f +k=1 +ellps=WGS84 +datum=WGS84 +no_defs" % (meanLon, meanLat)
 extentString = '-lle %f %f %f %f -tr 100 100' % (min(lons), min(lats), max(lons), max(lats))
 dStereo = Domain(srsString, extentString) # 3.
-dStereo.write_map(oFileName + '_stereo_map.png')
+dStereo.write_map(oFileName + '03_stereo_map.png')
 print 'Stereo Domain:', dStereo
 n.reproject(dStereo, 2) # 4.
-n.write_figure(oFileName + '_pro_stereo.png') # 5.
+n.write_figure(oFileName + '04_pro_stereo.png') # 5.
 
 # Reproject onto grid of another file (destination file is projected)
 n2 = Nansat('stere.tif')
 n.reproject(n2)
-n.write_figure(fileName=oFileName + '_proj_1onto2.png', bands=[1,2,3], clim='hist')
+n.write_figure(fileName=oFileName + '05_proj_1onto2.png', bands=[1,2,3], clim='hist')
 
 # Reproject onto grid of another file (destination file is in swath projection)
 n.reproject()
 n2.reproject(n)
-n2.write_figure(fileName=oFileName + '_proj_2onto1.png', bands=[1,2,3], clim='hist')
+n2.write_figure(fileName=oFileName + '06_proj_2onto1.png', bands=[1,2,3], clim='hist')
 
 # Reproject onto grids of lat/lon
+lonGrid, latGrid = n.get_geolocation_grids()
 dFromGrids = Domain(lon=lonGrid, lat=latGrid)
 n2.reproject(dFromGrids)
-n2.write_figure(fileName=oFileName + '_proj_on_grid.png', bands=[1,2,3], clim='hist')
+n2.write_figure(fileName=oFileName + '07_proj_on_grid.png', bands=[1,2,3], clim='hist')
 
 # reproject onto automatically generated domain
 dstDomainAuto = Domain(srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", ds=n.raw.dataset)
 n.reproject(dstDomainAuto)
-n.write_figure(fileName=oFileName + '_proj_1auto.png', bands=[1,2,3], clim='hist')
+n.write_figure(fileName=oFileName + '08_proj_1auto.png', bands=[1,2,3], clim='hist')
 
 # export all data into NetCDF format
-n.export(oFileName + '_0.nc')
+n.export(oFileName + '08.nc')
 
 # export one band to GeoTIFF
-n.export_band(oFileName + '_2.tif', bandID=2, driver='GTiff')
+n.export_band(oFileName + '08.tif', bandID=2, driver='GTiff')
 
 # create new object from given domain and array
 # 1. Reproject the current object
@@ -145,12 +171,12 @@ wmArray = wm[1]                                                     # 7.
 #transparency: int
 #transparency of the image background, set for PIL in Figure.save()
 #default transparent color is [0,0,0]
-n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
+n.write_figure(fileName=oFileName + '09_proj.png', bands=[1,2,3],
                mask_array=wmArray, mask_lut={0: [128, 128, 128]},
                clim='hist', transparency=[128, 128, 128])           # 8.
 
 # make KML file for the exported image
-n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
+n.write_kml_image(kmlFileName=oFileName + '10.kml', kmlFigureName=oFileName + '_proj.png')
 
 # Perform batch averaging of several files
 # 1. Create destination Nansat object with desired projection
@@ -160,7 +186,7 @@ nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
 # 3. Get mask of non-valid pixels
 mask = nMosaic['mask']
 # 4. Output averaged data using the mask
-nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
+nMosaic.write_figure(fileName=oFileName + '11_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
                         mask_array=mask, mask_lut={0:[128,128,128]})
 
 print 'domain_test completed successfully. Output files are found here:' + oFileName
