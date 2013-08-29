@@ -252,8 +252,25 @@ class Nansatmap(Basemap):
                              np.around(validValues[1], decimals=decimals))
         return interval
 
-    def _do_contour(self, bmfunc, data, interval, smooth, mode, **kwargs):
+    def _do_contour(self, bmfunc, data, v, smooth, mode, **kwargs):
         ''' Prepare data and make contour or contourf plots
+
+        1. Smooth data
+        1. Add colormap
+        1. Append contour or contourf plot to self.mpl
+        
+        bmfunc : Basemap function
+            Basemap.contour, Basemap.contourf
+        data : numpy 2D array
+            Input data
+        v : list with values
+            draw contour lines at the values specified in sequence v
+        smooth : Boolean
+            Apply smoothing?
+        mode : string
+            'gaussian', 'spline', 'fourier', 'convolve'
+            mname of smoothing algorithm to apply
+
         '''
         self._create_xy_grids()
 
@@ -266,14 +283,14 @@ class Nansatmap(Basemap):
             data = self.smooth(data, mode, **kwargs)
 
         # draw contour lines
-        if  interval is None:
+        if  v is None:
             self.mpl.append(bmfunc(self, self.x, self.y, data, **kwargs))
         else:
-            self.mpl.append(bmfunc(self, self.x, self.y, data, interval, **kwargs))
+            self.mpl.append(bmfunc(self, self.x, self.y, data, v, **kwargs))
         
-    def contour(self, data, interval=None,
+    def contour(self, data, v=None,
                 smooth=False, mode='gaussian',
-                label=True, inline=True, fontsize=3, **kwargs):
+                label=True, **kwargs):
         '''Draw lined contour plots
 
         If smooth is True, data is smoothed. Then draw lined contour.
@@ -282,60 +299,54 @@ class Nansatmap(Basemap):
         ----------
         data : numpy 2D array
             Input data
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        ticks : int
-            number of ticks on the colorbar
-        decimals : int
-            decimals of scale on the colorbar
+        v : list with values
+            draw contour lines at the values specified in sequence v
         smooth : Boolean
             Apply smoothing?
         mode : string
             'gaussian', 'spline', 'fourier', 'convolve'
-        label : Boolean
-            Add labels?
-        inline : Boolean
-            Lables should be inline?
-        fontsize : int
-            Size of label font
-        Parameters for Nansatmap.smooth()
-
+            mname of smoothing algorithm to apply
+        label : boolean
+            Add lables?
+        **kwargs:
+            Optional parameters for Nansatmap.smooth()
+            Optional parameters for pyplot.contour().
+            Optional parameters for pyplot.clabel()
+            
         Modifies
         ---------
         self.mpl : list
             append QuadContourSet instance
-
         '''
 
-        self._do_contour(Basemap.contour, data, interval, smooth, mode, **kwargs)
+
+        self._do_contour(Basemap.contour, data, v, smooth, mode, **kwargs)
 
         # add lables to the contour lines
         if label:
-            plt.clabel(self.mpl[-1], inline=inline, fontsize=fontsize)
+            plt.clabel(self.mpl[-1], **kwargs)
 
-    def contourf(self, data, interval=None,
+    def contourf(self, data, v=None,
                  smooth=False, mode='gaussian', **kwargs):
         '''Draw filled contour plots
 
-        If smooth is True, data is smoothed. Then draw lined contour.
+        If smooth is True, data is smoothed. Then draw filled contour.
 
         Parameters
         ----------
         data : numpy 2D array
             Input data
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        ticks : int
-            number of ticks on the colorbar
-        decimals : int
-            decimals of scale on the colorbar
+        v : list with values
+            draw contour lines at the values specified in sequence v
         smooth : Boolean
             Apply smoothing?
         mode : string
             'gaussian', 'spline', 'fourier', 'convolve'
-        interval : numpy array
-            tick for colorbar
-        Parameters for Nansatmap.smooth()
+            mname of smoothing algorithm to apply
+        **kwargs:
+            cmap : colormap (e.g. cm.jet)
+            Optional parameters for Nansatmap.smooth()
+            Optional parameters for pyplot.contourf().
 
         Modifies
         ---------
@@ -343,7 +354,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
-        self._do_contour(Basemap.contourf, data, interval, smooth, mode, **kwargs)
+        self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl)-1
 
     def pcolormesh(self, data, validValues=None, **kwargs):

@@ -25,7 +25,7 @@ interval = range(6,15) #np.arange(6, 21)
 w[w>20] = np.nan
 nMap.contourf(w, interval)
 # draw black smooth contour plot with labels
-nMap.contour(w, smooth=True, fontsize=8, colors='k')
+nMap.contour(w, smooth=True, fontsize=8, colors='k', fmt='%2.1f')
 # add colorbar
 nMap.add_colorbar(fontsize=10)
 # add geocoordinates
