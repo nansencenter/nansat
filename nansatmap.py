@@ -252,7 +252,26 @@ class Nansatmap(Basemap):
                              np.around(validValues[1], decimals=decimals))
         return interval
 
-    def contour(self, data, validValues=None, ticks=7, decimals=0,
+    def _do_contour(self, bmfunc, data, interval, smooth, mode, **kwargs):
+        ''' Prepare data and make contour or contourf plots
+        '''
+        self._create_xy_grids()
+
+        # if cmap is given, set to self.cmap
+        if 'cmap' in kwargs.keys():
+            self.cmap = kwargs.pop('cmap')
+        
+        # smooth data
+        if smooth:
+            data = self.smooth(data, mode, **kwargs)
+
+        # draw contour lines
+        if  interval is None:
+            self.mpl.append(bmfunc(self, self.x, self.y, data, **kwargs))
+        else:
+            self.mpl.append(bmfunc(self, self.x, self.y, data, interval, **kwargs))
+        
+    def contour(self, data, interval=None,
                 smooth=False, mode='gaussian',
                 label=True, inline=True, fontsize=3, **kwargs):
         '''Draw lined contour plots
@@ -287,28 +306,14 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
-        self._create_xy_grids()
-        # smooth data
-        if smooth:
-            data = self.smooth(data, mode, **kwargs)
 
-        # if data include NaN, set validValues and Replace Nan to a number
-        if np.any(np.isnan(data.flatten())):
-            data, validValues = self._nan_to_num(data, validValues)
-
-        # draw contour lines
-        if  validValues is None:
-            self.mpl.append(Basemap.contour(self, self.x, self.y, data, **kwargs))
-        else:
-            # Create a colorbar interval, if validValues is given
-            interval = self.get_interval(validValues, ticks, decimals)
-            self.mpl.append(Basemap.contour(self, self.x, self.y, data, interval, **kwargs))
+        self._do_contour(Basemap.contour, data, interval, smooth, mode, **kwargs)
 
         # add lables to the contour lines
         if label:
             plt.clabel(self.mpl[-1], inline=inline, fontsize=fontsize)
 
-    def contourf(self, data, validValues=None, ticks=7, decimals=0,
+    def contourf(self, data, interval=None,
                  smooth=False, mode='gaussian', **kwargs):
         '''Draw filled contour plots
 
@@ -338,35 +343,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
-        self._create_xy_grids()
-        # if cmap is given, set to self.cmap
-        if 'cmap' in kwargs.keys():
-            self.cmap = kwargs.pop('cmap')
-
-        # smooth data
-        if smooth:
-            data = self.smooth(data, mode, **kwargs)
-
-        # if data include NaN, set validValues and Replace Nan to a number
-        if np.any(np.isnan(data.flatten())):
-            data, validValues = self._nan_to_num(data, validValues)
-
-        # draw filled contour
-        if  validValues is None:
-            self.mpl.append(Basemap.contourf(self, self.x, self.y, data,
-                                             cmap=self.cmap, **kwargs))
-        else:
-            # if validValues is given create a colorbar interval
-            interval = self.get_interval(validValues, ticks, decimals)
-            # !!NB!! filled color is ">" validValues[0]. validValues[0] is not inclueded.
-            #        Adjust the data with validValues[0] by adding a small value.
-            #        Should be modified.
-            if str(data.dtype)[0:3] == 'int':
-                data[data==validValues[0]] = validValues[0] + 1
-            else:
-                data[data==validValues[0]] = validValues[0] + (validValues[1]-validValues[0])/10000
-            self.mpl.append(Basemap.contourf(self, self.x, self.y, data,
-                                         interval, cmap=self.cmap, **kwargs))
+        self._do_contour(Basemap.contourf, data, interval, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl)-1
 
     def pcolormesh(self, data, validValues=None, **kwargs):

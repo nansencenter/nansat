@@ -21,7 +21,9 @@ u = n[1]; v = n[2]; w = n[3]
 
 nMap = Nansatmap(n)
 # draw filled contour plot
-nMap.contourf(w)
+interval = range(6,15) #np.arange(6, 21)
+w[w>20] = np.nan
+nMap.contourf(w, interval)
 # draw black smooth contour plot with labels
 nMap.contour(w, smooth=True, fontsize=8, colors='k')
 # add colorbar
@@ -31,6 +33,7 @@ nMap.drawgrid()
 # save to a file
 nMap.save(oFileName+'contourf_contour.png', landmask=False)
 
+raise
 
 nMap = Nansatmap(n, resolution='h')
 # pseudo-color plot over the map
