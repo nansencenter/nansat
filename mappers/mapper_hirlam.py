@@ -24,7 +24,6 @@ class Mapper(VRT):
                         },
                      'dst': {
                          'wkv': 'eastward_wind', 
-                         'name': 'east_wind', 
                          'height': '10 m'
                          }
                      },
@@ -35,7 +34,6 @@ class Mapper(VRT):
                         },
                      'dst': {
                              'wkv': 'northward_wind', 
-                             'name': 'north_wind', 
                              'height': '10 m'
                              }
                      },

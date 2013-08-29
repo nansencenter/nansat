@@ -24,12 +24,10 @@ class Mapper(VRT):
                     {'src': {'SourceFilename': fileName,
                              'SourceBand': 8},
                      'dst': {'wkv': 'eastward_wind',
-                             'name': 'east_wind',
                              'height': '10 m'}},
                     {'src': {'SourceFilename': fileName,
                              'SourceBand': 9},
                      'dst': {'wkv': 'northward_wind',
-                             'name': 'north_wind',
                              'height': '10 m'}},
                     {
                         'src': [{

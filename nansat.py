@@ -326,6 +326,12 @@ class Nansat(Domain):
 
         return b
 
+    def has_band(self,band):
+        for b in self.bands():
+            if self.bands()[b]['name']==band:
+                return True
+        return False
+
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
                addGCPs=True, driver='netCDF'):
         '''Export Nansat object into netCDF or GTiff file
