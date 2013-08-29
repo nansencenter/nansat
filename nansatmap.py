@@ -28,6 +28,33 @@ class Nansatmap(Basemap):
     save to a file.
 
     '''
+    # general attributes
+    cmap = cm.jet
+    colorbar = None
+    mpl = []
+    lon, lat, x, y = None, None, None, None
+    # parameters for smoothing
+    # convolve
+    convolve_weightSize = 7
+    convolve_weights = None
+    convolve_mode = 'reflect'
+    convolve_cval = 0.0
+    convolve_origin = 0
+    # fourier_gaussian
+    fourier_sigma = 1.0
+    fourier_n = -1
+    fourier_axis = -1
+    # spline
+    spline_order = 3
+    spline_axis = -1
+    # gaussian filter
+    gaussian_sigma = 2.5
+    gaussian_order = 0
+    gaussian_mode = 'reflect'
+    gaussian_cval = 0.0
+    # saving parameters
+    DEFAULT_EXTENSION = '.png'
+            
     def __init__(self, domain, **kwargs):
         ''' Set attributes
         Get proj4 from the given domain and convert the proj4 projection to
@@ -105,29 +132,6 @@ class Nansatmap(Basemap):
             kwargs['lon_0'] = lon_0
             kwargs['lat_0'] = lat_0
             
-        # set default values of ALL params of NansatMap
-        self.d = {}
-        # convolve
-        self.d['convolve_weightSize'] = 7
-        self.d['convolve_weights'] = None
-        self.d['convolve_mode'] = 'reflect'
-        self.d['convolve_cval'] = 0.0
-        self.d['convolve_origin'] = 0
-        # fourier_gaussian
-        self.d['fourier_sigma'] = 1.0
-        self.d['fourier_n'] = -1
-        self.d['fourier_axis'] = -1
-        # spline
-        self.d['spline_order'] = 3
-        self.d['spline_axis'] = -1
-        # gaussian filter
-        self.d['gaussian_sigma'] = 2.5
-        self.d['gaussian_order'] = 0
-        self.d['gaussian_mode'] = 'reflect'
-        self.d['gaussian_cval'] = 0.0
-        # save
-        self.d['DEFAULT_EXTENSION'] = '.png'
-
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 
@@ -162,13 +166,6 @@ class Nansatmap(Basemap):
         plt.close()
         self.fig = plt.figure(**figKwargs)
 
-        # set attributes
-        self.cmap = cm.jet
-        self.colorbar = None
-        self.mpl = []
-        self.lon, self.lat, self.x, self.y = None, None, None, None
-        
-
     def smooth(self, idata, mode, **kwargs):
         '''Smooth data for contour() and contourf()
 
@@ -197,64 +194,77 @@ class Nansatmap(Basemap):
 
         if mode == 'convolve':
             # if weight is None, create a weight matrix
-            if self.d['convolve_weights'] is None:
-                weights = np.ones((self.d['convolve_weightSize'],
-                                   self.d['convolve_weightSize']))
-                center = (self.d['convolve_weightSize'] - 1) / 2
+            if self.convolve_weights is None:
+                weights = np.ones((self.convolve_weightSize,
+                                   self.convolve_weightSize))
+                center = (self.convolve_weightSize - 1) / 2
                 for i in range(-(center), center+1, 1):
                     for j in range(-(center), center+1, 1):
                         weights[i][j] /= pow(2.0, max(abs(i),abs(j)))
-                self.d['convolve_weights'] = weights
+                self.convolve_weights = weights
             odata = ndimage.convolve(idata,
-                                    weights=self.d['convolve_weights'],
-                                    mode=self.d['convolve_mode'],
-                                    cval=self.d['convolve_cval'],
-                                    origin=self.d['convolve_origin'])
+                                    weights=self.convolve_weights,
+                                    mode=self.convolve_mode,
+                                    cval=self.convolve_cval,
+                                    origin=self.convolve_origin)
         elif mode == 'fourier':
             odata = ndimage.fourier_gaussian(idata,
-                                            sigma=self.d['fourier_sigma'],
-                                            n=self.d['fourier_n'],
-                                            axis=self.d['fourier_axis'])
+                                            sigma=self.fourier_sigma,
+                                            n=self.fourier_n,
+                                            axis=self.fourier_axis)
         elif mode == 'spline':
             odata = ndimage.spline_filter1d(idata,
-                                           order=self.d['spline_order'],
-                                           axis=self.d['spline_axis'])
+                                           order=self.spline_order,
+                                           axis=self.spline_axis)
         else:
             if mode != 'gaussian':
                 print 'apply Gaussian filter in image_process()'
             odata = ndimage.gaussian_filter(idata,
-                                           sigma=self.d['gaussian_sigma'],
-                                           order=self.d['gaussian_order'],
-                                           mode=self.d['gaussian_mode'],
-                                           cval=self.d['gaussian_cval'])
+                                           sigma=self.gaussian_sigma,
+                                           order=self.gaussian_order,
+                                           mode=self.gaussian_mode,
+                                           cval=self.gaussian_cval)
         return odata
 
-    def get_interval(self, validValues, ticks, decimals):
-        ''' Create colorbar scale
+    def _do_contour(self, bmfunc, data, v, smooth, mode, **kwargs):
+        ''' Prepare data and make contour or contourf plots
 
-        Parameters
-        ----------
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        ticks : int
-            number of ticks on the colorbar
-        decimals : int
-            decimals of scale on the colorbar
-
-        Returns
-        -------
-        interval : numpy array
+        1. Smooth data
+        1. Add colormap
+        1. Append contour or contourf plot to self.mpl
+        
+        bmfunc : Basemap function
+            Basemap.contour, Basemap.contourf
+        data : numpy 2D array
+            Input data
+        v : list with values
+            draw contour lines at the values specified in sequence v
+        smooth : Boolean
+            Apply smoothing?
+        mode : string
+            'gaussian', 'spline', 'fourier', 'convolve'
+            mname of smoothing algorithm to apply
 
         '''
-        step = (validValues[1]-validValues[0]) / ticks
-        interval = np.append(np.around(np.arange(validValues[0], validValues[1], step),
-                             decimals=decimals),
-                             np.around(validValues[1], decimals=decimals))
-        return interval
+        self._create_xy_grids()
 
-    def contour(self, data, validValues=None, ticks=7, decimals=0,
+        # if cmap is given, set to self.cmap
+        if 'cmap' in kwargs.keys():
+            self.cmap = kwargs.pop('cmap')
+        
+        # smooth data
+        if smooth:
+            data = self.smooth(data, mode, **kwargs)
+
+        # draw contour lines
+        if  v is None:
+            self.mpl.append(bmfunc(self, self.x, self.y, data, **kwargs))
+        else:
+            self.mpl.append(bmfunc(self, self.x, self.y, data, v, **kwargs))
+        
+    def contour(self, data, v=None,
                 smooth=False, mode='gaussian',
-                label=True, inline=True, fontsize=3, **kwargs):
+                label=True, **kwargs):
         '''Draw lined contour plots
 
         If smooth is True, data is smoothed. Then draw lined contour.
@@ -263,74 +273,54 @@ class Nansatmap(Basemap):
         ----------
         data : numpy 2D array
             Input data
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        ticks : int
-            number of ticks on the colorbar
-        decimals : int
-            decimals of scale on the colorbar
+        v : list with values
+            draw contour lines at the values specified in sequence v
         smooth : Boolean
             Apply smoothing?
         mode : string
             'gaussian', 'spline', 'fourier', 'convolve'
-        label : Boolean
-            Add labels?
-        inline : Boolean
-            Lables should be inline?
-        fontsize : int
-            Size of label font
-        Parameters for Nansatmap.smooth()
-
+            mname of smoothing algorithm to apply
+        label : boolean
+            Add lables?
+        **kwargs:
+            Optional parameters for Nansatmap.smooth()
+            Optional parameters for pyplot.contour().
+            Optional parameters for pyplot.clabel()
+            
         Modifies
         ---------
         self.mpl : list
             append QuadContourSet instance
-
         '''
-        self._create_xy_grids()
-        # smooth data
-        if smooth:
-            data = self.smooth(data, mode, **kwargs)
 
-        # if data include NaN, set validValues and Replace Nan to a number
-        if np.any(np.isnan(data.flatten())):
-            data, validValues = self._nan_to_num(data, validValues)
 
-        # draw contour lines
-        if  validValues is None:
-            self.mpl.append(Basemap.contour(self, self.x, self.y, data, **kwargs))
-        else:
-            # Create a colorbar interval, if validValues is given
-            interval = self.get_interval(validValues, ticks, decimals)
-            self.mpl.append(Basemap.contour(self, self.x, self.y, data, interval, **kwargs))
+        self._do_contour(Basemap.contour, data, v, smooth, mode, **kwargs)
 
         # add lables to the contour lines
         if label:
-            plt.clabel(self.mpl[-1], inline=inline, fontsize=fontsize)
+            plt.clabel(self.mpl[-1], **kwargs)
 
-    def contourf(self, data, validValues=None, ticks=7, decimals=0,
+    def contourf(self, data, v=None,
                  smooth=False, mode='gaussian', **kwargs):
         '''Draw filled contour plots
 
-        If smooth is True, data is smoothed. Then draw lined contour.
+        If smooth is True, data is smoothed. Then draw filled contour.
 
         Parameters
         ----------
         data : numpy 2D array
             Input data
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        ticks : int
-            number of ticks on the colorbar
-        decimals : int
-            decimals of scale on the colorbar
+        v : list with values
+            draw contour lines at the values specified in sequence v
         smooth : Boolean
             Apply smoothing?
         mode : string
             'gaussian', 'spline', 'fourier', 'convolve'
-        interval : numpy array
-            tick for colorbar
-        Parameters for Nansatmap.smooth()
+            mname of smoothing algorithm to apply
+        **kwargs:
+            cmap : colormap (e.g. cm.jet)
+            Optional parameters for Nansatmap.smooth()
+            Optional parameters for pyplot.contourf().
 
         Modifies
         ---------
@@ -338,35 +328,7 @@ class Nansatmap(Basemap):
             append QuadContourSet instance
 
         '''
-        self._create_xy_grids()
-        # if cmap is given, set to self.cmap
-        if 'cmap' in kwargs.keys():
-            self.cmap = kwargs.pop('cmap')
-
-        # smooth data
-        if smooth:
-            data = self.smooth(data, mode, **kwargs)
-
-        # if data include NaN, set validValues and Replace Nan to a number
-        if np.any(np.isnan(data.flatten())):
-            data, validValues = self._nan_to_num(data, validValues)
-
-        # draw filled contour
-        if  validValues is None:
-            self.mpl.append(Basemap.contourf(self, self.x, self.y, data,
-                                             cmap=self.cmap, **kwargs))
-        else:
-            # if validValues is given create a colorbar interval
-            interval = self.get_interval(validValues, ticks, decimals)
-            # !!NB!! filled color is ">" validValues[0]. validValues[0] is not inclueded.
-            #        Adjust the data with validValues[0] by adding a small value.
-            #        Should be modified.
-            if str(data.dtype)[0:3] == 'int':
-                data[data==validValues[0]] = validValues[0] + 1
-            else:
-                data[data==validValues[0]] = validValues[0] + (validValues[1]-validValues[0])/10000
-            self.mpl.append(Basemap.contourf(self, self.x, self.y, data,
-                                         interval, cmap=self.cmap, **kwargs))
+        self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl)-1
 
     def pcolormesh(self, data, validValues=None, **kwargs):
@@ -386,20 +348,8 @@ class Nansatmap(Basemap):
             append matplotlib.collections.QuadMesh object
 
         '''
-        # if data includes NaN, set validValues and Replace Nan to a number
-        if np.any(np.isnan(data.flatten())):
-            data, validValues = self._nan_to_num(data, validValues)
-
-        # if validValues is not None, apply mask with interval "validValues"
-        if validValues is not None:
-            mask = np.logical_or(data <= validValues[0], data >= validValues[1])
-            data = np.ma.array(data, mask=mask)
-            # set vmin and vmax if validValues is given
-            if not ('vmin' in kwargs.keys()):
-                kwargs['vmin'] = validValues[0]
-            if not ('vmax' in kwargs.keys()):
-                kwargs['vmax'] = validValues[1]
-
+        # mask nan data
+        data = np.ma.array(data, mask=np.isnan(data))
         # Plot a quadrilateral mesh.
         self._create_xy_grids()
         self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
@@ -427,7 +377,7 @@ class Nansatmap(Basemap):
         # if Nan is included, apply mask
         dataX = np.ma.array(dataX, mask=np.isnan(dataX))
         dataY = np.ma.array(dataY, mask=np.isnan(dataY))
-        # subsample for quiver plot
+        # subset grids for quiver plot
         step0 = dataX.shape[0]/quivectors
         step1 = dataX.shape[1]/quivectors
         dataX2 = dataX[::step0, ::step1]
@@ -531,54 +481,28 @@ class Nansatmap(Basemap):
 
         # set default extension
         if not((fileName.split('.')[-1] in self.extensionList)):
-            fileName = fileName + self.d['DEFAULT_EXTENSION']
+            fileName = fileName + self.DEFAULT_EXTENSION
         self.fig.savefig(fileName)
 
-    def _nan_to_num(self, data, validValues):
-        ''' NaN is replaced to a number and set validValues.
-
-        Parameters
-        -----------
-        data : numpy array
-        validValues : None or list with two scalars
-
-        returns
-        --------
-        data : numpy array
-        validValues : list with two scalars (min and max of valid values)
-
-        '''
-        if validValues is None:
-            validValues = [np.nanmin(data.flatten()), np.nanmax(data.flatten())]
-        data[np.isnan(data)] = validValues[0] - 999999
-
-        return data, validValues
-
-    def _set_defaults(self, kwargs):
+    def _set_defaults(self, idict):
         '''Check input params and set defaut values
 
-        Look throught default parameters (self.d) and given parameters (kwargs)
+        Look throught default parameters (self.d) and given parameters (dict)
         and paste value from input if the key matches
 
         Parameters
         ----------
-        kwargs : dictionary
+        idict : dictionary
             parameter names and values
-
-        Returns
-        --------
-        kwargs : dictionary
 
         Modifies
         ---------
-        self.d
+            default self attributes
 
         '''
-        keys = kwargs.keys()
-        for iKey in keys:
-            if iKey in self.d:
-                self.d[iKey] = kwargs.pop(iKey)
-        return kwargs
+        for key in idict:
+            if hasattr(self, key):
+                setattr(self, key, idict[key])
 
     def _create_lonlat_grids(self):
         '''Generate grids with lon/lat coordinates in each cell
