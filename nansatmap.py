@@ -28,6 +28,33 @@ class Nansatmap(Basemap):
     save to a file.
 
     '''
+    # general attributes
+    cmap = cm.jet
+    colorbar = None
+    mpl = []
+    lon, lat, x, y = None, None, None, None
+    # parameters for smoothing
+    # convolve
+    convolve_weightSize = 7
+    convolve_weights = None
+    convolve_mode = 'reflect'
+    convolve_cval = 0.0
+    convolve_origin = 0
+    # fourier_gaussian
+    fourier_sigma = 1.0
+    fourier_n = -1
+    fourier_axis = -1
+    # spline
+    spline_order = 3
+    spline_axis = -1
+    # gaussian filter
+    gaussian_sigma = 2.5
+    gaussian_order = 0
+    gaussian_mode = 'reflect'
+    gaussian_cval = 0.0
+    # saving parameters
+    DEFAULT_EXTENSION = '.png'
+            
     def __init__(self, domain, **kwargs):
         ''' Set attributes
         Get proj4 from the given domain and convert the proj4 projection to
@@ -105,29 +132,6 @@ class Nansatmap(Basemap):
             kwargs['lon_0'] = lon_0
             kwargs['lat_0'] = lat_0
             
-        # set default values of ALL params of NansatMap
-        self.d = {}
-        # convolve
-        self.d['convolve_weightSize'] = 7
-        self.d['convolve_weights'] = None
-        self.d['convolve_mode'] = 'reflect'
-        self.d['convolve_cval'] = 0.0
-        self.d['convolve_origin'] = 0
-        # fourier_gaussian
-        self.d['fourier_sigma'] = 1.0
-        self.d['fourier_n'] = -1
-        self.d['fourier_axis'] = -1
-        # spline
-        self.d['spline_order'] = 3
-        self.d['spline_axis'] = -1
-        # gaussian filter
-        self.d['gaussian_sigma'] = 2.5
-        self.d['gaussian_order'] = 0
-        self.d['gaussian_mode'] = 'reflect'
-        self.d['gaussian_cval'] = 0.0
-        # save
-        self.d['DEFAULT_EXTENSION'] = '.png'
-
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 
@@ -162,13 +166,6 @@ class Nansatmap(Basemap):
         plt.close()
         self.fig = plt.figure(**figKwargs)
 
-        # set attributes
-        self.cmap = cm.jet
-        self.colorbar = None
-        self.mpl = []
-        self.lon, self.lat, self.x, self.y = None, None, None, None
-        
-
     def smooth(self, idata, mode, **kwargs):
         '''Smooth data for contour() and contourf()
 
@@ -197,36 +194,36 @@ class Nansatmap(Basemap):
 
         if mode == 'convolve':
             # if weight is None, create a weight matrix
-            if self.d['convolve_weights'] is None:
-                weights = np.ones((self.d['convolve_weightSize'],
-                                   self.d['convolve_weightSize']))
-                center = (self.d['convolve_weightSize'] - 1) / 2
+            if self.convolve_weights is None:
+                weights = np.ones((self.convolve_weightSize,
+                                   self.convolve_weightSize))
+                center = (self.convolve_weightSize - 1) / 2
                 for i in range(-(center), center+1, 1):
                     for j in range(-(center), center+1, 1):
                         weights[i][j] /= pow(2.0, max(abs(i),abs(j)))
-                self.d['convolve_weights'] = weights
+                self.convolve_weights = weights
             odata = ndimage.convolve(idata,
-                                    weights=self.d['convolve_weights'],
-                                    mode=self.d['convolve_mode'],
-                                    cval=self.d['convolve_cval'],
-                                    origin=self.d['convolve_origin'])
+                                    weights=self.convolve_weights,
+                                    mode=self.convolve_mode,
+                                    cval=self.convolve_cval,
+                                    origin=self.convolve_origin)
         elif mode == 'fourier':
             odata = ndimage.fourier_gaussian(idata,
-                                            sigma=self.d['fourier_sigma'],
-                                            n=self.d['fourier_n'],
-                                            axis=self.d['fourier_axis'])
+                                            sigma=self.fourier_sigma,
+                                            n=self.fourier_n,
+                                            axis=self.fourier_axis)
         elif mode == 'spline':
             odata = ndimage.spline_filter1d(idata,
-                                           order=self.d['spline_order'],
-                                           axis=self.d['spline_axis'])
+                                           order=self.spline_order,
+                                           axis=self.spline_axis)
         else:
             if mode != 'gaussian':
                 print 'apply Gaussian filter in image_process()'
             odata = ndimage.gaussian_filter(idata,
-                                           sigma=self.d['gaussian_sigma'],
-                                           order=self.d['gaussian_order'],
-                                           mode=self.d['gaussian_mode'],
-                                           cval=self.d['gaussian_cval'])
+                                           sigma=self.gaussian_sigma,
+                                           order=self.gaussian_order,
+                                           mode=self.gaussian_mode,
+                                           cval=self.gaussian_cval)
         return odata
 
     def _do_contour(self, bmfunc, data, v, smooth, mode, **kwargs):
@@ -484,34 +481,28 @@ class Nansatmap(Basemap):
 
         # set default extension
         if not((fileName.split('.')[-1] in self.extensionList)):
-            fileName = fileName + self.d['DEFAULT_EXTENSION']
+            fileName = fileName + self.DEFAULT_EXTENSION
         self.fig.savefig(fileName)
 
-    def _set_defaults(self, kwargs):
+    def _set_defaults(self, idict):
         '''Check input params and set defaut values
 
-        Look throught default parameters (self.d) and given parameters (kwargs)
+        Look throught default parameters (self.d) and given parameters (dict)
         and paste value from input if the key matches
 
         Parameters
         ----------
-        kwargs : dictionary
+        idict : dictionary
             parameter names and values
-
-        Returns
-        --------
-        kwargs : dictionary
 
         Modifies
         ---------
-        self.d
+            default self attributes
 
         '''
-        keys = kwargs.keys()
-        for iKey in keys:
-            if iKey in self.d:
-                self.d[iKey] = kwargs.pop(iKey)
-        return kwargs
+        for key in idict:
+            if hasattr(self, key):
+                setattr(self, key, idict[key])
 
     def _create_lonlat_grids(self):
         '''Generate grids with lon/lat coordinates in each cell
