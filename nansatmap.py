@@ -229,29 +229,6 @@ class Nansatmap(Basemap):
                                            cval=self.d['gaussian_cval'])
         return odata
 
-    def get_interval(self, validValues, ticks, decimals):
-        ''' Create colorbar scale
-
-        Parameters
-        ----------
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        ticks : int
-            number of ticks on the colorbar
-        decimals : int
-            decimals of scale on the colorbar
-
-        Returns
-        -------
-        interval : numpy array
-
-        '''
-        step = (validValues[1]-validValues[0]) / ticks
-        interval = np.append(np.around(np.arange(validValues[0], validValues[1], step),
-                             decimals=decimals),
-                             np.around(validValues[1], decimals=decimals))
-        return interval
-
     def _do_contour(self, bmfunc, data, v, smooth, mode, **kwargs):
         ''' Prepare data and make contour or contourf plots
 
@@ -509,26 +486,6 @@ class Nansatmap(Basemap):
         if not((fileName.split('.')[-1] in self.extensionList)):
             fileName = fileName + self.d['DEFAULT_EXTENSION']
         self.fig.savefig(fileName)
-
-    def _nan_to_num(self, data, validValues):
-        ''' NaN is replaced to a number and set validValues.
-
-        Parameters
-        -----------
-        data : numpy array
-        validValues : None or list with two scalars
-
-        returns
-        --------
-        data : numpy array
-        validValues : list with two scalars (min and max of valid values)
-
-        '''
-        if validValues is None:
-            validValues = [np.nanmin(data.flatten()), np.nanmax(data.flatten())]
-        data[np.isnan(data)] = validValues[0] - 999999
-
-        return data, validValues
 
     def _set_defaults(self, kwargs):
         '''Check input params and set defaut values
