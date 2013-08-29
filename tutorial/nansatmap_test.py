@@ -21,9 +21,7 @@ u = n[1]; v = n[2]; w = n[3]
 
 nMap = Nansatmap(n)
 # draw filled contour plot
-interval = range(6,15) #np.arange(6, 21)
-w[w>20] = np.nan
-nMap.contourf(w, interval)
+nMap.contourf(w, range(6,23))
 # draw black smooth contour plot with labels
 nMap.contour(w, smooth=True, fontsize=8, colors='k', fmt='%2.1f')
 # add colorbar
@@ -32,16 +30,16 @@ nMap.add_colorbar(fontsize=10)
 nMap.drawgrid()
 # save to a file
 nMap.save(oFileName+'contourf_contour.png', landmask=False)
-
 raise
 
 nMap = Nansatmap(n, resolution='h')
 # pseudo-color plot over the map
 nMap.pcolormesh(w)
 # quiver plot
-nMap.quiver(u, v, quivectors=20)
+nMap.quiver(v, u, quivectors=20)
 nMap.save(oFileName+'pcolormesh_quiver.png')
 
+raise
 # use Nansatmap for converting lon/lat into x/y
 # 1. Create domain over the area of interest in stereographic projection
 extentString = '-lle -10 50 20 70 -tr 1000 1000'

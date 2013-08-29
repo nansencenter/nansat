@@ -374,20 +374,8 @@ class Nansatmap(Basemap):
             append matplotlib.collections.QuadMesh object
 
         '''
-        # if data includes NaN, set validValues and Replace Nan to a number
-        if np.any(np.isnan(data.flatten())):
-            data, validValues = self._nan_to_num(data, validValues)
-
-        # if validValues is not None, apply mask with interval "validValues"
-        if validValues is not None:
-            mask = np.logical_or(data <= validValues[0], data >= validValues[1])
-            data = np.ma.array(data, mask=mask)
-            # set vmin and vmax if validValues is given
-            if not ('vmin' in kwargs.keys()):
-                kwargs['vmin'] = validValues[0]
-            if not ('vmax' in kwargs.keys()):
-                kwargs['vmax'] = validValues[1]
-
+        # mask nan data
+        data = np.ma.array(data, mask=np.isnan(data))
         # Plot a quadrilateral mesh.
         self._create_xy_grids()
         self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
@@ -415,7 +403,7 @@ class Nansatmap(Basemap):
         # if Nan is included, apply mask
         dataX = np.ma.array(dataX, mask=np.isnan(dataX))
         dataY = np.ma.array(dataY, mask=np.isnan(dataY))
-        # subsample for quiver plot
+        # subset grids for quiver plot
         step0 = dataX.shape[0]/quivectors
         step1 = dataX.shape[1]/quivectors
         dataX2 = dataX[::step0, ::step1]
