@@ -165,6 +165,7 @@ class VRT():
                  srcGCPProjection='',
                  srcMetadata='',
                  geolocationArray=None,
+                 nomem=False,
                  lat=None, lon=None):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
