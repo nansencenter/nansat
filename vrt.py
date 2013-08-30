@@ -14,6 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+import tempfile
 
 from nansat_tools import *
 
@@ -165,6 +166,7 @@ class VRT():
                  srcGCPProjection='',
                  srcMetadata='',
                  geolocationArray=None,
+                 nomem=False,
                  lat=None, lon=None):
         ''' Create VRT dataset from GDAL dataset, or from given parameters
 
@@ -195,6 +197,7 @@ class VRT():
         geolocationArray : GeolocationArray
             object with info on geolocation array
             and VRTs with x/y datasets
+        nomem : boolean, saves the vrt to a tempfile if nomem is True 
         lon : Numpy array
             grid with longitudes
         lat : Numpy array
@@ -209,7 +212,7 @@ class VRT():
         '''
         # essential attributes
         self.logger = add_logger('Nansat')
-        self.fileName = self._make_filename()
+        self.fileName = self._make_filename(nomem=nomem)
         self.vrtDriver = gdal.GetDriverByName('VRT')
 
         # open and parse wkv.xml
@@ -297,7 +300,7 @@ class VRT():
         except:
             pass
 
-    def _make_filename(self, extention='vrt'):
+    def _make_filename(self, extention='vrt', nomem=False):
         '''Create random VSI file name
 
         Parameters
@@ -310,9 +313,14 @@ class VRT():
         random file name
 
         '''
-        allChars = ascii_uppercase + digits
-        randomChars = ''.join(choice(allChars) for x in range(10))
-        return '/vsimem/%s.%s' % (randomChars, extention)
+        if nomem:
+            fd, filename = tempfile.mkstemp(suffix='.vrt')
+            os.close(fd)
+        else:
+            allChars = ascii_uppercase + digits
+            randomChars = ''.join(choice(allChars) for x in range(10))
+            filename = '/vsimem/%s.%s' % (randomChars, extention)
+        return filename
 
     def _create_bands(self, metaDict):
         ''' Generic function called from the mappers to create bands

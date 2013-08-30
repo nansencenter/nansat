@@ -229,7 +229,7 @@ class Nansat(Domain):
         return outString
 
     def add_band(self, fileName=None, vrt=None, bandID=1, array=None,
-                 parameters=None, resamplingAlg=1):
+                 parameters=None, resamplingAlg=1, nomem=False):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -247,6 +247,7 @@ class Nansat(Domain):
         array : Numpy array with band data
         parameters : dictionary, band metadata: wkv, name, etc.
         resamplingAlg : 0, 1, 2 stands for nearest, bilinear, cubic
+        nomem : boolean, saves the vrt to a tempfile if nomem is True 
 
         Modifies
         ---------
@@ -287,10 +288,10 @@ class Nansat(Domain):
         if array is not None:
             if array.shape == self.shape():
                 # create VRT from array
-                vrt2add = VRT(array=array)
+                vrt2add = VRT(array=array, nomem=nomem)
             else:
                 # create VRT from resized array
-                srcVRT = VRT(array=array)
+                srcVRT = VRT(array=array, nomem=nomem)
                 vrt2add = srcVRT.resized(self.shape()[1],
                                          self.shape()[0],
                                          resamplingAlg)
