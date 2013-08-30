@@ -23,8 +23,8 @@ import inspect, os
 import glob
 import datetime as dt
 
-from nansat import Nansat, Domain#, Mosaic
-from mosaic import Mosaic
+from nansat import Nansat, Domain, Mosaic
+#from mosaic import Mosaic
 
 # input and output file names
 from testio import testio
@@ -44,8 +44,8 @@ print 'Output file:', oFileName
 '''
 def main():
     # Create target domain
-    #domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
-    domain = Domain('+proj=longlat +datum=WGS84 +no_defs ' , '-lle 27 70 31 72 -ts 1400 1300')
+    domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
+    #domain = Domain('+proj=longlat +datum=WGS84 +no_defs ' , '-lle 27 70 31 72 -ts 1400 1300')
 
     # A. Perform averaging of several files
     # 1. Create destination Nansat object with desired projection
