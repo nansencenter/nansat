@@ -23,10 +23,13 @@ import inspect, os
 
 from nansat import Nansat, Domain, Nansatmap
 
-# Get input and output filenames
+# input and output file names
 from testio import testio
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
-oFileName = oFileName+'nansatmap_'
+iPath, oPath = testio()
+iFileName = os.path.join(iPath, 'map.tif')
+print 'Input file: ', iFileName
+oFileName = os.path.join(oPath, 'output_nansatmap_')
+print 'Output file:', oFileName
 
 ''' Nansatmap class perform opeartions with graphical files:
     create, add legend and geolocation_grids, save.

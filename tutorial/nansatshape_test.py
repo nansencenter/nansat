@@ -27,10 +27,14 @@ try:
 except:
     import gdal, osr, ogr
 
-# Get input and output filenames
+# input and output file names
 from testio import testio
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
-oFileName = oFileName+'nansatshape_'
+iPath, oPath = testio()
+iFileName = os.path.join(iPath, 'gcps.tif')
+shpFileName = os.path.join(iPath, 'points.shp')
+print 'Input file: ', iFileName, '; ', shpFileName
+oFileName = os.path.join(oPath, 'output_nansatshape_')
+print 'Output file:', oFileName
 
 ''' Nansatshape class read and write ESRI-shape files
 
@@ -42,42 +46,7 @@ oFileName = oFileName+'nansatshape_'
 
 '''
 def main():
-    # Create nansatShape object with point geometry
-    nansatOGR = Nansatshape(wkbStyle=ogr.wkbPoint)
-    # create point geometries and set them to features
-    nansatOGR.create_geometry([[10.0, 15.0, 20.0, 25.0, 30.0],
-                               [5.0, 45.0, 25.0, 35.0, 10.0]])
-    # add fields to the feature
-    nansatOGR.create_fields(fieldNames=['int', 'string', 'float'],
-                            fieldValues=[[100, 200, 300, 400, 500],
-                                         ['S0','S1','S2','S3','S4'],
-                                         [1.1, 1.2, 1.3, 1.4, 1.5]])
-    # append a new field to specified features
-    nansatOGR.create_fields(fieldNames=['string2'], fieldValues=[['SS1','SS3']],
-                            featureID=[1,3])
-    # append a new feature and set a new geometry
-    nansatOGR.create_geometry([[80.0],[20.0]], featureID=[5])
-    # set field values
-    nansatOGR.create_fields(fieldNames=['int', 'string2'],
-                            fieldValues=[[60],['SS5']], featureID=[5])
-    # save to a file
-    ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
-                                                         oFileName+'01_Points.shp')
-
-    # Create a nansatShape object with polygon geometry
-    nansatOGR = Nansatshape(wkbStyle=ogr.wkbPolygon)
-    # create polygon geometry and set them to featuers
-    nansatOGR.create_geometry([[100, 150, 200, 100, 500, 600, 800, 500],
-                               [20, 30, 60, 20, 30, 60, 90, 30]],
-                               featureID=[0, 0, 0, 0, 1, 1, 1, 1])
-    # append a polygon geometry to a new feature
-    nansatOGR.create_geometry([[300, 700, 750, 300],[80, 50, 60, 80]],
-                               featureID=[2,2,2,2])
-    # save to a file
-    ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
-                                                         oFileName+'02_Polygons.shp')
-
-    # Create a nansatShape object with polygon geometry
+    # Create a nansatShape object with line geometry
     nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
     # create polygon geometry and set them to featuers
     nansatOGR.create_geometry([[100, 150, 200, 500, 600, 800],
@@ -93,7 +62,7 @@ def main():
     nansatOGR.create_fields(fieldNames=['int'], fieldValues=[[500]], featureID=[1])
     # save to a file
     ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
-                                                         oFileName+'03_Lines.shp')
+                                                         oFileName+'Lines.shp')
 
     # Create a nansatShape from shape file
     nansatOGR = Nansatshape(shpFileName)
@@ -107,8 +76,3 @@ def main():
     print '\n*** nansatshape_test completed successfully. Output files are found here:' + oFileName
 
 main()
-
-
-
-
-

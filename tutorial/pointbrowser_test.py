@@ -22,9 +22,11 @@ import inspect, os
 from nansat import Nansat
 from nansat_tools import PointBrowser
 
-# Get input and output filenames
+# input and output file names
 from testio import testio
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
+iPath, oPath = testio()
+iFileName = os.path.join(iPath, 'gcps.tif')
+print 'Input file: ', iFileName
 
 ''' Pointbrowser class fetches coordinates of cliked points on the image
 
@@ -40,18 +42,6 @@ def main():
     # get numpy array from the Nansat object
     array = n[1]
 
-    # Create browser object
-    browser = PointBrowser(array)
-    # Choose points by clicking the fig
-    browser.get_points()
-    # Get coordinates of the clicked points
-    points = browser.coordinates
-    # Print coordinates
-    print '1: Coordinates of Clicked Points ---'
-    for iPoint in points:
-        print iPoint
-    print ''
-
     # Create browser object setting vmin and vmax of the image
     browser = PointBrowser(array, vmin=10.0, vmax=50.0)
     # Choose points by clicking the fig
@@ -59,7 +49,7 @@ def main():
     # Get coordinates of the clicked points
     points = browser.coordinates
     # Print coordinates
-    print '2: Coordinates of Clicked Points ---'
+    print 'Coordinates of Clicked Points ---'
     for iPoint in points:
         print iPoint
 

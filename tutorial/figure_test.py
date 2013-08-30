@@ -21,10 +21,13 @@ import inspect, os
 
 from nansat import Nansat, Figure
 
-# Get input and output file names
+# input and output file names
 from testio import testio
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
-oFileName = oFileName+'figure_'
+iPath, oPath = testio()
+iFileName = os.path.join(iPath, 'gcps.tif')
+print 'Input file: ', iFileName
+oFileName = os.path.join(oPath, 'output_figure_')
+print 'Output file:', oFileName
 
 '''Figrue class creates figure(png, jpg, tif, bmp) from numpy array
 

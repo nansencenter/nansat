@@ -20,12 +20,16 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 import inspect, os
 
-from nansat import Nansat
+from nansat import Nansat, Domain
+from mosaic import Mosaic
 
-# Get input and output file names
+# input and output file names
 from testio import testio
-iPath, iFileName, oPath, oFileName, shpFileName = testio()
-oFileName = oFileName+'nansat_'
+iPath, oPath = testio()
+iFileName = os.path.join(iPath, 'gcps.tif')
+print 'Input file: ', iFileName
+oFileName = os.path.join(oPath, 'output_nansat_')
+print 'Output file:', oFileName
 
 '''Nansat is a container for geospatial data, performs all high-level operations
 
@@ -57,86 +61,105 @@ def main():
     n = Nansat(iFileName, mapperName='generic', logLevel=10)
 
     # list bands and georeference of the object
-    print 'Raw Nansat:', n
-    print ''
+    print 'Raw Nansat:', n, '\n'
 
     # get dictionary with metadata from all bands
-    print 'Bands:', n.bands()
-    print ''
+    print 'Bands:', n.bands(), '\n'
 
     # get size of the object (Y and X dimensions, to follow Numpy style)
-    print 'Shape:', n.shape()
-    print ''
-
-    # get list with coordinates of the object corners
-    print 'Corners:', n.get_corners()
-    print ''
-
-    # get lists with coordinates of the object borders
-    print 'Border:', n.get_border()
-    print ''
+    print 'Shape:', n.shape(), '\n'
 
     # get time of the image aquisition
-    print 'Time:', n.get_time()[0]
-    print ''
+    print 'Time:', n.get_time()[0], '\n'
+
+    # set GlobalMetadata
+    n.set_metadata(key='GlobalKey', value='GlobalVal')
+    # get Global Metadata
+    print 'Global Metadata:', n.get_metadata(), '\n'
+
+    # set BandMetadata to the 1st band
+    n.set_metadata(key='BandKey', value='BandVal', bandID=1)
+    # get 1st Band Metadata
+    print '1st Band Metadata:', n.get_metadata(bandID=1), '\n'
+
+    # add a band from file (copy the 2nd band to the end (4th band)
+    n.add_band(fileName=n.fileName, bandID=2)
+    # add a band from numpy array (copy the 1st band to the end (5th band))
+    n.add_band(array=n[1], parameters={'name':'Name1', 'wkt':'copy from the 1st band array'})
+    # print band list
+    n.list_bands()
+    # get GDAL raster band (2nd band)
+    band = n.get_GDALRasterBand(bandID=2)
 
     # Get band data and do some operations
-    # 1. Get data from 1st band as numpy array
-    # 2. Plot the array (pyplot image is save to a PNG file)
-    # 3. Save as Matlab file
+    # -- Get data from 1st band as numpy array
     a = n[1]
+    # -- Plot the array (pyplot image is save to a PNG file)
     plt.imshow(a);plt.colorbar();plt.savefig(oFileName + '01_imshow.png');plt.close()
+    # -- Save as Matlab file
     savemat(oFileName + '01.mat', {'band_1': a})
 
+    # Resize the data to 50%
+    n.resize(0.5)
     # make simple indexed image from 1st band with default colormap
-    n.write_figure(oFileName + '02.png')
-
-    # make RGB image from bands 1,2,3 with brightness correction
-    n.write_figure(oFileName + '03_rgb.png', bands=[1,2,3], clim='hist', ratio=0.9)
-
-    # make indexed image with legend
-    n.write_figure(oFileName + '04_legend.png', legend=True, titleString='NANSAT Tutorial', LEGEND_HEIGHT=0.3, fontSize=10)
-
-    # get array with watermask (landmask)
-    # 1. Get Nansat object with watermask
-    # 2. Get array from Nansat object. 0 - land, 1 - water
-    wm = n.watermask()
-    wmArray = wm[1]
-
-    # write figure with land overlay (gray color) and apply brightness gamma correction
-    n.write_figure(oFileName + '05_land.png', clim='hist', mask_array=wmArray, mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
-
-    # add logo to image to the lower left corner
-    # (make sure file is in the current folder)
-    n.write_figure(oFileName + '06_logo.png', logoFileName='nansat_logo_s.png', logoLocation=[10, -10], logoSize=[70, 70])
-
-    # write figure with lat/lon grid
-    # 1. Get lat/lon arrays from Nansat object (may take some time)
-    # 2. Make figure with lat/lon grids
-    lonGrid, latGrid = n.get_geolocation_grids()
-    n.write_figure(oFileName + '07_latlon.png', latGrid=latGrid, lonGrid=lonGrid, latlonGridSpacing=10, latlonLabels=10)
-
-    # make small preview
-    # 1. Reduce size of the Nansat object ten times
-    # 2. Make simple grayscaled image with brightness correction
-    # 3. Resize back to original resolution
-    n.resize(0.1)
-    n.write_figure(oFileName + '08_preview.png', clim='hist', cmapName='gray')
+    n.write_figure(oFileName + '02.png', clim='hist')
+    # undo resize
     n.resize()
-
-    # enlarge the image with bicubic-spline interpolation
-    n.resize(2, eResampleAlg=3)
-    n.write_figure(oFileName + '09_large.png', clim='hist', cmapName='gray')
-    n.resize()
-
-    # make KML file with image borders (to be opened in Googe Earth)
-    n.write_kml(kmlFileName=oFileName + '10_preview.kml')
 
     # make image with map of the file location
-    n.write_map(oFileName + '11_map.png')
+    n.write_map(oFileName + '04_map.png')
 
+    # Writes an 8-bit GeoTiff image for a given band
+    n.write_geotiffimage(oFileName + '05_geotiff.tif', bandID=1)
 
-    n.write_nansatmap(oFileName + '12_nansatMap.png', )
+    # create a NetCDF file with all bands (3bands)
+    n.export(oFileName + '06.nc')
+
+    # create a GTiff file with one band (default driver is NetCDF)
+    n.export_band(oFileName + '07.tif', bandID=1, driver='GTiff')
+
+    # get array with watermask (landmask)
+    # -- Get Nansat object with watermask
+    wm = n.watermask()
+    # -- Get array from Nansat object. 0 - land, 1 - water
+    wmArray = wm[1]
+    # write figure with land overlay (gray color) and apply brightness gamma correction
+    n.write_figure(oFileName + '08_land.png', clim='hist', mask_array=wmArray, mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
+
+    # Reprojected image into stereographic projection
+    # -- Get corners of the image
+    lons, lats = n.get_corners()
+    meanLon = sum(lons, 0.0) / 4.
+    meanLat = sum(lats, 0.0) / 4.
+    srsString = "+proj=stere +lon_0=%f +lat_0=%f +k=1 +ellps=WGS84 +datum=WGS84 +no_defs" % (meanLon, meanLat)
+    extentString = '-lle %f %f %f %f -tr 100 100' % (min(lons), min(lats), max(lons), max(lats))
+    # -- Create Domain with stereographic projection, corner coordinates and resolution 1000m
+    dStereo = Domain(srsString, extentString)
+    dStereo.write_map(oFileName + '09_stereo_map.png')
+    print 'Stereo Domain:', dStereo
+    # -- Reproject with cubic interpolation
+    n.reproject(dStereo, 2)
+    # -- Write image
+    n.write_figure(oFileName + '10_pro_stereo.png', clim='hist')
+
+    # Perform batch averaging of several files
+    # -- Create destination Nansat object with desired projection
+    nMosaic = Mosaic(domain=dStereo)
+    # -- Perfom averaging
+    nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
+    # -- Get mask of non-valid pixels
+    mask = nMosaic['mask']
+    # -- Output averaged data using the mask
+    nMosaic.write_figure(fileName=oFileName + '11_mosaic.png', bands=['L_645', 'L_555', 'L_469'],
+                         mask_array=mask, mask_lut={0:[128,128,128]}, clim='hist')
+
+    # Get transect of the 1st and 2nd bands corresponding to the given points
+    values, lonlat, pixlinCoord =n.get_transect(points=((29.287, 71.153), (29.275, 71.145), (29.210, 71.154)), transect=False, bandList=[1, 2])
+    # print the results
+    print '1stBandVal  2ndBandVal       pix/lin         lon/lat '
+    for i in range (len(values[0])):
+        print '%6d %10d %13.2f /%6.2f  %7.2f /%6.2f' %(values[0][i], values[1][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlat[0][i], lonlat[1][i])
+    print ''
 
     print '\n***nansat_test completed successfully. Output files are found here:' + oFileName
 

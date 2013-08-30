@@ -5,7 +5,7 @@
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
 # Created:      27.08.2013
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2013 - 2015
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -25,27 +25,6 @@ import nansatshape_test
 import mosaic_test
 import pointbrowser_test
 
-def main():
-    # Test domain_test
-    domain_test.main()
-
-    # Test nansat_test
-    nansat_test.main()
-
-    # Test figure_test
-    figure_test.main()
-
-    # Test nansatmap_test
-    nansatmap_test.main()
-
-    # Test nansatshape_test
-    nansatshape_test.main()
-
-    # Test mosaic_test
-    mosaic_test.main()
-
-    # Test pointbrowser_test
-    pointbrowser_test.main()
 
 
 
