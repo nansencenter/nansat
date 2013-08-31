@@ -984,8 +984,12 @@ class Domain():
             produces 300 x 300 figure)
         projection : string, one of Basemap projections
             'cyl', projection of the map
-        resolution : string, 'c', 'h', ...
-            'c', crude, resolution of the map.
+        resolution : string, resolution of the map
+            'c': crude
+            'l': low
+            'i': intermediate
+            'h': high
+            'f': full
         continetsColor : string or any matplotlib color representation
             'coral', color of continets
         meridians : int
