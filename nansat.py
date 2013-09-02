@@ -18,6 +18,7 @@
 
 # import standard and additional libraries
 from nansat_tools import *
+import scipy
 
 # import nansat parts
 try:
@@ -1285,7 +1286,7 @@ class Nansat(Domain):
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,
-                           **kwargs):
+                           smooth=0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1306,6 +1307,12 @@ class Nansat(Domain):
             If False, return OGR object
         layerNum: int
             If shapefile is given as points, it is the number of the layer
+        smooth: int or [int, int]
+            If smooth or smooth[0] is greater than 0, smooth every transect
+            pixel as the median (default, smooth[1]=0) or mean (smooth[1]=1)
+            value in a box with sides equal to the given number.
+            smooth or smooth[0] must be 0 or a positive odd number
+            smooth[1] can be 0 or 1 for median or mean
 
         vmin, vmax : int (optional)
             minimum and maximum pixel values of an image shown
@@ -1322,6 +1329,21 @@ class Nansat(Domain):
             pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
+        smooth_function = scipy.stats.nanmedian
+        if type(smooth) is list:
+            if smooth[0] < 0:
+                raise ValueError("smooth[0] must be 0 or a positive odd number.")
+            if smooth[0]>0 and (smooth[0] % 2) != 1:
+                raise ValueError("The kernel size smooth[0] should be odd.")
+            if not smooth[1]==0 and not smooth[1]==1:
+                raise ValueError("smooth[1] must be 0 or 1 for median or mean filter.")
+            if smooth[1]==1:
+                smooth_function = scipy.stats.nanmean
+        else:
+            tmp = smooth
+            smooth = []
+            smooth.append(tmp)
+
         data = None
         # if shapefile is given, get corner points from it
         if type(points) == str:
@@ -1336,6 +1358,7 @@ class Nansat(Domain):
                 firstBand = self._get_band_number(firstBand)
             data = self[firstBand]
 
+            #browser = PointBrowser(medfilt2d(data, 51), **kwargs)
             browser = PointBrowser(data, **kwargs)
             browser.get_points()
             points = tuple(browser.coordinates)
@@ -1384,6 +1407,9 @@ class Nansat(Domain):
             pixlinCoord = np.append(pixlinCoord,
                                     [pixVector, linVector],
                                     axis=1)
+            if smooth[0]:
+                pixlinCoord0 = pixlinCoord-int(smooth[0])/2
+                pixlinCoord1 = pixlinCoord+int(smooth[0])/2
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
@@ -1398,7 +1424,13 @@ class Nansat(Domain):
             if data is None:
                 data = self[iBand]
             # extract values
-            transect.append(data[list(pixlinCoord[1]),
+            if smooth[0]:
+                for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
+                        pixlinCoord1[1], pixlinCoord0[0], pixlinCoord1[0]):
+                    transect.append( smooth_function(data[xmin:xmax,
+                        ymin:ymax], axis=None) )
+            else:
+                transect.append(data[list(pixlinCoord[1]),
                                  list(pixlinCoord[0])].tolist())
             data = None
         if returnOGR:
