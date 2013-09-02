@@ -1425,10 +1425,12 @@ class Nansat(Domain):
                 data = self[iBand]
             # extract values
             if smooth[0]:
+                transect0 = []
                 for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
                         pixlinCoord1[1], pixlinCoord0[0], pixlinCoord1[0]):
-                    transect.append( smooth_function(data[xmin:xmax,
+                    transect0.append( smooth_function(data[xmin:xmax,
                         ymin:ymax], axis=None) )
+                transect.append(transect0)
             else:
                 transect.append(data[list(pixlinCoord[1]),
                                  list(pixlinCoord[0])].tolist())
