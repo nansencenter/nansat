@@ -76,7 +76,7 @@ class Figure():
                           'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
     _cmapName = 'jet'
-        
+
     def __init__(self, nparray, **kwargs):
         ''' Set attributes
 
@@ -212,7 +212,6 @@ class Figure():
 
         # modify the default values using input values
         self._set_defaults(kwargs)
-
 
         # set fonts for Legend
         self.fontFileName = os.path.join(os.path.dirname(
