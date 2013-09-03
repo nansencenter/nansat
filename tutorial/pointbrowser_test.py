@@ -30,32 +30,30 @@ print 'Input file: ', iFileName
 
 ''' Pointbrowser class fetches coordinates of cliked points on the image
 
-    PointBrowser object is created by a numpy array.
-    When get_points() is called, an image is shown automatically.
-    Then click some points on the image.
-    Fetch the coodrdinates of the clicked points.
+PointBrowser object is created by a numpy array.
+When get_points() is called, an image is shown automatically.
+Then click some points on the image.
+Fetch the coodrdinates of the clicked points.
 
 '''
-def main():
-    # Create a Nansat object (n)
-    n = Nansat(iFileName)
-    # get numpy array from the Nansat object
-    array = n[1]
+# Create a Nansat object (n)
+n = Nansat(iFileName)
+# get numpy array from the Nansat object
+array = n[1]
 
-    # Create browser object setting vmin and vmax of the image
-    browser = PointBrowser(array, vmin=10.0, vmax=50.0)
-    # Choose points by clicking the fig
-    browser.get_points()
-    # Get coordinates of the clicked points
-    points = browser.coordinates
-    # Print coordinates
-    print 'Coordinates of Clicked Points ---'
-    for iPoint in points:
-        print iPoint
+# Create browser object setting vmin and vmax of the image
+browser = PointBrowser(array, vmin=10.0, vmax=50.0)
+# Choose points by clicking the fig
+browser.get_points()
+# Get coordinates of the clicked points
+points = browser.coordinates
+# Print coordinates
+print 'Coordinates of Clicked Points ---'
+for iPoint in points:
+    print iPoint
 
-    print '\n*** pointbrowser_test completed successfully.'
+print '\n*** pointbrowser_test completed successfully.'
 
-main()
 
 
 
