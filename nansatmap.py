@@ -84,7 +84,7 @@ class Nansatmap(Basemap):
 
         '''
         self.domain = domain
-        
+
         # get proj4
         spatialRef = osr.SpatialReference()
         projection = domain._get_projection(domain.vrt.dataset)
@@ -125,13 +125,14 @@ class Nansatmap(Basemap):
                         'vandg':'vandg', 'vandg2':'vandg',
                         'vandg3':'vandg', 'vandg4':'vandg',
                      }.get(projStr, 'cyl')
-        
+
         if projection in ['stere']:
             lon_0 = float(re.findall('lon_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
             lat_0 = float(re.findall('lat_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
             kwargs['lon_0'] = lon_0
             kwargs['lat_0'] = lat_0
-            
+
+
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 
@@ -143,7 +144,7 @@ class Nansatmap(Basemap):
         self.lonMax = max(lonCrn)
         self.latMin = max(min(latCrn), -90.)
         self.latMax = min(max(latCrn), 90.)
-        
+
         if not('llcrnrlat' in kwargs.keys()):
             kwargs['llcrnrlat'] = self.latMin
         if not('urcrnrlat' in kwargs.keys()):

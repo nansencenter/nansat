@@ -19,20 +19,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-import inspect, os
+import ogr
 
 from nansat import Nansat, Domain, Mosaic
 
-# input and output file names
-iPath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-iFileName = os.path.join(iPath, 'gcps.tif')
-print 'Input file: ', iFileName
-oPath = os.path.join(iPath, 'tmpdata')
-print 'Output path:', oPath
-if not os.path.exists(oPath):
-    os.mkdir(oPath)
-oFileName = os.path.join(oPath, 'output_')
-print 'Output file:', oFileName
+from testio import testio
+
+iPath, iFileName, oPath, oFileName, iShapeFileName = testio()
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
@@ -67,6 +60,7 @@ a = n[1]
 plt.imshow(a);plt.colorbar();plt.savefig(oFileName + '_imshow.png');plt.close()
 savemat(oFileName + '.mat', {'band_1': a})
 
+# ----------------------------  write_fugure()  ------------------------------ #
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '.png')
 
@@ -114,7 +108,67 @@ n.write_kml(kmlFileName=oFileName + '_preview.kml')
 # make image with map of the file location
 n.write_map(oFileName + '_map.png')
 
+# ---------------------------  get_transect()  ------------------------------- #
 
+# make a tuple with points in lon/lat
+points = ((27.35, 70.80), (27.35, 70.85))
+# get coordinates (lon/lat and pix/lin) of the transect between the two points
+# and the corresponding values
+values, lonlatVec, pixlinCoord = n.get_transect(points)
+# print the results
+print 'Values     pix/lin         lon/lat '
+for i in range (len(values[0])):
+    print '%5d  %6.2f /%6.2f  %6.2f /%6.2f' %(values[0][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlatVec[0][i],lonlatVec[1][i])
+print ''
+
+# make a tuple with points in lon/lat
+points = ((27.35, 70.80), (28.50, 71.05), (29.50, 71.10))
+# get coordinates (lon/lat and pix/lin) of the three points
+# and the corresponding values
+values, lonlatVec, pixlinCoord = n.get_transect(points, transect=False)
+# print the results
+print 'value      pix/lin         lon/lat '
+for i in range (len(values[0])):
+    print '%5d  %6.2f /%6.2f  %6.2f /%6.2f' %(values[0][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlatVec[0][i], lonlatVec[1][i])
+print ''
+
+# make a tuple with points in pix/lin
+points = ((170, 170), (170, 175), (175, 175))
+# get coordinates (lon/lat and pix/lin) of the transect between the three points
+# and the corresponding values in the 1st and 2nd bands
+values, lonlatVec, pixlinCoord = n.get_transect(points, latlon=False, bandList=[1,2])
+# print the results
+print '1stBand     2ndBand         pix/lin            lon/lat '
+print 'Value       Value'
+for i in range (len(values[0])):
+    print '%5d %10d %13.2f /%6.2f  %10.2f /%6.2f' %(values[0][i], values[1][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlatVec[0][i], lonlatVec[1][i])
+print ''
+
+# specify coordinates by click and get the corresponding values
+values, lonlatVec, pixlinCoord = n.get_transect()
+# print the results
+print 'value      pix/lin         lon/lat'
+for i in range (len(values[0])):
+    print '%5d  %6.2f /%6.2f  %6.2f /%6.2f' %(values[0][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlatVec[0][i], lonlatVec[1][i])
+print ''
+
+# read coordinates from shape file and get the corresponding values
+values, lonlatVec, pixlinCoord = n.get_transect(iShapeFileName, transect=False)
+# print the results
+print 'value      pix/lin         lon/lat '
+for i in range (len(values[0])):
+    print '%5d  %6.2f /%6.2f  %6.2f /%6.2f' %(values[0][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlatVec[0][i], lonlatVec[1][i])
+print ''
+
+# make a tuple with points in lon/lat
+points = ((27.35, 70.80), (28.50, 71.05), (29.50, 71.10))
+# return nansatOGR with the coordinates and the corresponding values
+nansatOGR = n.get_transect(points, transect=False, returnOGR=True)
+# Copy nansatOGR to a ESRI Shapefile
+driver = ogr.GetDriverByName('ESRI Shapefile')
+ds = driver.CopyDataSource(nansatOGR.datasource, oFileName+'nansatShape.shp')
+
+# -----------------------------  reproject()  ------------------------------- #
 # Make image reprojected onto map of Northern Europe
 # 1. Create Domain object. It describes the desired grid of reprojected image:
 # projection, resolution, size, etc. In this case it is geographic projection;
@@ -226,15 +280,7 @@ n.write_figure(fileName=oFileName + '_proj.png', bands=[1,2,3],
 # make KML file for the exported image
 n.write_kml_image(kmlFileName=oFileName + '.kml', kmlFigureName=oFileName + '_proj.png')
 
-# Perform batch averaging of several files
-# 1. Create destination Nansat object with desired projection
-nMosaic = Mosaic(domain=dStereo)
-# 2. Perfom averaging
-nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
-# 3. Get mask of non-valid pixels
-mask = nMosaic['mask']
-# 4. Output averaged data using the mask
-nMosaic.write_figure(fileName=oFileName + '_mosaic.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
-                        mask_array=mask, mask_lut={0:[128,128,128]})
+# run tests of the Mosaic
+import mosaic_test
 
 print 'Tutorial completed successfully. Output files are found here:' + oFileName
