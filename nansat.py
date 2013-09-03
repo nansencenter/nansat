@@ -1340,6 +1340,10 @@ class Nansat(Domain):
             if smooth[1]==1:
                 smooth_function = scipy.stats.nanmean
         else:
+            if smooth < 0:
+                raise ValueError("smooth must be 0 or a positive odd number.")
+            if smooth>0 and (smooth % 2) != 1:
+                raise ValueError("The kernel size smooth should be odd.")
             tmp = smooth
             smooth = []
             smooth.append(tmp)
@@ -1358,7 +1362,6 @@ class Nansat(Domain):
                 firstBand = self._get_band_number(firstBand)
             data = self[firstBand]
 
-            #browser = PointBrowser(medfilt2d(data, 51), **kwargs)
             browser = PointBrowser(data, **kwargs)
             browser.get_points()
             points = tuple(browser.coordinates)
