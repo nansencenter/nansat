@@ -247,7 +247,7 @@ class Nansat(Domain):
         array : Numpy array with band data
         parameters : dictionary, band metadata: wkv, name, etc.
         resamplingAlg : 0, 1, 2 stands for nearest, bilinear, cubic
-        nomem : boolean, saves the vrt to a tempfile if nomem is True 
+        nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
         ---------
@@ -463,6 +463,18 @@ class Nansat(Domain):
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
+
+        # if output filename is same as input one...
+        if self.fileName == fileName:
+            numOfBands = self.vrt.dataset.RasterCount
+            # create VRT from each band and add it
+            for iBand in range(numOfBands):
+                vrt = VRT(array=self[iBand+1])
+                self.add_band(vrt=vrt)
+                metadata= self.get_metadata(bandID=iBand+1)
+                self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
+            # remove source bands
+            self.vrt.delete_bands(range(1,numOfBands))
 
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
