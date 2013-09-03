@@ -38,41 +38,39 @@ print 'Output file:', oFileName
 
 ''' Nansatshape class read and write ESRI-shape files
 
-    The core of Nansatshape is a OGR. the main functions of the class are
-    1. Create empty object in memory and add data (fields and geometory).
-    2. Open shape file and read the data.
+The core of Nansatshape is a OGR. the main functions of the class are
+1. Create empty object in memory and add data (fields and geometory).
+2. Open shape file and read the data.
 
-    Nansatshape support points, line and ploygons. (not mupti-polygon)
+Nansatshape support points, line and ploygons. (not mupti-polygon)
 
 '''
-def main():
-    # Create a nansatShape object with line geometry
-    nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
-    # create polygon geometry and set them to featuers
-    nansatOGR.create_geometry([[100, 150, 200, 500, 600, 800],
-                               [20, 30, 60, 30, 60, 90]],
-                               featureID=[0, 0, 0, 1, 1, 1])
-    # append a polygon geometry to a new feature
-    nansatOGR.create_geometry([[300,700, 750],[80,50, 60]], featureID=[2,2,2])
-    # add fields to the feature
-    nansatOGR.create_fields(fieldNames=['int', 'string', 'float', 'string2'],
-                            fieldValues=[[100, 200, 300], ['S0','S1','S2'],
-                                         [1.1, 2.2, 3.3], ['A0','A1','A2'] ])
-    # replace specified field
-    nansatOGR.create_fields(fieldNames=['int'], fieldValues=[[500]], featureID=[1])
-    # save to a file
-    ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
-                                                         oFileName+'Lines.shp')
 
-    # Create a nansatShape from shape file
-    nansatOGR = Nansatshape(shpFileName)
-    # Get corner points (geometries of featuers) in the layer
-    points, latlon = nansatOGR.get_corner_points(latlon=False)
-    # print corner points
-    print 'Corner Points ---'
-    for iPoint in points:
-        print iPoint
+# Create a nansatShape object with line geometry
+nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
+# create polygon geometry and set them to featuers
+nansatOGR.create_geometry([[100, 150, 200, 500, 600, 800],
+                           [20, 30, 60, 30, 60, 90]],
+                           featureID=[0, 0, 0, 1, 1, 1])
+# append a polygon geometry to a new feature
+nansatOGR.create_geometry([[300,700, 750],[80,50, 60]], featureID=[2,2,2])
+# add fields to the feature
+nansatOGR.create_fields(fieldNames=['int', 'string', 'float', 'string2'],
+                        fieldValues=[[100, 200, 300], ['S0','S1','S2'],
+                                     [1.1, 2.2, 3.3], ['A0','A1','A2'] ])
+# replace specified field
+nansatOGR.create_fields(fieldNames=['int'], fieldValues=[[500]], featureID=[1])
+# save to a file
+ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
+                                                     oFileName+'Lines.shp')
 
-    print '\n*** nansatshape_test completed successfully. Output files are found here:' + oFileName
+# Create a nansatShape from shape file
+nansatOGR = Nansatshape(shpFileName)
+# Get corner points (geometries of featuers) in the layer
+points, latlon = nansatOGR.get_corner_points(latlon=False)
+# print corner points
+print 'Corner Points ---'
+for iPoint in points:
+    print iPoint
 
-main()
+print '\n*** nansatshape_test completed successfully. Output files are found here:' + oFileName
