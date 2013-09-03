@@ -17,13 +17,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # import all test files of Nansat
-import domain_test
-import nansat_test
-import figure_test
-import nansatmap_test
-import nansatshape_test
-import mosaic_test
-import pointbrowser_test
+import test_domain
+import test_nansat
+import test_figure
+import test_nansatmap
+import test_nansatshape
+import test_mosaic
+import test_pointbrowser
 
 
 
