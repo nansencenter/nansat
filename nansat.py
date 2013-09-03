@@ -229,7 +229,7 @@ class Nansat(Domain):
         return outString
 
     def add_band(self, fileName=None, vrt=None, bandID=1, array=None,
-                 parameters=None, resamplingAlg=1):
+                 parameters=None, resamplingAlg=1, nomem=False):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -247,6 +247,7 @@ class Nansat(Domain):
         array : Numpy array with band data
         parameters : dictionary, band metadata: wkv, name, etc.
         resamplingAlg : 0, 1, 2 stands for nearest, bilinear, cubic
+        nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
         ---------
@@ -287,10 +288,10 @@ class Nansat(Domain):
         if array is not None:
             if array.shape == self.shape():
                 # create VRT from array
-                vrt2add = VRT(array=array)
+                vrt2add = VRT(array=array, nomem=nomem)
             else:
                 # create VRT from resized array
-                srcVRT = VRT(array=array)
+                srcVRT = VRT(array=array, nomem=nomem)
                 vrt2add = srcVRT.resized(self.shape()[1],
                                          self.shape()[0],
                                          resamplingAlg)
@@ -462,6 +463,18 @@ class Nansat(Domain):
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
+
+        # if output filename is same as input one...
+        if self.fileName == fileName:
+            numOfBands = self.vrt.dataset.RasterCount
+            # create VRT from each band and add it
+            for iBand in range(numOfBands):
+                vrt = VRT(array=self[iBand+1])
+                self.add_band(vrt=vrt)
+                metadata= self.get_metadata(bandID=iBand+1)
+                self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
+            # remove source bands
+            self.vrt.delete_bands(range(1,numOfBands))
 
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
