@@ -1463,6 +1463,10 @@ class Nansat(Domain):
     def invalid2nan(self, iBand):
         ''' Get numpy array where invalid elements in a nansat band are set to numpy.nan
 
+        In nansat data retrieved from netcdf, invalid data is set to a real
+        number specified by _FillValue. Also numpy.inf is here set to
+        numpy.nan.
+
         Parameters
         ----------
         iBand : Nansat band to modify
@@ -1470,18 +1474,18 @@ class Nansat(Domain):
         Returns
         --------
         numpy array where _FillValue and numpy.inf are set to numpy.nan
+
         '''
         if type(iBand) == str:
             iBand = self._get_band_number(iBand)
         nparr = self[iBand]
-        # Complex numbers can also be a problem, but the fix does not belong
+        # Complex numbers can also be a problem, but this does not belong
         # here...
         #if not np.isrealobj(nparr[0][0]):
         #    nparr = np.abs(nparr)
         if self.get_metadata(bandID=iBand).has_key('_FillValue'):
             fillValue = float(self.get_metadata(bandID=iBand)['_FillValue'])
-            # Set invalid and missing data to np.NaN
-            # This is relevant for nansat data retrieved from netcdf
+            # Set invalid and missing data to np.nan
             nparr[np.where(nparr==fillValue)]=np.nan
         nparr[np.where(np.isinf(nparr))] = np.nan
         return nparr
