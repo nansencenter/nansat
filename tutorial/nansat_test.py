@@ -66,9 +66,6 @@ print 'Raw Nansat:', n, '\n'
 # get dictionary with metadata from all bands
 print 'Bands:', n.bands(), '\n'
 
-# get size of the object (Y and X dimensions, to follow Numpy style)
-print 'Shape:', n.shape(), '\n'
-
 # get time of the image aquisition
 print 'Time:', n.get_time()[0], '\n'
 
@@ -126,21 +123,11 @@ wmArray = wm[1]
 # write figure with land overlay (gray color) and apply brightness gamma correction
 n.write_figure(oFileName + '08_land.png', clim='hist', mask_array=wmArray, mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
 
-# Reprojected image into stereographic projection
-# -- Get corners of the image
-lons, lats = n.get_corners()
-meanLon = sum(lons, 0.0) / 4.
-meanLat = sum(lats, 0.0) / 4.
-srsString = "+proj=stere +lon_0=%f +lat_0=%f +k=1 +ellps=WGS84 +datum=WGS84 +no_defs" % (meanLon, meanLat)
-extentString = '-lle %f %f %f %f -tr 100 100' % (min(lons), min(lats), max(lons), max(lats))
-# -- Create Domain with stereographic projection, corner coordinates and resolution 1000m
-dStereo = Domain(srsString, extentString)
-dStereo.write_map(oFileName + '09_stereo_map.png')
-print 'Stereo Domain:', dStereo
 # -- Reproject with cubic interpolation
-n.reproject(dStereo, 2)
+d = Domain(4326, "-te 27 70.3 31 71.5 -ts 300 300")
+n.reproject(d, 2)
 # -- Write image
-n.write_figure(oFileName + '10_pro_stereo.png', clim='hist')
+n.write_figure(oFileName + '10_pro.png', clim='hist')
 
 # Get transect of the 1st and 2nd bands corresponding to the given points
 values, lonlat, pixlinCoord =n.get_transect(points=((29.287, 71.153), (29.275, 71.145), (29.210, 71.154)), transect=False, bandList=[1, 2])
