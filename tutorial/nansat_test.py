@@ -117,17 +117,13 @@ n.export_band(oFileName + '07.tif', bandID=1, driver='GTiff')
 
 # get array with watermask (landmask)
 # -- Get Nansat object with watermask
-wm = n.watermask()
-# -- Get array from Nansat object. 0 - land, 1 - water
-wmArray = wm[1]
-# write figure with land overlay (gray color) and apply brightness gamma correction
-n.write_figure(oFileName + '08_land.png', clim='hist', mask_array=wmArray, mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
+wm = n.watermask()[1]
 
 # -- Reproject with cubic interpolation
 d = Domain(4326, "-te 27 70.3 31 71.5 -ts 300 300")
 n.reproject(d, 2)
 # -- Write image
-n.write_figure(oFileName + '10_pro.png', clim='hist')
+n.write_figure(oFileName + '08_pro.png', clim='hist')
 
 # Get transect of the 1st and 2nd bands corresponding to the given points
 values, lonlat, pixlinCoord =n.get_transect(points=((29.287, 71.153), (29.275, 71.145), (29.210, 71.154)), transect=False, bandList=[1, 2])
