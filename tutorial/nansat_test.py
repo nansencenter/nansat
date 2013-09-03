@@ -142,17 +142,6 @@ n.reproject(dStereo, 2)
 # -- Write image
 n.write_figure(oFileName + '10_pro_stereo.png', clim='hist')
 
-# Perform batch averaging of several files
-# -- Create destination Nansat object with desired projection
-nMosaic = Mosaic(domain=dStereo)
-# -- Perfom averaging
-nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
-# -- Get mask of non-valid pixels
-mask = nMosaic['mask']
-# -- Output averaged data using the mask
-nMosaic.write_figure(fileName=oFileName + '11_mosaic.png', bands=['L_645', 'L_555', 'L_469'],
-                     mask_array=mask, mask_lut={0:[128,128,128]}, clim='hist')
-
 # Get transect of the 1st and 2nd bands corresponding to the given points
 values, lonlat, pixlinCoord =n.get_transect(points=((29.287, 71.153), (29.275, 71.145), (29.210, 71.154)), transect=False, bandList=[1, 2])
 # print the results
