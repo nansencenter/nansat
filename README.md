@@ -1,17 +1,23 @@
 nansat
 ======
 
-Nansat is a scientist friendly Python toolbox for processing of 2D satellite earth observation data. This is a mirror of the subversion repository found at https://svn.nersc.no/nansat
+Nansat is a scientist friendly Python toolbox for processing 2D satellite earth observation data.
+
+The main **goal** of Nansat is to facilitate:
+
+* easy development and testing of scientific algorithms,
+* easy analysis of geospatial data, and
+* efficient operational processing.
+
+Downlodad
+=========
+
+https://github.com/nansencenter/nansat/wiki/Download
 
 Requirements
 ============
 
-See https://svn.nersc.no/nansat/wiki/Nansat/Install/Requirements
-
-Installation
-============
-
-See https://svn.nersc.no/nansat/wiki/Nansat/Install/Nansat
+See https://github.com/nansencenter/nansat/wiki/Required-libs
 
 or:
 
