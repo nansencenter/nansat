@@ -193,7 +193,7 @@ class Nansatshape():
 
             # create a geometry
             geometry = None
-            if coordinates is not None:
+            if coordinates is not None and iFeature in geoFeatureID:
                 # get geoCoordinates corresponding to iFeature
                 mask = geoFeatureID==iFeature
                 geoCoords = []

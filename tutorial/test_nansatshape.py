@@ -48,18 +48,26 @@ Nansatshape support points, line and ploygons. (not mupti-polygon)
 
 # Create a nansatShape object with line geometry
 nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
-# create polygon geometry and set them to featuers
-nansatOGR.create_geometry([[100, 150, 200, 500, 600, 800],
-                           [20, 30, 60, 30, 60, 90]],
-                           featureID=[0, 0, 0, 1, 1, 1])
-# append a polygon geometry to a new feature
-nansatOGR.create_geometry([[300,700, 750],[80,50, 60]], featureID=[2,2,2])
-# add fields to the feature
-nansatOGR.create_fields(fieldNames=['int', 'string', 'float', 'string2'],
-                        fieldValues=[[100, 200, 300], ['S0','S1','S2'],
-                                     [1.1, 2.2, 3.3], ['A0','A1','A2'] ])
-# replace specified field
-nansatOGR.create_fields(fieldNames=['int'], fieldValues=[[500]], featureID=[1])
+
+# Create polygon geometry and set them to featuers
+nansatOGR.add_features(coordinates=[[100, 150, 200, 500, 600, 800],
+                                    [20, 30, 60, 30, 60, 90]],
+                       geoFeatureID=[0, 0, 0, 1, 1, 1])
+
+# Create structured numpy array
+fieldValues = np.zeros(3, dtype={'names':['INT', 'STR','FLOAT1','FLOAT2'],
+                                 'formats':['i4','a10','f8','f8']})
+fieldValues['INT'] = [10, 20, 30]
+fieldValues['STR'] = ['CHAR0', 'CHAR1', 'CHAR2']
+fieldValues['FLOAT1'] = [0.0, 3.5, 5.8]
+fieldValues['FLOAT2'] = [24.5, 15.4, 36.4]
+
+# add fields to the feature and geometry at once
+nansatOGR.add_features(values=fieldValues,
+                       fieldFeatureID=[0, 1, 2],
+                       coordinates=[[300, 700, 750],[80, 50, 60]],
+                       geoFeatureID=[2, 2, 2])
+
 # save to a file
 ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
                                                      oFileName+'Lines.shp')
@@ -74,3 +82,4 @@ for iPoint in points:
     print iPoint
 
 print '\n*** nansatshape_test completed successfully. Output files are found here:' + oFileName
+
