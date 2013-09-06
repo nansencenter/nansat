@@ -93,7 +93,7 @@ class Nansatshape():
                 self.fieldNames.append(layerDef.GetFieldDefn(i).GetName())
                 self.fieldDataTypes[self.fieldNames[-1]] = feature.GetFieldType(i)
 
-    def add_features(self, values=None, coordinates=None, fieldFeatureID=[], geoFeatureID=[], PixLine=True):
+    def add_features(self, values=None, coordinates=None, fieldFeatureID=[], geoFeatureID=[], AddPixLine=True):
         ''' Set field values and / or geometry to each feature
 
         !! NB !! Muptipolygon is not supported
@@ -124,7 +124,7 @@ class Nansatshape():
         geomType = self.layer.GetGeomType()
 
         # add pixel and line coordinates info to values
-        if coordinates is not None and PixLine is True and \
+        if coordinates is not None and AddPixLine is True and \
            (geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D):
             # create values if values is None
             if values is None:

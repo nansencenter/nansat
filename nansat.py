@@ -1430,7 +1430,6 @@ class Nansat(Domain):
         lonVector, latVector = self._transform_points(pixlinCoord[0],
                                                       pixlinCoord[1],
                                                       DstToSrc=0)
-
         transect = []
         # get data
         for iBand in bandList:
@@ -1451,11 +1450,27 @@ class Nansat(Domain):
                                  list(pixlinCoord[0])].tolist())
             data = None
         if returnOGR:
+            # Lists for field names and datatype
+            names = ['X (pixel)', 'Y (line)']
+            formats = ['i4','i4']
+            for iBand in bandList:
+                names.append('transect_' + str(iBand))
+                formats.append('f8')
+            # Create zeros structured numpy array
+            fieldValues = np.zeros(len(pixlinCoord[1]),
+                                   dtype={'names':names, 'formats':formats})
+            # Set values into the structured numpy array
+            fieldValues['X (pixel)'] = pixlinCoord[0]
+            fieldValues['Y (line)'] = pixlinCoord[1]
+            for i, iBand in enumerate(bandList):
+                fieldValues['transect_' + str(iBand) ] = transect[i]
+            # Create Nansatshape object
             NansatOGR = Nansatshape(wkt=wkt)
-            NansatOGR.set_layer(lonlatCoord=[lonVector, latVector],
-                                pixlinCoord=pixlinCoord,
-                                fieldNames=map(str, bandList),
-                                fieldValues=transect)
+            # Set features and geometries into the Nansatshape
+            NansatOGR.add_features(coordinates=[lonVector, latVector],
+                                   values=fieldValues,
+                                   AddPixLine=False)
+            # Return Nansatshape object
             return NansatOGR
         else:
             return transect, [lonVector, latVector], pixlinCoord
