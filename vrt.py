@@ -197,7 +197,7 @@ class VRT():
         geolocationArray : GeolocationArray
             object with info on geolocation array
             and VRTs with x/y datasets
-        nomem : boolean, saves the vrt to a tempfile if nomem is True 
+        nomem : boolean, saves the vrt to a tempfile if nomem is True
         lon : Numpy array
             grid with longitudes
         lat : Numpy array
@@ -832,6 +832,9 @@ class VRT():
                                            use_gcps=use_gcps,
                                            use_geotransform=use_geotransform,
                                            eResampleAlg=eResampleAlg)
+
+        # set metadata
+        warpedVRT.dataset.SetMetadata(self.dataset.GetMetadata_Dict())
 
         # add source VRT (self) to the warpedVRT
         # in order not to loose RAW file from self
