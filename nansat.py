@@ -370,7 +370,9 @@ class Nansat(Domain):
         exportVRT.real = []
         exportVRT.imag = []
         if flip:
-            exportVRT.dataset.SetGeoTransform( [0.0, 1.0, 0.0, 0.0, 0.0, -1.0] )
+            geoTransform = list(self.vrt.dataset.GetGeoTransform())
+            geoTransform[5] *= (-1)
+            exportVRT.dataset.SetGeoTransform(geoTransform)
 
         # Find complex data band
         complexBands = []
@@ -484,6 +486,7 @@ class Nansat(Domain):
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset)
         self.logger.debug('Export - OK!')
+        return dataset
 
     def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
@@ -1269,7 +1272,7 @@ class Nansat(Domain):
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Overloaded in childs.'''
 
-    def export_band(self, fileName, bandID=1, driver='netCDF'):
+    def export_band(self, fileName, bandID=1, flip=True, driver='netCDF'):
         '''Export only one band of the Nansat object
         Get array from the required band
         Create temporary Nansat from the array
@@ -1296,7 +1299,7 @@ class Nansat(Domain):
         tmpNansat.set_metadata(rootMetadata)
         tmpNansat.set_metadata(bandMetadata, bandID=1)
         # export
-        tmpNansat.export(fileName, driver=driver)
+        tmpNansat.export(fileName, driver=driver, flip=flip)
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,
