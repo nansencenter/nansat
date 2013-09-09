@@ -367,6 +367,7 @@ class Nansat(Domain):
         '''
         # temporary VRT for exporting
         exportVRT = self.vrt.copy()
+        exportVRT.dataset.SetGeoTransform( [0.0, 1.0, 0.0, 0.0, 0.0, -1.0] )
         exportVRT.real = []
         exportVRT.imag = []
 
