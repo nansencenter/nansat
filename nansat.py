@@ -1464,5 +1464,5 @@ class Nansat(Domain):
                                 fieldValues=transect)
             return NansatOGR
         else:
-            return transect, [lonVector, latVector], pixlinCoord
+            return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
