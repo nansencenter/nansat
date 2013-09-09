@@ -1305,7 +1305,7 @@ class Nansat(Domain):
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,
                            smooth=0, **kwargs):
-        '''Get transect from two points and return the values by numpy array
+        '''Get transect from two poins and retun the values by numpy array
 
         Parameters
         ----------
@@ -1465,4 +1465,3 @@ class Nansat(Domain):
             return NansatOGR
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
-
