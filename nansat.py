@@ -346,6 +346,7 @@ class Nansat(Domain):
         addGeolocArray : Boolean, add geolocation array datasets? [True].
         addGCPs : Boolean, add GCPs? [True]
         driver : Which GDAL driver (format) to use [netCDF]
+        flip : Boolean, flip the data? [True]
 
         Modifies
         ---------
