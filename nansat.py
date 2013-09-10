@@ -369,10 +369,9 @@ class Nansat(Domain):
         exportVRT = self.vrt.copy()
         exportVRT.real = []
         exportVRT.imag = []
-        if flip:
-            geoTransform = list(self.vrt.dataset.GetGeoTransform())
-            geoTransform[5] *= (-1)
-            exportVRT.dataset.SetGeoTransform(geoTransform)
+        geoTransform = list(self.vrt.dataset.GetGeoTransform())
+        if flip and geoTransform == [0.0, 1.0, 0.0, 0.0, 0.0, 1.0]:
+            exportVRT.dataset.SetGeoTransform([0.0, 1.0, 0.0, 0.0, 0.0, -1.0])
 
         # Find complex data band
         complexBands = []
