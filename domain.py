@@ -919,7 +919,7 @@ class Domain():
 
         return lonVector, latVector
 
-    def upwards_azimuth_direction(self):
+    def upwards_azimuth_direction(self, orbit_direction=None):
         '''Caluculate and return upwards azimuth direction of domain.
 
         The upward azimuth direction will be the satellite flight
@@ -943,6 +943,28 @@ class Domain():
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
         startlon, startlat = self._transform_points([mid_x], [mid_y1])
         endlon, endlat = self._transform_points([mid_x], [mid_y2])
+        pdb.set_trace()
+        if orbit_direction:
+            # check that startlat is actually less/greater than endlat for
+            # ascending/descending orbit direction
+            if str.lower(orbit_direction)=='ascending':
+                # should have startlat<endlat
+                if startlat>endlat:
+                    tmplat=startlat
+                    tmplon=startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
+            if str.lower(orbit_direction)=='descending':
+                # should have startlat>endlat
+                if startlat<endlat:
+                    tmplat=startlat
+                    tmplon=startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
         bearing_center = initial_bearing(startlon[0], startlat[0],
                                          endlon[0], endlat[0])
         return bearing_center

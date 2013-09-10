@@ -119,8 +119,8 @@ class Mapper(VRT):
         # Add SAR look direction to metadata domain
         ############################################
         self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
-            Domain(ds=gdalDataset).upwards_azimuth_direction()
-            + 90, 360)))
+            Domain(ds=gdalDataset).upwards_azimuth_direction( orbit_direction =
+                gdalDataset.GetMetadata()['ORBIT_DIRECTION']) + 90, 360)))
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
