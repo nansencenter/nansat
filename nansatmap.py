@@ -18,6 +18,7 @@
 from nansat_tools import *
 from matplotlib import colors
 
+
 class Nansatmap(Basemap):
     '''Perform opeartions with graphical files: create,
     add legend and geolocation_grids, save.
@@ -54,7 +55,7 @@ class Nansatmap(Basemap):
     gaussian_cval = 0.0
     # saving parameters
     DEFAULT_EXTENSION = '.png'
-            
+
     def __init__(self, domain, **kwargs):
         ''' Set attributes
         Get proj4 from the given domain and convert the proj4 projection to
@@ -93,45 +94,46 @@ class Nansatmap(Basemap):
 
         # convert proj4 to basemap projection
         projStr = proj4.split(' ')[0][6:]
-        projection = {  'aea':'aea', 'ocea':'aea',
-                        'aeqd':'aeqd', 'xxx1':'spaeqd', 'xxx2':'npaeqd',
-                        'cass':'cass',
-                        'cea':'cea',
-                        'eqc':'cyl', 'longlat':'cyl',
-                        'eck4':'eck4',
-                        'eqdc':'eqdc',
-                        'gall':'gall',
-                        'geos':'geos',
-                        'gnom':'gnom',
-                        'hammer':'hammer', 'nell_h':'hammer',
-                        'kav7':'kav7',
-                        'laea':'laea', 'xxx3':'splaea', 'xxx4':'nplaea',
-                        'lcc':'lcc', 'lcca':'lcc',
-                        'mbtfpq':'mbtfpq',
-                        'somerc':'merc', 'merc':'merc', 'omerc':'merc',
-                        'mill':'mill',
-                        'moll':'moll',
-                        'nsper':'nsper',
-                        'omerc':'omerc',
-                        'ortho':'ortho',
-                        'poly':'poly', 'rpoly':'poly', 'imw_p':'poly',
-                        'robin':'robin',
-                        'sinu':'sinu', 'fouc_s':'sinu', 'gn_sinu':'sinu',
-                        'mbtfps':'sinu','urmfps':'sinu',
-                        'stere':'stere', 'sterea':'stere', 'lee_os':'stere',
-                        'mil_os':'stere', 'rouss':'stere',
-                        'ups':'npstere', 'ups':'spstere', # CHECK!! #
-                        'tmerc':'tmerc', 'gstmerc':'tmerc', 'utm':'tmerc',
-                        'vandg':'vandg', 'vandg2':'vandg',
-                        'vandg3':'vandg', 'vandg4':'vandg',
-                     }.get(projStr, 'cyl')
+        projection = {'aea': 'aea', 'ocea': 'aea',
+                      'aeqd': 'aeqd', 'xxx1': 'spaeqd', 'xxx2': 'npaeqd',
+                      'cass': 'cass',
+                      'cea': 'cea',
+                      'eqc': 'cyl', 'longlat': 'cyl',
+                      'eck4': 'eck4',
+                      'eqdc': 'eqdc',
+                      'gall': 'gall',
+                      'geos': 'geos',
+                      'gnom': 'gnom',
+                      'hammer': 'hammer', 'nell_h': 'hammer',
+                      'kav7': 'kav7',
+                      'laea': 'laea', 'xxx3': 'splaea', 'xxx4': 'nplaea',
+                      'lcc': 'lcc', 'lcca': 'lcc',
+                      'mbtfpq': 'mbtfpq',
+                      'somerc': 'merc', 'merc': 'merc', 'omerc': 'merc',
+                      'mill': 'mill',
+                      'moll': 'moll',
+                      'nsper': 'nsper',
+                      'omerc': 'omerc',
+                      'ortho': 'ortho',
+                      'poly': 'poly', 'rpoly': 'poly', 'imw_p': 'poly',
+                      'robin': 'robin',
+                      'sinu': 'sinu', 'fouc_s': 'sinu', 'gn_sinu': 'sinu',
+                      'mbtfps': 'sinu', 'urmfps': 'sinu',
+                      'stere': 'stere', 'sterea': 'stere', 'lee_os': 'stere',
+                      'mil_os': 'stere', 'rouss': 'stere',
+                      'ups': 'npstere', 'ups': 'spstere',  # CHECK!!
+                      'tmerc': 'tmerc', 'gstmerc': 'tmerc', 'utm': 'tmerc',
+                      'vandg': 'vandg', 'vandg2': 'vandg',
+                      'vandg3': 'vandg', 'vandg4': 'vandg',
+                      }.get(projStr, 'cyl')
 
         if projection in ['stere']:
-            lon_0 = float(re.findall('lon_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
-            lat_0 = float(re.findall('lat_0=+[-+]?\d*[.\d*]*', proj4)[0].split('=')[1])
+            lon_0 = float(re.findall('lon_0=+[-+]?\d*[.\d*]*',
+                                     proj4)[0].split('=')[1])
+            lat_0 = float(re.findall('lat_0=+[-+]?\d*[.\d*]*',
+                                     proj4)[0].split('=')[1])
             kwargs['lon_0'] = lon_0
             kwargs['lat_0'] = lat_0
-
 
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
@@ -155,7 +157,8 @@ class Nansatmap(Basemap):
             kwargs['urcrnrlon'] = self.lonMax
 
         # separate kwarge of plt.figure() from kwargs
-        figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor', 'frameon']
+        figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor',
+                   'frameon']
         figKwargs = {}
         for iArg in figArgs:
             if iArg in kwargs.keys():
@@ -201,30 +204,30 @@ class Nansatmap(Basemap):
                 center = (self.convolve_weightSize - 1) / 2
                 for i in range(-(center), center+1, 1):
                     for j in range(-(center), center+1, 1):
-                        weights[i][j] /= pow(2.0, max(abs(i),abs(j)))
+                        weights[i][j] /= pow(2.0, max(abs(i), abs(j)))
                 self.convolve_weights = weights
             odata = ndimage.convolve(idata,
-                                    weights=self.convolve_weights,
-                                    mode=self.convolve_mode,
-                                    cval=self.convolve_cval,
-                                    origin=self.convolve_origin)
+                                     weights=self.convolve_weights,
+                                     mode=self.convolve_mode,
+                                     cval=self.convolve_cval,
+                                     origin=self.convolve_origin)
         elif mode == 'fourier':
             odata = ndimage.fourier_gaussian(idata,
-                                            sigma=self.fourier_sigma,
-                                            n=self.fourier_n,
-                                            axis=self.fourier_axis)
+                                             sigma=self.fourier_sigma,
+                                             n=self.fourier_n,
+                                             axis=self.fourier_axis)
         elif mode == 'spline':
             odata = ndimage.spline_filter1d(idata,
-                                           order=self.spline_order,
-                                           axis=self.spline_axis)
+                                            order=self.spline_order,
+                                            axis=self.spline_axis)
         else:
             if mode != 'gaussian':
                 print 'apply Gaussian filter in image_process()'
             odata = ndimage.gaussian_filter(idata,
-                                           sigma=self.gaussian_sigma,
-                                           order=self.gaussian_order,
-                                           mode=self.gaussian_mode,
-                                           cval=self.gaussian_cval)
+                                            sigma=self.gaussian_sigma,
+                                            order=self.gaussian_order,
+                                            mode=self.gaussian_mode,
+                                            cval=self.gaussian_cval)
         return odata
 
     def _do_contour(self, bmfunc, data, v, smooth, mode, **kwargs):
@@ -233,7 +236,7 @@ class Nansatmap(Basemap):
         1. Smooth data
         1. Add colormap
         1. Append contour or contourf plot to self.mpl
-        
+
         bmfunc : Basemap function
             Basemap.contour, Basemap.contourf
         data : numpy 2D array
@@ -252,19 +255,18 @@ class Nansatmap(Basemap):
         # if cmap is given, set to self.cmap
         if 'cmap' in kwargs.keys():
             self.cmap = kwargs.pop('cmap')
-        
+
         # smooth data
         if smooth:
             data = self.smooth(data, mode, **kwargs)
 
         # draw contour lines
-        if  v is None:
+        if v is None:
             self.mpl.append(bmfunc(self, self.x, self.y, data, **kwargs))
         else:
             self.mpl.append(bmfunc(self, self.x, self.y, data, v, **kwargs))
-        
-    def contour(self, data, v=None,
-                smooth=False, mode='gaussian',
+
+    def contour(self, data, v=None, smooth=False, mode='gaussian',
                 label=True, **kwargs):
         '''Draw lined contour plots
 
@@ -287,13 +289,12 @@ class Nansatmap(Basemap):
             Optional parameters for Nansatmap.smooth()
             Optional parameters for pyplot.contour().
             Optional parameters for pyplot.clabel()
-            
+
         Modifies
         ---------
         self.mpl : list
             append QuadContourSet instance
         '''
-
 
         self._do_contour(Basemap.contour, data, v, smooth, mode, **kwargs)
 
@@ -353,7 +354,8 @@ class Nansatmap(Basemap):
         data = np.ma.array(data, mask=np.isnan(data))
         # Plot a quadrilateral mesh.
         self._create_xy_grids()
-        self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data, **kwargs))
+        self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data,
+                                           **kwargs))
         self.colorbar = len(self.mpl)-1
 
     def quiver(self, dataX, dataY, quivectors=30, **kwargs):
@@ -411,15 +413,15 @@ class Nansatmap(Basemap):
 
         # add colorbar and set font size
         if self.colorbar is not None:
-            cbar = self.fig.colorbar(self.mpl[self.colorbar],**kwargs)
+            cbar = self.fig.colorbar(self.mpl[self.colorbar], **kwargs)
             imaxes = plt.gca()
             plt.axes(cbar.ax)
             plt.xticks(fontsize=fontsize)
             plt.axes(imaxes)
 
     def drawgrid(self, fontsize=10, lat_num=5, lon_num=5,
-                 lat_labels=[True,False,False,False],
-                 lon_labels=[False,False,True,False]):
+                 lat_labels=[True, False, False, False],
+                 lon_labels=[False, False, True, False]):
         '''Draw and label parallels (lat and lon lines) for values (in degrees)
 
         Parameters
@@ -507,22 +509,22 @@ class Nansatmap(Basemap):
 
     def _create_lonlat_grids(self):
         '''Generate grids with lon/lat coordinates in each cell
-        
+
         Modifies
         ---------
         self.lon : numpy array with lon coordinates
-        self.lat : numpy array with lat coordinates        
+        self.lat : numpy array with lat coordinates
         '''
         if self.lon is None or self.lat is None:
             self.lon, self.lat = self.domain.get_geolocation_grids()
 
     def _create_xy_grids(self):
         '''Generate grids with x/y coordinates in each cell
-        
+
         Modifies
         ---------
         self.x : numpy array with X coordinates
-        self.y : numpy array with Y coordinates        
+        self.y : numpy array with Y coordinates
         '''
         self._create_lonlat_grids()
         if self.x is None or self.y is None:

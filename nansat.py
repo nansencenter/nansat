@@ -328,9 +328,9 @@ class Nansat(Domain):
 
         return b
 
-    def has_band(self,band):
+    def has_band(self, band):
         for b in self.bands():
-            if self.bands()[b]['name']==band:
+            if self.bands()[b]['name'] == band:
                 return True
         return False
 
@@ -472,10 +472,10 @@ class Nansat(Domain):
             for iBand in range(numOfBands):
                 vrt = VRT(array=self[iBand+1])
                 self.add_band(vrt=vrt)
-                metadata= self.get_metadata(bandID=iBand+1)
+                metadata = self.get_metadata(bandID=iBand+1)
                 self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
             # remove source bands
-            self.vrt.delete_bands(range(1,numOfBands))
+            self.vrt.delete_bands(range(1, numOfBands))
 
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
@@ -779,7 +779,7 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                    **kwargs):
+                     **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -1251,9 +1251,8 @@ class Nansat(Domain):
                         break
 
         # if bandID is int and with bounds: return this number
-        if (type(bandID) == int and
-            bandID >= 1 and
-            bandID <= self.vrt.dataset.RasterCount):
+        if (type(bandID) == int and bandID >= 1 and
+                bandID <= self.vrt.dataset.RasterCount):
             bandNumber = bandID
 
         # if no bandNumber found - raise error
@@ -1297,8 +1296,8 @@ class Nansat(Domain):
         tmpNansat.export(fileName, driver=driver)
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
-                           transect=True, returnOGR=False, layerNum=0,
-                           smooth=0, **kwargs):
+                     transect=True, returnOGR=False, layerNum=0,
+                     smooth=0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1345,16 +1344,16 @@ class Nansat(Domain):
         if type(smooth) is list:
             if smooth[0] < 0:
                 raise ValueError("smooth[0] must be 0 or a positive odd number.")
-            if smooth[0]>0 and (smooth[0] % 2) != 1:
+            if smooth[0] > 0 and (smooth[0] % 2) != 1:
                 raise ValueError("The kernel size smooth[0] should be odd.")
-            if not smooth[1]==0 and not smooth[1]==1:
+            if not smooth[1] == 0 and not smooth[1] == 1:
                 raise ValueError("smooth[1] must be 0 or 1 for median or mean filter.")
-            if smooth[1]==1:
+            if smooth[1] == 1:
                 smooth_function = scipy.stats.nanmean
         else:
             if smooth < 0:
                 raise ValueError("smooth must be 0 or a positive odd number.")
-            if smooth>0 and (smooth % 2) != 1:
+            if smooth > 0 and (smooth % 2) != 1:
                 raise ValueError("The kernel size smooth should be odd.")
             tmp = smooth
             smooth = []
@@ -1442,13 +1441,16 @@ class Nansat(Domain):
             if smooth[0]:
                 transect0 = []
                 for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
-                        pixlinCoord1[1], pixlinCoord0[0], pixlinCoord1[0]):
-                    transect0.append( smooth_function(data[xmin:xmax,
-                        ymin:ymax], axis=None) )
+                                                  pixlinCoord1[1],
+                                                  pixlinCoord0[0],
+                                                  pixlinCoord1[0]):
+                    transect0.append(smooth_function(data[xmin:xmax,
+                                                          ymin:ymax],
+                                                     axis=None))
                 transect.append(transect0)
             else:
                 transect.append(data[list(pixlinCoord[1]),
-                                 list(pixlinCoord[0])].tolist())
+                                list(pixlinCoord[0])].tolist())
             data = None
         if returnOGR:
             NansatOGR = Nansatshape(wkt=wkt)

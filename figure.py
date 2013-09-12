@@ -17,6 +17,7 @@
 
 from nansat_tools import *
 
+
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
 
@@ -73,7 +74,7 @@ class Figure():
     pilImgLegend = None
 
     extensionList = ['png', 'PNG', 'tif', 'TIF', 'bmp',
-                          'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
+                     'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
     _cmapName = 'jet'
 
@@ -371,10 +372,8 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
         # test availability of grids
-        if (self.latGrid is None or
-            self.lonGrid is None or
-            self.nGridLines is None or
-            self.nGridLines == 0):
+        if (self.latGrid is None or self.lonGrid is None or
+                self.nGridLines is None or self.nGridLines == 0):
             return
         # get number of grid lines
         llSpacing = self.nGridLines
@@ -420,9 +419,8 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
         # test availability of grids
-        if (self.latGrid is None or
-            self.lonGrid is None or
-            self.latlonLabels == 0):
+        if (self.latGrid is None or self.lonGrid is None or
+                self.latlonLabels == 0):
             return
 
         draw = ImageDraw.Draw(self.pilImg)
@@ -575,8 +573,8 @@ class Figure():
 
         # create a pilImage for the legend
         self.pilImgLegend = Image.new('P', (self.width,
-                                      int(self.height *
-                                      self.LEGEND_HEIGHT)), 255)
+                                            int(self.height *
+                                                self.LEGEND_HEIGHT)), 255)
         draw = ImageDraw.Draw(self.pilImgLegend)
 
         # set black color
@@ -591,16 +589,16 @@ class Figure():
             bar = np.outer(np.ones(max(int(self.pilImgLegend.size[1] *
                            self.CBAR_HEIGHT), self.CBAR_HEIGHTMIN)),
                            np.linspace(0, self.numOfColor,
-                           int(self.pilImgLegend.size[0] *
-                           self.CBAR_WIDTH)))
+                                       int(self.pilImgLegend.size[0] *
+                                           self.CBAR_WIDTH)))
             # create a colorbar pil Image
             pilImgCbar = Image.fromarray(np.uint8(bar))
             # paste the colorbar pilImage on Legend pilImage
             self.pilImgLegend.paste(pilImgCbar,
                                     (int(self.pilImgLegend.size[0] *
-                                     self.CBAR_LOCATION_X),
+                                         self.CBAR_LOCATION_X),
                                      int(self.pilImgLegend.size[1] *
-                                     self.CBAR_LOCATION_Y)))
+                                         self.CBAR_LOCATION_Y)))
             # create a scale for the colorbar
             scaleLocation = np.linspace(0, 1, self.numOfTicks)
             scaleArray = scaleLocation
@@ -615,7 +613,7 @@ class Figure():
                              self.pilImgLegend.size[0] *
                              self.CBAR_WIDTH +
                              int(self.pilImgLegend.size[0] *
-                             self.CBAR_LOCATION_X))
+                                 self.CBAR_LOCATION_X))
 
                 box = (coordX, int(self.pilImgLegend.size[1] *
                                    self.CBAR_LOCATION_Y),
@@ -757,9 +755,8 @@ class Figure():
         self.create_pilImage(**kwargs)
 
         # add labels with lats/lons
-        if (self.latGrid is not None and
-            self.lonGrid is not None and
-            self.latlonLabels > 0):
+        if (self.latGrid is not None and self.lonGrid is not None and
+                self.latlonLabels > 0):
             self.add_latlon_labels()
 
         # add logo
@@ -782,8 +779,8 @@ class Figure():
 
         for item in datas:
             if (item[0] == self.transparency[0] and
-                item[1] == self.transparency[1] and
-                item[2] == self.transparency[2]):
+                    item[1] == self.transparency[1] and
+                    item[2] == self.transparency[2]):
                 newData.append((255, 255, 255, 0))
             else:
                 newData.append(item)
@@ -855,13 +852,12 @@ class Figure():
             for i in range(len(colorList[iColor]) - 1):
                 spaceNum = int(self.numOfColor *
                                (colorList[iColor][i + 1][0] -
-                               colorList[iColor][i][0]))
-                lut[iColor][iPalette:iPalette + spaceNum] = np.array(
-                                                np.linspace(
-                                                colorList[iColor][i][2],
-                                                colorList[iColor][i + 1][1],
-                                                num=spaceNum) * 255,
-                                                dtype=np.uint8)
+                                colorList[iColor][i][0]))
+                lut[iColor][iPalette:iPalette + spaceNum] = \
+                    np.array(np.linspace(colorList[iColor][i][2],
+                                         colorList[iColor][i + 1][1],
+                                         num=spaceNum) * 255,
+                             dtype=np.uint8)
                 iPalette += (spaceNum)
             # adjust the number of colors on the palette
             while iPalette < self.numOfColor:
@@ -947,4 +943,3 @@ class Figure():
                     setattr(self, key, [idict[key]])
                 else:
                     setattr(self, key, idict[key])
-
