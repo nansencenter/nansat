@@ -11,11 +11,13 @@ from datetime import datetime, timedelta
 from math import ceil
 from scipy.ndimage.filters import gaussian_filter
 
+
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1, lineStep= 1, **kwargs):
+                 GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1,
+                 lineStep=1, **kwargs):
         ''' Create VIIRS VRT '''
 
         assert 'GMTCO_npp_' in fileName, 'viirs_l1 BAD MAPPER'
@@ -23,7 +25,8 @@ class Mapper(VRT):
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()
 
-        viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240, 1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]
+        viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240,
+                            1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]
 
         # create empty VRT dataset with geolocation only
         xDatasetSource = 'HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude' % fileName
@@ -41,11 +44,12 @@ class Mapper(VRT):
             print bWavelength
             SourceFilename = 'HDF5:"%s"://All_Data/VIIRS-M%d-SDR_All/Radiance' % (ifile, bNumber)
             print SourceFilename
-            metaEntry = {
-                'src': {'SourceFilename': SourceFilename, 'SourceBand': 1},
-                'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': str(bWavelength),
-                        'suffix': str(bWavelength)},
-            }
+            metaEntry = {'src': {'SourceFilename': SourceFilename,
+                         'SourceBand': 1},
+                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
+                                 'wavelength': str(bWavelength),
+                                 'suffix': str(bWavelength)}
+                         }
             metaDict.append(metaEntry)
 
         # add bands with metadata and corresponding values to the empty VRT
@@ -77,8 +81,7 @@ class Mapper(VRT):
         step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT1))
         self.logger.debug('gcpCount: %d %d %d %d, %d %d',
                           latitude.shape[0], latitude.shape[1],
-                          GCP_COUNT0, GCP_COUNT1,
-                          step0, step1)
+                          GCP_COUNT0, GCP_COUNT1, step0, step1)
 
         # generate list of GCPs
         gcps = []

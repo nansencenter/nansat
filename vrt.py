@@ -18,6 +18,7 @@ import tempfile
 
 from nansat_tools import *
 
+
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
 
@@ -90,6 +91,7 @@ class GeolocationArray():
         self.d['LINE_STEP'] = str(lineStep)
         self.d['PIXEL_OFFSET'] = str(pixelOffset)
         self.d['PIXEL_STEP'] = str(pixelStep)
+
 
 class VRT():
     '''Wrapper around GDAL VRT-file
@@ -442,19 +444,19 @@ class VRT():
 
             srcDs = gdal.Open(src['SourceFilename'])
             # create XML for each source
-            src['XML'] = self.ComplexSource.substitute(
-                                        Dataset=src['SourceFilename'],
-                                        SourceBand=src['SourceBand'],
-                                        SourceType=src['SourceType'],
-                                        NODATA=src['NODATA'],
-                                        ScaleOffset=src['ScaleOffset'],
-                                        ScaleRatio=src['ScaleRatio'],
-                                        LUT=src['LUT'],
-                                        srcXSize=srcDs.RasterXSize,
-                                        srcYSize=srcDs.RasterYSize,
-                                        dstXSize=srcDs.RasterXSize,
-                                        dstYSize=srcDs.RasterYSize,
-                                        )
+            src['XML'] = self.ComplexSource.\
+                substitute(Dataset=src['SourceFilename'],
+                           SourceBand=src['SourceBand'],
+                           SourceType=src['SourceType'],
+                           NODATA=src['NODATA'],
+                           ScaleOffset=src['ScaleOffset'],
+                           ScaleRatio=src['ScaleRatio'],
+                           LUT=src['LUT'],
+                           srcXSize=srcDs.RasterXSize,
+                           srcYSize=srcDs.RasterYSize,
+                           dstXSize=srcDs.RasterXSize,
+                           dstYSize=srcDs.RasterYSize,
+                           )
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
@@ -476,10 +478,8 @@ class VRT():
 
         # set destination dataType (if not given in input parameters)
         if 'dataType' not in dst:
-            if (len(srcs) > 1
-                or float(srcs[0]['ScaleRatio']) != 1.0
-                or len(srcs[0]['LUT']) > 0
-                or 'DataType' not in srcs[0]):
+            if (len(srcs) > 1 or float(srcs[0]['ScaleRatio']) != 1.0 or
+                    len(srcs[0]['LUT']) > 0 or 'DataType' not in srcs[0]):
                 # if pixel function
                 # if scaling is applied
                 # if LUT
@@ -508,8 +508,8 @@ class VRT():
         # create list of available bands (to prevent duplicate names)
         bandNames = []
         for iBand in range(self.dataset.RasterCount):
-            bandNames.append(self.dataset.GetRasterBand(iBand + 1).\
-                      GetMetadataItem('name'))
+            bandNames.append(self.dataset.GetRasterBand(iBand + 1).
+                             GetMetadataItem('name'))
 
         # if name is not given add 'band_00N'
         if 'name' not in dst:
@@ -572,7 +572,8 @@ class VRT():
         '''
         # Make sure time is a list with one datetime element per band
         numBands = self.dataset.RasterCount
-        if isinstance(time, datetime.datetime) or isinstance(time, datetime.date):
+        if (isinstance(time, datetime.datetime) or
+                isinstance(time, datetime.date)):
             time = [time]
         if len(time) == 1:
             time = time * numBands
@@ -583,8 +584,8 @@ class VRT():
 
         # Store time as metadata key 'time' in each band
         for i in range(numBands):
-            self.dataset.GetRasterBand(i + 1).SetMetadataItem('time',
-                                       str(time[i].isoformat()))
+            self.dataset.GetRasterBand(i + 1).\
+                SetMetadataItem('time', str(time[i].isoformat()))
 
         return
 
@@ -685,18 +686,19 @@ class VRT():
                        'Float32': '4',
                        'Float64': '8',
                        'CFloat32': '8',
-                       'CFloat64': '16',}.get(dataType)
+                       'CFloat64': '16'}.get(dataType)
 
         self.logger.debug('DataType: %s', dataType)
 
         lineOffset = str(int(pixelOffset) * arrayShape[1])
-        contents = self.RawRasterBandSource.substitute(XSize=arrayShape[1],
-                                                       YSize=arrayShape[0],
-                                                       DataType=dataType,
-                                                       BandNum=1,
-                                                       SrcFileName=binaryFile,
-                                                       PixelOffset=pixelOffset,
-                                                       LineOffset=lineOffset)
+        contents = self.RawRasterBandSource.\
+            substitute(XSize=arrayShape[1],
+                       YSize=arrayShape[0],
+                       DataType=dataType,
+                       BandNum=1,
+                       SrcFileName=binaryFile,
+                       PixelOffset=pixelOffset,
+                       LineOffset=lineOffset)
         #write XML contents to
         self.write_xml(contents)
 
@@ -826,12 +828,13 @@ class VRT():
                         - float(self.dataset.RasterYSize) / float(ySize))
 
         # update size and GeoTranform in XML of the warped VRT object
-        warpedVRT = self.create_warped_vrt(xSize=xSize, ySize=ySize,
-                                           geoTransform=geoTransform,
-                                           use_geolocationArray=use_geolocationArray,
-                                           use_gcps=use_gcps,
-                                           use_geotransform=use_geotransform,
-                                           eResampleAlg=eResampleAlg)
+        warpedVRT = self.\
+            create_warped_vrt(xSize=xSize, ySize=ySize,
+                              geoTransform=geoTransform,
+                              use_geolocationArray=use_geolocationArray,
+                              use_gcps=use_gcps,
+                              use_geotransform=use_geotransform,
+                              eResampleAlg=eResampleAlg)
 
         # set metadata
         warpedVRT.dataset.SetMetadata(self.dataset.GetMetadata_Dict())
@@ -900,7 +903,7 @@ class VRT():
                 for chunki in range(0, numberOfChunks + 1):
                     chunk = gspString[(chunki * chunkLength):
                                       min(((chunki + 1) * chunkLength),
-                                      len(gspString))]
+                                          len(gspString))]
                     # add chunk to metadata
                     self.dataset.SetMetadataItem('NANSAT_%s_%03d'
                                                  % (gcpNames[i], chunki),
@@ -1068,7 +1071,7 @@ class VRT():
             node0.node('GeoTransform').value = str(geoTransform).strip('()')
             node0.node('DstGeoTransform').value = str(geoTransform).strip('()')
             node0.node('DstInvGeoTransform').value = \
-                                            str(invGeotransform[1]).strip('()')
+                str(invGeotransform[1]).strip('()')
 
             if node0.node('SrcGeoLocTransformer'):
                 node0.node('BlockXSize').value = str(xSize)
@@ -1323,7 +1326,7 @@ class VRT():
 
         '''
         node0 = Node.create(self.read_xml())
-        node0.delNode('VRTRasterBand', options={'band':bandNum})
+        node0.delNode('VRTRasterBand', options={'band': bandNum})
         self.write_xml(str(node0.rawxml()))
 
     def delete_bands(self, bandNums):
@@ -1358,8 +1361,8 @@ class VRT():
         self.dataset = self.vrtDriver.CreateCopy(self.fileName, self.dataset)
 
         # get source bandsize
-        srcXSize= self.dataset.RasterXSize
-        srcYSize= self.dataset.RasterYSize
+        srcXSize = self.dataset.RasterXSize
+        srcYSize = self.dataset.RasterYSize
 
         # read xml and create the node
         XML = self.read_xml()
@@ -1381,17 +1384,18 @@ class VRT():
             node1.replaceAttribute('ySize', str(dstYSize))
 
         # create contents for mask band
-        contents = self.ComplexSource.substitute(SourceType='SimpleSource',
-                                                 Dataset=maskDs.GetDescription(),
-                                                 SourceBand='mask,1',
-                                                 NODATA = '',
-                                                 ScaleOffset = '',
-                                                 ScaleRatio = '',
-                                                 LUT = '',
-                                                 srcXSize=srcXSize,
-                                                 srcYSize=srcYSize,
-                                                 dstXSize=dstXSize,
-                                                 dstYSize=dstYSize )
+        contents = self.ComplexSource.\
+            substitute(SourceType='SimpleSource',
+                       Dataset=maskDs.GetDescription(),
+                       SourceBand='mask,1',
+                       NODATA='',
+                       ScaleOffset='',
+                       ScaleRatio='',
+                       LUT='',
+                       srcXSize=srcXSize,
+                       srcYSize=srcYSize,
+                       dstXSize=dstXSize,
+                       dstYSize=dstYSize)
 
         # add mask band contents to xml
         contents = node0.node('MaskBand').node('VRTRasterBand').insert(contents)
@@ -1400,5 +1404,3 @@ class VRT():
 
         # write contents
         self.write_xml(contents)
-
-

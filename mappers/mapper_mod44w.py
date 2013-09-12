@@ -8,6 +8,7 @@
 from vrt import *
 import os.path
 
+
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MOD44W produc (MODIS watermask at 250 m)'''
 

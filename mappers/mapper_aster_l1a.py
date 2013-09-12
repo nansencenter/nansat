@@ -9,13 +9,14 @@ from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS, parse
 from datetime import datetime, timedelta
 from math import ceil
 
+
 class Mapper(VRT):
     ''' Mapper for ASTER L1A VNIR data'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 GCP_COUNT = 10,
-                 bandNames = ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
-                 bandWaves = [560, 660, 820], **kwargs):
+                 GCP_COUNT=10,
+                 bandNames=['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
+                 bandWaves=[560, 660, 820], **kwargs):
         ''' Create VRT
 
         Parameters
@@ -55,7 +56,7 @@ class Mapper(VRT):
                     'wavelength': str(bandWave),
                     'suffix': str(bandWave),
                     },
-                }
+            }
             metaDict.append(metaEntry)
 
         # create empty VRT dataset with geolocation only
@@ -92,9 +93,12 @@ class Mapper(VRT):
         step1 = longitude.shape[1] / GCP_COUNT
 
         # estimate pixel/line step
-        pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) / float(xDataset.RasterXSize)))
-        lineStep = int(ceil(float(gdalSubDataset.RasterYSize) / float(xDataset.RasterYSize)))
-        self.logger.debug('steps: %d %d %d %d' % (step0, step1, pixelStep, lineStep))
+        pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) /
+                             float(xDataset.RasterXSize)))
+        lineStep = int(ceil(float(gdalSubDataset.RasterYSize) /
+                            float(xDataset.RasterYSize)))
+        self.logger.debug('steps: %d %d %d %d' % (step0, step1,
+                                                  pixelStep, lineStep))
 
         # generate list of GCPs
         gcps = []
@@ -106,11 +110,12 @@ class Mapper(VRT):
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
                     gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep, i0 * lineStep)
-                    self.logger.debug('%d %d %d %f %f' % (k, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY))
+                    self.logger.debug('%d %d %d %f %f' % (k, gcp.GCPPixel,
+                                                          gcp.GCPLine,
+                                                          gcp.GCPX, gcp.GCPY))
                     gcps.append(gcp)
                     k += 1
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
 
         self._set_time(parse(gdalMetadata['FIRSTPACKETTIME']))
-
