@@ -943,7 +943,6 @@ class Domain():
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
         startlon, startlat = self._transform_points([mid_x], [mid_y1])
         endlon, endlat = self._transform_points([mid_x], [mid_y2])
-        pdb.set_trace()
         if orbit_direction:
             # check that startlat is actually less/greater than endlat for
             # ascending/descending orbit direction
