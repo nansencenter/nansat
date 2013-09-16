@@ -110,7 +110,7 @@ class Mapper(VRT):
                     'DataType': 6}]
             dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                    'PixelFunctionType': 'Sigma0HHBetaToSigma0VV',
-                   'polarisation': 'VV',
+                   'polarization': 'VV',
                    'suffix': 'VV'}
             self._create_band(src, dst)
             self.dataset.FlushCache()
