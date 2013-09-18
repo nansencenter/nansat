@@ -335,7 +335,7 @@ class Nansat(Domain):
         return False
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF', flip=True):
+               addGCPs=True, driver='netCDF'):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -370,9 +370,6 @@ class Nansat(Domain):
         exportVRT = self.vrt.copy()
         exportVRT.real = []
         exportVRT.imag = []
-        geoTransform = list(self.vrt.dataset.GetGeoTransform())
-        if flip and geoTransform == [0.0, 1.0, 0.0, 0.0, 0.0, 1.0]:
-            exportVRT.dataset.SetGeoTransform([0.0, 1.0, 0.0, 0.0, 0.0, -1.0])
 
         # Find complex data band
         complexBands = []
@@ -476,17 +473,16 @@ class Nansat(Domain):
             for iBand in range(numOfBands):
                 vrt = VRT(array=self[iBand+1])
                 self.add_band(vrt=vrt)
-                metadata= self.get_metadata(bandID=iBand+1)
+                metadata = self.get_metadata(bandID=iBand+1)
                 self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
             # remove source bands
-            self.vrt.delete_bands(range(1,numOfBands))
+            self.vrt.delete_bands(range(1, numOfBands))
 
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset)
         self.logger.debug('Export - OK!')
-        return dataset
 
     def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
@@ -701,14 +697,28 @@ class Nansat(Domain):
             # get projection of destination GCPs
             dstSRS = dstDomain.vrt.dataset.GetGCPProjection()
 
+        xSize = dstDomain.vrt.dataset.RasterXSize
+        ySize = dstDomain.vrt.dataset.RasterYSize
+
+        # get geoTransform
+        if 'use_gcps' in kwargs.keys() and kwargs['use_gcps']==False:
+            corners = dstDomain.get_corners()
+            ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' %(min(corners[0]),
+                                                             min(corners[1]),
+                                                             max(corners[0]),
+                                                             max(corners[1]),
+                                                             xSize, ySize)
+            d = Domain(srs=dstSRS, ext=ext)
+            geoTransform = d.vrt.dataset.GetGeoTransform()
+        else:
+            geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+
         # create Warped VRT
         warpedVRT = self.raw.create_warped_vrt(
                     dstSRS=dstSRS, dstGCPs=dstGCPs,
                     eResampleAlg=eResampleAlg,
-                    xSize=dstDomain.vrt.dataset.RasterXSize,
-                    ySize=dstDomain.vrt.dataset.RasterYSize,
-                    blockSize=blockSize,
-                    geoTransform=dstDomain.vrt.dataset.GetGeoTransform(),
+                    xSize=xSize, ySize=ySize, blockSize=blockSize,
+                    geoTransform=geoTransform,
                     WorkingDataType=WorkingDataType,
                     tps=tps, **kwargs)
 
@@ -1272,7 +1282,7 @@ class Nansat(Domain):
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Overloaded in childs.'''
 
-    def export_band(self, fileName, bandID=1, flip=True, driver='netCDF'):
+    def export_band(self, fileName, bandID=1, driver='netCDF'):
         '''Export only one band of the Nansat object
         Get array from the required band
         Create temporary Nansat from the array
@@ -1299,7 +1309,7 @@ class Nansat(Domain):
         tmpNansat.set_metadata(rootMetadata)
         tmpNansat.set_metadata(bandMetadata, bandID=1)
         # export
-        tmpNansat.export(fileName, driver=driver, flip=flip)
+        tmpNansat.export(fileName, driver=driver)
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,

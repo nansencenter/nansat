@@ -18,6 +18,7 @@ import tempfile
 
 from nansat_tools import *
 
+
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
 
@@ -909,9 +910,8 @@ class VRT():
     def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                           xSize=0, ySize=0, blockSize=None,
                           geoTransform=None, WorkingDataType=None,
-                          tps=False,
-                          use_geolocationArray=True, use_gcps=True,
-                          use_geotransform=True,
+                          tps=False, use_geolocationArray=True,
+                          use_gcps=True, use_geotransform=True,
                           dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
@@ -999,7 +999,7 @@ class VRT():
         acwvSRS = dstSRS
 
         # if destination GCPs are given: create and add fake GCPs to src
-        if len(dstGCPs) > 0:
+        if len(dstGCPs) > 0 and use_gcps:
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
@@ -1032,7 +1032,6 @@ class VRT():
             srcVRT.dataset.SetGCPs([], '')
             srcVRT.dataset.SetGeoTransform((0, 1, 0,
                                             srcVRT.dataset.RasterYSize, 0, -1))
-
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
