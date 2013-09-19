@@ -944,27 +944,29 @@ class Domain():
         mid_x = self.vrt.dataset.RasterXSize / 2
         mid_y1 = self.vrt.dataset.RasterYSize / 2 * 0.4
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
-        lon[0], lat[0] = self._transform_points([mid_x], [mid_y1])
-        lon[1], lat[1] = self._transform_points([mid_x], [mid_y2])
-
-        if (type(orbit_direction) == str and
-                str.lower(orbit_direction) == 'ascending'):
-            startlat = min(lat)
-            startlon = lon[lat.index(startlat)]
-            endlat = max(lat)
-            endlon = lon[lat.index(endlat)]
-        elif (type(orbit_direction) == str and
-                str.lower(orbit_direction) == 'descending'):
-            startlat = max(lat)
-            startlon = lon[lat.index(startlat)]
-            endlat = min(lat)
-            endlon = lon[lat.index(endlat)]
-        else:
-            startlon = lon[0]
-            startlat = lat[0]
-            endlon = lon[1]
-            endlat = lat[1]
-
+        startlon, startlat = self._transform_points([mid_x], [mid_y1])
+        endlon, endlat = self._transform_points([mid_x], [mid_y2])
+        if orbit_direction:
+            # check that startlat is actually less/greater than endlat for
+            # ascending/descending orbit direction
+            if str.lower(orbit_direction)=='ascending':
+                # should have startlat<endlat
+                if startlat>endlat:
+                    tmplat=startlat
+                    tmplon=startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
+            if str.lower(orbit_direction)=='descending':
+                # should have startlat>endlat
+                if startlat<endlat:
+                    tmplat=startlat
+                    tmplon=startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
         bearing_center = initial_bearing(startlon[0], startlat[0],
                                          endlon[0], endlat[0])
         return bearing_center

@@ -117,7 +117,7 @@ class Mapper(VRT):
                     'DataType': 6}]
             dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                    'PixelFunctionType': 'Sigma0HHBetaToSigma0VV',
-                   'polarisation': 'VV',
+                   'polarization': 'VV',
                    'suffix': 'VV'}
             self._create_band(src, dst)
             self.dataset.FlushCache()
@@ -125,10 +125,9 @@ class Mapper(VRT):
         ############################################
         # Add SAR look direction to metadata domain
         ############################################
-        self.dataset.SetMetadataItem('SAR_center_look_direction',
-                                     str(mod(Domain(ds=gdalDataset).
-                                         upwards_azimuth_direction() + 90,
-                                         360)))
+        self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
+            Domain(ds=gdalDataset).upwards_azimuth_direction( orbit_direction =
+                gdalDataset.GetMetadata()['ORBIT_DIRECTION']) + 90, 360)))
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']

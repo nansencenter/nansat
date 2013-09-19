@@ -214,6 +214,12 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
+        # Set invalid and missing data to np.nan
+        if band.GetMetadata().has_key('_FillValue'):
+            fillValue = float(band.GetMetadata()['_FillValue'])
+            bandData[np.where(bandData==fillValue)]=np.nan
+        bandData[np.where(np.isinf(bandData))] = np.nan
+
         return bandData
 
     def __repr__(self):
@@ -1460,4 +1466,4 @@ class Nansat(Domain):
                                 fieldValues=transect)
             return NansatOGR
         else:
-            return transect, [lonVector, latVector], pixlinCoord
+            return transect, [lonVector, latVector], pixlinCoord.astype(int)
