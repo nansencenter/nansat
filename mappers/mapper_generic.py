@@ -28,7 +28,7 @@ class Mapper(VRT):
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
         fileExt = os.path.splitext(fileName)[1]
-        
+
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
         if len(subDatasets) == 0:
@@ -199,6 +199,8 @@ class Mapper(VRT):
         '''Get GCPs from strings in metadata and insert in dataset'''
         gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
         gcpAllValues = []
+        geoTransform = self.dataset.GetGeoTransform()
+
         # for all gcp coordinates
         for i, gcpName in enumerate(gcpNames):
             # scan throught metadata and find how many lines with each GCP
@@ -217,7 +219,12 @@ class Mapper(VRT):
             # append all gcps from string
             for x in gcpString.split('|'):
                 if len(x) > 0:
-                    gcpValues.append(float(x))
+                    # if data (geoTransform) is flipped, GCP is flipped as well.
+                    if gcpName == 'GCPLine' and geoTransform[5] == -1:
+                        gcpValues.append(float(geoTransform[3]) - float(x))
+                    else:
+                        gcpValues.append(float(x))
+
             #gcpValues = [float(x) for x in gcpString.strip().split('|')]
             gcpAllValues.append(gcpValues)
 
