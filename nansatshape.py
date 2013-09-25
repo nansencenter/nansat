@@ -28,7 +28,7 @@ class Nansatshape():
         Nansatshape support points, line and ploygons. (not mupti-polygon)
 
     '''
-    def __init__(self, fileName=None, layer=0, srs=None, wkt=None, wkbStyle=ogr.wkbPoint):
+    def __init__(self, fileName=None, layer=0, srs=None, wkbStyle=ogr.wkbPoint):
         '''Create Nansatshape object
 
         if <fileName> is given:
@@ -46,8 +46,6 @@ class Nansatshape():
             if int and a shapefile is given, it is a layer number which is read.
             if string, it is layer name to created or open
         srs : SpatialReference object
-        wkt : String
-            Well known text
         wkbStyle : ogr.wkbPoint, ogr.wkbPoint25D, ogr.wkbLineString,
                    ogr.wkbLineString25D, ogr.wkbPolygon or ogr.wkbPolygon25D
 
@@ -67,10 +65,6 @@ class Nansatshape():
         # Create a empty datasource and layer in memory
         if fileName is None:
             self.datasource= ogr.GetDriverByName('Memory').CreateDataSource('wrk')
-            # create srs if wkt is given
-            if srs is None and wkt is not None:
-                srs = osr.SpatialReference()
-                srs.ImportFromWkt(wkt)
             # create a new later
             if layer == 0:
                 layer = 'NansatLayer'
@@ -100,13 +94,14 @@ class Nansatshape():
 
         Parameters
         ----------
-        values :  structured np.array or
+        values :  structured np.array
+            field names and values
             e.g. : np.zeros(n, dtype={'names':['INT', 'STR','FLOAT1','FLOAT2'],
                                       'formats':['i4','a10','f8','f8']})
                     n is a number of features.
 
         coordinates : np.array or list with scalar elements (2 x n)
-            n is a number of points
+            X-Y coordinates. n is a number of points
 
         fieldFeateurID : None or list with int elements (the length is n)
             the values are from 0 to n-1
@@ -114,6 +109,9 @@ class Nansatshape():
         geoFeateurID : None or list with int elements (the length is n)
             if the data type is point, it will be [0, 1, 2, 3, ..., (num of fields-1)]
             if polygon or line, the numbers represent which geometry each point belongs to.
+
+        AddPixLine : bool
+            if True, add 'X (pixel)' and 'Y (line)' as the fields.
 
         Modifies
         --------

@@ -1465,7 +1465,9 @@ class Nansat(Domain):
             for i, iBand in enumerate(bandList):
                 fieldValues['transect_' + str(iBand) ] = transect[i]
             # Create Nansatshape object
-            NansatOGR = Nansatshape(wkt=wkt)
+            srs = osr.SpatialReference()
+            srs.ImportFromWkt(wkt)
+            NansatOGR = Nansatshape(srs=srs)
             # Set features and geometries into the Nansatshape
             NansatOGR.add_features(coordinates=[lonVector, latVector],
                                    values=fieldValues,
