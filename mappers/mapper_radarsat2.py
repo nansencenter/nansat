@@ -6,13 +6,13 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from numpy import mod
-from xml.dom import minidom
 from math import asin
 
 from vrt import *
 from domain import Domain
 import tarfile
 import zipfile
+import xml.etree.ElementTree as ET
 
 try:
     from osgeo import gdal
@@ -29,11 +29,36 @@ class Mapper(VRT):
         ''' Create Radarsat2 VRT '''
         fPathName, fExt = os.path.splitext(fileName)
 
-        if fExt == '.ZIP' or fExt == '.zip':
+        if zipfile.is_zipfile(fileName):
+            # Open zip directly
             fPath, fName = os.path.split(fPathName)
             fileName = '/vsizip/%s/%s' % (fileName, fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
+            # Open product.xml to get additional metadata
+            zz = zipfile.ZipFile(fileName)
+            product_xml_file = zz.open(os.path.join(os.path.basename(fileName).split('.')[0],'product.xml'))
+        else:
+            # product.xml to get additionali metadata
+            product_xml_file = os.path.join(fileName,'product.xml')
+
+        ###
+        # Get additional metadata from product.xml
+        rs2 = ET.parse(product_xml_file)
+        rs2_root = rs2.getroot()
+        for elem in rs2_root:
+            if 'sourceAttributes' in elem.tag:
+                break
+        for el in elem:
+            if 'radarParameters' in el.tag:
+                break
+        for elem in el:
+            if 'antennaPointing' in elem.tag:
+                break
+        antennaPointing = 90 if elem.text.lower()=='right' else -90
+        if zipfile.is_zipfile(fileName):
+            product_xml_file.close()
+        ###
 
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
 
@@ -129,7 +154,8 @@ class Mapper(VRT):
         ############################################
         self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
             Domain(ds=gdalDataset).upwards_azimuth_direction( orbit_direction =
-                gdalDataset.GetMetadata()['ORBIT_DIRECTION']) + 90, 360)))
+            gdalDataset.GetMetadata()['ORBIT_DIRECTION']) + antennaPointing,
+            360)))
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
