@@ -95,7 +95,8 @@ class Mapper(VRT):
                 'DataType': dtype}]
         dst = {'wkv': 'angle_of_incidence',
                'PixelFunctionType': 'BetaSigmaToIncidence',
-               '_FillValue': -10000,
+               '_FillValue': -10000, # NB: this is also hard-coded in
+                                     #     pixelfunctions.c
                'dataType': 6,
                'name': 'incidence_angle'}
 

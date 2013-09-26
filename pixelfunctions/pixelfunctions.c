@@ -808,8 +808,11 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
                     sigma0 = s0Real*s0Real + s0Imag*s0Imag;
 
 		    if (beta0 != 0) incidence = asin(sigma0/beta0)*180/PI
-		    else incidence = -10000;
-
+		    else incidence = -10000; // NB: this is also hard-coded in
+                                             //     mapper_radarsat2.py, and
+                                             //     should be the same in other
+                                             //     mappers where this function
+                                             //     is needed...
 		    GDALCopyWords(&incidence, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
@@ -828,11 +831,12 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 			sigma0 = SRCVAL(papoSources[1], eSrcType, ii);
 
 			if (beta0 != 0) incidence = asin(sigma0/beta0)*180/PI
-			else incidence = -10000;
-
-                        //printf("%.2f\t", incidence);
-
-			GDALCopyWords(&incidence, GDT_Float64, 0,
+			else incidence = -10000; // NB: this is also hard-coded in
+                                                 //     mapper_radarsat2.py, and
+                                                 //     should be the same in other
+                                                 //     mappers where this function
+			                         //     is needed...                
+                        GDALCopyWords(&incidence, GDT_Float64, 0,
 			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
 			              eBufType, nPixelSpace, 1);
 		}
