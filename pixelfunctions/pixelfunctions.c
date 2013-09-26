@@ -804,8 +804,8 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
                     s0Real = SRCVAL(s0pReal, eSrcType, ii);
                     s0Imag = SRCVAL(s0pImag, eSrcType, ii);
 
-                    beta0 = sqrt(b0Real*b0Real + b0Imag*b0Imag);
-                    sigma0 = sqrt(s0Real*s0Real + s0Imag*s0Imag);
+                    beta0 = b0Real*b0Real + b0Imag*b0Imag;
+                    sigma0 = s0Real*s0Real + s0Imag*s0Imag;
 
 		    if (beta0 != 0) incidence = asin(sigma0/beta0)*180/PI
 		    else incidence = -10000;
