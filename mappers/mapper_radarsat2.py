@@ -7,12 +7,12 @@
 
 from numpy import mod
 from math import asin
+import tarfile
+import zipfile
 
 from vrt import *
 from domain import Domain
-import tarfile
-import zipfile
-import xml.etree.ElementTree as ET
+from nansat_tools import Node
 
 try:
     from osgeo import gdal
@@ -44,20 +44,11 @@ class Mapper(VRT):
 
         ###
         # Get additional metadata from product.xml
-        rs2 = ET.parse(product_xml_file)
-        rs2_root = rs2.getroot()
-        for elem in rs2_root:
-            if 'sourceAttributes' in elem.tag:
-                break
-        for el in elem:
-            if 'radarParameters' in el.tag:
-                break
-        for elem in el:
-            if 'antennaPointing' in elem.tag:
-                break
-        antennaPointing = 90 if elem.text.lower()=='right' else -90
-        if zipfile.is_zipfile(fileName):
-            product_xml_file.close()
+        rs2_0 = Node.create(product_xml_file)
+        rs2_1 = rs2_0.node('sourceAttributes')
+        rs2_2 = rs2_1.node('radarParameters')
+        antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' \
+                             else -90
         ###
 
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
