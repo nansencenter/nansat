@@ -49,6 +49,8 @@ class Mapper(VRT):
         rs2_2 = rs2_1.node('radarParameters')
         antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' \
                              else -90
+        if zipfile.is_zipfile(fileName):
+            product_xml_file.close()
         ###
 
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
