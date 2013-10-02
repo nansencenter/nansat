@@ -68,4 +68,7 @@ class Mapper(VRT):
             yRawPro = None
             xRawPro = None
             
-            print iRawPro.shape, iRawPro
+            for varName in f.variables:
+                if '_mean' in varName:
+                    varData = f.variables[varName][:]
+                    print varName, varData
