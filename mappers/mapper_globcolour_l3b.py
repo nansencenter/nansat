@@ -78,10 +78,11 @@ class Mapper(VRT, Globcolour):
             for varName in f.variables:
                 # find variable with _mean, eg CHL1_mean
                 if '_mean' in varName:
+                    var = f.variables[varName]
                     break
 
             # read binned data
-            varBinned = f.variables[varName][:]
+            varBinned = var[:]
 
             # convert to GLOBCOLOR grid
             varRawPro = np.zeros([GLOBCOLOR_ROWS, GLOBCOLOR_COLS], 'float32')
@@ -111,8 +112,13 @@ class Mapper(VRT, Globcolour):
                     metaEntry['dst']['suffix'] = simWavelength
                     metaEntry['dst']['wavelength'] = simWavelength
                 
+                # add all metadata from NC-file
+                for attr in var._attributes:
+                    metaEntry['dst'][attr] = var._attributes[attr]
+                
                 metaDict.append(metaEntry)
     
+
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
