@@ -97,15 +97,22 @@ class Mapper(VRT, Globcolour):
             # get WKV
             if varName in self.varname2wkv:
                 varWKV = self.varname2wkv[varName]
-
+                    
+                    
                 # add metadata to the dictionary
                 metaEntry = {
                     'src': {'SourceFilename': self.varVRTs[-1].fileName,
                             'SourceBand':  1},
                     'dst': {'wkv': varWKV, 'original_name': varName}}
+
+                # add wavelength for nLw
+                if 'Fully normalised water leaving radiance' in f.variables[varName].long_name:
+                    simWavelength = varName.split('L')[1].split('_mean')[0]
+                    metaEntry['dst']['suffix'] = simWavelength
+                    metaEntry['dst']['wavelength'] = simWavelength
                 
                 metaDict.append(metaEntry)
     
 
-        ## add bands with metadata and corresponding values to the empty VRT
-        #self._create_bands(metaDict)
+        # add bands with metadata and corresponding values to the empty VRT
+        self._create_bands(metaDict)
