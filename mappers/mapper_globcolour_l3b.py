@@ -58,4 +58,14 @@ class Mapper(VRT):
             colBinned = None
             rowBinned = None
             
-            print iBinned.shape, iBinned
+            # get iRawPro, index for converting from raw-gridded to proj-gridded
+            yRawPro = np.rint(1 + (GLOBCOLOR_ROWS - 1) * (latlonGrid[0] + 90) / 180)
+            lon_step_Mat = 1 / np.cos(np.pi * latlonGrid[0] / 180.) / 24.
+            xRawPro = np.rint(1 + (latlonGrid[1] + 180) / lon_step_Mat)
+            iRawPro = xRawPro + (yRawPro - 1) * GLOBCOLOR_COLS
+            iRawPro[iRawPro < 0] = 0
+            iRawPro = np.rint(iRawPro).astype('uint32')
+            yRawPro = None
+            xRawPro = None
+            
+            print iRawPro.shape, iRawPro
