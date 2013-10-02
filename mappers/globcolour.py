@@ -38,7 +38,6 @@ class Globcolour():
 
     def make_rrsw_meta_entry(self, nlwMetaEntry):
         '''Make metaEntry for calculation of Rrsw'''
-        print 'before', nlwMetaEntry
         iWKV = nlwMetaEntry['dst']['wkv']
         if iWKV == 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water':
             solarIrradiance = nlwMetaEntry['dst']['solar_irradiance']
@@ -48,7 +47,7 @@ class Globcolour():
             metaEntry['dst']['expression'] = 'self["nLw_%s"] / %s' % (wavelength, solarIrradiance)
         else:
             metaEntry = None
-        print 'after', nlwMetaEntry
+
         return metaEntry                              
             
         

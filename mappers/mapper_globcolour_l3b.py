@@ -6,11 +6,11 @@
 #              http://www.gnu.org/licenses/gpl-3.0.html
 import glob
 import os.path
+import datetime
 
 from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 from vrt import VRT, GeolocationArray
 from globcolour import Globcolour
@@ -32,7 +32,7 @@ class Mapper(VRT, Globcolour):
         # test if input files is GLOBCOLOUR L3B
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
-        print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
+        #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
         assert iFileName[0:4] == 'L3b_' and iFileExt == '.nc'
 
         # define shape of GLOBCOLOUR grid
@@ -41,21 +41,20 @@ class Mapper(VRT, Globcolour):
 
         # define lon/lat grids for projected var
         if latlonGrid is None:
-            #latlonGrid = np.mgrid[90:-90:4320j, -180:180:8640j].astype('float16')
+            latlonGrid = np.mgrid[90:-90:4320j, -180:180:8640j].astype('float16')
             #latlonGrid = np.mgrid[80:50:900j, -10:30:1200j].astype('float16')
-            latlonGrid = np.mgrid[47:39:300j, 25:45:500j].astype('float32')
-            # create empty VRT dataset with geolocation only
-            VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
+            #latlonGrid = np.mgrid[47:39:300j, 25:45:500j].astype('float32')
 
+        # create empty VRT dataset with geolocation only
+        VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
+        
         # get list of similar (same date) files in the directory
         simFilesMask = os.path.join(iDir, iFileName[0:30] + '*')
         simFiles = glob.glob(simFilesMask)
-        print 'simFilesMask, simFiles', simFilesMask, simFiles
 
         metaDict = []
         self.varVRTs = []
         for simFile in simFiles:
-            print 'simFile', simFile
             f = netcdf_file(simFile)
 
             # get iBinned, index for converting from binned into GLOBCOLOR-grid
@@ -123,6 +122,9 @@ class Mapper(VRT, Globcolour):
                 if metaEntry2 is not None:
                     metaDict.append(metaEntry2)
 
-
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+
+        # add time
+        startDate = datetime.datetime(int(iFileName[4:8]), int(iFileName[8:10]), int(iFileName[10:12]))
+        self._set_time(startDate)
