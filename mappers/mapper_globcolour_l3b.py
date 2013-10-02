@@ -48,3 +48,14 @@ class Mapper(VRT):
         for simFile in simFiles:
             print 'simFile', simFile
             f = netcdf_file(simFile)
+
+            # get iBinned, index for converting from binned into raw-gridded
+            colBinned = f.variables['col'][:]
+            rowBinned = f.variables['row'][:]
+            GLOBCOLOR_ROWS = 180 * 24
+            GLOBCOLOR_COLS = 360 * 24
+            iBinned = colBinned.astype('uint32') + (rowBinned.astype('uint32') - 1) * GLOBCOLOR_COLS
+            colBinned = None
+            rowBinned = None
+            
+            print iBinned.shape, iBinned
