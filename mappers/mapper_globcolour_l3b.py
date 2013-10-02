@@ -9,6 +9,8 @@ import os.path
 
 from scipy.io.netcdf import netcdf_file
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 from vrt import VRT
 
@@ -73,12 +75,14 @@ class Mapper(VRT):
             for varName in f.variables:
                 # find variable with _mean, eg CHL1_mean
                 if '_mean' in varName:
+
                     # read binned data
                     varBinned = f.variables[varName][:]
+
                     # convert to GLOBCOLOR grid
                     varRawPro = np.zeros([GLOBCOLOR_ROWS, GLOBCOLOR_COLS], 'float32')
                     varRawPro.flat[iBinned] = varBinned
-                    print varRawPro.shape, varRawPro
-                    
 
-                    
+                    # convert to latlonGrid
+                    varPro = varRawPro.flat[iRawPro.flat[:]].reshape(iRawPro.shape)
+                    #plt.imshow(varPro);plt.colorbar();plt.show()
