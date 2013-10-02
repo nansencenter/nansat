@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-from vrt import VRT
+from vrt import VRT, GeolocationArray
 from globcolour import Globcolour
 
 class Mapper(VRT, Globcolour):
@@ -44,6 +44,8 @@ class Mapper(VRT, Globcolour):
             #latlonGrid = np.mgrid[90:-90:4320j, -180:180:8640j].astype('float16')
             #latlonGrid = np.mgrid[80:50:900j, -10:30:1200j].astype('float16')
             latlonGrid = np.mgrid[47:39:300j, 25:45:500j].astype('float32')
+            # create empty VRT dataset with geolocation only
+            VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
 
         # get list of similar (same date) files in the directory
         simFilesMask = os.path.join(iDir, iFileName[0:30] + '*')
@@ -96,9 +98,14 @@ class Mapper(VRT, Globcolour):
             if varName in self.varname2wkv:
                 varWKV = self.varname2wkv[varName]
 
+                # add metadata to the dictionary
                 metaEntry = {
                     'src': {'SourceFilename': self.varVRTs[-1].fileName,
                             'SourceBand':  1},
                     'dst': {'wkv': varWKV, 'original_name': varName}}
-                print metaEntry
+                
+                metaDict.append(metaEntry)
     
+
+        ## add bands with metadata and corresponding values to the empty VRT
+        #self._create_bands(metaDict)
