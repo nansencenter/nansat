@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 
 
 from vrt import VRT
+from globcolour import Globcolour
 
-
-class Mapper(VRT):
+class Mapper(VRT, Globcolour):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, latlonGrid=None, **kwargs):
@@ -51,6 +51,7 @@ class Mapper(VRT):
         print 'simFilesMask, simFiles', simFilesMask, simFiles
 
         metaDict = []
+        self.varVRTs = []
         for simFile in simFiles:
             print 'simFile', simFile
             f = netcdf_file(simFile)
@@ -75,14 +76,29 @@ class Mapper(VRT):
             for varName in f.variables:
                 # find variable with _mean, eg CHL1_mean
                 if '_mean' in varName:
+                    break
 
-                    # read binned data
-                    varBinned = f.variables[varName][:]
+            # read binned data
+            varBinned = f.variables[varName][:]
 
-                    # convert to GLOBCOLOR grid
-                    varRawPro = np.zeros([GLOBCOLOR_ROWS, GLOBCOLOR_COLS], 'float32')
-                    varRawPro.flat[iBinned] = varBinned
+            # convert to GLOBCOLOR grid
+            varRawPro = np.zeros([GLOBCOLOR_ROWS, GLOBCOLOR_COLS], 'float32')
+            varRawPro.flat[iBinned] = varBinned
 
-                    # convert to latlonGrid
-                    varPro = varRawPro.flat[iRawPro.flat[:]].reshape(iRawPro.shape)
-                    #plt.imshow(varPro);plt.colorbar();plt.show()
+            # convert to latlonGrid
+            varPro = varRawPro.flat[iRawPro.flat[:]].reshape(iRawPro.shape)
+            #plt.imshow(varPro);plt.colorbar();plt.show()
+
+            # add VRT with array with data from projected variable
+            self.varVRTs.append(VRT(array=varPro))
+
+            # get WKV
+            if varName in self.varname2wkv:
+                varWKV = self.varname2wkv[varName]
+
+                metaEntry = {
+                    'src': {'SourceFilename': self.varVRTs[-1].fileName,
+                            'SourceBand':  1},
+                    'dst': {'wkv': varWKV, 'original_name': varName}}
+                print metaEntry
+    
