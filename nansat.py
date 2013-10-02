@@ -328,9 +328,9 @@ class Nansat(Domain):
 
         return b
 
-    def has_band(self,band):
+    def has_band(self, band):
         for b in self.bands():
-            if self.bands()[b]['name']==band:
+            if self.bands()[b]['name'] == band:
                 return True
         return False
 
@@ -470,12 +470,13 @@ class Nansat(Domain):
             numOfBands = self.vrt.dataset.RasterCount
             # create VRT from each band and add it
             for iBand in range(numOfBands):
-                vrt = VRT(array=self[iBand+1])
+                vrt = VRT(array=self[iBand + 1])
                 self.add_band(vrt=vrt)
-                metadata= self.get_metadata(bandID=iBand+1)
-                self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
+                metadata = self.get_metadata(bandID=iBand + 1)
+                self.set_metadata(key=metadata,
+                                  bandID=numOfBands + iBand + 1)
             # remove source bands
-            self.vrt.delete_bands(range(1,numOfBands))
+            self.vrt.delete_bands(range(1, numOfBands))
 
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
@@ -1345,16 +1346,16 @@ class Nansat(Domain):
         if type(smooth) is list:
             if smooth[0] < 0:
                 raise ValueError("smooth[0] must be 0 or a positive odd number.")
-            if smooth[0]>0 and (smooth[0] % 2) != 1:
+            if smooth[0] > 0 and (smooth[0] % 2) != 1:
                 raise ValueError("The kernel size smooth[0] should be odd.")
-            if not smooth[1]==0 and not smooth[1]==1:
+            if not smooth[1] == 0 and not smooth[1] == 1:
                 raise ValueError("smooth[1] must be 0 or 1 for median or mean filter.")
-            if smooth[1]==1:
+            if smooth[1] == 1:
                 smooth_function = scipy.stats.nanmean
         else:
             if smooth < 0:
                 raise ValueError("smooth must be 0 or a positive odd number.")
-            if smooth>0 and (smooth % 2) != 1:
+            if smooth > 0 and (smooth % 2) != 1:
                 raise ValueError("The kernel size smooth should be odd.")
             tmp = smooth
             smooth = []
@@ -1423,8 +1424,8 @@ class Nansat(Domain):
                                     [pixVector, linVector],
                                     axis=1)
             if smooth[0]:
-                pixlinCoord0 = pixlinCoord-int(smooth[0])/2
-                pixlinCoord1 = pixlinCoord+int(smooth[0])/2
+                pixlinCoord0 = pixlinCoord - int(smooth[0]) / 2
+                pixlinCoord1 = pixlinCoord + int(smooth[0]) / 2
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
@@ -1442,8 +1443,8 @@ class Nansat(Domain):
                 transect0 = []
                 for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
                         pixlinCoord1[1], pixlinCoord0[0], pixlinCoord1[0]):
-                    transect0.append( smooth_function(data[xmin:xmax,
-                        ymin:ymax], axis=None) )
+                    transect0.append(smooth_function(data[xmin:xmax,
+                        ymin:ymax], axis=None))
                 transect.append(transect0)
             else:
                 transect.append(data[list(pixlinCoord[1]),
@@ -1452,18 +1453,19 @@ class Nansat(Domain):
         if returnOGR:
             # Lists for field names and datatype
             names = ['X (pixel)', 'Y (line)']
-            formats = ['i4','i4']
+            formats = ['i4', 'i4']
             for iBand in bandList:
                 names.append('transect_' + str(iBand))
                 formats.append('f8')
             # Create zeros structured numpy array
             fieldValues = np.zeros(len(pixlinCoord[1]),
-                                   dtype={'names':names, 'formats':formats})
+                                   dtype={'names': names,
+                                          'formats': formats})
             # Set values into the structured numpy array
             fieldValues['X (pixel)'] = pixlinCoord[0]
             fieldValues['Y (line)'] = pixlinCoord[1]
             for i, iBand in enumerate(bandList):
-                fieldValues['transect_' + str(iBand) ] = transect[i]
+                fieldValues['transect_' + str(iBand)] = transect[i]
             # Create Nansatshape object
             srs = osr.SpatialReference()
             srs.ImportFromWkt(wkt)

@@ -19,7 +19,7 @@
 from nansat_tools import *
 
 class Nansatshape():
-    ''' Nansatshape class read and write ESRI-shape files
+    ''' Nansatshape class reads and writes ESRI-shape files
 
         The core of Nansatshape is a OGR. the main functions of the class are
         1. Create empty object in memory and add data (fields and geometory).
