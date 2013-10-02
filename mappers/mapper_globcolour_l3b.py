@@ -117,7 +117,11 @@ class Mapper(VRT, Globcolour):
                     metaEntry['dst'][attr] = var._attributes[attr]
                 
                 metaDict.append(metaEntry)
-    
+                
+                # add Rrsw band
+                metaEntry2 = self.make_rrsw_meta_entry(metaEntry)
+                if metaEntry2 is not None:
+                    metaDict.append(metaEntry2)
 
 
         # add bands with metadata and corresponding values to the empty VRT
