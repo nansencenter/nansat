@@ -18,7 +18,7 @@ from globcolour import Globcolour
 class Mapper(VRT, Globcolour):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, latlonGrid=None, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, latlonGrid=None, mask='', **kwargs):
 
         ''' Create MER2 VRT
 
@@ -49,12 +49,15 @@ class Mapper(VRT, Globcolour):
         VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
         
         # get list of similar (same date) files in the directory
-        simFilesMask = os.path.join(iDir, iFileName[0:30] + '*')
+        simFilesMask = os.path.join(iDir, iFileName[0:30] + '*' + mask)
         simFiles = glob.glob(simFilesMask)
+        simFiles.sort()
 
         metaDict = []
         self.varVRTs = []
+        mask = None
         for simFile in simFiles:
+            print simFile
             f = netcdf_file(simFile)
 
             # get iBinned, index for converting from binned into GLOBCOLOR-grid
@@ -80,6 +83,13 @@ class Mapper(VRT, Globcolour):
                     var = f.variables[varName]
                     break
 
+            # skip variable if no WKV is give in Globcolour
+            if varName not in self.varname2wkv:
+                continue
+
+            # get WKV
+            varWKV = self.varname2wkv[varName]
+
             # read binned data
             varBinned = var[:]
 
@@ -90,37 +100,47 @@ class Mapper(VRT, Globcolour):
             # convert to latlonGrid
             varPro = varRawPro.flat[iRawPro.flat[:]].reshape(iRawPro.shape)
             #plt.imshow(varPro);plt.colorbar();plt.show()
+            
+            # add mask band
+            if mask is None:
+                mask = np.zeros(varPro.shape, 'uint8')
+                mask[:] = 1
+                mask[varPro > 0] = 64
+                
+                # add VRT with array with data from projected variable
+                self.varVRTs.append(VRT(array=mask))
 
-            # add VRT with array with data from projected variable
-            self.varVRTs.append(VRT(array=varPro))
-
-            # get WKV
-            if varName in self.varname2wkv:
-                varWKV = self.varname2wkv[varName]
-                    
-                    
                 # add metadata to the dictionary
-                metaEntry = {
+                metaDict.append({
                     'src': {'SourceFilename': self.varVRTs[-1].fileName,
                             'SourceBand':  1},
-                    'dst': {'wkv': varWKV, 'original_name': varName}}
+                    'dst': {'name': 'mask'}})
+                    
+            # add VRT with array with data from projected variable
+            self.varVRTs.append(VRT(array=varPro))
+                   
+            # add metadata to the dictionary
+            metaEntry = {
+                'src': {'SourceFilename': self.varVRTs[-1].fileName,
+                        'SourceBand':  1},
+                'dst': {'wkv': varWKV, 'original_name': varName}}
 
-                # add wavelength for nLw
-                if 'Fully normalised water leaving radiance' in f.variables[varName].long_name:
-                    simWavelength = varName.split('L')[1].split('_mean')[0]
-                    metaEntry['dst']['suffix'] = simWavelength
-                    metaEntry['dst']['wavelength'] = simWavelength
-                
-                # add all metadata from NC-file
-                for attr in var._attributes:
-                    metaEntry['dst'][attr] = var._attributes[attr]
-                
-                metaDict.append(metaEntry)
-                
-                # add Rrsw band
-                metaEntry2 = self.make_rrsw_meta_entry(metaEntry)
-                if metaEntry2 is not None:
-                    metaDict.append(metaEntry2)
+            # add wavelength for nLw
+            if 'Fully normalised water leaving radiance' in f.variables[varName].long_name:
+                simWavelength = varName.split('L')[1].split('_mean')[0]
+                metaEntry['dst']['suffix'] = simWavelength
+                metaEntry['dst']['wavelength'] = simWavelength
+            
+            # add all metadata from NC-file
+            for attr in var._attributes:
+                metaEntry['dst'][attr] = var._attributes[attr]
+            
+            metaDict.append(metaEntry)
+            
+            # add Rrsw band
+            metaEntry2 = self.make_rrsw_meta_entry(metaEntry)
+            if metaEntry2 is not None:
+                metaDict.append(metaEntry2)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
