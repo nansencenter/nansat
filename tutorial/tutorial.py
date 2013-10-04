@@ -29,14 +29,14 @@ print n
 n.write_map(oFileName + 'map.png')
 
 # Write indexed picture with data from the first band
-n.write_figure(oFileName + 'rgb.png', clim='hist')
+n.write_figure(oFileName + '.png', clim='hist')
 
 # Reproject input image onto map of Norwegian Coast
 # 1. Create domain describing the desired map
 # 2. Transform the original satellite image
 # 3. Write the transfromed image into RGB picture
 dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                  "-te 27 70.2 31 71.5 -ts 2000 2000")
+                  "-te 27 70.2 31 71.5 -ts 500 500")
 n.reproject(dLatlong)
 n.write_figure(oFileName + 'pro.png', bands=[1,2,3], clim=[0, 100])
 
