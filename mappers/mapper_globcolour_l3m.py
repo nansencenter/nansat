@@ -14,27 +14,10 @@ import gdal
 import numpy as np
 
 from vrt import VRT, GeolocationArray
+from globcolour import Globcolour
 
-
-class Mapper(VRT):
+class Mapper(VRT, Globcolour):
     ''' Mapper for GLOBCOLOR L3M products'''
-
-    # detect wkv from metadata 'Parameter'
-    varname2wkv = {'CHL1_mean': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                   'CHL2_mean': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                   'KD490_mean': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water',
-                   'L412_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L443_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L490_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L510_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L531_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L555_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L620_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L670_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L681_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'L709_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
-                   'CDM_mean': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
-                   }
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' GLOBCOLOR L3M VRT '''
