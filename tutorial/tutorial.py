@@ -49,7 +49,6 @@ n.export(oFileName + '.nc')
 values, lonlat, pixlinCoord =n.get_transect()
 plt.plot(lonlat[0], values[0], '.-');plt.show()
 
-raise
 # run tests of other nansat components
 import test_domain
 import test_nansat

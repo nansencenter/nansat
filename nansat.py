@@ -220,11 +220,11 @@ class Nansat(Domain):
             try:
                 bandData[bandData == fillValue] = np.nan
             except:
-                self.logger.error('Cannot replace _FillValue values with np.NAN!')
+                self.logger.info('Cannot replace _FillValue values with np.NAN!')
         try:
             bandData[np.isinf(bandData)] = np.nan
         except:
-            self.logger.error('Cannot replace inf values with np.NAN!')
+            self.logger.info('Cannot replace inf values with np.NAN!')
         
 
         return bandData
