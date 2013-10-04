@@ -49,10 +49,14 @@ class Mapper(VRT):
         rs2_2 = rs2_1.node('radarParameters')
         antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' \
                              else -90
+        rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')     
+        passDirection = 180 if rs2_3['passDirection'] =='Descending' \
+                             else 0
+
         if zipfile.is_zipfile(fileName):
             product_xml_file.close()
         ###
-
+                
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
 
         #if it is not RADARSAT-2, return
@@ -145,10 +149,16 @@ class Mapper(VRT):
         ############################################
         # Add SAR look direction to metadata domain
         ############################################
-        self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
-            Domain(ds=gdalDataset).upwards_azimuth_direction( orbit_direction =
-            gdalDataset.GetMetadata()['ORBIT_DIRECTION']) + antennaPointing,
-            360)))
+        if 'ORBIT_DIRECTION' in gdalDataset.GetMetadata():
+            self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
+                Domain(ds=gdalDataset).upwards_azimuth_direction( orbit_direction =
+                gdalDataset.GetMetadata()['ORBIT_DIRECTION']) + antennaPointing,
+                360)))
+        else:
+            self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
+                passDirection + antennaPointing, 360)))
+        
+#        pdb.set_trace()
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
