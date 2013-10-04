@@ -496,7 +496,7 @@ class Nansat(Domain):
                                                           exportVRT.dataset)
         self.logger.debug('Export - OK!')
 
-def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
+    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor) or
