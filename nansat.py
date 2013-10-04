@@ -217,8 +217,15 @@ class Nansat(Domain):
         # Set invalid and missing data to np.nan
         if band.GetMetadata().has_key('_FillValue'):
             fillValue = float(band.GetMetadata()['_FillValue'])
-            bandData[np.where(bandData==fillValue)]=np.nan
-        bandData[np.where(np.isinf(bandData))] = np.nan
+            try:
+                bandData[bandData == fillValue] = np.nan
+            except:
+                self.logger.info('Cannot replace _FillValue values with np.NAN!')
+        try:
+            bandData[np.isinf(bandData)] = np.nan
+        except:
+            self.logger.info('Cannot replace inf values with np.NAN!')
+        
 
         return bandData
 
@@ -513,8 +520,6 @@ class Nansat(Domain):
                 3 : CubicSpline,
                 4 : Lancoz
                 if eResampleAlg > 0 : VRT.resized() is used
-                (Although the default is -1 (Average),
-                 if fileName start from 'ASA_', the default is 0 (NN).)
 
         Modifies
         ---------
@@ -523,12 +528,6 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-        # if fileName start from 'ASA_' and eResampleAlg is default (Average),
-        # then change eResampleAlg to 0 (NearestNeighbour)
-        fileName = self.fileName.split('/')[-1].split('\\')[-1]
-        if fileName.startswith('ASA_') and eResampleAlg == -1:
-            eResampleAlg = 0
-
         # resize back to original size/setting
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
@@ -555,7 +554,7 @@ class Nansat(Domain):
             # apply affine transformation using reprojection
             self.vrt = self.vrt.resized(newRasterXSize,
                                         newRasterYSize,
-                                        eResampleAlg=eResampleAlg)
+                                        eResampleAlg)
         else:
             # simply modify VRT rasterX/Ysize and GCPs
             # Get XML content from VRT-file

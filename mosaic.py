@@ -31,7 +31,6 @@ class Mosaic(Nansat):
 
     # default parameters
     nClass = Nansat
-    mapperName = ''
     eResampleAlg = 0
     period = None, None
 
@@ -71,11 +70,9 @@ class Mosaic(Nansat):
         '''
         # open file using Nansat or its child class
         # the line below is for debugging
-        #n = self.nClass(f, logLevel=self.logger.level,
-        #                   mapperName=self.mapperName)
+        #n = self.nClass(f, logLevel=self.logger.level)
         try:
-            n = self.nClass(f, logLevel=self.logger.level,
-                            mapperName=self.mapperName)
+            n = self.nClass(f, logLevel=self.logger.level)
         except:
             self.logger.error('Unable to open %s' % f)
             return None
@@ -257,8 +254,6 @@ class Mosaic(Nansat):
             name of the mask in input files
         nClass : child of Nansat, [Nansat]
             This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
         period : [datetime0, datetime1]
@@ -386,8 +381,6 @@ class Mosaic(Nansat):
             name of the mask in input files
         nClass : child of Nansat, [Nansat]
             This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
         period : [datetime0, datetime1]
@@ -430,8 +423,6 @@ class Mosaic(Nansat):
             name of the mask in input files
         nClass : child of Nansat, [Nansat]
             This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
         period : [datetime0, datetime1]
