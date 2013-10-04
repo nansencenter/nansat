@@ -496,7 +496,7 @@ class Nansat(Domain):
                                                           exportVRT.dataset)
         self.logger.debug('Export - OK!')
 
-    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
+def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor) or
@@ -520,8 +520,6 @@ class Nansat(Domain):
                 3 : CubicSpline,
                 4 : Lancoz
                 if eResampleAlg > 0 : VRT.resized() is used
-                (Although the default is -1 (Average),
-                 if fileName start from 'ASA_', the default is 0 (NN).)
 
         Modifies
         ---------
@@ -530,12 +528,6 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-        # if fileName start from 'ASA_' and eResampleAlg is default (Average),
-        # then change eResampleAlg to 0 (NearestNeighbour)
-        fileName = self.fileName.split('/')[-1].split('\\')[-1]
-        if fileName.startswith('ASA_') and eResampleAlg == -1:
-            eResampleAlg = 0
-
         # resize back to original size/setting
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
@@ -562,7 +554,7 @@ class Nansat(Domain):
             # apply affine transformation using reprojection
             self.vrt = self.vrt.resized(newRasterXSize,
                                         newRasterYSize,
-                                        eResampleAlg=eResampleAlg)
+                                        eResampleAlg)
         else:
             # simply modify VRT rasterX/Ysize and GCPs
             # Get XML content from VRT-file
