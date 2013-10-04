@@ -57,7 +57,7 @@ class Mapper(VRT, Globcolour):
         self.varVRTs = []
         mask = None
         for simFile in simFiles:
-            print simFile
+            print 'sim: ', simFile
             f = netcdf_file(simFile)
 
             # get iBinned, index for converting from binned into GLOBCOLOR-grid
