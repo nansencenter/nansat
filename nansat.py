@@ -219,9 +219,12 @@ class Nansat(Domain):
             fillValue = float(band.GetMetadata()['_FillValue'])
             try:
                 bandData[bandData == fillValue] = np.nan
-                bandData[np.isinf(bandData)] = np.nan
             except:
-                self.logger.error('Cannot replace bad values with np.NAN!')
+                self.logger.error('Cannot replace _FillValue values with np.NAN!')
+        try:
+            bandData[np.isinf(bandData)] = np.nan
+        except:
+            self.logger.error('Cannot replace inf values with np.NAN!')
         
 
         return bandData
