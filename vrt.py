@@ -1400,4 +1400,98 @@ class VRT():
         # write contents
         self.write_xml(contents)
 
+    def shift_bands(self, xBorderDegree, xBorderPix):
+        ''' Shift bands and modift geoTransform / GCPs.
+            Then create new VRT and return it.
+
+        Parameters
+        ----------
+        xBorderDegree : float
+            values of degree to shift.
+        xBorderPix : int
+            number of pixels to shift.
+
+        Returns
+        -------
+        VRT object : shifted VRT
+        '''
+
+        # Copy VRT
+        shiftVRT = self.copy()
+
+        # if geoTransform is given, modify the 1st value (= top left x )
+        geoTransform = shiftVRT.dataset.GetGeoTransform()
+        if geoTransform != '':
+            geoTransform = list(geoTransform)
+            geoTransform[0] = round(geoTransform[0] - xBorderDegree, 3)
+            shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
+
+        # if GCPs are given, modify GCPX
+        srcGCPS = shiftVRT.dataset.GetGCPs()
+        projection = shiftVRT.dataset.GetGCPProjection()
+        if srcGCPS != () and projection != '':
+            gcps = []
+            for iGCPs in srcGCPS:
+                iGCPs.GCPX = iGCPs.GCPX - xBorderDegree
+                gcps.append(iGCPs)
+            shiftVRT.dataset.SetGCPs(gcps, projection)
+
+        # write dataset content into VRT-file
+        shiftVRT.dataset.FlushCache()
+
+        # read xml and create the node
+        XML = shiftVRT.read_xml()
+        node0 = Node.create(XML)
+        # get a number of 'VRTRasterBand'
+        bandNum = node0.tagList().count('VRTRasterBand')
+
+        # shift bands (images)
+        for i in range(bandNum):
+            # create node1 of i-th VRTRasterBand
+            node1 = node0.node('VRTRasterBand', i)
+            xmlSource = node1.xml()
+            # if the data consists of one band
+            if node1.tagList().count('ComplexSource') == 1:
+                # modify the 1st band
+                node1.node('DstRect').replaceAttribute('xOff', str(xBorderPix-1))
+                # add the 2nd band
+                dom = xdm.parseString(xmlSource)
+                cloneNode = Node.create(dom).node('ComplexSource')
+                cloneNode.node('SrcRect').replaceAttribute('xOff', str(self.dataset.RasterXSize - xBorderPix))
+                contents = node0.insert(cloneNode.xml(), 'VRTRasterBand', i)
+                # overwrite the modified contents and create a new node
+                dom = xdm.parseString(contents)
+                node0 = Node.create(dom)
+            # if the data consists of more than two bands (= use pixelfunctions)
+            else:
+                for iNode in node1.nodeList('ComplexSource'):
+                    # get source band number
+                    srcBandNo = iNode.node('SourceBand').value
+                    for j in range(bandNum):
+                        # create node of j-th VRTRasterBand ( j is from 1 to the end)
+                        node2 = node0.node('VRTRasterBand', j)
+                        # get number of Complexsource in node2
+                        numOfNode = node2.tagList().count('ComplexSource')
+                        # create node for each ComplexSource in node2
+                        for k, kNode in enumerate(node2.nodeList('ComplexSource')):
+                            sourceBand = None
+                            # if all SourceBand in kNode are srcBandNo, get the band number.
+                            for lNode in kNode.nodeList('SourceBand'):
+                                if srcBandNo == lNode.value and k+1 == numOfNode:
+                                    sourceBand = j+1
+                            if sourceBand is not None:
+                                break
+                        if sourceBand is not None:
+                            break
+                    # modify SourceFile (use band in shiftVRT)
+                    if sourceBand is not None:
+                        iNode.node('SourceFilename').value = self.fileName
+                        iNode.node('SourceFilename').replaceAttribute('relativeToVRT', '1')
+                        iNode.node('SourceBand').value = str(sourceBand)
+
+        shiftVRT.write_xml(str(node0.rawxml()))
+
+        return shiftVRT
+
+
 

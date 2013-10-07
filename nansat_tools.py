@@ -283,14 +283,22 @@ class Node(object):
         del self.attributes[name]
         self.attributes[name] = value
 
-    def node(self, tag):
-        ''' Recursively find the first subnode with this tag. '''
+    def node(self, tag, elemNum=0):
+        ''' Recursively find the first subnode with this tag.
+
+        elemNum : int
+            if there are several same tag, specify which element to take.
+
+        '''
         if self.tag == tag:
             return self
+        ielm = 0
         for child in self.children:
             result = child.node(tag)
-            if result:
+            if result and ielm == elemNum:
                 return result
+            elif result:
+                ielm += 1
         return False
 
     def delNode(self, tag, options=None):

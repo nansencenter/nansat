@@ -681,6 +681,14 @@ class Nansat(Domain):
         http://www.gdal.org/gdalwarp.html
 
         '''
+
+        dstCorners  = dstDomain.get_corners()
+        dstBorderX = [min(dstCorners[0]), max(dstCorners[0])]
+        srcCorners = self.get_corners()
+
+        if min(dstCorners[0]) < min(srcCorners[0]) or max(dstCorners[0]) > max(srcCorners[0]):
+            self.logger.warning('Unable to reproject properly. Use self.shift()')
+
         # dereproject
         self.vrt = self.raw.copy()
 
@@ -1474,3 +1482,56 @@ class Nansat(Domain):
             return NansatOGR
         else:
             return transect, [lonVector, latVector], pixlinCoord
+
+    def shift(self, target):
+        ''' Create and return a new Nansat object corresponding to
+            the target domain.
+
+        If target is devided into two reprojecting onto self domain,
+        self is sifted properly not to devide the target object.
+        Then return a new shifted Nansat object.
+
+        Parameters
+        ----------
+        target : Nansat object
+
+        Returns
+        -------
+        Nansat object : shifted nansat object
+
+        '''
+        # get corners of target domain
+        trgCorners  = target.get_corners()
+        trgBorderX = [min(trgCorners[0]), max(trgCorners[0])]
+
+        # get corners of self.domain
+        baseCorners = self.get_corners()
+
+        # if min(target corners) is smaller than min(self corners) or
+        # max(target corners) is larger than max(self corners),
+        # modify the target corner to correspond to self domain.
+        if min(trgCorners[0]) < min(baseCorners[0]):
+            trgBorderX[0] = trgBorderX[0] + 360.0
+
+        if max(trgCorners[0]) > max(baseCorners[0]):
+            trgBorderX[1] = trgBorderX[1] - 360.0
+
+        # Compute how many degree should be sifted
+        borderDegree = [(max(trgBorderX) - min(trgBorderX)) / 2.0,
+                        (max(trgCorners[1]) - min(trgCorners[1])) / 2.0 ]
+
+        # Compute how many pixel sould be sifted
+        borderPix, borderLin = self._transform_points([borderDegree[0]],
+                                                      [borderDegree[1]],
+                                                      DstToSrc=1)
+
+        # Create shifted VRT
+        shiftVRT = self.vrt.shift_bands(borderDegree[0], borderPix[0])
+        # export the sifted VRT
+        fileName = self.vrt._make_filename(nomem=False)
+        shiftVRT.export(fileName)
+        # Create shifted Nansat object
+        shiftObj = Nansat(fileName)
+
+        return shiftObj
+
