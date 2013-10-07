@@ -225,7 +225,7 @@ class Nansat(Domain):
             bandData[np.isinf(bandData)] = np.nan
         except:
             self.logger.info('Cannot replace inf values with np.NAN!')
-        
+
 
         return bandData
 
