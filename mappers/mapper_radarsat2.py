@@ -78,7 +78,11 @@ class Mapper(VRT):
                         GetMetadata()['POLARIMETRIC_INTERP']
                     # The nansat data will be complex if the SAR data is of type 10
                     dtype = s0dataset.GetRasterBand(i).DataType
-                    suffix = polString
+                    pdb.set_trace()
+                    if dtype==10:
+                        suffix = polString+'_complex'
+                    else:
+                        suffix = polString
                     pol.append(polString)
                     metaDict.append(
                         {'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
@@ -103,8 +107,7 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Add derived band (incidence angle) calculated using pixel function
-        # "BetaSigmaToIncidence" (note that the result will be complex if dtype
-        # is 10):
+        # "BetaSigmaToIncidence":
         src = [{'SourceFilename': b0datasetName,
                 'SourceBand':  b0datasetBand,
                 'DataType': dtype},
