@@ -496,43 +496,7 @@ class Nansat(Domain):
                                                           exportVRT.dataset)
         self.logger.debug('Export - OK!')
 
-    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
-        '''Proportional resize of the dataset.
-
-        The dataset is resized as (xSize*factor, ySize*factor) or
-        (width, calulated height) or (calculated width, height).
-        self.vrt is rewritten to the the downscaled sizes.
-        If GCPs are given in a dataset, they are also rewritten.
-        If resize() is called without any parameters then previsous
-        resizing/reprojection cancelled.
-
-        Parameters
-        -----------
-        Either factor, or width, or height should be given:
-            factor : float, optional, default=1
-            width : int, optional
-            height : int, optional
-            eResampleAlg : int (GDALResampleAlg), optional
-                -1 : Average,
-                0 : NearestNeighbour,
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
-                if eResampleAlg > 0 : VRT.resized() is used
-
-        Modifies
-        ---------
-        self.vrt.dataset : VRT dataset of VRT object
-            raster size are modified to downscaled size.
-            If GCPs are given in the dataset, they are also overwritten.
-
-        '''
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
+    def _get_new_rastersize(self, factor=1, width=None, height=None):
         # get current shape
         rasterYSize = float(self.shape()[0])
         rasterXSize = float(self.shape()[1])
@@ -549,50 +513,147 @@ class Nansat(Domain):
 
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
+        
+        return newRasterYSize, newRasterXSize
+        
 
+    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
+        '''Proportional resize of the dataset.
+
+        The dataset is resized as (xSize*factor, ySize*factor) or
+        (width, calulated height) or (calculated width, height).
+        self.vrt is rewritten to the the downscaled sizes.
+        Georeference is stored in the object. Useful e.g. for export.
+        If GCPs are given in a dataset, they are also rewritten.
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
+
+        Parameters
+        -----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+            eResampleAlg : int (GDALResampleAlg), optional
+                -1 : Average,
+                0 : NearestNeighbour,
+
+        Modifies
+        ---------
+        self.vrt.dataset : VRT dataset of VRT object
+            raster size are modified to downscaled size.
+            If GCPs are given in the dataset, they are also overwritten.
+
+        '''
+        # resize back to original size/setting
+        if factor == 1 and width is None and height is None:
+            self.vrt = self.raw.copy()
+            return
+
+        # check if eResampleAlg is valid
         if eResampleAlg > 0:
-            # apply affine transformation using reprojection
-            self.vrt = self.vrt.resized(newRasterXSize,
-                                        newRasterYSize,
-                                        eResampleAlg)
-        else:
-            # simply modify VRT rasterX/Ysize and GCPs
-            # Get XML content from VRT-file
-            vrtXML = self.vrt.read_xml()
-            node0 = Node.create(vrtXML)
+            self.logger.error('''
+                            eResampleAlg must be <= 0.
+                            Use resize_without_georeference instead''')
+            return
 
-            # replace rasterXSize in <VRTDataset>
-            node0.replaceAttribute('rasterXSize', str(newRasterXSize))
-            node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+        # get new shape
+        newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
+                                                              width,
+                                                              height)
 
-            # replace xSize in <DstRect> of each source
-            for iNode1 in node0.nodeList('VRTRasterBand'):
-                for sourceName in ['ComplexSource', 'SimpleSource']:
-                    for iNode2 in iNode1.nodeList(sourceName):
-                        iNodeDstRect = iNode2.node('DstRect')
-                        iNodeDstRect.replaceAttribute('xSize',
-                                                      str(newRasterXSize))
-                        iNodeDstRect.replaceAttribute('ySize',
-                                                      str(newRasterYSize))
-                # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
-                if eResampleAlg == -1:
-                    iNode1.replaceTag('ComplexSource', 'AveragedSource')
-                    iNode1.replaceTag('SimpleSource', 'AveragedSource')
+        # Get XML content from VRT-file
+        vrtXML = self.vrt.read_xml()
+        node0 = Node.create(vrtXML)
 
-            # Edit GCPs to correspond to the downscaled size
-            if node0.node('GCPList'):
-                for iNode in node0.node('GCPList').nodeList('GCP'):
-                    pxl = float(iNode.getAttribute('Pixel')) * factor
-                    if pxl > float(rasterXSize):
-                        pxl = rasterXSize
-                    iNode.replaceAttribute('Pixel', str(pxl))
-                    lin = float(iNode.getAttribute('Line')) * factor
-                    if lin > float(rasterYSize):
-                        lin = rasterYSize
-                    iNode.replaceAttribute('Line', str(lin))
+        # replace rasterXSize in <VRTDataset>
+        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
 
-            # Write the modified elemements into VRT
-            self.vrt.write_xml(str(node0.rawxml()))
+        rasterYSize, rasterXSize = self.shape()
+
+        # replace xSize in <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for sourceName in ['ComplexSource', 'SimpleSource']:
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node('DstRect')
+                    iNodeDstRect.replaceAttribute('xSize',
+                                                  str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute('ySize',
+                                                  str(newRasterYSize))
+            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
+            if eResampleAlg == -1:
+                iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                iNode1.replaceTag('SimpleSource', 'AveragedSource')
+
+        # Edit GCPs to correspond to the downscaled size
+        if node0.node('GCPList'):
+            for iNode in node0.node('GCPList').nodeList('GCP'):
+                pxl = float(iNode.getAttribute('Pixel')) * factor
+                if pxl > float(rasterXSize):
+                    pxl = rasterXSize
+                iNode.replaceAttribute('Pixel', str(pxl))
+                lin = float(iNode.getAttribute('Line')) * factor
+                if lin > float(rasterYSize):
+                    lin = rasterYSize
+                iNode.replaceAttribute('Line', str(lin))
+
+        # Write the modified elemements into VRT
+        self.vrt.write_xml(str(node0.rawxml()))
+
+
+    def resize_lite(self, factor=1, width=None,
+                                                    height=None,
+                                                    eResampleAlg=1):
+        '''Proportional resize of the dataset. No georeference kept.
+
+        The dataset is resized as (xSize*factor, ySize*factor) or
+        (width, calulated height) or (calculated width, height).
+        self.vrt is rewritten to the the downscaled sizes.
+        No georeference (useful e.g. for export) is stored in the object. 
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
+
+        Parameters
+        -----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+            eResampleAlg : int (GDALResampleAlg), optional
+                1 : Bilinear,
+                2 : Cubic,
+                3 : CubicSpline,
+                4 : Lancoz
+                if eResampleAlg > 0 : VRT.resized() is used
+
+        Modifies
+        ---------
+        self.vrt.dataset : VRT dataset of VRT object
+            raster size are modified to downscaled size.
+
+        '''
+        # resize back to original size/setting
+        if factor == 1 and width is None and height is None:
+            self.vrt = self.raw.copy()
+            return
+
+        # check if eResampleAlg is valid
+        if eResampleAlg < 1:
+            self.logger.error('''
+                            eResampleAlg must be > 0.
+                            Use resize() instead''')
+            return
+
+        # get new shape
+        newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
+                                                              width,
+                                                              height)
+
+        # apply affine transformation using reprojection
+        self.vrt = self.vrt.resized(newRasterXSize,
+                                    newRasterYSize,
+                                    eResampleAlg)
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object

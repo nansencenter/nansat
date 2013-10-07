@@ -103,6 +103,14 @@ n.write_figure(oFileName + '02.png', clim='hist')
 # undo resize
 n.resize()
 
+# Resize the data to 50% using CubicSpline
+n.resize_lite(0.5, eResampleAlg=3)
+# make simple indexed image from 1st band with default colormap
+n.write_figure(oFileName + '02CubicSpline.png', clim='hist')
+# undo resize
+n.resize()
+
+
 # make image with map of the file location
 n.write_map(oFileName + '04_map.png')
 
