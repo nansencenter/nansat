@@ -32,19 +32,22 @@ class Mapper(VRT):
         if zipfile.is_zipfile(fileName):
             # Open zip directly
             fPath, fName = os.path.split(fPathName)
+            zipFileName = str(fileName)
             fileName = '/vsizip/%s/%s' % (fileName, fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
             # Open product.xml to get additional metadata
-            zz = zipfile.ZipFile(fileName)
-            product_xml_file = zz.open(os.path.join(os.path.basename(fileName).split('.')[0],'product.xml'))
+            zz = zipfile.ZipFile(zipFileName)
+            productXmlName = os.path.join(os.path.basename(zipFileName).split('.')[0],'product.xml')
+            productXml = zz.open(productXmlName).read()
         else:
             # product.xml to get additionali metadata
-            product_xml_file = os.path.join(fileName,'product.xml')
+            productXmlName = os.path.join(fileName,'product.xml')
+            productXml = open(productXmlName).read()
 
         ###
         # Get additional metadata from product.xml
-        rs2_0 = Node.create(product_xml_file)
+        rs2_0 = Node.create(productXml)
         rs2_1 = rs2_0.node('sourceAttributes')
         rs2_2 = rs2_1.node('radarParameters')
         antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' \
@@ -52,10 +55,6 @@ class Mapper(VRT):
         rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')     
         passDirection = rs2_3['passDirection']
 
-        if zipfile.is_zipfile(fileName):
-            product_xml_file.close()
-        ###
-                
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
 
         #if it is not RADARSAT-2, return
