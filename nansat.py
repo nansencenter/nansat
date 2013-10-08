@@ -1371,7 +1371,7 @@ class Nansat(Domain):
         points : tuple with one or more points or shape file name
             i.e. ((lon1, lat1),(lon2, lat2),(lon3, lat3), ...) or
                  ((col1, row1),(col2, row2),(col3, row3), ...)
-        bandID : list of int or string
+        bandList : list of int or string
             elements of the list are band number or band Name
         latlon : bool
             If the points in lat/lon, then True.
