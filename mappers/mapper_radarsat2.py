@@ -76,24 +76,44 @@ class Mapper(VRT):
                 for i in range(1, s0dataset.RasterCount+1):
                     polString = s0dataset.GetRasterBand(i).\
                         GetMetadata()['POLARIMETRIC_INTERP']
+                    suffix = polString
                     # The nansat data will be complex if the SAR data is of type 10
                     dtype = s0dataset.GetRasterBand(i).DataType
-                    pdb.set_trace()
                     if dtype==10:
+                        # add intensity band
+                        metaDict.append({
+                            'src': {
+                                'SourceFilename': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
+                                'SourceBand': i,
+                                'DataType': dtype,
+                            },
+                            'dst': {
+                                'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                                'PixelFunctionType': 'intensity',
+                                'SourceTransferType': \
+                                    gdal.GetDataTypeName(dtype),
+                                'suffix': suffix,
+                                'polarization': polString,
+                                'dataType': 6,
+                            }
+                        })
+                        # modify suffix for adding the compled band below
                         suffix = polString+'_complex'
-                    else:
-                        suffix = polString
                     pol.append(polString)
-                    metaDict.append(
-                        {'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
+                    metaDict.append({
+                        'src': {
+                            'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
                                                     + fileName +
                                                     '/product.xml'),
-                                 'SourceBand': i,
-                                 'DataType': s0dataset.GetRasterBand(i).
-                                 DataType},
-                         'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-                                 'suffix': suffix,
-                                 'polarization': polString}})
+                            'SourceBand': i,
+                            'DataType': dtype,
+                        },
+                        'dst': {
+                            'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                            'suffix': suffix,
+                            'polarization': polString
+                        }
+                    })
             if dataset[1] == 'Beta Nought calibrated':
                 b0dataset = gdal.Open(dataset[0])
                 b0datasetName = dataset[0][:]
@@ -108,18 +128,27 @@ class Mapper(VRT):
 
         # Add derived band (incidence angle) calculated using pixel function
         # "BetaSigmaToIncidence":
-        src = [{'SourceFilename': b0datasetName,
+        src = [
+            {
+                'SourceFilename': b0datasetName,
                 'SourceBand':  b0datasetBand,
-                'DataType': dtype},
-               {'SourceFilename': s0datasetName,
+                'DataType': dtype
+            },
+            {
+                'SourceFilename': s0datasetName,
                 'SourceBand': 1,
-                'DataType': dtype}]
-        dst = {'wkv': 'angle_of_incidence',
-               'PixelFunctionType': 'BetaSigmaToIncidence',
-               '_FillValue': -10000, # NB: this is also hard-coded in
-                                     #     pixelfunctions.c
-               'dataType': 6,
-               'name': 'incidence_angle'}
+                'DataType': dtype
+            }
+        ]
+        dst = {
+            'wkv': 'angle_of_incidence',
+            'PixelFunctionType': 'BetaSigmaToIncidence',
+            'SourceTransferType': gdal.GetDataTypeName(dtype),
+            '_FillValue': -10000,   # NB: this is also hard-coded in
+                                    #     pixelfunctions.c
+            'dataType': 6,
+            'name': 'incidence_angle'
+        }
 
         self._create_band(src, dst)
         self.dataset.FlushCache()

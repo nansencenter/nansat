@@ -381,9 +381,13 @@ class VRT():
             wkv
             suffix
             AnyOtherMetadata
-            PixelFunctionType: band will be a pixel function defined by the
-            corresponding name/value. In this case src may be list of
-            dicts with parameters for each source.
+            PixelFunctionType: - band will be a pixel function defined by the
+                                 corresponding name/value. In this case src may be list of
+                                 dicts with parameters for each source.
+                               - in case the dst band has a different datatype
+                                 than the source band it is important to add a
+                                 SourceTransferType parameter in dst
+            SourceTransferType
 
         Returns
         --------
@@ -462,7 +466,11 @@ class VRT():
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
             # in case of PixelFunction
             options = ['subClass=VRTDerivedRasterBand',
-                       'PixelFunctionType=%s' % dst['PixelFunctionType']]
+                       'PixelFunctionType=%s' % dst['PixelFunctionType'],
+                    ]
+            if 'SourceTransferType' in dst:
+                options.append('SourceTransferType=%s' %
+                        dst['SourceTransferType'])
         elif len(srcs) == 1 and srcs[0]['SourceBand'] == 0:
             # in case of VRTRawRasterBand
             options = ['subclass=VRTRawRasterBand',
