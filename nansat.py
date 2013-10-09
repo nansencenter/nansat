@@ -707,8 +707,8 @@ class Nansat(Domain):
                                                           [borderY],
                                                           DstToSrc=1)
             # set shifted self.vrt to self.raw
-            self.raw = self.vrt.shift(round(borderX, 3),
-                                      int(borderPix[0]))
+            self.raw = self.vrt.create_shifted_vrt(round(borderX, 3),
+                                                   int(borderPix[0]))
 
         # dereproject
         self.vrt = self.raw.copy()

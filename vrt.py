@@ -1183,10 +1183,6 @@ class VRT():
             # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
             fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine,
                                      0, srcPixel, srcLine))
-            #g.GCPX =
-            #g.GCPY =
-            #g.GCPPixel =
-            #g.GCPLine =
 
         # create 'fake' STEREO projection for 'fake' GCPs of SRC image
         srsString = ('+proj=stere +lon_0=0 +lat_0=0 +k=1 '
@@ -1401,7 +1397,7 @@ class VRT():
         # write contents
         self.write_xml(contents)
 
-    def shift(self, xBorderDegree, xBorderPix):
+    def create_shifted_vrt(self, xBorderDegree, xBorderPix):
         ''' Shift bands and modify geoTransform and return a shifted VRT
 
         Parameters
@@ -1421,12 +1417,6 @@ class VRT():
         # Copy VRT into self.vrt
         shiftVRT.vrt = self.copy()
 
-        # Add bands to self
-        for iBand in range(shiftVRT.vrt.dataset.RasterCount):
-            src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
-            dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
-            shiftVRT._create_band(src, dst)
-
         # if geoTransform is given, modify the 1st value (= top left x )
         geoTransform = self.dataset.GetGeoTransform()
         if geoTransform != '':
@@ -1437,21 +1427,28 @@ class VRT():
         # write dataset content into VRT-file
         self.dataset.FlushCache()
 
+        # Add bands to self
+        for iBand in range(shiftVRT.vrt.dataset.RasterCount):
+            src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
+            dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
+            shiftVRT._create_band(src, dst)
+
         # read xml and create the node
         XML = shiftVRT.read_xml()
         node0 = Node.create(XML)
-        # get a number of 'VRTRasterBand'
-        bandNum = node0.tagList().count('VRTRasterBand')
 
         # divide into two bands and switch the bands
-        for i, node1 in enumerate(node0.nodeList('VRTRasterBand')):
-            xmlSource = node1.xml()
+        for i in range(len(node0.nodeList('VRTRasterBand'))):
+            # create i-th 'VRTRasterBand' node
+            node1 = node0.node('VRTRasterBand', i)
             # modify the 1st band
-            node1.node('DstRect').replaceAttribute('xOff', str(xBorderPix-1))
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', str(xBorderPix-1))
             # add the 2nd band
+            xmlSource = node1.xml()
             dom = xdm.parseString(xmlSource)
             cloneNode = Node.create(dom).node('ComplexSource')
             cloneNode.node('SrcRect').replaceAttribute('xOff', str(shiftVRT.dataset.RasterXSize - xBorderPix))
+            cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             contents = node0.insert(cloneNode.xml(), 'VRTRasterBand', i)
             # overwrite the modified contents and create a new node
             dom = xdm.parseString(contents)
