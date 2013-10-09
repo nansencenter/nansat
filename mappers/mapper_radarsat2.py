@@ -36,6 +36,13 @@ class Mapper(VRT):
             fileName = '/vsizip/%s/%s' % (fileName, fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
+
+        product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
+        #if it is not RADARSAT-2, return
+        if product != 'RADARSAT-2':
+            raise AttributeError("RADARSAT-2 BAD MAPPER")
+
+        if zipfile.is_zipfile(fileName):
             # Open product.xml to get additional metadata
             zz = zipfile.ZipFile(zipFileName)
             productXmlName = os.path.join(os.path.basename(zipFileName).split('.')[0],'product.xml')
@@ -45,7 +52,6 @@ class Mapper(VRT):
             productXmlName = os.path.join(fileName,'product.xml')
             productXml = open(productXmlName).read()
 
-        ###
         # Get additional metadata from product.xml
         rs2_0 = Node.create(productXml)
         rs2_1 = rs2_0.node('sourceAttributes')
@@ -54,12 +60,6 @@ class Mapper(VRT):
                              else -90
         rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')     
         passDirection = rs2_3['passDirection']
-
-        product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
-
-        #if it is not RADARSAT-2, return
-        if product != 'RADARSAT-2':
-            raise AttributeError("RADARSAT-2 BAD MAPPER")
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
