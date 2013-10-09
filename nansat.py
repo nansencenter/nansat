@@ -528,6 +528,11 @@ class Nansat(Domain):
         If resize() is called without any parameters then previsous
         resizing/reprojection cancelled.
 
+        WARNING: It seems like the function is presently not working for complex
+        bands and pixelfunction bands - in case this kind of data is needed 
+        it should be copied to a numpy array which is added as a band before
+        resizing.
+
         Parameters
         -----------
         Either factor, or width, or height should be given:
@@ -613,6 +618,11 @@ class Nansat(Domain):
         No georeference (useful e.g. for export) is stored in the object. 
         If resize() is called without any parameters then previsous
         resizing/reprojection cancelled.
+
+        WARNING: It seems like the function is presently not working for complex
+        bands and pixelfunction bands - in case this kind of data is needed 
+        it should be copied to a numpy array which is added as a band before
+        resizing.
 
         Parameters
         -----------
