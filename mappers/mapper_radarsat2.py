@@ -42,7 +42,7 @@ class Mapper(VRT):
         if product != 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER")
 
-        if zipfile.is_zipfile(fileName):
+        if zipfile.is_zipfile(zipFileName):
             # Open product.xml to get additional metadata
             zz = zipfile.ZipFile(zipFileName)
             productXmlName = os.path.join(os.path.basename(zipFileName).split('.')[0],'product.xml')
