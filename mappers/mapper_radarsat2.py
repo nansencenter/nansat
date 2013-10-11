@@ -36,6 +36,8 @@ class Mapper(VRT):
             fileName = '/vsizip/%s/%s' % (fileName, fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
+        else:
+            zipFileName = str(fileName)
 
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
         #if it is not RADARSAT-2, return
