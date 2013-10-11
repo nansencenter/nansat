@@ -683,8 +683,8 @@ class Nansat(Domain):
 
         # get corners of target domain
         dstCornersX, dstCornersY = dstDomain.get_corners()
-        dstXmin = min(dstCornersX)
-        dstXmax = max(dstCornersY)
+        dstXL = min(dstCornersX)
+        dstXR = max(dstCornersX)
 
         # get corners of self.domain
         srcCornersX, srcCornersY = self.get_corners()
@@ -692,26 +692,21 @@ class Nansat(Domain):
         # if min(target corners) is smaller than min(self corners) or
         # max(target corners) is larger than max(self corners),
         # modify the target corner to correspond to self domain.
-        if dstXmin < min(srcCornersX):
-            dstXmin = dstXmin + 360.0
-        elif dstXmax > max(srcCornersX):
-            dstXmax = dstXmax - 360.0
+        if dstXL < min(srcCornersX):
+            dstXL = dstXL + 360.0
+        elif dstXR > max(srcCornersX):
+            dstXR = dstXR - 360.0
 
-        if (dstXmin != min(dstCornersX)) or (dstXmax != max(dstCornersX)):
-            # Compute where is the border to shift (in degree)
-            borderX = (abs(dstXmax - dstXmin)) / 2.0
-            borderY = (max(srcCornersY) - min(srcCornersY)) / 2.0
-
-            # Compute where is the border to shift (in pix/lin)
-            borderPix, borderLin = self._transform_points([borderX],
-                                                          [borderY],
-                                                          DstToSrc=1)
+        if (dstXL != min(dstCornersX)) or (dstXR != max(dstCornersX)):
+            # degree to shift (in degree)
+            shiftX = (abs(dstXR - dstXL)) / 2.0
             # set shifted self.vrt to self.raw
-            self.raw = self.vrt.create_shifted_vrt(round(borderX, 3),
-                                                   int(borderPix[0]))
+            self.raw = self.vrt.create_shifted_vrt(round(shiftX, 3))
 
         # dereproject
         self.vrt = self.raw.copy()
+        #self.vrt.export('c:/Users/asumak/Data/output/shifted.vrt')
+        #self.write_figure('c:/Users/asumak/Data/output/shifted.png')
 
         # if no domain: quit
         if dstDomain is None:
