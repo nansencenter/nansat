@@ -21,6 +21,7 @@ import inspect, os
 import numpy as np
 
 from nansat import Nansat, Domain, Nansatshape
+from nansat.nansat_tools import latlongSRS
 
 try:
     from osgeo import gdal, osr, ogr
@@ -30,13 +31,10 @@ except:
 # input and output file names
 from testio import testio
 iPath, oPath = testio()
-iFileName = os.path.join(iPath, 'gcps.tif')
-shpFileName = os.path.join(iPath, 'points.shp')
-print 'Input file: ', iFileName, '; ', shpFileName
 oFileName = os.path.join(oPath, 'output_nansatshape_')
 print 'Output file:', oFileName
 
-''' Nansatshape class read and write ESRI-shape files
+''' Nansatshape class reads and writes ESRI-shape files
 
 The core of Nansatshape is a OGR. the main functions of the class are
 1. Create empty object in memory and add data (fields and geometory).
@@ -45,40 +43,34 @@ The core of Nansatshape is a OGR. the main functions of the class are
 Nansatshape support points, line and ploygons. (not mupti-polygon)
 
 '''
+# Create a nansatShape object with point geometry, lonlat spatial reference
+nansatOGR = Nansatshape(srs=latlongSRS)
 
-# Create a nansatShape object with line geometry
-nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
-
-# Create structured numpy array for geometries
-coordinates = np.zeros(8, dtype={'names':['pixel', 'line','ID'],
-                                 'formats':['i4','i4','i4']})
-coordinates['pixel'] = [100, 150, 200, 500, 600, 800, 500, 700]
-coordinates['line'] = [20, 30, 60, 30, 60, 90, 40, 80]
-coordinates['ID'] = [0, 0, 1, 1, 1, 2, 2, 2]
+# Create numpy array for coordinates of points
+coordinates = np.array([[5.3,  30.2, 116.4, 34.0], 
+                        [60.4, 60.0,  39.9, 18.4]])
 
 # Create structured numpy array for fieldValues
-fieldValues = np.zeros(3, dtype={'names':['INT', 'STR','FLOAT1','FLOAT2'],
-                                 'formats':['i4','a10','f8','f8']})
-fieldValues['INT'] = [10, 20, 30]
-fieldValues['STR'] = ['CHAR0', 'CHAR1', 'CHAR2']
-fieldValues['FLOAT1'] = [0.0, 3.5, 5.8]
-fieldValues['FLOAT2'] = [24.5, 15.4, 36.4]
+fieldValues = np.zeros(4, dtype={'names':['id', 'name','random'],
+                                 'formats':['i4','a10','f8']})
+fieldValues['id'] = [1, 2, 3, 4]
+fieldValues['name'] = ['Bergen', 'St.Petersburg', 'Beijin', 'Cape Town']
+fieldValues['random'] = [1.3, 5.7, 11.13, 17.19]
 
 # add fields to the feature and geometry at once
 nansatOGR.add_features(fieldValues, coordinates)
 
 # save to a file
-ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
-                                                     oFileName+'Lines.shp')
+nansatOGR.export(oFileName + '.shp')
+
 
 # Create a nansatShape from shape file
-nansatOGR = Nansatshape(shpFileName)
+nansatOGR2 = Nansatshape(oFileName + '.shp')
 # Get corner points (geometries of featuers) in the layer
-points, latlon = nansatOGR.get_corner_points(latlon=False)
+points, latlon = nansatOGR2.get_points()
 # print corner points
 print 'Corner Points ---'
 for iPoint in points:
     print iPoint
 
 print '\n*** nansatshape_test completed successfully. Output files are found here:' + oFileName
-
