@@ -1397,7 +1397,7 @@ class VRT():
         # write contents
         self.write_xml(contents)
 
-    def create_shifted_vrt(self, xBorderDegree, xBorderPix):
+    def create_shifted_vrt(self, shiftDegree):
         ''' Shift bands and modify geoTransform and return a shifted VRT
 
         Parameters
@@ -1418,10 +1418,16 @@ class VRT():
         shiftVRT.vrt = self.copy()
 
         # if geoTransform is given, modify the 1st value (= top left x )
+        if shiftDegree < 0:
+            shiftDegree += 360.0
+
         geoTransform = self.dataset.GetGeoTransform()
         if geoTransform != '':
+            shiftPixel = int(shiftDegree / geoTransform[1])
             geoTransform = list(geoTransform)
-            geoTransform[0] = round(geoTransform[0] - xBorderDegree, 3)
+            geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
+            if geoTransform[0] + geoTransform[1] * self.dataset.RasterXSize > 360.0:
+                geoTransform[0] -= 360.0
             shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
 
         # write dataset content into VRT-file
@@ -1442,12 +1448,12 @@ class VRT():
             # create i-th 'VRTRasterBand' node
             node1 = node0.node('VRTRasterBand', i)
             # modify the 1st band
-            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', str(xBorderPix-1))
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', str(shiftPixel))
             # add the 2nd band
             xmlSource = node1.xml()
             dom = xdm.parseString(xmlSource)
             cloneNode = Node.create(dom).node('ComplexSource')
-            cloneNode.node('SrcRect').replaceAttribute('xOff', str(shiftVRT.dataset.RasterXSize - xBorderPix))
+            cloneNode.node('SrcRect').replaceAttribute('xOff', str(shiftVRT.dataset.RasterXSize - shiftPixel))
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             contents = node0.insert(cloneNode.xml(), 'VRTRasterBand', i)
             # overwrite the modified contents and create a new node
