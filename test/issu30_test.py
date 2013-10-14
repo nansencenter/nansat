@@ -26,7 +26,7 @@ import itertools
 import math
 
 
-def shift_vrt(vrtObj, dataset ,shiftDegree):
+def shift_vrt(vrtObj, shiftDegree):
     ''' Shift bands and modify geoTransform and return a shifted VRT
 
     Parameters
@@ -40,6 +40,8 @@ def shift_vrt(vrtObj, dataset ,shiftDegree):
     -------
     self.vrt
     '''
+
+    dataset=vrtObj.dataset
     # create a new VRT object
     shiftVRT = vrtObj.copy()
 
@@ -95,10 +97,8 @@ def shift_vrt(vrtObj, dataset ,shiftDegree):
 
     return shiftVRT
 
-
 n1 = Nansat('E:/data/NCEP_GRIB/gfs.t06z.master.grbf03')
-dataset = n1.vrt.dataset
-shiftedVRT = shift_vrt(n1.vrt, dataset, -160.0)
+shiftedVRT = shift_vrt(n1.vrt, 0)
 n1.vrt=shiftedVRT
 n1.write_figure(True)
 
