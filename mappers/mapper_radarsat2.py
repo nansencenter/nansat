@@ -30,36 +30,26 @@ class Mapper(VRT):
         fPathName, fExt = os.path.splitext(fileName)
 
         if zipfile.is_zipfile(fileName):
-            # Open zip directly
+            # Open zip file using VSI
             fPath, fName = os.path.split(fPathName)
-            zipFileName = str(fileName)
             fileName = '/vsizip/%s/%s' % (fileName, fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
-        else:
-            zipFileName = str(fileName)
 
-        product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
         #if it is not RADARSAT-2, return
+        product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
         if product != 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER")
-
-        if zipfile.is_zipfile(zipFileName):
-            # Open product.xml to get additional metadata
-            zz = zipfile.ZipFile(zipFileName)
-            productXmlName = os.path.join(os.path.basename(zipFileName).split('.')[0],'product.xml')
-            productXml = zz.open(productXmlName).read()
-        else:
-            # product.xml to get additionali metadata
-            productXmlName = os.path.join(fileName,'product.xml')
-            productXml = open(productXmlName).read()
+        
+        # read product.xml
+        productXmlName = os.path.join(fileName, 'product.xml')
+        productXml = self.read_xml(productXmlName)
 
         # Get additional metadata from product.xml
         rs2_0 = Node.create(productXml)
         rs2_1 = rs2_0.node('sourceAttributes')
         rs2_2 = rs2_1.node('radarParameters')
-        antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' \
-                             else -90
+        antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' else -90
         rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')     
         passDirection = rs2_3['passDirection']
 

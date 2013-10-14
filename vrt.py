@@ -710,19 +710,27 @@ class VRT():
         #write XML contents to
         self.write_xml(contents)
 
-    def read_xml(self):
+    def read_xml(self, inFileName=None):
         '''Read XML content of the VRT-file
+
+        Parameters
+        -----------
+        inFileName : string, optional
+            Name of the file to read XML from. self.fileName by default
 
         Returns
         --------
         string : XMl Content which is read from the VSI file
 
         '''
-        # write dataset content into VRT-file
-        self.dataset.FlushCache()
+        # if no input file given, flush dataset content into VRT-file
+        if inFileName is None:
+            inFileName = str(self.fileName)
+            self.dataset.FlushCache()
+
         #read from the vsi-file
         # open
-        vsiFile = gdal.VSIFOpenL(self.fileName, 'r')
+        vsiFile = gdal.VSIFOpenL(inFileName, 'r')
         # get file size
         gdal.VSIFSeekL(vsiFile, 0, 2)
         vsiFileSize = gdal.VSIFTellL(vsiFile)
