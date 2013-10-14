@@ -59,9 +59,6 @@ class Nansatshape():
         self.layer : ogr layer
 
         '''
-        # Create attributes
-        self.fieldNames = []
-        self.fieldDataTypes = {}
         # Create a empty datasource and layer in memory
         if fileName is None:
             self.datasource= ogr.GetDriverByName('Memory').CreateDataSource('wrk')
@@ -83,11 +80,8 @@ class Nansatshape():
             # Set self.fieldNames and self.fieldDataTypes
             layerDef = self.layer.GetLayerDefn()
             feature = self.layer.GetFeature(0)
-            for i in range(layerDef.GetFieldCount()):
-                self.fieldNames.append(layerDef.GetFieldDefn(i).GetName())
-                self.fieldDataTypes[self.fieldNames[-1]] = feature.GetFieldType(i)
 
-    def add_features(self, values=None, coordinates=None, fieldFeatureID=[], geoFeatureID=[], AddPixLine=True):
+    def add_features(self, values, coordinates):
         ''' Set field values and / or geometry to each feature
 
         !! NB !! Muptipolygon is not supported
@@ -100,241 +94,108 @@ class Nansatshape():
                                       'formats':['i4','a10','f8','f8']})
                     n is a number of features.
 
-        coordinates : np.array or list with scalar elements (2 x n)
-            X-Y coordinates. n is a number of points
-
-        fieldFeateurID : None or list with int elements (the length is n)
-            the values are from 0 to n-1
-
-        geoFeateurID : None or list with int elements (the length is n)
-            if the data type is point, it will be [0, 1, 2, 3, ..., (num of fields-1)]
-            if polygon or line, the numbers represent which geometry each point belongs to.
-
-        AddPixLine : bool
-            if True, add 'X (pixel)' and 'Y (line)' as the fields.
+        coordinates : structured np.array (2 or 3 x n)
+            If geometries are points,
+            the num of column is 2 and X-Y coordinates are given.
+            If geometries are lines /  polygon,
+            the num of column is 3 and X-Y coordinates and ID of each points
+            are given.
+            Names of the array are 'pixel', 'line', 'ID' respectively.
 
         Modifies
         --------
-        self.layer : if necessary, add field names. Then set the values and geometry.
+        self.layer : Set the values and geometry.
 
         '''
         # get geometry type
         geomType = self.layer.GetGeomType()
 
         # add pixel and line coordinates info to values
-        if coordinates is not None and AddPixLine is True and \
-           (geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D):
-            # create values if values is None
-            if values is None:
-                values = np.zeros(len(coordinates[1]),
-                                  dtype={'names':['X (pixel)', 'Y (line)'],
-                                         'formats':['i8','i8']})
+        if geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D and \
+            len(coordinates) == len(values) and(
+            'pixel' in coordinates.dtype.names and
+            'line' in coordinates.dtype.names):
+
             # append pix/lin fields to values if values is given
-            else:
-                descr = [('X (pixel)', int), ('Y (line)', int)]
-                # Create Zero structrued np.array ( n x m )
-                # n is max( num of feature of values, num of coordinates)
-                # m is num of field of values + 2 (for 'X (pixel)' and 'Y (line)' )
-                tmp = np.zeros(max(values.shape[0], len(coordinates[1])),
-                               dtype=values.dtype.descr + descr)
-                # extend values
-                for name in values.dtype.names:
-                    # if num of coordinates is more than num of featuer of values,
-                    # append 0 to values[name].
-                    if len(coordinates[1]) > values.shape[0]:
-                        tmp[name] = np.append(values[name],
-                                              np.zeros(len(coordinates[1]) - values.shape[0]))
-                    else:
-                        tmp[name] = values[name]
-                values = tmp
+            descr = [('X (pixel)', int), ('Y (line)', int)]
+            # Create Zero structrued np.array ( n x m )
+            # n is num of feature of values
+            # m is num of field of values + 2 (for 'X (pixel)' and 'Y (line)' )
+            tmp = np.zeros(values.shape[0],
+                           dtype=values.dtype.descr + descr)
+            # copy values to tmp
+            for name in values.dtype.names:
+                tmp[name] = values[name]
+            values = tmp
+
             # set coordinates into values
-            for iCoord in range(len(coordinates[1])):
-                values['X (pixel)'][iCoord] = coordinates[0][iCoord]
-                values['Y (line)'][iCoord] = coordinates[1][iCoord]
+            for iCoord in range(coordinates.shape[0]):
+                values['X (pixel)'][iCoord] = coordinates[iCoord]['pixel']
+                values['Y (line)'][iCoord] = coordinates[iCoord]['line']
 
-        # if fieldFeatureID is not given, assume that fieldValues
-        # are arranged from feature[0] to feature[n-1]
-        if values is not None and fieldFeatureID == []:
-                fieldFeatureID = range(len(values))
-
-        # if geoFeatureID is None, create new one.
-        if coordinates is not None and geoFeatureID == []:
-            # if Point, featureID is serial number from 0 to len(coordinates)
-            if geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D:
-                geoFeatureID = range(len(coordinates[1]))
-            # if line or ploygon, assume it is one geometry and belongs to the 1st feature.
+        # set fieldDenf
+        for i, iFieldName in enumerate (values.dtype.names):
+            # get data type for each field
+            if str(values.dtype[i]).startswith('int'):
+                dtype = ogr.OFTInteger
+            elif str(values.dtype[i]).startswith('float'):
+                dtype = ogr.OFTReal
             else:
-                geoFeatureID = [0] * len(coordinates[1])
+                dtype = ogr.OFTString
+            # create fields
+            field_defn = ogr.FieldDefn(iFieldName, ogr.OFTString)
+            field_defn.SetWidth(32)
+            self.layer.CreateField(field_defn)
 
-        # Remove duplicate featureID from geoFeatureID + fieldFeatureID
-        featureID = list(set(geoFeatureID + fieldFeatureID))
-
-        # convert list to np.array
-        FieldFeatureID = np.asarray(fieldFeatureID)
-        geoFeatureID = np.asarray(geoFeatureID)
-
-        names = None
-        # Tarnspose values
-        if values is not None:
-            # set self.fieldDataTypes of new fields
-            self._make_datatype_dict(values)
-            # set new fieldnames to the layer
-            names = values.dtype.names
-            self._add_fieldnames(names)
-
-        for iFeature in featureID:
-            # get values corresponding to iFeature
-            if iFeature in fieldFeatureID:
-                fieldValues = values[int(np.where(FieldFeatureID==iFeature)[0])]
-            else:
-                fieldValues = None
-
-            # create a geometry
-            geometry = None
-            if coordinates is not None and iFeature in geoFeatureID:
-                # get geoCoordinates corresponding to iFeature
-                mask = geoFeatureID==iFeature
-                geoCoords = []
-                for iCoordinates in coordinates:
-                    geoCoords.append(np.extract(mask, iCoordinates).tolist())
-                geometry = ogr.Geometry(type=geomType)
-                # if geomType is Point, set a point to a geometry
-                if geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D:
-                    geometry.SetPoint_2D(0, geoCoords[0][0], geoCoords[1][0])
-                # else, set points to a geometry
-                else:
-                    geomRing = ogr.Geometry(type=ogr.wkbLinearRing)
-                    for iPoint in range(len(geoCoords[1])):
-                        # add points for a line
-                        if geomType == ogr.wkbLineString or geomType == ogr.wkbLineString25D:
-                            geometry.AddPoint(float(geoCoords[0][iPoint]), float(geoCoords[1][iPoint]))
-                        # add points for a polygon
-                        elif geomType == ogr.wkbPolygon or geomType == ogr.wkbPolygon25D:
-                            geomRing.AddPoint(float(geoCoords[0][iPoint]), float(geoCoords[1][iPoint]))
-                        else:
-                            print 'Can not create geometry. Muptipolygon is not supported.'
-                    # set geomRing if it has points (polygon)
-                    if geomRing.GetPointCount() != 0:
-                        geometry.AddGeometryDirectly(geomRing)
-                # set srs
-                srs =self.layer.GetSpatialRef()
-                geometry.AssignSpatialReference(srs)
-
-            # set field values and geometry to the feature
-            self._set2feature(iFeature, fieldNames=names,
-                              fieldValues=fieldValues, geometry=geometry)
-
-    def _set2feature(self, featureID, fieldNames=[], fieldValues=None, geometry=None):
-        ''' set fields or a geometry to a feature
-
-        Parameters
-        ----------
-        featureID : int
-            feature ID number
-        fieldNames : list with string elements
-            names of fields
-        fieldValues : list (the lenght is a number of fields)
-            values corresponding to the fieldNames list
-        geometry : geometry object
-
-        Modifies
-        --------
-        self.layer : set fields or a geometry
-            if feature with given featureID has existed, set the values / geometry
-            if not, create a new feature then set the values / geometry
-
-        '''
-        # get featuer with featureID. if it does not exist, create a new feature
-        feature = self.layer.GetFeature(featureID)
-        setFeature = True
-        if feature is None:
+        # set values to each feature
+        for iFeature in range(len(values)):
             feature = ogr.Feature(self.layer.GetLayerDefn())
-            setFeatuer = False
+            # create a geometry
+            geometry = ogr.Geometry(type=geomType)
+            # if geomType is Point, set a point to a geometry
+            if geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D:
+                geometry.SetPoint_2D(0,
+                                     float(coordinates[iFeature]['pixel']),
+                                     float(coordinates[iFeature]['line']))
+            # else, set points to a geometry
+            else:
+                geomRing = ogr.Geometry(type=ogr.wkbLinearRing)
+                # add points for a line
+                if geomType == ogr.wkbLineString or geomType == ogr.wkbLineString25D:
+                    for iGeo in range(len(coordinates)):
+                        if coordinates[iGeo]['ID'] == iFeature:
+                            geometry.AddPoint(float(coordinates[iGeo]['pixel']),
+                                              float(coordinates[iGeo]['line']))
+                # add points for a polygon
+                elif geomType == ogr.wkbPolygon or geomType == ogr.wkbPolygon25D:
+                    for iGeo in range(len(coordinates)):
+                        if coordinates[iGeo]['ID'] == iFeature:
+                            geomRing.AddPoint(float(coordinates[iGeo]['pixel']),
+                                              float(coordinates[iGeo]['line']))
+                else:
+                    print 'Can not create geometry. Muptipolygon is not supported.'
+                # set geomRing if it has points (polygon)
+                if geomRing.GetPointCount() != 0:
+                    geometry.AddGeometryDirectly(geomRing)
+            # set srs
+            srs =self.layer.GetSpatialRef()
+            geometry.AssignSpatialReference(srs)
 
-        # if geometry is given, set geometry
-        if geometry is not None:
+            # set geometry
             feature.SetGeometryDirectly(geometry)
 
-        # if fieldValue is given, set field values
-        if fieldValues is not None:
-            intType = [np.int, np.int8, np.int16, np.int32, np.int64,
-                           np.uint16, np.uint32, np.uint64]
-            floatType = [np.float, np.float16, np.float32, np.float64]
-            for iField, iFieldName in enumerate(fieldNames):
-                val = fieldValues[iField]
-                if type(val) in intType:
-                    val = int(val)
-                elif type(val) in floatType:
-                    val = float(val)
-                feature.SetField(str(iFieldName), val)
-
-        # Set the feature or add a new feature to the layer
-        if setFeature:
-            self.layer.SetFeature(feature)
-        else:
-            self.layer.CreateFeature(feature)
-        feature.Destroy()
-
-    def _add_fieldnames(self, fieldNames):
-        ''' add a new field names to the layer
-
-        Parameters
-        ----------
-        fieldNames : list with string elements
-            field names
-
-        Modifies
-        --------
-        self.layer : add new fields
-        self.fieldNames : add new field names
-
-        '''
-        for iFieldName in fieldNames:
-            if not (iFieldName in self.fieldNames):
-                field = ogr.FieldDefn(iFieldName, self.fieldDataTypes[iFieldName])
-                self.layer.CreateField(field)
-                self.fieldNames.append(iFieldName)
-
-    def _make_datatype_dict(self, values, names=None):
-        '''set self.fieldDataTypes
-
-        Parameters
-        ----------
-        values : structured numpy array or list with string or scalar elements
-            values of fields
-        name : list with string elements
-            names of fields
-
-
-        Modifies
-        --------
-        self.fieldDataTypes
-            add new fields name and their OGR datatype
-
-        '''
-        intType = [np.int, np.int8, np.int16, np.int32, np.int64,
-                       np.uint16, np.uint32, np.uint64, int]
-        floatType = [np.float, np.float16, np.float32, np.float64, float]
-
-        # if field names are in structured numpy array, set them in name list
-        if names is None:
-            names = values.dtype.names
-
-        for i, iName in enumerate (names):
-            if type(values) == np.ndarray:
-                val = values.dtype.fields[iName][0]
-            else:
-                val = values[i][0]
-            if not (iName in self.fieldDataTypes.keys()):
-                # get ogr datatype for each field
-                if type(val) in intType:
-                    ogrDataType = ogr.OFTInteger
-                elif type(val) in floatType:
-                    ogrDataType = ogr.OFTReal
+            # set field values
+            for j, jField in enumerate(values.dtype.names):
+                if values.dtype[jField].name.startswith("int"):
+                    feature.SetField(jField, int(values[iFeature][jField]))
+                elif values.dtype[jField].name.startswith("float"):
+                    feature.SetField(jField, float(values[iFeature][jField]))
                 else:
-                    ogrDataType = ogr.OFTString
-                # set field name and datatype to self.fieldDataTypes
-                self.fieldDataTypes[iName] = ogrDataType
+                    feature.SetField(jField, str(values[iFeature][jField]))
+
+            self.layer.CreateFeature(feature)
+
+            feature.Destroy()
 
     def get_corner_points(self, latlon=True):
         '''Get corner points (geometries of featuers) in the layer

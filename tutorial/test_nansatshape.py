@@ -49,12 +49,14 @@ Nansatshape support points, line and ploygons. (not mupti-polygon)
 # Create a nansatShape object with line geometry
 nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
 
-# Create polygon geometry and set them to featuers
-nansatOGR.add_features(coordinates=[[100, 150, 200, 500, 600, 800],
-                                    [20, 30, 60, 30, 60, 90]],
-                       geoFeatureID=[0, 0, 0, 1, 1, 1])
+# Create structured numpy array for geometries
+coordinates = np.zeros(8, dtype={'names':['pixel', 'line','ID'],
+                                 'formats':['i4','i4','i4']})
+coordinates['pixel'] = [100, 150, 200, 500, 600, 800, 500, 700]
+coordinates['line'] = [20, 30, 60, 30, 60, 90, 40, 80]
+coordinates['ID'] = [0, 0, 1, 1, 1, 2, 2, 2]
 
-# Create structured numpy array
+# Create structured numpy array for fieldValues
 fieldValues = np.zeros(3, dtype={'names':['INT', 'STR','FLOAT1','FLOAT2'],
                                  'formats':['i4','a10','f8','f8']})
 fieldValues['INT'] = [10, 20, 30]
@@ -63,10 +65,7 @@ fieldValues['FLOAT1'] = [0.0, 3.5, 5.8]
 fieldValues['FLOAT2'] = [24.5, 15.4, 36.4]
 
 # add fields to the feature and geometry at once
-nansatOGR.add_features(values=fieldValues,
-                       fieldFeatureID=[0, 1, 2],
-                       coordinates=[[300, 700, 750],[80, 50, 60]],
-                       geoFeatureID=[2, 2, 2])
+nansatOGR.add_features(fieldValues, coordinates)
 
 # save to a file
 ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
