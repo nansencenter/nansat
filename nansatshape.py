@@ -61,7 +61,7 @@ class Nansatshape():
         # create random name for the OGR dataset in memory
         allChars = ascii_uppercase + digits
         randomName = ''.join(choice(allChars) for x in range(10))
-        
+
         # Create a empty datasource and layer in memory
         if fileName is None:
             self.datasource = ogr.GetDriverByName('Memory').CreateDataSource(randomName)
@@ -83,7 +83,7 @@ class Nansatshape():
 
     def add_features(self, values, coordinates):
         ''' Set field values and / or geometry to each feature
-        
+
         Loop over given arrays of coordinates and values and create
         corresponding points with data. Only ogr.wkbPoint is supported.
 
@@ -140,10 +140,10 @@ class Nansatshape():
             feature.SetGeometryDirectly(geometry)
 
             # set field values
-            for j, jField in enumerate(values.dtype.names):
-                if values.dtype[jField].name.startswith("int"):
+            for jField in values.dtype.names:
+                if values.dtype[jField].name.startswith('int'):
                     feature.SetField(jField, int(values[iFeature][jField]))
-                elif values.dtype[jField].name.startswith("float"):
+                elif values.dtype[jField].name.startswith('float'):
                     feature.SetField(jField, float(values[iFeature][jField]))
                 else:
                     feature.SetField(jField, str(values[iFeature][jField]))
@@ -157,7 +157,7 @@ class Nansatshape():
 
         !!NB!!
         if shapefile has SRS, assume that geometry is lon/lat
-        if not, assume that the geometry is given in pix/lin 
+        if not, assume that the geometry is given in pix/lin
         only ogr.wkbPoint or ogr.wkbPoint25D is supported
 
         Parameters
@@ -186,7 +186,7 @@ class Nansatshape():
                 latlon = False
             else:
                 latlon = True
-            
+
             # get corner points from geometry
             if geom is not None:
                 p = geom.GetPoints()[0]
