@@ -425,7 +425,7 @@ class Nansat(Domain):
         gcps = exportVRT.dataset.GetGCPs()
         if addGCPs and len(gcps) > 0:
             # add GCPs in VRT metadata and remove geotransform
-            exportVRT._add_gcp_metadata()
+            exportVRT._add_gcp_metadata(bottomup)
             exportVRT._remove_geotransform()
 
         # add projection metadata

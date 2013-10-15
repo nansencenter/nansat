@@ -858,7 +858,7 @@ class VRT():
         # Write the modified elemements back into temporary VRT
         self.write_xml(str(node0.rawxml()))
 
-    def _add_gcp_metadata(self):
+    def _add_gcp_metadata(self, bottomup=True):
         '''Add GCPs to metadata (required e.g. by Nansat.export())
 
         Creates string representation of GCPs line/pixel/X/Y
@@ -884,14 +884,32 @@ class VRT():
             # make empty strings
             gspStrings = ['', '', '', '']
 
-            # fill string with values
+            column = 0
             for gcp in gcps:
-                gspStrings[0] = '%s%05d| ' % (gspStrings[0],
-                                              int(gcp.GCPPixel))
-                gspStrings[1] = '%s%05d| ' % (gspStrings[1],
-                                              int(gcp.GCPLine))
-                gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcp.GCPX)
-                gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcp.GCPY)
+                if gcps[0].GCPLine == gcp.GCPLine:
+                    column += 1
+                else:
+                    break
+
+            # change the shape of gcps. (from 1D to 2D)
+            row = len(gcps) / column
+            gcps = list(gcps)
+            gcps = zip(*[iter(gcps)]*column)
+
+            # fill string with values
+            for iRow in range(row):
+                for jColumn in range(column):
+                    gspStrings[0] = '%s%05d| ' % (gspStrings[0],
+                                                  int(gcps[iRow][jColumn].GCPPixel))
+                    gspStrings[1] = '%s%05d| ' % (gspStrings[1],
+                                                  int(gcps[iRow][jColumn].GCPLine))
+                    # if bottomup is False (=image is filpped), gcps are flopped
+                    if bottomup:
+                        gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[iRow][jColumn].GCPX)
+                        gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[iRow][jColumn].GCPY)
+                    else:
+                        gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[row-iRow-1][jColumn].GCPX)
+                        gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[row-iRow-1][jColumn].GCPY)
 
             for i, gspString in enumerate(gspStrings):
                 #split string into chunks

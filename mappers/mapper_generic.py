@@ -185,7 +185,7 @@ class Mapper(VRT):
             geoTransform = self.dataset.GetGeoTransform()
             if len(geoTransform) == 0:
                 geoTransformStr = geoMetadata.get('GeoTransform', '(0|1|0|0|0|0|1)')
-                geoTransform = eval(geoTransformStr.replace('|', ','))
+                geoTransform = eval(geoTransformStr.replace('|', ',' ))
                 self.dataset.SetGeoTransform(geoTransform)
 
         if 'start_date' in gdalMetadata:
@@ -199,7 +199,6 @@ class Mapper(VRT):
         '''Get GCPs from strings in metadata and insert in dataset'''
         gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
         gcpAllValues = []
-        geoTransform = self.dataset.GetGeoTransform()
 
         # for all gcp coordinates
         for i, gcpName in enumerate(gcpNames):
@@ -219,12 +218,7 @@ class Mapper(VRT):
             # append all gcps from string
             for x in gcpString.split('|'):
                 if len(x) > 0:
-                    # if data (geoTransform) is flipped, GCP is flipped as well.
-                    if gcpName == 'GCPLine' and geoTransform[5] == -1:
-                        gcpValues.append(float(geoTransform[3]) - float(x))
-                    else:
-                        gcpValues.append(float(x))
-
+                    gcpValues.append(float(x))
             #gcpValues = [float(x) for x in gcpString.strip().split('|')]
             gcpAllValues.append(gcpValues)
 
