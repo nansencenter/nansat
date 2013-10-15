@@ -335,7 +335,7 @@ class Nansat(Domain):
         return False
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF', flip=True):
+               addGCPs=True, driver='netCDF', flip=True, bottomup=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -370,7 +370,6 @@ class Nansat(Domain):
         exportVRT = self.vrt.copy()
         exportVRT.real = []
         exportVRT.imag = []
-        geoTransform = list(self.vrt.dataset.GetGeoTransform())
 
         # Find complex data band
         complexBands = []
@@ -423,9 +422,11 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
-        # add GCPs to VRT metadata
-        if addGCPs:
+        gcps = exportVRT.dataset.GetGCPs()
+        if addGCPs and len(gcps) > 0:
+            # add GCPs in VRT metadata and remove geotransform
             exportVRT._add_gcp_metadata()
+            exportVRT._remove_geotransform()
 
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
@@ -479,10 +480,17 @@ class Nansat(Domain):
             # remove source bands
             self.vrt.delete_bands(range(1,numOfBands))
 
+        # set CreateCopy() options
+        if bottomup:
+            options = 'WRITE_BOTTOMUP=YES'
+        else:
+            options = 'WRITE_BOTTOMUP=NO'
+
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
-                                                          exportVRT.dataset)
+                                                          exportVRT.dataset,
+                                                          options=[options])
         self.logger.debug('Export - OK!')
         return dataset
 
