@@ -66,10 +66,16 @@ class Mapper(VRT, Envisat):
         # get calibration constant
         gotCalibration = True
         try:
-            calibrationConst = float(gdalDataset.GetMetadataItem("MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+            calibrationConst = float(gdalDataset.GetMetadataItem(
+                "MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
         except:
-            self.logger.warning('Cannot get calibrationConst')
-            gotCalibration = False
+            try:
+                # Apparently some ASAR files have calibration constant stored in another place
+                calibrationConst = float(gdalDataset.GetMetadataItem(
+                    "MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+            except:
+                self.logger.warning('Cannot get calibrationConst')
+                gotCalibration = False
 
         # add dictionary for raw counts
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
