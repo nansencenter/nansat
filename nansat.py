@@ -19,6 +19,7 @@
 # import standard and additional libraries
 from nansat_tools import *
 import scipy
+import math
 
 # import nansat parts
 try:
@@ -1309,7 +1310,8 @@ class Nansat(Domain):
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,
-                           smooth=0, **kwargs):
+                           smoothRadius=0, smoothAlg=0,
+                           **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1330,13 +1332,11 @@ class Nansat(Domain):
             If False, return OGR object
         layerNum: int
             If shapefile is given as points, it is the number of the layer
-        smooth: int or [int, int]
-            If smooth or smooth[0] is greater than 0, smooth every transect
-            pixel as the median (default, smooth[1]=0) or mean (smooth[1]=1)
-            value in a box with sides equal to the given number.
-            smooth or smooth[0] must be 0 or a positive odd number
-            smooth[1] can be 0 or 1 for median or mean
-
+        smoothRadius: int
+            If smootRadius is greater than 0, smooth every transect
+            pixel as the median or mean value in a circule with radius
+            equal to the given number.
+        smoothAlg: 0 or 1 for median or mean
         vmin, vmax : int (optional)
             minimum and maximum pixel values of an image shown
             in case points is None.
@@ -1353,23 +1353,8 @@ class Nansat(Domain):
 
         '''
         smooth_function = scipy.stats.nanmedian
-        if type(smooth) is list:
-            if smooth[0] < 0:
-                raise ValueError("smooth[0] must be 0 or a positive odd number.")
-            if smooth[0]>0 and (smooth[0] % 2) != 1:
-                raise ValueError("The kernel size smooth[0] should be odd.")
-            if not smooth[1]==0 and not smooth[1]==1:
-                raise ValueError("smooth[1] must be 0 or 1 for median or mean filter.")
-            if smooth[1]==1:
-                smooth_function = scipy.stats.nanmean
-        else:
-            if smooth < 0:
-                raise ValueError("smooth must be 0 or a positive odd number.")
-            if smooth>0 and (smooth % 2) != 1:
-                raise ValueError("The kernel size smooth should be odd.")
-            tmp = smooth
-            smooth = []
-            smooth.append(tmp)
+        if smoothAlg == 1:
+            smooth_function = scipy.stats.nanmean
 
         data = None
         # if shapefile is given, get corner points from it
@@ -1433,9 +1418,13 @@ class Nansat(Domain):
             pixlinCoord = np.append(pixlinCoord,
                                     [pixVector, linVector],
                                     axis=1)
-            if smooth[0]:
-                pixlinCoord0 = pixlinCoord-int(smooth[0])/2
-                pixlinCoord1 = pixlinCoord+int(smooth[0])/2
+            if smoothRadius:
+                pixlinCoord0 = pixlinCoord - smoothRadius
+                pixlinCoord0 = [pixlinCoord0[0].clip(0, self.vrt.dataset.RasterXSize-1),
+                                pixlinCoord0[1].clip(0, self.vrt.dataset.RasterYSize-1)]
+                pixlinCoord1 = pixlinCoord + smoothRadius
+                pixlinCoord1 = [pixlinCoord1[0].clip(0, self.vrt.dataset.RasterXSize-1),
+                                pixlinCoord1[1].clip(0, self.vrt.dataset.RasterYSize-1)]
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
@@ -1450,16 +1439,24 @@ class Nansat(Domain):
             if data is None:
                 data = self[iBand]
             # extract values
-            if smooth[0]:
+            if smoothRadius:
                 transect0 = []
-                for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
-                        pixlinCoord1[1], pixlinCoord0[0], pixlinCoord1[0]):
-                    transect0.append( smooth_function(data[xmin:xmax,
-                        ymin:ymax], axis=None) )
+                for centerX, xmin, xmax, centerY, ymin, ymax in zip(
+                    pixlinCoord[1], pixlinCoord0[1], pixlinCoord1[1],
+                    pixlinCoord[0], pixlinCoord0[0], pixlinCoord1[0]):
+                    circleCoords = [[], []]
+                    for x in range(int(xmin), int(xmax + 1)):
+                        for y in range(int(ymin), int(ymax + 1)):
+                            # get coordinates in a circular area
+                            if math.sqrt(pow(x - centerX, 2) + pow(y - centerY, 2)) <= smoothRadius:
+                                circleCoords[0].append(x)
+                                circleCoords[1].append(y)
+                    transect0.append(smooth_function(data[circleCoords],
+                                                     axis=None))
                 transect.append(transect0)
             else:
                 transect.append(data[list(pixlinCoord[1]),
-                                 list(pixlinCoord[0])].tolist())
+                                     list(pixlinCoord[0])].tolist())
             data = None
         if returnOGR:
             NansatOGR = Nansatshape(wkt=wkt)
