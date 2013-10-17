@@ -10,6 +10,7 @@ from envisat import Envisat
 from domain import Domain
 import numpy as np
 
+
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1
 
@@ -19,8 +20,8 @@ class Mapper(VRT, Envisat):
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 full_incAng=True, geolocation=False, zoomSize=500, step=1, **kwargs):
-
+                 full_incAng=True, geolocation=False, zoomSize=500,
+                 step=1, **kwargs):
         '''
         Parameters
         -----------
@@ -82,10 +83,11 @@ class Mapper(VRT, Envisat):
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
         if gotCalibration:
             # add dicrtionary for sigma0, ice and water
-            short_names = ['sigma0', 'sigma0_normalized_ice', 'sigma0_normalized_water']
+            short_names = ['sigma0', 'sigma0_normalized_ice',
+                           'sigma0_normalized_water']
             wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
-                    'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
-                    'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
+                   'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
+                   'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
             sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
             sourceFileNames = [fileName,
@@ -93,9 +95,9 @@ class Mapper(VRT, Envisat):
 
             pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                   'Sigma0NormalizedIce']
-            if polarization=='HH':
+            if polarization == 'HH':
                 pixelFunctionTypes.append('Sigma0HHNormalizedWater')
-            elif polarization=='VV':
+            elif polarization == 'VV':
                 pixelFunctionTypes.append('Sigma0VVNormalizedWater')
 
             # add pixelfunction bands to metaDict
@@ -135,7 +137,7 @@ class Mapper(VRT, Envisat):
         # longer domains, especially at high latitudes, the azimuth direction
         # may vary a lot over the domain, and using the center angle will be a
         # coarse approximation.
-        self.dataset.SetMetadataItem('SAR_center_look_direction', str(np.mod(
-            Domain(ds=gdalDataset).upwards_azimuth_direction()
-            + 90, 360)))
-
+        self.dataset.SetMetadataItem('SAR_center_look_direction',
+                                     str(np.mod(Domain(ds=gdalDataset).
+                                         upwards_azimuth_direction() + 90,
+                                                360)))

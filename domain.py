@@ -441,8 +441,8 @@ class Domain():
             # fill row-wise
             for i in range(self.vrt.dataset.RasterXSize):
                 [lo, la] = self._transform_points(
-                           [i] * self.vrt.dataset.RasterYSize,
-                           range(self.vrt.dataset.RasterYSize))
+                            [i] * self.vrt.dataset.RasterYSize,
+                            range(self.vrt.dataset.RasterYSize))
                 longitude[:, i] = lo
                 latitude[:, i] = la
 
@@ -544,9 +544,9 @@ class Domain():
             if trkey != '':
                 elements = []
                 for i in range(2):
-                    elements.append(float(trElem[i + 1].\
+                    elements.append(float(trElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "'[]'")))
                 extentDic[trkey] = elements
 
         # Find -ts text
@@ -566,9 +566,9 @@ class Domain():
             if tskey != '':
                 elements = []
                 for i in range(2):
-                    elements.append(float(tsElem[i + 1].\
+                    elements.append(float(tsElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "[]'")))
                 extentDic[tskey] = elements
 
         # Find -te text
@@ -589,9 +589,9 @@ class Domain():
             if tekey != '':
                 elements = []
                 for i in range(4):
-                    elements.append(float(teElem[i + 1].\
+                    elements.append(float(teElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "[]'")))
                 extentDic[tekey] = elements
 
         # Find -lle text
@@ -613,9 +613,9 @@ class Domain():
             if llekey != '':
                 elements = []
                 for i in range(4):
-                    elements.append(float(lleElem[i + 1].\
+                    elements.append(float(lleElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "[]'")))
                 extentDic[llekey] = elements
 
         result = re.search('\S', extentString)
@@ -770,7 +770,8 @@ class Domain():
 
         # apply > 180 deg correction to longitudes
         for ilon, lon in enumerate(lonList):
-            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180, sin(lon * pi / 180.))
+            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
+                                     sin(lon * pi / 180.))
 
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
@@ -902,8 +903,8 @@ class Domain():
         # create transformer
         transformer = gdal.Transformer(self.vrt.dataset, None,
                                        ['SRC_SRS=' + srcWKT,
-                                       'DST_SRS=' + dstWKT])
-                                       #,'METHOD=GCP_TPS'])
+                                        'DST_SRS=' + dstWKT])
+                                        #,'METHOD=GCP_TPS'])
 
         # use the transformer to convert pixel/line into lat/lon
         latVector = []
@@ -919,7 +920,7 @@ class Domain():
 
         return lonVector, latVector
 
-    def upwards_azimuth_direction(self):
+    def upwards_azimuth_direction(self, orbit_direction=None):
         '''Caluculate and return upwards azimuth direction of domain.
 
         The upward azimuth direction will be the satellite flight
@@ -938,11 +939,34 @@ class Domain():
             This method should probably also get a better name.
 
         '''
+        lon = [None] * 2
+        lat = [None] * 2
         mid_x = self.vrt.dataset.RasterXSize / 2
         mid_y1 = self.vrt.dataset.RasterYSize / 2 * 0.4
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
         startlon, startlat = self._transform_points([mid_x], [mid_y1])
         endlon, endlat = self._transform_points([mid_x], [mid_y2])
+        if orbit_direction:
+            # check that startlat is actually less/greater than endlat for
+            # ascending/descending orbit direction
+            if str.lower(orbit_direction)=='ascending':
+                # should have startlat<endlat
+                if startlat>endlat:
+                    tmplat=startlat
+                    tmplon=startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
+            if str.lower(orbit_direction)=='descending':
+                # should have startlat>endlat
+                if startlat<endlat:
+                    tmplat=startlat
+                    tmplon=startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
         bearing_center = initial_bearing(startlon[0], startlat[0],
                                          endlon[0], endlat[0])
         return bearing_center
@@ -1066,7 +1090,6 @@ class Domain():
                     dpi=dpi, pad_inches=padding)
         plt.close('all')
 
-
     def reproject_GCPs(self, srsString):
         '''Reproject all GCPs to a new spatial reference system
 
@@ -1096,8 +1119,11 @@ class Domain():
         srcGCPs = self.raw.dataset.GetGCPs()
         dstGCPs = []
         for srcGCP in srcGCPs:
-            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX, srcGCP.GCPY, srcGCP.GCPZ)
-            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel, srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
+            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX,
+                                                   srcGCP.GCPY,
+                                                   srcGCP.GCPZ)
+            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel,
+                              srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
             dstGCPs.append(dstGCP)
 
         # Update dataset

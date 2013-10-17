@@ -13,8 +13,9 @@ import struct
 import datetime
 from vrt import *
 
-satIDs = {4: 'NOAA-15',2: 'NOAA-16', 6: 'NOAA-17',7: 'NOAA-18', 8: 'NOAA-19',
-          11: 'Metop-B (Metop-1)', 12: 'Metop-A (Metop-2)', 13: 'Metop-C (Metop-3)'}
+satIDs = {4: 'NOAA-15', 2: 'NOAA-16', 6: 'NOAA-17', 7: 'NOAA-18', 8: 'NOAA-19',
+          11: 'Metop-B (Metop-1)', 12: 'Metop-A (Metop-2)',
+          13: 'Metop-C (Metop-3)'}
 dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
 dataSetQualityIndicatorOffset = 114
 recordLength = 22016
@@ -48,7 +49,6 @@ class Mapper(VRT):
         if missingScanLines != 0:
             print('WARNING: Missing scanlines: ' + str(missingScanLines))
 
-
         ##################
         # Read time
         ##################
@@ -56,8 +56,8 @@ class Mapper(VRT):
         year = int(struct.unpack('<H', fp.read(2))[0])
         dayofyear = int(struct.unpack('<H', fp.read(2))[0])
         millisecondsOfDay = int(struct.unpack('<l', fp.read(4))[0])
-        time = datetime.datetime(year,1,1) + datetime.timedelta(dayofyear-1,
-                        milliseconds=millisecondsOfDay)
+        time = datetime.datetime(year, 1, 1) + \
+            datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
 
         ##################################
         # Read calibration information
@@ -77,7 +77,7 @@ class Mapper(VRT):
         #for IRchannelNo in range(3):
         #    for coeffNo in range(3):
         #        avh_h_radtempcnv[IRchannelNo, coeffNo] = \
-        #                int(struct.unpack('<l', fp.read(4))[0])
+        #           int(struct.unpack('<l', fp.read(4))[0])
         #print avh_h_radtempcnv
         #IRcalibration['centralWavenumber'] = avh_h_radtempcnv[:,0] / [1E2, 1E3, 1E3]
         #IRcalibration['c1'] = avh_h_radtempcnv[:,1] / 1E5
@@ -149,37 +149,40 @@ class Mapper(VRT):
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
         self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
         RawGeolocMetaDict = []
-        for lonlatNo in range(1,3):
-            RawGeolocMetaDict.append({'src': {
-                        'SourceFilename': fileName,
-                        'SourceBand': 0,
-                        'SourceType': "RawRasterBand",
-                        'DataType': gdal.GDT_Int32,
-                        'ImageOffset' : headerLength + 640 + (lonlatNo-1)*4,
-                        'PixelOffset' : 8,
-                        'LineOffset' : recordLength,
-                        'ByteOrder' : 'LSB'},
-                    'dst': {}})
+        for lonlatNo in range(1, 3):
+            RawGeolocMetaDict.\
+                append({'src': {'SourceFilename': fileName,
+                                'SourceBand': 0,
+                                'SourceType': "RawRasterBand",
+                                'DataType': gdal.GDT_Int32,
+                                'ImageOffset': (headerLength + 640 +
+                                                (lonlatNo - 1) * 4),
+                                'PixelOffset': 8,
+                                'LineOffset': recordLength,
+                                'ByteOrder': 'LSB'},
+                        'dst': {}})
 
         self.RawGeolocVRT._create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
         self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
-        for lonlatNo in range(1,3):
-            GeolocMetaDict.append({'src': {
-                        'SourceFilename': self.RawGeolocVRT.fileName,
-                        'SourceBand': lonlatNo,
-                        'ScaleRatio': 0.0001,
-                        'ScaleOffset': 0,
-                        'DataType': gdal.GDT_Int32},
-                    'dst': {}})
+        for lonlatNo in range(1, 3):
+            GeolocMetaDict.\
+                append({'src': {'SourceFilename': self.RawGeolocVRT.fileName,
+                                'SourceBand': lonlatNo,
+                                'ScaleRatio': 0.0001,
+                                'ScaleOffset': 0,
+                                'DataType': gdal.GDT_Int32},
+                        'dst': {}})
 
         self.GeolocVRT._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.GeolocVRT, yVRT=self.GeolocVRT,
-                    xBand=2, yBand=1, # x = lon, y = lat
-                    lineOffset=0, pixelOffset=25, lineStep=1, pixelStep=40)
+        GeolocObject = GeolocationArray(xVRT=self.GeolocVRT,
+                                        yVRT=self.GeolocVRT,
+                                        xBand=2, yBand=1,  # x = lon, y = lat
+                                        lineOffset=0, pixelOffset=25,
+                                        lineStep=1, pixelStep=40)
 
         #######################
         # Initialize dataset
@@ -197,13 +200,14 @@ class Mapper(VRT):
         # are here converted to GCPs. Only a subset of GCPs is added,
         # significantly increasing speed when using -tps warping
         reductionFactor = 2
-        self.convert_GeolocationArray2GPCs(1*reductionFactor, 40*reductionFactor)
+        self.convert_GeolocationArray2GPCs(1*reductionFactor,
+                                           40*reductionFactor)
 
         ##################
         # Create bands
         ##################
         metaDict = []
-        ch = ({},{},{},{},{},{})
+        ch = ({}, {}, {}, {}, {}, {})
 
         ch[1]['wavelength'] = 0.63
         ch[2]['wavelength'] = 0.86
@@ -217,24 +221,21 @@ class Mapper(VRT):
         ch[4]['minmax'] = '400 1000'
         ch[5]['minmax'] = '400 1000'
 
-
-        for bandNo in range(1,6):
-            metaDict.append({'src': {
-                                'SourceFilename': fileName,
-                                'SourceBand': 0,
-                                'SourceType': "RawRasterBand",
-                                'dataType': gdal.GDT_UInt16,
-                                'ImageOffset' : imageOffset + (bandNo-1)*2,
-                                'PixelOffset' : 10,
-                                'LineOffset' : recordLength,
-                                'ByteOrder' : 'LSB'},
-                            'dst': {
-                                'dataType': gdal.GDT_UInt16,
-                                'wkv': 'raw_counts',
-                                'colormap': 'gray',
-                                'wavelength': ch[bandNo]['wavelength'],
-                                'minmax': ch[bandNo]['minmax'],
-                                "unit": "1"}})
+        for bandNo in range(1, 6):
+            metaDict.append({'src': {'SourceFilename': fileName,
+                                     'SourceBand': 0,
+                                     'SourceType': "RawRasterBand",
+                                     'dataType': gdal.GDT_UInt16,
+                                     'ImageOffset': imageOffset + (bandNo-1)*2,
+                                     'PixelOffset': 10,
+                                     'LineOffset': recordLength,
+                                     'ByteOrder': 'LSB'},
+                            'dst': {'dataType': gdal.GDT_UInt16,
+                                    'wkv': 'raw_counts',
+                                    'colormap': 'gray',
+                                    'wavelength': ch[bandNo]['wavelength'],
+                                    'minmax': ch[bandNo]['minmax'],
+                                    'unit': "1"}})
 
         self._create_bands(metaDict)
 

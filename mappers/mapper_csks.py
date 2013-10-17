@@ -10,7 +10,9 @@ from struct import unpack
 from vrt import VRT, GeolocationArray
 import numpy as np
 import os
-import gdal, osr
+import gdal
+import osr
+
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Cosmo-Skymed '''
@@ -37,15 +39,14 @@ class Mapper(VRT):
         subDatasets = gdalDataset.GetSubDatasets()
 
         # Get file names from dataset or subdataset
-        if subDatasets.__len__()==1:
+        if subDatasets.__len__() == 1:
             fileNames = [fileName]
         else:
             fileNames = [f[0] for f in subDatasets]
 
-        for i,elem in enumerate(fileNames):
-            if fileNames[i][-3:]=='QLK':
+        for i, elem in enumerate(fileNames):
+            if fileNames[i][-3:] == 'QLK':
                 fileNames.pop(i)
-
         #print fileNames
 
         subDataset = gdal.Open(fileNames[0])
@@ -54,22 +55,22 @@ class Mapper(VRT):
         gcps = []
         # create GCP with X,Y,Z(?),pixel,line from lat/lon matrices
         gcp = gdal.GCP(float(bottom_left_lon), float(bottom_left_lat), 0, 0, 0)
-        gcps.append( gcp )
+        gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 0, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(bottom_right_lon), float(bottom_right_lat), 0, subDataset.RasterXSize, 0)
-        gcps.append( gcp )
+        gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 1, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(top_left_lon), float(top_left_lat), 0, 0, subDataset.RasterYSize)
-        gcps.append( gcp )
+        gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 2, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(top_right_lon), float(top_right_lat),
-                0, subDataset.RasterXSize, subDataset.RasterYSize)
-        gcps.append( gcp )
+        gcp = gdal.GCP(float(top_right_lon), float(top_right_lat), 0,
+                       subDataset.RasterXSize, subDataset.RasterYSize)
+        gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 3, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(center_lon), float(center_lat),
-                0, int(np.round(subDataset.RasterXSize/2.)),
-                int(round(subDataset.RasterYSize/2.)))
-        gcps.append( gcp )
+        gcp = gdal.GCP(float(center_lon), float(center_lat), 0,
+                       int(np.round(subDataset.RasterXSize/2.)),
+                       int(round(subDataset.RasterYSize/2.)))
+        gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 4, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
 
         # append GCPs and lat/lon projection to the vsiDataset
@@ -79,67 +80,70 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, srcRasterXSize=subDataset.RasterXSize,
-                srcRasterYSize=subDataset.RasterYSize,
-                srcGCPs=gcps,
-                srcGCPProjection=latlongSRSWKT)
+                     srcRasterYSize=subDataset.RasterYSize,
+                     srcGCPs=gcps,
+                     srcGCPProjection=latlongSRSWKT)
 
         #print self.fileName
-
-
         # Read all bands later
         #band='S01'
         #res='SBI'
 
         # Use only full size "original" datasets
-        for i,elem in enumerate(fileNames):
+        for i, elem in enumerate(fileNames):
             band_number = i
-            if fileNames[i][-3:]=='SBI':
+            if fileNames[i][-3:] == 'SBI':
                 # Add real and imaginary raw counts as bands
-                src = {'SourceFilename': fileNames[i], 'SourceBand': 1, 'DataType': gdal.GDT_Int16}
-                dst = {'dataType': gdal.GDT_Float32, 'name': 'RawCounts_%s_real' %
-                                gdalMetadata[fileNames[i][-7:-4]+'_Polarisation']}
-                self._create_band(src,dst)
+                src = {'SourceFilename': fileNames[i],
+                       'SourceBand': 1,
+                       'DataType': gdal.GDT_Int16}
+                dst = {'dataType': gdal.GDT_Float32,
+                       'name': 'RawCounts_%s_real' %
+                       gdalMetadata[fileNames[i][-7:-4]+'_Polarisation']}
+                self._create_band(src, dst)
 
-                src = {'SourceFilename': fileNames[i], 'SourceBand': 2, 'DataType': gdal.GDT_Int16}
-                dst = {'dataType': gdal.GDT_Float32, 'name': 'RawCounts_%s_imaginary' %
-                                gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'] }
-                self._create_band(src,dst)
+                src = {'SourceFilename': fileNames[i],
+                       'SourceBand': 2,
+                       'DataType': gdal.GDT_Int16}
+                dst = {'dataType': gdal.GDT_Float32,
+                       'name': 'RawCounts_%s_imaginary' %
+                       gdalMetadata[fileNames[i][-7:-4] + '_Polarisation']}
+                self._create_band(src, dst)
 
                 self.dataset.FlushCache()
 
-        for i,elem in enumerate(fileNames):
+        for i, elem in enumerate(fileNames):
             band_number = i
-            if fileNames[i][-3:]=='SBI':
+            if fileNames[i][-3:] == 'SBI':
                 # Calculate sigma0 scaling factor
                 Rref = float(gdalMetadata['Reference_Slant_Range'])
                 Rexp = float(gdalMetadata['Reference_Slant_Range_Exponent'])
                 alphaRef = float(gdalMetadata['Reference_Incidence_Angle'])
-                F=float(gdalMetadata['Rescaling_Factor'])
-                K=float(gdalMetadata[fileNames[i][-7:-4]+'_Calibration_Constant'])
+                F = float(gdalMetadata['Rescaling_Factor'])
+                K = float(gdalMetadata[fileNames[i][-7:-4] + '_Calibration_Constant'])
                 Ftot = Rref**(2.*Rexp)
-                Ftot *=np.sin(alphaRef*np.pi/180.0)
-                Ftot /=F**2.
-                Ftot /=K
+                Ftot *= np.sin(alphaRef*np.pi / 180.0)
+                Ftot /= F**2.
+                Ftot /= K
 
                 #print Ftot
 
                 src = [{'SourceFilename': self.fileName,
-                            'DataType': gdal.GDT_Float32,
-                            'SourceBand': 2*i+1, 'ScaleRatio': np.sqrt(Ftot)},
-                                { 'SourceFilename': self.fileName,
-                                    'DataType': gdal.GDT_Float32,
-                                    'SourceBand': 2*i+2, 'ScaleRatio': np.sqrt(Ftot)}]
-                dst = {'wkv':
-                        'surface_backwards_scattering_coefficient_of_radar_wave',
-                        'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
-                        'polarisation': gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
-                        'name': 'sigma0_%s' % gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
-                        'SatelliteID': gdalMetadata['Satellite_ID'],
-                        'dataType': gdal.GDT_Float32}
-                        #'pass': gdalMetadata[''] - I can't find this in the metadata...
+                        'DataType': gdal.GDT_Float32,
+                        'SourceBand': 2*i+1,
+                        'ScaleRatio': np.sqrt(Ftot)},
+                       {'SourceFilename': self.fileName,
+                        'DataType': gdal.GDT_Float32,
+                        'SourceBand': 2*i+2,
+                        'ScaleRatio': np.sqrt(Ftot)}]
+                dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                       'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
+                       'polarisation': gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
+                       'name': 'sigma0_%s' % gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
+                       'SatelliteID': gdalMetadata['Satellite_ID'],
+                       'dataType': gdal.GDT_Float32}
+                       #'pass': gdalMetadata[''] - I can't find this in the metadata...
 
-                self._create_band(src,dst)
+                self._create_band(src, dst)
 
                 self.dataset.FlushCache()
-
-

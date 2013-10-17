@@ -1,3 +1,4 @@
+![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
 nansat
 ======
 

@@ -215,6 +215,19 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
+        # Set invalid and missing data to np.nan
+        if band.GetMetadata().has_key('_FillValue'):
+            fillValue = float(band.GetMetadata()['_FillValue'])
+            try:
+                bandData[bandData == fillValue] = np.nan
+            except:
+                self.logger.info('Cannot replace _FillValue values with np.NAN!')
+        try:
+            bandData[np.isinf(bandData)] = np.nan
+        except:
+            self.logger.info('Cannot replace inf values with np.NAN!')
+
+
         return bandData
 
     def __repr__(self):
@@ -329,9 +342,9 @@ class Nansat(Domain):
 
         return b
 
-    def has_band(self,band):
+    def has_band(self, band):
         for b in self.bands():
-            if self.bands()[b]['name']==band:
+            if self.bands()[b]['name'] == band:
                 return True
         return False
 
@@ -476,10 +489,10 @@ class Nansat(Domain):
             for iBand in range(numOfBands):
                 vrt = VRT(array=self[iBand+1])
                 self.add_band(vrt=vrt)
-                metadata= self.get_metadata(bandID=iBand+1)
+                metadata = self.get_metadata(bandID=iBand+1)
                 self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
             # remove source bands
-            self.vrt.delete_bands(range(1,numOfBands))
+            self.vrt.delete_bands(range(1, numOfBands))
 
         # set CreateCopy() options
         if bottomup:
@@ -519,8 +532,6 @@ class Nansat(Domain):
                 3 : CubicSpline,
                 4 : Lancoz
                 if eResampleAlg > 0 : VRT.resized() is used
-                (Although the default is -1 (Average),
-                 if fileName start from 'ASA_', the default is 0 (NN).)
 
         Modifies
         ---------
@@ -529,12 +540,6 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-        # if fileName start from 'ASA_' and eResampleAlg is default (Average),
-        # then change eResampleAlg to 0 (NearestNeighbour)
-        fileName = self.fileName.split('/')[-1].split('\\')[-1]
-        if fileName.startswith('ASA_') and eResampleAlg == -1:
-            eResampleAlg = 0
-
         # resize back to original size/setting
         if factor == 1 and width is None and height is None:
             self.vrt = self.raw.copy()
@@ -561,7 +566,7 @@ class Nansat(Domain):
             # apply affine transformation using reprojection
             self.vrt = self.vrt.resized(newRasterXSize,
                                         newRasterYSize,
-                                        eResampleAlg=eResampleAlg)
+                                        eResampleAlg)
         else:
             # simply modify VRT rasterX/Ysize and GCPs
             # Get XML content from VRT-file
@@ -791,7 +796,7 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                    **kwargs):
+                     **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -1263,9 +1268,8 @@ class Nansat(Domain):
                         break
 
         # if bandID is int and with bounds: return this number
-        if (type(bandID) == int and
-            bandID >= 1 and
-            bandID <= self.vrt.dataset.RasterCount):
+        if (type(bandID) == int and bandID >= 1 and
+                bandID <= self.vrt.dataset.RasterCount):
             bandNumber = bandID
 
         # if no bandNumber found - raise error
@@ -1312,6 +1316,7 @@ class Nansat(Domain):
                            transect=True, returnOGR=False, layerNum=0,
                            smoothRadius=0, smoothAlg=0,
                            **kwargs):
+
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1355,6 +1360,7 @@ class Nansat(Domain):
         smooth_function = scipy.stats.nanmedian
         if smoothAlg == 1:
             smooth_function = scipy.stats.nanmean
+
 
         data = None
         # if shapefile is given, get corner points from it
@@ -1441,6 +1447,7 @@ class Nansat(Domain):
             # extract values
             if smoothRadius:
                 transect0 = []
+
                 for centerX, xmin, xmax, centerY, ymin, ymax in zip(
                     pixlinCoord[1], pixlinCoord0[1], pixlinCoord1[1],
                     pixlinCoord[0], pixlinCoord0[0], pixlinCoord1[0]):
@@ -1457,6 +1464,7 @@ class Nansat(Domain):
             else:
                 transect.append(data[list(pixlinCoord[1]),
                                      list(pixlinCoord[0])].tolist())
+
             data = None
         if returnOGR:
             NansatOGR = Nansatshape(wkt=wkt)
@@ -1466,4 +1474,4 @@ class Nansat(Domain):
                                 fieldValues=transect)
             return NansatOGR
         else:
-            return transect, [lonVector, latVector], pixlinCoord
+            return transect, [lonVector, latVector], pixlinCoord.astype(int)
