@@ -1320,9 +1320,12 @@ class Nansat(Domain):
         if type(bandID) == dict:
             bandsMeta = self.bands()
             for b in bandsMeta:
+                numCorrectKeys = 0
                 for key in bandID:
                     if (key in bandsMeta[b] and
                             bandID[key] == bandsMeta[b][key]):
+                        numCorrectKeys = numCorrectKeys + 1
+                    if numCorrectKeys == len(bandID):
                         bandNumber = b
                         break
 
