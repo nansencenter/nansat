@@ -1431,16 +1431,20 @@ class Nansat(Domain):
                 pixlinCoord1 = pixlinCoord + smoothRadius
                 pixlinCoord1 = [pixlinCoord1[0].clip(0, self.vrt.dataset.RasterXSize-1),
                                 pixlinCoord1[1].clip(0, self.vrt.dataset.RasterYSize-1)]
-                # create a mask to extract circular area from a box area
-                xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
-                distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
-                mask = distance <= smoothRadius
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
                                                       pixlinCoord[1],
                                                       DstToSrc=0)
+
+        # if smoothRadius, create a mask to extract circular area from a box area
+        if smoothRadius:
+            xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
+            distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
+            mask = distance <= smoothRadius
+
         transect = []
+
         # get data
         for iBand in bandList:
             if type(iBand) == str:
