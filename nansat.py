@@ -1431,12 +1431,15 @@ class Nansat(Domain):
                 pixlinCoord1 = pixlinCoord + smoothRadius
                 pixlinCoord1 = [pixlinCoord1[0].clip(0, self.vrt.dataset.RasterXSize-1),
                                 pixlinCoord1[1].clip(0, self.vrt.dataset.RasterYSize-1)]
+                # create a mask to extract circular area from a box area
+                xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
+                distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
+                mask = distance <= smoothRadius
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
                                                       pixlinCoord[1],
                                                       DstToSrc=0)
-
         transect = []
         # get data
         for iBand in bandList:
@@ -1447,19 +1450,11 @@ class Nansat(Domain):
             # extract values
             if smoothRadius:
                 transect0 = []
-
-                for centerX, xmin, xmax, centerY, ymin, ymax in zip(
-                    pixlinCoord[1], pixlinCoord0[1], pixlinCoord1[1],
-                    pixlinCoord[0], pixlinCoord0[0], pixlinCoord1[0]):
-                    circleCoords = [[], []]
-                    for x in range(int(xmin), int(xmax + 1)):
-                        for y in range(int(ymin), int(ymax + 1)):
-                            # get coordinates in a circular area
-                            if math.sqrt(pow(x - centerX, 2) + pow(y - centerY, 2)) <= smoothRadius:
-                                circleCoords[0].append(x)
-                                circleCoords[1].append(y)
-                    transect0.append(smooth_function(data[circleCoords],
-                                                     axis=None))
+                for xmin, xmax, ymin, ymax in zip(
+                    pixlinCoord0[1], pixlinCoord1[1],
+                    pixlinCoord0[0], pixlinCoord1[0]):
+                    subdata = data[int(xmin):int(xmax + 1), int(ymin):int(ymax + 1)]
+                    transect0.append(smooth_function(subdata[mask]))
                 transect.append(transect0)
             else:
                 transect.append(data[list(pixlinCoord[1]),
