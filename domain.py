@@ -431,7 +431,6 @@ class Domain():
             grid with longitudes
         latitude : numpy array
             grid with latitudes
-
         '''
 
         X = range(0, self.vrt.dataset.RasterXSize, stepSize)
@@ -974,6 +973,30 @@ class Domain():
         bearing_center = initial_bearing(startlon[0], startlat[0],
                                          endlon[0], endlat[0])
         return bearing_center
+
+    def azimuth_up(self, reductionFactor=1):
+        '''Calculate the azimuth orientation (bearing) "upwards" in the domain
+
+        Bearing azimuth angle increases clockwise from North.
+        For lon-lat (Plate Caree) and Mercator projections, 
+        the bearing will be 0 (North is "up")
+    
+        Parameters
+        -----------
+        reductionFactor : integer
+            factor by which the size of the output array is reduced
+
+        Returns
+        -------
+        bearing        : numpy array
+
+        '''
+
+        lon, lat = self.get_geolocation_grids(reductionFactor)
+        b = initial_bearing(lon[1:,:], lat[1:,:],
+                            lon[:-1:,:], lat[:-1:,:])
+        b = np.vstack((b, b[-1,:])) # Repeat last row once to match size of lon-lat grids
+        return b
 
 
     def shape(self):
