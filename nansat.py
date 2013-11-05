@@ -680,38 +680,24 @@ class Nansat(Domain):
         ---------
         http://www.gdal.org/gdalwarp.html
         '''
-
-        """
-        # get corners of target domain
-        dstCornersX, dstCornersY = dstDomain.get_corners()
-        dstXL = min(dstCornersX)
-        dstXR = max(dstCornersX)
-
-        # get corners of self.domain
-        srcCornersX, srcCornersY = self.get_corners()
-
-        # if min(target corners) is smaller than min(self corners) or
-        # max(target corners) is larger than max(self corners),
-        # modify the target corner to correspond to self domain.
-        if dstXL < min(srcCornersX):
-            dstXL = dstXL + 360.0
-        elif dstXR > max(srcCornersX):
-            dstXR = dstXR - 360.0
-
-        if (dstXL != min(dstCornersX)) or (dstXR != max(dstCornersX)):
-            # degree to shift (in degree)
-            shiftX = (abs(dstXR - dstXL)) / 2.0
-            # set shifted self.vrt to self.raw
-            self.raw = self.vrt.create_shifted_vrt(round(shiftX, 3))
-        """
         # dereproject
         self.vrt = self.raw.copy()
-        #self.vrt.export('c:/Users/asumak/Data/output/shifted.vrt')
-        #self.write_figure('c:/Users/asumak/Data/output/shifted.png')
 
         # if no domain: quit
         if dstDomain is None:
             return
+
+        # if self spans from 0 to 360 and dstDomain is west of 0:
+        #     shift self westwards by 180 degrees
+        # check span
+        srcCorners = self.get_corners()
+        if (round(min(srcCorners[0])) == 0 and
+            round(max(srcCorners[0])) == 360):
+            # check intersection of src and dst
+            dstCorners = dstDomain.get_corners()
+            if min(dstCorners[0]) < 0:
+                # shift
+                self.raw = self.raw.get_shifted_vrt(-180)
 
         # get projection of destination dataset
         dstSRS = dstDomain.vrt.dataset.GetProjection()
