@@ -903,13 +903,13 @@ class VRT():
                                                   int(gcps[iRow][jColumn].GCPPixel))
                     gspStrings[1] = '%s%05d| ' % (gspStrings[1],
                                                   int(gcps[iRow][jColumn].GCPLine))
-                    # if bottomup is False (=image is filpped), gcps are flopped
+                    # if bottomup is True (=image is filpped), gcps are flipped
                     if bottomup:
-                        gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[iRow][jColumn].GCPX)
-                        gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[iRow][jColumn].GCPY)
-                    else:
                         gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[row-iRow-1][jColumn].GCPX)
                         gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[row-iRow-1][jColumn].GCPY)
+                    else:
+                        gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[iRow][jColumn].GCPX)
+                        gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[iRow][jColumn].GCPY)
 
             for i, gspString in enumerate(gspStrings):
                 #split string into chunks

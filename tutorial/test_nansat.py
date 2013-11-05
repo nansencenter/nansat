@@ -109,8 +109,9 @@ n.write_map(oFileName + '04_map.png')
 # Writes an 8-bit GeoTiff image for a given band
 n.write_geotiffimage(oFileName + '05_geotiff.tif', bandID=1)
 
-# create a NetCDF file with all bands (3bands)
-n.export(oFileName + '06.nc')
+# create a NetCDF file with all bands
+n.export(oFileName + '06a.nc')
+n.export(oFileName + '06b.nc', bottomup=True)
 
 # create a GTiff file with one band (default driver is NetCDF)
 n.export_band(oFileName + '07.tif', bandID=1, driver='GTiff')
