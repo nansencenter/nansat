@@ -10,11 +10,12 @@ from nansat_tools import Node, latlongSRS
 import numpy as np
 import mapper_generic as mg
 
+
 class Mapper(mg.Mapper):
     '''Mapping for the BEAM/Visat output of Case2Regional algorithm'''
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864],
-                 **kwargs):
+                 wavelengths=[None, 413, 443, 490, 510, 560, 620, 665,
+                              681, 709, 753, None, 778, 864], **kwargs):
 
         fPathName, fExt = os.path.splitext(fileName)
         fPath, fName = os.path.split(fPathName)
@@ -49,4 +50,3 @@ class Mapper(mg.Mapper):
                 self._create_band(src, dst)
 
         self.dataset.FlushCache()
-

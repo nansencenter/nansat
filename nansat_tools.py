@@ -171,6 +171,7 @@ class GDALError(Error):
     '''Error from GDAL '''
     pass
 
+
 class PointBrowser():
     '''
     Click on points and get the X-Y coordinates.
@@ -180,7 +181,9 @@ class PointBrowser():
         self.fig = plt.figure()
         self.data = data
         self.ax = self.fig.add_subplot(111)
-        img = self.ax.imshow(self.data, extent=(0, self.data.shape[1], 0, self.data.shape[0]), origin='lower', **kwargs)
+        img = self.ax.imshow(self.data, extent=(0, self.data.shape[1],
+                                                0, self.data.shape[0]),
+                             origin='lower', **kwargs)
         self.fig.colorbar(img)
         self.points, = self.ax.plot([], [], '+', ms=12, color='b')
         self.line, = self.ax.plot([], [])
@@ -197,13 +200,14 @@ class PointBrowser():
 
     def get_points(self):
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-        self.fig.axes[0].set_xlim([0,self.data.shape[1]])
-        self.fig.axes[0].set_ylim([0,self.data.shape[0]])
+        self.fig.axes[0].set_xlim([0, self.data.shape[1]])
+        self.fig.axes[0].set_ylim([0, self.data.shape[0]])
         text = "1. Please click on the figure and mark a point or draw a line.\n2. Then close the figure."
         plt.text(0, int(self.data.shape[0]*1.05), text, fontsize=13,
                  verticalalignment='top', horizontalalignment='left')
         plt.gca().invert_yaxis()
         plt.show()
+
 
 class Node(object):
     '''
@@ -316,8 +320,8 @@ class Node(object):
             elif child.node(tag):
                 for j, jKey in enumerate(options.keys()):
                     try:
-                        if child.getAttribute(jKey) == str(options[jKey]) \
-                        and len(options.keys()) == j+1:
+                        if (child.getAttribute(jKey) == str(options[jKey]) and
+                                len(options.keys()) == j+1):
                             self.children.pop(i)
                     except:
                         break
@@ -359,18 +363,18 @@ class Node(object):
             valList.append(val)
         return nameList, valList
 
-    def insert(self, contents, childNode=None, iElem=0 ):
+    def insert(self, contents, childNode=None, iElem=0):
         '''insert contents into the node'''
         dom2 = xdm.parseString(contents)
         dom1 = xdm.parseString(self.dom().toxml())
 
         if childNode is None:
             dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0],
-                                                       True))
+                                                           True))
         else:
             elements = dom1.getElementsByTagName(childNode)
             elements[iElem].appendChild(dom1.importNode(dom2.childNodes[0],
-                                                       True))
+                                                        True))
 
         contents = str(dom1.toxml())
         if contents.find('<?') != -1 and contents.find('?>'):
@@ -509,15 +513,15 @@ def initial_bearing(lon1, lat1, lon2, lat2):
             from the start point towards the end point along a great circle.
 
         '''
-        rlon1 = radians(lon1)
-        rlat1 = radians(lat1)
-        rlon2 = radians(lon2)
-        rlat2 = radians(lat2)
+        rlon1 = np.radians(lon1)
+        rlat1 = np.radians(lat1)
+        rlon2 = np.radians(lon2)
+        rlat2 = np.radians(lat2)
         deltalon = rlon2 - rlon1
-        bearing = atan2(sin(rlon2 - rlon1) * cos(rlat2),
-                        cos(rlat1) * sin(rlat2) -
-                        sin(rlat1) * cos(rlat2) * cos(rlon2 - rlon1))
-        return mod(degrees(bearing) + 360, 360)
+        bearing = np.arctan2(np.sin(rlon2 - rlon1) * np.cos(rlat2),
+                np.cos(rlat1) * np.sin(rlat2) -
+                np.sin(rlat1) * np.cos(rlat2) * np.cos(rlon2 - rlon1))
+        return mod(np.degrees(bearing) + 360, 360)
 
 
 def add_logger(logName='', logLevel=None):
@@ -563,6 +567,7 @@ def add_logger(logName='', logLevel=None):
 
     return logger
 
+
 def set_defaults(dictionary, newParm):
         '''Check input params and set defaut values
 
@@ -584,6 +589,3 @@ def set_defaults(dictionary, newParm):
                 dictionary[key] = newParm[key]
 
         return dictionary
-
-
-

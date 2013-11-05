@@ -12,6 +12,7 @@ import gdal
 import numpy as np
 import scipy.ndimage
 
+
 class Envisat():
     '''Methods/data shared between Envisat mappers
 
@@ -20,54 +21,52 @@ class Envisat():
     which are TIE_POINTS_ADS (MERIS) or GEOLOCATION_GRID_ADS (ASAR)
     '''
 
-    # specific name of geolocation and offsets, dataTypes and units of each dataset
+    # specific name of geolocation and offsets,
+    # dataTypes and units of each dataset
     allADSParams = {
         'MER_': {
-            'name': 'DS_NAME="Tie points ADS              "\n',
-            'width' : 71,
-            'list': {
-                "latitude"                  : {"offset" : 13         , "dataType" : gdal.GDT_Int32 , "units" : "(10)^-6 deg"},
-                "longitude"                 : {"offset" : 13+284*1   , "dataType" : gdal.GDT_Int32 , "units" : "(10)^-6 deg"},
-                "DME altitude"              : {"offset" : 13+284*2   , "dataType" : gdal.GDT_Int32 , "units" : "m"},
-                "DME roughness"             : {"offset" : 13+284*3   , "dataType" : gdal.GDT_UInt32, "units" : "m"},
-                "DME latitude corrections"  : {"offset" : 13+284*4   , "dataType" : gdal.GDT_Int32 , "units" : "(10)^-6 deg"},
-                "DME longitude corrections" : {"offset" : 13+284*5   , "dataType" : gdal.GDT_Int32 , "units" : "(10)^-6 deg"},
-                "sun zenith angles"         : {"offset" : 13+284*6   , "dataType" : gdal.GDT_UInt32, "units" : "(10)^-6 deg"},
-                "sun azimuth angles"        : {"offset" : 13+284*7   , "dataType" : gdal.GDT_Int32 , "units" : "(10)^-6 deg"},
-                "viewing zenith angles"     : {"offset" : 13+284*8   , "dataType" : gdal.GDT_UInt32, "units" : "(10)^-6 deg"},
-                "viewing azimuth angles"    : {"offset" : 13+284*9   , "dataType" : gdal.GDT_Int32 , "units" : "(10)^-6 deg"},
-                "zonal winds"               : {"offset" : 13+284*10+142*0 , "dataType" : gdal.GDT_Int16 , "units" : "m*s-1"},
-                "meridional winds"          : {"offset" : 13+284*10+142*1 , "dataType" : gdal.GDT_Int16 , "units" : "m*s-1"},
-                "mean sea level pressure"   : {"offset" : 13+284*10+142*2 , "dataType" : gdal.GDT_UInt16, "units" : "hPa"},
-                "total ozone"               : {"offset" : 13+284*10+142*3 , "dataType" : gdal.GDT_UInt16, "units" : "DU"},
-                "relative humidity"         : {"offset" : 13+284*10+142*4 , "dataType" : gdal.GDT_UInt16, "units" : "%"}
-            }
-        },
+                 'name': 'DS_NAME="Tie points ADS              "\n',
+                 'width': 71,
+                 'list': {"latitude"                 : {"offset": 13         , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
+                          "longitude"                : {"offset": 13+284*1   , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
+                          "DME altitude"             : {"offset": 13+284*2   , "dataType": gdal.GDT_Int32 , "units": "m"},
+                          "DME roughness"            : {"offset": 13+284*3   , "dataType": gdal.GDT_UInt32, "units": "m"},
+                          "DME latitude corrections" : {"offset": 13+284*4   , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
+                          "DME longitude corrections": {"offset": 13+284*5   , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
+                          "sun zenith angles"        : {"offset": 13+284*6   , "dataType": gdal.GDT_UInt32, "units": "(10)^-6 deg"},
+                          "sun azimuth angles"       : {"offset": 13+284*7   , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
+                          "viewing zenith angles"    : {"offset": 13+284*8   , "dataType": gdal.GDT_UInt32, "units": "(10)^-6 deg"},
+                          "viewing azimuth angles"   : {"offset": 13+284*9   , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
+                          "zonal winds"              : {"offset": 13+284*10+142*0 , "dataType": gdal.GDT_Int16 , "units": "m*s-1"},
+                          "meridional winds"         : {"offset": 13+284*10+142*1 , "dataType": gdal.GDT_Int16 , "units": "m*s-1"},
+                          "mean sea level pressure"  : {"offset": 13+284*10+142*2 , "dataType": gdal.GDT_UInt16, "units": "hPa"},
+                          "total ozone"              : {"offset": 13+284*10+142*3 , "dataType": gdal.GDT_UInt16, "units": "DU"},
+                          "relative humidity"        : {"offset": 13+284*10+142*4 , "dataType": gdal.GDT_UInt16, "units": "%"}
+                        }
+                },
         'ASA_': {
-            'name': 'DS_NAME="GEOLOCATION GRID ADS        "\n',
-            'width' : 11,
-            'list': {
-                "num_lines"                    : {"offset" : 13                 , "dataType" : gdal.GDT_Int16  , "units" : ""},
-                "first_line_samp_numbers"      : {"offset" : 25+11*4*0          , "dataType" : gdal.GDT_Float32, "units" : ""},
-                "first_line_slant_range_times" : {"offset" : 25+11*4*1          , "dataType" : gdal.GDT_Float32, "units" : "ns"},
-                "first_line_incidence_angle"    : {"offset" : 25+11*4*2          , "dataType" : gdal.GDT_Float32, "units" : "deg"},
-                "first_line_lats"              : {"offset" : 25+11*4*3          , "dataType" : gdal.GDT_Int32  , "units" : "(10)^-6 deg"},
-                "first_line_longs"             : {"offset" : 25+11*4*4          , "dataType" : gdal.GDT_Int32  , "units" : "(10)^-6 deg"},
-                "last_line_samp_numbers"       : {"offset" : 25+11*4*5+34+11*4*0, "dataType" : gdal.GDT_Int32  , "units" : ""},
-                "last_line_slant_range_times"  : {"offset" : 25+11*4*5+34+11*4*1, "dataType" : gdal.GDT_Float32, "units" : "ns"},
-                "last_line_incidence_angle"     : {"offset" : 25+11*4*5+34+11*4*2, "dataType" : gdal.GDT_Float32, "units" : "deg"},
-                "last_line_lats"               : {"offset" : 25+11*4*5+34+11*4*3, "dataType" : gdal.GDT_Int32  , "units" : "(10)^-6 deg"},
-                "last_line_longs"              : {"offset" : 25+11*4*5+34+11*4*4, "dataType" : gdal.GDT_Int32  , "units" : "(10)^-6 deg"},
-            }
-        }
-    }
+                 'name': 'DS_NAME="GEOLOCATION GRID ADS        "\n',
+                 'width' : 11,
+                 'list': {"num_lines"                   : {"offset": 13                 , "dataType": gdal.GDT_Int16  , "units": ""},
+                          "first_line_samp_numbers"     : {"offset": 25+11*4*0          , "dataType": gdal.GDT_Float32, "units": ""},
+                          "first_line_slant_range_times": {"offset": 25+11*4*1          , "dataType": gdal.GDT_Float32, "units": "ns"},
+                          "first_line_incidence_angle"  : {"offset": 25+11*4*2          , "dataType": gdal.GDT_Float32, "units": "deg"},
+                          "first_line_lats"             : {"offset": 25+11*4*3          , "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
+                          "first_line_longs"            : {"offset": 25+11*4*4          , "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
+                          "last_line_samp_numbers"      : {"offset": 25+11*4*5+34+11*4*0, "dataType": gdal.GDT_Int32  , "units": ""},
+                          "last_line_slant_range_times" : {"offset": 25+11*4*5+34+11*4*1, "dataType": gdal.GDT_Float32, "units": "ns"},
+                          "last_line_incidence_angle"   : {"offset": 25+11*4*5+34+11*4*2, "dataType": gdal.GDT_Float32, "units": "deg"},
+                          "last_line_lats"              : {"offset": 25+11*4*5+34+11*4*3, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
+                          "last_line_longs"             : {"offset": 25+11*4*5+34+11*4*4, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
+                        }
+                }
+                    }
     # map: GDAL TYPES ==> struct format strings
-    structFmt = {
-            gdal.GDT_Int16:   ">h",
-            gdal.GDT_UInt16:  ">H",
-            gdal.GDT_Int32:   ">i",
-            gdal.GDT_UInt32:  ">I",
-            gdal.GDT_Float32: ">f"}
+    structFmt = {gdal.GDT_Int16: ">h",
+                 gdal.GDT_UInt16: ">H",
+                 gdal.GDT_Int32: ">i",
+                 gdal.GDT_UInt32: ">I",
+                 gdal.GDT_Float32: ">f"}
     # names of grids with longitude/latitude in ASAR and MERIS ADS
     lonlatNames = {'ASA_': ['first_line_longs', 'first_line_lats'],
                    'MER_': ['longitude', 'latitude']}
@@ -78,7 +77,7 @@ class Envisat():
         self.prodType = prodType
         self.allADSParams = self.allADSParams[prodType]
         self.dsOffsetDict = self.read_offset_from_header(self.allADSParams['name'])
-        self.lonlatNames  = self.lonlatNames[prodType]
+        self.lonlatNames = self.lonlatNames[prodType]
 
     def _set_envisat_time(self, gdalMetadata):
         ''' Get time from metadata, set time to VRT'''
@@ -99,22 +98,24 @@ class Envisat():
                 offset of DS, size of DS, number of records, size of record
         '''
         # number of lines after line with 'DS_NAME'
-        textOffset = {'DS_OFFSET': 3, 'DS_SIZE': 4, 'NUM_DSR': 5, 'DSR_SIZE': 6}
+        textOffset = {'DS_OFFSET': 3, 'DS_SIZE': 4,
+                      'NUM_DSR': 5, 'DSR_SIZE': 6}
 
         # open file and read 150 header lines
         f = file(self.iFileName, 'rt')
         headerLines = f.readlines(150)
         offsetDict = {}
-        # create a dictionary with offset, size, number of records, size of records
+        # create a dictionary with offset, size, number of records,
+        # size of records
         if gadsDSName in headerLines:
             # get location of gadsDSName
             gridOffset = headerLines.index(gadsDSName)
             # Adjust the location of the varaibles by adding textOffset.
             # Read a text at the location and convert the text into integer.
             for iKey in textOffset:
-                offsetDict[iKey]  = int(headerLines[gridOffset +
-                                    textOffset[iKey]].replace(iKey+"=", '').
-                                    replace('<bytes>', ''))
+                offsetDict[iKey] = int(headerLines[gridOffset +
+                                       textOffset[iKey]].replace(iKey+"=", '').
+                                       replace('<bytes>', ''))
         f.close()
         return offsetDict
 
@@ -163,7 +164,8 @@ class Envisat():
         '''
         maxGADS = max(indeces) + 1
         dsOffsetDict = self.read_offset_from_header('DS_NAME="Scaling Factor GADS         "\n')
-        allGADSValues = self.read_binary_line(dsOffsetDict["DS_OFFSET"], '>f', maxGADS)
+        allGADSValues = self.read_binary_line(dsOffsetDict["DS_OFFSET"],
+                                              '>f', maxGADS)
         #get only values required for the mapper
         return [allGADSValues[i] for i in indeces]
 
@@ -233,7 +235,8 @@ class Envisat():
 
         # zoom the array
         array = scipy.ndimage.interpolation.zoom(array,
-                            zoomSize / float(adsHeight), order=1)
+                                                 zoomSize / float(adsHeight),
+                                                 order=1)
 
         # create VRT from the array
         adsVrt = VRT(array=array)
@@ -243,7 +246,8 @@ class Envisat():
 
         return adsVrt
 
-    def get_ads_vrts(self, gdalDataset, adsNames, zoomSize=500, step=1, **kwargs):
+    def get_ads_vrts(self, gdalDataset, adsNames, zoomSize=500,
+                     step=1, **kwargs):
         '''Create list with VRTs with zoomed and resized ADS arrays
 
         For given names of varaibles (which should match self.allADSParams):
@@ -300,17 +304,18 @@ class Envisat():
             Adds Geolocation Array metadata
         '''
         # get VRTs with lon and lat
-        xyVRTs = self.get_ads_vrts(gdalDataset, self.lonlatNames, zoomSize, step)
+        xyVRTs = self.get_ads_vrts(gdalDataset, self.lonlatNames, zoomSize,
+                                   step)
 
         # Add geolocation domain metadata to the dataset
         self.add_geolocationArray(GeolocationArray(xVRT=xyVRTs[0],
-                      yVRT=xyVRTs[1],
-                      xBand=1, yBand=1,
-                      srs=gdalDataset.GetGCPProjection(),
-                      lineOffset=0,
-                      lineStep=step,
-                      pixelOffset=0,
-                      pixelStep=step))
+                                  yVRT=xyVRTs[1],
+                                  xBand=1, yBand=1,
+                                  srs=gdalDataset.GetGCPProjection(),
+                                  lineOffset=0,
+                                  lineStep=step,
+                                  pixelOffset=0,
+                                  pixelStep=step))
 
 
 #m = MERIS()

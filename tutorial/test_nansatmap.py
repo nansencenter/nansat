@@ -64,7 +64,7 @@ nMap = Nansatmap(n, resolution='l')
 # pseudo-color plot over the map
 nMap.pcolormesh(w)
 # quiver plot
-nMap.quiver(v, u, quivectors=20)
+nMap.quiver(u, v, quivectors=20)
 # save to a file
 nMap.save(oFileName+'02_pcolormesh_quiver.png')
 

@@ -18,6 +18,7 @@
 # import standard and additional libraries
 from nansat_tools import *
 
+
 class Nansatshape():
     ''' Nansatshape class read and write ESRI-shape files
 
@@ -28,7 +29,8 @@ class Nansatshape():
         Nansatshape support points, line and ploygons. (not mupti-polygon)
 
     '''
-    def __init__(self, fileName=None, layerNum=0, layerName='NansatLayer', srs=None, wkt=None, wkbStyle=ogr.wkbPoint):
+    def __init__(self, fileName=None, layerNum=0, layerName='NansatLayer',
+                 srs=None, wkt=None, wkbStyle=ogr.wkbPoint):
         '''Create Nansatshape object
 
         if <fileName> is given:
@@ -67,7 +69,8 @@ class Nansatshape():
         self.fieldDataTypes = {}
         # Create a empty datasource and layer in memory
         if fileName is None:
-            self.datasource= ogr.GetDriverByName('Memory').CreateDataSource('wrk')
+            self.datasource = ogr.GetDriverByName('Memory').\
+                CreateDataSource('wrk')
             # create srs if wkt is given
             if srs is None and wkt is not None:
                 srs = osr.SpatialReference()
@@ -78,7 +81,8 @@ class Nansatshape():
         else:
             # Open shapefile and copy the datasource into memory
             ogrDs = ogr.Open(fileName)
-            self.datasource= ogr.GetDriverByName('Memory').CopyDataSource(ogrDs, 'OGRDataSource')
+            self.datasource = ogr.GetDriverByName('Memory').\
+                CopyDataSource(ogrDs, 'OGRDataSource')
             ogrDs.Destroy()
             # Set a layer from the datasource
             if layerName == 'NansatLayer':
@@ -90,9 +94,11 @@ class Nansatshape():
             feature = self.layer.GetFeature(0)
             for i in range(layerDef.GetFieldCount()):
                 self.fieldNames.append(layerDef.GetFieldDefn(i).GetName())
-                self.fieldDataTypes[self.fieldNames[-1]] = feature.GetFieldType(i)
+                self.fieldDataTypes[self.fieldNames[-1]] = \
+                    feature.GetFieldType(i)
 
-    def set_layer(self, lonlatCoord=None,  pixlinCoord=None, fieldNames=[], fieldValues=None):
+    def set_layer(self, lonlatCoord=None,  pixlinCoord=None, fieldNames=[],
+                  fieldValues=None):
         ''' set geometry and / or fields to each feature in self.layer
 
         Set geometry and fields to featues.
@@ -131,7 +137,8 @@ class Nansatshape():
                 self.fieldDataTypes[iFieldName] = ogr.OFTReal
             # add filedValue of pixel and line coordinates
             if fieldValues is None:
-                fieldValues = [pixlinCoord[0].tolist(), pixlinCoord[1].tolist()]
+                fieldValues = [pixlinCoord[0].tolist(),
+                               pixlinCoord[1].tolist()]
             else:
                 fieldValues.append(pixlinCoord[0].tolist())
                 fieldValues.append(pixlinCoord[1].tolist())
@@ -158,8 +165,10 @@ class Nansatshape():
         coordinates : np.array or list with scalar elements (2 x n)
             n is a number of points
         feateurID : None or list with int elements (the length is n)
-            if the data type is point, it will be [0, 1, 2, 3, ..., (num of fields-1)]
-            if polygon or line, the numbers represent which geometry each point belongs to.
+            if the data type is point, it will be [0, 1, 2, 3, ...,
+            (num of fields-1)]
+            if polygon or line, the numbers represent which geometry
+            each point belongs to.
         srs : osr.SpatialReference
 
         '''
@@ -170,7 +179,7 @@ class Nansatshape():
         # get geometry type
         geomType = self.layer.GetGeomType()
         # if featureID is None, create new one.
-        if featureID == None:
+        if featureID is None:
             if geomType == ogr.wkbPoint or geomType == ogr.wkbPoint25D:
                 featureID = range(coordinates.shape[1])
             else:
@@ -179,7 +188,7 @@ class Nansatshape():
         # Remove duplicate feature ID from featureID
         seen = set()
         seen_add = seen.add
-        featureNum = [x for x in featureID if x not in seen and not  seen_add(x)]
+        featureNum = [x for x in featureID if x not in seen and not seen_add(x)]
 
         # create a geometry
         for i, iFeature in enumerate(featureNum):
@@ -192,20 +201,24 @@ class Nansatshape():
                 geomRing = ogr.Geometry(type=ogr.wkbLinearRing)
                 for iCoord in range(coordinates.shape[1]):
                     # add points for a line
-                    if geomType == ogr.wkbLineString or geomType == ogr.wkbLineString25D:
+                    if (geomType == ogr.wkbLineString or
+                            geomType == ogr.wkbLineString25D):
                         if iFeature == featureID[iCoord]:
-                            geometry.AddPoint(float(coordinates[0][iCoord]), float(coordinates[1][iCoord]))
+                            geometry.AddPoint(float(coordinates[0][iCoord]),
+                                              float(coordinates[1][iCoord]))
                     # add points for a polygon
-                    elif geomType == ogr.wkbPolygon or geomType == ogr.wkbPolygon25D:
+                    elif (geomType == ogr.wkbPolygon or
+                            geomType == ogr.wkbPolygon25D):
                         if iFeature == featureID[iCoord]:
-                            geomRing.AddPoint(float(coordinates[0][iCoord]), float(coordinates[1][iCoord]))
+                            geomRing.AddPoint(float(coordinates[0][iCoord]),
+                                              float(coordinates[1][iCoord]))
                     else:
                         print 'Can not create geometry. Muptipolygon is not supported.'
                 # set geomRing if it has points (polygon)
                 if geomRing.GetPointCount() != 0:
                     geometry.AddGeometryDirectly(geomRing)
             # set srs
-            srs =self.layer.GetSpatialRef()
+            srs = self.layer.GetSpatialRef()
             geometry.AssignSpatialReference(srs)
 
             # set geometry to each feature
@@ -218,7 +231,8 @@ class Nansatshape():
         ----------
         fieldNames : list with string elements (the lenght is m)
             names of fields
-        fieldValues :  np.array (m x n) or list with one or more list as the element.
+        fieldValues :  np.array (m x n) or list with
+            one or more list as the element.
             e.g. : [[A1, A2, ..., An],[B1, B2, ..., Bn], ...,[Z1, Z2, .., Zn]]
             n is a number of features and m is a number of fields.
         feateurID : None or list with int elements (the length is n)
@@ -236,17 +250,19 @@ class Nansatshape():
         fieldValues = map(list, zip(*fieldValues))
 
         # Assume that fieldValues are arranged from feature[0] to feature[n-1]
-        if featureID == None:
+        if featureID is None:
             featureID = range(len(fieldValues))
 
         # set new fieldnames to the layer
         self._add_fieldnames(fieldNames)
 
         # set field values to each featuer
-        for i, iFeature in enumerate (featureID):
-            self._set2feature(iFeature, fieldNames=fieldNames, fieldValues=fieldValues[i])
+        for i, iFeature in enumerate(featureID):
+            self._set2feature(iFeature, fieldNames=fieldNames,
+                              fieldValues=fieldValues[i])
 
-    def _set2feature(self, featureID, fieldNames=[], fieldValues=None, geometry=None):
+    def _set2feature(self, featureID, fieldNames=[], fieldValues=None,
+                     geometry=None):
         ''' set fields or a geometry to a feature
 
         Parameters
@@ -262,11 +278,12 @@ class Nansatshape():
         Modifies
         --------
         self.layer : set fields or a geometry
-            if feature with given featureID has existed, set the values / geometry
+            if feature with given featureID has existed,
+            set the values / geometry
             if not, create a new feature then set the values / geometry
 
         '''
-        # get featuer with featureID. if it does not exist, create a new feature
+        # get featuer with featureID.if it does not exist, create a new feature
         feature = self.layer.GetFeature(featureID)
         setFeature = True
         if feature is None:
@@ -303,7 +320,8 @@ class Nansatshape():
         '''
         for iFieldName in fieldNames:
             if not (iFieldName in self.fieldNames):
-                field = ogr.FieldDefn(iFieldName, self.fieldDataTypes[iFieldName])
+                field = ogr.FieldDefn(iFieldName,
+                                      self.fieldDataTypes[iFieldName])
                 self.layer.CreateField(field)
                 self.fieldNames.append(iFieldName)
 
@@ -323,12 +341,12 @@ class Nansatshape():
             add new fields name and their OGR datatype
 
         '''
-        for i, iName in enumerate (names):
+        for i, iName in enumerate(names):
             if not (iName in self.fieldDataTypes.keys()):
                 ogrDataType = {
-                    "<type 'str'>" : ogr.OFTString,
-                    "<type 'int'>" : ogr.OFTInteger,
-                    "<type 'int32'>" : ogr.OFTInteger,
+                    "<type 'str'>": ogr.OFTString,
+                    "<type 'int'>": ogr.OFTInteger,
+                    "<type 'int32'>": ogr.OFTInteger,
                     "<type 'float'>": ogr.OFTReal,
                     }.get(str(type(values[i][0])), ogr.OFTString)
                 self.fieldDataTypes[iName] = ogrDataType
@@ -368,17 +386,20 @@ class Nansatshape():
             else:
                 latlon = True
             # get corner points from geometry
-            if geom is not None and (geom.GetGeometryType() == ogr.wkbPoint or
-                                     geom.GetGeometryType() == ogr.wkbPoint25D):
+            if (geom is not None and
+                    (geom.GetGeometryType() == ogr.wkbPoint or
+                     geom.GetGeometryType() == ogr.wkbPoint25D)):
                 p = geom.GetPoints()[0]
                 points.append((p[0], p[1]))
-            elif geom is not None and (geom.GetGeometryType() == ogr.wkbLineString or
-                                       geom.GetGeometryType() == ogr.wkbLineString25D):
+            elif (geom is not None and
+                    (geom.GetGeometryType() == ogr.wkbLineString or
+                     geom.GetGeometryType() == ogr.wkbLineString25D)):
                 for iPoint in range(geom.GetPointCount()):
                     p = geom.GetPoints()[iPoint]
                     points.append((p[0], p[1]))
-            elif geom is not None and (geom.GetGeometryType() == ogr.wkbPolygon or
-                                       geom.GetGeometryType() == ogr.wkbPolygon25D):
+            elif (geom is not None and
+                    (geom.GetGeometryType() == ogr.wkbPolygon or
+                     geom.GetGeometryType() == ogr.wkbPolygon25D)):
                 ring = geom.GetGeometryRef(0)
                 for iPoint in range(ring.GetPointCount()):
                     p = ring.GetPoint(iPoint)

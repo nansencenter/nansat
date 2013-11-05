@@ -29,8 +29,8 @@ from nansat import Nansat, Domain, Mosaic
 # input and output file names
 from testio import testio
 iPath, oPath = testio()
-iFileName = os.path.join(iPath, 'gcps.tif')
-print 'Input file: ', iFileName
+iFileNames = [os.path.join(iPath, 'gcps.tif'), os.path.join(iPath, 'stere.tif')]
+print 'Input files: ', iFileNames
 oFileName = os.path.join(oPath, 'output_mosaic_')
 print 'Output file:', oFileName
 
@@ -51,7 +51,7 @@ domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
 # 1. Create destination Nansat object with desired projection
 nMosaic = Mosaic(domain=domain)
 # 2. Perfom averaging
-nMosaic.average(['gcps.tif', 'stere.tif'], bands=['L_645', 'L_555', 'L_469'])
+nMosaic.average(iFileNames, bands=['L_645', 'L_555', 'L_469'])
 # 3. Get mask of valid pixels
 mask = nMosaic['mask']
 # 4. Output averaged data using the mask
@@ -64,7 +64,7 @@ L_469_std = nMosaic['L_469_std']
 #nMosaic.median(['gcps.tif', 'stere.tif'])
 
 # C. fill the result with the latest image
-nMosaic.latest(['gcps.tif', 'stere.tif'])
+nMosaic.latest(iFileNames)
 
 # D. Average only files that fall within given period
 # create new Mosaic
@@ -73,7 +73,7 @@ nMosaic = Mosaic(domain=domain, logLevel=0)
 period = [dt.datetime(2011, 8, 15, 0, 0), dt.datetime(2011, 8, 15, 23, 59)]
 # run averaging of only files within period.
 # Only gcps.tif will be averaged since stere.tif has no time information
-nMosaic.average(['gcps.tif', 'stere.tif'], period=period)
+nMosaic.average(iFileNames, period=period)
 
 print '\n*** mosaic_test completed successfully. Output files are found here:' + oFileName
 

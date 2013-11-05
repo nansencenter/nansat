@@ -18,39 +18,43 @@ except ImportError:
 from vrt import *
 from domain import Domain
 
+
 class Mapper(VRT):
     ''' VRT with mapping of WKV for KMSS TOA tiff data'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
         product = gdalDataset.GetDriver().LongName
-        if cmp(os.path.split(fileName)[1][0:4], '101_')!= 0:
-            if cmp(os.path.split(fileName)[1][0:4], '102_')!= 0:
+        if cmp(os.path.split(fileName)[1][0:4], '101_') != 0:
+            if cmp(os.path.split(fileName)[1][0:4], '102_') != 0:
                 raise AttributeError("NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'")
 
-        if product!= 'GeoTIFF':
+        if product != 'GeoTIFF':
             raise AttributeError("Not_GeoTIFF")
-        if cmp(fileName[-3:], 'tif')!= 0:
-			raise AttributeError("for NTSOMZ GeoTIFF extension must be tif")
-        if gdalDataset.RasterCount!= 3:
-			raise AttributeError("Not_NTSOMZ_KMSS_geotiff! does not have 3 bands!")
+        if cmp(fileName[-3:], 'tif') != 0:
+            raise AttributeError("for NTSOMZ GeoTIFF extension must be tif")
+        if gdalDataset.RasterCount != 3:
+            raise AttributeError("Not_NTSOMZ_KMSS_geotiff! does not have 3 bands!")
 
-        metaDict = [
-        {'src': {'SourceFilename': fileName, 'SourceBand':  1},
-         'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '555'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  2},
-         'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '655'}},
-        {'src': {'SourceFilename': fileName, 'SourceBand':  3},
-         'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'wavelength': '800'}},
-        ]
-	# from https://gsics.nesdis.noaa.gov/wiki/Development/StandardVariableNames
+        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
+                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
+                             'wavelength': '555'}},
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 2},
+                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
+                             'wavelength': '655'}},
+                    {'src': {'SourceFilename': fileName, 'SourceBand': 3},
+                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
+                             'wavelength': '800'}}
+                    ]
+        # from https://gsics.nesdis.noaa.gov/wiki/Development/StandardVariableNames
 
         # add DataType into 'src' and name into 'dst'
         for bandDict in metaDict:
             if 'DataType' not in bandDict['src']:
                 bandDict['src']['DataType'] = 2
-            if bandDict['dst'].has_key('wavelength'):
-                bandDict['dst']['name'] = 'toa_radiance_' + bandDict['dst']['wavelength']
+            if 'wavelength' in bandDict['dst']:
+                bandDict['dst']['name'] = ('toa_radiance_' +
+                                           bandDict['dst']['wavelength'])
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)

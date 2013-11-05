@@ -11,6 +11,7 @@ import numpy as np
 import vrt
 from nansat_tools import latlongSRS
 
+
 class Mapper(vrt.VRT):
     ''' Mapper PATHFINDER (local files)
 
@@ -18,7 +19,8 @@ class Mapper(vrt.VRT):
     * remote files
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4,
+                 **kwargs):
         ''' Create VRT '''
 
         assert 'AVHRR_Pathfinder-PFV5.2' in fileName, 'pathfinder52 BAD MAPPER'
@@ -49,12 +51,14 @@ class Mapper(vrt.VRT):
                 metaPrefix = ''
 
             subWKV = subGDALMetadata.get(metaPrefix + 'standard_name', '')
-            subScaleRatio = subGDALMetadata.get(metaPrefix + 'scale_factor', '1')
-            subScaleOffset = subGDALMetadata.get(metaPrefix + 'add_offset', '0')
+            subScaleRatio = subGDALMetadata.get(metaPrefix + 'scale_factor',
+                                                '1')
+            subScaleOffset = subGDALMetadata.get(metaPrefix + 'add_offset',
+                                                 '0')
             metaEntry = {'src': {'SourceFilename': subDataset[0],
-                                     'sourceBand':  1,
-                                     'ScaleRatio': subScaleRatio,
-                                     'ScaleOffset': subScaleOffset},
+                                 'sourceBand': 1,
+                                 'ScaleRatio': subScaleRatio,
+                                 'ScaleOffset': subScaleOffset},
                          'dst': {'wkv': subWKV}}
 
             # append band metadata to metaDict
@@ -70,9 +74,8 @@ class Mapper(vrt.VRT):
             qualArray[qualArray < minQual] = 1
             qualArray[qualArray >= minQual] = 128
             self.maskVRT = vrt.VRT(array=qualArray.astype('int8'))
-            metaDict.append(
-                            {'src': {'SourceFilename': self.maskVRT.fileName,
-                                     'SourceBand':  1,
+            metaDict.append({'src': {'SourceFilename': self.maskVRT.fileName,
+                                     'SourceBand': 1,
                                      'SourceType': 'SimpleSource',
                                      'DataType': 1},
                              'dst': {'name': 'mask'}})

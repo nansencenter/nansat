@@ -214,6 +214,19 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
+        # Set invalid and missing data to np.nan
+        if band.GetMetadata().has_key('_FillValue'):
+            fillValue = float(band.GetMetadata()['_FillValue'])
+            try:
+                bandData[bandData == fillValue] = np.nan
+            except:
+                self.logger.info('Cannot replace _FillValue values with np.NAN!')
+        try:
+            bandData[np.isinf(bandData)] = np.nan
+        except:
+            self.logger.info('Cannot replace inf values with np.NAN!')
+
+
         return bandData
 
     def __repr__(self):
@@ -328,9 +341,9 @@ class Nansat(Domain):
 
         return b
 
-    def has_band(self,band):
+    def has_band(self, band):
         for b in self.bands():
-            if self.bands()[b]['name']==band:
+            if self.bands()[b]['name'] == band:
                 return True
         return False
 
@@ -484,51 +497,7 @@ class Nansat(Domain):
                                                           exportVRT.dataset)
         self.logger.debug('Export - OK!')
 
-    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
-        '''Proportional resize of the dataset.
-
-        The dataset is resized as (xSize*factor, ySize*factor) or
-        (width, calulated height) or (calculated width, height).
-        self.vrt is rewritten to the the downscaled sizes.
-        If GCPs are given in a dataset, they are also rewritten.
-        If resize() is called without any parameters then previsous
-        resizing/reprojection cancelled.
-
-        Parameters
-        -----------
-        Either factor, or width, or height should be given:
-            factor : float, optional, default=1
-            width : int, optional
-            height : int, optional
-            eResampleAlg : int (GDALResampleAlg), optional
-                -1 : Average,
-                0 : NearestNeighbour,
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
-                if eResampleAlg > 0 : VRT.get_resized_array() is used
-                (Although the default is -1 (Average),
-                 if fileName start from 'ASA_', the default is 0 (NN).)
-
-        Modifies
-        ---------
-        self.vrt.dataset : VRT dataset of VRT object
-            raster size are modified to downscaled size.
-            If GCPs are given in the dataset, they are also overwritten.
-
-        '''
-        # if fileName start from 'ASA_' and eResampleAlg is default (Average),
-        # then change eResampleAlg to 0 (NearestNeighbour)
-        fileName = self.fileName.split('/')[-1].split('\\')[-1]
-        if fileName.startswith('ASA_') and eResampleAlg == -1:
-            eResampleAlg = 0
-
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
+    def _get_new_rastersize(self, factor=1, width=None, height=None):
         # get current shape
         rasterYSize = float(self.shape()[0])
         rasterXSize = float(self.shape()[1])
@@ -545,50 +514,156 @@ class Nansat(Domain):
 
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
+        
+        return newRasterYSize, newRasterXSize
+        
 
+    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
+        '''Proportional resize of the dataset.
+
+        The dataset is resized as (xSize*factor, ySize*factor) or
+        (width, calulated height) or (calculated width, height).
+        self.vrt is rewritten to the the downscaled sizes.
+        Georeference is stored in the object. Useful e.g. for export.
+        If GCPs are given in a dataset, they are also rewritten.
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
+
+        WARNING: It seems like the function is presently not working for complex
+        bands and pixelfunction bands - in case this kind of data is needed 
+        it should be copied to a numpy array which is added as a band before
+        resizing.
+
+        Parameters
+        -----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+            eResampleAlg : int (GDALResampleAlg), optional
+                -1 : Average,
+                0 : NearestNeighbour,
+
+        Modifies
+        ---------
+        self.vrt.dataset : VRT dataset of VRT object
+            raster size are modified to downscaled size.
+            If GCPs are given in the dataset, they are also overwritten.
+
+        '''
+        # resize back to original size/setting
+        if factor == 1 and width is None and height is None:
+            self.vrt = self.raw.copy()
+            return
+
+        # check if eResampleAlg is valid
         if eResampleAlg > 0:
-            # apply affine transformation using reprojection
-            self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
-                                                newRasterYSize,
-                                                eResampleAlg=eResampleAlg)
-        else:
-            # simply modify VRT rasterX/Ysize and GCPs
-            # Get XML content from VRT-file
-            vrtXML = self.vrt.read_xml()
-            node0 = Node.create(vrtXML)
+            self.logger.error('''
+                            eResampleAlg must be <= 0.
+                            Use resize_without_georeference instead''')
+            return
 
-            # replace rasterXSize in <VRTDataset>
-            node0.replaceAttribute('rasterXSize', str(newRasterXSize))
-            node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+        # get new shape
+        newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
+                                                              width,
+                                                              height)
 
-            # replace xSize in <DstRect> of each source
-            for iNode1 in node0.nodeList('VRTRasterBand'):
-                for sourceName in ['ComplexSource', 'SimpleSource']:
-                    for iNode2 in iNode1.nodeList(sourceName):
-                        iNodeDstRect = iNode2.node('DstRect')
-                        iNodeDstRect.replaceAttribute('xSize',
-                                                      str(newRasterXSize))
-                        iNodeDstRect.replaceAttribute('ySize',
-                                                      str(newRasterYSize))
-                # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
-                if eResampleAlg == -1:
-                    iNode1.replaceTag('ComplexSource', 'AveragedSource')
-                    iNode1.replaceTag('SimpleSource', 'AveragedSource')
+        # Get XML content from VRT-file
+        vrtXML = self.vrt.read_xml()
+        node0 = Node.create(vrtXML)
 
-            # Edit GCPs to correspond to the downscaled size
-            if node0.node('GCPList'):
-                for iNode in node0.node('GCPList').nodeList('GCP'):
-                    pxl = float(iNode.getAttribute('Pixel')) * factor
-                    if pxl > float(rasterXSize):
-                        pxl = rasterXSize
-                    iNode.replaceAttribute('Pixel', str(pxl))
-                    lin = float(iNode.getAttribute('Line')) * factor
-                    if lin > float(rasterYSize):
-                        lin = rasterYSize
-                    iNode.replaceAttribute('Line', str(lin))
+        # replace rasterXSize in <VRTDataset>
+        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
 
-            # Write the modified elemements into VRT
-            self.vrt.write_xml(str(node0.rawxml()))
+        rasterYSize, rasterXSize = self.shape()
+
+        # replace xSize in <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for sourceName in ['ComplexSource', 'SimpleSource']:
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node('DstRect')
+                    iNodeDstRect.replaceAttribute('xSize',
+                                                  str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute('ySize',
+                                                  str(newRasterYSize))
+            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
+            if eResampleAlg == -1:
+                iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                iNode1.replaceTag('SimpleSource', 'AveragedSource')
+
+        # Edit GCPs to correspond to the downscaled size
+        if node0.node('GCPList'):
+            for iNode in node0.node('GCPList').nodeList('GCP'):
+                pxl = float(iNode.getAttribute('Pixel')) * factor
+                if pxl > float(rasterXSize):
+                    pxl = rasterXSize
+                iNode.replaceAttribute('Pixel', str(pxl))
+                lin = float(iNode.getAttribute('Line')) * factor
+                if lin > float(rasterYSize):
+                    lin = rasterYSize
+                iNode.replaceAttribute('Line', str(lin))
+
+        # Write the modified elemements into VRT
+        self.vrt.write_xml(str(node0.rawxml()))
+
+
+    def resize_lite(self, factor=1, width=None,
+                                    height=None, eResampleAlg=1):
+        '''Proportional resize of the dataset. No georeference kept.
+
+        The dataset is resized as (xSize*factor, ySize*factor) or
+        (width, calulated height) or (calculated width, height).
+        self.vrt is rewritten to the the downscaled sizes.
+        No georeference (useful e.g. for export) is stored in the object. 
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
+
+        WARNING: It seems like the function is presently not working for complex
+        bands and pixelfunction bands - in case this kind of data is needed 
+        it should be copied to a numpy array which is added as a band before
+        resizing.
+
+        Parameters
+        -----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+            eResampleAlg : int (GDALResampleAlg), optional
+                1 : Bilinear,
+                2 : Cubic,
+                3 : CubicSpline,
+                4 : Lancoz
+                if eResampleAlg > 0 : VRT.get_resized_vrt() is used
+
+        Modifies
+        ---------
+        self.vrt.dataset : VRT dataset of VRT object
+            raster size are modified to downscaled size.
+
+        '''
+        # resize back to original size/setting
+        if factor == 1 and width is None and height is None:
+            self.vrt = self.raw.copy()
+            return
+
+        # check if eResampleAlg is valid
+        if eResampleAlg < 1:
+            self.logger.error('''
+                            eResampleAlg must be > 0.
+                            Use resize() instead''')
+            return
+
+        # get new shape
+        newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
+                                                              width,
+                                                              height)
+
+        # apply affine transformation using reprojection
+        self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
+                                            newRasterYSize,
+                                            eResampleAlg)
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -814,7 +889,7 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                    **kwargs):
+                     **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -1279,16 +1354,18 @@ class Nansat(Domain):
         if type(bandID) == dict:
             bandsMeta = self.bands()
             for b in bandsMeta:
+                numCorrectKeys = 0
                 for key in bandID:
                     if (key in bandsMeta[b] and
                             bandID[key] == bandsMeta[b][key]):
+                        numCorrectKeys = numCorrectKeys + 1
+                    if numCorrectKeys == len(bandID):
                         bandNumber = b
                         break
 
         # if bandID is int and with bounds: return this number
-        if (type(bandID) == int and
-            bandID >= 1 and
-            bandID <= self.vrt.dataset.RasterCount):
+        if (type(bandID) == int and bandID >= 1 and
+                bandID <= self.vrt.dataset.RasterCount):
             bandNumber = bandID
 
         # if no bandNumber found - raise error
@@ -1332,8 +1409,8 @@ class Nansat(Domain):
         tmpNansat.export(fileName, driver=driver)
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
-                           transect=True, returnOGR=False, layerNum=0,
-                           smooth=0, **kwargs):
+                     transect=True, returnOGR=False, layerNum=0,
+                     smooth=0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1341,7 +1418,7 @@ class Nansat(Domain):
         points : tuple with one or more points or shape file name
             i.e. ((lon1, lat1),(lon2, lat2),(lon3, lat3), ...) or
                  ((col1, row1),(col2, row2),(col3, row3), ...)
-        bandID : list of int or string
+        bandList : list of int or string
             elements of the list are band number or band Name
         latlon : bool
             If the points in lat/lon, then True.
@@ -1380,16 +1457,16 @@ class Nansat(Domain):
         if type(smooth) is list:
             if smooth[0] < 0:
                 raise ValueError("smooth[0] must be 0 or a positive odd number.")
-            if smooth[0]>0 and (smooth[0] % 2) != 1:
+            if smooth[0] > 0 and (smooth[0] % 2) != 1:
                 raise ValueError("The kernel size smooth[0] should be odd.")
-            if not smooth[1]==0 and not smooth[1]==1:
+            if not smooth[1] == 0 and not smooth[1] == 1:
                 raise ValueError("smooth[1] must be 0 or 1 for median or mean filter.")
-            if smooth[1]==1:
+            if smooth[1] == 1:
                 smooth_function = scipy.stats.nanmean
         else:
             if smooth < 0:
                 raise ValueError("smooth must be 0 or a positive odd number.")
-            if smooth>0 and (smooth % 2) != 1:
+            if smooth > 0 and (smooth % 2) != 1:
                 raise ValueError("The kernel size smooth should be odd.")
             tmp = smooth
             smooth = []
@@ -1477,13 +1554,16 @@ class Nansat(Domain):
             if smooth[0]:
                 transect0 = []
                 for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
-                        pixlinCoord1[1], pixlinCoord0[0], pixlinCoord1[0]):
-                    transect0.append( smooth_function(data[xmin:xmax,
-                        ymin:ymax], axis=None) )
+                                                  pixlinCoord1[1],
+                                                  pixlinCoord0[0],
+                                                  pixlinCoord1[0]):
+                    transect0.append(smooth_function(data[xmin:xmax,
+                                                          ymin:ymax],
+                                                     axis=None))
                 transect.append(transect0)
             else:
                 transect.append(data[list(pixlinCoord[1]),
-                                 list(pixlinCoord[0])].tolist())
+                                list(pixlinCoord[0])].tolist())
             data = None
         if returnOGR:
             NansatOGR = Nansatshape(wkt=wkt)
@@ -1493,5 +1573,4 @@ class Nansat(Domain):
                                 fieldValues=transect)
             return NansatOGR
         else:
-            return transect, [lonVector, latVector], pixlinCoord
-
+            return transect, [lonVector, latVector], pixlinCoord.astype(int)
