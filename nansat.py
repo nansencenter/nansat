@@ -293,9 +293,9 @@ class Nansat(Domain):
             else:
                 # create VRT from resized array
                 srcVRT = VRT(array=array, nomem=nomem)
-                vrt2add = srcVRT.resized(self.shape()[1],
-                                         self.shape()[0],
-                                         resamplingAlg)
+                vrt2add = srcVRT.get_resized_vrt(self.shape()[1],
+                                                 self.shape()[0],
+                                                 resamplingAlg)
             # set parameters
             bandNumber = 1
 
@@ -507,7 +507,7 @@ class Nansat(Domain):
                 2 : Cubic,
                 3 : CubicSpline,
                 4 : Lancoz
-                if eResampleAlg > 0 : VRT.resized() is used
+                if eResampleAlg > 0 : VRT.get_resized_array() is used
                 (Although the default is -1 (Average),
                  if fileName start from 'ASA_', the default is 0 (NN).)
 
@@ -548,9 +548,9 @@ class Nansat(Domain):
 
         if eResampleAlg > 0:
             # apply affine transformation using reprojection
-            self.vrt = self.vrt.resized(newRasterXSize,
-                                        newRasterYSize,
-                                        eResampleAlg=eResampleAlg)
+            self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
+                                                newRasterYSize,
+                                                eResampleAlg=eResampleAlg)
         else:
             # simply modify VRT rasterX/Ysize and GCPs
             # Get XML content from VRT-file
@@ -681,6 +681,7 @@ class Nansat(Domain):
         http://www.gdal.org/gdalwarp.html
         '''
 
+        """
         # get corners of target domain
         dstCornersX, dstCornersY = dstDomain.get_corners()
         dstXL = min(dstCornersX)
@@ -702,7 +703,7 @@ class Nansat(Domain):
             shiftX = (abs(dstXR - dstXL)) / 2.0
             # set shifted self.vrt to self.raw
             self.raw = self.vrt.create_shifted_vrt(round(shiftX, 3))
-
+        """
         # dereproject
         self.vrt = self.raw.copy()
         #self.vrt.export('c:/Users/asumak/Data/output/shifted.vrt')
@@ -738,7 +739,7 @@ class Nansat(Domain):
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # create Warped VRT
-        warpedVRT = self.raw.create_warped_vrt(
+        warpedVRT = self.raw.get_warped_vrt(
                     dstSRS=dstSRS, dstGCPs=dstGCPs,
                     eResampleAlg=eResampleAlg,
                     xSize=xSize, ySize=ySize, blockSize=blockSize,

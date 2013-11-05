@@ -102,7 +102,7 @@ class VRT():
     read, write, add band, add GeoTransform, SetProjection, etc. It uses
     either GDAL methods for these operations (e.g. Create, AddBand,
     SetMetadata, AutoCreateWarpedVRT, etc.) or reads/writes the XML-file
-    directly (e.g. remove_geotransform, create_warped_vrt, etc).
+    directly (e.g. remove_geotransform, get_warped_vrt, etc).
 
     The core of the VRT object is GDAL dataset <self.dataset> generated
     by the GDAL VRT-Driver. The respective VRT-file is located in /vismem
@@ -799,7 +799,7 @@ class VRT():
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
-    def resized(self, xSize, ySize, use_geolocationArray=False,
+    def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
                 use_gcps=False, use_geotransform=False,
                 eResampleAlg=1, **kwargs):
 
@@ -828,7 +828,7 @@ class VRT():
                         - float(self.dataset.RasterYSize) / float(ySize))
 
         # update size and GeoTranform in XML of the warped VRT object
-        warpedVRT = self.create_warped_vrt(xSize=xSize, ySize=ySize,
+        warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
                                            geoTransform=geoTransform,
                                            use_geolocationArray=use_geolocationArray,
                                            use_gcps=use_gcps,
@@ -908,7 +908,7 @@ class VRT():
                                                  % (gcpNames[i], chunki),
                                                  chunk)
 
-    def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
+    def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                           xSize=0, ySize=0, blockSize=None,
                           geoTransform=None, WorkingDataType=None,
                           tps=False, use_geolocationArray=True,
@@ -928,17 +928,17 @@ class VRT():
         Three switches (use_geolocationArray, use_gcps, use_geotransform)
         allow to select which method to apply for warping. E.g.:
         # #1: srcVRT has GeolocationArray, geolocation array is used
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform)
         # #2: srcVRT has GeolocationArray, geolocation array is not used,
         # either GCPs (if present) or GeoTransform is used
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False)
         # #3: srcVRT has GeolocationArray or GCPs, geolocation array is
         # not used, and GCPs are not used either.
         # Only input GeoTranform is used
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False,
                                              use_gcps=False)
@@ -947,7 +947,7 @@ class VRT():
         # GCPs are not used, GeoTransform is not used either.
         # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.xSize, -1)
         # Warping becomes pure affine resize
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False,
                                              use_gcps=False.,
@@ -1397,48 +1397,40 @@ class VRT():
         # write contents
         self.write_xml(contents)
 
-    def create_shifted_vrt(self, shiftDegree):
-        ''' Shift bands and modify geoTransform and return a shifted VRT
+    def get_shifted_vrt(self, shiftDegree):
+        ''' Shift bands and modify geoTransform
 
         Parameters
         ----------
         xBorderDegree : float
             values of degree to shift.
-        xBorderPix : int
-            number of pixels to shift.
 
         Modifies
         -------
         self.vrt
         '''
-        # create a new VRT object
-        shiftVRT = VRT(gdalDataset = self.dataset)
-
-        # Copy VRT into self.vrt
+        # Copy self into self.vrt
+        shiftVRT = VRT(gdalDataset=self.dataset)
         shiftVRT.vrt = self.copy()
 
-        # if geoTransform is given, modify the 1st value (= top left x )
         if shiftDegree < 0:
             shiftDegree += 360.0
 
-        geoTransform = self.dataset.GetGeoTransform()
-        if geoTransform != '':
-            shiftPixel = int(shiftDegree / geoTransform[1])
-            geoTransform = list(geoTransform)
-            geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
-            if geoTransform[0] + geoTransform[1] * self.dataset.RasterXSize > 360.0:
-                geoTransform[0] -= 360.0
-            shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
-
-        # write dataset content into VRT-file
-        self.dataset.FlushCache()
-
+        geoTransform = shiftVRT.vrt.dataset.GetGeoTransform()
+        shiftPixel = int(shiftDegree / float(geoTransform[1]))
+        geoTransform = list(geoTransform)
+        geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
+        newEastBorder = geoTransform[0] + geoTransform[1] * shiftVRT.dataset.RasterXSize
+        if  newEastBorder > 360.0:
+            geoTransform[0] -= 360.0
+        shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
+        
         # Add bands to self
         for iBand in range(shiftVRT.vrt.dataset.RasterCount):
             src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
             dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
             shiftVRT._create_band(src, dst)
-
+        
         # read xml and create the node
         XML = shiftVRT.read_xml()
         node0 = Node.create(XML)
@@ -1448,21 +1440,27 @@ class VRT():
             # create i-th 'VRTRasterBand' node
             node1 = node0.node('VRTRasterBand', i)
             # modify the 1st band
-            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', str(shiftPixel))
+            shiftStr = str(shiftPixel)
+            sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', shiftStr)
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xSize', sizeStr)
+            node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
+            
             # add the 2nd band
             xmlSource = node1.xml()
             dom = xdm.parseString(xmlSource)
             cloneNode = Node.create(dom).node('ComplexSource')
-            cloneNode.node('SrcRect').replaceAttribute('xOff', str(shiftVRT.dataset.RasterXSize - shiftPixel))
+            cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
+            cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
+            cloneNode.node('DstRect').replaceAttribute('xSize', shiftStr)
+
             contents = node0.insert(cloneNode.xml(), 'VRTRasterBand', i)
             # overwrite the modified contents and create a new node
             dom = xdm.parseString(contents)
             node0 = Node.create(dom)
 
-        #write XML contents to
+        # write down XML contents
         shiftVRT.write_xml(str(node0.rawxml()))
 
         return shiftVRT
-
-

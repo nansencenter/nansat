@@ -175,7 +175,7 @@ class Envisat():
         Read 'last_line_...' ADS (in case of ASAR).
         Zoom array with ADS data to <zoomSize>. Zooming is needed to create
         smooth matrices. Array is zoomed to small size because it is stred in
-        memory. Later the VRT with zoomed array is VRT.resized() in order to
+        memory. Later the VRT with zoomed array is VRT.get_resized_vrt() in order to
         match the size of the Nansat onject.
         Create VRT from the ADS array.
 
@@ -272,7 +272,7 @@ class Envisat():
             # create VRT with array from ADS
             adsVRTs.append(self.create_VRT_from_ADS(adsName, zoomSize))
             # resize the VRT to match <step>
-            adsVRTs[-1] = adsVRTs[-1].resized(XSize/step, YSize/step, **kwargs)
+            adsVRTs[-1] = adsVRTs[-1].get_resized_vrt(XSize/step, YSize/step, **kwargs)
 
         return adsVRTs
 
