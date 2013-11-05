@@ -213,6 +213,7 @@ class Mapper(VRT):
         '''Get GCPs from strings in metadata and insert in dataset'''
         gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
         gcpAllValues = []
+
         # for all gcp coordinates
         for i, gcpName in enumerate(gcpNames):
             # scan throught metadata and find how many lines with each GCP

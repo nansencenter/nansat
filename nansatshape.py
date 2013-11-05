@@ -145,6 +145,9 @@ class Nansatshape():
                 else:
                     feature.SetField(jField, str(values[iFeature][jField]))
 
+            self.layer.CreateFeature(feature)
+            feature.Destroy()
+
     def get_points(self, latlon=True):
         '''Get points (geometries of featuers) in the layer
 

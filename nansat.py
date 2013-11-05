@@ -348,18 +348,24 @@ class Nansat(Domain):
         return False
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF'):
+               addGCPs=True, driver='netCDF', bottomup=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
         -----------
-        fileName : output file name
-        rmMetadata : list with metadata names to remove before export.
+        fileName : str
+            output file name
+        rmMetadata : list
+            metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
-        addGeolocArray : Boolean, add geolocation array datasets? [True].
-        addGCPs : Boolean, add GCPs? [True]
-        driver : Which GDAL driver (format) to use [netCDF]
-        flip : Boolean, flip the data? [True]
+        addGeolocArray : bool
+            add geolocation array datasets to exported file?
+        addGCPs : bool
+            add GCPs?  to exported file?
+        driver : str
+            Name of GDAL driver (format)
+        bottomup : bool
+            Write swath-projected data bottomup?
 
         Modifies
         ---------
@@ -435,9 +441,11 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
-        # add GCPs to VRT metadata
-        if addGCPs:
-            exportVRT._add_gcp_metadata()
+        gcps = exportVRT.dataset.GetGCPs()
+        if addGCPs and len(gcps) > 0:
+            # add GCPs in VRT metadata and remove geotransform
+            exportVRT._add_gcp_metadata(bottomup)
+            exportVRT._remove_geotransform()
 
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
@@ -493,10 +501,17 @@ class Nansat(Domain):
             # remove source bands
             self.vrt.delete_bands(range(1, numOfBands))
 
+        # set CreateCopy() options
+        if bottomup:
+            options = 'WRITE_BOTTOMUP=NO'
+        else:
+            options = 'WRITE_BOTTOMUP=YES'
+
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
-                                                          exportVRT.dataset)
+                                                          exportVRT.dataset,
+                                                          options=[options])
         self.logger.debug('Export - OK!')
 
     def _get_new_rastersize(self, factor=1, width=None, height=None):

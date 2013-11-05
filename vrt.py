@@ -877,7 +877,7 @@ class VRT():
         # Write the modified elemements back into temporary VRT
         self.write_xml(str(node0.rawxml()))
 
-    def _add_gcp_metadata(self):
+    def _add_gcp_metadata(self, bottomup=True):
         '''Add GCPs to metadata (required e.g. by Nansat.export())
 
         Creates string representation of GCPs line/pixel/X/Y
@@ -893,37 +893,56 @@ class VRT():
         srs = self.dataset.GetGCPProjection()
         chunkLength = 5000
 
-        # if GCPs exist
-        if len(gcps) > 0:
-            # add GCP Projection
-            self.dataset.SetMetadataItem('NANSAT_GCPProjection',
-                                         srs.replace(',', '|').replace('"',
-                                                                       '&'))
+        # exit if no GCPs
+        if len(gcps) == 0:
+            return
 
-            # make empty strings
-            gspStrings = ['', '', '', '']
+        # add GCP Projection
+        self.dataset.SetMetadataItem('NANSAT_GCPProjection',
+                            srs.replace(',',  '|').replace('"', '&'))
 
-            # fill string with values
-            for gcp in gcps:
+        # make empty strings
+        gspStrings = ['', '', '', '']
+
+        column = 0
+        for gcp in gcps:
+            if gcps[0].GCPLine == gcp.GCPLine:
+                column += 1
+            else:
+                break
+
+        # change the shape of gcps. (from 1D to 2D)
+        row = len(gcps) / column
+        gcps = list(gcps)
+        gcps = zip(*[iter(gcps)]*column)
+
+        # fill string with values
+        for iRow in range(row):
+            for jColumn in range(column):
                 gspStrings[0] = '%s%05d| ' % (gspStrings[0],
-                                              int(gcp.GCPPixel))
+                                              int(gcps[iRow][jColumn].GCPPixel))
                 gspStrings[1] = '%s%05d| ' % (gspStrings[1],
-                                              int(gcp.GCPLine))
-                gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcp.GCPX)
-                gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcp.GCPY)
+                                              int(gcps[iRow][jColumn].GCPLine))
+                # if bottomup is True (=image is filpped), gcps are flipped
+                if bottomup:
+                    gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[row-iRow-1][jColumn].GCPX)
+                    gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[row-iRow-1][jColumn].GCPY)
+                else:
+                    gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[iRow][jColumn].GCPX)
+                    gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[iRow][jColumn].GCPY)
 
-            for i, gspString in enumerate(gspStrings):
-                #split string into chunks
-                numberOfChunks = int(float(len(gspString)) / chunkLength)
-                chunki = 0
-                for chunki in range(0, numberOfChunks + 1):
-                    chunk = gspString[(chunki * chunkLength):
-                                      min(((chunki + 1) * chunkLength),
-                                          len(gspString))]
-                    # add chunk to metadata
-                    self.dataset.SetMetadataItem('NANSAT_%s_%03d'
-                                                 % (gcpNames[i], chunki),
-                                                 chunk)
+        for i, gspString in enumerate(gspStrings):
+            #split string into chunks
+            numberOfChunks = int(float(len(gspString)) / chunkLength)
+            chunki = 0
+            for chunki in range(0, numberOfChunks + 1):
+                chunk = gspString[(chunki * chunkLength):
+                                  min(((chunki + 1) * chunkLength),
+                                      len(gspString))]
+                # add chunk to metadata
+                self.dataset.SetMetadataItem('NANSAT_%s_%03d'
+                                             % (gcpNames[i], chunki),
+                                             chunk)
 
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                           xSize=0, ySize=0, blockSize=None,
