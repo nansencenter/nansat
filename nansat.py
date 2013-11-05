@@ -653,12 +653,14 @@ class Nansat(Domain):
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
                   WorkingDataType=None, tps=False, **kwargs):
-        ''' Reproject the object based on the given Domain
+        ''' Change projection of the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
-        from the Domain.
+        from the dstDomain.
         Modify XML content of the warped vrt using the Domain parameters.
         Generate warpedVRT and replace self.vrt with warpedVRT.
+        If current object spans from 0 to 360 and dstDomain is west of 0,
+        the object is shifted by 180 westwards.
 
         Parameters
         -----------
@@ -670,6 +672,13 @@ class Nansat(Domain):
             2 : Cubic,
             3 : CubicSpline
             4 : Lancoz
+        blockSize : int
+            size of blocks for resampling. Large value decrease speed
+            but increase accuracy at the edge
+        WorkingDataType : int (GDT_int, ...)
+            type of data in bands. Shuold be integer for int32 bands
+        tps : boolean
+            Use thin-spline trasnformation or not
 
         Modifies
         ---------

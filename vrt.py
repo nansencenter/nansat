@@ -1398,16 +1398,22 @@ class VRT():
         self.write_xml(contents)
 
     def get_shifted_vrt(self, shiftDegree):
-        ''' Shift bands and modify geoTransform
-
+        ''' Roll data in bands westwards or eastwards
+        
+        Create shiftVRT which references self. Modify georeference
+        of shiftVRT to account for the roll. Add as many bands as in self
+        but for each band create two complex sources: for western
+        and eastern parts. Keep self in shiftVRT.vrt
+        
         Parameters
         ----------
-        xBorderDegree : float
-            values of degree to shift.
+        shiftDegree : float
+            rolling angle, how far east/west to roll
 
-        Modifies
+        Returns
         -------
-        self.vrt
+        shiftVRT : VRT object with rolled bands
+        
         '''
         # Copy self into self.vrt
         shiftVRT = VRT(gdalDataset=self.dataset)
