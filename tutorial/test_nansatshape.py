@@ -40,7 +40,7 @@ The core of Nansatshape is a OGR. the main functions of the class are
 1. Create empty object in memory and add data (fields and geometory).
 2. Open shape file and read the data.
 
-Nansatshape support points, line and ploygons. (not mupti-polygon)
+Nansatshape support points
 
 '''
 # Create a nansatShape object with point geometry, lonlat spatial reference
@@ -62,7 +62,6 @@ nansatOGR.add_features(fieldValues, coordinates)
 
 # save to a file
 nansatOGR.export(oFileName + '.shp')
-
 
 # Create a nansatShape from shape file
 nansatOGR2 = Nansatshape(oFileName + '.shp')

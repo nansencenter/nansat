@@ -25,7 +25,7 @@ class Nansatshape():
         1. Create empty object in memory and add data (fields and geometory).
         2. Open shape file and read the data.
 
-        Nansatshape support points, line and ploygons. (not mupti-polygon)
+        Nansatshape support points, but not line, ploygons, mupti-polygons
 
     '''
     def __init__(self, fileName=None, layer=0, srs=None, wkbStyle=ogr.wkbPoint):
@@ -50,10 +50,6 @@ class Nansatshape():
 
         Creates
         --------
-        self.fieldNames : list of field names
-            list of field names in the layer
-        self.fileDataType : dictionary
-            keys are field names and values are ogr data types.
         self.datasource : ogr data source in memory
         self.layer : ogr layer
 
