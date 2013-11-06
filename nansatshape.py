@@ -29,7 +29,8 @@ class Nansatshape():
         Nansatshape support points, but not line, ploygons, mupti-polygons
 
     '''
-    def __init__(self, fileName=None, layer=0, srs=None, wkbStyle=ogr.wkbPoint):
+    def __init__(self, fileName=None, layer=0, srs=None,
+                 wkbStyle=ogr.wkbPoint):
         '''Create Nansatshape object
 
         if <fileName> is given:
@@ -61,7 +62,8 @@ class Nansatshape():
 
         # Create a empty datasource and layer in memory
         if fileName is None:
-            self.datasource = ogr.GetDriverByName('Memory').CreateDataSource(randomName)
+            self.datasource = ogr.GetDriverByName('Memory').\
+                CreateDataSource(randomName)
             # create a new later
             if layer == 0:
                 layer = 'NansatLayer'
@@ -70,7 +72,8 @@ class Nansatshape():
         else:
             # Open shapefile and copy the datasource into memory
             ogrDs = ogr.Open(fileName)
-            self.datasource = ogr.GetDriverByName('Memory').CopyDataSource(ogrDs, randomName)
+            self.datasource = ogr.GetDriverByName('Memory').\
+                CopyDataSource(ogrDs, randomName)
             ogrDs.Destroy()
             # Set a layer from the datasource
             if type(layer) is int:
@@ -108,7 +111,7 @@ class Nansatshape():
             return
 
         # create fields from columns of values
-        for i, iFieldName in enumerate (values.dtype.names):
+        for i, iFieldName in enumerate(values.dtype.names):
             # get data type for each field
             if str(values.dtype[i]).startswith('int'):
                 dtype = ogr.OFTInteger
@@ -128,7 +131,7 @@ class Nansatshape():
             geometry = ogr.Geometry(type=geomType)
             # set a coordinates of the geometry
             geometry.SetPoint_2D(0, float(coordinates[0, iFeature]),
-                                    float(coordinates[1, iFeature]))
+                                 float(coordinates[1, iFeature]))
             # set srs
             srs = self.layer.GetSpatialRef()
             geometry.AssignSpatialReference(srs)
@@ -191,7 +194,7 @@ class Nansatshape():
             points = tuple(points)
         return points, latlon
 
-
     def export(self, fileName):
         '''Save as ESRI shape-file'''
-        ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(self.datasource, fileName)
+        ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(self.datasource,
+                                                             fileName)

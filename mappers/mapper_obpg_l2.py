@@ -53,12 +53,12 @@ class Mapper(VRT):
             srs.ImportFromProj4(proj4)
             projection = srs.ExportToWkt()
             geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
-            
+
             # create empty VRT dataset with georeference only
             VRT.__init__(self, srcGeoTransform=geoTransform,
-                               srcProjection=projection,
-                               srcRasterXSize=rasterXSize,
-                               srcRasterYSize=rasterYSize)
+                         srcProjection=projection,
+                         srcRasterXSize=rasterXSize,
+                         srcRasterYSize=rasterYSize)
         else:
             # create empty VRT dataset with geolocation only
             VRT.__init__(self, gdalSubDataset)
@@ -181,7 +181,6 @@ class Mapper(VRT):
                                                           startMillisec)
         self._set_time(startDate)
 
-        
         # skip adding georeference for GOCI
         if title is 'GOCI Level-2 Data':
             return
@@ -220,8 +219,8 @@ class Mapper(VRT):
         else:
             self.remove_geolocationArray()
 
-        self.remove_geolocationArray()  
-        
+        self.remove_geolocationArray()
+
         # estimate step of GCPs
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
         step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT))
@@ -247,4 +246,3 @@ class Mapper(VRT):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
-

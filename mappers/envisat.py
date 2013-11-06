@@ -42,8 +42,7 @@ class Envisat():
                           "mean sea level pressure"  : {"offset": 13+284*10+142*2 , "dataType": gdal.GDT_UInt16, "units": "hPa"},
                           "total ozone"              : {"offset": 13+284*10+142*3 , "dataType": gdal.GDT_UInt16, "units": "DU"},
                           "relative humidity"        : {"offset": 13+284*10+142*4 , "dataType": gdal.GDT_UInt16, "units": "%"}
-                        }
-                },
+                        }},
         'ASA_': {
                  'name': 'DS_NAME="GEOLOCATION GRID ADS        "\n',
                  'width' : 11,
@@ -58,9 +57,7 @@ class Envisat():
                           "last_line_incidence_angle"   : {"offset": 25+11*4*5+34+11*4*2, "dataType": gdal.GDT_Float32, "units": "deg"},
                           "last_line_lats"              : {"offset": 25+11*4*5+34+11*4*3, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
                           "last_line_longs"             : {"offset": 25+11*4*5+34+11*4*4, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
-                        }
-                }
-                    }
+                        }}}
     # map: GDAL TYPES ==> struct format strings
     structFmt = {gdal.GDT_Int16: ">h",
                  gdal.GDT_UInt16: ">H",
@@ -241,7 +238,7 @@ class Envisat():
         # create VRT from the array
         adsVrt = VRT(array=array)
         # add "name" and "units" to band metadata
-        bandMetadata = {"name" : adsName, "units" : adsParams['units']}
+        bandMetadata = {"name": adsName, "units": adsParams['units']}
         adsVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)
 
         return adsVrt

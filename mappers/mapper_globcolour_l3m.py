@@ -16,6 +16,7 @@ import numpy as np
 from vrt import VRT, GeolocationArray
 from globcolour import Globcolour
 
+
 class Mapper(VRT, Globcolour):
     ''' Mapper for GLOBCOLOR L3M products'''
 

@@ -50,7 +50,4 @@ class Globcolour():
         else:
             metaEntry = None
 
-        return metaEntry                              
-            
-        
-        
+        return metaEntry

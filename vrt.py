@@ -383,7 +383,8 @@ class VRT():
             suffix
             AnyOtherMetadata
             PixelFunctionType: - band will be a pixel function defined by the
-                                 corresponding name/value. In this case src may be list of
+                                 corresponding name/value.
+                                 In this case src may be list of
                                  dicts with parameters for each source.
                                - in case the dst band has a different datatype
                                  than the source band it is important to add a
@@ -467,11 +468,10 @@ class VRT():
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
             # in case of PixelFunction
             options = ['subClass=VRTDerivedRasterBand',
-                       'PixelFunctionType=%s' % dst['PixelFunctionType'],
-                    ]
+                       'PixelFunctionType=%s' % dst['PixelFunctionType']]
             if 'SourceTransferType' in dst:
                 options.append('SourceTransferType=%s' %
-                        dst['SourceTransferType'])
+                               dst['SourceTransferType'])
         elif len(srcs) == 1 and srcs[0]['SourceBand'] == 0:
             # in case of VRTRawRasterBand
             options = ['subclass=VRTRawRasterBand',
@@ -817,8 +817,8 @@ class VRT():
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
     def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
-                use_gcps=False, use_geotransform=False,
-                eResampleAlg=1, **kwargs):
+                        use_gcps=False, use_geotransform=False,
+                        eResampleAlg=1, **kwargs):
 
         ''' Resize VRT
 
@@ -846,11 +846,11 @@ class VRT():
 
         # update size and GeoTranform in XML of the warped VRT object
         warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
-                                           geoTransform=geoTransform,
-                                           use_geolocationArray=use_geolocationArray,
-                                           use_gcps=use_gcps,
-                                           use_geotransform=use_geotransform,
-                                           eResampleAlg=eResampleAlg)
+                                        geoTransform=geoTransform,
+                                        use_geolocationArray=use_geolocationArray,
+                                        use_gcps=use_gcps,
+                                        use_geotransform=use_geotransform,
+                                        eResampleAlg=eResampleAlg)
 
         # set metadata
         warpedVRT.dataset.SetMetadata(self.dataset.GetMetadata_Dict())
@@ -926,11 +926,11 @@ class VRT():
                                                  chunk)
 
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
-                          xSize=0, ySize=0, blockSize=None,
-                          geoTransform=None, WorkingDataType=None,
-                          tps=False, use_geolocationArray=True,
-                          use_gcps=True, use_geotransform=True,
-                          dstGCPs=[], dstGeolocationArray=None):
+                       xSize=0, ySize=0, blockSize=None,
+                       geoTransform=None, WorkingDataType=None,
+                       tps=False, use_geolocationArray=True,
+                       use_gcps=True, use_geotransform=True,
+                       dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
 
@@ -1417,12 +1417,12 @@ class VRT():
 
     def get_shifted_vrt(self, shiftDegree):
         ''' Roll data in bands westwards or eastwards
-        
+
         Create shiftVRT which references self. Modify georeference
         of shiftVRT to account for the roll. Add as many bands as in self
         but for each band create two complex sources: for western
         and eastern parts. Keep self in shiftVRT.vrt
-        
+
         Parameters
         ----------
         shiftDegree : float
@@ -1431,7 +1431,7 @@ class VRT():
         Returns
         -------
         shiftVRT : VRT object with rolled bands
-        
+
         '''
         # Copy self into self.vrt
         shiftVRT = VRT(gdalDataset=self.dataset)
@@ -1444,17 +1444,19 @@ class VRT():
         shiftPixel = int(shiftDegree / float(geoTransform[1]))
         geoTransform = list(geoTransform)
         geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
-        newEastBorder = geoTransform[0] + geoTransform[1] * shiftVRT.dataset.RasterXSize
-        if  newEastBorder > 360.0:
+        newEastBorder = geoTransform[0] + (geoTransform[1] *
+                                           shiftVRT.dataset.RasterXSize)
+        if newEastBorder > 360.0:
             geoTransform[0] -= 360.0
         shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
-        
+
         # Add bands to self
         for iBand in range(shiftVRT.vrt.dataset.RasterCount):
-            src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
+            src = {'SourceFilename': shiftVRT.vrt.fileName,
+                   'SourceBand': iBand + 1}
             dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
             shiftVRT._create_band(src, dst)
-        
+
         # read xml and create the node
         XML = shiftVRT.read_xml()
         node0 = Node.create(XML)
@@ -1469,7 +1471,7 @@ class VRT():
             node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', shiftStr)
             node1.node('ComplexSource').node('DstRect').replaceAttribute('xSize', sizeStr)
             node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
-            
+
             # add the 2nd band
             xmlSource = node1.xml()
             dom = xdm.parseString(xmlSource)
