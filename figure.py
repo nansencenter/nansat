@@ -853,11 +853,11 @@ class Figure():
                 spaceNum = int(self.numOfColor *
                                (colorList[iColor][i + 1][0] -
                                 colorList[iColor][i][0]))
-                lut[iColor][iPalette:iPalette + spaceNum] = \
-                    np.array(np.linspace(colorList[iColor][i][2],
-                                         colorList[iColor][i + 1][1],
-                                         num=spaceNum) * 255,
-                             dtype=np.uint8)
+                lut[iColor][iPalette:iPalette + spaceNum] = np.array(
+                    np.linspace(colorList[iColor][i][2],
+                                colorList[iColor][i + 1][1],
+                                num=spaceNum) * 255,
+                    dtype=np.uint8)
                 iPalette += (spaceNum)
             # adjust the number of colors on the palette
             while iPalette < self.numOfColor:

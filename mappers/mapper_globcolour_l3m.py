@@ -16,6 +16,7 @@ import numpy as np
 from vrt import VRT, GeolocationArray
 from globcolour import Globcolour
 
+
 class Mapper(VRT, Globcolour):
     ''' Mapper for GLOBCOLOR L3M products'''
 
@@ -47,8 +48,8 @@ class Mapper(VRT, Globcolour):
                 if '_mean' in simSubDataset[0]:
                     simValidSupDataset = simSupDataset
                     simGdalDataset = gdal.Open(simSubDataset[0])
-                    simBandMetadata = simGdalDataset.GetRasterBand(1).\
-                        GetMetadata()
+                    simBand = simGdalDataset.GetRasterBand(1)
+                    simBandMetadata = simBand.GetMetadata()
                     simVarname = simBandMetadata['NETCDF_VARNAME']
                     # get WKV
                     print '    simVarname', simVarname

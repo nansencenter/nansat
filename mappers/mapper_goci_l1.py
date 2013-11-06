@@ -23,17 +23,17 @@ class Mapper(VRT):
         lon_0 = gdalMetadata['HDFEOS_POINTS_Map_Projection_Central_Longitude_(meridian)']
         rasterXSize = int(gdalMetadata['HDFEOS_POINTS_Scene_Header_number_of_columns'].split(' ')[0])
         rasterYSize = int(gdalMetadata['HDFEOS_POINTS_Scene_Header_number_of_rows'].split(' ')[0])
-        proj4 = '+proj=ortho +lat_0=%s +lon_0=%s units=m  +ellps=WGS84 +datum=WGS84 +no_defs' % (lat_0, lon_0)
+        proj4 = '+proj=ortho +lat_0=%s +lon_0=%s units=m +ellps=WGS84 +datum=WGS84 +no_defs' % (lat_0, lon_0)
         srs = osr.SpatialReference()
         srs.ImportFromProj4(proj4)
         projection = srs.ExportToWkt()
         geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
-        
+
         # create empty VRT dataset with georeference only
         VRT.__init__(self, srcGeoTransform=geoTransform,
-                           srcProjection=projection,
-                           srcRasterXSize=rasterXSize,
-                           srcRasterYSize=rasterYSize)
+                     srcProjection=projection,
+                     srcRasterXSize=rasterXSize,
+                     srcRasterYSize=rasterYSize)
 
         # add bands from subdatasets
         subDatasets = gdalDataset.GetSubDatasets()
@@ -45,10 +45,9 @@ class Mapper(VRT):
                                  'ScaleRatio': 1e-6},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': wavelengths[subDSI],
-                                 'suffix': wavelengths[subDSI]},
-                                 }
+                                 'suffix': wavelengths[subDSI]}}
             metaDict.append(metaEntry)
-        
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 

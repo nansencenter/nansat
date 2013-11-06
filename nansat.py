@@ -215,7 +215,7 @@ class Nansat(Domain):
             bandData = eval(expression)
 
         # Set invalid and missing data to np.nan
-        if band.GetMetadata().has_key('_FillValue'):
+        if '_FillValue' in band.GetMetadata():
             fillValue = float(band.GetMetadata()['_FillValue'])
             try:
                 bandData[bandData == fillValue] = np.nan
@@ -225,7 +225,6 @@ class Nansat(Domain):
             bandData[np.isinf(bandData)] = np.nan
         except:
             self.logger.info('Cannot replace inf values with np.NAN!')
-
 
         return bandData
 
@@ -402,6 +401,8 @@ class Nansat(Domain):
         # create two bands from real and imaginary data arrays
         if len(complexBands) != 0:
             for i in complexBands:
+                print i
+                print self[i]
                 bandMetadataR = self.get_metadata(bandID=i)
                 bandMetadataR.pop('dataType')
                 try:
@@ -425,6 +426,8 @@ class Nansat(Domain):
                              'SourceBand':  1},
                              'dst': bandMetadataI}]
                 exportVRT._create_bands(metaDict)
+                if i == 4:
+                    exportVRT.export('c:/Users/asumak/Data/output/exportVRT.vrt')
             # delete the complex bands
             exportVRT.delete_bands(complexBands)
 
@@ -531,9 +534,8 @@ class Nansat(Domain):
 
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
-        
+
         return newRasterYSize, newRasterXSize
-        
 
     def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
@@ -547,7 +549,7 @@ class Nansat(Domain):
         resizing/reprojection cancelled.
 
         WARNING: It seems like the function is presently not working for complex
-        bands and pixelfunction bands - in case this kind of data is needed 
+        bands and pixelfunction bands - in case this kind of data is needed
         it should be copied to a numpy array which is added as a band before
         resizing.
 
@@ -582,8 +584,8 @@ class Nansat(Domain):
 
         # get new shape
         newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
-                                                              width,
-                                                              height)
+                                                                  width,
+                                                                  height)
 
         # Get XML content from VRT-file
         vrtXML = self.vrt.read_xml()
@@ -624,20 +626,19 @@ class Nansat(Domain):
         # Write the modified elemements into VRT
         self.vrt.write_xml(str(node0.rawxml()))
 
-
     def resize_lite(self, factor=1, width=None,
-                                    height=None, eResampleAlg=1):
+                    height=None, eResampleAlg=1):
         '''Proportional resize of the dataset. No georeference kept.
 
         The dataset is resized as (xSize*factor, ySize*factor) or
         (width, calulated height) or (calculated width, height).
         self.vrt is rewritten to the the downscaled sizes.
-        No georeference (useful e.g. for export) is stored in the object. 
+        No georeference (useful e.g. for export) is stored in the object.
         If resize() is called without any parameters then previsous
         resizing/reprojection cancelled.
 
         WARNING: It seems like the function is presently not working for complex
-        bands and pixelfunction bands - in case this kind of data is needed 
+        bands and pixelfunction bands - in case this kind of data is needed
         it should be copied to a numpy array which is added as a band before
         resizing.
 
@@ -674,8 +675,8 @@ class Nansat(Domain):
 
         # get new shape
         newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
-                                                              width,
-                                                              height)
+                                                                  width,
+                                                                  height)
 
         # apply affine transformation using reprojection
         self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
@@ -792,8 +793,7 @@ class Nansat(Domain):
         #     shift self westwards by 180 degrees
         # check span
         srcCorners = self.get_corners()
-        if (round(min(srcCorners[0])) == 0 and
-            round(max(srcCorners[0])) == 360):
+        if round(min(srcCorners[0])) == 0 and round(max(srcCorners[0])) == 360:
             # check intersection of src and dst
             dstCorners = dstDomain.get_corners()
             if min(dstCorners[0]) < 0:
@@ -813,26 +813,27 @@ class Nansat(Domain):
         ySize = dstDomain.vrt.dataset.RasterYSize
 
         # get geoTransform
-        if 'use_gcps' in kwargs.keys() and kwargs['use_gcps']==False:
+        if 'use_gcps' in kwargs.keys() and not(kwargs['use_gcps']):
             corners = dstDomain.get_corners()
-            ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' %(min(corners[0]),
-                                                             min(corners[1]),
-                                                             max(corners[0]),
-                                                             max(corners[1]),
-                                                             xSize, ySize)
+            ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' % (min(corners[0]),
+                                                              min(corners[1]),
+                                                              max(corners[0]),
+                                                              max(corners[1]),
+                                                              xSize, ySize)
             d = Domain(srs=dstSRS, ext=ext)
             geoTransform = d.vrt.dataset.GetGeoTransform()
         else:
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # create Warped VRT
-        warpedVRT = self.raw.get_warped_vrt(
-                    dstSRS=dstSRS, dstGCPs=dstGCPs,
-                    eResampleAlg=eResampleAlg,
-                    xSize=xSize, ySize=ySize, blockSize=blockSize,
-                    geoTransform=geoTransform,
-                    WorkingDataType=WorkingDataType,
-                    tps=tps, **kwargs)
+        warpedVRT = self.raw.get_warped_vrt(dstSRS=dstSRS,
+                                            dstGCPs=dstGCPs,
+                                            eResampleAlg=eResampleAlg,
+                                            xSize=xSize, ySize=ySize,
+                                            blockSize=blockSize,
+                                            geoTransform=geoTransform,
+                                            WorkingDataType=WorkingDataType,
+                                            tps=tps, **kwargs)
 
         # set current VRT object
         self.vrt = warpedVRT

@@ -64,8 +64,8 @@ class Mapper(VRT):
             vrtXML = self.read_xml()
             node0 = Node.create(vrtXML)
             for iBand in sizeDiffBands:
-                iNodeDstRect = node0.nodeList('VRTRasterBand')[iBand].\
-                    node('DstRect')
+                iBandNode = node0.nodeList('VRTRasterBand')[iBand]
+                iNodeDstRect = iBandNode.node('DstRect')
                 iNodeDstRect.replaceAttribute('xSize', str(xSize))
                 iNodeDstRect.replaceAttribute('ySize', str(ySize))
 

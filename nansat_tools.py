@@ -519,8 +519,9 @@ def initial_bearing(lon1, lat1, lon2, lat2):
         rlat2 = np.radians(lat2)
         deltalon = rlon2 - rlon1
         bearing = np.arctan2(np.sin(rlon2 - rlon1) * np.cos(rlat2),
-                np.cos(rlat1) * np.sin(rlat2) -
-                np.sin(rlat1) * np.cos(rlat2) * np.cos(rlon2 - rlon1))
+                             np.cos(rlat1) * np.sin(rlat2) -
+                             np.sin(rlat1) * np.cos(rlat2) *
+                             np.cos(rlon2 - rlon1))
         return mod(np.degrees(bearing) + 360, 360)
 
 

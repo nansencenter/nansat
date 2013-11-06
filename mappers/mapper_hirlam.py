@@ -66,8 +66,8 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Adding valid time from the GRIB file to dataset
-        validTime = gdalDataset.GetRasterBand(2).\
-            GetMetadata()['GRIB_VALID_TIME']
+        band = gdalDataset.GetRasterBand(2)
+        validTime = band.GetMetadata()['GRIB_VALID_TIME']
         self._set_time(datetime.datetime.
                        utcfromtimestamp(int(validTime.strip().split(' ')[0])))
 
