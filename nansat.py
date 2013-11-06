@@ -401,8 +401,6 @@ class Nansat(Domain):
         # create two bands from real and imaginary data arrays
         if len(complexBands) != 0:
             for i in complexBands:
-                print i
-                print self[i]
                 bandMetadataR = self.get_metadata(bandID=i)
                 bandMetadataR.pop('dataType')
                 try:
