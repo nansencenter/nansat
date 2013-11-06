@@ -62,8 +62,8 @@ class Nansatshape():
 
         # Create a empty datasource and layer in memory
         if fileName is None:
-            self.datasource = ogr.GetDriverByName('Memory').\
-                CreateDataSource(randomName)
+            memDriver = ogr.GetDriverByName('Memory')
+            self.datasource = memDriver.CreateDataSource(randomName)
             # create a new later
             if layer == 0:
                 layer = 'NansatLayer'
@@ -72,8 +72,7 @@ class Nansatshape():
         else:
             # Open shapefile and copy the datasource into memory
             ogrDs = ogr.Open(fileName)
-            self.datasource = ogr.GetDriverByName('Memory').\
-                CopyDataSource(ogrDs, randomName)
+            self.datasource = memDriver.CopyDataSource(ogrDs, randomName)
             ogrDs.Destroy()
             # Set a layer from the datasource
             if type(layer) is int:
