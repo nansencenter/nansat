@@ -811,7 +811,7 @@ class Nansat(Domain):
         ySize = dstDomain.vrt.dataset.RasterYSize
 
         # get geoTransform
-        if 'use_gcps' in kwargs.keys() and not(kwargs['use_gcps']):
+        if 'use_gcps' in kwargs.keys() and not (kwargs['use_gcps']):
             corners = dstDomain.get_corners()
             ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' % (min(corners[0]),
                                                               min(corners[1]),

@@ -383,7 +383,8 @@ class VRT():
             suffix
             AnyOtherMetadata
             PixelFunctionType: - band will be a pixel function defined by the
-                                 corresponding name/value. In this case src may be list of
+                                 corresponding name/value.
+                                 In this case src may be list of
                                  dicts with parameters for each source.
                                - in case the dst band has a different datatype
                                  than the source band it is important to add a
@@ -1461,14 +1462,16 @@ class VRT():
         shiftPixel = int(shiftDegree / float(geoTransform[1]))
         geoTransform = list(geoTransform)
         geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
-        newEastBorder = geoTransform[0] + geoTransform[1] * shiftVRT.dataset.RasterXSize
+        newEastBorder = geoTransform[0] + (geoTransform[1] *
+                                           shiftVRT.dataset.RasterXSize)
         if newEastBorder > 360.0:
             geoTransform[0] -= 360.0
         shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
 
         # Add bands to self
         for iBand in range(shiftVRT.vrt.dataset.RasterCount):
-            src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
+            src = {'SourceFilename': shiftVRT.vrt.fileName,
+                   'SourceBand': iBand + 1}
             dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
             shiftVRT._create_band(src, dst)
 
