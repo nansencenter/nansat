@@ -407,7 +407,7 @@ class Nansatmap(Basemap):
         if kwargs is None:
             kwargs = {}
         if not ('orientation' in kwargs.keys()):
-            kwargs['orientation'] = 'horisontal'
+            kwargs['orientation'] = 'horizontal'
         if not ('pad' in kwargs.keys()):
             kwargs['pad'] = 0.01
 

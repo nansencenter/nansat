@@ -287,14 +287,22 @@ class Node(object):
         del self.attributes[name]
         self.attributes[name] = value
 
-    def node(self, tag):
-        ''' Recursively find the first subnode with this tag. '''
+    def node(self, tag, elemNum=0):
+        ''' Recursively find the first subnode with this tag.
+
+        elemNum : int
+            if there are several same tag, specify which element to take.
+
+        '''
         if self.tag == tag:
             return self
+        ielm = 0
         for child in self.children:
             result = child.node(tag)
-            if result:
+            if result and ielm == elemNum:
                 return result
+            elif result:
+                ielm += 1
         return False
 
     def delNode(self, tag, options=None):
@@ -505,15 +513,15 @@ def initial_bearing(lon1, lat1, lon2, lat2):
             from the start point towards the end point along a great circle.
 
         '''
-        rlon1 = radians(lon1)
-        rlat1 = radians(lat1)
-        rlon2 = radians(lon2)
-        rlat2 = radians(lat2)
+        rlon1 = np.radians(lon1)
+        rlat1 = np.radians(lat1)
+        rlon2 = np.radians(lon2)
+        rlat2 = np.radians(lat2)
         deltalon = rlon2 - rlon1
-        bearing = atan2(sin(rlon2 - rlon1) * cos(rlat2),
-                        cos(rlat1) * sin(rlat2) -
-                        sin(rlat1) * cos(rlat2) * cos(rlon2 - rlon1))
-        return mod(degrees(bearing) + 360, 360)
+        bearing = np.arctan2(np.sin(rlon2 - rlon1) * np.cos(rlat2),
+                np.cos(rlat1) * np.sin(rlat2) -
+                np.sin(rlat1) * np.cos(rlat2) * np.cos(rlon2 - rlon1))
+        return mod(np.degrees(bearing) + 360, 360)
 
 
 def add_logger(logName='', logLevel=None):

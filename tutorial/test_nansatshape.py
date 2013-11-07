@@ -16,11 +16,11 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-
 import inspect, os
 import numpy as np
 
 from nansat import Nansat, Domain, Nansatshape
+from nansat.nansat_tools import latlongSRS
 
 try:
     from osgeo import gdal, osr, ogr
@@ -30,44 +30,42 @@ except:
 # input and output file names
 from testio import testio
 iPath, oPath = testio()
-iFileName = os.path.join(iPath, 'gcps.tif')
-shpFileName = os.path.join(iPath, 'points.shp')
-print 'Input file: ', iFileName, '; ', shpFileName
 oFileName = os.path.join(oPath, 'output_nansatshape_')
 print 'Output file:', oFileName
 
-''' Nansatshape class read and write ESRI-shape files
+''' Nansatshape class reads and writes ESRI-shape files
 
 The core of Nansatshape is a OGR. the main functions of the class are
 1. Create empty object in memory and add data (fields and geometory).
 2. Open shape file and read the data.
 
-Nansatshape support points, line and ploygons. (not mupti-polygon)
+Nansatshape support points
 
 '''
+# Create a nansatShape object with point geometry, lonlat spatial reference
+nansatOGR = Nansatshape(srs=latlongSRS)
 
-# Create a nansatShape object with line geometry
-nansatOGR = Nansatshape(wkbStyle=ogr.wkbLineString)
-# create polygon geometry and set them to featuers
-nansatOGR.create_geometry([[100, 150, 200, 500, 600, 800],
-                           [20, 30, 60, 30, 60, 90]],
-                           featureID=[0, 0, 0, 1, 1, 1])
-# append a polygon geometry to a new feature
-nansatOGR.create_geometry([[300,700, 750],[80,50, 60]], featureID=[2,2,2])
-# add fields to the feature
-nansatOGR.create_fields(fieldNames=['int', 'string', 'float', 'string2'],
-                        fieldValues=[[100, 200, 300], ['S0','S1','S2'],
-                                     [1.1, 2.2, 3.3], ['A0','A1','A2'] ])
-# replace specified field
-nansatOGR.create_fields(fieldNames=['int'], fieldValues=[[500]], featureID=[1])
+# Create numpy array for coordinates of points
+coordinates = np.array([[5.3,  30.2, 116.4, 34.0], 
+                        [60.4, 60.0,  39.9, 18.4]])
+
+# Create structured numpy array for fieldValues
+fieldValues = np.zeros(4, dtype={'names':['id', 'name','random'],
+                                 'formats':['i4','a10','f8']})
+fieldValues['id'] = [1, 2, 3, 4]
+fieldValues['name'] = ['Bergen', 'St.Petersburg', 'Beijin', 'Cape Town']
+fieldValues['random'] = [1.3, 5.7, 11.13, 17.19]
+
+# add fields to the feature and geometry at once
+nansatOGR.add_features(fieldValues, coordinates)
+
 # save to a file
-ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(nansatOGR.datasource,
-                                                     oFileName+'Lines.shp')
+nansatOGR.export(oFileName + '.shp')
 
 # Create a nansatShape from shape file
-nansatOGR = Nansatshape(shpFileName)
+nansatOGR2 = Nansatshape(oFileName + '.shp')
 # Get corner points (geometries of featuers) in the layer
-points, latlon = nansatOGR.get_corner_points(latlon=False)
+points, latlon = nansatOGR2.get_points()
 # print corner points
 print 'Corner Points ---'
 for iPoint in points:

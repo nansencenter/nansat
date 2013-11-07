@@ -306,9 +306,9 @@ class Nansat(Domain):
             else:
                 # create VRT from resized array
                 srcVRT = VRT(array=array, nomem=nomem)
-                vrt2add = srcVRT.resized(self.shape()[1],
-                                         self.shape()[0],
-                                         resamplingAlg)
+                vrt2add = srcVRT.get_resized_vrt(self.shape()[1],
+                                                 self.shape()[0],
+                                                 resamplingAlg)
             # set parameters
             bandNumber = 1
 
@@ -348,17 +348,24 @@ class Nansat(Domain):
         return False
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF'):
+               addGCPs=True, driver='netCDF', bottomup=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
         -----------
-        fileName : output file name
-        rmMetadata : list with metadata names to remove before export.
+        fileName : str
+            output file name
+        rmMetadata : list
+            metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
-        addGeolocArray : Boolean, add geolocation array datasets? [True].
-        addGCPs : Boolean, add GCPs? [True]
-        driver : Which GDAL driver (format) to use [netCDF]
+        addGeolocArray : bool
+            add geolocation array datasets to exported file?
+        addGCPs : bool
+            add GCPs?  to exported file?
+        driver : str
+            Name of GDAL driver (format)
+        bottomup : bool
+            Write swath-projected data bottomup?
 
         Modifies
         ---------
@@ -434,9 +441,11 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
-        # add GCPs to VRT metadata
-        if addGCPs:
-            exportVRT._add_gcp_metadata()
+        gcps = exportVRT.dataset.GetGCPs()
+        if addGCPs and len(gcps) > 0:
+            # add GCPs in VRT metadata and remove geotransform
+            exportVRT._add_gcp_metadata(bottomup)
+            exportVRT._remove_geotransform()
 
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
@@ -483,17 +492,26 @@ class Nansat(Domain):
             numOfBands = self.vrt.dataset.RasterCount
             # create VRT from each band and add it
             for iBand in range(numOfBands):
-                vrt = VRT(array=self[iBand+1])
+                vrt = VRT(array=self[iBand + 1])
                 self.add_band(vrt=vrt)
-                metadata = self.get_metadata(bandID=iBand+1)
-                self.set_metadata(key=metadata, bandID=numOfBands+iBand+1)
+                metadata = self.get_metadata(bandID=iBand + 1)
+                self.set_metadata(key=metadata,
+                                  bandID=numOfBands + iBand + 1)
+
             # remove source bands
             self.vrt.delete_bands(range(1, numOfBands))
+
+        # set CreateCopy() options
+        if bottomup:
+            options = 'WRITE_BOTTOMUP=NO'
+        else:
+            options = 'WRITE_BOTTOMUP=YES'
 
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
-                                                          exportVRT.dataset)
+                                                          exportVRT.dataset,
+                                                          options=[options])
         self.logger.debug('Export - OK!')
 
     def _get_new_rastersize(self, factor=1, width=None, height=None):
@@ -608,8 +626,7 @@ class Nansat(Domain):
 
 
     def resize_lite(self, factor=1, width=None,
-                                                    height=None,
-                                                    eResampleAlg=1):
+                                    height=None, eResampleAlg=1):
         '''Proportional resize of the dataset. No georeference kept.
 
         The dataset is resized as (xSize*factor, ySize*factor) or
@@ -635,7 +652,7 @@ class Nansat(Domain):
                 2 : Cubic,
                 3 : CubicSpline,
                 4 : Lancoz
-                if eResampleAlg > 0 : VRT.resized() is used
+                if eResampleAlg > 0 : VRT.get_resized_vrt() is used
 
         Modifies
         ---------
@@ -661,9 +678,9 @@ class Nansat(Domain):
                                                               height)
 
         # apply affine transformation using reprojection
-        self.vrt = self.vrt.resized(newRasterXSize,
-                                    newRasterYSize,
-                                    eResampleAlg)
+        self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
+                                            newRasterYSize,
+                                            eResampleAlg)
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -728,12 +745,14 @@ class Nansat(Domain):
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
                   WorkingDataType=None, tps=False, **kwargs):
-        ''' Reproject the object based on the given Domain
+        ''' Change projection of the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
-        from the Domain.
+        from the dstDomain.
         Modify XML content of the warped vrt using the Domain parameters.
         Generate warpedVRT and replace self.vrt with warpedVRT.
+        If current object spans from 0 to 360 and dstDomain is west of 0,
+        the object is shifted by 180 westwards.
 
         Parameters
         -----------
@@ -745,6 +764,13 @@ class Nansat(Domain):
             2 : Cubic,
             3 : CubicSpline
             4 : Lancoz
+        blockSize : int
+            size of blocks for resampling. Large value decrease speed
+            but increase accuracy at the edge
+        WorkingDataType : int (GDT_int, ...)
+            type of data in bands. Shuold be integer for int32 bands
+        tps : boolean
+            Use thin-spline trasnformation or not
 
         Modifies
         ---------
@@ -754,7 +780,6 @@ class Nansat(Domain):
         See Also
         ---------
         http://www.gdal.org/gdalwarp.html
-
         '''
         # dereproject
         self.vrt = self.raw.copy()
@@ -762,6 +787,18 @@ class Nansat(Domain):
         # if no domain: quit
         if dstDomain is None:
             return
+
+        # if self spans from 0 to 360 and dstDomain is west of 0:
+        #     shift self westwards by 180 degrees
+        # check span
+        srcCorners = self.get_corners()
+        if (round(min(srcCorners[0])) == 0 and
+            round(max(srcCorners[0])) == 360):
+            # check intersection of src and dst
+            dstCorners = dstDomain.get_corners()
+            if min(dstCorners[0]) < 0:
+                # shift
+                self.raw = self.raw.get_shifted_vrt(-180)
 
         # get projection of destination dataset
         dstSRS = dstDomain.vrt.dataset.GetProjection()
@@ -772,14 +809,28 @@ class Nansat(Domain):
             # get projection of destination GCPs
             dstSRS = dstDomain.vrt.dataset.GetGCPProjection()
 
+        xSize = dstDomain.vrt.dataset.RasterXSize
+        ySize = dstDomain.vrt.dataset.RasterYSize
+
+        # get geoTransform
+        if 'use_gcps' in kwargs.keys() and kwargs['use_gcps']==False:
+            corners = dstDomain.get_corners()
+            ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' %(min(corners[0]),
+                                                             min(corners[1]),
+                                                             max(corners[0]),
+                                                             max(corners[1]),
+                                                             xSize, ySize)
+            d = Domain(srs=dstSRS, ext=ext)
+            geoTransform = d.vrt.dataset.GetGeoTransform()
+        else:
+            geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+
         # create Warped VRT
-        warpedVRT = self.raw.create_warped_vrt(
+        warpedVRT = self.raw.get_warped_vrt(
                     dstSRS=dstSRS, dstGCPs=dstGCPs,
                     eResampleAlg=eResampleAlg,
-                    xSize=dstDomain.vrt.dataset.RasterXSize,
-                    ySize=dstDomain.vrt.dataset.RasterYSize,
-                    blockSize=blockSize,
-                    geoTransform=dstDomain.vrt.dataset.GetGeoTransform(),
+                    xSize=xSize, ySize=ySize, blockSize=blockSize,
+                    geoTransform=geoTransform,
                     WorkingDataType=WorkingDataType,
                     tps=tps, **kwargs)
 
@@ -1501,14 +1552,13 @@ class Nansat(Domain):
                                     [pixVector, linVector],
                                     axis=1)
             if smooth[0]:
-                pixlinCoord0 = pixlinCoord-int(smooth[0])/2
-                pixlinCoord1 = pixlinCoord+int(smooth[0])/2
+                pixlinCoord0 = pixlinCoord - int(smooth[0]) / 2
+                pixlinCoord1 = pixlinCoord + int(smooth[0]) / 2
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
                                                       pixlinCoord[1],
                                                       DstToSrc=0)
-
         transect = []
         # get data
         for iBand in bandList:
@@ -1532,11 +1582,30 @@ class Nansat(Domain):
                                 list(pixlinCoord[0])].tolist())
             data = None
         if returnOGR:
-            NansatOGR = Nansatshape(wkt=wkt)
-            NansatOGR.set_layer(lonlatCoord=[lonVector, latVector],
-                                pixlinCoord=pixlinCoord,
-                                fieldNames=map(str, bandList),
-                                fieldValues=transect)
+            # Lists for field names and datatype
+            names = ['X (pixel)', 'Y (line)']
+            formats = ['i4', 'i4']
+            for iBand in bandList:
+                names.append('transect_' + str(iBand))
+                formats.append('f8')
+            # Create zeros structured numpy array
+            fieldValues = np.zeros(len(pixlinCoord[1]),
+                                   dtype={'names': names,
+                                          'formats': formats})
+            # Set values into the structured numpy array
+            fieldValues['X (pixel)'] = pixlinCoord[0]
+            fieldValues['Y (line)'] = pixlinCoord[1]
+            for i, iBand in enumerate(bandList):
+                fieldValues['transect_' + str(iBand)] = transect[i]
+            # Create Nansatshape object
+            srs = osr.SpatialReference()
+            srs.ImportFromWkt(wkt)
+            NansatOGR = Nansatshape(srs=srs)
+            # Set features and geometries into the Nansatshape
+            NansatOGR.add_features(coordinates=[lonVector, latVector],
+                                   values=fieldValues,
+                                   AddPixLine=False)
+            # Return Nansatshape object
             return NansatOGR
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)

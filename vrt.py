@@ -103,7 +103,7 @@ class VRT():
     read, write, add band, add GeoTransform, SetProjection, etc. It uses
     either GDAL methods for these operations (e.g. Create, AddBand,
     SetMetadata, AutoCreateWarpedVRT, etc.) or reads/writes the XML-file
-    directly (e.g. remove_geotransform, create_warped_vrt, etc).
+    directly (e.g. remove_geotransform, get_warped_vrt, etc).
 
     The core of the VRT object is GDAL dataset <self.dataset> generated
     by the GDAL VRT-Driver. The respective VRT-file is located in /vismem
@@ -216,6 +216,7 @@ class VRT():
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename(nomem=nomem)
         self.vrtDriver = gdal.GetDriverByName('VRT')
+        self.vrt = None
 
         # open and parse wkv.xml
         fileNameWKV = os.path.join(os.path.dirname(
@@ -815,7 +816,7 @@ class VRT():
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
-    def resized(self, xSize, ySize, use_geolocationArray=False,
+    def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
                 use_gcps=False, use_geotransform=False,
                 eResampleAlg=1, **kwargs):
 
@@ -844,13 +845,12 @@ class VRT():
                         - float(self.dataset.RasterYSize) / float(ySize))
 
         # update size and GeoTranform in XML of the warped VRT object
-        warpedVRT = self.\
-            create_warped_vrt(xSize=xSize, ySize=ySize,
-                              geoTransform=geoTransform,
-                              use_geolocationArray=use_geolocationArray,
-                              use_gcps=use_gcps,
-                              use_geotransform=use_geotransform,
-                              eResampleAlg=eResampleAlg)
+        warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
+                                           geoTransform=geoTransform,
+                                           use_geolocationArray=use_geolocationArray,
+                                           use_gcps=use_gcps,
+                                           use_geotransform=use_geotransform,
+                                           eResampleAlg=eResampleAlg)
 
         # set metadata
         warpedVRT.dataset.SetMetadata(self.dataset.GetMetadata_Dict())
@@ -877,7 +877,7 @@ class VRT():
         # Write the modified elemements back into temporary VRT
         self.write_xml(str(node0.rawxml()))
 
-    def _add_gcp_metadata(self):
+    def _add_gcp_metadata(self, bottomup=True):
         '''Add GCPs to metadata (required e.g. by Nansat.export())
 
         Creates string representation of GCPs line/pixel/X/Y
@@ -893,44 +893,62 @@ class VRT():
         srs = self.dataset.GetGCPProjection()
         chunkLength = 5000
 
-        # if GCPs exist
-        if len(gcps) > 0:
-            # add GCP Projection
-            self.dataset.SetMetadataItem('NANSAT_GCPProjection',
-                                         srs.replace(',', '|').replace('"',
-                                                                       '&'))
+        # exit if no GCPs
+        if len(gcps) == 0:
+            return
 
-            # make empty strings
-            gspStrings = ['', '', '', '']
+        # add GCP Projection
+        self.dataset.SetMetadataItem('NANSAT_GCPProjection',
+                            srs.replace(',',  '|').replace('"', '&'))
 
-            # fill string with values
-            for gcp in gcps:
+        # make empty strings
+        gspStrings = ['', '', '', '']
+
+        column = 0
+        for gcp in gcps:
+            if gcps[0].GCPLine == gcp.GCPLine:
+                column += 1
+            else:
+                break
+
+        # change the shape of gcps. (from 1D to 2D)
+        row = len(gcps) / column
+        gcps = list(gcps)
+        gcps = zip(*[iter(gcps)]*column)
+
+        # fill string with values
+        for iRow in range(row):
+            for jColumn in range(column):
                 gspStrings[0] = '%s%05d| ' % (gspStrings[0],
-                                              int(gcp.GCPPixel))
+                                              int(gcps[iRow][jColumn].GCPPixel))
                 gspStrings[1] = '%s%05d| ' % (gspStrings[1],
-                                              int(gcp.GCPLine))
-                gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcp.GCPX)
-                gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcp.GCPY)
+                                              int(gcps[iRow][jColumn].GCPLine))
+                # if bottomup is True (=image is filpped), gcps are flipped
+                if bottomup:
+                    gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[row-iRow-1][jColumn].GCPX)
+                    gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[row-iRow-1][jColumn].GCPY)
+                else:
+                    gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[iRow][jColumn].GCPX)
+                    gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[iRow][jColumn].GCPY)
 
-            for i, gspString in enumerate(gspStrings):
-                #split string into chunks
-                numberOfChunks = int(float(len(gspString)) / chunkLength)
-                chunki = 0
-                for chunki in range(0, numberOfChunks + 1):
-                    chunk = gspString[(chunki * chunkLength):
-                                      min(((chunki + 1) * chunkLength),
-                                          len(gspString))]
-                    # add chunk to metadata
-                    self.dataset.SetMetadataItem('NANSAT_%s_%03d'
-                                                 % (gcpNames[i], chunki),
-                                                 chunk)
+        for i, gspString in enumerate(gspStrings):
+            #split string into chunks
+            numberOfChunks = int(float(len(gspString)) / chunkLength)
+            chunki = 0
+            for chunki in range(0, numberOfChunks + 1):
+                chunk = gspString[(chunki * chunkLength):
+                                  min(((chunki + 1) * chunkLength),
+                                      len(gspString))]
+                # add chunk to metadata
+                self.dataset.SetMetadataItem('NANSAT_%s_%03d'
+                                             % (gcpNames[i], chunki),
+                                             chunk)
 
-    def create_warped_vrt(self, dstSRS=None, eResampleAlg=0,
+    def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                           xSize=0, ySize=0, blockSize=None,
                           geoTransform=None, WorkingDataType=None,
-                          tps=False,
-                          use_geolocationArray=True, use_gcps=True,
-                          use_geotransform=True,
+                          tps=False, use_geolocationArray=True,
+                          use_gcps=True, use_geotransform=True,
                           dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
@@ -946,17 +964,17 @@ class VRT():
         Three switches (use_geolocationArray, use_gcps, use_geotransform)
         allow to select which method to apply for warping. E.g.:
         # #1: srcVRT has GeolocationArray, geolocation array is used
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform)
         # #2: srcVRT has GeolocationArray, geolocation array is not used,
         # either GCPs (if present) or GeoTransform is used
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False)
         # #3: srcVRT has GeolocationArray or GCPs, geolocation array is
         # not used, and GCPs are not used either.
         # Only input GeoTranform is used
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False,
                                              use_gcps=False)
@@ -965,7 +983,7 @@ class VRT():
         # GCPs are not used, GeoTransform is not used either.
         # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.xSize, -1)
         # Warping becomes pure affine resize
-        warpedVRT = srcVRT.create_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
                                              use_geolocationArray=False,
                                              use_gcps=False.,
@@ -1018,7 +1036,7 @@ class VRT():
         acwvSRS = dstSRS
 
         # if destination GCPs are given: create and add fake GCPs to src
-        if len(dstGCPs) > 0:
+        if len(dstGCPs) > 0 and use_gcps:
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
@@ -1051,7 +1069,6 @@ class VRT():
             srcVRT.dataset.SetGCPs([], '')
             srcVRT.dataset.SetGeoTransform((0, 1, 0,
                                             srcVRT.dataset.RasterYSize, 0, -1))
-
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
@@ -1202,10 +1219,6 @@ class VRT():
             # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
             fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine,
                                      0, srcPixel, srcLine))
-            #g.GCPX =
-            #g.GCPY =
-            #g.GCPPixel =
-            #g.GCPLine =
 
         # create 'fake' STEREO projection for 'fake' GCPs of SRC image
         srsString = ('+proj=stere +lon_0=0 +lat_0=0 +k=1 '
@@ -1420,3 +1433,77 @@ class VRT():
 
         # write contents
         self.write_xml(contents)
+
+    def get_shifted_vrt(self, shiftDegree):
+        ''' Roll data in bands westwards or eastwards
+        
+        Create shiftVRT which references self. Modify georeference
+        of shiftVRT to account for the roll. Add as many bands as in self
+        but for each band create two complex sources: for western
+        and eastern parts. Keep self in shiftVRT.vrt
+        
+        Parameters
+        ----------
+        shiftDegree : float
+            rolling angle, how far east/west to roll
+
+        Returns
+        -------
+        shiftVRT : VRT object with rolled bands
+        
+        '''
+        # Copy self into self.vrt
+        shiftVRT = VRT(gdalDataset=self.dataset)
+        shiftVRT.vrt = self.copy()
+
+        if shiftDegree < 0:
+            shiftDegree += 360.0
+
+        geoTransform = shiftVRT.vrt.dataset.GetGeoTransform()
+        shiftPixel = int(shiftDegree / float(geoTransform[1]))
+        geoTransform = list(geoTransform)
+        geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
+        newEastBorder = geoTransform[0] + geoTransform[1] * shiftVRT.dataset.RasterXSize
+        if  newEastBorder > 360.0:
+            geoTransform[0] -= 360.0
+        shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
+        
+        # Add bands to self
+        for iBand in range(shiftVRT.vrt.dataset.RasterCount):
+            src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
+            dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
+            shiftVRT._create_band(src, dst)
+        
+        # read xml and create the node
+        XML = shiftVRT.read_xml()
+        node0 = Node.create(XML)
+
+        # divide into two bands and switch the bands
+        for i in range(len(node0.nodeList('VRTRasterBand'))):
+            # create i-th 'VRTRasterBand' node
+            node1 = node0.node('VRTRasterBand', i)
+            # modify the 1st band
+            shiftStr = str(shiftPixel)
+            sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', shiftStr)
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xSize', sizeStr)
+            node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
+            
+            # add the 2nd band
+            xmlSource = node1.xml()
+            dom = xdm.parseString(xmlSource)
+            cloneNode = Node.create(dom).node('ComplexSource')
+            cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
+            cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
+            cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
+            cloneNode.node('DstRect').replaceAttribute('xSize', shiftStr)
+
+            contents = node0.insert(cloneNode.xml(), 'VRTRasterBand', i)
+            # overwrite the modified contents and create a new node
+            dom = xdm.parseString(contents)
+            node0 = Node.create(dom)
+
+        # write down XML contents
+        shiftVRT.write_xml(str(node0.rawxml()))
+
+        return shiftVRT

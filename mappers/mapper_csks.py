@@ -20,7 +20,7 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create CSKS VRT '''
 
-        if fileName[0:4] != "CSKS":
+        if fileName.split('/')[-1][0:4] != "CSKS":
             raise AttributeError("COSMO-SKYMED BAD MAPPER")
 
         # Get coordinates
@@ -91,7 +91,6 @@ class Mapper(VRT):
 
         # Use only full size "original" datasets
         for i, elem in enumerate(fileNames):
-            band_number = i
             if fileNames[i][-3:] == 'SBI':
                 # Add real and imaginary raw counts as bands
                 src = {'SourceFilename': fileNames[i],
@@ -113,7 +112,6 @@ class Mapper(VRT):
                 self.dataset.FlushCache()
 
         for i, elem in enumerate(fileNames):
-            band_number = i
             if fileNames[i][-3:] == 'SBI':
                 # Calculate sigma0 scaling factor
                 Rref = float(gdalMetadata['Reference_Slant_Range'])

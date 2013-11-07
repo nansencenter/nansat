@@ -40,7 +40,7 @@ class Mapper(VRT):
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
         if product != 'RADARSAT-2':
             raise AttributeError("RADARSAT-2 BAD MAPPER")
-        
+
         # read product.xml
         productXmlName = os.path.join(fileName, 'product.xml')
         productXml = self.read_xml(productXmlName)
@@ -50,7 +50,7 @@ class Mapper(VRT):
         rs2_1 = rs2_0.node('sourceAttributes')
         rs2_2 = rs2_1.node('radarParameters')
         antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' else -90
-        rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')     
+        rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')
         passDirection = rs2_3['passDirection']
 
         # create empty VRT dataset with geolocation only
@@ -76,37 +76,34 @@ class Mapper(VRT):
                     if dtype==10:
                         # add intensity band
                         metaDict.append({
-                            'src': {
-                                'SourceFilename': 'RADARSAT_2_CALIB:SIGMA0:' + fileName + '/product.xml',
-                                'SourceBand': i,
-                                'DataType': dtype,
-                            },
-                            'dst': {
-                                'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-                                'PixelFunctionType': 'intensity',
-                                'SourceTransferType': \
-                                    gdal.GetDataTypeName(dtype),
-                                'suffix': suffix,
-                                'polarization': polString,
-                                'dataType': 6,
-                            }
+                            'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
+                                                        + fileName
+                                                        + '/product.xml'),
+                                    'SourceBand': i,
+                                    'DataType': dtype,
+                                    },
+                            'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                                    'PixelFunctionType': 'intensity',
+                                    'SourceTransferType': gdal.GetDataTypeName(dtype),
+                                    'suffix': suffix,
+                                    'polarization': polString,
+                                    'dataType': 6,
+                                    }
                         })
                         # modify suffix for adding the compled band below
                         suffix = polString+'_complex'
                     pol.append(polString)
                     metaDict.append({
-                        'src': {
-                            'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
-                                                    + fileName +
-                                                    '/product.xml'),
-                            'SourceBand': i,
-                            'DataType': dtype,
-                        },
-                        'dst': {
-                            'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-                            'suffix': suffix,
-                            'polarization': polString
-                        }
+                        'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
+                                                    + fileName
+                                                    + '/product.xml'),
+                                'SourceBand': i,
+                                'DataType': dtype,
+                                },
+                        'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                                'suffix': suffix,
+                                'polarization': polString
+                                }
                     })
             if dataset[1] == 'Beta Nought calibrated':
                 b0dataset = gdal.Open(dataset[0])

@@ -27,14 +27,10 @@ class Mapper(VRT):
             number of GCPs along each dimention
         '''
 
-        """
-        Title=
-        Title=HMODISA Level-2 Data
-        Title=MERIS Level-2 Data
-        """
-
-        titles = ['HMODISA Level-2 Data', 'MODISA Level-2 Data',
-                  'MERIS Level-2 Data']
+        titles = ['HMODISA Level-2 Data',
+                  'MODISA Level-2 Data',
+                  'MERIS Level-2 Data',
+                  'GOCI Level-2 Data']
         # should raise error in case of not obpg_l2 file
         title = gdalMetadata["Title"]
         assert title in titles, 'obpg_l2 BAD MAPPER'
@@ -48,8 +44,24 @@ class Mapper(VRT):
                 gdalSubDataset = gdal.Open(subDataset[0])
                 break
 
-        # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset)
+        if title is 'GOCI Level-2 Data':
+            # set GOCI projection parameters
+            rasterXSize = 5567
+            rasterYSize = 5685
+            proj4 = '+proj=ortho +lat_0=36 +lon_0=130 units=m  +ellps=WGS84 +datum=WGS84 +no_defs'
+            srs = osr.SpatialReference()
+            srs.ImportFromProj4(proj4)
+            projection = srs.ExportToWkt()
+            geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
+            
+            # create empty VRT dataset with georeference only
+            VRT.__init__(self, srcGeoTransform=geoTransform,
+                               srcProjection=projection,
+                               srcRasterXSize=rasterXSize,
+                               srcRasterYSize=rasterYSize)
+        else:
+            # create empty VRT dataset with geolocation only
+            VRT.__init__(self, gdalSubDataset)
 
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
@@ -161,6 +173,20 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
+        # set TIME
+        startYear = int(gdalMetadata['Start Year'])
+        startDay = int(gdalMetadata['Start Day'])
+        startMillisec = int(gdalMetadata['Start Millisec'])
+        startDate = datetime(startYear, 1, 1) + timedelta(startDay, 0, 0,
+                                                          startMillisec)
+        self._set_time(startDate)
+
+        
+        # skip adding georeference for GOCI
+        if title is 'GOCI Level-2 Data':
+            return
+
+        # add georeference
         geolocationMetadata = gdalSubDataset.GetMetadata('GEOLOCATION')
         xDatasetSource = geolocationMetadata['X_DATASET']
         xDatasetBand = geolocationMetadata['X_BAND']
@@ -194,6 +220,8 @@ class Mapper(VRT):
         else:
             self.remove_geolocationArray()
 
+        self.remove_geolocationArray()  
+        
         # estimate step of GCPs
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
         step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT))
@@ -220,10 +248,3 @@ class Mapper(VRT):
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
 
-        # set TIME
-        startYear = int(gdalMetadata['Start Year'])
-        startDay = int(gdalMetadata['Start Day'])
-        startMillisec = int(gdalMetadata['Start Millisec'])
-        startDate = datetime(startYear, 1, 1) + timedelta(startDay, 0, 0,
-                                                          startMillisec)
-        self._set_time(startDate)
