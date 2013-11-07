@@ -61,8 +61,8 @@ class Figure():
     CBAR_WIDTH = 0.8
     CBAR_LOCATION_X = 0.1
     CBAR_LOCATION_Y = 0.5
-    CBAR_LOCATION_ADJUST_X = 5
-    CBAR_LOCATION_ADJUST_Y = 3
+    CBTICK_LOC_ADJUST_X = 5
+    CBTICK_LOC_ADJUST_Y = 3
     CAPTION_LOCATION_X = 0.1
     CAPTION_LOCATION_Y = 0.3
     TITLE_LOCATION_X = 0.1
@@ -165,10 +165,10 @@ class Figure():
             0.1, colorbar offset X  relative to legend width
         CBAR_LOCATION_Y : float [0 1]
             0.5,  colorbar offset Y  relative to legend height
-        CBAR_LOCATION_ADJUST_X : int
-            5,  colorbar offset X, pixels
-        CBAR_LOCATION_ADJUST_Y : int
-            3,  colorbar offset Y, pixels
+        CBTICK_LOC_ADJUST_X : int
+            5,  colorbar tick label offset X, pixels
+        CBTICK_LOC_ADJUST_Y : int
+            3,  colorbar tick label offset Y, pixels
         CAPTION_LOCATION_X : float, [0 1]
             0.1, caption offset X relative to legend width
         CAPTION_LOCATION_Y : float, [0 1]
@@ -621,11 +621,11 @@ class Figure():
                                   (self.CBAR_LOCATION_Y +
                                    self.CBAR_HEIGHT)) - 1)
                 draw.line(box, fill=black)
-                box = (coordX - self.CBAR_LOCATION_ADJUST_X,
+                box = (coordX - self.CBTICK_LOC_ADJUST_X,
                        int(self.pilImgLegend.size[1] *
                            (self.CBAR_LOCATION_Y +
                             self.CBAR_HEIGHT)) +
-                       self.CBAR_LOCATION_ADJUST_Y)
+                       self.CBTICK_LOC_ADJUST_Y)
                 draw.text(box, scaleArray[iTick], fill=black, font=font)
 
         # draw longname and units
