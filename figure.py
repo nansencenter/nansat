@@ -63,10 +63,10 @@ class Figure():
     CBAR_LOCATION_Y = 0.5
     CBAR_LOCATION_ADJUST_X = 5
     CBAR_LOCATION_ADJUST_Y = 3
-    TEXT_LOCATION_X = 0.1
-    TEXT_LOCATION_Y = 0.1
-    NAME_LOCATION_X = 0.1
-    NAME_LOCATION_Y = 0.3
+    CAPTION_LOCATION_X = 0.1
+    CAPTION_LOCATION_Y = 0.3
+    TITLE_LOCATION_X = 0.1
+    TITLE_LOCATION_Y = 0.1
     DEFAULT_EXTENSION = '.png'
 
     palette = None
@@ -169,13 +169,13 @@ class Figure():
             5,  colorbar offset X, pixels
         CBAR_LOCATION_ADJUST_Y : int
             3,  colorbar offset Y, pixels
-        TEXT_LOCATION_X : float, [0 1]
+        CAPTION_LOCATION_X : float, [0 1]
             0.1, caption offset X relative to legend width
-        TEXT_LOCATION_Y : float, [0 1]
+        CAPTION_LOCATION_Y : float, [0 1]
             0.1, caption offset Y relative to legend height
-        NAME_LOCATION_X : float, [0 1]
+        TITLE_LOCATION_X : float, [0 1]
             0.1, title offset X relative to legend width
-        NAME_LOCATION_Y :
+        TITLE_LOCATION_Y :
             0.3, title  offset Y relative to legend height
         DEFAULT_EXTENSION : string
             '.png'
@@ -629,18 +629,18 @@ class Figure():
                 draw.text(box, scaleArray[iTick], fill=black, font=font)
 
         # draw longname and units
-        box = (int(self.pilImgLegend.size[0] * self.NAME_LOCATION_X),
-               int(self.pilImgLegend.size[1] * self.NAME_LOCATION_Y))
+        box = (int(self.pilImgLegend.size[0] * self.CAPTION_LOCATION_X),
+               int(self.pilImgLegend.size[1] * self.CAPTION_LOCATION_Y))
         draw.text(box, str(self.caption), fill=black, font=font)
 
         # if titleString is given, draw it
         if self.titleString != '':
             # write text each line onto pilImgCanvas
             textHeight = int(self.pilImgLegend.size[1] *
-                             self.TEXT_LOCATION_Y)
+                             self.TITLE_LOCATION_Y)
             for line in self.titleString.splitlines():
                 draw.text((int(self.pilImgLegend.size[0] *
-                               self.TEXT_LOCATION_X),
+                               self.TITLE_LOCATION_X),
                            textHeight), line, fill=black, font=font)
                 text = draw.textsize(line, font=font)
                 textHeight += text[1]
