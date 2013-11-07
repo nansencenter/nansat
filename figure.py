@@ -917,7 +917,8 @@ class Figure():
             if digit in frmts:
                 frmt = frmts[digit]
             else:
-                frmt = '%4.2e'
+                #frmt = '%4.2e'
+                frmt = '%.'+'%d'%abs(digit)+'f'
 
         return str(frmt % val)
 
