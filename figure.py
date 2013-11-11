@@ -621,7 +621,7 @@ class Figure():
                                   (self.CBAR_LOCATION_Y +
                                    self.CBAR_HEIGHT)) - 1)
                 draw.line(box, fill=black)
-                box = (coordX - self.CBTICK_LOC_ADJUST_X,
+                box = (coordX + self.CBTICK_LOC_ADJUST_X,
                        int(self.pilImgLegend.size[1] *
                            (self.CBAR_LOCATION_Y +
                             self.CBAR_HEIGHT)) +
