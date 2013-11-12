@@ -20,7 +20,7 @@ from nansat_tools import *
 
 # import nansat parts
 try:
-    from vrt import VRT, GeolocationArray
+    from vrt import VRT
 except ImportError:
     warnings.warn('Cannot import vrt!'
                   'domain will not work.')
@@ -943,8 +943,6 @@ class Domain():
             This method should probably also get a better name.
 
         '''
-        lon = [None] * 2
-        lat = [None] * 2
         mid_x = self.vrt.dataset.RasterXSize / 2
         mid_y1 = self.vrt.dataset.RasterYSize / 2 * 0.4
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
@@ -996,7 +994,8 @@ class Domain():
         lon, lat = self.get_geolocation_grids(reductionFactor)
         b = initial_bearing(lon[1:, :], lat[1:, :],
                             lon[:-1:, :], lat[:-1:, :])
-        b = np.vstack((b, b[-1, :]))  # Repeat last row once to match size of lon-lat grids
+        # Repeat last row once to match size of lon-lat grids
+        b = np.vstack((b, b[-1, :]))
         return b
 
     def shape(self):
@@ -1082,7 +1081,7 @@ class Domain():
         meanLat = latVec.mean()
 
         # generate template map (can be also tmerc)
-        f = plt.figure(num=1, figsize=figureSize, dpi=dpi)
+        plt.figure(num=1, figsize=figureSize, dpi=dpi)
         bmap = Basemap(projection=projection,
                        lat_0=meanLat, lon_0=meanLon,
                        llcrnrlon=minLon, llcrnrlat=minLat,

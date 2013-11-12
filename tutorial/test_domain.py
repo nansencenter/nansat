@@ -16,13 +16,9 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import savemat
-import inspect, os
+import os
 
-from nansat import Nansat, Domain, Mosaic
-#from mosaic import Mosaic
+from nansat import Domain
 
 # input and output file names
 from testio import testio
@@ -43,9 +39,10 @@ reference of a raster:
 '''
 
 # Create Domain object. It describes the desired grid of reprojected image:
-#    projection, resolution, size, etc. In this case it is geographic projection;
-#    -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
-d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", "-te 25 70 35 72 -ts 2000 2000")
+# projection, resolution, size, etc. In this case it is geographic projection;
+# -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
+d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+           "-te 25 70 35 72 -ts 2000 2000")
 d = Domain(4326, "-te 25 70 35 72 -ts 2000 2000")
 d.write_map(oFileName + '01_latlong_map.png')
 print 'Latlong Domain:', d, '\n'

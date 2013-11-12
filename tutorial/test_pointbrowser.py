@@ -16,8 +16,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import inspect, os
+import os
 
 from nansat import Nansat
 from nansat_tools import PointBrowser
@@ -53,7 +52,3 @@ for iPoint in points:
     print iPoint
 
 print '\n*** pointbrowser_test completed successfully.'
-
-
-
-

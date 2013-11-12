@@ -31,6 +31,7 @@ class Mapper(VRT, Globcolour):
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
+        #import pdb;pdb.set_trace()
         # test if input files is GLOBCOLOUR L3B
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
@@ -44,7 +45,7 @@ class Mapper(VRT, Globcolour):
         # define lon/lat grids for projected var
         if latlonGrid is None:
             latlonGrid = np.mgrid[90:-90:4320j,
-                                  -180:180:8640j].astype('float16')
+                                  -180:180:8640j].astype('float32')
             #latlonGrid = np.mgrid[80:50:900j, -10:30:1200j].astype('float16')
             #latlonGrid = np.mgrid[47:39:300j, 25:45:500j].astype('float32')
 

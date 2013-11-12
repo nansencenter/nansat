@@ -45,7 +45,7 @@ class Nansatshape():
         fileName : string
             location of a shape file
         layer : int or string
-            if int and a shapefile is given, it is a layer number which is read.
+            if int and a shapefile is given, it is a layer number to read
             if string, it is layer name to created or open
         srs : SpatialReference object
         wkbStyle : ogr.wkbPoint, ogr.wkbPoint25D
@@ -59,10 +59,10 @@ class Nansatshape():
         # create random name for the OGR dataset in memory
         allChars = ascii_uppercase + digits
         randomName = ''.join(choice(allChars) for x in range(10))
+        memDriver = ogr.GetDriverByName('Memory')
 
         # Create a empty datasource and layer in memory
         if fileName is None:
-            memDriver = ogr.GetDriverByName('Memory')
             self.datasource = memDriver.CreateDataSource(randomName)
             # create a new later
             if layer == 0:
@@ -113,14 +113,14 @@ class Nansatshape():
         for i, iFieldName in enumerate(values.dtype.names):
             # get data type for each field
             if str(values.dtype[i]).startswith('int'):
-                dtype = ogr.OFTInteger
+                fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTInteger)
             elif str(values.dtype[i]).startswith('float'):
-                dtype = ogr.OFTReal
+                fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTReal)
             else:
-                dtype = ogr.OFTString
+                fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTString)
+                fieldDefn.SetWidth(32)
+
             # create field
-            fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTString)
-            fieldDefn.SetWidth(32)
             self.layer.CreateField(fieldDefn)
 
         # set values to each feature

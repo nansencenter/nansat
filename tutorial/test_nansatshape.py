@@ -16,16 +16,11 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import inspect, os
+import os
 import numpy as np
 
-from nansat import Nansat, Domain, Nansatshape
+from nansat import Nansatshape
 from nansat.nansat_tools import latlongSRS
-
-try:
-    from osgeo import gdal, osr, ogr
-except:
-    import gdal, osr, ogr
 
 # input and output file names
 from testio import testio
@@ -46,12 +41,12 @@ Nansatshape support points
 nansatOGR = Nansatshape(srs=latlongSRS)
 
 # Create numpy array for coordinates of points
-coordinates = np.array([[5.3,  30.2, 116.4, 34.0], 
+coordinates = np.array([[5.3,  30.2, 116.4, 34.0],
                         [60.4, 60.0,  39.9, 18.4]])
 
 # Create structured numpy array for fieldValues
-fieldValues = np.zeros(4, dtype={'names':['id', 'name','random'],
-                                 'formats':['i4','a10','f8']})
+fieldValues = np.zeros(4, dtype={'names':   ['id', 'name', 'random'],
+                                 'formats': ['i4', 'a10',  'f8']})
 fieldValues['id'] = [1, 2, 3, 4]
 fieldValues['name'] = ['Bergen', 'St.Petersburg', 'Beijin', 'Cape Town']
 fieldValues['random'] = [1.3, 5.7, 11.13, 17.19]

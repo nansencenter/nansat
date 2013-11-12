@@ -546,10 +546,10 @@ class Nansat(Domain):
         If resize() is called without any parameters then previsous
         resizing/reprojection cancelled.
 
-        WARNING: It seems like the function is presently not working for complex
-        bands and pixelfunction bands - in case this kind of data is needed
-        it should be copied to a numpy array which is added as a band before
-        resizing.
+        WARNING: It seems like the function is presently not working for
+        complex bands and pixelfunction bands - in case this kind of data is
+        needed it should be copied to a numpy array which is added as a band
+        before resizing.
 
         Parameters
         -----------
@@ -635,10 +635,10 @@ class Nansat(Domain):
         If resize() is called without any parameters then previsous
         resizing/reprojection cancelled.
 
-        WARNING: It seems like the function is presently not working for complex
-        bands and pixelfunction bands - in case this kind of data is needed
-        it should be copied to a numpy array which is added as a band before
-        resizing.
+        WARNING: It seems like the function is presently not working for
+        complex bands and pixelfunction bands - in case this kind of data is
+        needed it should be copied to a numpy array which is added as a band
+        before resizing.
 
         Parameters
         -----------

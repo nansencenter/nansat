@@ -16,10 +16,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import savemat
-import inspect, os
+import os
 
 from nansat import Nansat, Domain, Nansatmap
 
@@ -49,7 +46,7 @@ u = n[1]; v = n[2]; w = n[3]
 # Create Nansatmap object from nansat (domain) object
 nMap = Nansatmap(n)
 # draw filled contour plot
-nMap.contourf(w, v=range(4,22,2))
+nMap.contourf(w, v=range(4, 22, 2))
 # draw black smooth contour plot with labels
 nMap.contour(w, smooth=True, fontsize=8, colors='k')
 # add colorbar
@@ -57,7 +54,7 @@ nMap.add_colorbar(fontsize=10)
 # add geocoordinates
 nMap.drawgrid()
 # save to a file
-nMap.save(oFileName+'01_contourf_contour.png', landmask=False)
+nMap.save(oFileName + '01_contourf_contour.png', landmask=False)
 
 # Create Nansatmap object from nansat (domain) object
 nMap = Nansatmap(n, resolution='l')
@@ -66,7 +63,7 @@ nMap.pcolormesh(w)
 # quiver plot
 nMap.quiver(v, u, quivectors=20)
 # save to a file
-nMap.save(oFileName+'02_pcolormesh_quiver.png')
+nMap.save(oFileName + '02_pcolormesh_quiver.png')
 
 # use Nansatmap for converting lon/lat into x/y
 # 1. Create domain over the area of interest in stereographic projection
@@ -81,4 +78,3 @@ x, y = nmap([0, 2, 4], [63, 64, 65])
 lon, lat = nmap(x, y, inverse=True)
 
 print '\n*** nansatmap_test completed successfully. Output files are found here:' + oFileName
-

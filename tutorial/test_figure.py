@@ -17,7 +17,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 import numpy as np
-import inspect, os
+import os
 
 from nansat import Nansat, Figure
 
@@ -51,7 +51,7 @@ fig = Figure(array)
 # Set minimum and maximum values
 fig.process(cmin=10, cmax=60)
 # Save the figure
-fig.save(oFileName+'01_clim.png')
+fig.save(oFileName + '01_clim.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
@@ -60,7 +60,7 @@ clim = fig.clim_from_histogram(ratio=1.0)
 # Set cmin and cmax values
 fig.process(cmin=clim[0], cmax=clim[1])
 # Save the figure
-fig.save(oFileName+'02_clim.png')
+fig.save(oFileName + '02_clim.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
@@ -68,11 +68,12 @@ fig = Figure(array)
 fig.process(cmin=10, cmax=60, legend=True, titleString='NANSAT figure_test',
          LEGEND_HEIGHT=0.3, fontSize=10)
 # Save the figure
-fig.save(oFileName+'03_title.png')
+fig.save(oFileName + '03_title.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
-# add logo to image to the lower left corner (make sure file is in the current folder)
+# add logo to image to the lower left corner
+# (make sure file is in the current folder)
 fig.process(cmin=10, cmax=60, logoFileName='nansat_logo_s.png',
             logoLocation=[10, -35], logoSize=[20, 20],
             legend=True, LEGEND_HEIGHT=0.3)
@@ -97,7 +98,7 @@ wm = n.watermask()
 wmArray = wm[1]
 # Compute min and max valuse from ratio
 clim = fig.clim_from_histogram(ratio=1.0)
-# Make figure with land overlay (gray color) and apply brightness gamma correction
+# Make figure with land overlay (gray) and apply brightness gamma correction
 fig.process(cmin=clim[0], cmax=clim[1], mask_array=wmArray,
                mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
 # save the fig
@@ -112,6 +113,6 @@ clim = fig.clim_from_histogram(ratio=0.9)
 # Set cmin and cmax values
 fig.process(cmin=clim[0], cmax=clim[1])
 # make RGB image from bands 1,2,3 with brightness correction
-fig.save(oFileName + '07_rgb.png', bands=[1,2,3])
+fig.save(oFileName + '07_rgb.png', bands=[1, 2, 3])
 
 print '\n***figure_test completed successfully. Output files are found here:' + oFileName

@@ -5,16 +5,6 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from copy import deepcopy
-import datetime
-import os.path
-import glob
-
-import gdal
-
-import numpy as np
-
-from vrt import VRT, GeolocationArray
-
 
 class Globcolour():
     ''' Mapper for GLOBCOLOR L3M products'''
