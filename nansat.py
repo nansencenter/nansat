@@ -532,7 +532,7 @@ class Nansat(Domain):
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
         
-        return newRasterYSize, newRasterXSize
+        return newRasterYSize, newRasterXSize, factor
         
 
     def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
@@ -581,7 +581,8 @@ class Nansat(Domain):
             return
 
         # get new shape
-        newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
+        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
+                                                              factor,
                                                               width,
                                                               height)
 
@@ -673,7 +674,8 @@ class Nansat(Domain):
             return
 
         # get new shape
-        newRasterYSize, newRasterXSize = self._get_new_rastersize(factor,
+        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
+                                                              factor,
                                                               width,
                                                               height)
 
