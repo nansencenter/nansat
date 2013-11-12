@@ -29,7 +29,8 @@ class Nansatshape():
         Nansatshape support points, but not line, ploygons, mupti-polygons
 
     '''
-    def __init__(self, fileName=None, layer=0, srs=None, wkbStyle=ogr.wkbPoint):
+    def __init__(self, fileName=None, layer=0, srs=None,
+                 wkbStyle=ogr.wkbPoint):
         '''Create Nansatshape object
 
         if <fileName> is given:
@@ -44,7 +45,7 @@ class Nansatshape():
         fileName : string
             location of a shape file
         layer : int or string
-            if int and a shapefile is given, it is a layer number which is read.
+            if int and a shapefile is given, it is a layer number to read
             if string, it is layer name to created or open
         srs : SpatialReference object
         wkbStyle : ogr.wkbPoint, ogr.wkbPoint25D
@@ -58,10 +59,11 @@ class Nansatshape():
         # create random name for the OGR dataset in memory
         allChars = ascii_uppercase + digits
         randomName = ''.join(choice(allChars) for x in range(10))
+        memDriver = ogr.GetDriverByName('Memory')
 
         # Create a empty datasource and layer in memory
         if fileName is None:
-            self.datasource = ogr.GetDriverByName('Memory').CreateDataSource(randomName)
+            self.datasource = memDriver.CreateDataSource(randomName)
             # create a new later
             if layer == 0:
                 layer = 'NansatLayer'
@@ -70,7 +72,7 @@ class Nansatshape():
         else:
             # Open shapefile and copy the datasource into memory
             ogrDs = ogr.Open(fileName)
-            self.datasource = ogr.GetDriverByName('Memory').CopyDataSource(ogrDs, randomName)
+            self.datasource = memDriver.CopyDataSource(ogrDs, randomName)
             ogrDs.Destroy()
             # Set a layer from the datasource
             if type(layer) is int:
@@ -108,17 +110,17 @@ class Nansatshape():
             return
 
         # create fields from columns of values
-        for i, iFieldName in enumerate (values.dtype.names):
+        for i, iFieldName in enumerate(values.dtype.names):
             # get data type for each field
             if str(values.dtype[i]).startswith('int'):
-                dtype = ogr.OFTInteger
+                fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTInteger)
             elif str(values.dtype[i]).startswith('float'):
-                dtype = ogr.OFTReal
+                fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTReal)
             else:
-                dtype = ogr.OFTString
+                fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTString)
+                fieldDefn.SetWidth(32)
+
             # create field
-            fieldDefn = ogr.FieldDefn(iFieldName, ogr.OFTString)
-            fieldDefn.SetWidth(32)
             self.layer.CreateField(fieldDefn)
 
         # set values to each feature
@@ -128,7 +130,7 @@ class Nansatshape():
             geometry = ogr.Geometry(type=geomType)
             # set a coordinates of the geometry
             geometry.SetPoint_2D(0, float(coordinates[0, iFeature]),
-                                    float(coordinates[1, iFeature]))
+                                 float(coordinates[1, iFeature]))
             # set srs
             srs = self.layer.GetSpatialRef()
             geometry.AssignSpatialReference(srs)
@@ -194,7 +196,7 @@ class Nansatshape():
             points = tuple(points)
         return points, latlon
 
-
     def export(self, fileName):
         '''Save as ESRI shape-file'''
-        ogr.GetDriverByName("ESRI Shapefile").CopyDataSource(self.datasource, fileName)
+        shapeDriver = ogr.GetDriverByName("ESRI Shapefile")
+        shapeDriver.CopyDataSource(self.datasource, fileName)

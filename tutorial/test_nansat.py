@@ -18,10 +18,9 @@
 
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-import inspect, os
+import os
 
 from nansat import Nansat, Domain
-from mosaic import Mosaic
 
 # input and output file names
 from testio import testio
@@ -82,7 +81,8 @@ print '1st Band Metadata:', n.get_metadata(bandID=1), '\n'
 # add a band from file (copy the 2nd band to the end (4th band)
 n.add_band(fileName=n.fileName, bandID=2)
 # add a band from numpy array (copy the 1st band to the end (5th band))
-n.add_band(array=n[1], parameters={'name':'Name1', 'wkt':'copy from the 1st band array'})
+n.add_band(array=n[1], parameters={'name': 'Name1',
+                                   'info':  'copy from the 1st band array'})
 # print band list
 n.list_bands()
 # get GDAL raster band (2nd band)
@@ -135,12 +135,21 @@ n.reproject(d, 2)
 n.write_figure(oFileName + '08_pro.png', clim='hist')
 
 # Get transect of the 1st and 2nd bands corresponding to the given points
-values, lonlat, pixlinCoord =n.get_transect(points=((29.287, 71.153), (29.275, 71.145), (29.210, 71.154)), transect=False, bandList=[1, 2])
+values, lonlat, pixlinCoord = n.get_transect(
+                                    points=((29.287, 71.153),
+                                            (29.275, 71.145),
+                                            (29.210, 71.154)),
+                                    transect=False,
+                                    bandList=[1, 2])
 # print the results
 print '1stBandVal  2ndBandVal       pix/lin         lon/lat '
 for i in range (len(values[0])):
-    print '%6d %10d %13.2f /%6.2f  %7.2f /%6.2f' %(values[0][i], values[1][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlat[0][i], lonlat[1][i])
+    print '%6d %10d %13.2f /%6.2f  %7.2f /%6.2f' % (values[0][i],
+                                                    values[1][i],
+                                                    pixlinCoord[0][i],
+                                                    pixlinCoord[1][i],
+                                                    lonlat[0][i],
+                                                    lonlat[1][i])
 print ''
 
 print '\n***nansat_test completed successfully. Output files are found here:' + oFileName
-

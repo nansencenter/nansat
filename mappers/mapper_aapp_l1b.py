@@ -147,20 +147,21 @@ class Mapper(VRT):
         srcRasterYSize = numCalibratedScanLines
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
-        self.RawGeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
+        self.RawGeolocVRT = VRT(srcRasterXSize=51,
+                                srcRasterYSize=srcRasterYSize)
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
-            RawGeolocMetaDict.\
-                append({'src': {'SourceFilename': fileName,
-                                'SourceBand': 0,
-                                'SourceType': "RawRasterBand",
-                                'DataType': gdal.GDT_Int32,
-                                'ImageOffset': (headerLength + 640 +
-                                                (lonlatNo - 1) * 4),
-                                'PixelOffset': 8,
-                                'LineOffset': recordLength,
-                                'ByteOrder': 'LSB'},
-                        'dst': {}})
+            RawGeolocMetaDict.append(
+                {'src': {'SourceFilename': fileName,
+                         'SourceBand': 0,
+                         'SourceType': "RawRasterBand",
+                         'DataType': gdal.GDT_Int32,
+                         'ImageOffset': (headerLength + 640 +
+                                         (lonlatNo - 1) * 4),
+                         'PixelOffset': 8,
+                         'LineOffset': recordLength,
+                         'ByteOrder': 'LSB'},
+                 'dst': {}})
 
         self.RawGeolocVRT._create_bands(RawGeolocMetaDict)
 
@@ -168,13 +169,13 @@ class Mapper(VRT):
         self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
-            GeolocMetaDict.\
-                append({'src': {'SourceFilename': self.RawGeolocVRT.fileName,
-                                'SourceBand': lonlatNo,
-                                'ScaleRatio': 0.0001,
-                                'ScaleOffset': 0,
-                                'DataType': gdal.GDT_Int32},
-                        'dst': {}})
+            GeolocMetaDict.append(
+                {'src': {'SourceFilename': self.RawGeolocVRT.fileName,
+                         'SourceBand': lonlatNo,
+                         'ScaleRatio': 0.0001,
+                         'ScaleOffset': 0,
+                         'DataType': gdal.GDT_Int32},
+                 'dst': {}})
 
         self.GeolocVRT._create_bands(GeolocMetaDict)
 

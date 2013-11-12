@@ -79,16 +79,19 @@ class Mapper(VRT):
                         src = {'SourceFilename': fileName,
                                'SourceBand': sourceBands}
                         # set scale ratio and scale offset
-                        scaleRatio = bandMetadata.\
-                            get('ScaleRatio', bandMetadata.
-                                get('scale', bandMetadata.
-                                    get('scale_factor', '')))
+                        scaleRatio = bandMetadata.get(
+                            'ScaleRatio',
+                            bandMetadata.get(
+                                'scale',
+                                bandMetadata.get('scale_factor', '')))
                         if len(scaleRatio) > 0:
                             src['ScaleRatio'] = scaleRatio
-                        scaleOffset = bandMetadata.\
-                            get('ScaleOffset', bandMetadata.
-                                get('offset', bandMetadata.
-                                    get('add_offset', '')))
+                        scaleOffset = bandMetadata.get(
+                            'ScaleOffset',
+                            bandMetadata.get(
+                                'offset',
+                                bandMetadata.get(
+                                    'add_offset', '')))
                         if len(scaleOffset) > 0:
                             src['ScaleOffset'] = scaleOffset
                         # sate DataType
@@ -131,40 +134,39 @@ class Mapper(VRT):
         # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
         # using pixelfunctions
         rmBands = []
-        for iBand in range(self.dataset.RasterCount):
-            iBandName = self.dataset.GetRasterBand(iBand+1).\
-                GetMetadataItem('name')
+        for iBandNo in range(self.dataset.RasterCount):
+            iBand = self.dataset.GetRasterBand(iBandNo + 1)
+            iBandName = iBand.GetMetadataItem('name')
             # find real data band
             if iBandName.find("_real") != -1:
-                realBand = iBand
-                realDtype = self.dataset.GetRasterBand(realBand+1).\
-                    GetMetadataItem('DataType')
+                realBandNo = iBandNo
+                realBand = self.dataset.GetRasterBand(realBandNo + 1)
+                realDtype = realBand.GetMetadataItem('DataType')
                 bandName = iBandName.replace(iBandName.split('_')[-1],
                                              '')[0:-1]
-                for jBand in range(self.dataset.RasterCount):
-                    jBandName = self.dataset.GetRasterBand(jBand+1).\
-                        GetMetadataItem('name')
+                for jBandNo in range(self.dataset.RasterCount):
+                    jBand = self.dataset.GetRasterBand(jBandNo + 1)
+                    jBandName = jBand.GetMetadataItem('name')
                     # find an imaginary data band corresponding to the real
                     # data band and create complex data band from the bands
                     if jBandName.find(bandName+'_imag') != -1:
-                        imagBand = jBand
-                        imagDtype = self.dataset.GetRasterBand(imagBand+1).\
-                            GetMetadataItem('DataType')
-                        dst = self.dataset.GetRasterBand(imagBand+1).\
-                            GetMetadata()
+                        imagBandNo = jBandNo
+                        imagBand = self.dataset.GetRasterBand(imagBandNo + 1)
+                        imagDtype = imagBand.GetMetadataItem('DataType')
+                        dst = imagBand.GetMetadata()
                         dst['name'] = bandName
                         dst['PixelFunctionType'] = 'ComplexData'
                         dst['dataType'] = 10
-                        src = [{'SourceFilename': fileNames[realBand],
+                        src = [{'SourceFilename': fileNames[realBandNo],
                                 'SourceBand':  1,
                                 'DataType': realDtype},
-                               {'SourceFilename': fileNames[imagBand],
+                               {'SourceFilename': fileNames[imagBandNo],
                                 'SourceBand': 1,
                                 'DataType': imagDtype}]
                         self._create_band(src, dst)
                         self.dataset.FlushCache()
-                        rmBands.append(realBand+1)
-                        rmBands.append(imagBand+1)
+                        rmBands.append(realBandNo + 1)
+                        rmBands.append(imagBandNo + 1)
 
         # Delete real and imaginary bands
         if len(rmBands) != 0:

@@ -246,10 +246,9 @@ class Mapper(VRT):
                     bands = [bands[11]]  # Only ch12 needs to be modified
 
             for band in bands:
-                band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].\
-                    setAttribute("xSize", newSrcXSize)
-                band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0].\
-                    setAttribute("ySize", newSrcYSize)
+                node1 = band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0]
+                node1.setAttribute("xSize", newSrcXSize)
+                node1.setAttribute("ySize", newSrcYSize)
             self.write_xml(str(node0.rawxml()))
 
         # Set global metadata

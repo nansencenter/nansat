@@ -49,7 +49,10 @@ class Mapper(VRT):
         rs2_0 = Node.create(productXml)
         rs2_1 = rs2_0.node('sourceAttributes')
         rs2_2 = rs2_1.node('radarParameters')
-        antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' else -90
+        if rs2_2['antennaPointing'].lower() == 'right':
+            antennaPointing = 90
+        else:
+            antennaPointing = -90
         rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')
         passDirection = rs2_3['passDirection']
 
@@ -65,52 +68,47 @@ class Mapper(VRT):
             if dataset[1] == 'Sigma Nought calibrated':
                 s0dataset = gdal.Open(dataset[0])
                 s0datasetName = dataset[0][:]
-                s0datasetPol = s0dataset.GetRasterBand(1).\
-                    GetMetadata()['POLARIMETRIC_INTERP']
+                band = s0dataset.GetRasterBand(1)
+                s0datasetPol = band.GetMetadata()['POLARIMETRIC_INTERP']
                 for i in range(1, s0dataset.RasterCount+1):
-                    polString = s0dataset.GetRasterBand(i).\
-                        GetMetadata()['POLARIMETRIC_INTERP']
+                    iBand = s0dataset.GetRasterBand(i)
+                    polString = iBand.GetMetadata()['POLARIMETRIC_INTERP']
                     suffix = polString
                     # The nansat data will be complex if the SAR data is of type 10
-                    dtype = s0dataset.GetRasterBand(i).DataType
-                    if dtype==10:
+                    dtype = iBand.DataType
+                    if dtype == 10:
                         # add intensity band
-                        metaDict.append({
-                            'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
+                        metaDict.append(
+                            {'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
                                                         + fileName
                                                         + '/product.xml'),
-                                    'SourceBand': i,
-                                    'DataType': dtype,
-                                    },
-                            'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-                                    'PixelFunctionType': 'intensity',
-                                    'SourceTransferType': gdal.GetDataTypeName(dtype),
-                                    'suffix': suffix,
-                                    'polarization': polString,
-                                    'dataType': 6,
-                                    }
-                        })
+                                     'SourceBand': i,
+                                     'DataType': dtype},
+                             'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                                     'PixelFunctionType': 'intensity',
+                                     'SourceTransferType': gdal.GetDataTypeName(dtype),
+                                     'suffix': suffix,
+                                     'polarization': polString,
+                                     'dataType': 6}})
                         # modify suffix for adding the compled band below
                         suffix = polString+'_complex'
                     pol.append(polString)
-                    metaDict.append({
-                        'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
+                    metaDict.append(
+                        {'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
                                                     + fileName
                                                     + '/product.xml'),
-                                'SourceBand': i,
-                                'DataType': dtype,
-                                },
-                        'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-                                'suffix': suffix,
-                                'polarization': polString
-                                }
-                    })
+                                 'SourceBand': i,
+                                 'DataType': dtype},
+                         'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                                 'suffix': suffix,
+                                 'polarization': polString}})
+
             if dataset[1] == 'Beta Nought calibrated':
                 b0dataset = gdal.Open(dataset[0])
                 b0datasetName = dataset[0][:]
                 for j in range(1, b0dataset.RasterCount+1):
-                    polString = b0dataset.GetRasterBand(j).\
-                        GetMetadata()['POLARIMETRIC_INTERP']
+                    jBand = b0dataset.GetRasterBand(j)
+                    polString = jBand.GetMetadata()['POLARIMETRIC_INTERP']
                     if polString == s0datasetPol:
                         b0datasetBand = j
 
@@ -119,27 +117,19 @@ class Mapper(VRT):
 
         # Add derived band (incidence angle) calculated using pixel function
         # "BetaSigmaToIncidence":
-        src = [
-            {
-                'SourceFilename': b0datasetName,
+        src = [{'SourceFilename': b0datasetName,
                 'SourceBand':  b0datasetBand,
-                'DataType': dtype
-            },
-            {
-                'SourceFilename': s0datasetName,
+                'DataType': dtype},
+               {'SourceFilename': s0datasetName,
                 'SourceBand': 1,
-                'DataType': dtype
-            }
-        ]
-        dst = {
-            'wkv': 'angle_of_incidence',
-            'PixelFunctionType': 'BetaSigmaToIncidence',
-            'SourceTransferType': gdal.GetDataTypeName(dtype),
-            '_FillValue': -10000,   # NB: this is also hard-coded in
-                                    #     pixelfunctions.c
-            'dataType': 6,
-            'name': 'incidence_angle'
-        }
+                'DataType': dtype}]
+        dst = {'wkv': 'angle_of_incidence',
+               'PixelFunctionType': 'BetaSigmaToIncidence',
+               'SourceTransferType': gdal.GetDataTypeName(dtype),
+               '_FillValue': -10000,   # NB: this is also hard-coded in
+                                       #     pixelfunctions.c
+               'dataType': 6,
+               'name': 'incidence_angle'}
 
         self._create_band(src, dst)
         self.dataset.FlushCache()
@@ -168,9 +158,12 @@ class Mapper(VRT):
         ############################################
         # Add SAR look direction to metadata domain
         ############################################
-        self.dataset.SetMetadataItem('SAR_center_look_direction', str(mod(
-            Domain(ds=gdalDataset).upwards_azimuth_direction( orbit_direction =
-            str(passDirection) ) + antennaPointing, 360)))
+        self.dataset.SetMetadataItem(
+            'SAR_center_look_direction',
+            str(mod(
+                Domain(ds=gdalDataset).upwards_azimuth_direction(
+                    orbit_direction=str(passDirection)) + antennaPointing,
+                360)))
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']

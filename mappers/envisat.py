@@ -24,8 +24,7 @@ class Envisat():
     # specific name of geolocation and offsets,
     # dataTypes and units of each dataset
     allADSParams = {
-        'MER_': {
-                 'name': 'DS_NAME="Tie points ADS              "\n',
+        'MER_': {'name': 'DS_NAME="Tie points ADS              "\n',
                  'width': 71,
                  'list': {"latitude"                 : {"offset": 13         , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
                           "longitude"                : {"offset": 13+284*1   , "dataType": gdal.GDT_Int32 , "units": "(10)^-6 deg"},
@@ -42,10 +41,8 @@ class Envisat():
                           "mean sea level pressure"  : {"offset": 13+284*10+142*2 , "dataType": gdal.GDT_UInt16, "units": "hPa"},
                           "total ozone"              : {"offset": 13+284*10+142*3 , "dataType": gdal.GDT_UInt16, "units": "DU"},
                           "relative humidity"        : {"offset": 13+284*10+142*4 , "dataType": gdal.GDT_UInt16, "units": "%"}
-                        }
-                },
-        'ASA_': {
-                 'name': 'DS_NAME="GEOLOCATION GRID ADS        "\n',
+                          }},
+        'ASA_': {'name': 'DS_NAME="GEOLOCATION GRID ADS        "\n',
                  'width' : 11,
                  'list': {"num_lines"                   : {"offset": 13                 , "dataType": gdal.GDT_Int16  , "units": ""},
                           "first_line_samp_numbers"     : {"offset": 25+11*4*0          , "dataType": gdal.GDT_Float32, "units": ""},
@@ -57,10 +54,8 @@ class Envisat():
                           "last_line_slant_range_times" : {"offset": 25+11*4*5+34+11*4*1, "dataType": gdal.GDT_Float32, "units": "ns"},
                           "last_line_incidence_angle"   : {"offset": 25+11*4*5+34+11*4*2, "dataType": gdal.GDT_Float32, "units": "deg"},
                           "last_line_lats"              : {"offset": 25+11*4*5+34+11*4*3, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
-                          "last_line_longs"             : {"offset": 25+11*4*5+34+11*4*4, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
-                        }
-                }
-                    }
+                          "last_line_longs"             : {"offset": 25+11*4*5+34+11*4*4, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"}
+                          }}}
     # map: GDAL TYPES ==> struct format strings
     structFmt = {gdal.GDT_Int16: ">h",
                  gdal.GDT_UInt16: ">H",
@@ -241,7 +236,7 @@ class Envisat():
         # create VRT from the array
         adsVrt = VRT(array=array)
         # add "name" and "units" to band metadata
-        bandMetadata = {"name" : adsName, "units" : adsParams['units']}
+        bandMetadata = {"name": adsName, "units": adsParams['units']}
         adsVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)
 
         return adsVrt

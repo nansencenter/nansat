@@ -16,7 +16,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 from nansat_tools import *
-from matplotlib import colors
 
 
 class Nansatmap(Basemap):
@@ -202,8 +201,8 @@ class Nansatmap(Basemap):
                 weights = np.ones((self.convolve_weightSize,
                                    self.convolve_weightSize))
                 center = (self.convolve_weightSize - 1) / 2
-                for i in range(-(center), center+1, 1):
-                    for j in range(-(center), center+1, 1):
+                for i in range(- (center), center + 1, 1):
+                    for j in range(- (center), center + 1, 1):
                         weights[i][j] /= pow(2.0, max(abs(i), abs(j)))
                 self.convolve_weights = weights
             odata = ndimage.convolve(idata,
@@ -331,7 +330,7 @@ class Nansatmap(Basemap):
 
         '''
         self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
-        self.colorbar = len(self.mpl)-1
+        self.colorbar = len(self.mpl) - 1
 
     def pcolormesh(self, data, validValues=None, **kwargs):
         '''Make a pseudo-color plot over the map
@@ -356,7 +355,7 @@ class Nansatmap(Basemap):
         self._create_xy_grids()
         self.mpl.append(Basemap.pcolormesh(self, self.x, self.y, data,
                                            **kwargs))
-        self.colorbar = len(self.mpl)-1
+        self.colorbar = len(self.mpl) - 1
 
     def quiver(self, dataX, dataY, quivectors=30, **kwargs):
         '''Draw quiver plots
@@ -381,8 +380,8 @@ class Nansatmap(Basemap):
         dataX = np.ma.array(dataX, mask=np.isnan(dataX))
         dataY = np.ma.array(dataY, mask=np.isnan(dataY))
         # subset grids for quiver plot
-        step0 = dataX.shape[0]/quivectors
-        step1 = dataX.shape[1]/quivectors
+        step0 = dataX.shape[0] / quivectors
+        step1 = dataX.shape[1] / quivectors
         dataX2 = dataX[::step0, ::step1]
         dataY2 = dataY[::step0, ::step1]
         self._create_lonlat_grids()

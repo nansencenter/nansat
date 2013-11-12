@@ -24,16 +24,21 @@ class Mapper(VRT):
             raise AttributeError("COSMO-SKYMED BAD MAPPER")
 
         # Get coordinates
-        bottom_left_lon = float(gdalMetadata['Estimated_Bottom_Left_Geodetic_Coordinates'].split(' ')[1])
-        bottom_left_lat = float(gdalMetadata['Estimated_Bottom_Left_Geodetic_Coordinates'].split(' ')[0])
-        bottom_right_lon = float(gdalMetadata['Estimated_Bottom_Right_Geodetic_Coordinates'].split(' ')[1])
-        bottom_right_lat = float(gdalMetadata['Estimated_Bottom_Right_Geodetic_Coordinates'].split(' ')[0])
-        top_left_lon = float(gdalMetadata['Estimated_Top_Left_Geodetic_Coordinates'].split(' ')[1])
-        top_left_lat = float(gdalMetadata['Estimated_Top_Left_Geodetic_Coordinates'].split(' ')[0])
-        top_right_lon = float(gdalMetadata['Estimated_Top_Right_Geodetic_Coordinates'].split(' ')[1])
-        top_right_lat = float(gdalMetadata['Estimated_Top_Right_Geodetic_Coordinates'].split(' ')[0])
-        center_lon = float(gdalMetadata['Scene_Centre_Geodetic_Coordinates'].split(' ')[1])
-        center_lat = float(gdalMetadata['Scene_Centre_Geodetic_Coordinates'].split(' ')[0])
+        metadata = gdalMetadata['Estimated_Bottom_Left_Geodetic_Coordinates']
+        bottom_left_lon = float(metadata.split(' ')[1])
+        bottom_left_lat = float(metadata.split(' ')[0])
+        metadata = gdalMetadata['Estimated_Bottom_Right_Geodetic_Coordinates']
+        bottom_right_lon = float(metadata.split(' ')[1])
+        bottom_right_lat = float(metadata.split(' ')[0])
+        metadata = gdalMetadata['Estimated_Top_Left_Geodetic_Coordinates']
+        top_left_lon = float(metdata.split(' ')[1])
+        top_left_lat = float(metdata.split(' ')[0])
+        metadata = gdalMetadata['Estimated_Top_Right_Geodetic_Coordinates']
+        top_right_lon = float(metdata.split(' ')[1])
+        top_right_lat = float(metdata.split(' ')[0])
+        metadata = gdalMetadata['Scene_Centre_Geodetic_Coordinates']
+        center_lon = float(metdata.split(' ')[1])
+        center_lat = float(metdata.split(' ')[0])
 
         # Get sub-datasets
         subDatasets = gdalDataset.GetSubDatasets()
@@ -54,20 +59,34 @@ class Mapper(VRT):
         # generate list of GCPs
         gcps = []
         # create GCP with X,Y,Z(?),pixel,line from lat/lon matrices
-        gcp = gdal.GCP(float(bottom_left_lon), float(bottom_left_lat), 0, 0, 0)
+        gcp = gdal.GCP(float(bottom_left_lon),
+                       float(bottom_left_lat), 0, 0, 0)
         gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 0, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(bottom_right_lon), float(bottom_right_lat), 0, subDataset.RasterXSize, 0)
+        gcp = gdal.GCP(float(bottom_right_lon),
+                       float(bottom_right_lat),
+                       0,
+                       subDataset.RasterXSize,
+                       0)
         gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 1, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(top_left_lon), float(top_left_lat), 0, 0, subDataset.RasterYSize)
+        gcp = gdal.GCP(float(top_left_lon),
+                       float(top_left_lat),
+                       0,
+                       0,
+                       subDataset.RasterYSize)
         gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 2, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(top_right_lon), float(top_right_lat), 0,
-                       subDataset.RasterXSize, subDataset.RasterYSize)
+        gcp = gdal.GCP(float(top_right_lon),
+                       float(top_right_lat),
+                       0,
+                       subDataset.RasterXSize,
+                       subDataset.RasterYSize)
         gcps.append(gcp)
         #self.logger.debug('%d %d %d %f %f', 3, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
-        gcp = gdal.GCP(float(center_lon), float(center_lat), 0,
+        gcp = gdal.GCP(float(center_lon),
+                       float(center_lat),
+                       0,
                        int(np.round(subDataset.RasterXSize/2.)),
                        int(round(subDataset.RasterYSize/2.)))
         gcps.append(gcp)
@@ -79,7 +98,8 @@ class Mapper(VRT):
         latlongSRSWKT = latlongSRS.ExportToWkt()
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, srcRasterXSize=subDataset.RasterXSize,
+        VRT.__init__(self,
+                     srcRasterXSize=subDataset.RasterXSize,
                      srcRasterYSize=subDataset.RasterYSize,
                      srcGCPs=gcps,
                      srcGCPProjection=latlongSRSWKT)
@@ -118,7 +138,8 @@ class Mapper(VRT):
                 Rexp = float(gdalMetadata['Reference_Slant_Range_Exponent'])
                 alphaRef = float(gdalMetadata['Reference_Incidence_Angle'])
                 F = float(gdalMetadata['Rescaling_Factor'])
-                K = float(gdalMetadata[fileNames[i][-7:-4] + '_Calibration_Constant'])
+                K = float(gdalMetadata[fileNames[i][-7:-4] +
+                          '_Calibration_Constant'])
                 Ftot = Rref**(2.*Rexp)
                 Ftot *= np.sin(alphaRef*np.pi / 180.0)
                 Ftot /= F**2.
@@ -136,8 +157,10 @@ class Mapper(VRT):
                         'ScaleRatio': np.sqrt(Ftot)}]
                 dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                        'PixelFunctionType': 'RawcountsToSigma0_CosmoSkymed_SBI',
-                       'polarisation': gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
-                       'name': 'sigma0_%s' % gdalMetadata[fileNames[i][-7:-4]+'_Polarisation'],
+                       'polarisation': gdalMetadata[fileNames[i][-7:-4] +
+                                                    '_Polarisation'],
+                       'name': 'sigma0_%s' % gdalMetadata[fileNames[i][-7:-4] +
+                                                          '_Polarisation'],
                        'SatelliteID': gdalMetadata['Satellite_ID'],
                        'dataType': gdal.GDT_Float32}
                        #'pass': gdalMetadata[''] - I can't find this in the metadata...

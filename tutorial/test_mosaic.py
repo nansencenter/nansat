@@ -16,20 +16,17 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import savemat
-import inspect, os
-import glob
+import os
 import datetime as dt
 
-from nansat import Nansat, Domain, Mosaic
+from nansat import Domain, Mosaic
 #from mosaic import Mosaic
 
 # input and output file names
 from testio import testio
 iPath, oPath = testio()
-iFileNames = [os.path.join(iPath, 'gcps.tif'), os.path.join(iPath, 'stere.tif')]
+iFileNames = [os.path.join(iPath, 'gcps.tif'),
+              os.path.join(iPath, 'stere.tif')]
 print 'Input files: ', iFileNames
 oFileName = os.path.join(oPath, 'output_mosaic_')
 print 'Output file:', oFileName
@@ -45,7 +42,6 @@ mosaicing methods:
 
 # Create target domain
 domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
-#domain = Domain('+proj=longlat +datum=WGS84 +no_defs ' , '-lle 27 70 31 72 -ts 1400 1300')
 
 # A. Perform averaging of several files
 # 1. Create destination Nansat object with desired projection
@@ -55,8 +51,11 @@ nMosaic.average(iFileNames, bands=['L_645', 'L_555', 'L_469'])
 # 3. Get mask of valid pixels
 mask = nMosaic['mask']
 # 4. Output averaged data using the mask
-nMosaic.write_figure(fileName=oFileName + '.png', bands=['L_645', 'L_555', 'L_469'], clim='hist',
-                        mask_array=mask, mask_lut={0:[128,128,128]})
+nMosaic.write_figure(fileName=oFileName + '.png',
+                     bands=['L_645', 'L_555', 'L_469'],
+                     clim='hist',
+                     mask_array=mask,
+                     mask_lut={0: [128,128,128]})
 # 5. Get values of standard deviation from averaging of input files
 L_469_std = nMosaic['L_469_std']
 
@@ -76,4 +75,3 @@ period = [dt.datetime(2011, 8, 15, 0, 0), dt.datetime(2011, 8, 15, 23, 59)]
 nMosaic.average(iFileNames, period=period)
 
 print '\n*** mosaic_test completed successfully. Output files are found here:' + oFileName
-
