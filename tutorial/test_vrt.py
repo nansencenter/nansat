@@ -18,10 +18,11 @@ iFileName = os.path.join(iPath, 'gcps.tif')
 oFileName = os.path.join(oPath, 'tutor_')
 
 # Open an input satellite image with Nansat
-n = Nansat(iFileName)
+n = Nansat(iFileName, logLevel=10)
 
 # List bands and georeference of the object
 print n
+n.vrt.export('vrt0.vrt')
 
 # Write picture with map of the file location
 n.write_map(oFileName + 'map.png')
@@ -35,24 +36,18 @@ n.write_figure(oFileName + '.png', clim='hist')
 # 3. Write the transfromed image into RGB picture
 dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                   "-te 27 70.2 31 71.5 -ts 500 500")
-
+                  
 n.reproject(dLatlong)
 n.write_figure(oFileName + 'pro.png', bands=[1, 2, 3], clim=[0, 100])
 
-# Export projected satelite image into NetCDF format
-n.export(oFileName + '.nc')
+n.vrt.export('vrt00.vrt')
+n.vrt.vrt.export('vrt01.vrt')
 
-# Collect values from interactively drawn transect
-# 1. draw transect interactively
-# 2. plot the values
-values, lonlat, pixlinCoord = n.get_transect()
-plt.plot(lonlat[0], values[0], '.-'); plt.show()
+dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                  "-te 28 70.5 30 71 -ts 500 500")
+n.reproject(dLatlong)
+n.write_figure(oFileName + 'pro.png', bands=[1, 2, 3], clim=[0, 100])
 
-# run tests of other nansat components
-import test_domain
-import test_nansat
-import test_figure
-import test_nansatmap
-import test_nansatshape
-import test_mosaic
-import test_pointbrowser
+n.vrt.export('vrt000.vrt')
+n.vrt.vrt.export('vrt001.vrt')
+n.vrt.vrt.vrt.export('vrt002.vrt')

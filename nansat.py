@@ -174,13 +174,9 @@ class Nansat(Domain):
         # create self.raw from a file using mapper or...
         if fileName != '':
             # Make original VRT object with mapping of variables
-            self.raw = self._get_mapper(mapperName, **kwargs)
-            # Set current VRT object
-            self.vrt = self.raw.copy()
+            self.vrt = self._get_mapper(mapperName, **kwargs)
         # ...create using array, domain, and parameters
         else:
-            # Get vrt from domain
-            self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # Set current VRT object
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             if array is not None:
@@ -315,15 +311,15 @@ class Nansat(Domain):
         for pKey in parameters:
             p2add[pKey] = parameters[pKey]
 
+        # MAYBE ADD ONE MORE VRT ???
+        
         # add the array band into self.vrt and get bandName
-        bandName = self.raw._create_band({'SourceFilename': vrt2add.fileName,
+        bandName = self.vrt._create_band({'SourceFilename': vrt2add.fileName,
                                           'SourceBand': bandNumber}, p2add)
         # add VRT with the band to the dictionary
         # (not to loose the VRT object and VRT file in memory)
         self.addedBands[bandName] = vrt2add
-        self.raw.dataset.FlushCache()  # required after adding bands
-        # copy raw VRT object to the current vrt
-        self.vrt = self.raw.copy()
+        self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
         ''' Make a dictionary with all bands metadata
@@ -782,9 +778,6 @@ class Nansat(Domain):
         ---------
         http://www.gdal.org/gdalwarp.html
         '''
-        # dereproject
-        self.vrt = self.raw.copy()
-
         # if no domain: quit
         if dstDomain is None:
             return
@@ -798,7 +791,7 @@ class Nansat(Domain):
             dstCorners = dstDomain.get_corners()
             if min(dstCorners[0]) < 0:
                 # shift
-                self.raw = self.raw.get_shifted_vrt(-180)
+                self.vrt = self.vrt.get_shifted_vrt(-180)
 
         # get projection of destination dataset
         dstSRS = dstDomain.vrt.dataset.GetProjection()
@@ -826,7 +819,7 @@ class Nansat(Domain):
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # create Warped VRT
-        warpedVRT = self.raw.get_warped_vrt(dstSRS=dstSRS,
+        self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
                                             dstGCPs=dstGCPs,
                                             eResampleAlg=eResampleAlg,
                                             xSize=xSize, ySize=ySize,
@@ -835,12 +828,10 @@ class Nansat(Domain):
                                             WorkingDataType=WorkingDataType,
                                             tps=tps, **kwargs)
 
-        # set current VRT object
-        self.vrt = warpedVRT
-        # add metadata from RAW to VRT (except fileName)
+        # add metadata from VRT.VRT to VRT (except fileName)
         vrtFileName = self.vrt.dataset.GetMetadataItem('fileName')
-        rawMetadata = self.raw.dataset.GetMetadata()
-        self.vrt.dataset.SetMetadata(rawMetadata)
+        vrtvrtMetadata = self.vrt.vrt.dataset.GetMetadata()
+        self.vrt.dataset.SetMetadata(vrtvrtMetadata)
         self.vrt.dataset.SetMetadataItem('fileName', vrtFileName)
 
     def watermask(self, mod44path=None, dstDomain=None):

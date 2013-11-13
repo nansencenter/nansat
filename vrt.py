@@ -778,6 +778,16 @@ class VRT():
             # shallow copy (only geometadata)
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
+        
+        # iterative copy of self.vrt
+        print 'copy vrt.vrt'
+        if self.vrt is not None:
+            vrt.vrt = self.vrt.copy()
+            vrtXML = vrt.read_xml()
+            node0 = Node.create(vrtXML)
+            node0.node('SourceDataset').value = str(vrt.vrt.fileName)
+            vrt.write_xml(str(node0.rawxml()))
+            
         return vrt
 
     def add_geolocationArray(self, geolocationArray=None):
@@ -1162,9 +1172,12 @@ class VRT():
             warpedVRT.add_geolocationArray(dstGeolocationArray)
             warpedVRT.dataset.SetProjection('')
 
+        # Copy self into self.vrt
+        warpedVRT.vrt = self.copy()
+
         # replace the reference from srcVRT to self
         self.logger.debug('replace the reference from srcVRT to self')
-        rawFileName = str(os.path.basename(self.fileName))
+        rawFileName = str(os.path.basename(warpedVRT.vrt.fileName))
         warpedXML = str(warpedVRT.read_xml())
         node0 = Node.create(warpedXML)
         node1 = node0.node('GDALWarpOptions')
