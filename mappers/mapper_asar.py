@@ -143,7 +143,10 @@ class Mapper(VRT, Envisat):
         # longer domains, especially at high latitudes, the azimuth direction
         # may vary a lot over the domain, and using the center angle will be a
         # coarse approximation.
+        passingDirection = gdalMetadata['SPH_PASS']
+        print '**', gdalMetadata['SPH_PASS']
         self.dataset.SetMetadataItem('SAR_center_look_direction',
                                      str(np.mod(Domain(ds=gdalDataset).
-                                         upwards_azimuth_direction() + 90,
-                                                360)))
+                                         upwards_azimuth_direction(
+                                         orbit_direction = str(passingDirection)) + 90,
+                                         360)))

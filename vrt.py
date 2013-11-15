@@ -135,8 +135,8 @@ class VRT():
                 <ScaleOffset>$ScaleOffset</ScaleOffset>
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
-                <SrcRect xOff="0" yOff="0" xSize="$srcXSize" ySize="$srcYSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$dstXSize" ySize="$dstYSize"/>
+                <SrcRect xOff="$srcXOff" yOff="$srcYOff" xSize="$srcXSize" ySize="$srcYSize"/>
+                <DstRect xOff="$dstXOff" yOff="$dstYOff" xSize="$dstXSize" ySize="$dstYSize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -457,8 +457,12 @@ class VRT():
                            ScaleOffset=src['ScaleOffset'],
                            ScaleRatio=src['ScaleRatio'],
                            LUT=src['LUT'],
+                           srcXOff=0,
+                           srcYOff=0,
                            srcXSize=srcDs.RasterXSize,
                            srcYSize=srcDs.RasterYSize,
+                           dstXOff=0,
+                           dstYOff=0,
                            dstXSize=srcDs.RasterXSize,
                            dstYSize=srcDs.RasterYSize,
                            )
@@ -816,7 +820,7 @@ class VRT():
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
-    def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
+    def get_resized_warped_vrt(self, xSize, ySize, use_geolocationArray=False,
                 use_gcps=False, use_geotransform=False,
                 eResampleAlg=1, **kwargs):
 
@@ -1402,16 +1406,17 @@ class VRT():
         node0.replaceAttribute('rasterYSize', str(dstYSize))
 
         # replace source band data to masked band data
-        for iNode in node0.nodeList('VRTRasterBand'):
-            node1 = iNode.node('ComplexSource').node('SrcRect')
-            node1.replaceAttribute('xOff', str(xOff))
-            node1.replaceAttribute('yOff', str(yOff))
-            node1.replaceAttribute('xSize', str(dstXSize))
-            node1.replaceAttribute('ySize', str(dstYSize))
-            node1 = iNode.node('ComplexSource').node('DstRect')
-            node1.replaceAttribute('xSize', str(dstXSize))
-            node1.replaceAttribute('ySize', str(dstYSize))
-
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for iNode2 in iNode1.nodeList('ComplexSource'):
+                #node1 = iNode.node('ComplexSource').node('SrcRect')
+                node3 = iNode2.node('SrcRect')
+                node3.replaceAttribute('xOff', str(xOff))
+                node3.replaceAttribute('yOff', str(yOff))
+                node3.replaceAttribute('xSize', str(dstXSize))
+                node3.replaceAttribute('ySize', str(dstYSize))
+                node3 = iNode2.node('DstRect')
+                node3.replaceAttribute('xSize', str(dstXSize))
+                node3.replaceAttribute('ySize', str(dstYSize))
         # create contents for mask band
         contents = self.ComplexSource.\
             substitute(SourceType='SimpleSource',
@@ -1421,27 +1426,30 @@ class VRT():
                        ScaleOffset='',
                        ScaleRatio='',
                        LUT='',
+                       srcXOff=xOff,
+                       srcYOff=yOff,
                        srcXSize=srcXSize,
                        srcYSize=srcYSize,
                        dstXSize=dstXSize,
-                       dstYSize=dstYSize)
+                       dstYSize=dstYSize,
+                       dstXOff=0,
+                       dstYOff=0)
 
         # add mask band contents to xml
         contents = node0.node('MaskBand').node('VRTRasterBand').insert(contents)
         node0.node('MaskBand').delNode('VRTRasterBand')
         contents = node0.insert(contents, 'MaskBand')
-
         # write contents
         self.write_xml(contents)
 
     def get_shifted_vrt(self, shiftDegree):
         ''' Roll data in bands westwards or eastwards
-        
+
         Create shiftVRT which references self. Modify georeference
         of shiftVRT to account for the roll. Add as many bands as in self
         but for each band create two complex sources: for western
         and eastern parts. Keep self in shiftVRT.vrt
-        
+
         Parameters
         ----------
         shiftDegree : float
@@ -1450,7 +1458,7 @@ class VRT():
         Returns
         -------
         shiftVRT : VRT object with rolled bands
-        
+
         '''
         # Copy self into self.vrt
         shiftVRT = VRT(gdalDataset=self.dataset)
@@ -1467,13 +1475,13 @@ class VRT():
         if  newEastBorder > 360.0:
             geoTransform[0] -= 360.0
         shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
-        
+
         # Add bands to self
         for iBand in range(shiftVRT.vrt.dataset.RasterCount):
             src = {'SourceFilename': shiftVRT.vrt.fileName, 'SourceBand': iBand + 1}
             dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
             shiftVRT._create_band(src, dst)
-        
+
         # read xml and create the node
         XML = shiftVRT.read_xml()
         node0 = Node.create(XML)
@@ -1488,7 +1496,7 @@ class VRT():
             node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', shiftStr)
             node1.node('ComplexSource').node('DstRect').replaceAttribute('xSize', sizeStr)
             node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
-            
+
             # add the 2nd band
             xmlSource = node1.xml()
             dom = xdm.parseString(xmlSource)
@@ -1507,3 +1515,251 @@ class VRT():
         shiftVRT.write_xml(str(node0.rawxml()))
 
         return shiftVRT
+
+    def get_resized_vrt(self, factor=1.0, width=None, height=None, eResampleAlg=-1):
+        ''' Create resized vrt
+
+        Create resized VRT by different algorithms.
+        if eResampleAlg=-1, source elements ('ComplexSource' or 'SimpleSource')
+        in the XML is overwritten as 'AveragedSource'.
+        if eResampleAlg=-1 and the dataType is complex, two array VRTs,
+        real and imaginary vrt, are created and pixelfunctions('ComplexData')
+        is applied.
+
+        if eResampleAlg!=-1, create a new VRT with projection and new size.
+        array from each band is read and img.thumbnail() is applied
+        for resizing the array. Then craete a new arryVRT and
+        add it to the new VRT object.
+
+        Parameters
+        ----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+        eResampleAlg : int (GDALResampleAlg), optional
+                -1 : Average,
+                0 : NearestNeighbour,
+                1 : BILINEAR,
+                2 : BICUBIC
+                3 : ANTIALIAS
+
+        Returns
+        -------
+        resizedVRT : resized VRT object
+
+        '''
+        # get current shape
+        rasterXSize = float(self.dataset.RasterXSize)
+        rasterYSize = float(self.dataset.RasterYSize)
+
+        # estimate factor if width or height is given
+        if width is not None:
+            factor = float(width) / rasterXSize
+        if height is not None:
+            factor = float(height) / rasterYSize
+
+        # calculate new size
+        newRasterYSize = int(rasterYSize * factor)
+        newRasterXSize = int(rasterXSize * factor)
+
+        self.logger.info('New size/factor: (%f, %f)/%f' %
+                        (newRasterXSize, newRasterYSize, factor))
+
+        #check "FillValue" is included
+        nanVal = False
+        for iBand in range(1, self.dataset.RasterCount+1):
+            if not nanVal:
+                band = self.dataset.GetRasterBand(iBand)
+                metadata = band.GetMetadata()
+                if '_FillValue' in metadata.keys():
+                    fillVal = float(metadata['_FillValue'])
+                    if fillVal in band.ReadAsArray():
+                        nanVal = True
+
+        # if algorithm is -1 (average), modify VRT
+        if not nanVal and (eResampleAlg == -1 or eResampleAlg == 0):
+        #if (eResampleAlg == -1 or eResampleAlg == 0):
+
+            resizedVRT = VRT(gdalDataset=self.dataset)
+            # set metadata
+            srcMetadata = self.dataset.GetMetadata()
+            resizedVRT.dataset.SetMetadata(srcMetadata)
+            resizedVRT.bands = []
+
+            for iBand in range(1, self.dataset.RasterCount + 1):
+                # get band metadata. if it uses pixelfunction, delete it
+                band = self.dataset.GetRasterBand(iBand)
+                dstMetadata = band.GetMetadata()
+
+                # if the band is Pixelfunctions, create VRT from array
+                if band.DataType == 10:
+                    array = band.ReadAsArray()
+                    for array in [array.real, array.imag]:
+                        resizedVRT.bands.append(VRT(array=array))
+
+                    # create metadata Dictionary
+                    dstMetadata['PixelFunctionType'] = 'ComplexData'
+                    dstMetadata['SourceTransferType'] = gdal.GetDataTypeName(10)
+                    metaDict = [{'src': [{'SourceFilename': resizedVRT.bands[-2].fileName,
+                                          'SourceBand': 1,
+                                          'DataType': 6},
+                                         {'SourceFilename': resizedVRT.bands[-1].fileName,
+                                          'SourceBand': 1,
+                                          'DataType': 6}],
+                                 'dst': dstMetadata}]
+
+                # if not pixelfunctions, copy the sourceFilename
+                else:
+                    # create metadata Dictionary
+                    fileName = dstMetadata.pop('SourceFilename')
+                    bandNum = dstMetadata.pop('SourceBand')
+                    metaDict = [{'src': {
+                                 'SourceFilename': fileName,
+                                 'SourceBand': int(bandNum)},
+                                 'dst': dstMetadata}]
+
+                # add band to resizedVRT
+                resizedVRT._create_bands(metaDict)
+
+            # Get XML content from VRT-file
+            vrtXML = resizedVRT.read_xml()
+            node0 = Node.create(vrtXML)
+
+            # replace rasterXSize in <VRTDataset>
+            node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+            node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+
+            # replace xSize in <DstRect> of each source
+            for iNode1 in node0.nodeList('VRTRasterBand'):
+                for sourceName in ['ComplexSource', 'SimpleSource']:
+                    for iNode2 in iNode1.nodeList(sourceName):
+                        iNodeDstRect = iNode2.node('DstRect')
+                        iNodeDstRect.replaceAttribute('xSize',
+                                                      str(newRasterXSize))
+                        iNodeDstRect.replaceAttribute('ySize',
+                                                      str(newRasterYSize))
+
+                # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
+                if eResampleAlg == -1:
+                    # overwrite 'ComplexSource' to 'AveragedSource'
+                    iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                    iNode1.replaceTag('SimpleSource', 'AveragedSource')
+
+            # Write the modified elemements into VRT
+            resizedVRT.write_xml(str(node0.rawxml()))
+        # if algorithm is 0-3 ...
+        else:
+            eResampleAlg = {0:'NEAREST',
+                            1:'BILINEAR',
+                            2:'BICUBIC',
+                            3:'ANTIALIAS'}.get(eResampleAlg, 'AVERAGE')
+
+            # create an empty VRT
+            resizedVRT = VRT(srcProjection=self.dataset.GetProjection(),
+                             srcRasterXSize=newRasterXSize,
+                             srcRasterYSize=newRasterYSize)
+            # set metadata
+            srcMetadata = self.dataset.GetMetadata()
+            resizedVRT.dataset.SetMetadata(srcMetadata)
+            resizedVRT.bands = []
+
+            for iBand in range(1, self.dataset.RasterCount + 1):
+                # get array from each band
+                array = self.dataset.GetRasterBand(iBand).ReadAsArray()
+                dataType = array.dtype
+                # if complex data, create two arrays for real and imaginary numbers
+                if str(dataType).startswith('complex'):
+                    arrays = [array.real, array.imag]
+                else:
+                    arrays = [array]
+
+                addColumnNum = None
+                addRowNum = None
+                for i, iArray in enumerate(arrays):
+                    if eResampleAlg == 'AVERAGE':
+                        shape = (newRasterYSize, newRasterXSize)
+
+                        # calculate how many raw / column should be added
+                        # to be multiples of int(1 / factor)
+                        if addColumnNum is None:
+                            addColumnNum = (iArray.shape[1] / shape[1]
+                                            - iArray.shape[1] % shape[1])
+                        if addRowNum is None:
+                            addRowNum = (iArray.shape[0] / shape[0]
+                                         - iArray.shape[0] % shape[0])
+
+                        # append the last columns and raws so that
+                        # the size of array becoms multiples of int(1 / factor)
+                        if addColumnNum != 0:
+                            print iArray.shape[0], addColumnNum
+                            ones = np.ones((iArray.shape[0], addColumnNum))
+                            addOnes = ones * iArray[:, -1].reshape(iArray.shape[0], 1)
+                            iArray = np.append(iArray, addOnes, 1)
+                            print iArray.shape
+
+                        if addRowNum != 0:
+                            ones = np.ones((addRowNum, iArray.shape[1]))
+                            print ones.shape
+                            iArray = np.append(iArray, ones * iArray[-1], 0)
+                            print iArray.shape
+
+                        # resize the array with average
+                        shp = (shape[0]+1,
+                               iArray.shape[0] // (shape[0]+1),
+                               shape[1]+1,
+                               iArray.shape[1] // (shape[1]+1))
+                        arrays[i] = iArray.reshape(shp).mean(-1).mean(1)
+                        print arrays[i].shape
+                        print '----'
+                    else:
+                        # create image from the array and appply algorithm
+                        img = Image.fromarray(np.float32(iArray))
+                        img.thumbnail((newRasterXSize, newRasterYSize),
+                                       getattr(Image, eResampleAlg))
+                        # convert image to numpy array
+                        arrays[i] = np.asarray(img)
+
+                # if original data type is complex,
+                # create complex array from two arrays with real numbers
+                if str(dataType).startswith('complex'):
+                    arrays[0] = np.vectorize(complex)(arrays[0], arrays[1])
+
+                # create VRT from array and append it to resizedVRT.
+                resizedVRT.bands.append(VRT(array=arrays[0].astype(dataType)))
+
+                # get band metadata. if it uses pixelfunction, delete it
+                dstMetadata = self.dataset.GetRasterBand(iBand).GetMetadata()
+                if 'PixelFunctionType' in dstMetadata:
+                    dstMetadata.pop('PixelFunctionType')
+                # create metadata Dictionary
+                metaDict = [{'src': {
+                             'SourceFilename': resizedVRT.bands[-1].fileName,
+                             'SourceBand': 1},
+                             'dst': dstMetadata}]
+                # add band to resizedVRT
+                resizedVRT._create_bands(metaDict)
+
+        # if GDPs are given, create resized GCPs
+        GCPs = self.dataset.GetGCPs()
+        if len(GCPs) > 0:
+            resizedGCPs = []
+            projection = self.dataset.GetGCPProjection()
+            for g in GCPs:
+                resizedGCPs.append(gdal.GCP(g.GCPX, g.GCPY, 0,
+                                            g.GCPPixel * factor,
+                                            g.GCPLine * factor))
+            # set resized GDPs to resizedVRT
+            resizedVRT.dataset.SetGCPs(resizedGCPs, projection)
+
+        # if geoTransrform is given, set resized one
+        geoTransform = list(self.dataset.GetGeoTransform())
+        if geoTransform != [0, 1, 0, 0, 0, 1]:
+            geoTransform[1] /= factor
+            geoTransform[5] /= factor
+            resizedVRT.dataset.SetGeoTransform(tuple(geoTransform))
+
+        return resizedVRT
+
+
+
