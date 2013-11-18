@@ -52,7 +52,7 @@ class Mapper(VRT):
         antennaPointing = 90 if rs2_2['antennaPointing'].lower() =='right' else -90
         rs2_3 = rs2_1.node('orbitAndAttitude').node('orbitInformation')
         passDirection = rs2_3['passDirection']
-        print 'RS2mapper 55 : ', passDirection
+
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
 
