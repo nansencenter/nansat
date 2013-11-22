@@ -31,31 +31,35 @@ class Mapper(VRT):
         srcProjection = osr.SpatialReference()
         srcProjection.ImportFromProj4(srcProj4)
         srcProjection = srcProjection.ExportToWkt()
-        srcGeotransform = (geolocArray[2], geolocArray[4], 0, geolocArray[3], 0, geolocArray[5])
+        srcGeotransform = (geolocArray[2], geolocArray[4], 0,
+                           geolocArray[3], 0, geolocArray[5])
         lon = matFile['longitude']
         #lat = matFile['latitude']
         srcRasterYSize, srcRasterXSize = lon.shape
         # create VRT from lat/lon
-        #VRT.__init__(self, lon=lon, lat=lat)
-        VRT.__init__(self, srcGeoTransform=srcGeotransform,
-                            srcProjection=srcProjection,
-                            srcRasterXSize=srcRasterXSize,
-                            srcRasterYSize=srcRasterYSize,
-                            **kwargs)
+        # VRT.__init__(self, lon=lon, lat=lat)
+        VRT.__init__(self,
+                     srcGeoTransform=srcGeotransform,
+                     srcProjection=srcProjection,
+                     srcRasterXSize=srcRasterXSize,
+                     srcRasterYSize=srcRasterYSize)
 
         # add the following variables
         varNames = ['SSS1', 'SSS2', 'SSS3', 'SST',
                     'Sigma_SSS1', 'Sigma_SSS2', 'Sigma_SSS3',
-                    'Control_Flags_1', 'Control_Flags_2', 'Control_Flags_3', 'Control_Flags_4',
-                    'Science_Flags_1', 'Science_Flags_2', 'Science_Flags_3', 'Science_Flags_4']
+                    'Control_Flags_1', 'Control_Flags_2',
+                    'Control_Flags_3', 'Control_Flags_4',
+                    'Science_Flags_1', 'Science_Flags_2',
+                    'Science_Flags_3', 'Science_Flags_4']
         self.varVRTs = {}
         metaDict = []
         for varName in varNames:
             var = matFile[varName]
             self.varVRTs[varName] = VRT(array=var)
-            metaDict.append(
-            {'src': {'SourceFilename': self.varVRTs[varName].fileName, 'sourceBand':  1},
-             'dst': {'name': varName}})
+            metaDict.append({'src': {'SourceFilename':
+                                     self.varVRTs[varName].fileName,
+                                     'sourceBand': 1},
+                            'dst': {'name': varName}})
 
         # create mask
         cloudBits = [2, 3, 4, 5, 6]
@@ -68,13 +72,15 @@ class Mapper(VRT):
         mask[matFile['Sigma_SSS3'] > maxSigma] = 1
         for cloudBit in cloudBits:
             for cfi in range(1, 5):
-                bitMap = np.bitwise_and(matFile['Control_Flags_%d' % cfi], np.power(2, cloudBit))
+                bitMap = np.bitwise_and(matFile['Control_Flags_%d' % cfi],
+                                        np.power(2, cloudBit))
                 mask[bitMap > 0] = 1
 
         self.varVRTs['mask'] = VRT(array=mask)
-        metaDict.append(
-        {'src': {'SourceFilename': self.varVRTs['mask'].fileName, 'sourceBand':  1},
-         'dst': {'name': 'mask'}})
+        metaDict.append({'src': {'SourceFilename':
+                                 self.varVRTs['mask'].fileName,
+                                 'sourceBand': 1},
+                        'dst': {'name': 'mask'}})
 
         self.logger.debug('metaDict: %s' % metaDict)
 

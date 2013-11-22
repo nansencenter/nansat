@@ -17,6 +17,7 @@
 
 from nansat_tools import *
 
+
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
 
@@ -26,6 +27,57 @@ class Figure():
     convert to uint8, append legend, save to a file
     '''
 
+    # default values of ALL params of Figure
+    cmin = [0.]
+    cmax = [1.]
+    gamma = 2.
+    subsetArraySize = 100000
+    numOfColor = 250
+    cmapName = 'jet'
+    ratio = 1.0
+    numOfTicks = 5
+    titleString = ''
+    caption = ''
+    fontSize = 12
+    logarithm = False
+    legend = False
+    mask_array = None
+    mask_lut = None
+
+    logoFileName = None
+    logoLocation = [0, 0]
+    logoSize = None
+
+    latGrid = None
+    lonGrid = None
+    nGridLines = 10
+    latlonLabels = 0
+
+    transparency = None
+
+    LEGEND_HEIGHT = 0.1
+    CBAR_HEIGHTMIN = 5
+    CBAR_HEIGHT = 0.15
+    CBAR_WIDTH = 0.8
+    CBAR_LOCATION_X = 0.1
+    CBAR_LOCATION_Y = 0.5
+    CBTICK_LOC_ADJUST_X = 5
+    CBTICK_LOC_ADJUST_Y = 3
+    CAPTION_LOCATION_X = 0.1
+    CAPTION_LOCATION_Y = 0.3
+    TITLE_LOCATION_X = 0.1
+    TITLE_LOCATION_Y = 0.1
+    DEFAULT_EXTENSION = '.png'
+
+    palette = None
+    pilImg = None
+    pilImgLegend = None
+
+    extensionList = ['png', 'PNG', 'tif', 'TIF', 'bmp',
+                     'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
+
+    _cmapName = 'jet'
+
     def __init__(self, nparray, **kwargs):
         ''' Set attributes
 
@@ -33,15 +85,104 @@ class Figure():
         -----------
         array : numpy array (2D or 3D)
             dataset from Nansat
-        kwargs : dictionary
-            parameters that are used for all operations.
-            See Nansat.write_figure()
+
+        cmin : number (int ot float) or [number, number, number]
+            0, minimum value of varibale in the matrix to be shown
+        cmax : number (int ot float) or [number, number, number]
+            1, minimum value of varibale in the matrix to be shown
+        gamma : float, >0
+            2, coefficient for tone curve udjustment
+        subsetArraySize : int
+            100000, size of the subset array which is used to get histogram
+        numOfColor : int
+            250, number of colors for use of the palette.
+            254th is black and 255th is white.
+        cmapName : string
+            'jet', name of Matplotlib colormaps
+            see --> http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+        ratio : float, [0 1]
+            1.0, ratio of pixels which are used to write the figure
+        numOfTicks : int
+            5, number of ticks on a colorbar
+        titleString : string
+            '', title of legend (1st line)
+        caption : string
+            '', caption of the legend (2nd line, e.g. long name and units)
+        fontSize : int
+            12, size of the font of title, caption and ticks
+        logarithm : boolean, defult = False
+            If True, tone curve is used to convert pixel values.
+            If False, linear.
+        legend : boolean, default = False
+            if True, information as textString, colorbar, longName and
+            units are added in the figure.
+        mask_array : 2D numpy array, int, the shape should be equal
+            array.shape. If given this array is used for masking land,
+            clouds, etc on the output image. Value of the array are
+            indeces. LUT from mask_lut is used for coloring upon this
+            indeces.
+        mask_lut : dictionary
+            Look-Up-Table with colors for masking land, clouds etc. Used
+            tgether with mask_array:
+            {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
+            index 0 - will have black color
+                  1 - dark gray
+                  2 - light gray
+                  3 - blue
+        logoFileName : string
+            name of the file with logo
+        logoLocation : list of two int, default = [0,0]
+            X and Y offset of the image
+            If positive - offset is from left, upper edge
+            If Negative - from right, lower edge
+            Offset is calculated from the entire image legend inclusive
+        logoSize : list of two int
+            desired X,Y size of logo. If None - original size is used
+        latGrid : numpy array
+            full size array with latitudes. For adding lat/lon grid lines
+        lonGrid : numpy array
+            full size array with longitudes. For adding lat/lon grid lines
+        latlonGridSpacing : int
+            number of lat/lon grid lines to show
+        latlonLabels : int
+            number of lat/lon labels to show along each side.
+        transparency : int
+            transparency of the image background(mask), set for PIL alpha
+            mask in Figure.save()
+        default : None
+
+        Advanced parameters
+        --------------------
+        LEGEND_HEIGHT : float, [0 1]
+            0.1, legend height relative to image height
+        CBAR_HEIGHTMIN : int
+            5, minimum colorbar height, pixels
+        CBAR_HEIGHT : float, [0 1]
+            0.15,  colorbar height relative to image height
+        CBAR_WIDTH : float [0 1]
+            0.8, colorbar width  relative to legend width
+        CBAR_LOCATION_X : float [0 1]
+            0.1, colorbar offset X  relative to legend width
+        CBAR_LOCATION_Y : float [0 1]
+            0.5,  colorbar offset Y  relative to legend height
+        CBTICK_LOC_ADJUST_X : int
+            5,  colorbar tick label offset X, pixels
+        CBTICK_LOC_ADJUST_Y : int
+            3,  colorbar tick label offset Y, pixels
+        CAPTION_LOCATION_X : float, [0 1]
+            0.1, caption offset X relative to legend width
+        CAPTION_LOCATION_Y : float, [0 1]
+            0.1, caption offset Y relative to legend height
+        TITLE_LOCATION_X : float, [0 1]
+            0.1, title offset X relative to legend width
+        TITLE_LOCATION_Y :
+            0.3, title  offset Y relative to legend height
+        DEFAULT_EXTENSION : string
+            '.png'
+        --------------------------------------------------
 
         Modifies
         ---------
-        self.d : dictionary
-            all default parameters are set here. If kwargs1 or **kwargs are
-            given, the default parameters are modified
         self.sizeX, self.sizeY : int
             width and height of the image
         self.pilImg : PIL image
@@ -70,61 +211,8 @@ class Figure():
         self.width = self.array.shape[2]
         self.height = self.array.shape[1]
 
-        # set default values of ALL params of Figure
-        self.d = {}
-        self.d['cmin'] = [0.]
-        self.d['cmax'] = [1.]
-        self.d['gamma'] = 2.
-        self.d['subsetArraySize'] = 100000
-        self.d['numOfColor'] = 250
-        self.d['cmapName'] = 'jet'
-        self.d['ratio'] = 1.0
-        self.d['numOfTicks'] = 5
-        self.d['titleString'] = ''
-        self.d['caption'] = ''
-        self.d['fontSize'] = 12
-        self.d['logarithm'] = False
-        self.d['legend'] = False
-        self.d['mask_array'] = None
-        self.d['mask_lut'] = None
-
-        self.d['logoFileName'] = None
-        self.d['logoLocation'] = [0, 0]
-        self.d['logoSize'] = None
-
-        self.d['latGrid'] = None
-        self.d['lonGrid'] = None
-        self.d['nGridLines'] = 10
-        self.d['latlonLabels'] = 0
-
-        self.d['transparency'] = None
-
-        self.d['LEGEND_HEIGHT'] = 0.1
-        self.d['CBAR_HEIGHTMIN'] = 5
-        self.d['CBAR_HEIGHT'] = 0.15
-        self.d['CBAR_WIDTH'] = 0.8
-        self.d['CBAR_LOCATION_X'] = 0.1
-        self.d['CBAR_LOCATION_Y'] = 0.5
-        self.d['CBAR_LOCATION_ADJUST_X'] = 5
-        self.d['CBAR_LOCATION_ADJUST_Y'] = 3
-        self.d['TEXT_LOCATION_X'] = 0.1
-        self.d['TEXT_LOCATION_Y'] = 0.1
-        self.d['NAME_LOCATION_X'] = 0.1
-        self.d['NAME_LOCATION_Y'] = 0.3
-        self.d['DEFAULT_EXTENSION'] = '.png'
-
-        # default values which are set when input values are not correct
-        self._cmapName = 'jet'
-
         # modify the default values using input values
         self._set_defaults(kwargs)
-
-        self.palette = None
-        self.pilImg = None
-        self.pilImgLegend = None
-
-        self.extensionList = ['png', 'PNG', 'tif', 'TIF', 'bmp',
-                              'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG']
 
         # set fonts for Legend
         self.fontFileName = os.path.join(os.path.dirname(
@@ -152,11 +240,11 @@ class Figure():
         # apply logarithm/gamme correction to pixel values
         for iBand in range(self.array.shape[0]):
             self.array[iBand, :, :] = (
-                (np.power((self.array[iBand, :, :] - self.d['cmin'][iBand]) /
-                         (self.d['cmax'][iBand] - self.d['cmin'][iBand]),
-                          (1.0 / self.d['gamma']))) *
-                (self.d['cmax'][iBand] - self.d['cmin'][iBand]) +
-                self.d['cmin'][iBand])
+                (np.power((self.array[iBand, :, :] - self.cmin[iBand]) /
+                         (self.cmax[iBand] - self.cmin[iBand]),
+                          (1.0 / self.gamma))) *
+                (self.cmax[iBand] - self.cmin[iBand]) +
+                self.cmin[iBand])
 
     def apply_mask(self, **kwargs):
         '''Apply mask for coloring land, clouds, etc
@@ -181,15 +269,15 @@ class Figure():
         self._set_defaults(kwargs)
 
         # get values of free indeces in the palette
-        availIndeces = range(self.d['numOfColor'], 255 - 1)
+        availIndeces = range(self.numOfColor, 255 - 1)
 
         # for all lut color indeces
-        for i, maskValue in enumerate(self.d['mask_lut']):
+        for i, maskValue in enumerate(self.mask_lut):
             if i < len(availIndeces):
                 # get color for that index
-                maskColor = self.d['mask_lut'][maskValue]
+                maskColor = self.mask_lut[maskValue]
                 # get indeces for that index
-                maskIndeces = self.d['mask_array'] == maskValue
+                maskIndeces = self.mask_array == maskValue
                 # exchange colors
                 if self.array.shape[0] == 1:
                     # in a indexed image
@@ -222,9 +310,9 @@ class Figure():
         '''
         # set/get default parameters
         self._set_defaults(kwargs)
-        logoFileName = self.d['logoFileName']
-        logoLocation = self.d['logoLocation']
-        logoSize = self.d['logoSize']
+        logoFileName = self.logoFileName
+        logoLocation = self.logoLocation
+        logoSize = self.logoSize
 
         # check if pilImg was created already
         if self.pilImg is None:
@@ -284,24 +372,22 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
         # test availability of grids
-        if (self.d['latGrid'] is None or
-            self.d['lonGrid'] is None or
-            self.d['nGridLines'] is None or
-            self.d['nGridLines'] == 0):
+        if (self.latGrid is None or self.lonGrid is None or
+                self.nGridLines is None or self.nGridLines == 0):
             return
         # get number of grid lines
-        llSpacing = self.d['nGridLines']
+        llSpacing = self.nGridLines
         # get vectors for grid lines
-        latVec = np.linspace(self.d['latGrid'].min(),
-                             self.d['latGrid'].max(), llSpacing)
-        lonVec = np.linspace(self.d['lonGrid'].min(),
-                             self.d['lonGrid'].max(), llSpacing)
-        latI = np.zeros(self.d['latGrid'].shape, 'int8')
-        lonI = np.zeros(self.d['latGrid'].shape, 'int8')
+        latVec = np.linspace(self.latGrid.min(),
+                             self.latGrid.max(), llSpacing)
+        lonVec = np.linspace(self.lonGrid.min(),
+                             self.lonGrid.max(), llSpacing)
+        latI = np.zeros(self.latGrid.shape, 'int8')
+        lonI = np.zeros(self.latGrid.shape, 'int8')
         # convert lat/lon to indeces
         for i in range(len(latVec)):
-            latI[self.d['latGrid'] > latVec[i]] = i
-            lonI[self.d['lonGrid'] > lonVec[i]] = i
+            latI[self.latGrid > latVec[i]] = i
+            lonI[self.lonGrid > lonVec[i]] = i
         # find pixels on the rgid lines (binarize)
         latI = np.diff(latI)
         lonI = np.diff(lonI)
@@ -310,28 +396,6 @@ class Figure():
         latI[latI != 0] = 1
         # add mask to the image
         self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
-
-    def quiver(self, lenX, lenY, **kwargs):
-        '''Add arrows to the image
-
-        Parameters:
-        -----------
-        lenX: relative length along x-axis (0<=lenX<=1)
-        lenY: relative length along y-axis (0<=lenY<=1)
-        lenMax: maximum length in number of pixels of the arrows
-
-        The arrows are scaled relative to lenMax as lenX*lenMax
-
-        '''
-        if kwargs.has_key('lenMax'):
-            lenMax = kwargs['lenMax']
-        else:
-            lenMax = np.shape(self.array)[2]/35
-
-        #ax.quiver(X[::dd,::dd],Y[::dd,::dd],dirRange[::dd,::dd],dirAzim[::dd,::dd],scale=50,color='w')
-        arrows = np.zeros(self.array.shape(), 'int8')
-
-        self.apply_mask(mask_array=arrows, mask_lut={1: [255, 255, 255]})
 
     def add_latlon_labels(self, **kwargs):
         '''Add lat/lon labels along upper and left side
@@ -355,25 +419,24 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
         # test availability of grids
-        if (self.d['latGrid'] is None or
-            self.d['lonGrid'] is None or
-            self.d['latlonLabels'] == 0):
+        if (self.latGrid is None or self.lonGrid is None or
+                self.latlonLabels == 0):
             return
 
         draw = ImageDraw.Draw(self.pilImg)
-        font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
+        font = ImageFont.truetype(self.fontFileName, self.fontSize)
 
         # get number of labels; step of lables
-        llLabels = self.d['latlonLabels']
-        llShape = self.d['latGrid'].shape
+        llLabels = self.latlonLabels
+        llShape = self.latGrid.shape
         latI = range(0, llShape[0], (llShape[0] / llLabels) - 1)
         lonI = range(0, llShape[1], (llShape[1] / llLabels) - 1)
         # get lons/lats from first row/column
-        #lats = self.d['latGrid'][latI, 0]
-        #lons = self.d['lonGrid'][0, lonI]
+        #lats = self.latGrid[latI, 0]
+        #lons = self.lonGrid[0, lonI]
         for i in range(len(latI)):
-            lat = self.d['latGrid'][latI[i], 0]
-            lon = self.d['lonGrid'][0, lonI[i]]
+            lat = self.latGrid[latI[i], 0]
+            lon = self.lonGrid[0, lonI[i]]
             draw.text((0, 10 + latI[i]), '%4.2f' % lat, fill=255, font=font)
             draw.text((50 + lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
 
@@ -397,7 +460,7 @@ class Figure():
         '''
         # modify default values
         self._set_defaults(kwargs)
-        ratio = self.d['ratio']
+        ratio = self.ratio
 
         # create a ratio list for each band
         if isinstance(ratio, float) or isinstance(ratio, int):
@@ -445,7 +508,7 @@ class Figure():
         Modifies
         ---------
         self.array : numpy array
-        self.d['cmin'], self.d['cmax'] : allowed min/max values
+        self.cmin, self.cmax : allowed min/max values
 
         '''
         # modify default parameters
@@ -454,12 +517,12 @@ class Figure():
         for iBand in range(self.array.shape[0]):
             # if clipping integer matrix, make clipping ranges valid
             if self.array.dtype in ['int8', 'uint8', 'int16', 'uint16']:
-                self.d['cmin'][iBand] = np.ceil(self.d['cmin'][iBand])
-                self.d['cmin'][iBand] = np.floor(self.d['cmin'][iBand])
+                self.cmin[iBand] = np.ceil(self.cmin[iBand])
+                self.cmin[iBand] = np.floor(self.cmin[iBand])
 
             # Clipping, allowing for reversed colorscale (cmin > cmax)
-            clipMin = np.min([self.d['cmin'][iBand], self.d['cmax'][iBand]])
-            clipMax = np.max([self.d['cmin'][iBand], self.d['cmax'][iBand]])
+            clipMin = np.min([self.cmin[iBand], self.cmax[iBand]])
+            clipMax = np.max([self.cmin[iBand], self.cmax[iBand]])
             self.array[iBand, :, :] = np.clip(self.array[iBand, :, :],
                                               clipMin, clipMax)
 
@@ -482,9 +545,9 @@ class Figure():
         for iBand in range(self.array.shape[0]):
             self.array[iBand, :, :] = (
                 (self.array[iBand, :, :].astype('float32') -
-                 self.d['cmin'][iBand]) *
-                (self.d['numOfColor'] - 1) /
-                (self.d['cmax'][iBand] - self.d['cmin'][iBand]))
+                 self.cmin[iBand]) *
+                (self.numOfColor - 1) /
+                (self.cmax[iBand] - self.cmin[iBand]))
 
         self.array = self.array.astype(np.uint8)
 
@@ -506,12 +569,12 @@ class Figure():
         self._set_defaults(kwargs)
 
         # set fonts size for colorbar
-        font = ImageFont.truetype(self.fontFileName, self.d['fontSize'])
+        font = ImageFont.truetype(self.fontFileName, self.fontSize)
 
         # create a pilImage for the legend
         self.pilImgLegend = Image.new('P', (self.width,
-                                      int(self.height *
-                                      self.d['LEGEND_HEIGHT'])), 255)
+                                            int(self.height *
+                                                self.LEGEND_HEIGHT)), 255)
         draw = ImageDraw.Draw(self.pilImgLegend)
 
         # set black color
@@ -524,60 +587,60 @@ class Figure():
         if self.array.shape[0] == 1:
             # make an array for color bar
             bar = np.outer(np.ones(max(int(self.pilImgLegend.size[1] *
-                           self.d['CBAR_HEIGHT']), self.d['CBAR_HEIGHTMIN'])),
-                           np.linspace(0, self.d['numOfColor'],
-                           int(self.pilImgLegend.size[0] *
-                           self.d['CBAR_WIDTH'])))
+                           self.CBAR_HEIGHT), self.CBAR_HEIGHTMIN)),
+                           np.linspace(0, self.numOfColor,
+                                       int(self.pilImgLegend.size[0] *
+                                           self.CBAR_WIDTH)))
             # create a colorbar pil Image
             pilImgCbar = Image.fromarray(np.uint8(bar))
             # paste the colorbar pilImage on Legend pilImage
             self.pilImgLegend.paste(pilImgCbar,
                                     (int(self.pilImgLegend.size[0] *
-                                     self.d['CBAR_LOCATION_X']),
+                                         self.CBAR_LOCATION_X),
                                      int(self.pilImgLegend.size[1] *
-                                     self.d['CBAR_LOCATION_Y'])))
+                                         self.CBAR_LOCATION_Y)))
             # create a scale for the colorbar
-            scaleLocation = np.linspace(0, 1, self.d['numOfTicks'])
+            scaleLocation = np.linspace(0, 1, self.numOfTicks)
             scaleArray = scaleLocation
-            if self.d['logarithm']:
-                scaleArray = (np.power(scaleArray, (1.0 / self.d['gamma'])))
-            scaleArray = (scaleArray * (self.d['cmax'][0] -
-                          self.d['cmin'][0]) + self.d['cmin'][0])
+            if self.logarithm:
+                scaleArray = (np.power(scaleArray, (1.0 / self.gamma)))
+            scaleArray = (scaleArray * (self.cmax[0] -
+                          self.cmin[0]) + self.cmin[0])
             scaleArray = map(self._round_number, scaleArray)
             # draw scales and lines on the legend pilImage
-            for iTick in range(self.d['numOfTicks']):
+            for iTick in range(self.numOfTicks):
                 coordX = int(scaleLocation[iTick] *
                              self.pilImgLegend.size[0] *
-                             self.d['CBAR_WIDTH'] +
+                             self.CBAR_WIDTH +
                              int(self.pilImgLegend.size[0] *
-                             self.d['CBAR_LOCATION_X']))
+                                 self.CBAR_LOCATION_X))
 
                 box = (coordX, int(self.pilImgLegend.size[1] *
-                                   self.d['CBAR_LOCATION_Y']),
+                                   self.CBAR_LOCATION_Y),
                        coordX, int(self.pilImgLegend.size[1] *
-                                  (self.d['CBAR_LOCATION_Y'] +
-                                   self.d['CBAR_HEIGHT'])) - 1)
+                                  (self.CBAR_LOCATION_Y +
+                                   self.CBAR_HEIGHT)) - 1)
                 draw.line(box, fill=black)
-                box = (coordX - self.d['CBAR_LOCATION_ADJUST_X'],
+                box = (coordX + self.CBTICK_LOC_ADJUST_X,
                        int(self.pilImgLegend.size[1] *
-                           (self.d['CBAR_LOCATION_Y'] +
-                            self.d['CBAR_HEIGHT'])) +
-                       self.d['CBAR_LOCATION_ADJUST_Y'])
+                           (self.CBAR_LOCATION_Y +
+                            self.CBAR_HEIGHT)) +
+                       self.CBTICK_LOC_ADJUST_Y)
                 draw.text(box, scaleArray[iTick], fill=black, font=font)
 
         # draw longname and units
-        box = (int(self.pilImgLegend.size[0] * self.d['NAME_LOCATION_X']),
-               int(self.pilImgLegend.size[1] * self.d['NAME_LOCATION_Y']))
-        draw.text(box, str(self.d['caption']), fill=black, font=font)
+        box = (int(self.pilImgLegend.size[0] * self.CAPTION_LOCATION_X),
+               int(self.pilImgLegend.size[1] * self.CAPTION_LOCATION_Y))
+        draw.text(box, str(self.caption), fill=black, font=font)
 
         # if titleString is given, draw it
-        if self.d['titleString'] != '':
+        if self.titleString != '':
             # write text each line onto pilImgCanvas
             textHeight = int(self.pilImgLegend.size[1] *
-                             self.d['TEXT_LOCATION_Y'])
-            for line in self.d['titleString'].splitlines():
+                             self.TITLE_LOCATION_Y)
+            for line in self.titleString.splitlines():
                 draw.text((int(self.pilImgLegend.size[0] *
-                               self.d['TEXT_LOCATION_X']),
+                               self.TITLE_LOCATION_X),
                            textHeight), line, fill=black, font=font)
                 text = draw.textsize(line, font=font)
                 textHeight += text[1]
@@ -667,7 +730,7 @@ class Figure():
         self.clip()
 
         # apply logarithm
-        if self.d['logarithm']:
+        if self.logarithm:
             self.apply_logarithm()
 
         # convert to uint8
@@ -677,32 +740,31 @@ class Figure():
         self._create_palette()
 
         # apply colored mask (land mask, cloud mask and something else)
-        if self.d['mask_array'] is not None and self.d['mask_lut'] is not None:
+        if self.mask_array is not None and self.mask_lut is not None:
             self.apply_mask()
 
         # add lat/lon grids lines if latGrid and lonGrid are given
-        if self.d['latGrid'] is not None and self.d['lonGrid'] is not None:
+        if self.latGrid is not None and self.lonGrid is not None:
             self.add_latlon_grids()
 
         # append legend
-        if self.d['legend']:
+        if self.legend:
             self.create_legend()
 
         # create PIL image ready for saving
         self.create_pilImage(**kwargs)
 
         # add labels with lats/lons
-        if (self.d['latGrid'] is not None and
-            self.d['lonGrid'] is not None and
-            self.d['latlonLabels'] > 0):
+        if (self.latGrid is not None and self.lonGrid is not None and
+                self.latlonLabels > 0):
             self.add_latlon_labels()
 
         # add logo
-        if self.d['logoFileName'] is not None:
+        if self.logoFileName is not None:
             self.add_logo()
 
     def _make_transparent_color(self):
-        ''' makes colors specified by self.d['transparency']
+        ''' makes colors specified by self.transparency
         and self.reprojMask (if the image is reprojected) transparent
 
         Modifies
@@ -716,9 +778,9 @@ class Figure():
         newData = list()
 
         for item in datas:
-            if (item[0] == self.d['transparency'][0] and
-                item[1] == self.d['transparency'][1] and
-                item[2] == self.d['transparency'][2]):
+            if (item[0] == self.transparency[0] and
+                    item[1] == self.transparency[1] and
+                    item[2] == self.transparency[2]):
                 newData.append((255, 255, 255, 0))
             else:
                 newData.append(item)
@@ -750,13 +812,13 @@ class Figure():
         self._set_defaults(kwargs)
 
         if not((fileName.split('.')[-1] in self.extensionList)):
-            fileName = fileName + self.d['DEFAULT_EXTENSION']
+            fileName = fileName + self.DEFAULT_EXTENSION
 
         fileExtension = fileName.split('.')[-1]
         if fileExtension in ['jpg', 'JPG', 'jpeg', 'JPEG']:
             self.pilImg = self.pilImg.convert('RGB')
 
-        if self.d['transparency'] is not None:
+        if self.transparency is not None:
             self._make_transparent_color()
         self.pilImg.save(fileName)
 
@@ -774,10 +836,10 @@ class Figure():
         '''
         # create a colorList from matplotlib colormap name
         try:
-            colorDic = cm.datad[self.d['cmapName']]
+            colorDic = cm.datad[self.cmapName]
         except:
             colorDic = cm.datad[self._cmapName]
-            self.d['cmapName'] = self._cmapName
+            self.cmapName = self._cmapName
 
         colorList = [colorDic['red'], colorDic['green'], colorDic['blue']]
 
@@ -788,21 +850,20 @@ class Figure():
         for iColor in range(3):
             iPalette = 0
             for i in range(len(colorList[iColor]) - 1):
-                spaceNum = int(self.d['numOfColor'] *
+                spaceNum = int(self.numOfColor *
                                (colorList[iColor][i + 1][0] -
-                               colorList[iColor][i][0]))
+                                colorList[iColor][i][0]))
                 lut[iColor][iPalette:iPalette + spaceNum] = np.array(
-                                                np.linspace(
-                                                colorList[iColor][i][2],
-                                                colorList[iColor][i + 1][1],
-                                                num=spaceNum) * 255,
-                                                dtype=np.uint8)
+                    np.linspace(colorList[iColor][i][2],
+                                colorList[iColor][i + 1][1],
+                                num=spaceNum) * 255,
+                    dtype=np.uint8)
                 iPalette += (spaceNum)
             # adjust the number of colors on the palette
-            while iPalette < self.d['numOfColor']:
+            while iPalette < self.numOfColor:
                 lut[iColor][iPalette] = lut[iColor][iPalette - 1]
                 iPalette += 1
-            while iPalette > self.d['numOfColor']:
+            while iPalette > self.numOfColor:
                 lut[iColor][iPalette] = 0
                 iPalette -= 1
         # the last palette color is replaced to white
@@ -826,10 +887,10 @@ class Figure():
 
         '''
         array = self.array[iBand, :, :].flatten()
-        array = array[array > array.min()]
-        array = array[array < array.max()]
+        array = array[array > np.nanmin(array)]
+        array = array[array < np.nanmax(array)]
         step = max(int(round(float(len(array)) /
-                       float(self.d['subsetArraySize']))), 1.0)
+                       float(self.subsetArraySize))), 1.0)
         arraySubset = array[::step]
         hist, bins, patches = plt.hist(arraySubset, bins=100)
         plt.close()
@@ -856,11 +917,12 @@ class Figure():
             if digit in frmts:
                 frmt = frmts[digit]
             else:
-                frmt = '%4.2e'
+                #frmt = '%4.2e'
+                frmt = '%.'+'%d'%abs(digit)+'f'
 
         return str(frmt % val)
 
-    def _set_defaults(self, dict):
+    def _set_defaults(self, idict):
         '''Check input params and set defaut values
 
         Look throught default parameters (self.d) and given parameters (dict)
@@ -868,18 +930,17 @@ class Figure():
 
         Parameters
         ----------
-        dict : dictionary
+        idict : dictionary
             parameter names and values
 
         Modifies
         ---------
-        self.d
+            default self attributes
 
         '''
-        for key in dict:
-            if key in self.d:
-                if key in ['cmin', 'cmax'] and type(dict[key])!=list:
-                    self.d[key] = [dict[key]]
+        for key in idict:
+            if hasattr(self, key):
+                if key in ['cmin', 'cmax'] and type(idict[key]) != list:
+                    setattr(self, key, [idict[key]])
                 else:
-                    self.d[key] = dict[key]
-
+                    setattr(self, key, idict[key])

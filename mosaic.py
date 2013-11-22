@@ -15,53 +15,51 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
 
 import scipy.stats as st
 
 # import standard and additional libraries
 from nansat import *
 
+
 class Mosaic(Nansat):
     '''Container for mosaicing methods
-    
-    Mosaic inherits everything from Nansat
-    ''' 
-    
-    # default parameters
-    d = {}
-    d['nClass'] = Nansat
-    d['mapperName'] = ''
-    d['eResampleAlg'] = 0
-    d['period'] = None, None
 
-    def _set_defaults(self, dict):
+    Mosaic inherits everything from Nansat
+    '''
+
+    # default parameters
+    nClass = Nansat
+    eResampleAlg = 0
+    period = None, None
+
+    def _set_defaults(self, idict):
         '''Check input params and set defaut values
 
-        Look throught default parameters (self.d) and given parameters (dict)
+        Look throught default parameters (in self) and given parameters (dict)
         and paste value from input if the key matches
 
         Parameters
         ----------
-        dict : dictionary
+        idict : dictionary
             parameter names and values
 
         Modifies
         ---------
-        self.d
+        self
 
         '''
-        for key in dict:
-            if key in self.d:
-                if key in ['cmin', 'cmax'] and type(dict[key])!=list:
-                    self.d[key] = [dict[key]]
-                else:
-                    self.d[key] = dict[key]
+        for key in idict:
+            if hasattr(self, key):
+                setattr(self, key, idict[key])
 
     def _get_layer_image(self, f):
         '''Get nansat object from the specifed file
-        
+
         Open file with Nansat
-        
+        Return, if it is within a given period,
+
         Parameters:
         -----------
         f : string
@@ -72,37 +70,37 @@ class Mosaic(Nansat):
         '''
         # open file using Nansat or its child class
         # the line below is for debugging
-        #n = self.d['nClass'](f, logLevel=self.logger.level, mapperName=self.d['mapperName'])
+        #n = self.nClass(f, logLevel=self.logger.level)
         try:
-            n = self.d['nClass'](f, logLevel=self.logger.level,
-                       mapperName=self.d['mapperName'])
+            n = self.nClass(f, logLevel=self.logger.level)
         except:
             self.logger.error('Unable to open %s' % f)
-            n = None
-        
+            return None
+
         # check if image is out of period
         if n is not None:
             ntime = n.get_time()
-            if (self.d['period'][0] is not None and
-                                 len(ntime) > 0 and
-                     ntime[0] < self.d['period'][0]):
-                self.logger.info('%s is taken prior the period' % f)
-                print '%s is taken prior the period' % f
-                n = None
-            if (self.d['period'][1] is not None and
-                                 len(ntime) > 0 and
-                     ntime[0] > self.d['period'][1]):
-                self.logger.info('%s is taken after the period' % f)
-                print '%s is taken after the period' % f
-                n = None
 
+            if (ntime[0] is None and any(self.period)):
+                self.logger.error('%s has no time' % f)
+                return None
+
+            if (self.period[0] is not None and
+                    ntime[0] < self.period[0]):
+                self.logger.info('%s is taken before the period' % f)
+                return None
+
+            if (self.period[1] is not None and
+                    ntime[0] > self.period[1]):
+                self.logger.info('%s is taken after the period' % f)
+                return None
         return n
-        
+
     def _get_layer_mask(self, n, doReproject, maskName):
         '''Get mask from input Nansat object
-        
+
         Open files, reproject, get mask and metadata
-        
+
         Parameters:
         -----------
         n : Nansat
@@ -111,7 +109,7 @@ class Mosaic(Nansat):
             Should we reproject input files?
         maskName : string
             Name of the mask in the input file
-        
+
         Returns:
         --------
         mask : Numpy array with L2-mask
@@ -127,7 +125,7 @@ class Mosaic(Nansat):
         if doReproject:
             # reproject image and get reprojected mask
             try:
-                n.reproject(self, eResampleAlg=self.d['eResampleAlg'])
+                n.reproject(self, eResampleAlg=self.eResampleAlg)
                 mask = n[maskName]
             except:
                 self.logger.error('Unable to reproject %s' % f)
@@ -143,7 +141,7 @@ class Mosaic(Nansat):
         return mask
 
     def _get_layer(self, f, doReproject, maskName):
-        '''Get nansat band from input file
+        '''Get nansat object and mask from input file
 
         Parameters:
         -----------
@@ -153,25 +151,25 @@ class Mosaic(Nansat):
             Should we reproject input files?
         maskName : string
             Name of the mask in the input file
-        
+
         Returns:
         --------
         n : Nansat object of input file
-        mask : Numpy array with L2-mask
+        mask : Numpy array with array
         '''
         n = self._get_layer_image(f)
         if n is not None:
             mask = self._get_layer_mask(n, doReproject, maskName)
         else:
             mask = None
-                
+
         return n, mask
 
     def _get_cube(self, files, band, doReproject, maskName):
         '''Make cube with data from one band of input files
-        
+
         Open files, reproject, get band, insert into cube
-        
+
         Parameter:
         ----------
         files : list of strings
@@ -210,20 +208,20 @@ class Mosaic(Nansat):
             if a is not None:
                 # mask invalid data
                 a[mask <= 2] = np.nan
-            
+
             # add band to the cube
             dataCube[i, :, :] = a
 
             # add data to mask matrix (maximum of 0, 1, 2, 64)
             maskMat[0, :, :] = mask
             maskMat[1, :, :] = maskMat.max(0)
-            
+
         return dataCube, maskMat.max(0)
 
-    def average(self, files=[], bands=[], doReproject=True, maskName='mask',
-               **kwargs):
-        '''Use memory-friendly averaging for mosaicing
-        
+    def average(self, files=[], bands=[1], doReproject=True, maskName='mask',
+                **kwargs):
+        '''Memory-friendly averaging of input files for mosaicing
+
         Convert all input files into Nansat objects, reproject onto the
         Domain of the current object, get bands, from each object,
         calculate average and STD, add averaged bands (and STD) to the current
@@ -256,18 +254,15 @@ class Mosaic(Nansat):
             name of the mask in input files
         nClass : child of Nansat, [Nansat]
             This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
+        period : [datetime0, datetime1]
+            Start and stop datetime objects from pyhon datetime.
 
         '''
         # check inputs
         if len(files) == 0:
             self.logger.error('No input files given!')
-            return
-        if len(bands) == 0:
-            self.logger.error('No input bands given!')
             return
 
         # modify default values
@@ -298,7 +293,7 @@ class Mosaic(Nansat):
 
             if n is not None:
                 # keep last image opened
-                lastN = self._get_layer_image(f) 
+                lastN = self._get_layer_image(f)
             else:
                 # skip processing of invalid image
                 continue
@@ -351,11 +346,12 @@ class Mosaic(Nansat):
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'name': maskName, 'long_name': 'L2-mask', 'standard_name': 'mask'})
+        self.add_band(array=maskMat, parameters={'name': maskName,
+                                                 'long_name': 'L2-mask',
+                                                 'standard_name': 'mask'})
         # add averaged bands with metadata
         for b in bands:
             self.logger.debug('    %s' % b)
-
             # get metadata of this band from the last image
             parameters = lastN.get_metadata(bandID=b)
             parameters.pop('dataType')
@@ -366,10 +362,10 @@ class Mosaic(Nansat):
             parameters['name'] = parameters['name'] + '_std'
             self.add_band(array=stdMat[b], parameters=parameters)
 
-    def median(self, files=[], bands=[], doReproject=True, maskName='mask',
+    def median(self, files=[], bands=[1], doReproject=True, maskName='mask',
                **kwargs):
         '''Calculate median of input bands
-        
+
         Memory and CPU greedy method. Generates 3D cube from bands of
         all input images and calculates median. Adds median bands to self
 
@@ -385,10 +381,10 @@ class Mosaic(Nansat):
             name of the mask in input files
         nClass : child of Nansat, [Nansat]
             This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
+        period : [datetime0, datetime1]
+            Start and stop datetime objects from pyhon datetime.
 
         '''
         # modify default values
@@ -398,7 +394,7 @@ class Mosaic(Nansat):
         for band in bands:
             bandCube, mask = self._get_cube(files, band, doReproject, maskName)
             bandMedian = st.nanmedian(bandCube, axis=0)
-            
+
             # get metadata of this band from the last image
             parameters = lastN.get_metadata(bandID=band)
             # add band and std with metadata
@@ -406,15 +402,15 @@ class Mosaic(Nansat):
 
         self.add_band(array=mask, parameters={'name': 'mask'})
 
-    def latest(self, files=[], bands=[], doReproject=True, maskName='mask',
+    def latest(self, files=[], bands=[1], doReproject=True, maskName='mask',
                **kwargs):
         '''Mosaic by adding the latest image on top without averaging
-        
+
         Uses Nansat.get_time() to estimate time of each input file;
         Sorts images by aquisition time;
         Creates date_index band - with mask of coverage of each frame;
         Uses date_index to fill bands of self only with the latest data
-        
+
         Parameters
         -----------
         files : list
@@ -427,11 +423,11 @@ class Mosaic(Nansat):
             name of the mask in input files
         nClass : child of Nansat, [Nansat]
             This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
         eResampleAlg : int, [0]
             agorithm for reprojection, see Nansat.reproject()
-        
+        period : [datetime0, datetime1]
+            Start and stop datetime objects from pyhon datetime.
+
         '''
         # collect ordinals of times of each input file
         itimes = np.zeros(len(files))
@@ -439,7 +435,7 @@ class Mosaic(Nansat):
             n = self._get_layer_image(files[i])
             nstime = n.get_time()[0]
             if nstime is None:
-                nstime = 693596 #1900-01-01
+                nstime = 693596  # 1900-01-01
             else:
                 nstime = nstime.toordinal()
             itimes[i] = nstime
@@ -462,7 +458,7 @@ class Mosaic(Nansat):
             # or serial number of the latest image
             maxIndex[1, :, :] = maxIndex.max(0)
         maxIndex = maxIndex.max(0)
-        
+
         # preallocate 2D matrices for mosaiced data and mask
         self.logger.debug('Allocating 2D matrices')
         avgMat = {}
@@ -496,15 +492,17 @@ class Mosaic(Nansat):
                     # by the serial number of the input file
                     avgMat[b][maxIndex == (i + 1)] = a[maxIndex == (i + 1)]
 
-            # destroy input nansat 
+            # destroy input nansat
             n = None
         # keep last image opened
-        lastN = self._get_layer_image(f) 
+        lastN = self._get_layer_image(f)
 
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'name': maskName, 'long_name': 'L2-mask', 'standard_name': 'mask'})
+        self.add_band(array=maskMat, parameters={'name': maskName,
+                                                 'long_name': 'L2-mask',
+                                                 'standard_name': 'mask'})
         # add mosaiced bands with metadata
         for b in bands:
             self.logger.debug('    %s' % b)
@@ -513,11 +511,12 @@ class Mosaic(Nansat):
             parameters = lastN.get_metadata(bandID=b)
             # add band with metadata
             self.add_band(array=avgMat[b], parameters=parameters)
-        
-        # compose list of dates of input images 
+
+        # compose list of dates of input images
         timeString = ''
-        dt = datetime.datetime(1,1,1)
+        dt = datetime.datetime(1, 1, 1)
         for i in range(len(itimes)):
             timeString += dt.fromordinal(int(itimes[ars[i]])).strftime('%Y-%m-%dZ%H:%M ')
         # add band with mask of coverage of each frame
-        self.add_band(array=maxIndex, parameters={'name': 'date_index', 'values': timeString})
+        self.add_band(array=maxIndex, parameters={'name': 'date_index',
+                                                  'values': timeString})

@@ -9,7 +9,8 @@
 from datetime import datetime, timedelta
 import numpy as np
 import vrt
-from nansat_tools import latlongSRS, set_defaults
+from nansat_tools import latlongSRS
+
 
 class Mapper(vrt.VRT):
     ''' Mapper PATHFINDER (local files)
@@ -18,7 +19,8 @@ class Mapper(vrt.VRT):
     * remote files
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4,
+                 **kwargs):
         ''' Create VRT '''
 
         assert 'AVHRR_Pathfinder-PFV5.2' in fileName, 'pathfinder52 BAD MAPPER'
@@ -26,16 +28,6 @@ class Mapper(vrt.VRT):
         subDatasets = gdalDataset.GetSubDatasets()
         metaDict = []
         sstName = ''
-
-        kwDict = {'minQual' : 4}
-        # set kwargs
-        pathfinder52Kwargs = {}
-        for key in kwargs:
-            if key.startswith('pathfinder52'):
-                keyName = key.replace('pathfinder52_', '')
-                pathfinder52Kwargs[keyName] = kwargs[key]
-
-        kwDict = set_defaults(kwDict, pathfinder52Kwargs)
 
         for subDataset in subDatasets:
             subDatasetName = subDataset[0].split(':')[2]
@@ -59,30 +51,31 @@ class Mapper(vrt.VRT):
                 metaPrefix = ''
 
             subWKV = subGDALMetadata.get(metaPrefix + 'standard_name', '')
-            subScaleRatio = subGDALMetadata.get(metaPrefix + 'scale_factor', '1')
-            subScaleOffset = subGDALMetadata.get(metaPrefix + 'add_offset', '0')
+            subScaleRatio = subGDALMetadata.get(metaPrefix + 'scale_factor',
+                                                '1')
+            subScaleOffset = subGDALMetadata.get(metaPrefix + 'add_offset',
+                                                 '0')
             metaEntry = {'src': {'SourceFilename': subDataset[0],
-                                     'sourceBand':  1,
-                                     'ScaleRatio': subScaleRatio,
-                                     'ScaleOffset': subScaleOffset},
+                                 'sourceBand': 1,
+                                 'ScaleRatio': subScaleRatio,
+                                 'ScaleOffset': subScaleOffset},
                          'dst': {'wkv': subWKV}}
 
             # append band metadata to metaDict
             metaDict.append(metaEntry)
 
         # create empty VRT dataset with geolocation only
-        vrt.VRT.__init__(self, subGDALDataset, **kwargs)
+        vrt.VRT.__init__(self, subGDALDataset)
 
         # add mask
         if qualName != '':
             qualDataset = vrt.gdal.Open(qualName)
             qualArray = qualDataset.ReadAsArray()
-            qualArray[qualArray < kwDict['minQual']] = 1
-            qualArray[qualArray >= kwDict['minQual']] = 128
+            qualArray[qualArray < minQual] = 1
+            qualArray[qualArray >= minQual] = 128
             self.maskVRT = vrt.VRT(array=qualArray.astype('int8'))
-            metaDict.append(
-                            {'src': {'SourceFilename': self.maskVRT.fileName,
-                                     'SourceBand':  1,
+            metaDict.append({'src': {'SourceFilename': self.maskVRT.fileName,
+                                     'SourceBand': 1,
                                      'SourceType': 'SimpleSource',
                                      'DataType': 1},
                              'dst': {'name': 'mask'}})

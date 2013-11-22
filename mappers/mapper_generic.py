@@ -5,12 +5,17 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
+#import os
 from vrt import *
-from nansat_tools import Node, latlongSRS, set_defaults
+from nansat_tools import Node, latlongSRS
 import numpy as np
 
+
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
+                 rmMetadatas=['NETCDF_VARNAME', '_Unsigned',
+                              'ScaleRatio', 'ScaleOffset', 'dods_variable'],
+                 **kwargs):
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}
@@ -23,22 +28,7 @@ class Mapper(VRT):
             else:
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
-
-        kwDict = {'rmMetadatas' : ['NETCDF_VARNAME',
-                                   '_Unsigned',
-                                   'ScaleRatio',
-                                   'ScaleOffset',
-                                   'dods_variable']}
-
-        # choose kwargs for generic
-        genericKwargs = {}
-        for key in kwargs:
-            if key.startswith('generic'):
-                keyName = key.replace('generic_', '')
-                genericKwargs[keyName] = kwargs[key]
-
-        # modify the default values using input values
-        kwDict = set_defaults(kwDict, genericKwargs)
+        fileExt = os.path.splitext(fileName)[1]
 
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
@@ -67,12 +57,14 @@ class Mapper(VRT):
 
             # take bands whose sizes are same as the first band.
             if (subDataset.RasterXSize == firstXSize and
-                        subDataset.RasterYSize == firstYSize):
+                    subDataset.RasterYSize == firstYSize):
                 if projection == '':
                     projection = subDataset.GetProjection()
-                if 'GEOLOCATION_X_DATASET' in fileName or 'longitude' in fileName:
+                if ('GEOLOCATION_X_DATASET' in fileName or
+                        'longitude' in fileName):
                     xDatasetSource = fileName
-                elif 'GEOLOCATION_Y_DATASET' in fileName or 'latitude' in fileName:
+                elif ('GEOLOCATION_Y_DATASET' in fileName or
+                        'latitude' in fileName):
                     yDatasetSource = fileName
                 else:
                     for iBand in range(subDataset.RasterCount):
@@ -84,16 +76,22 @@ class Mapper(VRT):
                         #sourceBands = i*subDataset.RasterCount + iBand + 1
 
                         # generate src metadata
-                        src = {'SourceFilename': fileName, 'SourceBand': sourceBands}
+                        src = {'SourceFilename': fileName,
+                               'SourceBand': sourceBands}
                         # set scale ratio and scale offset
-                        scaleRatio = bandMetadata.get('ScaleRatio',
-                                     bandMetadata.get('scale',
-                                     bandMetadata.get('scale_factor', '')))
+                        scaleRatio = bandMetadata.get(
+                            'ScaleRatio',
+                            bandMetadata.get(
+                                'scale',
+                                bandMetadata.get('scale_factor', '')))
                         if len(scaleRatio) > 0:
                             src['ScaleRatio'] = scaleRatio
-                        scaleOffset = bandMetadata.get('ScaleOffset',
-                                      bandMetadata.get('offset',
-                                      bandMetadata.get('add_offset', '')))
+                        scaleOffset = bandMetadata.get(
+                            'ScaleOffset',
+                            bandMetadata.get(
+                                'offset',
+                                bandMetadata.get(
+                                    'add_offset', '')))
                         if len(scaleOffset) > 0:
                             src['ScaleOffset'] = scaleOffset
                         # sate DataType
@@ -104,23 +102,23 @@ class Mapper(VRT):
                         dst = bandMetadata
                         # set wkv and bandname
                         dst['wkv'] = bandMetadata.get('standard_name', '')
-                        bandName = bandMetadata.get('NETCDF_VARNAME', '') # could we also use bandMetadata.get('name')?
+                        bandName = bandMetadata.get('NETCDF_VARNAME', '')  # could we also use bandMetadata.get('name')?
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('dods_variable', '')
                         if len(bandName) > 0:
-                            if origin_is_nansat:
+                            if origin_is_nansat and fileExt == '.nc':
                                 # remove digits added by gdal in exporting to
                                 # netcdf...
                                 if bandName[-1:].isdigit():
-                                    bandName=bandName[:-1]
+                                    bandName = bandName[:-1]
                                 if bandName[-1:].isdigit():
-                                    bandName=bandName[:-1]
+                                    bandName = bandName[:-1]
                                 dst['name'] = bandName
                             else:
                                 dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
-                        for rmMetadata in kwDict['rmMetadatas']:
+                        for rmMetadata in rmMetadatas:
                             if rmMetadata in dst:
                                 dst.pop(rmMetadata)
 
@@ -136,34 +134,39 @@ class Mapper(VRT):
         # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
         # using pixelfunctions
         rmBands = []
-        for iBand in range(self.dataset.RasterCount):
-            iBandName = self.dataset.GetRasterBand(iBand+1).GetMetadataItem('name')
+        for iBandNo in range(self.dataset.RasterCount):
+            iBand = self.dataset.GetRasterBand(iBandNo + 1)
+            iBandName = iBand.GetMetadataItem('name')
             # find real data band
             if iBandName.find("_real") != -1:
-                realBand = iBand
-                realDtype = self.dataset.GetRasterBand(realBand+1).GetMetadataItem('DataType')
-                bandName = iBandName.replace(iBandName.split('_')[-1], '')[0:-1]
-                for jBand in range(self.dataset.RasterCount):
-                    jBandName = self.dataset.GetRasterBand(jBand+1).GetMetadataItem('name')
-                    # find an imaginary data band corresponding to the real data band
-                    # and create complex data band from the bands
+                realBandNo = iBandNo
+                realBand = self.dataset.GetRasterBand(realBandNo + 1)
+                realDtype = realBand.GetMetadataItem('DataType')
+                bandName = iBandName.replace(iBandName.split('_')[-1],
+                                             '')[0:-1]
+                for jBandNo in range(self.dataset.RasterCount):
+                    jBand = self.dataset.GetRasterBand(jBandNo + 1)
+                    jBandName = jBand.GetMetadataItem('name')
+                    # find an imaginary data band corresponding to the real
+                    # data band and create complex data band from the bands
                     if jBandName.find(bandName+'_imag') != -1:
-                        imagBand = jBand
-                        imagDtype = self.dataset.GetRasterBand(imagBand+1).GetMetadataItem('DataType')
-                        dst = self.dataset.GetRasterBand(imagBand+1).GetMetadata()
+                        imagBandNo = jBandNo
+                        imagBand = self.dataset.GetRasterBand(imagBandNo + 1)
+                        imagDtype = imagBand.GetMetadataItem('DataType')
+                        dst = imagBand.GetMetadata()
                         dst['name'] = bandName
-                        dst['PixelFunctionType'] ='ComplexData'
+                        dst['PixelFunctionType'] = 'ComplexData'
                         dst['dataType'] = 10
-                        src = [{'SourceFilename': fileNames[realBand],
+                        src = [{'SourceFilename': fileNames[realBandNo],
                                 'SourceBand':  1,
                                 'DataType': realDtype},
-                               {'SourceFilename': fileNames[imagBand],
-                                 'SourceBand': 1,
-                                 'DataType': imagDtype}]
+                               {'SourceFilename': fileNames[imagBandNo],
+                                'SourceBand': 1,
+                                'DataType': imagDtype}]
                         self._create_band(src, dst)
                         self.dataset.FlushCache()
-                        rmBands.append(realBand+1)
-                        rmBands.append(imagBand+1)
+                        rmBands.append(realBandNo + 1)
+                        rmBands.append(imagBandNo + 1)
 
         # Delete real and imaginary bands
         if len(rmBands) != 0:
@@ -188,14 +191,16 @@ class Mapper(VRT):
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
-            self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
+            self.add_geolocationArray(GeolocationArray(xDatasetSource,
+                                                       yDatasetSource))
 
         elif gcpCount == 0:
             # if no GCPs found and not GEOLOCATION ARRAY set:
             #   Set Nansat Geotransform if it is not set automatically
             geoTransform = self.dataset.GetGeoTransform()
             if len(geoTransform) == 0:
-                geoTransformStr = geoMetadata.get('GeoTransform', '(0|1|0|0|0|0|1)')
+                geoTransformStr = geoMetadata.get('GeoTransform',
+                                                  '(0|1|0|0|0|0|1)')
                 geoTransform = eval(geoTransformStr.replace('|', ','))
                 self.dataset.SetGeoTransform(geoTransform)
 
@@ -204,12 +209,13 @@ class Mapper(VRT):
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
-        return projection.replace("|",",").replace("&",'"')
+        return projection.replace("|", ",").replace("&", '"')
 
     def add_gcps_from_metadata(self, geoMetadata):
         '''Get GCPs from strings in metadata and insert in dataset'''
         gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
         gcpAllValues = []
+
         # for all gcp coordinates
         for i, gcpName in enumerate(gcpNames):
             # scan throught metadata and find how many lines with each GCP
@@ -223,7 +229,7 @@ class Mapper(VRT):
                 gcpLineName = '%s_%03d' % (gcpName, n)
                 gcpString += geoMetadata[gcpLineName]
             # convert strings to floats
-            gcpString = gcpString.strip().replace(' ','')
+            gcpString = gcpString.strip().replace(' ', '')
             gcpValues = []
             # append all gcps from string
             for x in gcpString.split('|'):
@@ -240,7 +246,8 @@ class Mapper(VRT):
 
         if len(gcps) > 0:
             # get GCP projection and repare
-            projection = self.repare_projection(geoMetadata.get('GCPProjection', ''))
+            projection = self.repare_projection(geoMetadata.
+                                                get('GCPProjection', ''))
             # add GCPs to dataset
             self.dataset.SetGCPs(gcps, projection)
             self._remove_geotransform()

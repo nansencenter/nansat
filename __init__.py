@@ -55,5 +55,5 @@ except ImportError:
 
 os.environ['LOG_LEVEL'] = '30'
 
-__all__ = ['Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap', 'np', 'plt', 'Basemap', 'Mosaic']
-
+__all__ = ['Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
+           'np', 'plt', 'Basemap', 'Mosaic']

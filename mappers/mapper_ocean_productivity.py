@@ -15,28 +15,29 @@ import numpy as np
 
 from vrt import VRT, GeolocationArray
 
+
 class Mapper(VRT):
     ''' Mapper for Ocean Productivity website
     http://www.science.oregonstate.edu/ocean.productivity/'''
     # detect wkv from metadata 'Parameter'
-    param2wkv = {
-    'chl': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-    'sst': 'sea_surface_temperature',
-    'par': 'instantaneous_photosynthetically_available_radiation',
-    'bbp':'particle_backscatter_at_443_nm',
-    }
+    param2wkv = {'chl': 'mass_concentration_of_chlorophyll_a_in_sea_water',
+                 'sst': 'sea_surface_temperature',
+                 'par': 'instantaneous_photosynthetically_available_radiation',
+                 'bbp': 'particle_backscatter_at_443_nm'
+                 }
 
-    bandNames = {
-    'mass_concentration_of_chlorophyll_a_in_sea_water': 'algal_1',
-    'sea_surface_temperature': 'SST',
-    'instantaneous_photosynthetically_available_radiation': 'par',
-    'particle_backscatter_at_443_nm': 'bbp_443',
-    }
+    bandNames = {'mass_concentration_of_chlorophyll_a_in_sea_water': 'algal_1',
+                 'sea_surface_temperature': 'SST',
+                 'instantaneous_photosynthetically_available_radiation': 'par',
+                 'particle_backscatter_at_443_nm': 'bbp_443'
+                 }
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Ocean Productivity website VRT '''
 
-        if ('IDL' not in gdalMetadata['Projection Category'] and 'Source' not in gdalMetadata and '-9999' not in gdalMetadata['Hole Value']):
+        if ('IDL' not in gdalMetadata['Projection Category'] and
+                'Source' not in gdalMetadata and
+                '-9999' not in gdalMetadata['Hole Value']):
                 raise AttributeError("BAD MAPPER")
         print 'Ocean Productivity website data'
         # get list of similar (same date) files in the directory
@@ -92,7 +93,7 @@ class Mapper(VRT):
         self.maskVRT = VRT(array=mask)
 
         metaDict.append(
-            {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand':  1},
+            {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand': 1},
              'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
@@ -102,12 +103,12 @@ class Mapper(VRT):
         numberOfColumns = 4320
         numberOfLines = 2160
         #longitudeStep = float(simGdalMetadata['Longitude Step'])
-        VRT.__init__(self, srcGeoTransform=(-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
-                           srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
-                           srcRasterXSize=numberOfColumns,
-                           srcRasterYSize=numberOfLines,
-                           **kwargs
-                    )
+        VRT.__init__(self,
+                     srcGeoTransform=(-180.0, longitudeStep, 0.0,
+                                      90.0, 0.0, -longitudeStep),
+                     srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+                     srcRasterXSize=numberOfColumns,
+                     srcRasterYSize=numberOfLines)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -115,4 +116,5 @@ class Mapper(VRT):
         # Add valid time
         startYear = int(iFile[4:8])
         startDay = int(iFile[8:11])
-        self._set_time(datetime.datetime(startYear, 1, 1) + datetime.timedelta(startDay))
+        self._set_time(datetime.datetime(startYear, 1, 1) +
+                       datetime.timedelta(startDay))

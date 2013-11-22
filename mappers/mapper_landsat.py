@@ -16,8 +16,9 @@ try:
 except ImportError:
     import gdal
 
+
 class Mapper(VRT):
-    ''' Mapper for LANDSAT3,4,5,6,7.tar.gz files'''
+    ''' Mapper for LANDSAT3,4,5,6,7,8.tar.gz files'''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create LANDSAT VRT '''
@@ -33,8 +34,11 @@ class Mapper(VRT):
                 #print tarName
                 bandNo = tarName[-6:-4]
                 metaDict.append({
-                    'src': {'SourceFilename': '/vsitar/%s/%s' % (fileName, tarName), 'SourceBand':  1},
-                    'dst': {'wkv': 'toa_outgoing_spectral_radiance', 'suffix': bandNo}})
+                    'src': {'SourceFilename': '/vsitar/%s/%s' % (fileName,
+                                                                 tarName),
+                            'SourceBand':  1},
+                    'dst': {'wkv': 'toa_outgoing_spectral_radiance',
+                            'suffix': bandNo}})
         #print metaDict
         sizeDiffBands = []
         for iFile in range(len(metaDict)):
@@ -44,23 +48,25 @@ class Mapper(VRT):
                 gdalDatasetTmp0 = gdalDatasetTmp
                 xSize = gdalDatasetTmp.RasterXSize
                 ySize = gdalDatasetTmp.RasterYSize
-            elif xSize != gdalDatasetTmp.RasterXSize or ySize != gdalDatasetTmp.RasterYSize:
+            elif (xSize != gdalDatasetTmp.RasterXSize or
+                    ySize != gdalDatasetTmp.RasterYSize):
                 sizeDiffBands.append(iFile)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDatasetTmp0, **kwargs)
+        VRT.__init__(self, gdalDatasetTmp0)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
+        # 8th band of LANDSAT8 is a double size band.
+        # Reduce the size to same as the 1st band.
         if len(sizeDiffBands) != 0:
             vrtXML = self.read_xml()
             node0 = Node.create(vrtXML)
             for iBand in sizeDiffBands:
-                iNodeDstRect = node0.nodeList('VRTRasterBand')[iBand].node('DstRect')
-                iNodeDstRect.replaceAttribute('xSize',str(xSize))
-                iNodeDstRect.replaceAttribute('ySize',str(ySize))
+                iBandNode = node0.nodeList('VRTRasterBand')[iBand]
+                iNodeDstRect = iBandNode.node('DstRect')
+                iNodeDstRect.replaceAttribute('xSize', str(xSize))
+                iNodeDstRect.replaceAttribute('ySize', str(ySize))
 
             self.write_xml(str(node0.rawxml()))
-
-

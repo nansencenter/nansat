@@ -18,6 +18,7 @@
 
 # import standard and additional libraries
 from nansat_tools import *
+import scipy
 
 # import nansat parts
 try:
@@ -37,13 +38,6 @@ try:
 except ImportError:
     warnings.warn('Cannot import VRT!'
                   'Nansat will not work.')
-
-try:
-    from nansatmap import Nansatmap
-except ImportError:
-    warnings.warn('Cannot import Nansatmap!'
-                  'Nansat will not work.')
-
 
 try:
     from nansatshape import Nansatshape
@@ -74,6 +68,7 @@ else:
     if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
         print 'Cannot find "gdal_PIXFUN.so". Compiling pixelfunctions...'
         os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
+
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -128,41 +123,7 @@ class Nansat(Domain):
             Metadata for the 1st band of a new raster,e.g. name, wkv, units,...
         logLevel : int, optional, default: logging.DEBUG (30)
             Level of logging. See: http://docs.python.org/howto/logging.html
-
-        Parameters (**kwargs)
-        ---------------------
-        -- VRT
-        eResampleAlg = 0
-        use_geolocationArray = True
-        use_gcps = True
-        use_geotransform = True
-        WorkingDataType = None
-        tps = False
-        blockSize = None
-        -- mapper_envisat
-        envisat_zoomSize = 500
-        envisat_step = 1
-        -- mapper_asar
-        asar_geolocation = False
-        -- mapper_meris
-        meris_geolocation = True
-        -- mapper_obpg_l2
-        obpg_l2_GCP_COUNT = 10
-        -- mapper_pathfinder52
-        pathfinder52_minQual = 4
-        -- mapper_viirs_l1
-        viirs_l1_GCP_COUNT0 = 5
-        viirs_l1_GCP_COUNT1 = 20
-        viirs_l1_pixelStep = 1
-        viirs_l1_lineStep = 1
-        -- mapper_aster_l1a
-        aster_l1a_bandNames = ['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N']
-        aster_l1a_bandWaves = [560, 660, 820]
-        -- mapper_case2reg
-        case2regKwargs_wavelengths = [None, 413, 443, 490, 510, 560, 620, 665, 681, 709, 753, None, 778, 864]}
-        -- mapper_generic
-        generic_rmMetadatas = ['NETCDF_VARNAME', '_Unsigned', 'ScaleRatio',
-                               'ScaleOffset', 'dods_variable']
+        kwargs : additional arguments for mappers
 
         Creates
         --------
@@ -253,6 +214,18 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
+        # Set invalid and missing data to np.nan
+        if '_FillValue' in band.GetMetadata():
+            fillValue = float(band.GetMetadata()['_FillValue'])
+            try:
+                bandData[bandData == fillValue] = np.nan
+            except:
+                self.logger.info('Cannot replace _FillValue values with np.NAN!')
+        try:
+            bandData[np.isinf(bandData)] = np.nan
+        except:
+            self.logger.info('Cannot replace inf values with np.NAN!')
+
         return bandData
 
     def __repr__(self):
@@ -269,7 +242,7 @@ class Nansat(Domain):
         return outString
 
     def add_band(self, fileName=None, vrt=None, bandID=1, array=None,
-                 parameters=None, resamplingAlg=1):
+                 parameters=None, resamplingAlg=1, nomem=False):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -287,6 +260,7 @@ class Nansat(Domain):
         array : Numpy array with band data
         parameters : dictionary, band metadata: wkv, name, etc.
         resamplingAlg : 0, 1, 2 stands for nearest, bilinear, cubic
+        nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
         ---------
@@ -327,13 +301,13 @@ class Nansat(Domain):
         if array is not None:
             if array.shape == self.shape():
                 # create VRT from array
-                vrt2add = VRT(array=array)
+                vrt2add = VRT(array=array, nomem=nomem)
             else:
                 # create VRT from resized array
-                srcVRT = VRT(array=array)
-                vrt2add = srcVRT.resized(self.shape()[1],
-                                         self.shape()[0],
-                                         resamplingAlg)
+                srcVRT = VRT(array=array, nomem=nomem)
+                vrt2add = srcVRT.get_resized_vrt(self.shape()[1],
+                                                 self.shape()[0],
+                                                 resamplingAlg)
             # set parameters
             bandNumber = 1
 
@@ -366,18 +340,31 @@ class Nansat(Domain):
 
         return b
 
+    def has_band(self, band):
+        for b in self.bands():
+            if self.bands()[b]['name'] == band:
+                return True
+        return False
+
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF'):
+               addGCPs=True, driver='netCDF', bottomup=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
         -----------
-        fileName : output file name
-        rmMetadata : list with metadata names to remove before export.
+        fileName : str
+            output file name
+        rmMetadata : list
+            metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
-        addGeolocArray : Boolean, add geolocation array datasets? [True].
-        addGCPs : Boolean, add GCPs? [True]
-        driver : Which GDAL driver (format) to use [netCDF]
+        addGeolocArray : bool
+            add geolocation array datasets to exported file?
+        addGCPs : bool
+            add GCPs?  to exported file?
+        driver : str
+            Name of GDAL driver (format)
+        bottomup : bool
+            Write swath-projected data bottomup?
 
         Modifies
         ---------
@@ -422,19 +409,23 @@ class Nansat(Domain):
                     pass
                 # Copy metadata and modify 'name' for real and imag bands
                 bandMetadataI = bandMetadataR.copy()
-                bandMetadataR['name'] = bandMetadataR.pop('name')+'_real'
-                bandMetadataI['name'] = bandMetadataI.pop('name')+'_imag'
+                bandMetadataR['name'] = bandMetadataR.pop('name') + '_real'
+                bandMetadataI['name'] = bandMetadataI.pop('name') + '_imag'
                 # Create bands from the real and imaginary numbers
                 exportVRT.real.append(VRT(array=self[i].real))
                 exportVRT.imag.append(VRT(array=self[i].imag))
 
-                metaDict = [{'src': {'SourceFilename': exportVRT.real[-1].fileName,
+                metaDict = [{'src': {
+                             'SourceFilename': exportVRT.real[-1].fileName,
                              'SourceBand':  1},
                              'dst': bandMetadataR},
-                            {'src': {'SourceFilename': exportVRT.imag[-1].fileName,
+                            {'src': {
+                             'SourceFilename': exportVRT.imag[-1].fileName,
                              'SourceBand':  1},
                              'dst': bandMetadataI}]
                 exportVRT._create_bands(metaDict)
+                if i == 4:
+                    exportVRT.export('c:/Users/asumak/Data/output/exportVRT.vrt')
             # delete the complex bands
             exportVRT.delete_bands(complexBands)
 
@@ -451,9 +442,11 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
-        # add GCPs to VRT metadata
-        if addGCPs:
-            exportVRT._add_gcp_metadata()
+        gcps = exportVRT.dataset.GetGCPs()
+        if addGCPs and len(gcps) > 0:
+            # add GCPs in VRT metadata and remove geotransform
+            exportVRT._add_gcp_metadata(bottomup)
+            exportVRT._remove_geotransform()
 
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
@@ -495,57 +488,34 @@ class Nansat(Domain):
                 self.logger.info('Global metadata %s not found' % rmMeta)
         exportVRT.dataset.SetMetadata(globMetadata)
 
+        # if output filename is same as input one...
+        if self.fileName == fileName:
+            numOfBands = self.vrt.dataset.RasterCount
+            # create VRT from each band and add it
+            for iBand in range(numOfBands):
+                vrt = VRT(array=self[iBand + 1])
+                self.add_band(vrt=vrt)
+                metadata = self.get_metadata(bandID=iBand + 1)
+                self.set_metadata(key=metadata,
+                                  bandID=numOfBands + iBand + 1)
+
+            # remove source bands
+            self.vrt.delete_bands(range(1, numOfBands))
+
+        # set CreateCopy() options
+        if bottomup:
+            options = 'WRITE_BOTTOMUP=NO'
+        else:
+            options = 'WRITE_BOTTOMUP=YES'
+
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
-                                                          exportVRT.dataset)
+                                                          exportVRT.dataset,
+                                                          options=[options])
         self.logger.debug('Export - OK!')
 
-    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
-        '''Proportional resize of the dataset.
-
-        The dataset is resized as (xSize*factor, ySize*factor) or
-        (width, calulated height) or (calculated width, height).
-        self.vrt is rewritten to the the downscaled sizes.
-        If GCPs are given in a dataset, they are also rewritten.
-        If resize() is called without any parameters then previsous
-        resizing/reprojection cancelled.
-
-        Parameters
-        -----------
-        Either factor, or width, or height should be given:
-            factor : float, optional, default=1
-            width : int, optional
-            height : int, optional
-            eResampleAlg : int (GDALResampleAlg), optional
-                -1 : Average,
-                0 : NearestNeighbour,
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
-                if eResampleAlg > 0 : VRT.resized() is used
-                (Although the default is -1 (Average),
-                 if fileName start from 'ASA_', the default is 0 (NN).)
-
-        Modifies
-        ---------
-        self.vrt.dataset : VRT dataset of VRT object
-            raster size are modified to downscaled size.
-            If GCPs are given in the dataset, they are also overwritten.
-
-        '''
-        # if fileName start from 'ASA_' and eResampleAlg is default (Average),
-        # then change eResampleAlg to 0 (NearestNeighbour)
-        fileName = self.fileName.split('/')[-1].split('\\')[-1]
-        if fileName.startswith('ASA_') and eResampleAlg == -1:
-            eResampleAlg = 0
-
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
+    def _get_new_rastersize(self, factor=1, width=None, height=None):
         # get current shape
         rasterYSize = float(self.shape()[0])
         rasterXSize = float(self.shape()[1])
@@ -563,50 +533,155 @@ class Nansat(Domain):
         self.logger.info('New size/factor: (%f, %f)/%f' %
                         (newRasterXSize, newRasterYSize, factor))
 
+        return newRasterYSize, newRasterXSize, factor
+
+    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
+        '''Proportional resize of the dataset.
+
+        The dataset is resized as (xSize*factor, ySize*factor) or
+        (width, calulated height) or (calculated width, height).
+        self.vrt is rewritten to the the downscaled sizes.
+        Georeference is stored in the object. Useful e.g. for export.
+        If GCPs are given in a dataset, they are also rewritten.
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
+
+        WARNING: It seems like the function is presently not working for
+        complex bands and pixelfunction bands - in case this kind of data is
+        needed it should be copied to a numpy array which is added as a band
+        before resizing.
+
+        Parameters
+        -----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+            eResampleAlg : int (GDALResampleAlg), optional
+                -1 : Average,
+                0 : NearestNeighbour,
+
+        Modifies
+        ---------
+        self.vrt.dataset : VRT dataset of VRT object
+            raster size are modified to downscaled size.
+            If GCPs are given in the dataset, they are also overwritten.
+
+        '''
+        # resize back to original size/setting
+        if factor == 1 and width is None and height is None:
+            self.vrt = self.raw.copy()
+            return
+
+        # check if eResampleAlg is valid
         if eResampleAlg > 0:
-            # apply affine transformation using reprojection
-            self.vrt = self.vrt.resized(newRasterXSize,
-                                        newRasterYSize,
-                                        eResampleAlg=eResampleAlg)
-        else:
-            # simply modify VRT rasterX/Ysize and GCPs
-            # Get XML content from VRT-file
-            vrtXML = self.vrt.read_xml()
-            node0 = Node.create(vrtXML)
+            self.logger.error('''
+                            eResampleAlg must be <= 0.
+                            Use resize_without_georeference instead''')
+            return
 
-            # replace rasterXSize in <VRTDataset>
-            node0.replaceAttribute('rasterXSize', str(newRasterXSize))
-            node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+        # get new shape
+        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
+                                                              factor,
+                                                              width,
+                                                              height)
 
-            # replace xSize in <DstRect> of each source
-            for iNode1 in node0.nodeList('VRTRasterBand'):
-                for sourceName in ['ComplexSource', 'SimpleSource']:
-                    for iNode2 in iNode1.nodeList(sourceName):
-                        iNodeDstRect = iNode2.node('DstRect')
-                        iNodeDstRect.replaceAttribute('xSize',
-                                                      str(newRasterXSize))
-                        iNodeDstRect.replaceAttribute('ySize',
-                                                      str(newRasterYSize))
-                # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
-                if eResampleAlg == -1:
-                    iNode1.replaceTag('ComplexSource', 'AveragedSource')
-                    iNode1.replaceTag('SimpleSource', 'AveragedSource')
+        # Get XML content from VRT-file
+        vrtXML = self.vrt.read_xml()
+        node0 = Node.create(vrtXML)
 
-            # Edit GCPs to correspond to the downscaled size
-            if node0.node('GCPList'):
-                for iNode in node0.node('GCPList').nodeList('GCP'):
-                    pxl = float(iNode.getAttribute('Pixel')) * factor
-                    if pxl > float(rasterXSize):
-                        pxl = rasterXSize
-                    iNode.replaceAttribute('Pixel', str(pxl))
-                    lin = float(iNode.getAttribute('Line')) * factor
-                    if lin > float(rasterYSize):
-                        lin = rasterYSize
-                    iNode.replaceAttribute('Line', str(lin))
+        # replace rasterXSize in <VRTDataset>
+        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
 
-            # Write the modified elemements into VRT
-            self.vrt.write_xml(str(node0.rawxml()))
+        rasterYSize, rasterXSize = self.shape()
 
+        # replace xSize in <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for sourceName in ['ComplexSource', 'SimpleSource']:
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node('DstRect')
+                    iNodeDstRect.replaceAttribute('xSize',
+                                                  str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute('ySize',
+                                                  str(newRasterYSize))
+            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
+            if eResampleAlg == -1:
+                iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                iNode1.replaceTag('SimpleSource', 'AveragedSource')
+
+        # Edit GCPs to correspond to the downscaled size
+        if node0.node('GCPList'):
+            for iNode in node0.node('GCPList').nodeList('GCP'):
+                pxl = float(iNode.getAttribute('Pixel')) * factor
+                if pxl > float(rasterXSize):
+                    pxl = rasterXSize
+                iNode.replaceAttribute('Pixel', str(pxl))
+                lin = float(iNode.getAttribute('Line')) * factor
+                if lin > float(rasterYSize):
+                    lin = rasterYSize
+                iNode.replaceAttribute('Line', str(lin))
+
+        # Write the modified elemements into VRT
+        self.vrt.write_xml(str(node0.rawxml()))
+
+    def resize_lite(self, factor=1, width=None,
+                    height=None, eResampleAlg=1):
+        '''Proportional resize of the dataset. No georeference kept.
+
+        The dataset is resized as (xSize*factor, ySize*factor) or
+        (width, calulated height) or (calculated width, height).
+        self.vrt is rewritten to the the downscaled sizes.
+        No georeference (useful e.g. for export) is stored in the object.
+        If resize() is called without any parameters then previsous
+        resizing/reprojection cancelled.
+
+        WARNING: It seems like the function is presently not working for
+        complex bands and pixelfunction bands - in case this kind of data is
+        needed it should be copied to a numpy array which is added as a band
+        before resizing.
+
+        Parameters
+        -----------
+        Either factor, or width, or height should be given:
+            factor : float, optional, default=1
+            width : int, optional
+            height : int, optional
+            eResampleAlg : int (GDALResampleAlg), optional
+                1 : Bilinear,
+                2 : Cubic,
+                3 : CubicSpline,
+                4 : Lancoz
+                if eResampleAlg > 0 : VRT.get_resized_vrt() is used
+
+        Modifies
+        ---------
+        self.vrt.dataset : VRT dataset of VRT object
+            raster size are modified to downscaled size.
+
+        '''
+        # resize back to original size/setting
+        if factor == 1 and width is None and height is None:
+            self.vrt = self.raw.copy()
+            return
+
+        # check if eResampleAlg is valid
+        if eResampleAlg < 1:
+            self.logger.error('''
+                            eResampleAlg must be > 0.
+                            Use resize() instead''')
+            return
+
+        # get new shape
+        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
+                                                              factor,
+                                                              width,
+                                                              height)
+
+        # apply affine transformation using reprojection
+        self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
+                                            newRasterYSize,
+                                            eResampleAlg)
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -670,13 +745,15 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, tps=False):
-        ''' Reproject the object based on the given Domain
+                  WorkingDataType=None, tps=False, **kwargs):
+        ''' Change projection of the object based on the given Domain
 
         Warp the raw VRT using AutoCreateWarpedVRT() using projection
-        from the Domain.
+        from the dstDomain.
         Modify XML content of the warped vrt using the Domain parameters.
         Generate warpedVRT and replace self.vrt with warpedVRT.
+        If current object spans from 0 to 360 and dstDomain is west of 0,
+        the object is shifted by 180 westwards.
 
         Parameters
         -----------
@@ -688,6 +765,13 @@ class Nansat(Domain):
             2 : Cubic,
             3 : CubicSpline
             4 : Lancoz
+        blockSize : int
+            size of blocks for resampling. Large value decrease speed
+            but increase accuracy at the edge
+        WorkingDataType : int (GDT_int, ...)
+            type of data in bands. Shuold be integer for int32 bands
+        tps : boolean
+            Use thin-spline trasnformation or not
 
         Modifies
         ---------
@@ -697,7 +781,6 @@ class Nansat(Domain):
         See Also
         ---------
         http://www.gdal.org/gdalwarp.html
-
         '''
         # dereproject
         self.vrt = self.raw.copy()
@@ -705,6 +788,17 @@ class Nansat(Domain):
         # if no domain: quit
         if dstDomain is None:
             return
+
+        # if self spans from 0 to 360 and dstDomain is west of 0:
+        #     shift self westwards by 180 degrees
+        # check span
+        srcCorners = self.get_corners()
+        if round(min(srcCorners[0])) == 0 and round(max(srcCorners[0])) == 360:
+            # check intersection of src and dst
+            dstCorners = dstDomain.get_corners()
+            if min(dstCorners[0]) < 0:
+                # shift
+                self.raw = self.raw.get_shifted_vrt(-180)
 
         # get projection of destination dataset
         dstSRS = dstDomain.vrt.dataset.GetProjection()
@@ -715,16 +809,31 @@ class Nansat(Domain):
             # get projection of destination GCPs
             dstSRS = dstDomain.vrt.dataset.GetGCPProjection()
 
+        xSize = dstDomain.vrt.dataset.RasterXSize
+        ySize = dstDomain.vrt.dataset.RasterYSize
+
+        # get geoTransform
+        if 'use_gcps' in kwargs.keys() and not (kwargs['use_gcps']):
+            corners = dstDomain.get_corners()
+            ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' % (min(corners[0]),
+                                                              min(corners[1]),
+                                                              max(corners[0]),
+                                                              max(corners[1]),
+                                                              xSize, ySize)
+            d = Domain(srs=dstSRS, ext=ext)
+            geoTransform = d.vrt.dataset.GetGeoTransform()
+        else:
+            geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+
         # create Warped VRT
-        warpedVRT = self.raw.create_warped_vrt(
-                    dstSRS=dstSRS, dstGCPs=dstGCPs,
-                    eResampleAlg=eResampleAlg,
-                    xSize=dstDomain.vrt.dataset.RasterXSize,
-                    ySize=dstDomain.vrt.dataset.RasterYSize,
-                    blockSize=blockSize,
-                    geoTransform=dstDomain.vrt.dataset.GetGeoTransform(),
-                    WorkingDataType=WorkingDataType,
-                    tps=tps)
+        warpedVRT = self.raw.get_warped_vrt(dstSRS=dstSRS,
+                                            dstGCPs=dstGCPs,
+                                            eResampleAlg=eResampleAlg,
+                                            xSize=xSize, ySize=ySize,
+                                            blockSize=blockSize,
+                                            geoTransform=geoTransform,
+                                            WorkingDataType=WorkingDataType,
+                                            tps=tps, **kwargs)
 
         # set current VRT object
         self.vrt = warpedVRT
@@ -798,7 +907,7 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                    **kwargs):
+                     **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -829,109 +938,15 @@ class Nansat(Domain):
             Then the first element is Red, the second is Green,
             and the third is Blue.
         clim : list with two elements or 'hist' to specify range of colormap
-            None (default) : min/max values are fetched from WKV,fallback-'hist'
+            None (default) : min/max values are fetched from WKV,
+            fallback-'hist'
             [min, max] : min and max are numbers, or
             [[min, min, min], [max, max, max]]: three bands used
             'hist' : a histogram is used to calculate min and max values
         addDate : boolean
             False (default) : no date will be aded to the caption
             True : the first time of the object will be added to the caption
-        **kwargs : parameters for Figure(). See below:
-        ---------- Figure.__init__() parameters: -----------
-            cmin : number (int ot float) or [number, number, number]
-                0, minimum value of varibale in the matrix to be shown
-            cmax : number (int ot float) or [number, number, number]
-                1, minimum value of varibale in the matrix to be shown
-            gamma : float, >0
-                2, coefficient for tone curve udjustment
-            subsetArraySize : int
-                100000, size of the subset array which is used to get histogram
-            numOfColor : int
-                250, number of colors for use of the palette.
-                254th is black and 255th is white.
-            cmapName : string
-                'jet', name of Matplotlib colormaps
-                see --> http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-            ratio : float, [0 1]
-                1.0, ratio of pixels which are used to write the figure
-            numOfTicks : int
-                5, number of ticks on a colorbar
-            titleString : string
-                '', title of legend (1st line)
-            caption : string
-                '', caption of the legend (2nd line, e.g. long name and units)
-            fontSize : int
-                12, size of the font of title, caption and ticks
-            logarithm : boolean, defult = False
-                If True, tone curve is used to convert pixel values.
-                If False, linear.
-            legend : boolean, default = False
-                if True, information as textString, colorbar, longName and
-                units are added in the figure.
-            mask_array : 2D numpy array, int, the shape should be equal
-                array.shape. If given this array is used for masking land,
-                clouds, etc on the output image. Value of the array are
-                indeces. LUT from mask_lut is used for coloring upon this
-                indeces.
-            mask_lut : dictionary
-                Look-Up-Table with colors for masking land, clouds etc. Used
-                tgether with mask_array:
-                {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
-                index 0 - will have black color
-                      1 - dark gray
-                      2 - light gray
-                      3 - blue
-            logoFileName : string
-                name of the file with logo
-            logoLocation : list of two int, default = [0,0]
-                X and Y offset of the image
-                If positive - offset is from left, upper edge
-                If Negative - from right, lower edge
-                Offset is calculated from the entire image legend inclusive
-            logoSize : list of two int
-                desired X,Y size of logo. If None - original size is used
-            latGrid : numpy array
-                full size array with latitudes. For adding lat/lon grid lines
-            lonGrid : numpy array
-                full size array with longitudes. For adding lat/lon grid lines
-            latlonGridSpacing : int
-                number of lat/lon grid lines to show
-            latlonLabels : int
-                number of lat/lon labels to show along each side.
-            transparency : int
-                transparency of the image background(mask), set for PIL alpha
-                mask in Figure.save()
-            default : None
-
-            Advanced parameters
-            --------------------
-            LEGEND_HEIGHT : float, [0 1]
-                0.1, legend height relative to image height
-            CBAR_HEIGHTMIN : int
-                5, minimum colorbar height, pixels
-            CBAR_HEIGHT : float, [0 1]
-                0.15,  colorbar height relative to image height
-            CBAR_WIDTH : float [0 1]
-                0.8, colorbar width  relative to legend width
-            CBAR_LOCATION_X : float [0 1]
-                0.1, colorbar offset X  relative to legend width
-            CBAR_LOCATION_Y : float [0 1]
-                0.5,  colorbar offset Y  relative to legend height
-            CBAR_LOCATION_ADJUST_X : int
-                5,  colorbar offset X, pixels
-            CBAR_LOCATION_ADJUST_Y : int
-                3,  colorbar offset Y, pixels
-            TEXT_LOCATION_X : float, [0 1]
-                0.1, caption offset X relative to legend width
-            TEXT_LOCATION_Y : float, [0 1]
-                0.1, caption offset Y relative to legend height
-            NAME_LOCATION_X : float, [0 1]
-                0.1, title offset X relative to legend width
-            NAME_LOCATION_Y :
-                0.3, title  offset Y relative to legend height
-            DEFAULT_EXTENSION : string
-                '.png'
-        --------------------------------------------------
+        **kwargs : parameters for Figure().
 
         Modifies
         ---------
@@ -974,12 +989,6 @@ class Nansat(Domain):
         else:
             bands = [self._get_band_number(bands)]
 
-        # if cmin / cmax is scalar, convert to a list
-        for ikey in ['cmin', 'cmax']:
-            if ikey in kwargs:
-                if not isinstance(kwargs[ikey], list):
-                    kwargs[ikey] = [kwargs[ikey]]
-
         # == create 3D ARRAY ==
         array = None
         for band in bands:
@@ -997,7 +1006,11 @@ class Nansat(Domain):
         array = None
 
         # == PREPARE cmin/cmax ==
-        # try to get clim from WKV if it is not given
+        # check if cmin and cmax are given as the arguments
+        if 'cmin' in kwargs.keys() and 'cmax' in kwargs.keys():
+            clim = [kwargs['cmin'], kwargs['cmax']]
+
+        # try to get clim from WKV if it is not given as the argument
         # if failed clim will be evaluated from histogram
         if clim is None:
             clim = [[], []]
@@ -1046,17 +1059,6 @@ class Nansat(Domain):
             caption += self.get_time()[0].strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
-
-        # modify clim if cmin and cmax are given as the arguments
-        if 'cmin' in kwargs.keys():
-            for i in range(len(kwargs['cmin'])):
-                if kwargs['cmin'][i] > clim[0][i]:
-                    clim[0][i] = kwargs['cmin'][i]
-
-        if 'cmax' in kwargs.keys():
-            for i in range(len(kwargs['cmax'])):
-                if kwargs['cmax'][i] < clim[1][i]:
-                    clim[1][i] = kwargs['cmax'][i]
 
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
@@ -1150,211 +1152,6 @@ class Nansat(Domain):
             print colorTable
         outDataset = None
         self.vrt.copyproj(fileName)
-
-    def write_nansatmap( self, fileName=None, contour=None, contourf=None,
-                         quiver=None, mesh=None, color_bar=False,
-                         cbar_num_of_ticks=7, cbar_round_decimals=0,
-                         grid=False, landmask=True, **kwargs):
-        ''' Save a raster band to a figure in graphical format.
-
-        Parameters
-        -----------
-        fileName : string, optional
-            Output file name. if one of extensions 'png', 'emf', 'eps', 'pdf',
-            'rgba', 'ps', 'raw', 'svg', 'svgz' is included,
-            specified file is crated. otherwise, 'png' file is created.
-            if None, the Nansatmap object is returned.
-            if True, the Nansatmap is shown
-        contour : numpy 2D array, int or string
-            input data, band number or band name
-        contourf : numpy 2D array, int or string
-            input data, band number or band name
-        quiver : list of numpy 2D array, int or string
-            (e.g. [array, array], [int, str], etc...)
-            input data, band number or band name
-        mesh : numpy 2D array, int or string
-            input data, band number or band name
-        color_bar : bool
-            add color bar?
-        cbar_num_of_ticks : int
-            number of ticks on the colorbar
-        cbar_round_decimals : int
-            decimals of scale on the colorbar
-        grid : bool
-            draw grid?
-        landmask : bool
-            draw continents?
-        **kwargs : parameters for nansatmap().
-            See nansatmap.py
-
-        Modifies
-        ---------
-        if fileName is specified, creates nansatmap file
-
-        Returns
-        -------
-        Nansatmap object
-
-        Example
-        --------
-        # write contour line and save the image
-        n.write_nansatmap('test.jpg', contour=n[3])
-        # put colors and write quiverplots
-        n.write_nansatmap('test.jpg', mesh=1, quiver=['east_wind','north_wind'],
-                          grid=True, color_bar=True)
-
-        See also
-        --------
-        Nansatmap()
-        http://matplotlib.org/basemap/api/basemap_api.html#mpl_toolkits.basemap.Basemap
-
-        '''
-        # if data is given by band number or name, get the array
-        for dataVar in ['contour', 'contourf', 'mesh', 'quiver']:
-            if locals()[dataVar] is not None:
-                if type(locals()[dataVar])==list:
-                    if type(locals()[dataVar][0]) != np.ndarray:
-                        listData = []
-                        for i, iValue in enumerate(locals()[dataVar]):
-                            if type(locals()[dataVar][i])==str:
-                                bandNum = self._get_band_number(locals()[dataVar])
-                            if type(locals()[dataVar][i])==int:
-                                bandNum = locals()[dataVar][i]
-                            listData.append(self[bandNum])
-                        if listData != []:
-                            globals()[dataVar] = listData
-
-                elif type(locals()[dataVar]) == np.ndarray and dataVar+'Valid' in kwargs:
-                        globals()[dataVar+'Valid'] = kwargs.pop(dataVar+'Valid')
-
-                elif type(locals()[dataVar]) != np.ndarray:
-                    if type(locals()[dataVar])==str:
-                        bandNum = self._get_band_number(locals()[dataVar])
-                    elif type(locals()[dataVar])==int:
-                        bandNum = locals()[dataVar]
-                    # set Variable
-                    globals()[dataVar] = self[bandNum]
-                    # set varlid min and max values for colorbar ticks
-                    if dataVar+'Valid' in kwargs:
-                        globals()[dataVar+'Valid'] = kwargs.pop(dataVar+'Valid')
-                    else:
-                        try:
-                            globals()[dataVar+'Valid'] = [
-                            float(self.vrt.dataset.GetRasterBand(bandNum).GetMetadataItem('valid_min')),
-                            float(self.vrt.dataset.GetRasterBand(bandNum).GetMetadataItem('valid_max'))]
-                        except:
-                            globals()[dataVar+'Valid'] = None
-                else:
-                    globals()[dataVar+'Valid'] = None
-
-        # Create Nansatmap object
-        argKeys = ['lcrnrlon', 'llcrnrlat', 'urcrnrlon', 'urcrnrlat',
-                   'llcrnrx', 'llcrnry', 'urcrnrx', 'urcrnry',
-                   'width', 'height', 'projection', 'resolution',
-                   'area_thresh', 'rsphere', 'lat_ts',
-                   'lat_0', 'lat_1', 'lat_2', 'lon_0', 'lon_1', 'lon_2',
-                   'k_0', 'no_rot', 'suppress_ticks', 'satellite_height',
-                   'boundinglat', 'fix_aspect', 'anchor', 'celestial',
-                   'round', 'ax', 'num', 'figsize', 'dpi',
-                   'facecolor', 'edgecolor', 'frameon']
-        kwargs1 = self._pickup_args(kwargs, argKeys)
-        nMap = Nansatmap(self, **kwargs1)
-
-        # draw filled contour plot
-        if contourf is not None:
-            argKeys = ['smooth', 'mode', 'colors', 'alpha', 'cmap', 'norm',
-                       'vmin', 'vmax', 'levels', 'origin', 'extent',
-                       'locator', 'extend', 'xunits', 'yunits', 'antialiased',
-                       'nchunk', 'hatches']
-            kwargs1 = self._pickup_args(kwargs, argKeys)
-            if type(contourf) != np.ndarray:
-                contourf = globals()['contourf']
-
-            nMap.contourf(contourf, contourfValid, cbar_num_of_ticks,
-                          cbar_round_decimals, **kwargs1)
-
-        # draw black smooth contour plot with labels
-        if contour is not None:
-            argKeys = ['smooth','contourFontsize','contourColors', 'alpha',
-                       'cmap', 'norm', 'vmin', 'vmax', 'levels', 'origin',
-                       'extent', 'locator', 'extend', 'xunits', 'yunits',
-                       'antialiased', 'linewidths', 'linestyles']
-
-            kwargs1 = self._pickup_args(kwargs, argKeys)
-
-            if 'contourFontsize' in kwargs1.keys():
-                kwargs1['fontsize'] = kwargs1.pop('contourFontsize')
-            if 'contourColors' in kwargs1.keys():
-                kwargs1['colors'] = kwargs1.pop('contourColors')
-            if type(contour) != np.ndarray:
-                contour = globals()['contour']
-            nMap.contour(contour, contourValid, cbar_num_of_ticks,
-                         cbar_round_decimals, **kwargs1)
-
-        # pseudo-color plot over the map
-        if mesh is not None:
-            argKeys = ['cmap', 'norm', 'vmin', 'vmax', 'shading',
-                       'edgecolors', 'alpha', 'agg_filter', 'animated',
-                       'antialiased', 'array', 'axes', 'clim', 'clip_box',
-                       'clip_on', 'clip_path', 'cmap', 'meshColor', 'colorbar',
-                       'contains', 'edgecolor', 'facecolor', 'figure', 'gid',
-                       'hatch', 'label', 'linestyle', 'linewidth', 'lod',
-                       'norm', 'offset_position', 'offsets', 'paths',
-                       'picker', 'pickradius', 'rasterized', 'snap',
-                       'transform', 'url', 'urls', 'visible', 'zorder']
-            kwargs1 = self._pickup_args(kwargs, argKeys)
-            if 'meshColor' in kwargs1.keys():
-                kwargs1['color'] = kwargs1.pop('meshColor')
-            if type(mesh) != np.ndarray:
-                mesh = globals()['mesh']
-            nMap.pcolormesh(mesh, meshValid, **kwargs1)
-
-        # quiver plot
-        if quiver is not None:
-            if type(quiver)==list and len(quiver)==2:
-                argKeys = ['quivectors']
-                kwargs1 = self._pickup_args(kwargs, argKeys)
-                if type(quiver[0]) != np.ndarray:
-                    quiver = globals()['quiver']
-                nMap.quiver(quiver[0], quiver[1], **kwargs1)
-            else:
-                self.logger.warning('"quiver" mast be a list of two numpy arrays.')
-
-        # add colorbar
-        if color_bar:
-            argKeys = ['orientation', 'pad', 'cbarFontsize']
-            kwargs1 = self._pickup_args(kwargs, argKeys)
-            if 'cbarFontsize' in kwargs1.keys():
-                kwargs1['fontsize'] = kwargs1.pop('cbarFontsize')
-            nMap.add_colorbar(**kwargs1)
-
-        # add geocoordinates
-        if grid:
-            argKeys = ['gridFontsize', 'lat_num', 'lon_num',
-                       'lat_labels', 'lon_labels']
-            kwargs1 = self._pickup_args(kwargs, argKeys)
-            if 'gridFontsize' in kwargs1.keys():
-                kwargs1['fontsize'] = kwargs1.pop('gridFontsize')
-            nMap.drawgrid(**kwargs1)
-
-        # Save to a image file or Show
-        if fileName is not None:
-            argKeys = ['color', 'lake_color', 'ax', 'zorder', 'alpha']
-            kwargs1 = self._pickup_args(kwargs, argKeys)
-            if type(fileName)==bool and fileName:
-                if landmask:
-                    nMap.draw_continents(**kwargs1)
-                plt.show()
-            elif type(fileName)==str:
-                nMap.save(fileName, landmask, **kwargs1)
-        return nMap
-
-    def _pickup_args(self, allkwargs, keys):
-        kwargs = {}
-        for iArg in keys:
-            if iArg in allkwargs.keys():
-                kwargs[iArg] = allkwargs[iArg]
-        return kwargs
 
     def get_time(self, bandID=None):
         ''' Get time for dataset and/or its bands
@@ -1502,6 +1299,7 @@ class Nansat(Domain):
             # to lowercase
             mapperName = mapperName.replace('mapper_',
                                             '').replace('.py', '').lower()
+            # create VRT
             try:
                 mapper_module = __import__('mapper_' + mapperName)
             except ImportError:
@@ -1512,12 +1310,12 @@ class Nansat(Domain):
         else:
             # We test all mappers, import one by one
             for iMapper in self.mapperList:
-                #get rid of .py extension
+                # get rid of .py extension
                 iMapper = iMapper.replace('.py', '')
                 self.logger.debug('Trying %s...' % iMapper)
                 try:
                     mapper_module = __import__(iMapper)
-                    #create a Mapper object and get VRT dataset from it
+                    # create a Mapper object and get VRT dataset from it
                     tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
                                                   metadata, **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
@@ -1567,7 +1365,6 @@ class Nansat(Domain):
         '''
         bandNumber = 0
         # if bandID is str: create simple dict with seraching criteria
-        searchDict = None
         if type(bandID) == str:
             bandID = {'name': bandID}
 
@@ -1575,16 +1372,18 @@ class Nansat(Domain):
         if type(bandID) == dict:
             bandsMeta = self.bands()
             for b in bandsMeta:
+                numCorrectKeys = 0
                 for key in bandID:
                     if (key in bandsMeta[b] and
                             bandID[key] == bandsMeta[b][key]):
+                        numCorrectKeys = numCorrectKeys + 1
+                    if numCorrectKeys == len(bandID):
                         bandNumber = b
                         break
 
         # if bandID is int and with bounds: return this number
-        if (type(bandID) == int and
-            bandID >= 1 and
-            bandID <= self.vrt.dataset.RasterCount):
+        if (type(bandID) == int and bandID >= 1 and
+                bandID <= self.vrt.dataset.RasterCount):
             bandNumber = bandID
 
         # if no bandNumber found - raise error
@@ -1594,175 +1393,6 @@ class Nansat(Domain):
                               % (str(bandID), self.vrt.dataset.RasterCount))
 
         return bandNumber
-
-    def mosaic(self, files=[], bands=[], doReproject=True, maskName='mask',
-               **kwargs):
-        '''Mosaic input files. If images overlap, calculate average
-
-        Convert all input files into Nansat objects, reproject onto the
-        Domain of the current object, get bands, from each object,
-        calculate average and STD, add averaged bands (and STD) to the current
-        object.
-
-        mosaic() tries to get band 'mask' from the input files. The mask
-        should have the following coding:
-            0 : nodata
-            1 : clouds
-            2 : land
-            64 : valid pixel
-        If it gets that band (which can be provided by some mappers or Nansat
-        childs, e.g.  ModisL2Image) it uses it to select averagable pixels
-        (i.e. where mask == 64).
-        If it cannot locate the band 'mask' is assumes that all pixels are
-        averagebale except for thouse out of swath after reprojection.
-
-        mosaic() adds bands to the object, so it works only with empty, or
-        non-projected objects
-
-        Parameters
-        -----------
-        files : list
-            list of input files
-        bands : list
-            list of names/band_numbers to be processed
-        doReproject : boolean, [True]
-            reproject input files?
-        maskName : str, ['mask']
-            name of the mask in input files
-        nClass : child of Nansat, [Nansat]
-            This class is used to read input files
-        mapperName : str, ['']
-            This mapper is used to read input files
-        eResampleAlg : int, [0]
-            agorithm for reprojection, see Nansat.reproject()
-
-        '''
-        # get Nansat child class for opening file
-        nClass = kwargs.get('nClass', Nansat)
-
-        # get mapper name for opening file
-        mapperName = kwargs.get('mapperName', '')
-
-        # get resampling method for reproject
-        eResampleAlg = kwargs.get('eResampleAlg', 0)
-
-        # get desired shape
-        dstShape = self.shape()
-        self.logger.debug('dstShape: %s' % str(dstShape))
-
-        # preallocate 2D matrices for sum, sum of squares, count of products
-        # and mask
-        self.logger.debug('Allocating 2D matrices')
-        avgMat = {}
-        stdMat = {}
-        for b in bands:
-            avgMat[b] = np.zeros((dstShape[0], dstShape[1]))
-            stdMat[b] = np.zeros((dstShape[0], dstShape[1]))
-
-        cntMat = np.zeros((dstShape[0], dstShape[1]), 'float16')
-        maskMat = np.zeros((2, dstShape[0], dstShape[1]), 'int8')
-
-        # for all input files
-        for i, f in enumerate(files):
-            self.logger.info('Processing %s' % f)
-            # open file using Nansat or its child class
-            # the line below is for debugging
-            #n = nClass(f, logLevel=self.logger.level, mapperName=mapperName)
-            try:
-                n = nClass(f, logLevel=self.logger.level,
-                           mapperName=mapperName)
-            except:
-                self.logger.error('Unable to open %s' % f)
-                continue
-
-            # get metadata from the image (only last img metadata is kept)
-            bandsMetadata = n.bands()
-
-            # add mask band [0: nodata, 1: cloud, 2: land, 64: data]
-            try:
-                mask = n[maskName]
-            except:
-                self.logger.error('Cannot get mask from %s' % f)
-                mask = 64 * np.ones(n.shape()).astype('int8')
-                n.add_band(array=mask, parameters={'name': maskName})
-
-            if doReproject:
-                # reproject image and get reprojected mask
-                try:
-                    n.reproject(self, eResampleAlg=eResampleAlg)
-                    mask = n[maskName]
-                except:
-                    self.logger.error('Unable to reproject %s' % f)
-                    continue
-            # if mask was not received from projected image
-            # create zeros (out of swath) for blocking this image from
-            # averaging
-            if mask is None:
-                self.logger.error('No mask in reprojected file %s!' % f)
-                mask = np.zeros(n.shape()).astype('int8')
-
-            # add data to counting matrix
-            cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
-            cntMatTmp[mask > 2] = 1
-            cntMat += cntMatTmp
-            # add data to mask matrix (maximum of 0, 1, 2, 64)
-            maskMat[0, :, :] = mask
-            maskMat[1, :, :] = maskMat.max(0)
-
-            # add data to summation matrix
-            for b in bands:
-                self.logger.debug('    Adding %s to sum' % b)
-                # get projected data from Nansat object
-                a = None
-                try:
-                    a = n[b]
-                except:
-                    self.logger.error('%s is not in %s' % (b, n.fileName))
-                if a is not None:
-                    # mask invalid data
-                    a[mask <= 2] = 0
-                    # sum of valid values and squares
-                    avgMat[b] += a
-                    stdMat[b] += np.square(a)
-            # destroy
-            n = None
-
-        # average products
-        cntMat[cntMat == 0] = np.nan
-        for b in bands:
-            self.logger.debug('    Averaging %s' % b)
-            # get average
-            avg = avgMat[b] / cntMat
-            # calculate STD
-            # STD = sqrt(sum((x-M)^2)/n) = (sqrt((sum(x^2) -
-            #                                2*mean(x)*sum(x) +
-            #                                sum(mean(x)^2))/n))
-            stdMat[b] = np.sqrt((stdMat[b] - 2.0 * avg * avgMat[b] +
-                                np.square(avg) * cntMat) / cntMat)
-            # set std
-            avgMat[b] = avg
-
-        # calculate mask (max of 0, 1, 2, 64)
-        maskMat = maskMat.max(0)
-        # if old 'valid' mask was applied in files, replace with new mask
-        maskMat[maskMat == 128] = 64
-
-        self.logger.debug('Adding bands')
-        # add mask band
-        self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'name': maskName, 'long_name': 'L2-mask', 'standard_name': 'mask'})
-        # add averaged bands with metadata
-        for b in bands:
-            self.logger.debug('    %s' % b)
-
-            # get metadata of this band
-            for bm in bandsMetadata:
-                if bandsMetadata[bm]['name'] == b:
-                    parameters = bandsMetadata[bm]
-
-            self.add_band(array=avgMat[b], parameters=parameters)
-            parameters['name'] = b + '_std'
-            self.add_band(array=stdMat[b], parameters=parameters)
 
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Overloaded in childs.'''
@@ -1796,7 +1426,9 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
-    def get_transect(self, points=None, bandList=[1], latlon=True, transect=True, returnOGR=False, layerNum=0):
+    def get_transect(self, points=None, bandList=[1], latlon=True,
+                     transect=True, returnOGR=False, layerNum=0,
+                     smooth=0, **kwargs):
         '''Get transect from two poins and retun the values by numpy array
 
         Parameters
@@ -1804,7 +1436,7 @@ class Nansat(Domain):
         points : tuple with one or more points or shape file name
             i.e. ((lon1, lat1),(lon2, lat2),(lon3, lat3), ...) or
                  ((col1, row1),(col2, row2),(col3, row3), ...)
-        bandID : list of int or string
+        bandList : list of int or string
             elements of the list are band number or band Name
         latlon : bool
             If the points in lat/lon, then True.
@@ -1817,13 +1449,48 @@ class Nansat(Domain):
             If False, return OGR object
         layerNum: int
             If shapefile is given as points, it is the number of the layer
+        smooth: int or [int, int]
+            If smooth or smooth[0] is greater than 0, smooth every transect
+            pixel as the median (default, smooth[1]=0) or mean (smooth[1]=1)
+            value in a box with sides equal to the given number.
+            smooth or smooth[0] must be 0 or a positive odd number
+            smooth[1] can be 0 or 1 for median or mean
+
+        vmin, vmax : int (optional)
+            minimum and maximum pixel values of an image shown
+            in case points is None.
 
         Returns
         --------
-        transect : list or OGR object
-            values of the transect or OGR object with the transect values
+        if returnOGR:
+            transect : OGR object with points coordinates and values
+        else:
+            transect : list or
+                values of the transect or OGR object with the transect values
+            [lonVector, latVector] : list with longitudes, latitudes
+            pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
+        smooth_function = scipy.stats.nanmedian
+        if type(smooth) is list:
+            if smooth[0] < 0:
+                raise ValueError("smooth[0] must be 0 or a positive odd number.")
+            if smooth[0] > 0 and (smooth[0] % 2) != 1:
+                raise ValueError("The kernel size smooth[0] should be odd.")
+            if not smooth[1] == 0 and not smooth[1] == 1:
+                raise ValueError("smooth[1] must be 0 or 1 for median or mean filter.")
+            if smooth[1] == 1:
+                smooth_function = scipy.stats.nanmean
+        else:
+            if smooth < 0:
+                raise ValueError("smooth must be 0 or a positive odd number.")
+            if smooth > 0 and (smooth % 2) != 1:
+                raise ValueError("The kernel size smooth should be odd.")
+            tmp = smooth
+            smooth = []
+            smooth.append(tmp)
+
+        data = None
         # if shapefile is given, get corner points from it
         if type(points) == str:
             nansatOGR = Nansatshape(fileName=points)
@@ -1832,10 +1499,12 @@ class Nansat(Domain):
 
         # if points is not given, get points from GUI ...
         if points is None:
-            firstBand =bandList[0]
+            firstBand = bandList[0]
             if type(firstBand) == str:
                 firstBand = self._get_band_number(firstBand)
-            browser = PointBrowser(self[firstBand])
+            data = self[firstBand]
+
+            browser = PointBrowser(data, **kwargs)
             browser.get_points()
             points = tuple(browser.coordinates)
             latlon = False
@@ -1843,7 +1512,7 @@ class Nansat(Domain):
         # get wkt
         wkt = self._get_projection(self.vrt.dataset)
 
-        pixlinCoord = np.array([[],[]])
+        pixlinCoord = np.array([[], []])
         for iPoint in range(len(points)):
             # if one point is given
             if type(points[iPoint]) != tuple:
@@ -1857,39 +1526,87 @@ class Nansat(Domain):
             else:
                 try:
                     point0 = points[iPoint]
-                    point1 = points[iPoint+1]
+                    point1 = points[iPoint + 1]
                 except:
                     break
             # if points in degree, convert them into pix/lin
             if latlon:
-                pix, lin = self._transform_points([point0[0], point1[0]],[point0[1], point1[1]], DstToSrc=1)
+                pix, lin = self._transform_points([point0[0], point1[0]],
+                                                  [point0[1], point1[1]],
+                                                  DstToSrc=1)
                 point0 = (pix[0], lin[0])
                 point1 = (pix[1], lin[1])
             # compute Euclidean distance between point0 and point1
-            length = int(np.hypot(point0[0]-point1[0], point0[1]-point1[1]))
+            length = int(np.hypot(point0[0] - point1[0],
+                                  point0[1] - point1[1]))
             # if a point is given
             if length == 0:
                 length = 1
             # get sequential coordinates on pix/lin between two points
-            pixVector = list(np.linspace(point0[0], point1[0], length).astype(int))
-            linVector = list(np.linspace(point0[1], point1[1], length).astype(int))
-            pixlinCoord = np.append(pixlinCoord, [pixVector, linVector], axis=1)
+            pixVector = list(np.linspace(point0[0],
+                                         point1[0],
+                                         length).astype(int))
+            linVector = list(np.linspace(point0[1],
+                                         point1[1],
+                                         length).astype(int))
+            pixlinCoord = np.append(pixlinCoord,
+                                    [pixVector, linVector],
+                                    axis=1)
+            if smooth[0]:
+                pixlinCoord0 = pixlinCoord - int(smooth[0]) / 2
+                pixlinCoord1 = pixlinCoord + int(smooth[0]) / 2
 
         # convert pix/lin into lon/lat
-        lonVector, latVector = self._transform_points(pixlinCoord[0], pixlinCoord[1], DstToSrc=0)
-
+        lonVector, latVector = self._transform_points(pixlinCoord[0],
+                                                      pixlinCoord[1],
+                                                      DstToSrc=0)
         transect = []
         # get data
         for iBand in bandList:
             if type(iBand) == str:
                 iBand = self._get_band_number(iBand)
-            data = self[iBand]
+            if data is None:
+                data = self[iBand]
             # extract values
-            transect.append(data[list(pixlinCoord[1]), list(pixlinCoord[0])].tolist())
+            if smooth[0]:
+                transect0 = []
+                for xmin, xmax, ymin, ymax in zip(pixlinCoord0[1],
+                                                  pixlinCoord1[1],
+                                                  pixlinCoord0[0],
+                                                  pixlinCoord1[0]):
+                    transect0.append(smooth_function(data[xmin:xmax,
+                                                          ymin:ymax],
+                                                     axis=None))
+                transect.append(transect0)
+            else:
+                transect.append(data[list(pixlinCoord[1]),
+                                list(pixlinCoord[0])].tolist())
+            data = None
         if returnOGR:
-            NansatOGR = Nansatshape(wkt=wkt)
-            NansatOGR.set_layer(lonlatCoord=[lonVector, latVector], pixlinCoord=pixlinCoord, fieldNames=map(str, bandList), fieldValues=transect)
+            # Lists for field names and datatype
+            names = ['X (pixel)', 'Y (line)']
+            formats = ['i4', 'i4']
+            for iBand in bandList:
+                names.append('transect_' + str(iBand))
+                formats.append('f8')
+            # Create zeros structured numpy array
+            fieldValues = np.zeros(len(pixlinCoord[1]),
+                                   dtype={'names': names,
+                                          'formats': formats})
+            # Set values into the structured numpy array
+            fieldValues['X (pixel)'] = pixlinCoord[0]
+            fieldValues['Y (line)'] = pixlinCoord[1]
+            for i, iBand in enumerate(bandList):
+                fieldValues['transect_' + str(iBand)] = transect[i]
+            # Create Nansatshape object
+            srs = osr.SpatialReference()
+            srs.ImportFromWkt(wkt)
+            NansatOGR = Nansatshape(srs=srs)
+            # Set features and geometries into the Nansatshape
+            NansatOGR.add_features(coordinates=[lonVector, latVector],
+                                   values=fieldValues,
+                                   AddPixLine=False)
+            # Return Nansatshape object
             return NansatOGR
         else:
-            return transect, [lonVector, latVector]
-
+            return transect, [lonVector, latVector], pixlinCoord.astype(int)

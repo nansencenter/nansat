@@ -20,7 +20,7 @@ from nansat_tools import *
 
 # import nansat parts
 try:
-    from vrt import VRT, GeolocationArray
+    from vrt import VRT
 except ImportError:
     warnings.warn('Cannot import vrt!'
                   'domain will not work.')
@@ -412,7 +412,7 @@ class Domain():
         kmlFile.write('</kml>')
         kmlFile.close()
 
-    def get_geolocation_grids(self):
+    def get_geolocation_grids(self, stepSize=1):
         '''Get longitude and latitude grids representing the full data grid
 
         If GEOLOCATION is not present in the self.vrt.dataset then grids
@@ -420,31 +420,35 @@ class Domain():
         If GEOLOCATION is present in the self.vrt.dataset then grids are read
         from the geolocation bands.
 
+        Parameters
+        -----------
+        stepSize : int
+            Reduction factor if output is desired on a reduced grid size
+
         Returns
         --------
         longitude : numpy array
             grid with longitudes
         latitude : numpy array
             grid with latitudes
-
         '''
+
+        X = range(0, self.vrt.dataset.RasterXSize, stepSize)
+        Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
         # if the vrt dataset has geolocationArray
         if len(self.vrt.geolocationArray.d) > 0:
-            longitude = self.vrt.geolocationArray.xVRT.dataset.ReadAsArray()
-            latitude = self.vrt.geolocationArray.yVRT.dataset.ReadAsArray()
+            geoArray = self.vrt.geolocationArray
+            longitude = geoArray.xVRT.dataset.ReadAsArray()[X, Y]
+            latitude = geoArray.yVRT.dataset.ReadAsArray()[X, Y]
         else:
             # create empty grids
-            longitude = np.zeros([self.vrt.dataset.RasterYSize,
-                                  self.vrt.dataset.RasterXSize], 'float32')
-            latitude = np.zeros([self.vrt.dataset.RasterYSize,
-                                 self.vrt.dataset.RasterXSize], 'float32')
+            longitude = np.zeros([len(Y), len(X)], 'float32')
+            latitude = np.zeros([len(Y), len(X)], 'float32')
             # fill row-wise
-            for i in range(self.vrt.dataset.RasterXSize):
-                [lo, la] = self._transform_points(
-                           [i] * self.vrt.dataset.RasterYSize,
-                           range(self.vrt.dataset.RasterYSize))
-                longitude[:, i] = lo
-                latitude[:, i] = la
+            for index, i in enumerate(X):
+                [lo, la] = self._transform_points([i] * len(Y), Y)
+                longitude[:, index] = lo
+                latitude[:, index] = la
 
         return longitude, latitude
 
@@ -544,9 +548,9 @@ class Domain():
             if trkey != '':
                 elements = []
                 for i in range(2):
-                    elements.append(float(trElem[i + 1].\
+                    elements.append(float(trElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "'[]'")))
                 extentDic[trkey] = elements
 
         # Find -ts text
@@ -566,9 +570,9 @@ class Domain():
             if tskey != '':
                 elements = []
                 for i in range(2):
-                    elements.append(float(tsElem[i + 1].\
+                    elements.append(float(tsElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "[]'")))
                 extentDic[tskey] = elements
 
         # Find -te text
@@ -589,9 +593,9 @@ class Domain():
             if tekey != '':
                 elements = []
                 for i in range(4):
-                    elements.append(float(teElem[i + 1].\
+                    elements.append(float(teElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "[]'")))
                 extentDic[tekey] = elements
 
         # Find -lle text
@@ -613,9 +617,9 @@ class Domain():
             if llekey != '':
                 elements = []
                 for i in range(4):
-                    elements.append(float(lleElem[i + 1].\
+                    elements.append(float(lleElem[i + 1].
                                           translate(string.maketrans('', ''),
-                                          "[]'")))
+                                                    "[]'")))
                 extentDic[llekey] = elements
 
         result = re.search('\S', extentString)
@@ -770,7 +774,8 @@ class Domain():
 
         # apply > 180 deg correction to longitudes
         for ilon, lon in enumerate(lonList):
-            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180, sin(lon * pi / 180.))
+            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
+                                     sin(lon * pi / 180.))
 
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
@@ -902,8 +907,8 @@ class Domain():
         # create transformer
         transformer = gdal.Transformer(self.vrt.dataset, None,
                                        ['SRC_SRS=' + srcWKT,
-                                       'DST_SRS=' + dstWKT])
-                                       #,'METHOD=GCP_TPS'])
+                                        'DST_SRS=' + dstWKT])
+                                        #,'METHOD=GCP_TPS'])
 
         # use the transformer to convert pixel/line into lat/lon
         latVector = []
@@ -919,7 +924,7 @@ class Domain():
 
         return lonVector, latVector
 
-    def upwards_azimuth_direction(self):
+    def upwards_azimuth_direction(self, orbit_direction=None):
         '''Caluculate and return upwards azimuth direction of domain.
 
         The upward azimuth direction will be the satellite flight
@@ -943,9 +948,55 @@ class Domain():
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
         startlon, startlat = self._transform_points([mid_x], [mid_y1])
         endlon, endlat = self._transform_points([mid_x], [mid_y2])
+        if orbit_direction:
+            # check that startlat is actually less/greater than endlat for
+            # ascending/descending orbit direction
+            if str.lower(orbit_direction) == 'ascending':
+                # should have startlat<endlat
+                if startlat > endlat:
+                    tmplat = startlat
+                    tmplon = startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
+            if str.lower(orbit_direction) == 'descending':
+                # should have startlat>endlat
+                if startlat < endlat:
+                    tmplat = startlat
+                    tmplon = startlon
+                    startlat = endlat
+                    startlon = endlon
+                    endlat = tmplat
+                    endlon = tmplon
         bearing_center = initial_bearing(startlon[0], startlat[0],
                                          endlon[0], endlat[0])
         return bearing_center
+
+    def azimuth_up(self, reductionFactor=1):
+        '''Calculate the azimuth orientation (bearing) "upwards" in the domain
+
+        Bearing azimuth angle increases clockwise from North.
+        For lon-lat (Plate Caree) and Mercator projections,
+        the bearing will be 0 (North is "up")
+
+        Parameters
+        -----------
+        reductionFactor : integer
+            factor by which the size of the output array is reduced
+
+        Returns
+        -------
+        bearing        : numpy array
+
+        '''
+
+        lon, lat = self.get_geolocation_grids(reductionFactor)
+        b = initial_bearing(lon[1:, :], lat[1:, :],
+                            lon[:-1:, :], lat[:-1:, :])
+        # Repeat last row once to match size of lon-lat grids
+        b = np.vstack((b, b[-1, :]))
+        return b
 
     def shape(self):
         '''Return Numpy-like shape of Domain object (ySize, xSize)
@@ -984,8 +1035,12 @@ class Domain():
             produces 300 x 300 figure)
         projection : string, one of Basemap projections
             'cyl', projection of the map
-        resolution : string, 'c', 'h', ...
-            'c', crude, resolution of the map.
+        resolution : string, resolution of the map
+            'c', crude
+            'l', low
+            'i', intermediate
+            'h', high
+            'f', full
         continetsColor : string or any matplotlib color representation
             'coral', color of continets
         meridians : int
@@ -1026,7 +1081,7 @@ class Domain():
         meanLat = latVec.mean()
 
         # generate template map (can be also tmerc)
-        f = plt.figure(num=1, figsize=figureSize, dpi=dpi)
+        plt.figure(num=1, figsize=figureSize, dpi=dpi)
         bmap = Basemap(projection=projection,
                        lat_0=meanLat, lon_0=meanLon,
                        llcrnrlon=minLon, llcrnrlat=minLat,
@@ -1062,7 +1117,6 @@ class Domain():
                     dpi=dpi, pad_inches=padding)
         plt.close('all')
 
-
     def reproject_GCPs(self, srsString):
         '''Reproject all GCPs to a new spatial reference system
 
@@ -1092,8 +1146,11 @@ class Domain():
         srcGCPs = self.raw.dataset.GetGCPs()
         dstGCPs = []
         for srcGCP in srcGCPs:
-            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX, srcGCP.GCPY, srcGCP.GCPZ)
-            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel, srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
+            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX,
+                                                   srcGCP.GCPY,
+                                                   srcGCP.GCPZ)
+            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel,
+                              srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
             dstGCPs.append(dstGCP)
 
         # Update dataset
