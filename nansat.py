@@ -834,6 +834,23 @@ class Nansat(Domain):
         self.vrt.dataset.SetMetadata(vrtvrtMetadata)
         self.vrt.dataset.SetMetadataItem('fileName', vrtFileName)
 
+    def undo(self, steps=1):
+        '''Undo reproject or resize of Nansat object
+        
+        Restore the self.vrt from self.vrt.vrt
+        
+        Parameters
+        -----------
+        steps : int
+            How many steps back to undo
+        
+        Modifies
+        --------
+        self.vrt
+        
+        '''
+        self.vrt = self.vrt.vrt
+    
     def watermask(self, mod44path=None, dstDomain=None):
         ''' Create numpy array with watermask (water=1, land=0)
 
