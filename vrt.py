@@ -1521,3 +1521,43 @@ class VRT():
         shiftVRT.write_xml(str(node0.rawxml()))
 
         return shiftVRT
+    
+    def undo(self, steps=1):
+        '''Restore self from self.vrt
+        
+        Undo last or several modifications of self
+        Iteratively copy self.vrt into self until
+        self.vrt is None or steps == 0
+        
+        Parameters
+        -----------
+        steps : int
+            How many sub VRTs to restore
+
+        Returns
+        -------
+        self : if no change possible
+        self.vrt : if change possible
+
+        Modifies
+        --------
+        self
+        self.vrt
+         
+        '''
+        # check if self is the las valid VRT
+        if self.vrt is None:
+            return self
+
+        # check if required depth of restoration is met
+        if steps == 0:
+            return self
+
+        # decrease the depth of restoration
+        steps -= 1
+        
+        # return restored subVRT
+        return self.vrt.undo(steps)
+
+    def __repr__(self):
+        return self.fileName

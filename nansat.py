@@ -849,7 +849,8 @@ class Nansat(Domain):
         self.vrt
         
         '''
-        self.vrt = self.vrt.vrt
+        
+        self.vrt = self.vrt.undo(steps)
     
     def watermask(self, mod44path=None, dstDomain=None):
         ''' Create numpy array with watermask (water=1, land=0)
