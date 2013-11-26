@@ -36,22 +36,7 @@ n.write_figure(oFileName + '.png', clim='hist')
 dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                   "-te 27 70.2 31 71.5 -ts 500 500")
 
-print n.vrt
-print n.vrt.vrt
-
 n.reproject(dLatlong)
-print n.vrt
-print n.vrt.vrt
-print n.vrt.vrt.vrt
-
-n.reproject(dLatlong)
-print n.vrt
-print n.vrt.vrt
-print n.vrt.vrt.vrt
-print n.vrt.vrt.vrt.vrt
-
-
-"""
 # Export projected satelite image into NetCDF format
 n.export(oFileName + '.nc')
 
@@ -69,4 +54,3 @@ import test_nansatmap
 import test_nansatshape
 import test_mosaic
 import test_pointbrowser
-"""

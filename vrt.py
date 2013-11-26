@@ -780,7 +780,6 @@ class VRT():
                       geolocationArray=self.geolocationArray)
         
         # iterative copy of self.vrt
-        print 'copy vrt.vrt'
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
             vrtXML = vrt.read_xml()
@@ -1522,10 +1521,9 @@ class VRT():
 
         return shiftVRT
     
-    def undo(self, steps=1):
-        '''Restore self from self.vrt
+    def get_sub_vrt(self, steps=1):
+        '''Return sub-VRT from given depth
         
-        Undo last or several modifications of self
         Iteratively copy self.vrt into self until
         self.vrt is None or steps == 0
         
@@ -1536,8 +1534,8 @@ class VRT():
 
         Returns
         -------
-        self : if no change possible
-        self.vrt : if change possible
+        self : if no deeper VRTs found
+        self.vrt : if deeper VRTs are found
 
         Modifies
         --------
@@ -1545,7 +1543,9 @@ class VRT():
         self.vrt
          
         '''
-        # check if self is the las valid VRT
+
+        # print 'vrt.get_sub_vrt: ', steps, self, self.vrt
+        # check if self is the last valid (deepest) VRT
         if self.vrt is None:
             return self
 
@@ -1556,8 +1556,8 @@ class VRT():
         # decrease the depth of restoration
         steps -= 1
         
-        # return restored subVRT
-        return self.vrt.undo(steps)
+        # return restored sub-VRT
+        return self.vrt.get_sub_vrt(steps)
 
     def __repr__(self):
-        return self.fileName
+        return os.path.split(self.fileName)[1]
