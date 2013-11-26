@@ -158,6 +158,12 @@ class Mapper(VRT):
         ############################################
         # Add SAR look direction to metadata domain
         ############################################
+        if antennaPointing == 90:
+            self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')
+        if antennaPointing == -90:
+            self.dataset.SetMetadataItem('ANTENNA_POINTING', 'LEFT')
+        self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(passDirection).upper())
+        # "center look direction" below is obsolete, and can soon be deleted
         self.dataset.SetMetadataItem(
             'SAR_center_look_direction',
             str(mod(

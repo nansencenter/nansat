@@ -139,6 +139,11 @@ class Mapper(VRT, Envisat):
                                           zoomSize=zoomSize, step=step)
 
         # Add SAR look direction to metadata domain
+        self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT') # ASAR is always right-looking
+        self.dataset.SetMetadataItem('ORBIT_DIRECTION', gdalMetadata['SPH_PASS'].upper())
+
+        # "SAR_center_look_direction" below is obsolete, and may soon be deleted
+        #
         # Note that this is the look direction in the center of the domain. For
         # longer domains, especially at high latitudes, the azimuth direction
         # may vary a lot over the domain, and using the center angle will be a
