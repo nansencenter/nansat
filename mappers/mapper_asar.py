@@ -53,7 +53,9 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, product[0:4])
 
         # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
-        polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
+        polarization = [gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")]
+        if 'SPH_MDS2_TX_RX_POLAR' in gdalMetadata.keys():
+            polarization.append(gdalMetadata['SPH_MDS2_TX_RX_POLAR'].replace("/", ""))
 
         # Create VRTdataset with small VRTRawRasterbands
         self.adsVRTs = self.get_ads_vrts(gdalDataset,
@@ -88,43 +90,44 @@ class Mapper(VRT, Envisat):
                                  'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
         if gotCalibration:
-            # add dicrtionary for sigma0, ice and water
-            short_names = ['sigma0', 'sigma0_normalized_ice',
-                           'sigma0_normalized_water']
-            wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
-                   'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
-                   'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
-            sphPass = [gdalMetadata['SPH_PASS'], '', '']
+            for iChannel in polarization:
+                # add dicrtionary for sigma0, ice and water
+                short_names = ['sigma0', 'sigma0_normalized_ice',
+                               'sigma0_normalized_water']
+                wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
+                       'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
+                       'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
+                sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
-            sourceFileNames = [fileName,
-                               self.adsVRTs[0].fileName]
+                sourceFileNames = [fileName,
+                                   self.adsVRTs[0].fileName]
 
-            pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
-                                  'Sigma0NormalizedIce']
-            if polarization == 'HH':
-                pixelFunctionTypes.append('Sigma0HHNormalizedWater')
-            elif polarization == 'VV':
-                pixelFunctionTypes.append('Sigma0VVNormalizedWater')
+                pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
+                                      'Sigma0NormalizedIce']
+                if iChannel == 'HH':
+                    pixelFunctionTypes.append('Sigma0HHNormalizedWater')
+                elif iChannel == 'VV':
+                    pixelFunctionTypes.append('Sigma0VVNormalizedWater')
 
-            # add pixelfunction bands to metaDict
-            for iPixFunc in range(len(pixelFunctionTypes)):
-                srcFiles = []
-                for iFileName in sourceFileNames:
-                    sourceFile = {'SourceFilename': iFileName,
-                                  'SourceBand': 1}
-                    # if ASA_full_incAng, set 'ScaleRatio' into source file dict
-                    if iFileName == fileName:
-                        sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst)
-                    srcFiles.append(sourceFile)
+                # add pixelfunction bands to metaDict
+                for iPixFunc in range(len(pixelFunctionTypes)):
+                    srcFiles = []
+                    for iFileName in sourceFileNames:
+                        sourceFile = {'SourceFilename': iFileName,
+                                      'SourceBand': 1}
+                        # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                        if iFileName == fileName:
+                            sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst)
+                        srcFiles.append(sourceFile)
 
-                metaDict.append({'src': srcFiles,
-                                 'dst': {'short_name': short_names[iPixFunc],
-                                         'wkv': wkt[iPixFunc],
-                                         'PixelFunctionType': pixelFunctionTypes[iPixFunc],
-                                         'polarization': polarization,
-                                         'suffix': polarization,
-                                         'pass': sphPass[iPixFunc],
-                                         'dataType': 6}})
+                    metaDict.append({'src': srcFiles,
+                                     'dst': {'short_name': short_names[iPixFunc],
+                                             'wkv': wkt[iPixFunc],
+                                             'PixelFunctionType': pixelFunctionTypes[iPixFunc],
+                                             'polarization': iChannel,
+                                             'suffix': iChannel,
+                                             'pass': sphPass[iPixFunc],
+                                             'dataType': 6}})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
