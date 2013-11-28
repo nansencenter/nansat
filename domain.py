@@ -437,9 +437,10 @@ class Domain():
         Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
         # if the vrt dataset has geolocationArray
         if len(self.vrt.geolocationArray.d) > 0:
+            Xm, Ym = np.meshgrid(X, Y)
             geoArray = self.vrt.geolocationArray
-            longitude = geoArray.xVRT.dataset.ReadAsArray()[X, Y]
-            latitude = geoArray.yVRT.dataset.ReadAsArray()[X, Y]
+            longitude = geoArray.xVRT.dataset.ReadAsArray()[Xm, Ym]
+            latitude = geoArray.yVRT.dataset.ReadAsArray()[Xm, Ym]
         else:
             # create empty grids
             longitude = np.zeros([len(Y), len(X)], 'float32')
