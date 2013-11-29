@@ -68,20 +68,27 @@ class Mapper(VRT, Envisat):
         # get calibration constant
         gotCalibration = True
         try:
-            calibrationConst = float(gdalDataset.GetMetadataItem(
-                "MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+            calibrationConst = [float(gdalDataset.GetMetadataItem(
+                "MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))]
         except:
             try:
                 # Apparently some ASAR files have calibration constant stored in another place
-                calibrationConst = float(gdalDataset.GetMetadataItem(
-                    "MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+                #calibrationConst = float(gdalDataset.GetMetadataItem(
+                #    "MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+                calibrationConst = [
+                    float(gdalDataset.GetMetadataItem(
+                    "MAIN_PROCESSING_PARAMS_ADS_0_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records")),
+                    float(gdalDataset.GetMetadataItem(
+                    "MAIN_PROCESSING_PARAMS_ADS_0_CALIBRATION_FACTORS.2.EXT_CAL_FACT", "records"))]
             except:
                 self.logger.warning('Cannot get calibrationConst')
                 gotCalibration = False
 
         # add dictionary for raw counts
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
-                     'dst': {'short_name': 'RawCounts'}}]
+        metaDict = []
+        for i, iChannel in enumerate(polarization):
+            metaDict.append({'src': {'SourceFilename': fileName, 'SourceBand': (i + 1)},
+                             'dst': {'short_name': 'RawCounts_'+ iChannel}})
 
         if full_incAng:
             for adsVRT in self.adsVRTs:
@@ -90,7 +97,7 @@ class Mapper(VRT, Envisat):
                                  'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
         if gotCalibration:
-            for iChannel in polarization:
+            for i, iChannel in enumerate(polarization):
                 # add dicrtionary for sigma0, ice and water
                 short_names = ['sigma0', 'sigma0_normalized_ice',
                                'sigma0_normalized_water']
@@ -112,12 +119,14 @@ class Mapper(VRT, Envisat):
                 # add pixelfunction bands to metaDict
                 for iPixFunc in range(len(pixelFunctionTypes)):
                     srcFiles = []
-                    for iFileName in sourceFileNames:
-                        sourceFile = {'SourceFilename': iFileName,
-                                      'SourceBand': 1}
-                        # if ASA_full_incAng, set 'ScaleRatio' into source file dict
-                        if iFileName == fileName:
-                            sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst)
+                    for j, jFileName in enumerate(sourceFileNames):
+                        sourceFile = {'SourceFilename': jFileName}
+                        if j == 0:
+                            sourceFile['SourceBand'] = i + 1
+                            # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                            sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst[i])
+                        else:
+                            sourceFile['SourceBand'] = 1
                         srcFiles.append(sourceFile)
 
                     metaDict.append({'src': srcFiles,
