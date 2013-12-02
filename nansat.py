@@ -570,7 +570,38 @@ class Nansat(Domain):
                                                               width,
                                                               height)
 
-        self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize, newRasterYSize, factor, eResampleAlg)
+        if eResampleAlg <= 0:
+            self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize, newRasterYSize, factor, eResampleAlg)
+        else:
+            # modify GeoTransform: set resolution from new X/Y size
+            geoTransform = (0,
+                        float(self.vrt.dataset.RasterXSize) / float(newRasterXSize),
+                        0,
+                        self.vrt.dataset.RasterYSize,
+                        0,
+                        - float(self.vrt.dataset.RasterYSize) / float(newRasterYSize))
+
+            # update size and GeoTranform in XML of the warped VRT object
+            self.vrt = self.vrt.get_warped_vrt(xSize=newRasterXSize,
+                                       ySize=newRasterYSize,
+                                       geoTransform=geoTransform,
+                                       use_geolocationArray=False,
+                                       use_gcps=False,
+                                       use_geotransform=False,
+                                       eResampleAlg=eResampleAlg)
+        
+        # resize gcps
+        gcps = self.vrt.vrt.dataset.GetGCPs()
+        if len(gcps) > 0:
+            gcpPro = self.vrt.vrt.dataset.GetGCPProjection()
+            for gcp in gcps:
+                gcp.GCPPixel *= factor
+                gcp.GCPLine *= factor
+            self.vrt.dataset.SetGCPs(gcps, gcpPro)
+            self.vrt._remove_geotransform()
+        
+        # set global metadata
+        #self.vrt.dataset.SetMetadata(self.vrt.vrt.dataset.GetMetadata())
 
     def resize_lite(self, factor=1, width=None,
                     height=None, eResampleAlg=1):
@@ -607,28 +638,13 @@ class Nansat(Domain):
             raster size are modified to downscaled size.
 
         '''
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
-        # check if eResampleAlg is valid
-        if eResampleAlg < 1:
-            self.logger.error('''
-                            eResampleAlg must be > 0.
-                            Use resize() instead''')
-            return
-
         # get new shape
         newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
                                                               factor,
                                                               width,
                                                               height)
 
-        # apply affine transformation using reprojection
-        self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
-                                            newRasterYSize,
-                                            eResampleAlg)
+
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object

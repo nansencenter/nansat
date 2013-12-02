@@ -770,6 +770,7 @@ class VRT():
 
     def copy(self):
         '''Creates full copy of VRT dataset'''
+        print 'copy:', self
         try:
             # deep copy (everything including bands)
             vrt = VRT(vrtDataset=self.dataset,
@@ -782,10 +783,14 @@ class VRT():
         # iterative copy of self.vrt
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
+            print self, self.vrt, vrt, vrt.vrt
             vrtXML = vrt.read_xml()
-            node0 = Node.create(vrtXML)
-            node0.node('SourceDataset').value = str(vrt.vrt.fileName)
-            vrt.write_xml(str(node0.rawxml()))
+            #print vrtXML
+            
+            vrtXML = vrtXML.replace(os.path.split(self.vrt.fileName)[1],
+                                    os.path.split(vrt.vrt.fileName)[1])
+            #print vrtXML
+            vrt.write_xml(vrtXML)
             
         return vrt
     
@@ -1560,29 +1565,37 @@ class VRT():
         return self.vrt.get_sub_vrt(steps)
 
     def __repr__(self):
-        return os.path.split(self.fileName)[1]
+        strOut = os.path.split(self.fileName)[1]
+        if self.vrt is not None:
+            strOut += '=>%s' % self.vrt.__repr__()
+        return strOut
 
-    def get_spawner_vrt(self):
-        '''Create vrt with copy of self in and cgange references'''
+    def get_super_vrt(self):
+        '''Create vrt with subVRT
+        
+        copy of self in vrt.vrt and change references from vrt to vrt.vrt
+        
+        '''
         
         # create new self
-        spawner = VRT(gdalDataset=self.dataset)
-        spawner.vrt = self.copy()
+        superVRT = VRT(gdalDataset=self.dataset)
+        print 'super: self=', self
+        superVRT.vrt = self.copy()
 
         # Add bands to newSelf
-        for iBand in range(spawner.vrt.dataset.RasterCount):
-            src = {'SourceFilename': spawner.vrt.fileName,
+        for iBand in range(superVRT.vrt.dataset.RasterCount):
+            src = {'SourceFilename': superVRT.vrt.fileName,
                    'SourceBand': iBand + 1}
-            dst = spawner.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
-            spawner._create_band(src, dst)
-        spawner.dataset.FlushCache()
+            dst = superVRT.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
+            superVRT._create_band(src, dst)
+        superVRT.dataset.FlushCache()
         
-        return spawner
+        return superVRT
 
     def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, factor, eResampleAlg):
         '''Create VRT and replace step in the source'''
         
-        subsamVRT = self.get_spawner_vrt()
+        subsamVRT = self.get_super_vrt()
         
         # Get XML content from VRT-file
         vrtXML = subsamVRT.read_xml()
@@ -1608,18 +1621,6 @@ class VRT():
             if eResampleAlg == -1:
                 iNode1.replaceTag('ComplexSource', 'AveragedSource')
                 iNode1.replaceTag('SimpleSource', 'AveragedSource')
-
-        # Edit GCPs to correspond to the downscaled size
-        if node0.node('GCPList'):
-            for iNode in node0.node('GCPList').nodeList('GCP'):
-                pxl = float(iNode.getAttribute('Pixel')) * factor
-                if pxl > float(rasterXSize): #bad solution. GCP should be removed
-                    pxl = rasterXSize
-                iNode.replaceAttribute('Pixel', str(pxl))
-                lin = float(iNode.getAttribute('Line')) * factor
-                if lin > float(rasterYSize): #bad solution. GCP should be removed
-                    lin = rasterYSize
-                iNode.replaceAttribute('Line', str(lin))
 
         # Write the modified elemements into VRT
         subsamVRT.write_xml(str(node0.rawxml()))        
