@@ -564,62 +564,13 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
-        # check if eResampleAlg is valid
-        if eResampleAlg > 0:
-            self.logger.error('''
-                            eResampleAlg must be <= 0.
-                            Use resize_without_georeference instead''')
-            return
-
         # get new shape
         newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
                                                               factor,
                                                               width,
                                                               height)
 
-        # Get XML content from VRT-file
-        vrtXML = self.vrt.read_xml()
-        node0 = Node.create(vrtXML)
-
-        # replace rasterXSize in <VRTDataset>
-        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
-        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
-
-        rasterYSize, rasterXSize = self.shape()
-
-        # replace xSize in <DstRect> of each source
-        for iNode1 in node0.nodeList('VRTRasterBand'):
-            for sourceName in ['ComplexSource', 'SimpleSource']:
-                for iNode2 in iNode1.nodeList(sourceName):
-                    iNodeDstRect = iNode2.node('DstRect')
-                    iNodeDstRect.replaceAttribute('xSize',
-                                                  str(newRasterXSize))
-                    iNodeDstRect.replaceAttribute('ySize',
-                                                  str(newRasterYSize))
-            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
-            if eResampleAlg == -1:
-                iNode1.replaceTag('ComplexSource', 'AveragedSource')
-                iNode1.replaceTag('SimpleSource', 'AveragedSource')
-
-        # Edit GCPs to correspond to the downscaled size
-        if node0.node('GCPList'):
-            for iNode in node0.node('GCPList').nodeList('GCP'):
-                pxl = float(iNode.getAttribute('Pixel')) * factor
-                if pxl > float(rasterXSize):
-                    pxl = rasterXSize
-                iNode.replaceAttribute('Pixel', str(pxl))
-                lin = float(iNode.getAttribute('Line')) * factor
-                if lin > float(rasterYSize):
-                    lin = rasterYSize
-                iNode.replaceAttribute('Line', str(lin))
-
-        # Write the modified elemements into VRT
-        self.vrt.write_xml(str(node0.rawxml()))
+        self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize, newRasterYSize, factor, eResampleAlg)
 
     def resize_lite(self, factor=1, width=None,
                     height=None, eResampleAlg=1):

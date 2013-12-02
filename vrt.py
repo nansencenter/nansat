@@ -789,23 +789,6 @@ class VRT():
             
         return vrt
     
-    def get_spawner_vrt(self):
-        '''Create vrt with copy of self in and cgange references'''
-        
-        # create new self
-        spawner = VRT(gdalDataset=self.dataset)
-        spawner.vrt = self.copy()
-
-        # Add bands to newSelf
-        for iBand in range(spawner.vrt.dataset.RasterCount):
-            src = {'SourceFilename': spawner.vrt.fileName,
-                   'SourceBand': iBand + 1}
-            dst = spawner.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
-            spawner._create_band(src, dst)
-        spawner.dataset.FlushCache()
-        
-        return spawner
-
     def add_geolocationArray(self, geolocationArray=None):
         ''' Add GEOLOCATION ARRAY to the VRT
 
@@ -1578,3 +1561,67 @@ class VRT():
 
     def __repr__(self):
         return os.path.split(self.fileName)[1]
+
+    def get_spawner_vrt(self):
+        '''Create vrt with copy of self in and cgange references'''
+        
+        # create new self
+        spawner = VRT(gdalDataset=self.dataset)
+        spawner.vrt = self.copy()
+
+        # Add bands to newSelf
+        for iBand in range(spawner.vrt.dataset.RasterCount):
+            src = {'SourceFilename': spawner.vrt.fileName,
+                   'SourceBand': iBand + 1}
+            dst = spawner.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
+            spawner._create_band(src, dst)
+        spawner.dataset.FlushCache()
+        
+        return spawner
+
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, factor, eResampleAlg):
+        '''Create VRT and replace step in the source'''
+        
+        subsamVRT = self.get_spawner_vrt()
+        
+        # Get XML content from VRT-file
+        vrtXML = subsamVRT.read_xml()
+        node0 = Node.create(vrtXML)
+
+        # replace rasterXSize in <VRTDataset>
+        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+
+        rasterYSize = subsamVRT.vrt.dataset.RasterYSize
+        rasterXSize = subsamVRT.vrt.dataset.RasterXSize
+
+        # replace xSize in <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for sourceName in ['ComplexSource', 'SimpleSource']:
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node('DstRect')
+                    iNodeDstRect.replaceAttribute('xSize',
+                                                  str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute('ySize',
+                                                  str(newRasterYSize))
+            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
+            if eResampleAlg == -1:
+                iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                iNode1.replaceTag('SimpleSource', 'AveragedSource')
+
+        # Edit GCPs to correspond to the downscaled size
+        if node0.node('GCPList'):
+            for iNode in node0.node('GCPList').nodeList('GCP'):
+                pxl = float(iNode.getAttribute('Pixel')) * factor
+                if pxl > float(rasterXSize): #bad solution. GCP should be removed
+                    pxl = rasterXSize
+                iNode.replaceAttribute('Pixel', str(pxl))
+                lin = float(iNode.getAttribute('Line')) * factor
+                if lin > float(rasterYSize): #bad solution. GCP should be removed
+                    lin = rasterYSize
+                iNode.replaceAttribute('Line', str(lin))
+
+        # Write the modified elemements into VRT
+        subsamVRT.write_xml(str(node0.rawxml()))        
+        
+        return subsamVRT
