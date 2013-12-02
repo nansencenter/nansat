@@ -52,10 +52,15 @@ class Mapper(VRT, Envisat):
 
         Envisat.__init__(self, fileName, product[0:4])
 
-        # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
-        polarization = [gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")]
+        # get channel string (remove '/', since NetCDF doesnt support that in metadata)
+        polarization = [{'channel' : gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", ""),
+                        'bandNum' : 1}]
+        # if there is the 2nd band, get channel string
         if 'SPH_MDS2_TX_RX_POLAR' in gdalMetadata.keys():
-            polarization.append(gdalMetadata['SPH_MDS2_TX_RX_POLAR'].replace("/", ""))
+            channel = gdalMetadata['SPH_MDS2_TX_RX_POLAR'].replace("/", "")
+            if not(channel.isspace()):
+                polarization.append({'channel' : channel,
+                                     'bandNum' : 2})
 
         # Create VRTdataset with small VRTRawRasterbands
         self.adsVRTs = self.get_ads_vrts(gdalDataset,
@@ -68,27 +73,30 @@ class Mapper(VRT, Envisat):
         # get calibration constant
         gotCalibration = True
         try:
-            calibrationConst = [float(gdalDataset.GetMetadataItem(
-                "MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))]
+            for iPolarization in polarization:
+                metaKey = ('MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.%d.EXT_CAL_FACT'
+                           %(iPolarization['bandNum']))
+                iPolarization['calibrationConst'] = float(
+                    gdalDataset.GetMetadataItem(metaKey, 'records'))
         except:
             try:
-                # Apparently some ASAR files have calibration constant stored in another place
-                #calibrationConst = float(gdalDataset.GetMetadataItem(
-                #    "MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
-                calibrationConst = [
-                    float(gdalDataset.GetMetadataItem(
-                    "MAIN_PROCESSING_PARAMS_ADS_0_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records")),
-                    float(gdalDataset.GetMetadataItem(
-                    "MAIN_PROCESSING_PARAMS_ADS_0_CALIBRATION_FACTORS.2.EXT_CAL_FACT", "records"))]
+                for iPolarization in polarization:
+                    # Apparently some ASAR files have calibration constant stored in another place
+                    metaKey = ('MAIN_PROCESSING_PARAMS_ADS_0_CALIBRATION_FACTORS.%d.EXT_CAL_FACT'
+                               %(iPolarization['bandNum']))
+                    iPolarization['calibrationConst'] = float(
+                        gdalDataset.GetMetadataItem(metaKey, 'records'))
             except:
                 self.logger.warning('Cannot get calibrationConst')
                 gotCalibration = False
 
         # add dictionary for raw counts
         metaDict = []
-        for i, iChannel in enumerate(polarization):
-            metaDict.append({'src': {'SourceFilename': fileName, 'SourceBand': (i + 1)},
-                             'dst': {'short_name': 'RawCounts_'+ iChannel}})
+        for iPolarization in polarization:
+            metaDict.append({'src': {'SourceFilename': fileName,
+                                     'SourceBand': iPolarization['bandNum']},
+                             'dst': {'short_name': 'RawCounts_%s'
+                                     %iPolarization['channel']}})
 
         if full_incAng:
             for adsVRT in self.adsVRTs:
@@ -97,7 +105,7 @@ class Mapper(VRT, Envisat):
                                  'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
         if gotCalibration:
-            for i, iChannel in enumerate(polarization):
+            for iPolarization in polarization:
                 # add dicrtionary for sigma0, ice and water
                 short_names = ['sigma0', 'sigma0_normalized_ice',
                                'sigma0_normalized_water']
@@ -111,9 +119,9 @@ class Mapper(VRT, Envisat):
 
                 pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                       'Sigma0NormalizedIce']
-                if iChannel == 'HH':
+                if iPolarization['channel'] == 'HH':
                     pixelFunctionTypes.append('Sigma0HHNormalizedWater')
-                elif iChannel == 'VV':
+                elif iPolarization['channel'] == 'VV':
                     pixelFunctionTypes.append('Sigma0VVNormalizedWater')
 
                 # add pixelfunction bands to metaDict
@@ -122,9 +130,9 @@ class Mapper(VRT, Envisat):
                     for j, jFileName in enumerate(sourceFileNames):
                         sourceFile = {'SourceFilename': jFileName}
                         if j == 0:
-                            sourceFile['SourceBand'] = i + 1
+                            sourceFile['SourceBand'] = iPolarization['bandNum']
                             # if ASA_full_incAng, set 'ScaleRatio' into source file dict
-                            sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst[i])
+                            sourceFile['ScaleRatio'] = np.sqrt(1.0 / iPolarization['calibrationConst'])
                         else:
                             sourceFile['SourceBand'] = 1
                         srcFiles.append(sourceFile)
@@ -133,8 +141,8 @@ class Mapper(VRT, Envisat):
                                      'dst': {'short_name': short_names[iPixFunc],
                                              'wkv': wkt[iPixFunc],
                                              'PixelFunctionType': pixelFunctionTypes[iPixFunc],
-                                             'polarization': iChannel,
-                                             'suffix': iChannel,
+                                             'polarization': iPolarization['channel'],
+                                             'suffix': iPolarization['channel'],
                                              'pass': sphPass[iPixFunc],
                                              'dataType': 6}})
 
