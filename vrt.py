@@ -788,6 +788,23 @@ class VRT():
             vrt.write_xml(str(node0.rawxml()))
             
         return vrt
+    
+    def get_spawner_vrt(self):
+        '''Create vrt with copy of self in and cgange references'''
+        
+        # create new self
+        spawner = VRT(gdalDataset=self.dataset)
+        spawner.vrt = self.copy()
+
+        # Add bands to newSelf
+        for iBand in range(spawner.vrt.dataset.RasterCount):
+            src = {'SourceFilename': spawner.vrt.fileName,
+                   'SourceBand': iBand + 1}
+            dst = spawner.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
+            spawner._create_band(src, dst)
+        spawner.dataset.FlushCache()
+        
+        return spawner
 
     def add_geolocationArray(self, geolocationArray=None):
         ''' Add GEOLOCATION ARRAY to the VRT
