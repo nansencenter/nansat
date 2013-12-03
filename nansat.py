@@ -599,52 +599,16 @@ class Nansat(Domain):
                 gcp.GCPLine *= factor
             self.vrt.dataset.SetGCPs(gcps, gcpPro)
             self.vrt._remove_geotransform()
-        
+        else:
+            # change resultion in geotransform to keep spatial extent
+            geoTransform = list(self.vrt.vrt.dataset.GetGeoTransform())
+            geoTransform[1] = float(geoTransform[1])/factor
+            geoTransform[5] = float(geoTransform[5])/factor
+            geoTransform = map(float, geoTransform)
+            self.vrt.dataset.SetGeoTransform(geoTransform)
+            
         # set global metadata
         #self.vrt.dataset.SetMetadata(self.vrt.vrt.dataset.GetMetadata())
-
-    def resize_lite(self, factor=1, width=None,
-                    height=None, eResampleAlg=1):
-        '''Proportional resize of the dataset. No georeference kept.
-
-        The dataset is resized as (xSize*factor, ySize*factor) or
-        (width, calulated height) or (calculated width, height).
-        self.vrt is rewritten to the the downscaled sizes.
-        No georeference (useful e.g. for export) is stored in the object.
-        If resize() is called without any parameters then previsous
-        resizing/reprojection cancelled.
-
-        WARNING: It seems like the function is presently not working for
-        complex bands and pixelfunction bands - in case this kind of data is
-        needed it should be copied to a numpy array which is added as a band
-        before resizing.
-
-        Parameters
-        -----------
-        Either factor, or width, or height should be given:
-            factor : float, optional, default=1
-            width : int, optional
-            height : int, optional
-            eResampleAlg : int (GDALResampleAlg), optional
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
-                if eResampleAlg > 0 : VRT.get_resized_vrt() is used
-
-        Modifies
-        ---------
-        self.vrt.dataset : VRT dataset of VRT object
-            raster size are modified to downscaled size.
-
-        '''
-        # get new shape
-        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
-                                                              factor,
-                                                              width,
-                                                              height)
-
-
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object

@@ -14,40 +14,34 @@ from testio import testio
 
 # Set input and output file names
 iPath, oPath = testio()
-iFileName = os.path.join(iPath, 'gcps.tif')
+iFileName1 = os.path.join(iPath, 'gcps.tif')
+iFileName2 = os.path.join(iPath, 'stere.tif')
 oFileName = os.path.join(oPath, 'tutor_')
 
 # Open an input satellite image with Nansat
-n = Nansat(iFileName, logLevel=10)
+n1 = Nansat(iFileName1, logLevel=10)
+n2 = Nansat(iFileName2, logLevel=10)
 
-# List bands and georeference of the object
-print n
-n.vrt.export('vrt0.vrt')
+n1.vrt.export('n1.vrt.txt')
 
-# Write picture with map of the file location
-n.write_map(oFileName + 'map.png')
+n1.write_figure(oFileName + 'n1.png', clim=[0, 60])
+n1.resize(0.1, eResampleAlg=3)
+n1.resize(10, eResampleAlg=3)
+n1.write_figure(oFileName + 'n1x01x10.png', clim=[0, 60])
+n1.undo(100)
 
-# Write indexed picture with data from the first band
-n.write_figure(oFileName + '.png', clim='hist')
+n2.write_figure(oFileName + 'n2.png', clim=[0, 60])
+n2.reproject(n1, eResampleAlg=2)
+n2.write_figure(oFileName + 'n2_on_n1.png', clim=[0, 60])
 
-# Reproject input image onto map of Norwegian Coast
-# 1. Create domain describing the desired map
-# 2. Transform the original satellite image
-# 3. Write the transfromed image into RGB picture
-dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                  "-te 27 70.2 31 71.5 -ts 500 500")
-                  
-n.reproject(dLatlong)
-n.write_figure(oFileName + 'pro.png', bands=[1, 2, 3], clim=[0, 100])
 
-n.vrt.export('vrt00.vrt')
-n.vrt.vrt.export('vrt01.vrt')
+n1.resize(2)
+n1.write_figure(oFileName + 'n1x2.png', clim=[0, 60])
+n2.reproject(n1, eResampleAlg=2)
+n2.write_figure(oFileName + 'n2x10_on_n1x2.png', clim=[0, 60])
 
-dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                  "-te 28 70.5 30 71 -ts 500 500")
-n.reproject(dLatlong)
-n.write_figure(oFileName + 'pro.png', bands=[1, 2, 3], clim=[0, 100])
-
-n.vrt.export('vrt000.vrt')
-n.vrt.vrt.export('vrt001.vrt')
-n.vrt.vrt.vrt.export('vrt002.vrt')
+n2.undo(100)
+n2.resize(0.2, eResampleAlg=-1)
+n2.write_figure(oFileName + 'n2x05.png', clim=[0, 60])
+n2.reproject(n1, eResampleAlg=2)
+n2.write_figure(oFileName + 'n2x05_on_n1x20.png', clim=[0, 60])

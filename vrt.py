@@ -770,7 +770,6 @@ class VRT():
 
     def copy(self):
         '''Creates full copy of VRT dataset'''
-        print 'copy:', self
         try:
             # deep copy (everything including bands)
             vrt = VRT(vrtDataset=self.dataset,
@@ -783,13 +782,9 @@ class VRT():
         # iterative copy of self.vrt
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
-            print self, self.vrt, vrt, vrt.vrt
             vrtXML = vrt.read_xml()
-            #print vrtXML
-            
             vrtXML = vrtXML.replace(os.path.split(self.vrt.fileName)[1],
                                     os.path.split(vrt.vrt.fileName)[1])
-            #print vrtXML
             vrt.write_xml(vrtXML)
             
         return vrt
@@ -1549,7 +1544,6 @@ class VRT():
          
         '''
 
-        # print 'vrt.get_sub_vrt: ', steps, self, self.vrt
         # check if self is the last valid (deepest) VRT
         if self.vrt is None:
             return self
@@ -1579,7 +1573,6 @@ class VRT():
         
         # create new self
         superVRT = VRT(gdalDataset=self.dataset)
-        print 'super: self=', self
         superVRT.vrt = self.copy()
 
         # Add bands to newSelf
