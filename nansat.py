@@ -1550,3 +1550,19 @@ class Nansat(Domain):
             return NansatOGR
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
+
+    def crop(self, pix0, pix1, lin0, lin1):
+        '''Crop of Nansat object'''
+        self.vrt = self.vrt.get_super_vrt()
+        xml = self.vrt.read_xml()
+        node0 = Node.create(xml)
+        
+        # replace xSize in <SrcRect> and <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for sourceName in 'ComplexSource']:
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node('SrcRect')
+                    iNodeDstRect.replaceAttribute('xSize',
+                                                  str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute('ySize',
+                                                  str(newRasterYSize))
