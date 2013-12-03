@@ -778,17 +778,22 @@ class VRT():
             # shallow copy (only geometadata)
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
-        
+
+        if 'adsVRTs' in dir(self):
+            vrt.adsVRTs = self.adsVRTs
+
         # iterative copy of self.vrt
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
+            if 'adsVRTs' in dir(self.vrt):
+                vrt.vrt.adsVRTs = self.vrt.adsVRTs
             vrtXML = vrt.read_xml()
             vrtXML = vrtXML.replace(os.path.split(self.vrt.fileName)[1],
                                     os.path.split(vrt.vrt.fileName)[1])
             vrt.write_xml(vrtXML)
-            
+
         return vrt
-    
+
     def add_geolocationArray(self, geolocationArray=None):
         ''' Add GEOLOCATION ARRAY to the VRT
 
@@ -1520,13 +1525,13 @@ class VRT():
         shiftVRT.write_xml(str(node0.rawxml()))
 
         return shiftVRT
-    
+
     def get_sub_vrt(self, steps=1):
         '''Return sub-VRT from given depth
-        
+
         Iteratively copy self.vrt into self until
         self.vrt is None or steps == 0
-        
+
         Parameters
         -----------
         steps : int
@@ -1541,7 +1546,7 @@ class VRT():
         --------
         self
         self.vrt
-         
+
         '''
 
         # check if self is the last valid (deepest) VRT
@@ -1554,7 +1559,7 @@ class VRT():
 
         # decrease the depth of restoration
         steps -= 1
-        
+
         # return restored sub-VRT
         return self.vrt.get_sub_vrt(steps)
 
@@ -1566,11 +1571,11 @@ class VRT():
 
     def get_super_vrt(self):
         '''Create vrt with subVRT
-        
+
         copy of self in vrt.vrt and change references from vrt to vrt.vrt
-        
+
         '''
-        
+
         # create new self
         superVRT = VRT(gdalDataset=self.dataset)
         superVRT.vrt = self.copy()
@@ -1582,14 +1587,14 @@ class VRT():
             dst = superVRT.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
             superVRT._create_band(src, dst)
         superVRT.dataset.FlushCache()
-        
+
         return superVRT
 
     def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, factor, eResampleAlg):
         '''Create VRT and replace step in the source'''
-        
+
         subsamVRT = self.get_super_vrt()
-        
+
         # Get XML content from VRT-file
         vrtXML = subsamVRT.read_xml()
         node0 = Node.create(vrtXML)
@@ -1616,6 +1621,6 @@ class VRT():
                 iNode1.replaceTag('SimpleSource', 'AveragedSource')
 
         # Write the modified elemements into VRT
-        subsamVRT.write_xml(str(node0.rawxml()))        
-        
+        subsamVRT.write_xml(str(node0.rawxml()))
+
         return subsamVRT
