@@ -1551,18 +1551,63 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, pix0, pix1, lin0, lin1):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None):
         '''Crop of Nansat object'''
+        self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
+        
+        RasterXSize = self.vrt.dataset.RasterXSize
+        RasterYSize = self.vrt.dataset.RasterYSize
+        
+        if xSize is None or (xSize + xOff) > RasterXSize:
+            xSize =  RasterXSize - xOff
+        if ySize is None or (ySize + yOff) > RasterYSize:
+            ySize =  RasterYSize - yOff
+            
         self.vrt = self.vrt.get_super_vrt()
         xml = self.vrt.read_xml()
         node0 = Node.create(xml)
         
-        # replace xSize in <SrcRect> and <DstRect> of each source
+        node0.node('VRTDataset').replaceAttribute('rasterXSize', str(xSize))
+        node0.node('VRTDataset').replaceAttribute('rasterYSize', str(ySize))
+        
+        # replace xOff and xSize in <SrcRect> and <DstRect> of each source
         for iNode1 in node0.nodeList('VRTRasterBand'):
-            for sourceName in 'ComplexSource']:
-                for iNode2 in iNode1.nodeList(sourceName):
-                    iNodeDstRect = iNode2.node('SrcRect')
-                    iNodeDstRect.replaceAttribute('xSize',
-                                                  str(newRasterXSize))
-                    iNodeDstRect.replaceAttribute('ySize',
-                                                  str(newRasterYSize))
+            iNode2 = iNode1.node('ComplexSource')
+
+            iNode3 = iNode2.node('SrcRect')
+            iNode3.replaceAttribute('xOff', str(xOff))
+            iNode3.replaceAttribute('yOff', str(yOff))
+            iNode3.replaceAttribute('xSize', str(xSize))
+            iNode3.replaceAttribute('ySize', str(ySize))
+
+            iNode3 = iNode2.node('DstRect')
+            iNode3.replaceAttribute('xSize', str(xSize))
+            iNode3.replaceAttribute('ySize', str(ySize))
+            
+
+        xml = str(node0.rawxml())
+        self.vrt.write_xml(xml)
+        
+        if xOff > 0 or yOff > 0:
+            gcps = self.vrt.dataset.GetGCPs()
+            newGCPs = []
+            if len(gcps) > 0:
+                gcpProjection = self.vrt.dataset.GetGCPProjection()
+                for gcp in gcps:
+                    gcp.GCPPixel -= xOff
+                    gcp.GCPLine -= yOff
+                    if   (gcp.GCPPixel > 0 and
+                          gcp.GCPPixel <= xSize and
+                          gcp.GCPLine > 0 and
+                          gcp.GCPLine <= ySize):
+                        newGCPs.append(gcp)
+                self.vrt.dataset.SetGCPs(newGCPs, gcpProjection)
+                self.vrt._remove_geotransform()
+            else:
+                geoTransfrom = self.vrt.dataset.GetGeoTransform()
+                geoTransfrom = map(float, geoTransfrom)
+                print geoTransfrom
+                geoTransfrom[0] += geoTransfrom[1] * xOff
+                geoTransfrom[3] += geoTransfrom[5] * yOff
+                print geoTransfrom
+                self.vrt.dataset.SetGeoTransform(geoTransfrom)
