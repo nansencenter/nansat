@@ -799,6 +799,9 @@ class Domain():
                      self.vrt.dataset.RasterYSize]
         return self._transform_points(colVector, rowVector)
 
+    
+
+
     def _get_geotransform(self, extentDic):
         '''
         the new coordinates and raster size are calculated based on
@@ -882,6 +885,41 @@ class Domain():
             raise ProjectionError('Empty projection in input dataset!')
 
         return projection
+
+    def get_pixelsize_meters(self):
+        '''Returns the pixelsize (deltaX, deltaY) of the domain
+
+        For projected domains, the exact result which is constant
+        over the domain is returned.
+        For geographic (lon-lat) projections, or domains with no geotransform,
+        the haversine formula is used to calculate the pixel size 
+        in the center of the domain.
+                
+        Returns 
+        --------
+        deltaX, deltaY : float
+            pixel size in X and Y directions given in meters
+            
+        '''     
+                
+        srs=osr.SpatialReference(self.vrt.dataset.GetProjection())
+        if srs.IsProjected:
+            if srs.GetAttrValue('unit') == 'metre':
+                geoTransform = self.vrt.dataset.GetGeoTransform()
+                deltaX = abs(geoTransform[1])
+                deltaY = abs(geoTransform[5])
+                return deltaX, deltaY
+        
+        # Estimate pixel size in center of domain using haversine formula
+        centerCol = round(self.vrt.dataset.RasterXSize/2)
+        centerRow = round(self.vrt.dataset.RasterYSize/2)
+        lon00, lat00 = self._transform_points([centerCol], [centerRow])
+        lon01, lat01 = self._transform_points([centerCol], [centerRow + 1])
+        lon10, lat10 = self._transform_points([centerCol + 1], [centerRow])
+
+        deltaX = haversine(lon00, lat00, lon01, lat01)
+        deltaY = haversine(lon00, lat00, lon10, lat10)
+        return deltaX[0], deltaY[0]
 
     def _transform_points(self, colVector, rowVector, DstToSrc=0):
         '''Transform given lists of X,Y coordinates into lat/lon
