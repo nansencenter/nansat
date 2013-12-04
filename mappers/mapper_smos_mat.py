@@ -51,13 +51,13 @@ class Mapper(VRT):
                     'Control_Flags_3', 'Control_Flags_4',
                     'Science_Flags_1', 'Science_Flags_2',
                     'Science_Flags_3', 'Science_Flags_4']
-        self.varVRTs = {}
+        self.sub_varVRTs = {}
         metaDict = []
         for varName in varNames:
             var = matFile[varName]
-            self.varVRTs[varName] = VRT(array=var)
+            self.sub_varVRTs[varName] = VRT(array=var)
             metaDict.append({'src': {'SourceFilename':
-                                     self.varVRTs[varName].fileName,
+                                     self.sub_varVRTs[varName].fileName,
                                      'sourceBand': 1},
                             'dst': {'name': varName}})
 
@@ -76,7 +76,7 @@ class Mapper(VRT):
                                         np.power(2, cloudBit))
                 mask[bitMap > 0] = 1
 
-        self.varVRTs['mask'] = VRT(array=mask)
+        self.sub_varVRTs['mask'] = VRT(array=mask)
         metaDict.append({'src': {'SourceFilename':
                                  self.varVRTs['mask'].fileName,
                                  'sourceBand': 1},

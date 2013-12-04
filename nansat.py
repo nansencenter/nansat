@@ -312,7 +312,7 @@ class Nansat(Domain):
             p2add[pKey] = parameters[pKey]
 
         # MAYBE ADD ONE MORE VRT ???
-        
+
         # add the array band into self.vrt and get bandName
         bandName = self.vrt._create_band({'SourceFilename': vrt2add.fileName,
                                           'SourceBand': bandNumber}, p2add)
@@ -589,7 +589,7 @@ class Nansat(Domain):
                                        use_gcps=False,
                                        use_geotransform=False,
                                        eResampleAlg=eResampleAlg)
-        
+
         # resize gcps
         gcps = self.vrt.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
@@ -606,7 +606,7 @@ class Nansat(Domain):
             geoTransform[5] = float(geoTransform[5])/factor
             geoTransform = map(float, geoTransform)
             self.vrt.dataset.SetGeoTransform(geoTransform)
-            
+
         # set global metadata
         #self.vrt.dataset.SetMetadata(self.vrt.vrt.dataset.GetMetadata())
 
@@ -767,22 +767,22 @@ class Nansat(Domain):
 
     def undo(self, steps=1):
         '''Undo reproject or resize of Nansat object
-        
+
         Restore the self.vrt from self.vrt.vrt
-        
+
         Parameters
         -----------
         steps : int
             How many steps back to undo
-        
+
         Modifies
         --------
         self.vrt
-        
+
         '''
-        
+
         self.vrt = self.vrt.get_sub_vrt(steps)
-    
+
     def watermask(self, mod44path=None, dstDomain=None):
         ''' Create numpy array with watermask (water=1, land=0)
 

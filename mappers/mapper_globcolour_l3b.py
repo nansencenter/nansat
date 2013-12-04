@@ -58,7 +58,7 @@ class Mapper(VRT, Globcolour):
         simFiles.sort()
 
         metaDict = []
-        self.varVRTs = []
+        self.sub_varVRTs = []
         mask = None
         for simFile in simFiles:
             print 'sim: ', simFile
@@ -114,20 +114,20 @@ class Mapper(VRT, Globcolour):
                 mask[varPro > 0] = 64
 
                 # add VRT with array with data from projected variable
-                self.varVRTs.append(VRT(array=mask))
+                self.sub_varVRTs.append(VRT(array=mask))
 
                 # add metadata to the dictionary
                 metaDict.append({
-                    'src': {'SourceFilename': self.varVRTs[-1].fileName,
+                    'src': {'SourceFilename': self.sub_varVRTs[-1].fileName,
                             'SourceBand':  1},
                     'dst': {'name': 'mask'}})
 
             # add VRT with array with data from projected variable
-            self.varVRTs.append(VRT(array=varPro))
+            self.sub_varVRTs.append(VRT(array=varPro))
 
             # add metadata to the dictionary
             metaEntry = {
-                'src': {'SourceFilename': self.varVRTs[-1].fileName,
+                'src': {'SourceFilename': self.sub_varVRTs[-1].fileName,
                         'SourceBand':  1},
                 'dst': {'wkv': varWKV, 'original_name': varName}}
 

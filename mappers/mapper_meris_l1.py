@@ -110,7 +110,7 @@ class Mapper(VRT, Envisat):
             bandDict['src']['ScaleRatio'] = str(scales[i])
 
         # get list with resized VRTs from ADS
-        self.adsVRTs = self.get_ads_vrts(gdalDataset,
+        self.sub_adsVRTs = self.get_ads_vrts(gdalDataset,
                                          ['sun zenith angles',
                                           'sun azimuth angles',
                                           'zonal winds',
@@ -118,7 +118,7 @@ class Mapper(VRT, Envisat):
                                          zoomSize=zoomSize,
                                          step=step)
         # add bands from the ADS VRTs
-        for adsVRT in self.adsVRTs:
+        for adsVRT in self.sub_adsVRTs:
             metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
                                      'SourceBand': 1},
                              'dst': {'name': (adsVRT.dataset.GetRasterBand(1).

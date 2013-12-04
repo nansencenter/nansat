@@ -147,8 +147,8 @@ class Mapper(VRT):
         srcRasterYSize = numCalibratedScanLines
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
-        self.RawGeolocVRT = VRT(srcRasterXSize=51,
-                                srcRasterYSize=srcRasterYSize)
+        self.sub_RawGeolocVRT = VRT(srcRasterXSize=51,
+                                    srcRasterYSize=srcRasterYSize)
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
             RawGeolocMetaDict.append(
@@ -163,14 +163,14 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.RawGeolocVRT._create_bands(RawGeolocMetaDict)
+        self.sub_RawGeolocVRT._create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
         self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': self.RawGeolocVRT.fileName,
+                {'src': {'SourceFilename': self.sub_RawGeolocVRT.fileName,
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,

@@ -779,14 +779,13 @@ class VRT():
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
 
-        if 'adsVRTs' in dir(self):
-            vrt.adsVRTs = self.adsVRTs
+        for iAttr in dir(self):
+            if iAttr.startswith('sub_'):
+                vrt.__dict__[iAttr] = self.__dict__[iAttr]
 
         # iterative copy of self.vrt
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
-            if 'adsVRTs' in dir(self.vrt):
-                vrt.vrt.adsVRTs = self.vrt.adsVRTs
             vrtXML = vrt.read_xml()
             vrtXML = vrtXML.replace(os.path.split(self.vrt.fileName)[1],
                                     os.path.split(vrt.vrt.fileName)[1])

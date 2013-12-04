@@ -56,7 +56,7 @@ class Mapper(VRT, Envisat):
         polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
 
         # Create VRTdataset with small VRTRawRasterbands
-        self.adsVRTs = self.get_ads_vrts(gdalDataset,
+        self.sub_adsVRTs = self.get_ads_vrts(gdalDataset,
                                          ["first_line_incidence_angle"],
                                          zoomSize=zoomSize, step=step, **kwargs)
 
@@ -82,7 +82,7 @@ class Mapper(VRT, Envisat):
                      'dst': {'short_name': 'RawCounts'}}]
 
         if full_incAng:
-            for adsVRT in self.adsVRTs:
+            for adsVRT in self.sub_adsVRTs:
                 metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
                                          'SourceBand': 1},
                                  'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
@@ -97,7 +97,7 @@ class Mapper(VRT, Envisat):
             sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
             sourceFileNames = [fileName,
-                               self.adsVRTs[0].fileName]
+                               self.sub_adsVRTs[0].fileName]
 
             pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                   'Sigma0NormalizedIce']
