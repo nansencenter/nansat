@@ -1033,6 +1033,61 @@ return CE_None;
 }
 
 
+
+CPLErr IntensityInt(void **papoSources, int nSources, void *pData,
+                    int nXSize, int nYSize,
+                    GDALDataType eSrcType, GDALDataType eBufType,
+                    int nPixelSpace, int nLineSpace)
+{
+    int ii, iLine, iCol;
+    int dfPixVal;
+
+    /* ---- Init ---- */
+    if (nSources != 1) return CE_Failure;
+
+    if (GDALDataTypeIsComplex( eSrcType ))
+    {
+        int dfReal, dfImag;
+        int nOffset = GDALGetDataTypeSize( eSrcType ) / 8 / 2;
+        void *pReal = papoSources[0];
+        void *pImag = ((GByte *)papoSources[0]) + nOffset;
+
+        /* ---- Set pixels ---- */
+        for( iLine = 0, ii = 0; iLine < nYSize; ++iLine ) {
+            for( iCol = 0; iCol < nXSize; ++iCol, ++ii ) {
+
+                /* Source raster pixels may be obtained with SRCVAL macro */
+                dfReal = SRCVAL(pReal, eSrcType, ii);
+                dfImag = SRCVAL(pImag, eSrcType, ii);
+
+                dfPixVal = dfReal * dfReal + dfImag * dfImag;
+				
+                GDALCopyWords(&dfPixVal, GDT_Int16, 0,
+                              ((GByte *)pData) + nLineSpace * iLine +
+                              iCol * nPixelSpace, eBufType, nPixelSpace, 1);
+            }
+        }
+    } else {
+        /* ---- Set pixels ---- */
+        for( iLine = 0, ii = 0; iLine < nYSize; ++iLine ) {
+            for( iCol = 0; iCol < nXSize; ++iCol, ++ii ) {
+
+                /* Source raster pixels may be obtained with SRCVAL macro */
+                dfPixVal = SRCVAL(papoSources[0], eSrcType, ii);
+                dfPixVal *= dfPixVal;
+
+                GDALCopyWords(&dfPixVal, GDT_Int32, 0,
+                              ((GByte *)pData) + nLineSpace * iLine +
+                              iCol * nPixelSpace, eBufType, nPixelSpace, 1);
+            }
+        }
+    }
+
+    /* ---- Return success ---- */
+    return CE_None;
+} /* IntensityInt */
+
+
 /************************************************************************/
 /*                       Convert Rrs to Rrsw                            */
 /************************************************************************/
@@ -1376,6 +1431,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
 	GDALAddDerivedBandPixelFunc("Sigma0NormalizedIce", Sigma0NormalizedIce);
 	GDALAddDerivedBandPixelFunc("Sigma0HHNormalizedWater", Sigma0HHNormalizedWater);
 	GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater", Sigma0VVNormalizedWater);
+	GDALAddDerivedBandPixelFunc("IntensityInt", IntensityInt);
 
     return CE_None;
 }
