@@ -779,9 +779,8 @@ class VRT():
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
 
-        for iAttr in dir(self):
-            if iAttr.startswith('sub_'):
-                vrt.__dict__[iAttr] = self.__dict__[iAttr]
+        if 'subVRTs' in dir(self):
+            vrt.subVRTs = self.subVRTs
 
         # iterative copy of self.vrt
         if self.vrt is not None:
