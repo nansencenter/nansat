@@ -778,6 +778,19 @@ class VRT():
             # shallow copy (only geometadata)
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
+
+        for iAttr in dir(self):
+            if iAttr.startswith('sub_'):
+                vrt.__dict__[iAttr] = self.__dict__[iAttr]
+
+        # iterative copy of self.vrt
+        if self.vrt is not None:
+            vrt.vrt = self.vrt.copy()
+            vrtXML = vrt.read_xml()
+            vrtXML = vrtXML.replace(os.path.split(self.vrt.fileName)[1],
+                                    os.path.split(vrt.vrt.fileName)[1])
+            vrt.write_xml(vrtXML)
+
         return vrt
 
     def add_geolocationArray(self, geolocationArray=None):
@@ -1162,9 +1175,12 @@ class VRT():
             warpedVRT.add_geolocationArray(dstGeolocationArray)
             warpedVRT.dataset.SetProjection('')
 
+        # Copy self into self.vrt
+        warpedVRT.vrt = self.copy()
+
         # replace the reference from srcVRT to self
         self.logger.debug('replace the reference from srcVRT to self')
-        rawFileName = str(os.path.basename(self.fileName))
+        rawFileName = str(os.path.basename(warpedVRT.vrt.fileName))
         warpedXML = str(warpedVRT.read_xml())
         node0 = Node.create(warpedXML)
         node1 = node0.node('GDALWarpOptions')
@@ -1507,3 +1523,102 @@ class VRT():
         shiftVRT.write_xml(str(node0.rawxml()))
 
         return shiftVRT
+
+    def get_sub_vrt(self, steps=1):
+        '''Return sub-VRT from given depth
+
+        Iteratively copy self.vrt into self until
+        self.vrt is None or steps == 0
+
+        Parameters
+        -----------
+        steps : int
+            How many sub VRTs to restore
+
+        Returns
+        -------
+        self : if no deeper VRTs found
+        self.vrt : if deeper VRTs are found
+
+        Modifies
+        --------
+        self
+        self.vrt
+
+        '''
+
+        # check if self is the last valid (deepest) VRT
+        if self.vrt is None:
+            return self
+
+        # check if required depth of restoration is met
+        if steps == 0:
+            return self
+
+        # decrease the depth of restoration
+        steps -= 1
+
+        # return restored sub-VRT
+        return self.vrt.get_sub_vrt(steps)
+
+    def __repr__(self):
+        strOut = os.path.split(self.fileName)[1]
+        if self.vrt is not None:
+            strOut += '=>%s' % self.vrt.__repr__()
+        return strOut
+
+    def get_super_vrt(self):
+        '''Create vrt with subVRT
+
+        copy of self in vrt.vrt and change references from vrt to vrt.vrt
+
+        '''
+
+        # create new self
+        superVRT = VRT(gdalDataset=self.dataset)
+        superVRT.vrt = self.copy()
+
+        # Add bands to newSelf
+        for iBand in range(superVRT.vrt.dataset.RasterCount):
+            src = {'SourceFilename': superVRT.vrt.fileName,
+                   'SourceBand': iBand + 1}
+            dst = superVRT.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
+            superVRT._create_band(src, dst)
+        superVRT.dataset.FlushCache()
+
+        return superVRT
+
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, factor, eResampleAlg):
+        '''Create VRT and replace step in the source'''
+
+        subsamVRT = self.get_super_vrt()
+
+        # Get XML content from VRT-file
+        vrtXML = subsamVRT.read_xml()
+        node0 = Node.create(vrtXML)
+
+        # replace rasterXSize in <VRTDataset>
+        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
+        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+
+        rasterYSize = subsamVRT.vrt.dataset.RasterYSize
+        rasterXSize = subsamVRT.vrt.dataset.RasterXSize
+
+        # replace xSize in <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            for sourceName in ['ComplexSource', 'SimpleSource']:
+                for iNode2 in iNode1.nodeList(sourceName):
+                    iNodeDstRect = iNode2.node('DstRect')
+                    iNodeDstRect.replaceAttribute('xSize',
+                                                  str(newRasterXSize))
+                    iNodeDstRect.replaceAttribute('ySize',
+                                                  str(newRasterYSize))
+            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
+            if eResampleAlg == -1:
+                iNode1.replaceTag('ComplexSource', 'AveragedSource')
+                iNode1.replaceTag('SimpleSource', 'AveragedSource')
+
+        # Write the modified elemements into VRT
+        subsamVRT.write_xml(str(node0.rawxml()))
+
+        return subsamVRT

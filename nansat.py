@@ -174,13 +174,9 @@ class Nansat(Domain):
         # create self.raw from a file using mapper or...
         if fileName != '':
             # Make original VRT object with mapping of variables
-            self.raw = self._get_mapper(mapperName, **kwargs)
-            # Set current VRT object
-            self.vrt = self.raw.copy()
+            self.vrt = self._get_mapper(mapperName, **kwargs)
         # ...create using array, domain, and parameters
         else:
-            # Get vrt from domain
-            self.raw = VRT(gdalDataset=domain.vrt.dataset)
             # Set current VRT object
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             if array is not None:
@@ -315,15 +311,15 @@ class Nansat(Domain):
         for pKey in parameters:
             p2add[pKey] = parameters[pKey]
 
+        # MAYBE ADD ONE MORE VRT ???
+        
         # add the array band into self.vrt and get bandName
-        bandName = self.raw._create_band({'SourceFilename': vrt2add.fileName,
+        bandName = self.vrt._create_band({'SourceFilename': vrt2add.fileName,
                                           'SourceBand': bandNumber}, p2add)
         # add VRT with the band to the dictionary
         # (not to loose the VRT object and VRT file in memory)
         self.addedBands[bandName] = vrt2add
-        self.raw.dataset.FlushCache()  # required after adding bands
-        # copy raw VRT object to the current vrt
-        self.vrt = self.raw.copy()
+        self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
         ''' Make a dictionary with all bands metadata
@@ -568,120 +564,51 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
-        # check if eResampleAlg is valid
-        if eResampleAlg > 0:
-            self.logger.error('''
-                            eResampleAlg must be <= 0.
-                            Use resize_without_georeference instead''')
-            return
-
         # get new shape
         newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
                                                               factor,
                                                               width,
                                                               height)
 
-        # Get XML content from VRT-file
-        vrtXML = self.vrt.read_xml()
-        node0 = Node.create(vrtXML)
+        if eResampleAlg <= 0:
+            self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize, newRasterYSize, factor, eResampleAlg)
+        else:
+            # modify GeoTransform: set resolution from new X/Y size
+            geoTransform = (0,
+                        float(self.vrt.dataset.RasterXSize) / float(newRasterXSize),
+                        0,
+                        self.vrt.dataset.RasterYSize,
+                        0,
+                        - float(self.vrt.dataset.RasterYSize) / float(newRasterYSize))
 
-        # replace rasterXSize in <VRTDataset>
-        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
-        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
-
-        rasterYSize, rasterXSize = self.shape()
-
-        # replace xSize in <DstRect> of each source
-        for iNode1 in node0.nodeList('VRTRasterBand'):
-            for sourceName in ['ComplexSource', 'SimpleSource']:
-                for iNode2 in iNode1.nodeList(sourceName):
-                    iNodeDstRect = iNode2.node('DstRect')
-                    iNodeDstRect.replaceAttribute('xSize',
-                                                  str(newRasterXSize))
-                    iNodeDstRect.replaceAttribute('ySize',
-                                                  str(newRasterYSize))
-            # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
-            if eResampleAlg == -1:
-                iNode1.replaceTag('ComplexSource', 'AveragedSource')
-                iNode1.replaceTag('SimpleSource', 'AveragedSource')
-
-        # Edit GCPs to correspond to the downscaled size
-        if node0.node('GCPList'):
-            for iNode in node0.node('GCPList').nodeList('GCP'):
-                pxl = float(iNode.getAttribute('Pixel')) * factor
-                if pxl > float(rasterXSize):
-                    pxl = rasterXSize
-                iNode.replaceAttribute('Pixel', str(pxl))
-                lin = float(iNode.getAttribute('Line')) * factor
-                if lin > float(rasterYSize):
-                    lin = rasterYSize
-                iNode.replaceAttribute('Line', str(lin))
-
-        # Write the modified elemements into VRT
-        self.vrt.write_xml(str(node0.rawxml()))
-
-    def resize_lite(self, factor=1, width=None,
-                    height=None, eResampleAlg=1):
-        '''Proportional resize of the dataset. No georeference kept.
-
-        The dataset is resized as (xSize*factor, ySize*factor) or
-        (width, calulated height) or (calculated width, height).
-        self.vrt is rewritten to the the downscaled sizes.
-        No georeference (useful e.g. for export) is stored in the object.
-        If resize() is called without any parameters then previsous
-        resizing/reprojection cancelled.
-
-        WARNING: It seems like the function is presently not working for
-        complex bands and pixelfunction bands - in case this kind of data is
-        needed it should be copied to a numpy array which is added as a band
-        before resizing.
-
-        Parameters
-        -----------
-        Either factor, or width, or height should be given:
-            factor : float, optional, default=1
-            width : int, optional
-            height : int, optional
-            eResampleAlg : int (GDALResampleAlg), optional
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
-                if eResampleAlg > 0 : VRT.get_resized_vrt() is used
-
-        Modifies
-        ---------
-        self.vrt.dataset : VRT dataset of VRT object
-            raster size are modified to downscaled size.
-
-        '''
-        # resize back to original size/setting
-        if factor == 1 and width is None and height is None:
-            self.vrt = self.raw.copy()
-            return
-
-        # check if eResampleAlg is valid
-        if eResampleAlg < 1:
-            self.logger.error('''
-                            eResampleAlg must be > 0.
-                            Use resize() instead''')
-            return
-
-        # get new shape
-        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
-                                                              factor,
-                                                              width,
-                                                              height)
-
-        # apply affine transformation using reprojection
-        self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
-                                            newRasterYSize,
-                                            eResampleAlg)
+            # update size and GeoTranform in XML of the warped VRT object
+            self.vrt = self.vrt.get_warped_vrt(xSize=newRasterXSize,
+                                       ySize=newRasterYSize,
+                                       geoTransform=geoTransform,
+                                       use_geolocationArray=False,
+                                       use_gcps=False,
+                                       use_geotransform=False,
+                                       eResampleAlg=eResampleAlg)
+        
+        # resize gcps
+        gcps = self.vrt.vrt.dataset.GetGCPs()
+        if len(gcps) > 0:
+            gcpPro = self.vrt.vrt.dataset.GetGCPProjection()
+            for gcp in gcps:
+                gcp.GCPPixel *= factor
+                gcp.GCPLine *= factor
+            self.vrt.dataset.SetGCPs(gcps, gcpPro)
+            self.vrt._remove_geotransform()
+        else:
+            # change resultion in geotransform to keep spatial extent
+            geoTransform = list(self.vrt.vrt.dataset.GetGeoTransform())
+            geoTransform[1] = float(geoTransform[1])/factor
+            geoTransform[5] = float(geoTransform[5])/factor
+            geoTransform = map(float, geoTransform)
+            self.vrt.dataset.SetGeoTransform(geoTransform)
+            
+        # set global metadata
+        #self.vrt.dataset.SetMetadata(self.vrt.vrt.dataset.GetMetadata())
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -782,9 +709,6 @@ class Nansat(Domain):
         ---------
         http://www.gdal.org/gdalwarp.html
         '''
-        # dereproject
-        self.vrt = self.raw.copy()
-
         # if no domain: quit
         if dstDomain is None:
             return
@@ -798,7 +722,7 @@ class Nansat(Domain):
             dstCorners = dstDomain.get_corners()
             if min(dstCorners[0]) < 0:
                 # shift
-                self.raw = self.raw.get_shifted_vrt(-180)
+                self.vrt = self.vrt.get_shifted_vrt(-180)
 
         # get projection of destination dataset
         dstSRS = dstDomain.vrt.dataset.GetProjection()
@@ -826,7 +750,7 @@ class Nansat(Domain):
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # create Warped VRT
-        warpedVRT = self.raw.get_warped_vrt(dstSRS=dstSRS,
+        self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
                                             dstGCPs=dstGCPs,
                                             eResampleAlg=eResampleAlg,
                                             xSize=xSize, ySize=ySize,
@@ -835,14 +759,30 @@ class Nansat(Domain):
                                             WorkingDataType=WorkingDataType,
                                             tps=tps, **kwargs)
 
-        # set current VRT object
-        self.vrt = warpedVRT
-        # add metadata from RAW to VRT (except fileName)
+        # add metadata from VRT.VRT to VRT (except fileName)
         vrtFileName = self.vrt.dataset.GetMetadataItem('fileName')
-        rawMetadata = self.raw.dataset.GetMetadata()
-        self.vrt.dataset.SetMetadata(rawMetadata)
+        vrtvrtMetadata = self.vrt.vrt.dataset.GetMetadata()
+        self.vrt.dataset.SetMetadata(vrtvrtMetadata)
         self.vrt.dataset.SetMetadataItem('fileName', vrtFileName)
 
+    def undo(self, steps=1):
+        '''Undo reproject or resize of Nansat object
+        
+        Restore the self.vrt from self.vrt.vrt
+        
+        Parameters
+        -----------
+        steps : int
+            How many steps back to undo
+        
+        Modifies
+        --------
+        self.vrt
+        
+        '''
+        
+        self.vrt = self.vrt.get_sub_vrt(steps)
+    
     def watermask(self, mod44path=None, dstDomain=None):
         ''' Create numpy array with watermask (water=1, land=0)
 

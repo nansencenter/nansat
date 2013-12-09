@@ -101,14 +101,14 @@ n.resize(0.5)
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '02.png', clim='hist')
 # undo resize
-n.resize()
+n.undo()
 
 # Resize the data to 50% using CubicSpline
 n.resize_lite(0.5, eResampleAlg=3)
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '02CubicSpline.png', clim='hist')
 # undo resize
-n.resize()
+n.undo()
 
 
 # make image with map of the file location
@@ -133,6 +133,9 @@ d = Domain(4326, "-te 27 70.3 31 71.5 -ts 300 300")
 n.reproject(d, 2)
 # -- Write image
 n.write_figure(oFileName + '08_pro.png', clim='hist')
+print n.vrt
+n.undo()
+print n.vrt
 
 # Get transect of the 1st and 2nd bands corresponding to the given points
 values, lonlat, pixlinCoord = n.get_transect(

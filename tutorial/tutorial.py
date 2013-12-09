@@ -35,9 +35,8 @@ n.write_figure(oFileName + '.png', clim='hist')
 # 3. Write the transfromed image into RGB picture
 dLatlong = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                   "-te 27 70.2 31 71.5 -ts 500 500")
-n.reproject(dLatlong)
-n.write_figure(oFileName + 'pro.png', bands=[1, 2, 3], clim=[0, 100])
 
+n.reproject(dLatlong)
 # Export projected satelite image into NetCDF format
 n.export(oFileName + '.nc')
 
