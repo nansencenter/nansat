@@ -1493,7 +1493,7 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
         '''Crop Nansat object
         
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1517,7 +1517,9 @@ class Nansat(Domain):
                 superVRT is created with modified SrcRect and DstRect
         '''
         # use interactive PointBrowser for selecting extent
-        if xOff==0 and yOff==0 and xSize is None and ySize is None:
+        if      (xOff==0 and yOff==0 and
+                 xSize is None and ySize is None and
+                 lonlim is None and latlim is None):
             factor = self.resize(width=1000)
             data = self[1]
             browser = PointBrowser(data)
@@ -1530,6 +1532,21 @@ class Nansat(Domain):
             print xOff, yOff, xSize, ySize
             self.undo()
 
+        # get xOff, yOff, xSize and ySize from lonlim and latlim
+        if       (xOff==0 and yOff==0 and
+                 xSize is None and ySize is None and
+                 type(lonlim) is list and type(latlim) is list):
+            crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0], lonlim[1], lonlim[1]],
+                                                   [latlim[0], latlim[1], latlim[0], latlim[1]],
+                                                    1)
+            print crnPix
+            print crnLin
+            xOff = round(min(crnPix))
+            yOff = round(min(crnLin))
+            xSize = round(max(crnPix) - min(crnPix))
+            ySize = round(max(crnLin) - min(crnLin))
+            print xOff, yOff, xSize, ySize
+        
         self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
         
         RasterXSize = self.vrt.dataset.RasterXSize
