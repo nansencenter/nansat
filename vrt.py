@@ -217,6 +217,7 @@ class VRT():
         self.fileName = self._make_filename(nomem=nomem)
         self.vrtDriver = gdal.GetDriverByName('VRT')
         self.vrt = None
+        self.subVRTs = {}
 
         # open and parse wkv.xml
         fileNameWKV = os.path.join(os.path.dirname(
@@ -779,8 +780,9 @@ class VRT():
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
 
-        if 'subVRTs' in dir(self):
-            vrt.subVRTs = self.subVRTs
+        # add subVRTs: dictionary with several VRTs generated in mappers
+        # or with added bands
+        vrt.subVRTs = self.subVRTs
 
         # iterative copy of self.vrt
         if self.vrt is not None:
@@ -826,51 +828,6 @@ class VRT():
 
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
-
-    def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
-                        use_gcps=False, use_geotransform=False,
-                        eResampleAlg=1, **kwargs):
-
-        ''' Resize VRT
-
-        Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
-
-        Parameters
-        -----------
-        xSize, ySize : int
-            new size of the VRT object
-        eResampleAlg : GDALResampleAlg
-            see also gdal.AutoCreateWarpedVRT
-
-        Returns
-        --------
-        VRT object : Resized VRT object
-
-        '''
-        # modify GeoTransform: set resolution from new X/Y size
-        geoTransform = (0,
-                        float(self.dataset.RasterXSize) / float(xSize),
-                        0,
-                        self.dataset.RasterYSize,
-                        0,
-                        - float(self.dataset.RasterYSize) / float(ySize))
-
-        # update size and GeoTranform in XML of the warped VRT object
-        warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
-                                        geoTransform=geoTransform,
-                                        use_geolocationArray=use_geolocationArray,
-                                        use_gcps=use_gcps,
-                                        use_geotransform=use_geotransform,
-                                        eResampleAlg=eResampleAlg)
-
-        # set metadata
-        warpedVRT.dataset.SetMetadata(self.dataset.GetMetadata_Dict())
-
-        # add source VRT (self) to the warpedVRT
-        # in order not to loose RAW file from self
-        warpedVRT.srcVRT = self
-
-        return warpedVRT
 
     def _remove_geotransform(self):
         '''Remove GeoTransfomr from VRT Object

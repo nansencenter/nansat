@@ -131,8 +131,6 @@ class Nansat(Domain):
             list of available working mappers
         self.fileName : file name
             set file name given by the argument
-        self.raw : Mapper(VRT) object
-            set VRT object with VRT dataset with mapping of variables
         self.vrt : Mapper(VRT) object
             Copy of self.raw
         self.logger : logging.Logger
@@ -171,7 +169,7 @@ class Nansat(Domain):
         self.name = os.path.basename(fileName)
         self.path = os.path.dirname(fileName)
 
-        # create self.raw from a file using mapper or...
+        # create self.vrt from a file using mapper or...
         if fileName != '':
             # Make original VRT object with mapping of variables
             self.vrt = self._get_mapper(mapperName, **kwargs)
@@ -237,8 +235,7 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
-    def add_band(self, fileName=None, vrt=None, bandID=1, array=None,
-                 parameters=None, resamplingAlg=1, nomem=False):
+    def add_band(self, array, parameters=None, nomem=False):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
@@ -250,12 +247,8 @@ class Nansat(Domain):
 
         Parameters
         -----------
-        fileName : string, name of the file, source of band
-        vrt : VRT, source of band
-        bandID : int, number of the band in fileName or in vrt
         array : Numpy array with band data
         parameters : dictionary, band metadata: wkv, name, etc.
-        resamplingAlg : 0, 1, 2 stands for nearest, bilinear, cubic
         nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
@@ -268,57 +261,15 @@ class Nansat(Domain):
         if parameters is None:
             parameters = {}
 
-        # default added vrt, source bandNumber and metadata
-        vrt2add = None
-        bandNumber = None
-        p2add = {}
+        # create VRT from array
+        bandVRT = VRT(array=array, nomem=nomem)
 
-        # get band from input file name
-        if fileName is not None:
-            # create temporary nansat object
-            n = Nansat(fileName)
-            # reproject onto current grid
-            n.reproject(self)
-            # get vrt to be added
-            vrt2add = n.vrt
-            # get band metadata
-            bandNumber = n._get_band_number(bandID)
-            p2add = n.get_metadata(bandID=bandID)
-
-        # get band from input VRT
-        if vrt is not None:
-            # get VRT to be added
-            vrt2add = vrt
-            # get band metadata
-            bandNumber = bandID
-            p2add = vrt.dataset.GetRasterBand(bandID).GetMetadata()
-
-        # get band from input array
-        if array is not None:
-            if array.shape == self.shape():
-                # create VRT from array
-                vrt2add = VRT(array=array, nomem=nomem)
-            else:
-                # create VRT from resized array
-                srcVRT = VRT(array=array, nomem=nomem)
-                vrt2add = srcVRT.get_resized_vrt(self.shape()[1],
-                                                 self.shape()[0],
-                                                 resamplingAlg)
-            # set parameters
-            bandNumber = 1
-
-        # add parameters from input
-        for pKey in parameters:
-            p2add[pKey] = parameters[pKey]
-
-        # MAYBE ADD ONE MORE VRT ???
+        self.vrt = self.vrt.get_super_vrt()
 
         # add the array band into self.vrt and get bandName
-        bandName = self.vrt._create_band({'SourceFilename': vrt2add.fileName,
-                                          'SourceBand': bandNumber}, p2add)
-        # add VRT with the band to the dictionary
-        # (not to loose the VRT object and VRT file in memory)
-        self.addedBands[bandName] = vrt2add
+        bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
+                                          'SourceBand': 1}, parameters)
+        self.vrt.subVRTs[bandName] = bandVRT
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
@@ -608,7 +559,9 @@ class Nansat(Domain):
             self.vrt.dataset.SetGeoTransform(geoTransform)
 
         # set global metadata
-        #self.vrt.dataset.SetMetadata(self.vrt.vrt.dataset.GetMetadata())
+        subMetaData = self.vrt.vrt.dataset.GetMetadata()
+        subMetaData.pop('fileName')
+        self.set_metadata(subMetaData)
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -1154,7 +1107,7 @@ class Nansat(Domain):
         return metadata
 
     def set_metadata(self, key='', value='', bandID=None):
-        ''' Set metadata to self.raw.dataset and self.vrt.dataset
+        ''' Set metadata to self.vrt.dataset
 
         Parameters
         -----------
@@ -1168,27 +1121,21 @@ class Nansat(Domain):
 
         Modifies
         ---------
-        self.raw.dataset : sets metadata in GDAL raw dataset
         self.vrt.dataset : sets metadata in GDAL current dataset
 
         '''
         # set all metadata to the dataset or to the band
         if bandID is None:
-            metaReceiverRAW = self.raw.dataset
             metaReceiverVRT = self.vrt.dataset
         else:
             bandNumber = self._get_band_number(bandID)
-
-            metaReceiverRAW = self.raw.dataset.GetRasterBand(bandNumber)
             metaReceiverVRT = self.vrt.dataset.GetRasterBand(bandNumber)
 
         # set metadata from dictionary or from single pair key,value
         if type(key) == dict:
             for k in key:
-                metaReceiverRAW.SetMetadataItem(k, key[k])
                 metaReceiverVRT.SetMetadataItem(k, key[k])
         else:
-            metaReceiverRAW.SetMetadataItem(key, value)
             metaReceiverVRT.SetMetadataItem(key, value)
 
     def _get_mapper(self, mapperName, **kwargs):
@@ -1605,3 +1552,8 @@ class Nansat(Domain):
                 geoTransfrom[0] += geoTransfrom[1] * xOff
                 geoTransfrom[3] += geoTransfrom[5] * yOff
                 self.vrt.dataset.SetGeoTransform(geoTransfrom)
+
+        # set global metadata
+        subMetaData = self.vrt.vrt.dataset.GetMetadata()
+        subMetaData.pop('fileName')
+        self.set_metadata(subMetaData)
