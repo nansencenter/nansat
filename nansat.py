@@ -1450,7 +1450,7 @@ class Nansat(Domain):
             latlon = False
 
         # get wkt
-        wkt = self._get_projection(self.vrt.dataset)
+        wkt = self.vrt.get_projection()
 
         pixlinCoord = np.array([[], []])
         for iPoint in range(len(points)):
@@ -1471,7 +1471,7 @@ class Nansat(Domain):
                     break
             # if points in degree, convert them into pix/lin
             if latlon:
-                pix, lin = self._transform_points([point0[0], point1[0]],
+                pix, lin = self.transform_points([point0[0], point1[0]],
                                                   [point0[1], point1[1]],
                                                   DstToSrc=1)
                 point0 = (pix[0], lin[0])
@@ -1497,7 +1497,7 @@ class Nansat(Domain):
                 pixlinCoord1 = pixlinCoord + int(smooth[0]) / 2
 
         # convert pix/lin into lon/lat
-        lonVector, latVector = self._transform_points(pixlinCoord[0],
+        lonVector, latVector = self.transform_points(pixlinCoord[0],
                                                       pixlinCoord[1],
                                                       DstToSrc=0)
         transect = []
@@ -1590,24 +1590,18 @@ class Nansat(Domain):
         
         if xOff > 0 or yOff > 0:
             gcps = self.vrt.dataset.GetGCPs()
-            newGCPs = []
             if len(gcps) > 0:
+                newGCPs = []
                 gcpProjection = self.vrt.dataset.GetGCPProjection()
-                for gcp in gcps:
-                    gcp.GCPPixel -= xOff
-                    gcp.GCPLine -= yOff
-                    if   (gcp.GCPPixel > 0 and
-                          gcp.GCPPixel <= xSize and
-                          gcp.GCPLine > 0 and
-                          gcp.GCPLine <= ySize):
-                        newGCPs.append(gcp)
+                for newPix in np.r_[0:xSize:10j]:
+                    for newLin in np.r_[0:ySize:10j]:
+                        newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
+                        newGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
                 self.vrt.dataset.SetGCPs(newGCPs, gcpProjection)
                 self.vrt._remove_geotransform()
             else:
                 geoTransfrom = self.vrt.dataset.GetGeoTransform()
                 geoTransfrom = map(float, geoTransfrom)
-                print geoTransfrom
                 geoTransfrom[0] += geoTransfrom[1] * xOff
                 geoTransfrom[3] += geoTransfrom[5] * yOff
-                print geoTransfrom
                 self.vrt.dataset.SetGeoTransform(geoTransfrom)

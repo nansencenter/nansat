@@ -19,8 +19,37 @@ iFileName2 = os.path.join(iPath, 'stere.tif')
 oFileName = os.path.join(oPath, 'tutor_')
 
 # Open an input satellite image with Nansat
-n1 = Nansat(iFileName1, logLevel=10)
-n2 = Nansat(iFileName2, logLevel=10)
+#n1 = Nansat(iFileName1, logLevel=10)
+#n2 = Nansat(iFileName2, logLevel=10)
+
+# test crop
+#n1.crop(30, 40, 100, 120)
+#n1.resize(0.5, eResampleAlg=3)
+
+#n1.vrt.export('n1.vrt.txt')
+#n1.vrt.vrt.export('n1.vrt.vrt.txt')
+#n1.vrt.vrt.vrt.export('n1.vrt.vrt.vrt.txt')
+
+#n1.write_figure(oFileName + 'ncrop_resize05.png', clim=[0, 60])
+#n1.resize(2, eResampleAlg=3)
+#n1.write_figure(oFileName + 'ncrop_resize20.png', clim='hist')
+#print n1
+
+
+nr = Nansat('/files/RS2_20130520_062731_0076_SCWA_HHHV_SGF_260697_5426_8472420/')
+nr.crop(500, 1000, 1000, 1000)
+f = nr.write_figure(oFileName + 'nr_crop.png', clim='hist', legend=True)
+
+nr.resize(0.5, eResampleAlg=3)
+nr.resize(2, eResampleAlg=3)
+nr.write_figure(oFileName + 'nr_crop_filt_1.png', 1, clim='hist', legend=True)
+nr.write_figure(oFileName + 'nr_crop_filt_2.png', 2, clim='hist', legend=True)
+nr.write_figure(oFileName + 'nr_crop_filt_4.png', 4, clim='hist', legend=True)
+
+#nr.vrt.vrt.vrt.export('nr.vrt.vrt.vrt.txt')
+
+"""
+
 
 n1.vrt.export('n1.vrt.txt')
 
@@ -45,3 +74,4 @@ n2.resize(0.2, eResampleAlg=-1)
 n2.write_figure(oFileName + 'n2x05.png', clim=[0, 60])
 n2.reproject(n1, eResampleAlg=2)
 n2.write_figure(oFileName + 'n2x05_on_n1x20.png', clim=[0, 60])
+"""
