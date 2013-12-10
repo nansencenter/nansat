@@ -557,6 +557,8 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
+        
+        return factor
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -1514,6 +1516,20 @@ class Nansat(Domain):
             self.vrt : VRT
                 superVRT is created with modified SrcRect and DstRect
         '''
+        # use interactive PointBrowser for selecting extent
+        if xOff==0 and yOff==0 and xSize is None and ySize is None:
+            factor = self.resize(width=1000)
+            data = self[1]
+            browser = PointBrowser(data)
+            browser.get_points()
+            points = np.array(browser.coordinates)
+            xOff = round(points.min(axis=0)[0] / factor)
+            yOff = round(points.min(axis=0)[1] / factor)
+            xSize = round((points.max(axis=0)[0] - points.min(axis=0)[0]) / factor)
+            ySize = round((points.max(axis=0)[1] - points.min(axis=0)[1]) / factor)
+            print xOff, yOff, xSize, ySize
+            self.undo()
+
         self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
         
         RasterXSize = self.vrt.dataset.RasterXSize
