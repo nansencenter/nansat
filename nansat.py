@@ -131,8 +131,8 @@ class Nansat(Domain):
             list of available working mappers
         self.fileName : file name
             set file name given by the argument
-        self.vrt : Mapper(VRT) object
-            Copy of self.raw
+        self.vrt : VRT object
+            Wrapper around VRT file and GDAL dataset with satellite raster data
         self.logger : logging.Logger
             logger for output debugging info
         self.name : string
@@ -239,11 +239,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.addedBands
-        Create new band in self.raw which points to this vrt
-
-        NB : Adding band is possible for raw (nonprojected, nonresized) images
-        only. Adding band will cancel any previous reproject() or resize().
+        to self.vrt.subVRTs
 
         Parameters
         -----------
@@ -288,10 +284,23 @@ class Nansat(Domain):
         return b
 
     def has_band(self, band):
+        '''Check if self has band with name <band>
+        Parameters
+        ----------
+            band : str
+                name of the band to check
+
+        Returns
+        -------
+            True/False if band exists or not
+                
+        '''
+        bandExists = False
         for b in self.bands():
             if self.bands()[b]['name'] == band:
-                return True
-        return False
+                bandExists = True
+
+        return bandExists
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
                addGCPs=True, driver='netCDF', bottomup=False):
@@ -462,26 +471,6 @@ class Nansat(Domain):
                                                           options=[options])
         self.logger.debug('Export - OK!')
 
-    def _get_new_rastersize(self, factor=1, width=None, height=None):
-        # get current shape
-        rasterYSize = float(self.shape()[0])
-        rasterXSize = float(self.shape()[1])
-
-        # estimate factor if width or height is given
-        if width is not None:
-            factor = float(width) / rasterXSize
-        if height is not None:
-            factor = float(height) / rasterYSize
-
-        # calculate new size
-        newRasterYSize = int(rasterYSize * factor)
-        newRasterXSize = int(rasterXSize * factor)
-
-        self.logger.info('New size/factor: (%f, %f)/%f' %
-                        (newRasterXSize, newRasterYSize, factor))
-
-        return newRasterYSize, newRasterXSize, factor
-
     def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
@@ -505,8 +494,12 @@ class Nansat(Domain):
             width : int, optional
             height : int, optional
             eResampleAlg : int (GDALResampleAlg), optional
-                -1 : Average,
-                0 : NearestNeighbour,
+               -1 : Average,
+                0 : NearestNeighbour
+                1 : Bilinear,
+                2 : Cubic,
+                3 : CubicSpline,
+                4 : Lancoz
 
         Modifies
         ---------
@@ -515,31 +508,33 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-        # get new shape
-        newRasterYSize, newRasterXSize, factor = self._get_new_rastersize(
-                                                              factor,
-                                                              width,
-                                                              height)
+        # get current shape
+        rasterYSize = float(self.shape()[0])
+        rasterXSize = float(self.shape()[1])
+
+        # estimate factor if width or height is given
+        if width is not None:
+            factor = float(width) / rasterXSize
+        if height is not None:
+            factor = float(height) / rasterYSize
+
+        # calculate new size
+        newRasterYSize = int(rasterYSize * factor)
+        newRasterXSize = int(rasterXSize * factor)
+
+        self.logger.info('New size/factor: (%f, %f)/%f' %
+                        (newRasterXSize, newRasterYSize, factor))
 
         if eResampleAlg <= 0:
-            self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize, newRasterYSize, factor, eResampleAlg)
+            self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize,
+                                                   newRasterYSize,
+                                                   factor,
+                                                   eResampleAlg)
         else:
-            # modify GeoTransform: set resolution from new X/Y size
-            geoTransform = (0,
-                        float(self.vrt.dataset.RasterXSize) / float(newRasterXSize),
-                        0,
-                        self.vrt.dataset.RasterYSize,
-                        0,
-                        - float(self.vrt.dataset.RasterYSize) / float(newRasterYSize))
-
             # update size and GeoTranform in XML of the warped VRT object
-            self.vrt = self.vrt.get_warped_vrt(xSize=newRasterXSize,
-                                       ySize=newRasterYSize,
-                                       geoTransform=geoTransform,
-                                       use_geolocationArray=False,
-                                       use_gcps=False,
-                                       use_geotransform=False,
-                                       eResampleAlg=eResampleAlg)
+            self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
+                                                newRasterYSize,
+                                                eResampleAlg=eResampleAlg)
 
         # resize gcps
         gcps = self.vrt.vrt.dataset.GetGCPs()
@@ -628,8 +623,8 @@ class Nansat(Domain):
                   WorkingDataType=None, tps=False, **kwargs):
         ''' Change projection of the object based on the given Domain
 
-        Warp the raw VRT using AutoCreateWarpedVRT() using projection
-        from the dstDomain.
+        Create superVRT from self.vrt with AutoCreateWarpedVRT() using
+        projection from the dstDomain.
         Modify XML content of the warped vrt using the Domain parameters.
         Generate warpedVRT and replace self.vrt with warpedVRT.
         If current object spans from 0 to 360 and dstDomain is west of 0,
@@ -655,8 +650,7 @@ class Nansat(Domain):
 
         Modifies
         ---------
-        self.vrt : VRT object with VRT dataset
-            replaced to warpedVRT dataset
+        self.vrt : VRT object with dataset replaced to warpedVRT dataset
 
         See Also
         ---------
@@ -712,14 +706,13 @@ class Nansat(Domain):
                                             WorkingDataType=WorkingDataType,
                                             tps=tps, **kwargs)
 
-        # add metadata from VRT.VRT to VRT (except fileName)
-        vrtFileName = self.vrt.dataset.GetMetadataItem('fileName')
-        vrtvrtMetadata = self.vrt.vrt.dataset.GetMetadata()
-        self.vrt.dataset.SetMetadata(vrtvrtMetadata)
-        self.vrt.dataset.SetMetadataItem('fileName', vrtFileName)
+        # set global metadata from subVRT
+        subMetaData = self.vrt.vrt.dataset.GetMetadata()
+        subMetaData.pop('fileName')
+        self.set_metadata(subMetaData)
 
     def undo(self, steps=1):
-        '''Undo reproject or resize of Nansat object
+        '''Undo reproject, resize, add_band or crop of Nansat object
 
         Restore the self.vrt from self.vrt.vrt
 
@@ -1499,7 +1492,28 @@ class Nansat(Domain):
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
     def crop(self, xOff=0, yOff=0, xSize=None, ySize=None):
-        '''Crop of Nansat object'''
+        '''Crop Nansat object
+        
+        Create superVRT, modify the Source Rectangle (SrcRect) and Destination
+        Rectangle (DstRect) tags in the VRT file for each band in order
+        to take only part of the original image,
+        create new GCPs or new GeoTransform for the cropped object.
+        
+        Parameters
+        ----------
+        xOff : int
+            pixel offset of subimage
+        yOff : int
+            line offset of subimage
+        xSize : int
+            width in pixels of subimage
+        ySize : int
+            height in pizels of subimage
+        
+        Modifies:
+            self.vrt : VRT
+                superVRT is created with modified SrcRect and DstRect
+        '''
         self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
         
         RasterXSize = self.vrt.dataset.RasterXSize

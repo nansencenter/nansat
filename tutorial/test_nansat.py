@@ -78,11 +78,9 @@ n.set_metadata(key='BandKey', value='BandVal', bandID=1)
 # get 1st Band Metadata
 print '1st Band Metadata:', n.get_metadata(bandID=1), '\n'
 
-# add a band from file (copy the 2nd band to the end (4th band)
-n.add_band(fileName=n.fileName, bandID=2)
 # add a band from numpy array (copy the 1st band to the end (5th band))
-n.add_band(array=n[1], parameters={'name': 'Name1',
-                                   'info':  'copy from the 1st band array'})
+n.add_band(n[1], parameters={'name': 'Name1',
+                             'info':  'copy from the 1st band array'})
 # print band list
 n.list_bands()
 # get GDAL raster band (2nd band)
@@ -96,20 +94,20 @@ plt.imshow(a);plt.colorbar();plt.savefig(oFileName + '01_imshow.png');plt.close(
 # -- Save as Matlab file
 savemat(oFileName + '01.mat', {'band_1': a})
 
-# Resize the data to 50%
+# Resize the data to 50% using averaging
 n.resize(0.5)
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '02.png', clim='hist')
 # undo resize
 n.undo()
 
-# Resize the data to 50% using CubicSpline
-n.resize_lite(0.5, eResampleAlg=3)
+# Smooth the data by resizing to 50% and to 200% using CubicSpline
+n.resize(0.5, eResampleAlg=3)
+n.resize(2.0, eResampleAlg=3)
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '02CubicSpline.png', clim='hist')
-# undo resize
-n.undo()
-
+# undo smoothing (undo two resizing)
+n.undo(2)
 
 # make image with map of the file location
 n.write_map(oFileName + '04_map.png')
@@ -136,6 +134,17 @@ n.write_figure(oFileName + '08_pro.png', clim='hist')
 print n.vrt
 n.undo()
 print n.vrt
+
+# crop image
+n.crop(100, 110, 50, 60)
+n.write_figure(oFileName + '09_crop.png', clim='hist')
+
+# automatically reproject cropped image
+d = Domain(4326, ds=n.vrt.dataset)
+n.reproject(d)
+n.write_figure(oFileName + '09_crop_pro.png', clim='hist')
+# undo croping and reproject
+n.undo(2)
 
 # Get transect of the 1st and 2nd bands corresponding to the given points
 values, lonlat, pixlinCoord = n.get_transect(

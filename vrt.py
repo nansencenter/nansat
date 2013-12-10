@@ -122,10 +122,17 @@ class VRT():
     and creates an instance of Mapper. But each Mapper has only a
     constructor, other methods are from VRT.
 
-    Nansat has two instances of Mapper-class (<=VRT-class): self.raw and
-    self.vrt. One holds VRT-file in original projection (derived from the
-    input file), another - in modified projection.
-
+    Nansat has one instances of Mapper-class (<=VRT-class): self.vrt.
+    It holds VRT-file in original projection (derived from the
+    input file). After most of the operations with Nansat object 
+    (e.g. reproject, crop, resize, add_band) self.vrt is replaced with a new
+    VRT object (super VRT or supVRT) which has the previous VRT object inside
+    (subVRT). The supVRT references subVRT and adds any kind of transformation:
+    resize, reprojection, cropping, etc. :
+    subVRT = self.vrt
+    self.vrt = method_to_create_super_VRT()
+    self.vrt.vrt = subVRT
+    
     '''
     ComplexSource = Template('''
             <$SourceType>
@@ -157,6 +164,11 @@ class VRT():
             <TargetSRS>$TargetSRS</TargetSRS>
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
+
+    # main sub VRT
+    vrt = None
+    # other sub VRTs
+    subVRTs = {}
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                  array=None,
@@ -204,6 +216,8 @@ class VRT():
             grid with longitudes
         lat : Numpy array
             grid with latitudes
+        subVRTs : dict
+            dictionray with VRTs that are used inside VRT
 
         Modifies
         ---------
@@ -216,8 +230,6 @@ class VRT():
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename(nomem=nomem)
         self.vrtDriver = gdal.GetDriverByName('VRT')
-        self.vrt = None
-        self.subVRTs = {}
 
         # open and parse wkv.xml
         fileNameWKV = os.path.join(os.path.dirname(
@@ -1650,3 +1662,41 @@ class VRT():
             raise ProjectionError('Empty projection in input dataset!')
 
         return projection
+
+    def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
+                        use_gcps=False, use_geotransform=False,
+                        eResampleAlg=1, **kwargs):
+
+        ''' Resize VRT
+
+        Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
+
+        Parameters
+        -----------
+        xSize, ySize : int
+            new size of the VRT object
+        eResampleAlg : GDALResampleAlg
+            see also gdal.AutoCreateWarpedVRT
+
+        Returns
+        --------
+        VRT object : Resized VRT object
+
+        '''
+        # modify GeoTransform: set resolution from new X/Y size
+        geoTransform = (0,
+                        float(self.dataset.RasterXSize) / float(xSize),
+                        0,
+                        self.dataset.RasterYSize,
+                        0,
+                        - float(self.dataset.RasterYSize) / float(ySize))
+
+        # update size and GeoTranform in XML of the warped VRT object
+        warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
+                                        geoTransform=geoTransform,
+                                        use_geolocationArray=use_geolocationArray,
+                                        use_gcps=use_gcps,
+                                        use_geotransform=use_geotransform,
+                                        eResampleAlg=eResampleAlg)
+
+        return warpedVRT
