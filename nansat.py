@@ -1450,7 +1450,7 @@ class Nansat(Domain):
             latlon = False
 
         # get wkt
-        wkt = self._get_projection(self.vrt.dataset)
+        wkt = self.vrt.get_projection()
 
         pixlinCoord = np.array([[], []])
         for iPoint in range(len(points)):
@@ -1471,7 +1471,7 @@ class Nansat(Domain):
                     break
             # if points in degree, convert them into pix/lin
             if latlon:
-                pix, lin = self._transform_points([point0[0], point1[0]],
+                pix, lin = self.transform_points([point0[0], point1[0]],
                                                   [point0[1], point1[1]],
                                                   DstToSrc=1)
                 point0 = (pix[0], lin[0])
@@ -1497,7 +1497,7 @@ class Nansat(Domain):
                 pixlinCoord1 = pixlinCoord + int(smooth[0]) / 2
 
         # convert pix/lin into lon/lat
-        lonVector, latVector = self._transform_points(pixlinCoord[0],
+        lonVector, latVector = self.transform_points(pixlinCoord[0],
                                                       pixlinCoord[1],
                                                       DstToSrc=0)
         transect = []
@@ -1550,3 +1550,58 @@ class Nansat(Domain):
             return NansatOGR
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
+
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None):
+        '''Crop of Nansat object'''
+        self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
+        
+        RasterXSize = self.vrt.dataset.RasterXSize
+        RasterYSize = self.vrt.dataset.RasterYSize
+        
+        if xSize is None or (xSize + xOff) > RasterXSize:
+            xSize =  RasterXSize - xOff
+        if ySize is None or (ySize + yOff) > RasterYSize:
+            ySize =  RasterYSize - yOff
+            
+        self.vrt = self.vrt.get_super_vrt()
+        xml = self.vrt.read_xml()
+        node0 = Node.create(xml)
+        
+        node0.node('VRTDataset').replaceAttribute('rasterXSize', str(xSize))
+        node0.node('VRTDataset').replaceAttribute('rasterYSize', str(ySize))
+        
+        # replace xOff and xSize in <SrcRect> and <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            iNode2 = iNode1.node('ComplexSource')
+
+            iNode3 = iNode2.node('SrcRect')
+            iNode3.replaceAttribute('xOff', str(xOff))
+            iNode3.replaceAttribute('yOff', str(yOff))
+            iNode3.replaceAttribute('xSize', str(xSize))
+            iNode3.replaceAttribute('ySize', str(ySize))
+
+            iNode3 = iNode2.node('DstRect')
+            iNode3.replaceAttribute('xSize', str(xSize))
+            iNode3.replaceAttribute('ySize', str(ySize))
+            
+
+        xml = str(node0.rawxml())
+        self.vrt.write_xml(xml)
+        
+        if xOff > 0 or yOff > 0:
+            gcps = self.vrt.dataset.GetGCPs()
+            if len(gcps) > 0:
+                newGCPs = []
+                gcpProjection = self.vrt.dataset.GetGCPProjection()
+                for newPix in np.r_[0:xSize:10j]:
+                    for newLin in np.r_[0:ySize:10j]:
+                        newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
+                        newGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
+                self.vrt.dataset.SetGCPs(newGCPs, gcpProjection)
+                self.vrt._remove_geotransform()
+            else:
+                geoTransfrom = self.vrt.dataset.GetGeoTransform()
+                geoTransfrom = map(float, geoTransfrom)
+                geoTransfrom[0] += geoTransfrom[1] * xOff
+                geoTransfrom[3] += geoTransfrom[5] * yOff
+                self.vrt.dataset.SetGeoTransform(geoTransfrom)

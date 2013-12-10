@@ -1583,6 +1583,9 @@ class VRT():
             src = {'SourceFilename': superVRT.vrt.fileName,
                    'SourceBand': iBand + 1}
             dst = superVRT.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
+            # remove PixelFunctionType from metadata to prevent its application 
+            if 'PixelFunctionType' in dst:
+                dst.pop('PixelFunctionType')
             superVRT._create_band(src, dst)
         superVRT.dataset.FlushCache()
 
@@ -1622,3 +1625,71 @@ class VRT():
         subsamVRT.write_xml(str(node0.rawxml()))
 
         return subsamVRT
+
+    def transform_points(self, colVector, rowVector, DstToSrc=0):
+        '''Transform given lists of X,Y coordinates into lat/lon
+
+        Parameters
+        -----------
+        colVector : lists
+            X and Y coordinates with any coordinate system
+        DstToSrc : 0 or 1
+            1 for inverse transformation, 0 for forward transformation.
+
+        Returns
+        --------
+        lonVector, latVector : lists
+            X and Y coordinates in degree of lat/lon
+
+        '''
+        # get source SRS (either Projection or GCPProjection)
+        srcWKT = self.get_projection()
+
+        # prepare target WKT (pure lat/lon)
+        dstWKT = latlongSRS.ExportToWkt()
+
+        # create transformer
+        transformer = gdal.Transformer(self.dataset, None,
+                                       ['SRC_SRS=' + srcWKT,
+                                        'DST_SRS=' + dstWKT])
+                                        #,'METHOD=GCP_TPS'])
+
+        # use the transformer to convert pixel/line into lat/lon
+        latVector = []
+        lonVector = []
+        for pixel, line in zip(colVector, rowVector):
+            try:
+                succ, point = transformer.TransformPoint(DstToSrc, pixel, line)
+                lonVector.append(point[0])
+                latVector.append(point[1])
+            except:
+                lonVector.append(np.nan)
+                latVector.append(np.nan)
+
+        return lonVector, latVector
+
+    def get_projection(self):
+        '''Get projection form self.dataset
+
+        Get projection from GetProjection() or GetGCPProjection().
+        If both are empty, raise error
+
+        Return
+        -------
+        projection : projection or GCPprojection
+
+        Raises
+        -------
+        ProjectionError : occurrs when the projection is empty.
+
+        '''
+        #get projection or GCPProjection
+        projection = self.dataset.GetProjection()
+        if projection == '':
+            projection = self.dataset.GetGCPProjection()
+
+        #test projection
+        if projection == '':
+            raise ProjectionError('Empty projection in input dataset!')
+
+        return projection
