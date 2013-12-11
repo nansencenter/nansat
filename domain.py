@@ -437,9 +437,10 @@ class Domain():
         Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
         # if the vrt dataset has geolocationArray
         if len(self.vrt.geolocationArray.d) > 0:
+            Xm, Ym = np.meshgrid(X, Y)
             geoArray = self.vrt.geolocationArray
-            longitude = geoArray.xVRT.dataset.ReadAsArray()[X, Y]
-            latitude = geoArray.yVRT.dataset.ReadAsArray()[X, Y]
+            longitude = geoArray.xVRT.dataset.ReadAsArray()[Xm, Ym]
+            latitude = geoArray.yVRT.dataset.ReadAsArray()[Xm, Ym]
         else:
             # create empty grids
             longitude = np.zeros([len(Y), len(X)], 'float32')
@@ -798,6 +799,9 @@ class Domain():
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
 
+    
+
+
     def _get_geotransform(self, extentDic):
         '''
         the new coordinates and raster size are calculated based on
@@ -857,6 +861,7 @@ class Domain():
         return coordinates, int(rasterXSize), int(rasterYSize)
 
     def transform_points(self, colVector, rowVector, DstToSrc=0):
+
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters

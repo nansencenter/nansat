@@ -19,7 +19,7 @@ class Mapper(VRT):
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 GCP_COUNT=10, **kwargs):
+                 GCP_COUNT=10, addGeolocation=False, **kwargs):
         ''' Create VRT
         Parameters
         ----------
@@ -30,7 +30,9 @@ class Mapper(VRT):
         titles = ['HMODISA Level-2 Data',
                   'MODISA Level-2 Data',
                   'MERIS Level-2 Data',
-                  'GOCI Level-2 Data']
+                  'GOCI Level-2 Data',
+                  'VIIRSN Level-2 Data']
+                  
         # should raise error in case of not obpg_l2 file
         title = gdalMetadata["Title"]
         assert title in titles, 'obpg_l2 BAD MAPPER'
@@ -78,11 +80,18 @@ class Mapper(VRT):
                                                'case': 'II'}},
                         'sst': {'src': {},
                                 'dst': {'wkv': 'sea_surface_temperature'}},
+                        'sst4': {'src': {},
+                                'dst': {'wkv': 'sea_surface_temperature'}},
                         'l2_flags': {'src': {'SourceType': 'SimpleSource',
                                              'DataType': 4},
                                      'dst': {'wkv': 'quality_flags',
                                              'dataType': 4}},
                         'qual_sst': {'src': {'SourceType': 'SimpleSource',
+                                             'DataType': 4},
+                                     'dst': {'wkv': 'quality_flags',
+                                             'name': 'qual_sst',
+                                             'dataType': 4}},
+                        'qual_sst4': {'src': {'SourceType': 'SimpleSource',
                                              'DataType': 4},
                                      'dst': {'wkv': 'quality_flags',
                                              'name': 'qual_sst',
@@ -210,21 +219,23 @@ class Mapper(VRT):
         latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
 
         # add geolocation array
-        if (longitude.min() >= -180 and longitude.max() <= 180 and
-                latitude.min() >= -90 and latitude.max() <= 90):
-            self.add_geolocationArray(GeolocationArray(xDatasetSource,
-                                                       yDatasetSource,
-                                                       pixelStep=pixelStep,
-                                                       lineStep=lineStep))
-        else:
-            self.remove_geolocationArray()
-
-        self.remove_geolocationArray()
+        if addGeolocation:
+            if (longitude.min() >= -180 and longitude.max() <= 180 and
+                    latitude.min() >= -90 and latitude.max() <= 90):
+                self.add_geolocationArray(GeolocationArray(xDatasetSource,
+                                                           yDatasetSource,
+                                                           pixelStep=pixelStep,
+                                                           lineStep=lineStep))
+            else:
+                self.remove_geolocationArray()
 
         # estimate step of GCPs
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
         step1 = max(1, int(float(latitude.shape[1]) / GCP_COUNT))
-        self.logger.debug('gcpCount: %d %d %f %d %d',
+        if str(title) == 'VIIRSN Level-2 Data':
+            step0 = 64
+        self.logger.debug('gcpCount: >%s<, %d %d %f %d %d',
+                          title,
                           latitude.shape[0], latitude.shape[1],
                           GCP_COUNT, step0, step1)
 

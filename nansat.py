@@ -914,7 +914,7 @@ class Nansat(Domain):
 
         # Estimate color min/max from histogram
         if clim == 'hist':
-            clim = fig.clim_from_histogram()
+            clim = fig.clim_from_histogram(**kwargs)
 
         # modify clim to the proper shape [[min], [max]]
         # or [[min, min, min], [max, max, max]]

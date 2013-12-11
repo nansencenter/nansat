@@ -1475,18 +1475,17 @@ class VRT():
             node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
 
             # add the 2nd band
-            xmlSource = node1.xml()
-            dom = xdm.parseString(xmlSource)
-            cloneNode = Node.create(dom).node('ComplexSource')
+            xmlSource = str(node1.rawxml())
+            cloneNode = Node.create(xmlSource).node('ComplexSource')
             cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
             cloneNode.node('DstRect').replaceAttribute('xSize', shiftStr)
 
-            contents = node0.insert(cloneNode.xml(), 'VRTRasterBand', i)
+            contents = node0.insert(str(cloneNode.rawxml()),
+                                    'VRTRasterBand', i)
             # overwrite the modified contents and create a new node
-            dom = xdm.parseString(contents)
-            node0 = Node.create(dom)
+            node0 = Node.create(str(contents))
 
         # write down XML contents
         shiftVRT.write_xml(str(node0.rawxml()))
