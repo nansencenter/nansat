@@ -179,8 +179,6 @@ class Mapper(VRT, Envisat):
         # It is assummed that HH is the first band in sigma0 and
         # beta0 sub datasets
         ###################################################################
-        import pdb
-        pdb.set_trace()
         polarizations = []
         for pp in polarization:
             polarizations.append(pp['channel'])
