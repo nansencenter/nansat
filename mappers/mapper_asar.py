@@ -147,3 +147,25 @@ class Mapper(VRT, Envisat):
                                      str(np.mod(Domain(ds=gdalDataset).
                                          upwards_azimuth_direction() + 90,
                                                 360)))
+
+        ###################################################################
+        # Add sigma0_VV - pixel function of sigma0_HH and beta0_HH
+        # incidence angle is calculated within pixel function
+        # It is assummed that HH is the first band in sigma0 and
+        # beta0 sub datasets
+        ###################################################################
+        if 'VV' not in polarization and 'HH' in polarization:
+            srcFiles = []
+            for iFileName in sourceFileNames:
+                sourceFile = {'SourceFilename': iFileName,
+                              'SourceBand': 1}
+                # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                if iFileName == fileName:
+                    sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst)
+                srcFiles.append(sourceFile)
+            dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                   'PixelFunctionType': 'Sigma0HHToSigma0VV',
+                   'polarization': 'VV',
+                   'suffix': 'VV'}
+            self._create_band(srcFiles, dst)
+            self.dataset.FlushCache()
