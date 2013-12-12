@@ -557,6 +557,8 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
+        
+        return factor
 
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
@@ -912,7 +914,7 @@ class Nansat(Domain):
 
         # Estimate color min/max from histogram
         if clim == 'hist':
-            clim = fig.clim_from_histogram()
+            clim = fig.clim_from_histogram(**kwargs)
 
         # modify clim to the proper shape [[min], [max]]
         # or [[min, min, min], [max, max, max]]
@@ -1491,7 +1493,7 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
         '''Crop Nansat object
         
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1514,6 +1516,37 @@ class Nansat(Domain):
             self.vrt : VRT
                 superVRT is created with modified SrcRect and DstRect
         '''
+        # use interactive PointBrowser for selecting extent
+        if      (xOff==0 and yOff==0 and
+                 xSize is None and ySize is None and
+                 lonlim is None and latlim is None):
+            factor = self.resize(width=1000)
+            data = self[1]
+            browser = PointBrowser(data)
+            browser.get_points()
+            points = np.array(browser.coordinates)
+            xOff = round(points.min(axis=0)[0] / factor)
+            yOff = round(points.min(axis=0)[1] / factor)
+            xSize = round((points.max(axis=0)[0] - points.min(axis=0)[0]) / factor)
+            ySize = round((points.max(axis=0)[1] - points.min(axis=0)[1]) / factor)
+            print xOff, yOff, xSize, ySize
+            self.undo()
+
+        # get xOff, yOff, xSize and ySize from lonlim and latlim
+        if       (xOff==0 and yOff==0 and
+                 xSize is None and ySize is None and
+                 type(lonlim) is list and type(latlim) is list):
+            crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0], lonlim[1], lonlim[1]],
+                                                   [latlim[0], latlim[1], latlim[0], latlim[1]],
+                                                    1)
+            print crnPix
+            print crnLin
+            xOff = round(min(crnPix))
+            yOff = round(min(crnLin))
+            xSize = round(max(crnPix) - min(crnPix))
+            ySize = round(max(crnLin) - min(crnLin))
+            print xOff, yOff, xSize, ySize
+        
         self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
         
         RasterXSize = self.vrt.dataset.RasterXSize
@@ -1546,7 +1579,7 @@ class Nansat(Domain):
             iNode3.replaceAttribute('ySize', str(ySize))
             
 
-        xml = str(node0.rawxml())
+        xml = node0.rawxml()
         self.vrt.write_xml(xml)
         
         if xOff > 0 or yOff > 0:

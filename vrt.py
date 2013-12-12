@@ -855,7 +855,7 @@ class VRT():
         node0 = Node.create(tmpVRTXML)
         node1 = node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
-        self.write_xml(str(node0.rawxml()))
+        self.write_xml(node0.rawxml())
 
     def _add_gcp_metadata(self, bottomup=True):
         '''Add GCPs to metadata (required e.g. by Nansat.export())
@@ -1111,7 +1111,7 @@ class VRT():
             print 'node0.xml()', node0.xml()
         """
         # overwrite XML of the warped VRT file with uprated size and geotranform
-        warpedVRT.write_xml(str(node0.rawxml()))
+        warpedVRT.write_xml(node0.rawxml())
 
         # apply thin-spline-transformation option
         if use_gcps and tps:
@@ -1153,7 +1153,7 @@ class VRT():
         node0 = Node.create(warpedXML)
         node1 = node0.node('GDALWarpOptions')
         node1.node('SourceDataset').value = '/vsimem/' + rawFileName
-        warpedVRT.write_xml(str(node0.rawxml()))
+        warpedVRT.write_xml(node0.rawxml())
 
         return warpedVRT
 
@@ -1339,7 +1339,7 @@ class VRT():
         '''
         node0 = Node.create(self.read_xml())
         node0.delNode('VRTRasterBand', options={'band': bandNum})
-        self.write_xml(str(node0.rawxml()))
+        self.write_xml(node0.rawxml())
 
     def delete_bands(self, bandNums):
         ''' Delete bands
@@ -1476,8 +1476,7 @@ class VRT():
 
             # add the 2nd band
             xmlSource = node1.rawxml()
-            dom = xdm.parseString(xmlSource)
-            cloneNode = Node.create(dom).node('ComplexSource')
+            cloneNode = Node.create(xmlSource).node('ComplexSource')
             cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
@@ -1485,11 +1484,10 @@ class VRT():
 
             contents = node0.insert(cloneNode.rawxml(), 'VRTRasterBand', i)
             # overwrite the modified contents and create a new node
-            dom = xdm.parseString(contents)
-            node0 = Node.create(dom)
+            node0 = Node.create(str(contents))
 
         # write down XML contents
-        shiftVRT.write_xml(str(node0.rawxml()))
+        shiftVRT.write_xml(node0.rawxml())
 
         return shiftVRT
 
@@ -1591,7 +1589,7 @@ class VRT():
                 iNode1.replaceTag('SimpleSource', 'AveragedSource')
 
         # Write the modified elemements into VRT
-        subsamVRT.write_xml(str(node0.rawxml()))
+        subsamVRT.write_xml(node0.rawxml())
 
         return subsamVRT
 
