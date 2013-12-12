@@ -380,8 +380,6 @@ class Nansat(Domain):
                              'SourceBand':  1},
                              'dst': bandMetadataI}]
                 exportVRT._create_bands(metaDict)
-                if i == 4:
-                    exportVRT.export('c:/Users/asumak/Data/output/exportVRT.vrt')
             # delete the complex bands
             exportVRT.delete_bands(complexBands)
 
@@ -481,11 +479,6 @@ class Nansat(Domain):
         If GCPs are given in a dataset, they are also rewritten.
         If resize() is called without any parameters then previsous
         resizing/reprojection cancelled.
-
-        WARNING: It seems like the function is presently not working for
-        complex bands and pixelfunction bands - in case this kind of data is
-        needed it should be copied to a numpy array which is added as a band
-        before resizing.
 
         Parameters
         -----------
