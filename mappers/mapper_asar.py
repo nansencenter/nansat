@@ -100,10 +100,15 @@ class Mapper(VRT, Envisat):
 
         if full_incAng:
             for adsVRT in self.subVRTs['adsVRTs']:
-                metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
-                                         'SourceBand': 1},
-                                 'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
-                                         'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
+                metaDict.append({
+                    'src': {
+                        'SourceFilename': adsVRT.fileName,
+                        'SourceBand': 1},
+                    'dst': {
+                        'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
+                        'short_name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
+                        'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}
+                    })
         if gotCalibration:
             for iPolarization in polarization:
                 # add dicrtionary for sigma0, ice and water
@@ -174,10 +179,7 @@ class Mapper(VRT, Envisat):
                                                 360)))
 
         ###################################################################
-        # Add sigma0_VV - pixel function of sigma0_HH and beta0_HH
-        # incidence angle is calculated within pixel function
-        # It is assummed that HH is the first band in sigma0 and
-        # beta0 sub datasets
+        # Add sigma0_VV 
         ###################################################################
         polarizations = []
         for pp in polarization:
