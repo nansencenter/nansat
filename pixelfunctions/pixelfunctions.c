@@ -1046,6 +1046,15 @@ double RawcountsIncidenceToSigma0Function(double *b){
 	return (pow(b[0], 2.0) * sin(b[1] *  pi / 180.0));
 }
 
+double Sigma0HHToSigma0VVFunction(double *b){
+	double pi = 3.14159265;
+        double s0hh, factor;
+        s0hh = RawcountsIncidenceToSigma0Function(b);
+	/* Polarisation ratio from Thompson et al. with alpha=1 */
+	factor = pow( (1 + 2 * pow(tan(b[1]*pi/180.0), 2)) / (1 + 1 * pow(tan(b[1]*pi/180.0), 2)), 2);
+	return s0hh * factor;
+}
+
 double Sigma0NormalizedIceFunction(double *b){
 	double pi = 3.14159265;
 	double sigma0 = (pow(b[0], 2.0) * sin(b[1] *  pi / 180.0));
@@ -1130,6 +1139,19 @@ CPLErr RawcountsIncidenceToSigma0(void **papoSources,
         int nPixelSpace, int nLineSpace){
 
     GenericPixelFunction(RawcountsIncidenceToSigma0Function,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+CPLErr Sigma0HHToSigma0VV(void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+                GDALDataType eSrcType, GDALDataType eBufType,
+                int nPixelSpace, int nLineSpace){
+    // Works for ASAR!
+    GenericPixelFunction(Sigma0HHToSigma0VVFunction,
         papoSources, nSources, pData,
         nXSize, nYSize, eSrcType, eBufType,
         nPixelSpace, nLineSpace);
@@ -1367,15 +1389,16 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("UVToMagnitude", UVToMagnitude);
     GDALAddDerivedBandPixelFunc("UVToDirectionTo", UVToDirectionTo);
     GDALAddDerivedBandPixelFunc("UVToDirectionFrom", UVToDirectionFrom);
-    GDALAddDerivedBandPixelFunc("Sigma0HHBetaToSigma0VV", Sigma0HHBetaToSigma0VV);
-	GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
+    GDALAddDerivedBandPixelFunc("Sigma0HHBetaToSigma0VV", Sigma0HHBetaToSigma0VV); //Radarsat-2
+    GDALAddDerivedBandPixelFunc("Sigma0HHToSigma0VV", Sigma0HHToSigma0VV); // ASAR
+    GDALAddDerivedBandPixelFunc("RawcountsIncidenceToSigma0", RawcountsIncidenceToSigma0);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_QLK", RawcountsToSigma0_CosmoSkymed_QLK);
     GDALAddDerivedBandPixelFunc("RawcountsToSigma0_CosmoSkymed_SBI", RawcountsToSigma0_CosmoSkymed_SBI);
     GDALAddDerivedBandPixelFunc("ComplexData", ComplexData);
     GDALAddDerivedBandPixelFunc("NormReflectanceToRemSensReflectance", NormReflectanceToRemSensReflectance);    
-	GDALAddDerivedBandPixelFunc("Sigma0NormalizedIce", Sigma0NormalizedIce);
-	GDALAddDerivedBandPixelFunc("Sigma0HHNormalizedWater", Sigma0HHNormalizedWater);
-	GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater", Sigma0VVNormalizedWater);
+    GDALAddDerivedBandPixelFunc("Sigma0NormalizedIce", Sigma0NormalizedIce);
+    GDALAddDerivedBandPixelFunc("Sigma0HHNormalizedWater", Sigma0HHNormalizedWater);
+    GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater", Sigma0VVNormalizedWater);
 
     return CE_None;
 }

@@ -461,7 +461,14 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
         ratio = self.ratio
-
+        
+        # find masked pixels if mask_array and mask_lut provided
+        masked = None
+        if self.mask_array is not None and self.mask_lut is not None:
+            masked = np.zeros(self.mask_array.shape, 'bool')
+            for lutVal in self.mask_lut:
+                masked = masked + (self.mask_array == lutVal)
+        
         # create a ratio list for each band
         if isinstance(ratio, float) or isinstance(ratio, int):
             ratioList = np.ones(self.array.shape[0]) * float(ratio)
@@ -476,10 +483,12 @@ class Figure():
         # create a 2D array and set min and max values
         clim = [[0] * self.array.shape[0], [0] * self.array.shape[0]]
         for iBand in range(self.array.shape[0]):
-            clim[0][iBand] = self.array[iBand, :, :].min()
-            clim[1][iBand] = self.array[iBand, :, :].max()
+            clim[0][iBand] = np.nanmin(self.array[iBand, :, :])
+            clim[1][iBand] = np.nanmax(self.array[iBand, :, :])
+            if masked is not None:
+                self.array[iBand, :, :][masked] = clim[0][iBand]
             # if 0<ratio<1 try to compute histogram
-            if (ratioList[iBand] > 0 or ratioList[iBand] < 1):
+            if (ratioList[iBand] > 0 and ratioList[iBand] < 1):
                 try:
                     hist, bins = self._get_histogram(iBand)
                 except:
@@ -488,10 +497,9 @@ class Figure():
                     cumhist = hist.cumsum()
                     cumhist /= cumhist[-1]
                     clim[0][iBand] = bins[len(cumhist[cumhist <
-                                              (1 - ratioList[iBand]) / 2])]
+                                           (1 - ratioList[iBand]) / 2])]
                     clim[1][iBand] = bins[len(cumhist[cumhist <
-                                              1 - ((1 - ratioList[iBand]) /
-                                                   2)])]
+                                           1 - ((1 - ratioList[iBand]) / 2)])]
         self.color_limits = clim
         return clim
 

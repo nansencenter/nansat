@@ -249,7 +249,7 @@ class Mapper(VRT):
                 node1 = band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0]
                 node1.setAttribute("xSize", newSrcXSize)
                 node1.setAttribute("ySize", newSrcYSize)
-            self.write_xml(str(node0.rawxml()))
+            self.write_xml(node0.rawxml())
 
         # Set global metadata
         self.dataset.SetMetadata({'satID': satellite})

@@ -52,8 +52,15 @@ class Mapper(VRT, Envisat):
 
         Envisat.__init__(self, fileName, product[0:4])
 
-        # get polarization string (remove '/', since NetCDF doesnt support that in metadata)
-        polarization = gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", "")
+        # get channel string (remove '/', since NetCDF doesnt support that in metadata)
+        polarization = [{'channel' : gdalMetadata['SPH_MDS1_TX_RX_POLAR'].replace("/", ""),
+                        'bandNum' : 1}]
+        # if there is the 2nd band, get channel string
+        if 'SPH_MDS2_TX_RX_POLAR' in gdalMetadata.keys():
+            channel = gdalMetadata['SPH_MDS2_TX_RX_POLAR'].replace("/", "")
+            if not(channel.isspace()):
+                polarization.append({'channel' : channel,
+                                     'bandNum' : 2})
 
         # Create VRTdataset with small VRTRawRasterbands
         self.subVRTs = {'adsVRTs' : self.get_ads_vrts(gdalDataset,
@@ -66,20 +73,30 @@ class Mapper(VRT, Envisat):
         # get calibration constant
         gotCalibration = True
         try:
-            calibrationConst = float(gdalDataset.GetMetadataItem(
-                "MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+            for iPolarization in polarization:
+                metaKey = ('MAIN_PROCESSING_PARAMS_ADS_CALIBRATION_FACTORS.%d.EXT_CAL_FACT'
+                           %(iPolarization['bandNum']))
+                iPolarization['calibrationConst'] = float(
+                    gdalDataset.GetMetadataItem(metaKey, 'records'))
         except:
             try:
-                # Apparently some ASAR files have calibration constant stored in another place
-                calibrationConst = float(gdalDataset.GetMetadataItem(
-                    "MAIN_PROCESSING_PARAMS_ADS_1_CALIBRATION_FACTORS.1.EXT_CAL_FACT", "records"))
+                for iPolarization in polarization:
+                    # Apparently some ASAR files have calibration constant stored in another place
+                    metaKey = ('MAIN_PROCESSING_PARAMS_ADS_0_CALIBRATION_FACTORS.%d.EXT_CAL_FACT'
+                               %(iPolarization['bandNum']))
+                    iPolarization['calibrationConst'] = float(
+                        gdalDataset.GetMetadataItem(metaKey, 'records'))
             except:
                 self.logger.warning('Cannot get calibrationConst')
                 gotCalibration = False
 
         # add dictionary for raw counts
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
-                     'dst': {'short_name': 'RawCounts'}}]
+        metaDict = []
+        for iPolarization in polarization:
+            metaDict.append({'src': {'SourceFilename': fileName,
+                                     'SourceBand': iPolarization['bandNum']},
+                             'dst': {'short_name': 'RawCounts_%s'
+                                     %iPolarization['channel']}})
 
         if full_incAng:
             for adsVRT in self.subVRTs['adsVRTs']:
@@ -88,43 +105,46 @@ class Mapper(VRT, Envisat):
                                  'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
                                          'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
         if gotCalibration:
-            # add dicrtionary for sigma0, ice and water
-            short_names = ['sigma0', 'sigma0_normalized_ice',
-                           'sigma0_normalized_water']
-            wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
-                   'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
-                   'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
-            sphPass = [gdalMetadata['SPH_PASS'], '', '']
+            for iPolarization in polarization:
+                # add dicrtionary for sigma0, ice and water
+                short_names = ['sigma0', 'sigma0_normalized_ice',
+                               'sigma0_normalized_water']
+                wkt = ['surface_backwards_scattering_coefficient_of_radar_wave',
+                       'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
+                       'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
+                sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
-            sourceFileNames = [fileName,
-                               self.subVRTs['adsVRTs'][0].fileName]
+                sourceFileNames = [fileName,
+                                   self.subVRTs['adsVRTs'][0].fileName]
 
-            pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
-                                  'Sigma0NormalizedIce']
-            if polarization == 'HH':
-                pixelFunctionTypes.append('Sigma0HHNormalizedWater')
-            elif polarization == 'VV':
-                pixelFunctionTypes.append('Sigma0VVNormalizedWater')
+                pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
+                                      'Sigma0NormalizedIce']
+                if iPolarization['channel'] == 'HH':
+                    pixelFunctionTypes.append('Sigma0HHNormalizedWater')
+                elif iPolarization['channel'] == 'VV':
+                    pixelFunctionTypes.append('Sigma0VVNormalizedWater')
 
-            # add pixelfunction bands to metaDict
-            for iPixFunc in range(len(pixelFunctionTypes)):
-                srcFiles = []
-                for iFileName in sourceFileNames:
-                    sourceFile = {'SourceFilename': iFileName,
-                                  'SourceBand': 1}
-                    # if ASA_full_incAng, set 'ScaleRatio' into source file dict
-                    if iFileName == fileName:
-                        sourceFile['ScaleRatio'] = np.sqrt(1.0/calibrationConst)
-                    srcFiles.append(sourceFile)
+                # add pixelfunction bands to metaDict
+                for iPixFunc in range(len(pixelFunctionTypes)):
+                    srcFiles = []
+                    for j, jFileName in enumerate(sourceFileNames):
+                        sourceFile = {'SourceFilename': jFileName}
+                        if j == 0:
+                            sourceFile['SourceBand'] = iPolarization['bandNum']
+                            # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                            sourceFile['ScaleRatio'] = np.sqrt(1.0 / iPolarization['calibrationConst'])
+                        else:
+                            sourceFile['SourceBand'] = 1
+                        srcFiles.append(sourceFile)
 
-                metaDict.append({'src': srcFiles,
-                                 'dst': {'short_name': short_names[iPixFunc],
-                                         'wkv': wkt[iPixFunc],
-                                         'PixelFunctionType': pixelFunctionTypes[iPixFunc],
-                                         'polarization': polarization,
-                                         'suffix': polarization,
-                                         'pass': sphPass[iPixFunc],
-                                         'dataType': 6}})
+                    metaDict.append({'src': srcFiles,
+                                     'dst': {'short_name': short_names[iPixFunc],
+                                             'wkv': wkt[iPixFunc],
+                                             'PixelFunctionType': pixelFunctionTypes[iPixFunc],
+                                             'polarization': iPolarization['channel'],
+                                             'suffix': iPolarization['channel'],
+                                             'pass': sphPass[iPixFunc],
+                                             'dataType': 6}})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -139,6 +159,11 @@ class Mapper(VRT, Envisat):
                                           zoomSize=zoomSize, step=step)
 
         # Add SAR look direction to metadata domain
+        self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT') # ASAR is always right-looking
+        self.dataset.SetMetadataItem('ORBIT_DIRECTION', gdalMetadata['SPH_PASS'].upper())
+
+        # "SAR_center_look_direction" below is obsolete, and may soon be deleted
+        #
         # Note that this is the look direction in the center of the domain. For
         # longer domains, especially at high latitudes, the azimuth direction
         # may vary a lot over the domain, and using the center angle will be a
@@ -147,3 +172,30 @@ class Mapper(VRT, Envisat):
                                      str(np.mod(Domain(ds=gdalDataset).
                                          upwards_azimuth_direction() + 90,
                                                 360)))
+
+        ###################################################################
+        # Add sigma0_VV - pixel function of sigma0_HH and beta0_HH
+        # incidence angle is calculated within pixel function
+        # It is assummed that HH is the first band in sigma0 and
+        # beta0 sub datasets
+        ###################################################################
+        polarizations = []
+        for pp in polarization:
+            polarizations.append(pp['channel'])
+        if 'VV' not in polarizations and 'HH' in polarizations:
+            srcFiles = []
+            for j, jFileName in enumerate(sourceFileNames):
+                sourceFile = {'SourceFilename': jFileName}
+                if j == 0:
+                    sourceFile['SourceBand'] = iPolarization['bandNum']
+                    # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                    sourceFile['ScaleRatio'] = np.sqrt(1.0 / iPolarization['calibrationConst'])
+                else:
+                    sourceFile['SourceBand'] = 1
+                srcFiles.append(sourceFile)
+            dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                   'PixelFunctionType': 'Sigma0HHToSigma0VV',
+                   'polarization': 'VV',
+                   'suffix': 'VV'}
+            self._create_band(srcFiles, dst)
+            self.dataset.FlushCache()

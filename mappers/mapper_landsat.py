@@ -69,4 +69,4 @@ class Mapper(VRT):
                 iNodeDstRect.replaceAttribute('xSize', str(xSize))
                 iNodeDstRect.replaceAttribute('ySize', str(ySize))
 
-            self.write_xml(str(node0.rawxml()))
+            self.write_xml(node0.rawxml())
