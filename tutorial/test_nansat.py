@@ -135,9 +135,13 @@ print n.vrt
 n.undo()
 print n.vrt
 
-# crop image
+# crop image using xOff, yOff, xSize, ySize
 n.crop(100, 110, 50, 60)
 n.write_figure(oFileName + '09_crop.png', clim='hist')
+n.undo()
+
+# crop image using lonlim, latlim
+n.crop(lonlim=[28, 29], latlim=[70.7, 71])
 
 # automatically reproject cropped image
 d = Domain(4326, ds=n.vrt.dataset)
