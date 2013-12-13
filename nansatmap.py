@@ -87,7 +87,7 @@ class Nansatmap(Basemap):
 
         # get proj4
         spatialRef = osr.SpatialReference()
-        projection = domain._get_projection(domain.vrt.dataset)
+        projection = domain.vrt.get_projection()
         spatialRef.ImportFromWkt(projection)
         proj4 = spatialRef.ExportToProj4()
 

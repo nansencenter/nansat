@@ -455,7 +455,7 @@ class Node(object):
         return self.dom().toprettyxml(separator)
 
     def rawxml(self):
-        return self.dom().toxml()
+        return str(self.dom().toxml())
 
     @staticmethod
     def create(dom):

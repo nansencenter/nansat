@@ -63,9 +63,9 @@ class Mapper(VRT, Envisat):
                                      'bandNum' : 2})
 
         # Create VRTdataset with small VRTRawRasterbands
-        self.adsVRTs = self.get_ads_vrts(gdalDataset,
+        self.subVRTs = {'adsVRTs' : self.get_ads_vrts(gdalDataset,
                                          ["first_line_incidence_angle"],
-                                         zoomSize=zoomSize, step=step, **kwargs)
+                                         zoomSize=zoomSize, step=step, **kwargs)}
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDataset)
@@ -99,11 +99,16 @@ class Mapper(VRT, Envisat):
                                      %iPolarization['channel']}})
 
         if full_incAng:
-            for adsVRT in self.adsVRTs:
-                metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
-                                         'SourceBand': 1},
-                                 'dst': {'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
-                                         'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}})
+            for adsVRT in self.subVRTs['adsVRTs']:
+                metaDict.append({
+                    'src': {
+                        'SourceFilename': adsVRT.fileName,
+                        'SourceBand': 1},
+                    'dst': {
+                        'name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
+                        'short_name': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('name').replace('last_line_', ''),
+                        'units': adsVRT.dataset.GetRasterBand(1).GetMetadataItem('units')}
+                    })
         if gotCalibration:
             for iPolarization in polarization:
                 # add dicrtionary for sigma0, ice and water
@@ -115,7 +120,7 @@ class Mapper(VRT, Envisat):
                 sphPass = [gdalMetadata['SPH_PASS'], '', '']
 
                 sourceFileNames = [fileName,
-                                   self.adsVRTs[0].fileName]
+                                   self.subVRTs['adsVRTs'][0].fileName]
 
                 pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                       'Sigma0NormalizedIce']
@@ -172,3 +177,27 @@ class Mapper(VRT, Envisat):
                                      str(np.mod(Domain(ds=gdalDataset).
                                          upwards_azimuth_direction() + 90,
                                                 360)))
+
+        ###################################################################
+        # Add sigma0_VV 
+        ###################################################################
+        polarizations = []
+        for pp in polarization:
+            polarizations.append(pp['channel'])
+        if 'VV' not in polarizations and 'HH' in polarizations:
+            srcFiles = []
+            for j, jFileName in enumerate(sourceFileNames):
+                sourceFile = {'SourceFilename': jFileName}
+                if j == 0:
+                    sourceFile['SourceBand'] = iPolarization['bandNum']
+                    # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                    sourceFile['ScaleRatio'] = np.sqrt(1.0 / iPolarization['calibrationConst'])
+                else:
+                    sourceFile['SourceBand'] = 1
+                srcFiles.append(sourceFile)
+            dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                   'PixelFunctionType': 'Sigma0HHToSigma0VV',
+                   'polarization': 'VV',
+                   'suffix': 'VV'}
+            self._create_band(srcFiles, dst)
+            self.dataset.FlushCache()

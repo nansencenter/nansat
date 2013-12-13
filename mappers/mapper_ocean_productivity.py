@@ -90,11 +90,11 @@ class Mapper(VRT):
         a = simGdalDataset.ReadAsArray()
         mask = np.zeros(a.shape, 'uint8') + 128
         mask[a < -9990] = 1
-        self.maskVRT = VRT(array=mask)
+        self.subVRTs = {'maskVRT': VRT(array=mask)}
 
-        metaDict.append(
-            {'src': {'SourceFilename': self.maskVRT.fileName, 'SourceBand': 1},
-             'dst': {'name': 'mask'}})
+        metaDict.append({'src': {'SourceFilename': self.subVRTs['maskVRT'].fileName,
+                                 'SourceBand': 1},
+                         'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         # print 'simGdalMetadata', simGdalMetadata

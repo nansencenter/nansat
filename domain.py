@@ -250,7 +250,7 @@ class Domain():
 
         '''
         toPrettyWKT = osr.SpatialReference()
-        toPrettyWKT.ImportFromWkt(self._get_projection(self.vrt.dataset))
+        toPrettyWKT.ImportFromWkt(self.vrt.get_projection())
         prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
         corners = self.get_corners()
         outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
@@ -447,7 +447,7 @@ class Domain():
             latitude = np.zeros([len(Y), len(X)], 'float32')
             # fill row-wise
             for index, i in enumerate(X):
-                [lo, la] = self._transform_points([i] * len(Y), Y)
+                [lo, la] = self.transform_points([i] * len(Y), Y)
                 longitude[:, index] = lo
                 latitude[:, index] = la
 
@@ -726,7 +726,7 @@ class Domain():
         rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] +
                      [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
 
-        return self._transform_points(colVector, rowVector)
+        return self.transform_points(colVector, rowVector)
 
     def _get_border_kml(self):
         '''Generate Placemark entry for KML
@@ -797,7 +797,7 @@ class Domain():
                      self.vrt.dataset.RasterXSize]
         rowVector = [0, self.vrt.dataset.RasterYSize, 0,
                      self.vrt.dataset.RasterYSize]
-        return self._transform_points(colVector, rowVector)
+        return self.transform_points(colVector, rowVector)
 
     
 
@@ -860,68 +860,8 @@ class Domain():
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
-    def _get_projection(self, dataset):
-        '''Get projection form dataset
+    def transform_points(self, colVector, rowVector, DstToSrc=0):
 
-        Get projection from GetProjection() or GetGCPProjection().
-        If both are empty, raise error
-
-        Return
-        -------
-        projection : projection or GCPprojection
-
-        Raises
-        -------
-        ProjectionError : occurrs when the projection is empty.
-
-        '''
-        #get projection or GCPProjection
-        projection = dataset.GetProjection()
-        if projection == '':
-            projection = dataset.GetGCPProjection()
-
-        #test projection
-        if projection == '':
-            raise ProjectionError('Empty projection in input dataset!')
-
-        return projection
-
-    def get_pixelsize_meters(self):
-        '''Returns the pixelsize (deltaX, deltaY) of the domain
-
-        For projected domains, the exact result which is constant
-        over the domain is returned.
-        For geographic (lon-lat) projections, or domains with no geotransform,
-        the haversine formula is used to calculate the pixel size 
-        in the center of the domain.
-                
-        Returns 
-        --------
-        deltaX, deltaY : float
-            pixel size in X and Y directions given in meters
-            
-        '''     
-                
-        srs=osr.SpatialReference(self.vrt.dataset.GetProjection())
-        if srs.IsProjected:
-            if srs.GetAttrValue('unit') == 'metre':
-                geoTransform = self.vrt.dataset.GetGeoTransform()
-                deltaX = abs(geoTransform[1])
-                deltaY = abs(geoTransform[5])
-                return deltaX, deltaY
-        
-        # Estimate pixel size in center of domain using haversine formula
-        centerCol = round(self.vrt.dataset.RasterXSize/2)
-        centerRow = round(self.vrt.dataset.RasterYSize/2)
-        lon00, lat00 = self._transform_points([centerCol], [centerRow])
-        lon01, lat01 = self._transform_points([centerCol], [centerRow + 1])
-        lon10, lat10 = self._transform_points([centerCol + 1], [centerRow])
-
-        deltaX = haversine(lon00, lat00, lon01, lat01)
-        deltaY = haversine(lon00, lat00, lon10, lat10)
-        return deltaX[0], deltaY[0]
-
-    def _transform_points(self, colVector, rowVector, DstToSrc=0):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -937,31 +877,7 @@ class Domain():
             X and Y coordinates in degree of lat/lon
 
         '''
-        # get source SRS (either Projection or GCPProjection)
-        srcWKT = self._get_projection(self.vrt.dataset)
-
-        # prepare target WKT (pure lat/lon)
-        dstWKT = latlongSRS.ExportToWkt()
-
-        # create transformer
-        transformer = gdal.Transformer(self.vrt.dataset, None,
-                                       ['SRC_SRS=' + srcWKT,
-                                        'DST_SRS=' + dstWKT])
-                                        #,'METHOD=GCP_TPS'])
-
-        # use the transformer to convert pixel/line into lat/lon
-        latVector = []
-        lonVector = []
-        for pixel, line in zip(colVector, rowVector):
-            try:
-                succ, point = transformer.TransformPoint(DstToSrc, pixel, line)
-                lonVector.append(point[0])
-                latVector.append(point[1])
-            except:
-                lonVector.append(np.nan)
-                latVector.append(np.nan)
-
-        return lonVector, latVector
+        return self.vrt.transform_points(colVector, rowVector, DstToSrc)
 
     def upwards_azimuth_direction(self, orbit_direction=None):
         '''Caluculate and return upwards azimuth direction of domain.
@@ -985,8 +901,8 @@ class Domain():
         mid_x = self.vrt.dataset.RasterXSize / 2
         mid_y1 = self.vrt.dataset.RasterYSize / 2 * 0.4
         mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
-        startlon, startlat = self._transform_points([mid_x], [mid_y1])
-        endlon, endlat = self._transform_points([mid_x], [mid_y2])
+        startlon, startlat = self.transform_points([mid_x], [mid_y1])
+        endlon, endlat = self.transform_points([mid_x], [mid_y2])
         if orbit_direction:
             # check that startlat is actually less/greater than endlat for
             # ascending/descending orbit direction

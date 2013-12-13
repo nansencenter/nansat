@@ -81,8 +81,8 @@ class Mapper(VRT):
         srcRasterYSize = numCalibratedScanLines
 
         # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
-        self.RawGeolocVRT = VRT(srcRasterXSize=51,
-                                srcRasterYSize=srcRasterYSize)
+        self.subVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
+                                            srcRasterYSize=srcRasterYSize)}
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
             RawGeolocMetaDict.append(
@@ -97,24 +97,25 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.RawGeolocVRT._create_bands(RawGeolocMetaDict)
+        self.subVRTs['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
-        self.GeolocVRT = VRT(srcRasterXSize=51, srcRasterYSize=srcRasterYSize)
+        self.subVRTs['GeolocVRT'] = VRT(srcRasterXSize=51,
+                                        srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': self.RawGeolocVRT.fileName,
+                {'src': {'SourceFilename': self.subVRTs['RawGeolocVRT'].fileName,
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.GeolocVRT._create_bands(GeolocMetaDict)
+        self.subVRTs['GeolocVRT']._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.GeolocVRT,
-                                        yVRT=self.GeolocVRT,
+        GeolocObject = GeolocationArray(xVRT=self.subVRTs['GeolocVRT'],
+                                        yVRT=self.subVRTs['GeolocVRT'],
                                         xBand=2, yBand=1,  # x = lon, y = lat
                                         lineOffset=0, pixelOffset=25,
                                         lineStep=1, pixelStep=40)
@@ -141,8 +142,8 @@ class Mapper(VRT):
         ##################
         # Create bands
         ##################
-        self.RawBandsVRT = VRT(srcRasterXSize=2048,
-                               srcRasterYSize=numCalibratedScanLines)
+        self.subVRTs['RawBandsVRT'] = VRT(srcRasterXSize=2048,
+                                          srcRasterYSize=numCalibratedScanLines)
         RawMetaDict = []
         metaDict = []
 
@@ -174,7 +175,7 @@ class Mapper(VRT):
                 minmax = '290 210'
 
             metaDict.append(
-                {'src': {'SourceFilename': self.RawBandsVRT.fileName,
+                {'src': {'SourceFilename': self.subVRTs['RawBandsVRT'].fileName,
                          'SourceBand': bandNo,
                          'ScaleRatio': 0.01,
                          'ScaleOffset': 0,
@@ -189,11 +190,11 @@ class Mapper(VRT):
         # Add temperature difference between ch3 and ch 4 as pixelfunction
         if not startsWith3A:  # Only if ch3 is IR (nighttime)
             metaDict.append(
-                {'src': [{'SourceFilename': self.RawBandsVRT.fileName,
+                {'src': [{'SourceFilename': self.subVRTs['RawBandsVRT'].fileName,
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 4},
-                         {'SourceFilename': self.RawBandsVRT.fileName,
+                         {'SourceFilename': self.subVRTs['RawBandsVRT'].fileName,
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 3}],
@@ -207,7 +208,7 @@ class Mapper(VRT):
                          'units': 'kelvin',
                          'minmax': '-3 3'}})
 
-        self.RawBandsVRT._create_bands(RawMetaDict)
+        self.self.subVRTs['RawBandsVRT']._create_bands(RawMetaDict)
         self._create_bands(metaDict)
 
         globalMetadata = {}
