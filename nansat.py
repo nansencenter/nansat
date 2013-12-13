@@ -1522,42 +1522,72 @@ class Nansat(Domain):
             yOff = round(points.min(axis=0)[1] / factor)
             xSize = round((points.max(axis=0)[0] - points.min(axis=0)[0]) / factor)
             ySize = round((points.max(axis=0)[1] - points.min(axis=0)[1]) / factor)
-            print xOff, yOff, xSize, ySize
             self.undo()
 
         # get xOff, yOff, xSize and ySize from lonlim and latlim
         if       (xOff==0 and yOff==0 and
                  xSize is None and ySize is None and
                  type(lonlim) is list and type(latlim) is list):
-            crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0], lonlim[1], lonlim[1]],
-                                                   [latlim[0], latlim[1], latlim[0], latlim[1]],
+            crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0],
+                                                    lonlim[1], lonlim[1]],
+                                                   [latlim[0], latlim[1],
+                                                    latlim[0], latlim[1]],
                                                     1)
-            print crnPix
-            print crnLin
             xOff = round(min(crnPix))
             yOff = round(min(crnLin))
             xSize = round(max(crnPix) - min(crnPix))
             ySize = round(max(crnLin) - min(crnLin))
-            print xOff, yOff, xSize, ySize
-        
-        self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
         
         RasterXSize = self.vrt.dataset.RasterXSize
         RasterYSize = self.vrt.dataset.RasterYSize
         
-        if xSize is None or (xSize + xOff) > RasterXSize:
-            xSize =  RasterXSize - xOff
-        if ySize is None or (ySize + yOff) > RasterYSize:
-            ySize =  RasterYSize - yOff
+        # set xSize/ySize of ommited in the call
+        if xSize is None:
+            xSize = RasterXSize - xOff
+        if ySize is None:
+            ySize = RasterYSize - yOff
             
+        # test if crop is totally outside
+        if    (xOff > RasterXSize or (xOff + xSize) < 0 or
+               yOff > RasterYSize or (yOff + ySize) < 0):
+            self.logger.error('WARNING! Cropping region is outside the image!')
+            self.logger.error('xOff: %d, yOff: %d, xSize: %d, ySize: %d' %
+                                                                       (xOff,
+                                                                        yOff,
+                                                                        xSize,
+                                                                        ySize))
+            return
+            
+        # set default values of invalud xOff/yOff and xSize/ySize
+        if xOff < 0:
+            xOff = 0
+        if yOff < 0:
+            yOff = 0
+        if (xSize + xOff) > RasterXSize:
+            xSize = RasterXSize - xOff
+        if (ySize + yOff) > RasterYSize:
+            ySize = RasterYSize - yOff
+        
+        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
+                                                                        yOff,
+                                                                        xSize,
+                                                                        ySize))
+        # test if crop is too large
+        if    (xOff == 0 and xSize == RasterXSize and
+               yOff == 0 and ySize == RasterYSize):
+            self.logger.error('WARNING! Cropping region is larger or equal to image!')
+            return
+
+        # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
         xml = self.vrt.read_xml()
         node0 = Node.create(xml)
-        
+
+        # change size
         node0.node('VRTDataset').replaceAttribute('rasterXSize', str(xSize))
         node0.node('VRTDataset').replaceAttribute('rasterYSize', str(ySize))
-        
-        # replace xOff and xSize in <SrcRect> and <DstRect> of each source
+
+        # replace x/y-Off and x/y-Size in <SrcRect> and <DstRect> of each source
         for iNode1 in node0.nodeList('VRTRasterBand'):
             iNode2 = iNode1.node('ComplexSource')
 
@@ -1571,27 +1601,29 @@ class Nansat(Domain):
             iNode3.replaceAttribute('xSize', str(xSize))
             iNode3.replaceAttribute('ySize', str(ySize))
             
-
+        # write modified XML
         xml = node0.rawxml()
         self.vrt.write_xml(xml)
         
-        if xOff > 0 or yOff > 0:
-            gcps = self.vrt.dataset.GetGCPs()
-            if len(gcps) > 0:
-                newGCPs = []
-                gcpProjection = self.vrt.dataset.GetGCPProjection()
-                for newPix in np.r_[0:xSize:10j]:
-                    for newLin in np.r_[0:ySize:10j]:
-                        newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
-                        newGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
-                self.vrt.dataset.SetGCPs(newGCPs, gcpProjection)
-                self.vrt._remove_geotransform()
-            else:
-                geoTransfrom = self.vrt.dataset.GetGeoTransform()
-                geoTransfrom = map(float, geoTransfrom)
-                geoTransfrom[0] += geoTransfrom[1] * xOff
-                geoTransfrom[3] += geoTransfrom[5] * yOff
-                self.vrt.dataset.SetGeoTransform(geoTransfrom)
+        # modify GCPs or GeoTranfrom to fit the new shape of image
+        gcps = self.vrt.dataset.GetGCPs()
+        if len(gcps) > 0:
+            newGCPs = []
+            # create new 100 GPCs (10 x 10 regular matrix)
+            gcpProjection = self.vrt.dataset.GetGCPProjection()
+            for newPix in np.r_[0:xSize:10j]:
+                for newLin in np.r_[0:ySize:10j]:
+                    newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
+                    newGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
+            self.vrt.dataset.SetGCPs(newGCPs, gcpProjection)
+            self.vrt._remove_geotransform()
+        else:
+            # shift upper left corner coordinates
+            geoTransfrom = self.vrt.dataset.GetGeoTransform()
+            geoTransfrom = map(float, geoTransfrom)
+            geoTransfrom[0] += geoTransfrom[1] * xOff
+            geoTransfrom[3] += geoTransfrom[5] * yOff
+            self.vrt.dataset.SetGeoTransform(geoTransfrom)
 
         # set global metadata
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
