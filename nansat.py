@@ -1532,24 +1532,34 @@ class Nansat(Domain):
             crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0], lonlim[1], lonlim[1]],
                                                    [latlim[0], latlim[1], latlim[0], latlim[1]],
                                                     1)
-            print crnPix
-            print crnLin
             xOff = round(min(crnPix))
             yOff = round(min(crnLin))
             xSize = round(max(crnPix) - min(crnPix))
             ySize = round(max(crnLin) - min(crnLin))
-            print xOff, yOff, xSize, ySize
         
         self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
         
         RasterXSize = self.vrt.dataset.RasterXSize
         RasterYSize = self.vrt.dataset.RasterYSize
         
-        if xSize is None or (xSize + xOff) > RasterXSize:
+        if xSize is None:
             xSize =  RasterXSize - xOff
-        if ySize is None or (ySize + yOff) > RasterYSize:
+        if ySize is None:
             ySize =  RasterYSize - yOff
-            
+        
+        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % xOff,
+                                                                       yOff,
+                                                                       xSize,
+                                                                       ySize)
+        if    ((xSize + xOff) > RasterXSize or
+               (ySize + yOff) > RasterYSize or
+               xOff > RasterXSize or
+               yOff > RasterXSize or
+               xOff < 0 or xSize < 0 or
+               yOff < 0 or ySize < 0):
+            self.logger.error('WARNING! Cropping region is outside the image!')
+            return
+        
         self.vrt = self.vrt.get_super_vrt()
         xml = self.vrt.read_xml()
         node0 = Node.create(xml)
