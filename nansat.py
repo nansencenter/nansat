@@ -1486,7 +1486,7 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None, tps=False):
         '''Crop Nansat object
         
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1532,7 +1532,7 @@ class Nansat(Domain):
                                                     lonlim[1], lonlim[1]],
                                                    [latlim[0], latlim[1],
                                                     latlim[0], latlim[1]],
-                                                    1)
+                                                    1, tps=tps)
             xOff = round(min(crnPix))
             yOff = round(min(crnLin))
             xSize = round(max(crnPix) - min(crnPix))

@@ -890,7 +890,7 @@ class Domain():
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0):
+    def transform_points(self, colVector, rowVector, DstToSrc=0, tps=False):
 
         '''Transform given lists of X,Y coordinates into lat/lon
 
@@ -907,7 +907,7 @@ class Domain():
             X and Y coordinates in degree of lat/lon
 
         '''
-        return self.vrt.transform_points(colVector, rowVector, DstToSrc)
+        return self.vrt.transform_points(colVector, rowVector, DstToSrc, tps)
 
     def upwards_azimuth_direction(self, orbit_direction=None):
         '''Caluculate and return upwards azimuth direction of domain.

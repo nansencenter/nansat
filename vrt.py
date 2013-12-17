@@ -1593,7 +1593,7 @@ class VRT():
 
         return subsamVRT
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0):
+    def transform_points(self, colVector, rowVector, DstToSrc=0, tps=False):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -1615,11 +1615,13 @@ class VRT():
         # prepare target WKT (pure lat/lon)
         dstWKT = latlongSRS.ExportToWkt()
 
+        # prepare options
+        options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + dstWKT]
+        if tps:
+            options += 'METHOD=GCP_TPS'
+        
         # create transformer
-        transformer = gdal.Transformer(self.dataset, None,
-                                       ['SRC_SRS=' + srcWKT,
-                                        'DST_SRS=' + dstWKT])
-                                        #,'METHOD=GCP_TPS'])
+        transformer = gdal.Transformer(self.dataset, None, options)
 
         # use the transformer to convert pixel/line into lat/lon
         latVector = []
