@@ -469,24 +469,29 @@ class Nansat(Domain):
                                                           options=[options])
         self.logger.debug('Export - OK!')
 
-    def resize(self, factor=1, width=None, height=None, eResampleAlg=-1):
+    def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
-        The dataset is resized as (xSize*factor, ySize*factor) or
-        (width, calulated height) or (calculated width, height).
-        self.vrt is rewritten to the the downscaled sizes.
-        Georeference is stored in the object. Useful e.g. for export.
+        The dataset is resized as (xSize*factor, ySize*factor)
+        If desired width, height or pixelsize is specified, 
+        the scaling factor is calculated accordingly.
         If GCPs are given in a dataset, they are also rewritten.
-        If resize() is called without any parameters then previsous
-        resizing/reprojection cancelled.
 
         Parameters
         -----------
-        Either factor, or width, or height should be given:
-            factor : float, optional, default=1
-            width : int, optional
-            height : int, optional
-            eResampleAlg : int (GDALResampleAlg), optional
+        factor : float, optional, default=1
+            Scaling factor for width and height
+            > 1 means increasing domain size
+            < 1 means decreasing domain size
+        width : int, optional
+            Desired new width in pixels
+        height : int, optional
+            Desired new height in pixels
+        pixelsize : float, optional 
+            Desired new pixelsize in meters (approximate). 
+            A factor is calculated from ratio of the 
+            current pixelsize to the desired pixelsize.
+        eResampleAlg : int (GDALResampleAlg), optional
                -1 : Average,
                 0 : NearestNeighbour
                 1 : Bilinear,
@@ -505,6 +510,13 @@ class Nansat(Domain):
         rasterYSize = float(self.shape()[0])
         rasterXSize = float(self.shape()[1])
 
+        # estimate factor if pixelsize is given
+        if pixelsize is not None:
+            deltaX, deltaY = self.get_pixelsize_meters()
+            factorX = deltaX / float(pixelsize)
+            factorY = deltaY / float(pixelsize)
+            factor = (factorX + factorY)/2
+          
         # estimate factor if width or height is given
         if width is not None:
             factor = float(width) / rasterXSize
