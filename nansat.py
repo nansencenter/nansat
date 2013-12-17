@@ -1545,20 +1545,21 @@ class Nansat(Domain):
                                                    [latlim[0], latlim[1],
                                                     latlim[0], latlim[1]],
                                                     1, tps=tps)
+
             xOff = round(min(crnPix))
             yOff = round(min(crnLin))
             xSize = round(max(crnPix) - min(crnPix))
             ySize = round(max(crnLin) - min(crnLin))
-        
+
         RasterXSize = self.vrt.dataset.RasterXSize
         RasterYSize = self.vrt.dataset.RasterYSize
-        
-        # set xSize/ySize of ommited in the call
+
+        # set xSize/ySize if ommited in the call
         if xSize is None:
             xSize = RasterXSize - xOff
         if ySize is None:
             ySize = RasterYSize - yOff
-            
+
         # test if crop is totally outside
         if    (xOff > RasterXSize or (xOff + xSize) < 0 or
                yOff > RasterYSize or (yOff + ySize) < 0):
@@ -1572,14 +1573,18 @@ class Nansat(Domain):
             
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
+            xSize += xOff
             xOff = 0
+
         if yOff < 0:
+            ySize += yOff
             yOff = 0
+
         if (xSize + xOff) > RasterXSize:
             xSize = RasterXSize - xOff
         if (ySize + yOff) > RasterYSize:
             ySize = RasterYSize - yOff
-        
+
         self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
                                                                         yOff,
                                                                         xSize,
