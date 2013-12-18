@@ -1518,9 +1518,16 @@ class Nansat(Domain):
         ySize : int
             height in pizels of subimage
         
-        Modifies:
+        Modifies
+        --------
             self.vrt : VRT
                 superVRT is created with modified SrcRect and DstRect
+        Returns
+        -------
+            status : int
+                0 - everyhting is OK, image is cropped
+                1 - if crop is totally outside, image is NOT cropped
+                2 - crop area is too large and crop is not needed
         '''
         # use interactive PointBrowser for selecting extent
         if      (xOff==0 and yOff==0 and
