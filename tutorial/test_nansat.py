@@ -59,6 +59,17 @@ n = Nansat(iFileName)
 # Open an input file, specify which Mapper to use, set logging level
 n = Nansat(iFileName, mapperName='generic', logLevel=10)
 
+# create nansat object from grids of lon, lat and values
+# first get the grids from existing nansat objects
+lonGrid, latGrid = n.get_geolocation_grids()
+valGrid = n[1]
+# next create a domain
+d = Domain(lon=lonGrid, lat=latGrid)
+# at last generate nansat from given domain and array
+n2 = Nansat(domain=d, array=valGrid, parameters={'name': 'new_band'})
+print n
+
+
 # list bands and georeference of the object
 print 'Raw Nansat:', n, '\n'
 

@@ -177,6 +177,7 @@ class Nansat(Domain):
         else:
             # Set current VRT object
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
+            self.domain = domain
             if array is not None:
                 # add a band from array
                 self.add_band(array=array, parameters=parameters)
@@ -1569,7 +1570,7 @@ class Nansat(Domain):
                                                                         yOff,
                                                                         xSize,
                                                                         ySize))
-            return
+            return 1
             
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
@@ -1593,7 +1594,7 @@ class Nansat(Domain):
         if    (xOff == 0 and xSize == RasterXSize and
                yOff == 0 and ySize == RasterYSize):
             self.logger.error('WARNING! Cropping region is larger or equal to image!')
-            return
+            return 2
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
@@ -1646,3 +1647,5 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
+        
+        return 0
