@@ -142,7 +142,7 @@ class Figure():
             full size array with latitudes. For adding lat/lon grid lines
         lonGrid : numpy array
             full size array with longitudes. For adding lat/lon grid lines
-        latlonGridSpacing : int
+        nGridLines : int
             number of lat/lon grid lines to show
         latlonLabels : int
             number of lat/lon labels to show along each side.
