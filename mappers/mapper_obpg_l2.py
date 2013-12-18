@@ -194,19 +194,18 @@ class Mapper(VRT):
         if title is 'GOCI Level-2 Data':
             return
 
-        # add georeference
+        # add GCPs
         geolocationMetadata = gdalSubDataset.GetMetadata('GEOLOCATION')
         xDatasetSource = geolocationMetadata['X_DATASET']
-        xDatasetBand = geolocationMetadata['X_BAND']
         xDataset = gdal.Open(xDatasetSource)
-        xVRT = VRT(vrtDataset=xDataset)
 
         yDatasetSource = geolocationMetadata['Y_DATASET']
-        yDatasetBand = geolocationMetadata['Y_BAND']
         yDataset = gdal.Open(yDatasetSource)
-        yVRT = VRT(vrtDataset=yDataset)
+    
+        longitude = xDataset.ReadAsArray()
+        latitude = yDataset.ReadAsArray()
 
-        # estimate pixel/line step
+        # estimate pixel/line step of the geolocation arrays
         pixelStep = int(ceil(float(gdalSubDataset.RasterXSize) /
                              float(xDataset.RasterXSize)))
         lineStep = int(ceil(float(gdalSubDataset.RasterYSize) /
@@ -214,20 +213,6 @@ class Mapper(VRT):
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
 
         # ==== ADD GCPs and Pojection ====
-        # get lat/lon matrices
-        longitude = xVRT.dataset.GetRasterBand(1).ReadAsArray()
-        latitude = yVRT.dataset.GetRasterBand(1).ReadAsArray()
-
-        # add geolocation array
-        if addGeolocation:
-            if (longitude.min() >= -180 and longitude.max() <= 180 and
-                    latitude.min() >= -90 and latitude.max() <= 90):
-                self.add_geolocationArray(GeolocationArray(xDatasetSource,
-                                                           yDatasetSource,
-                                                           pixelStep=pixelStep,
-                                                           lineStep=lineStep))
-            else:
-                self.remove_geolocationArray()
 
         # estimate step of GCPs
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
@@ -257,3 +242,4 @@ class Mapper(VRT):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
+        self.remove_geolocationArray()
