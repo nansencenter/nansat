@@ -169,6 +169,8 @@ class VRT():
     vrt = None
     # other sub VRTs
     subVRTs = {}
+    # use Thin Spline Transformation of the VRT has GCPs?
+    tps = False
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                  array=None,
@@ -795,6 +797,9 @@ class VRT():
         # add subVRTs: dictionary with several VRTs generated in mappers
         # or with added bands
         vrt.subVRTs = self.subVRTs
+        
+        # set TPS flag
+        vrt.tps = bool(self.tps)
 
         # iterative copy of self.vrt
         if self.vrt is not None:
@@ -927,7 +932,7 @@ class VRT():
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
-                       tps=False, use_geolocationArray=True,
+                       use_geolocationArray=True,
                        use_gcps=True, use_geotransform=True,
                        dstGCPs=[], dstGeolocationArray=None):
 
@@ -1114,10 +1119,11 @@ class VRT():
         warpedVRT.write_xml(node0.rawxml())
 
         # apply thin-spline-transformation option
-        if use_gcps and tps:
+        if use_gcps and self.tps:
             tmpVRTXML = warpedVRT.read_xml()
             tmpVRTXML = tmpVRTXML.replace('GCPTransformer', 'TPSTransformer')
             warpedVRT.write_xml(tmpVRTXML)
+            
         """
         # TODO: implement the below option for proper handling stereo
         # projections over the pole get source projection from GCPs or
@@ -1544,6 +1550,7 @@ class VRT():
         # create new self
         superVRT = VRT(gdalDataset=self.dataset)
         superVRT.vrt = self.copy()
+        superVRT.tps = self.tps
 
         # Add bands to newSelf
         for iBand in range(superVRT.vrt.dataset.RasterCount):
@@ -1593,7 +1600,7 @@ class VRT():
 
         return subsamVRT
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0, tps=False):
+    def transform_points(self, colVector, rowVector, DstToSrc=0):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -1617,7 +1624,7 @@ class VRT():
 
         # prepare options
         options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + dstWKT]
-        if tps:
+        if self.tps:
             options += 'METHOD=GCP_TPS'
         
         # create transformer
@@ -1658,8 +1665,8 @@ class VRT():
             projection = self.dataset.GetGCPProjection()
 
         #test projection
-        if projection == '':
-            raise ProjectionError('Empty projection in input dataset!')
+        #if projection == '':
+        #    raise ProjectionError('Empty projection in input dataset!')
 
         return projection
 
@@ -1700,3 +1707,42 @@ class VRT():
                                         eResampleAlg=eResampleAlg)
 
         return warpedVRT
+
+    def reproject_GCPs(self, srsString):
+        '''Reproject all GCPs to a new spatial reference system
+
+        Necessary before warping an image if the given GCPs
+        are in a coordinate system which has a singularity
+        in (or near) the destination area (e.g. poles for lonlat GCPs)
+
+        Parameters
+        ----------
+        srsString : string
+            SRS given as Proj4 string
+
+        Modifies
+        --------
+            Reprojects all GCPs to new SRS and updates GCPProjection
+        '''
+
+        # Make tranformer from GCP SRS to destination SRS
+        dstSRS = osr.SpatialReference()
+        dstSRS.ImportFromProj4(srsString)
+        srcSRS = osr.SpatialReference()
+        srcGCPProjection = self.dataset.GetGCPProjection()
+        srcSRS.ImportFromWkt(srcGCPProjection)
+        transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
+
+        # Reproject all GCPs
+        srcGCPs = self.dataset.GetGCPs()
+        dstGCPs = []
+        for srcGCP in srcGCPs:
+            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX,
+                                                   srcGCP.GCPY,
+                                                   srcGCP.GCPZ)
+            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel,
+                              srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
+            dstGCPs.append(dstGCP)
+
+        # Update dataset
+        self.dataset.SetGCPs(dstGCPs, dstSRS.ExportToWkt())
