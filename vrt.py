@@ -1014,7 +1014,6 @@ class VRT():
         warpedVRT : VRT object with WarpedVRT
 
         '''
-        print 'vrt.get_warped_vrt: use tps 1', self.tps
         # VRT to be warped
         srcVRT = self.copy()
 
@@ -1120,7 +1119,6 @@ class VRT():
         warpedVRT.write_xml(node0.rawxml())
 
         # apply thin-spline-transformation option
-        print 'vrt.get_warped_vrt: use tps 2', self.tps
         if use_gcps and self.tps:
             tmpVRTXML = warpedVRT.read_xml()
             tmpVRTXML = tmpVRTXML.replace('GCPTransformer', 'TPSTransformer')
@@ -1628,7 +1626,6 @@ class VRT():
         options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + dstWKT]
         if self.tps:
             options += 'METHOD=GCP_TPS'
-            print 'vrt.transform_points: use tps'
         
         # create transformer
         transformer = gdal.Transformer(self.dataset, None, options)

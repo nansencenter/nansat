@@ -194,6 +194,13 @@ class Mapper(VRT):
         if title is 'GOCI Level-2 Data':
             return
 
+        self._remove_geotransform()
+
+        # add geolocation
+        geoMeta = self.geolocationArray.d
+        if len(geoMeta) > 0:
+            self.dataset.SetMetadata(geoMeta, 'GEOLOCATION')
+
         # add GCPs
         geolocationMetadata = gdalSubDataset.GetMetadata('GEOLOCATION')
         xDatasetSource = geolocationMetadata['X_DATASET']
@@ -239,21 +246,6 @@ class Mapper(VRT):
                                       gcp.GCPX, gcp.GCPY)
                     gcps.append(gcp)
                     k += 1
-                    # keep central lon/lat
-                    if k == (GCP_COUNT ** 2) / 2:
-                        clon, clat = lon, lat
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
-        self.remove_geolocationArray()
-        
-        # use TPS for MODIS data
-        if title in ['HMODISA Level-2 Data', 'MODISA Level-2 Data']:
-            self.tps = True
-            print 'mapper.self.tps', self.tps
-
-        # reproject GCPs for MODIS data
-        if title in ['HMODISA Level-2 Data', 'MODISA Level-2 Data']:
-            srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lon_0=%f +lat_0=%f +no_defs' % (clon, clat)
-            self.reproject_GCPs(srs)
-            print 'mapper.gcp[0]', self.dataset.GetGCPs()[0]
