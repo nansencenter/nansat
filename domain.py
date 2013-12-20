@@ -890,24 +890,25 @@ class Domain():
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0, tps=False):
+    def transform_points(self, colVector, rowVector, DstToSrc=0):
 
-        '''Transform given lists of X,Y coordinates into lat/lon
+        '''Transform given lists of X,Y coordinates into lon/lat or inverse
 
         Parameters
         -----------
         colVector : lists
-            X and Y coordinates with any coordinate system
+            X and Y coordinates in pixel/line or lon/lat  coordinate system
         DstToSrc : 0 or 1
-            1 for inverse transformation, 0 for forward transformation.
+            0 - forward transform (pix/line => lon/lat)
+            1 - inverse transformation
 
         Returns
         --------
-        lonVector, latVector : lists
-            X and Y coordinates in degree of lat/lon
+        X, Y : lists
+            X and Y coordinates in lon/lat or pixel/line coordinate system
 
         '''
-        return self.vrt.transform_points(colVector, rowVector, DstToSrc, tps)
+        return self.vrt.transform_points(colVector, rowVector, DstToSrc)
 
     def upwards_azimuth_direction(self, orbit_direction=None):
         '''Caluculate and return upwards azimuth direction of domain.
@@ -1118,26 +1119,4 @@ class Domain():
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
         '''
-
-        # Make tranformer from GCP SRS to destination SRS
-        dstSRS = osr.SpatialReference()
-        dstSRS.ImportFromProj4(srsString)
-        srcSRS = osr.SpatialReference()
-        srcGCPProjection = self.raw.dataset.GetGCPProjection()
-        srcSRS.ImportFromWkt(srcGCPProjection)
-        transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
-
-        # Reproject all GCPs
-        srcGCPs = self.raw.dataset.GetGCPs()
-        dstGCPs = []
-        for srcGCP in srcGCPs:
-            (x, y, z) = transformer.TransformPoint(srcGCP.GCPX,
-                                                   srcGCP.GCPY,
-                                                   srcGCP.GCPZ)
-            dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel,
-                              srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
-            dstGCPs.append(dstGCP)
-
-        # Update dataset
-        self.raw.dataset.SetGCPs(dstGCPs, dstSRS.ExportToWkt())
-        self.vrt.dataset.SetGCPs(dstGCPs, dstSRS.ExportToWkt())
+        self.vrt.reproject_GCPs(srsString)
