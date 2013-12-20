@@ -321,7 +321,9 @@ class Nansat(Domain):
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
-            Write swath-projected data bottomup?
+            False: Write swath-projected data with rows and columns organized
+                   as in the original product.
+            True:  Use the default behaviour of GDAL, which is to flip the rows
 
         Modifies
         ---------
