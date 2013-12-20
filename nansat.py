@@ -628,7 +628,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, tps=False, **kwargs):
+                  WorkingDataType=None, **kwargs):
         ''' Change projection of the object based on the given Domain
 
         Create superVRT from self.vrt with AutoCreateWarpedVRT() using
@@ -653,8 +653,6 @@ class Nansat(Domain):
             but increase accuracy at the edge
         WorkingDataType : int (GDT_int, ...)
             type of data in bands. Shuold be integer for int32 bands
-        tps : boolean
-            Use thin-spline trasnformation or not
 
         Modifies
         ---------
@@ -705,6 +703,7 @@ class Nansat(Domain):
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # create Warped VRT
+        print 'n.reproject.vrt.tps:', self.vrt.tps
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
                                             dstGCPs=dstGCPs,
                                             eResampleAlg=eResampleAlg,
@@ -712,7 +711,7 @@ class Nansat(Domain):
                                             blockSize=blockSize,
                                             geoTransform=geoTransform,
                                             WorkingDataType=WorkingDataType,
-                                            tps=tps, **kwargs)
+                                            **kwargs)
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
@@ -1499,7 +1498,7 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None, tps=False):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
         '''Crop Nansat object
         
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1552,7 +1551,7 @@ class Nansat(Domain):
                                                     lonlim[1], lonlim[1]],
                                                    [latlim[0], latlim[1],
                                                     latlim[0], latlim[1]],
-                                                    1, tps=tps)
+                                                    1)
 
             xOff = round(min(crnPix))
             yOff = round(min(crnLin))

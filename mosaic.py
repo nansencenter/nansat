@@ -285,18 +285,22 @@ class Mosaic(Nansat):
         maskMat = np.zeros((2, dstShape[0], dstShape[1]), 'int8')
 
         # for all input files
+        firstN = None
         for i, f in enumerate(files):
+            print 'Processing %s' % f
             self.logger.info('Processing %s' % f)
 
             # get image and mask
             n, mask = self._get_layer(f, doReproject, maskName)
 
-            if n is not None:
-                # keep last image opened
-                lastN = self._get_layer_image(f)
-            else:
-                # skip processing of invalid image
+            # skip processing of invalid image
+            if n is None:
                 continue
+                
+            # keep first image opened
+            if firstN is None:
+                firstN = self._get_layer_image(f)
+
             # add data to counting matrix
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
             cntMatTmp[mask == 64] = 1
@@ -352,8 +356,8 @@ class Mosaic(Nansat):
         # add averaged bands with metadata
         for b in bands:
             self.logger.debug('    %s' % b)
-            # get metadata of this band from the last image
-            parameters = lastN.get_metadata(bandID=b)
+            # get metadata of this band from the first image
+            parameters = firstN.get_metadata(bandID=b)
             parameters.pop('dataType')
             parameters.pop('SourceBand')
             parameters.pop('SourceFilename')

@@ -19,7 +19,7 @@ class Mapper(VRT):
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
-                 GCP_COUNT=10, addGeolocation=False, **kwargs):
+                 GCP_COUNT=10, **kwargs):
         ''' Create VRT
         Parameters
         ----------
@@ -194,6 +194,13 @@ class Mapper(VRT):
         if title is 'GOCI Level-2 Data':
             return
 
+        self._remove_geotransform()
+
+        # add geolocation
+        geoMeta = self.geolocationArray.d
+        if len(geoMeta) > 0:
+            self.dataset.SetMetadata(geoMeta, 'GEOLOCATION')
+
         # add GCPs
         geolocationMetadata = gdalSubDataset.GetMetadata('GEOLOCATION')
         xDatasetSource = geolocationMetadata['X_DATASET']
@@ -242,4 +249,3 @@ class Mapper(VRT):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
-        self.remove_geolocationArray()
