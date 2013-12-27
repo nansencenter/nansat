@@ -46,7 +46,7 @@ n.export(oFileName + '.nc')
 # Collect values from interactively drawn transect
 # 1. draw transect interactively
 # 2. plot the values
-values, lonlat, pixlinCoord =n.get_transect()
+values, lonlat, pixlinCoord = n.get_transect()
 plt.plot(lonlat[0], values[0], '.-');plt.show()
 
 # run tests of other nansat components

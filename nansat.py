@@ -1424,13 +1424,22 @@ class Nansat(Domain):
             pixlinCoord = np.append(pixlinCoord,
                                     [pixVector, linVector],
                                     axis=1)
-            if smoothRadius:
-                pixlinCoord0 = pixlinCoord - smoothRadius
-                pixlinCoord0 = [pixlinCoord0[0].clip(0, self.vrt.dataset.RasterXSize-1),
-                                pixlinCoord0[1].clip(0, self.vrt.dataset.RasterYSize-1)]
-                pixlinCoord1 = pixlinCoord + smoothRadius
-                pixlinCoord1 = [pixlinCoord1[0].clip(0, self.vrt.dataset.RasterXSize-1),
-                                pixlinCoord1[1].clip(0, self.vrt.dataset.RasterYSize-1)]
+        if smoothRadius:
+            # get start/end coordinates of subwindows
+            pixlinCoord0 = pixlinCoord - smoothRadius
+            pixlinCoord1 = pixlinCoord + smoothRadius
+            # truncate out-of-image points 
+            gpi = ((pixlinCoord0[0] >= 0) *
+                   (pixlinCoord0[1] >= 0) *
+                   (pixlinCoord1[0] >= 0) *
+                   (pixlinCoord1[1] >= 0) *
+                   (pixlinCoord0[0] < self.vrt.dataset.RasterXSize) *
+                   (pixlinCoord0[1] < self.vrt.dataset.RasterXSize) *
+                   (pixlinCoord1[0] < self.vrt.dataset.RasterYSize) *
+                   (pixlinCoord1[1] < self.vrt.dataset.RasterYSize))
+            pixlinCoord0 = pixlinCoord0[:, gpi]
+            pixlinCoord1 = pixlinCoord1[:, gpi]
+            pixlinCoord = pixlinCoord[:, gpi]
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self._transform_points(pixlinCoord[0],
