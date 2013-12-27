@@ -899,7 +899,7 @@ class Figure():
         array = array[array < np.nanmax(array)]
         step = max(int(round(float(len(array)) /
                        float(self.subsetArraySize))), 1.0)
-        arraySubset = array[::step]
+        arraySubset = array[::int(step)]
         hist, bins, patches = plt.hist(arraySubset, bins=100)
         plt.close()
         return hist.astype(float), bins
