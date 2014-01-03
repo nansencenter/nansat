@@ -706,7 +706,6 @@ class Nansat(Domain):
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # create Warped VRT
-        print 'n.reproject.vrt.tps:', self.vrt.tps
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
                                             dstGCPs=dstGCPs,
                                             eResampleAlg=eResampleAlg,
