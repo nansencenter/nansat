@@ -75,29 +75,31 @@ class Mosaic(Nansat):
         # open file using Nansat or its child class
         # the line below is for debugging
         #n = self.nClass(f, logLevel=self.logger.level)
+        self.logger.info('Try to open %s' % f)
         try:
             n = self.nClass(f, logLevel=self.logger.level)
         except:
             self.logger.error('Unable to open %s' % f)
-            return None
+            n = None
 
         # check if image is out of period
+        self.logger.info('Try to get time from %s' % f)
         if n is not None:
             ntime = n.get_time()
 
             if (ntime[0] is None and any(self.period)):
                 self.logger.error('%s has no time' % f)
-                return None
+                n = None
 
             if (self.period[0] is not None and
                     ntime[0] < self.period[0]):
                 self.logger.info('%s is taken before the period' % f)
-                return None
+                n = None
 
             if (self.period[1] is not None and
                     ntime[0] > self.period[1]):
                 self.logger.info('%s is taken after the period' % f)
-                return None
+                n = None
         return n
 
     def _get_layer_mask(self, n):
@@ -118,32 +120,26 @@ class Mosaic(Nansat):
         --------
         mask : Numpy array with L2-mask
         '''
+        mask = 64 * np.ones(self.shape()).astype('int8')
         # add mask band [0: nodata, 1: cloud, 2: land, 64: data]
+        self.logger.info('Try to get raw mask')
         try:
             mask = n[self.maskName]
         except:
             self.logger.error('Cannot get mask from %s' % n.fileName)
-            mask = 64 * np.ones(n.shape()).astype('int8')
             n.add_band(array=mask, parameters={'name': self.maskName})
-
+        self.logger.debug('Got raw mask - OK')
+        
         if self.doReproject:
             # reproject image and get reprojected mask
+            self.logger.debug('Try to get reprojected mask')
             n.reproject(self, eResampleAlg=self.eResampleAlg)
-            mask = n[self.maskName]
             try:
-                n.reproject(self, eResampleAlg=self.eResampleAlg)
                 mask = n[self.maskName]
             except:
-                self.logger.error('Unable to reproject!')
-                return None, None
-
-        # if mask was not received from projected image
-        # create zeros (out of swath) for blocking this image from
-        # averaging
-        if mask is None:
-            self.logger.error('No mask in reprojected file %s!' % n.fileName)
-            mask = np.zeros(n.shape()).astype('int8')
-
+                self.logger.error('Unable to get reprojected mask!')
+            self.logger.debug('Get reprojected mask - OK')
+                
         return mask
 
     def _get_layer(self, f):
@@ -163,11 +159,10 @@ class Mosaic(Nansat):
         n : Nansat object of input file
         mask : Numpy array with array
         '''
+        mask = None
         n = self._get_layer_image(f)
         if n is not None:
             mask = self._get_layer_mask(n)
-        else:
-            mask = None
 
         return n, mask
 
@@ -307,7 +302,6 @@ class Mosaic(Nansat):
 
         # start sub-processes
         for i in range(threads):
-            print 'start...'
             procs[i].start()
 
         # put file names into task queue
@@ -406,6 +400,7 @@ class Mosaic(Nansat):
             dstShape = self.shape()
             
             # get image and mask
+            self.logger.info('Open %s and get mask' % f)
             n, mask = self._get_layer(f)
     
             # skip processing of invalid image
