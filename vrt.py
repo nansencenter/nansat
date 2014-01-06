@@ -91,6 +91,18 @@ class GeolocationArray():
         self.d['LINE_STEP'] = str(lineStep)
         self.d['PIXEL_OFFSET'] = str(pixelOffset)
         self.d['PIXEL_STEP'] = str(pixelStep)
+    
+    def get_geolocation_grids(self):
+        '''Read values of geolocation grids'''
+        lonDS = gdal.Open(self.d['X_DATASET'])
+        lonBand = lonDS.GetRasterBand(int(self.d['X_BAND']))
+        lonGrid = lonBand.ReadAsArray()
+        latDS = gdal.Open(self.d['Y_DATASET'])
+        latBand = latDS.GetRasterBand(int(self.d['Y_BAND']))
+        latGrid = latBand.ReadAsArray()
+        
+        return lonGrid, latGrid
+        
 
 
 class VRT():
