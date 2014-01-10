@@ -1640,14 +1640,20 @@ class Nansat(Domain):
         # modify GCPs or GeoTranfrom to fit the new shape of image
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
-            newGCPs = []
+            dstGCPs = []
             # create new 100 GPCs (10 x 10 regular matrix)
-            gcpProjection = self.vrt.dataset.GetGCPProjection()
+            srcGCPProjectionWKT = self.vrt.dataset.GetGCPProjection()
             for newPix in np.r_[0:xSize:10j]:
                 for newLin in np.r_[0:ySize:10j]:
                     newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
-                    newGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
-            self.vrt.dataset.SetGCPs(newGCPs, gcpProjection)
+                    dstGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
+            # set new GCPss
+            self.vrt.dataset.SetGCPs(dstGCPs, latlongSRS.ExportToWkt())
+            # reproject new GCPs to the SRS of original GCPs
+            dstSRS = osr.SpatialReference()
+            dstSRS.ImportFromWkt(srcGCPProjectionWKT)
+            self.vrt.reproject_GCPs(dstSRS.ExportToProj4())
+            # remove geotranform which was automatically added
             self.vrt._remove_geotransform()
         else:
             # shift upper left corner coordinates
