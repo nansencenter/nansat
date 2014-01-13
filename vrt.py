@@ -1428,12 +1428,11 @@ class VRT():
             dstYSize=dstYSize)
 
         # add mask band contents to xml
-        contents = node0.node('MaskBand').node('VRTRasterBand').insert(contents)
-        node0.node('MaskBand').delNode('VRTRasterBand')
-        contents = node0.insert(contents, 'MaskBand')
+        node1 = node0.node('MaskBand').node('VRTRasterBand').insert(contents)
+        node0.replaceNode('VRTRasterBand', 0, node1)
 
         # write contents
-        self.write_xml(contents)
+        self.write_xml(node0.rawxml())
 
     def get_shifted_vrt(self, shiftDegree):
         ''' Roll data in bands westwards or eastwards
@@ -1480,11 +1479,12 @@ class VRT():
         # read xml and create the node
         XML = shiftVRT.read_xml()
         node0 = Node.create(XML)
-
+        
         # divide into two bands and switch the bands
         for i in range(len(node0.nodeList('VRTRasterBand'))):
             # create i-th 'VRTRasterBand' node
             node1 = node0.node('VRTRasterBand', i)
+            node1Band = node1.getAttribute('band')
             # modify the 1st band
             shiftStr = str(shiftPixel)
             sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
@@ -1495,14 +1495,15 @@ class VRT():
             # add the 2nd band
             xmlSource = node1.rawxml()
             cloneNode = Node.create(xmlSource).node('ComplexSource')
+            #cloneNode = node1.node('ComplexSource')
             cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
             cloneNode.node('DstRect').replaceAttribute('xSize', shiftStr)
-
-            contents = node0.insert(cloneNode.rawxml(), 'VRTRasterBand', i)
-            # overwrite the modified contents and create a new node
-            node0 = Node.create(str(contents))
+            
+            # get VRTRasterBand with inserted ComplexSource
+            node1 = node1.insert(cloneNode.rawxml())
+            node0.replaceNode('VRTRasterBand', i, node1)
 
         # write down XML contents
         shiftVRT.write_xml(node0.rawxml())
