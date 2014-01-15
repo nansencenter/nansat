@@ -55,6 +55,13 @@ fig.save(oFileName + '01_clim.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
+# Set minimum and maximum values and another colormap
+fig.process(cmin=10, cmax=60, cmapName='spectral')
+# Save the figure
+fig.save(oFileName + '01_clim_spectral.png')
+
+# Create a Figure object (fig)
+fig = Figure(array)
 # Compute min and max valuse from histogram
 clim = fig.clim_from_histogram(ratio=0.7)
 # Set cmin and cmax values
