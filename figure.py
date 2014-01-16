@@ -842,43 +842,25 @@ class Figure():
         self.palette : numpy array (uint8)
 
         '''
-        # create a colorList from matplotlib colormap name
+        # test if given colormap name is in builtin or added colormaps
         try:
-            colorDic = cm.datad[self.cmapName]
+            cmap = cm.get_cmap(self.cmapName)
         except:
-            colorDic = cm.datad[self._cmapName]
+            self.logger.error('%s is not a valid colormap' % self.cmapName)
             self.cmapName = self._cmapName
+        
+        # get colormap by name
+        cmap = cm.get_cmap(self.cmapName)
 
-        colorList = [colorDic['red'], colorDic['green'], colorDic['blue']]
+        # get colormap look-up
+        cmapLUT = np.uint8(cmap(range(self.numOfColor)) * 255)
+        # replace all last colors to black and...
+        lut = np.zeros((3, 256), 'uint8')
+        lut[:, :self.numOfColor] = cmapLUT.T[:3]
+        # ...and the most last color to white
+        lut[:, -1] = 255
 
-        # create a numpyarray for a palette based on the color list
-        # default is all values are black (=0)
-        lut = np.zeros([3, 256])
-        # place colors to each number (palette)
-        for iColor in range(3):
-            iPalette = 0
-            for i in range(len(colorList[iColor]) - 1):
-                spaceNum = int(self.numOfColor *
-                               (colorList[iColor][i + 1][0] -
-                                colorList[iColor][i][0]))
-                lut[iColor][iPalette:iPalette + spaceNum] = np.array(
-                    np.linspace(colorList[iColor][i][2],
-                                colorList[iColor][i + 1][1],
-                                num=spaceNum) * 255,
-                    dtype=np.uint8)
-                iPalette += (spaceNum)
-            # adjust the number of colors on the palette
-            while iPalette < self.numOfColor:
-                lut[iColor][iPalette] = lut[iColor][iPalette - 1]
-                iPalette += 1
-            while iPalette > self.numOfColor:
-                lut[iColor][iPalette] = 0
-                iPalette -= 1
-        # the last palette color is replaced to white
-        for iColor in range(3):
-            lut[iColor][-1] = 255
-
-        # set palette
+        # set palette to be used by PIL
         self.palette = lut.T.flatten().astype(np.uint8)
 
     def _get_histogram(self, iBand):
