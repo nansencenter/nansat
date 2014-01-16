@@ -145,10 +145,38 @@ except ImportError:
 try:
     latlongSRS = osr.SpatialReference()
     latlongSRS.ImportFromProj4('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-
 except:
     warnings.warn('Cannot generate latlongSRS. Nansat will not work!')
 
+
+
+obpg = {
+'red': [  (0.00, 0.56, 0.56),
+          (0.19, 0.00, 0.00),
+          (0.38, 0.00, 0.00),
+          (0.50, 0.00, 0.00),
+          (0.63, 1.00, 1.00),
+          (0.88, 1.00, 1.00),
+          (1.00, 0.40, 0.40)],
+'green': [(0.00, 0.00, 0.00),
+          (0.19, 0.00, 0.00),
+          (0.38, 1.00, 1.00),
+          (0.50, 1.00, 1.00),
+          (0.63, 1.00, 1.00),
+          (0.88, 0.00, 0.00),
+          (1.00, 0.00, 0.00)],
+'blue': [ (0.00, 0.43, 0.43),
+          (0.19, 1.00, 1.00),
+          (0.38, 1.00, 1.00),
+          (0.50, 0.00, 0.00),
+          (0.63, 0.00, 0.00),
+          (0.88, 0.00, 0.00),
+          (1.00, 0.00, 0.00)],
+}
+try:
+    cm.register_cmap(name='obpg', data=obpg, lut=256)
+except:
+    warnings.warn('Cannot generate and register the OBPG colormap!')
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''

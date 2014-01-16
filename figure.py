@@ -842,13 +842,15 @@ class Figure():
         self.palette : numpy array (uint8)
 
         '''
-        # test if given colormap name is available in builtin colormaps
-        if self.cmapName not in cm.datad:
-            # restore default colormap name
+        # test if given colormap name is in builtin or added colormaps
+        try:
+            cmap = cm.get_cmap(self.cmapName)
+        except:
+            self.logger.error('%s is not a valid colormap' % self.cmapName)
             self.cmapName = self._cmapName
         
         # get colormap by name
-        cmap = cm.get_cmap(self.cmapName, self.numOfColor)
+        cmap = cm.get_cmap(self.cmapName)
 
         # get colormap look-up
         cmapLUT = np.uint8(cmap(range(self.numOfColor)) * 255)

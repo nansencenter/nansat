@@ -55,10 +55,10 @@ fig.save(oFileName + '01_clim.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
-# Set minimum and maximum values and another colormap
-fig.process(cmin=10, cmax=60, cmapName='spectral')
+# Set minimum and maximum values and custom colormap
+fig.process(cmin=10, cmax=60, cmapName='obpg')
 # Save the figure
-fig.save(oFileName + '01_clim_spectral.png')
+fig.save(oFileName + '01_clim_obpg.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
