@@ -761,7 +761,7 @@ class Domain():
 
         return kmlEntry
 
-    def get_border_polygon(self):
+    def get_border_wkt(self):
         '''Creates string with WKT representation of the border polygon
 
         Returns
@@ -780,8 +780,31 @@ class Domain():
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
         # outer quotes have to be double and inner - single!
-        wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
-        return wktPolygon
+        #wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
+        wkt = 'POLYGON((%s))' % polyCont
+        return wkt
+
+    def get_border_geometry(self):
+        ''' Get OGR Geometry of the border Polygon
+
+        Returns
+        -------
+        OGR Geometry, type Polygon
+        
+        '''
+
+        return ogr.CreateGeometryFromWkt(self.get_border_wkt())
+
+    def get_border_postgis(self):
+        ''' Get PostGIS formatted string of the border Polygon
+
+        Returns
+        -------
+        str : 'PolygonFromText(PolygonWKT)'
+
+        '''
+
+        return "PolygonFromText('%s')" % self.get_border_wkt()
 
     def get_corners(self):
         '''Get coordinates of corners of the Domain
@@ -792,6 +815,7 @@ class Domain():
             vectors with lon/lat values for each corner
 
         '''
+
         colVector = [0, 0, self.vrt.dataset.RasterXSize,
                      self.vrt.dataset.RasterXSize]
         rowVector = [0, self.vrt.dataset.RasterYSize, 0,
