@@ -380,8 +380,14 @@ class Nansatmap(Basemap):
         dataX = np.ma.array(dataX, mask=np.isnan(dataX))
         dataY = np.ma.array(dataY, mask=np.isnan(dataY))
         # subset grids for quiver plot
-        step0 = dataX.shape[0] / quivectors
-        step1 = dataX.shape[1] / quivectors
+        if type(quivectors) in [list, tuple]:
+            quivectors0 = quivectors[0]
+            quivectors1 = quivectors[1]
+        else:
+            quivectors0 = quivectors
+            quivectors1 = quivectors
+        step0 = dataX.shape[0] / quivectors0
+        step1 = dataX.shape[1] / quivectors1
         dataX2 = dataX[::step0, ::step1]
         dataY2 = dataY[::step0, ::step1]
         self._create_lonlat_grids()

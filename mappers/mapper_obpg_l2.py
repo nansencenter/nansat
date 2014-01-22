@@ -186,7 +186,7 @@ class Mapper(VRT):
         startYear = int(gdalMetadata['Start Year'])
         startDay = int(gdalMetadata['Start Day'])
         startMillisec = int(gdalMetadata['Start Millisec'])
-        startDate = datetime(startYear, 1, 1) + timedelta(startDay, 0, 0,
+        startDate = datetime(startYear, 1, 1) + timedelta(startDay-1, 0, 0,
                                                           startMillisec)
         self._set_time(startDate)
 

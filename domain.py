@@ -983,11 +983,17 @@ class Domain():
         return bearing_center
 
     def azimuth_up(self, reductionFactor=1):
-        '''Calculate the azimuth orientation (bearing) "upwards" in the domain
-
-        Bearing azimuth angle increases clockwise from North.
-        For lon-lat (Plate Caree) and Mercator projections,
-        the bearing will be 0 (North is "up")
+        '''Calculate the azimuth of 'upward' direction in each pixel
+        
+        Generaly speaking, azimuth is angle from the reference vector
+        (direction to North) to the chosen direction. Azimuth increases
+        clockwise from direction to North. http://en.wikipedia.org/wiki/Azimuth
+        
+        Here we calcluate azimuth of 'upward' direction.
+        'Upward' direction coincides with Y-axis direction (and hence is
+        opposite to the ROW-axis direction). For lon-lat (cylindrical,
+        Plate Caree) and Mercator projections 'upward' direction coincides with
+        direction to North, hence azimuth is 0. 
 
         Parameters
         -----------
@@ -996,16 +1002,17 @@ class Domain():
 
         Returns
         -------
-        bearing        : numpy array
+        azimuth        : numpy array
+            Values of azimuth in degrees in range 0 - 360
 
         '''
 
         lon, lat = self.get_geolocation_grids(reductionFactor)
-        b = initial_bearing(lon[1:, :], lat[1:, :],
+        a = initial_bearing(lon[1:, :], lat[1:, :],
                             lon[:-1:, :], lat[:-1:, :])
         # Repeat last row once to match size of lon-lat grids
-        b = np.vstack((b, b[-1, :]))
-        return b
+        a = np.vstack((a, a[-1, :]))
+        return a
 
     def shape(self):
         '''Return Numpy-like shape of Domain object (ySize, xSize)
