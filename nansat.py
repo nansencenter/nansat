@@ -1554,7 +1554,8 @@ class Nansat(Domain):
         # get xOff, yOff, xSize and ySize from lonlim and latlim
         if       (xOff==0 and yOff==0 and
                  xSize is None and ySize is None and
-                 type(lonlim) is list and type(latlim) is list):
+                 type(lonlim) in [list, tuple] and
+                 type(latlim) in [list, tuple]):
             crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0],
                                                     lonlim[1], lonlim[1]],
                                                    [latlim[0], latlim[1],

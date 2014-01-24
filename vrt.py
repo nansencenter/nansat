@@ -1647,7 +1647,7 @@ class VRT():
         xy = np.array([colVector, rowVector]).transpose()
         
         # transfrom coordinates
-        lonlat = transformer.TransformPoints(0, xy)[0]
+        lonlat = transformer.TransformPoints(DstToSrc, xy)[0]
         
         # convert return to lon,lat vectors
         lonlat = np.array(lonlat)
