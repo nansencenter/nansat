@@ -66,7 +66,7 @@ meanLon = sum(lons, 0.0) / 4.
 meanLat = sum(lats, 0.0) / 4.
 
 # get string with WKT representation of the border polygon
-print 'BorderPolygon:', d.get_border_polygon(), '\n'
+print 'BorderPolygon:', d.get_border_wkt(), '\n'
 
 # longitude and latitude grids representing the full data grid
 longitude, latitude = d.get_geolocation_grids()

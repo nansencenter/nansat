@@ -1625,7 +1625,7 @@ class VRT():
 
         Returns
         --------
-        lonVector, latVector : lists
+        lonVector, latVector : numpy arrays
             X and Y coordinates in degree of lat/lon
 
         '''
@@ -1642,19 +1642,18 @@ class VRT():
         
         # create transformer
         transformer = gdal.Transformer(self.dataset, None, options)
-
-        # use the transformer to convert pixel/line into lat/lon
-        latVector = []
-        lonVector = []
-        for pixel, line in zip(colVector, rowVector):
-            try:
-                succ, point = transformer.TransformPoint(DstToSrc, pixel, line)
-                lonVector.append(point[0])
-                latVector.append(point[1])
-            except:
-                lonVector.append(np.nan)
-                latVector.append(np.nan)
-
+        
+        # convert lists with X,Y coordinates to 2D numpy array
+        xy = np.array([colVector, rowVector]).transpose()
+        
+        # transfrom coordinates
+        lonlat = transformer.TransformPoints(0, xy)[0]
+        
+        # convert return to lon,lat vectors
+        lonlat = np.array(lonlat)
+        lonVector = lonlat[:, 0]
+        latVector = lonlat[:, 1]
+        
         return lonVector, latVector
 
     def get_projection(self):

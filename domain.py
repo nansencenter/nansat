@@ -435,20 +435,18 @@ class Domain():
 
         X = range(0, self.vrt.dataset.RasterXSize, stepSize)
         Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
-        # if the vrt dataset has geolocationArray
+        Xm, Ym = np.meshgrid(X, Y)
+        
         if len(self.vrt.geolocationArray.d) > 0:
-            Xm, Ym = np.meshgrid(X, Y)
+            # if the vrt dataset has geolocationArray
+            # read lon,lat grids from geolocationArray
             lon, lat = self.vrt.geolocationArray.get_geolocation_grids()
             longitude, latitude = lon[Ym, Xm], lat[Ym, Xm]
         else:
-            # create empty grids
-            longitude = np.zeros([len(Y), len(X)], 'float32')
-            latitude = np.zeros([len(Y), len(X)], 'float32')
-            # fill row-wise
-            for index, i in enumerate(X):
-                [lo, la] = self.transform_points([i] * len(Y), Y)
-                longitude[:, index] = lo
-                latitude[:, index] = la
+            # generate lon,lat grids using GDAL Transformer
+            lonVec, latVec = self.transform_points(Xm.flatten(), Ym.flatten())
+            longitude = lonVec.reshape(Xm.shape)
+            latitude = latVec.reshape(Xm.shape)
 
         return longitude, latitude
 
