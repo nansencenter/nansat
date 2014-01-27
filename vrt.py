@@ -1647,12 +1647,17 @@ class VRT():
         xy = np.array([colVector, rowVector]).transpose()
         
         # transfrom coordinates
+        #lonlat = transformer.TransformPoints(DstToSrc, xy)#[0]
+        #import pdb; pdb.set_trace()
         lonlat = transformer.TransformPoints(DstToSrc, xy)[0]
         
         # convert return to lon,lat vectors
         lonlat = np.array(lonlat)
-        lonVector = lonlat[:, 0]
-        latVector = lonlat[:, 1]
+        if lonlat.shape[0] > 0:
+            lonVector = lonlat[:, 0]
+            latVector = lonlat[:, 1]
+        else:
+            lonVector, latVector = [], []
         
         return lonVector, latVector
 
