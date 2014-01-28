@@ -19,14 +19,18 @@ class Mapper(VRT):
         
         # find grid_mapping_name
         # and get all parameters
+        # generate proj4 and WKT strings
         for varName in f.variables:
             var = f.variables[varName]
             attrs = var.ncattrs()
             if 'grid_mapping_name' in attrs:
-                gmName = str(varName)
-                gmVal = str(var.getncattr('grid_mapping_name'))
+                proj4str = self.get_proj4_from_ncvar(var)
+                latlongSRS.ImportFromProj4(proj4str)
+                srcProjection = latlongSRS.ExportToWkt()
                 break
 
+        print 'WKT:', srcProjection
+        
         # find bands with grid_mapping
         validVars = []
         validDims = []
@@ -61,7 +65,26 @@ class Mapper(VRT):
                 xDim = dim
             if 'y' in dim or 'lat' in dim or 'north' in dim:
                 yDim = dim
-
+        
+        # get X/Y size
+        var0 = f.variables[validVars[0]]
+        xDimI = var0.dimensions.index(xDim)
+        srcRasterXSize = var0.shape[xDimI]
+        yDimI = var0.dimensions.index(yDim)
+        srcRasterYSize = var0.shape[yDimI]
+        
+        print 'x/ySize', srcRasterXSize, srcRasterYSize
+        
+        # get GDAL GeoTransform
+        xdata = f.variables[xDim][:]
+        ydata = f.variables[yDim][:]
+        x0 = xdata[0]
+        dx = xdata[1] - xdata[0]
+        y0 = ydata[0]
+        dy = ydata[1] - ydata[0]
+        srcGeoTransform = ( x0, dx, 0, y0, 0, dy )
+        print srcGeoTransform
+        
         # make list of metadata dictionary entries
         # for each var make [k][i][j][x][y] depending on order of dims
         metaDict = []
@@ -113,17 +136,60 @@ class Mapper(VRT):
             
                 # put band metadata
                 for attr in attrs:
-                    print attr
                     metaEntry['dst'][str(attr)] = str(var.getncattr(attr))
 
                 # add wkv
                 if 'standard_name' in attrs:
                     metaEntry['dst']['wkv'] = metaEntry['dst']['standard_name']
             
-                print metaEntry
                 metaDict.append(metaEntry)
 
-        print metaDict[0]['src']['SourceFilename']
         gdalDataset = gdal.Open(metaDict[0]['src']['SourceFilename'])
-        VRT.__init__(self, gdalDataset)
+        VRT.__init__(self, srcGeoTransform=srcGeoTransform,
+                            srcProjection=srcProjection,
+                            srcRasterXSize=srcRasterXSize,
+                            srcRasterYSize=srcRasterYSize)
         self._create_bands(metaDict)
+
+    def get_proj4_from_ncvar(self, var):
+        projDict = {
+            'albers_conical_equal_area' : {
+                0: '+proj=aea',
+                'standard_parallel': '+lat_1',
+                'longitude_of_central_meridian': '+lon_0',
+                'latitude_of_projection_origin': '+lat_0',
+                'false_easting': '+x_0',
+                'false_northing': '+y_0',
+            },
+            'polar_stereographic' : {
+                0: '+proj=stere ',
+                'straight_vertical_longitude_from_pole': '+lon_0',
+                'latitude_of_projection_origin': '+lat_0',
+                'scale_factor_at_projection_origin': '+k_0',
+                'false_easting': '+x_0',
+                'false_northing': '+y_0',
+            },
+            'stereographic' : {
+                0: '+proj=stere ',
+                'longitude_of_projection_origin': '+lon_0',
+                'latitude_of_projection_origin': '+lat_0',
+                'scale_factor_at_projection_origin': '+k_0',
+                'false_easting': '+x_0',
+                'false_northing': '+y_0',
+            },
+            'latitude_longitude' : {
+                0: '+longlat ',
+            }
+        }
+        
+        attrs = var.ncattrs()
+        gmName = str(var.getncattr('grid_mapping_name'))
+        
+        if gmName in projDict:
+            projSubDict = projDict[gmName]
+            proj4 = projSubDict[0]
+            for projKey in projSubDict:
+                if projKey in attrs:
+                    proj4 += projSubDict[projKey] + '=' + str(var.getncattr(projKey)) + ' '
+        return proj4
+    
