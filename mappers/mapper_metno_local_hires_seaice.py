@@ -6,14 +6,12 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 # High resolution (1 km) manual ice concentration, based on SAR imagery
-# http://thredds.met.no/thredds/catalog/myocean/siw-tac/siw-metno-svalbard/
 #
-# Mapper may be called with full URL:
-#   'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-svalbard/2014/01/ice_conc_svalbard_201401091500.nc
-# or with keyword (fake filename):
-#   'metno_hires_seaice:20140109'
+# Mapper is called with keyword (fake filename):
+#   'metno_hires_seaice_20140109'
+# and [optional] keyword: iceFolder = <local folder where netCDF files with ice are stored>
 #
-# The latter syntax will construct the URL, and will return the closest available data within +/- 3 days
+# The closest available data within +/- 3 days is returned
 
 import sys
 import os
