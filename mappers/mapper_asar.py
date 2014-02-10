@@ -154,9 +154,6 @@ class Mapper(VRT, Envisat):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # set time
-        self._set_envisat_time(gdalMetadata)
-
         # add geolocation arrays
 
         if geolocation:
@@ -201,3 +198,6 @@ class Mapper(VRT, Envisat):
                    'suffix': 'VV'}
             self._create_band(srcFiles, dst)
             self.dataset.FlushCache()
+
+        # set time
+        self._set_envisat_time(gdalMetadata)
