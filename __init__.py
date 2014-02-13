@@ -18,6 +18,11 @@
 import warnings
 
 try:
+    from nsr import NSR
+except ImportError:
+    warnings.warn('''Cannot import NSR! Nansat will not work''')
+
+try:
     from domain import Domain
 except ImportError:
     warnings.warn('''Cannot import Domain! Nansat will not work''')
@@ -55,5 +60,5 @@ except ImportError:
 
 os.environ['LOG_LEVEL'] = '30'
 
-__all__ = ['Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
+__all__ = ['NSR', 'Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
            'np', 'plt', 'Basemap', 'Mosaic']
