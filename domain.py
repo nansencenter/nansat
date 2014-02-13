@@ -17,13 +17,16 @@
 
 from nansat_tools import *
 
-
 # import nansat parts
+try:
+    from nsr import NSR
+except ImportError:
+    warnings.warn('Cannot import nsr! Domain will not work.')
+
 try:
     from vrt import VRT
 except ImportError:
-    warnings.warn('Cannot import vrt!'
-                  'domain will not work.')
+    warnings.warn('Cannot import vrt! Domain will not work.')
 
 
 class Domain():
@@ -166,32 +169,16 @@ class Domain():
         if srs is not None:
             # if XML-file and domain name is given - read that file
             if isinstance(srs, str) and os.path.isfile(srs):
-                srs, ext, self.name = self._from_xml(srs, ext)
-            # import srs from srsString and get the projection
-            sr = osr.SpatialReference()
-            # try to use different import methods
-            # import from proj4 string
-            try:
-                status = sr.ImportFromProj4(srs)
-            except:
-                status = 1
-            # import from EPSG number
-            if status > 0:
-                try:
-                    status = sr.ImportFromEPSG(srs)
-                except:
-                    status = 1
-            # import from WKT text
-            if status > 0:
-                try:
-                    status = sr.ImportFromWkt(srs)
-                except:
-                    status = 1
-            # create WKT
-            dstWKT = sr.ExportToWkt()
-            # test success of WKT
-            if status > 0 or dstWKT == '':
+                srs, ext, self.name = self._from_xml(srs, ext)            
+
+            # create Spatial Reference object
+            nsr = NSR(srs)
+            
+            dstWKT = nsr.ExportToWkt()
+            if dstWKT == '':
                 raise ProjectionError('srs (%s) is wrong' % (srs))
+
+                
 
         # choose between input opitons:
         # ds
