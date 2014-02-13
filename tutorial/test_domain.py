@@ -43,16 +43,12 @@ reference of a raster:
 # -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
 d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
            "-te 25 70 35 72 -ts 2000 2000")
-d = Domain(4326, "-te 25 70 35 72 -ts 2000 2000")
+d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
 d.write_map(oFileName + '01_latlong_map.png')
 print 'Latlong Domain:', d, '\n'
 
 # write to KML
-#d.write_kml(kmlFileName=oFileName + '01_latlong_map.kml')
-
-# read from KML
-#d = Domain(oFileName + '01_latlong_map.kml')
-#print 'Domain from KML', d
+d.write_kml(kmlFileName=oFileName + '01_latlong_map.kml')
 
 # get shape
 print 'shape:', d.shape(), '\n'

@@ -167,18 +167,10 @@ class Domain():
 
         # if srs is given, convert it to WKT
         if srs is not None:
-            # if XML-file and domain name is given - read that file
-            if isinstance(srs, str) and os.path.isfile(srs):
-                srs, ext, self.name = self._from_xml(srs, ext)            
-
-            # create Spatial Reference object
-            nsr = NSR(srs)
-            
-            dstWKT = nsr.ExportToWkt()
+            # parse input and create WKT
+            dstWKT = NSR(srs).ExportToWkt()
             if dstWKT == '':
                 raise ProjectionError('srs (%s) is wrong' % (srs))
-
-                
 
         # choose between input opitons:
         # ds
@@ -630,51 +622,6 @@ class Domain():
             raise OptionError('Domain._create_extentDic():'
                               '"-ts" or "-tr" should be chosen.')
         return extentDic
-
-    def _from_xml(self, srsString, extentString):
-        ''' Read strings from the given xml file
-
-        Parameters
-        -----------
-        srsString : file name
-            name of the input XML-file
-        extentString : string
-            name of the domain
-
-        Returns
-        --------
-        srsString : string
-            proj4 string of the destination
-        extentString : string
-            extent string of the destination
-        name : string
-            domain name
-
-        Raises
-        -------
-        OptionError : occures when the given extentString is not in
-            the XML-file
-
-         '''
-        # open file
-        fd = file(srsString, 'rb')
-        # get root element
-        domains = ElementTree(file=fd).getroot()
-        fd.close()
-
-        # iterate over domains to find the required one
-        for domain in list(domains):
-            # if the domain name is the same as the given one
-            if domain.attrib['name'] == extentString:
-                # get contents of the tags
-                name = extentString[:]
-                srsString = domain.find('srsString').text
-                extentString = domain.find('extentString').text
-                break
-            if domain == list(domains)[-1]:
-                raise OptionError('extentString is improper')
-
-        return srsString, extentString, name
 
     def get_border(self, nPoints=10):
         '''Generate two vectors with values of lat/lon for the border of domain
