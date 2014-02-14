@@ -17,14 +17,8 @@
 
 from nansat_tools import *
 
-# import nansat parts
 try:
-    from nsr import NSR
-except ImportError:
-    warnings.warn('Cannot import nsr! Domain will not work.')
-
-try:
-    from vrt import VRT
+    from vrt import NSR, VRT
 except ImportError:
     warnings.warn('Cannot import vrt! Domain will not work.')
 

@@ -18,6 +18,11 @@ import tempfile
 
 from nansat_tools import *
 
+try:
+    from nsr import NSR
+except ImportError:
+    warnings.warn('Cannot import nsr! Domain will not work.')
+
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
