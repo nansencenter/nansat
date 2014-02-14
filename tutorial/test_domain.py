@@ -43,7 +43,15 @@ reference of a raster:
 # -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
 d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
            "-te 25 70 35 72 -ts 2000 2000")
+print d
+
 d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+print d
+
+d = Domain(4326, "-lle 25 70 35 72 -ts 500 500")
+print d
+
+
 d.write_map(oFileName + '01_latlong_map.png')
 print 'Latlong Domain:', d, '\n'
 
@@ -82,8 +90,16 @@ d.write_kml(kmlFileName=oFileName + '03_preview.kml')
 srsString = "+proj=stere +lon_0=5 +lat_0=60"
 extentString = '-te -1000000 -1000000 1000000 1000000 -tr 1000 1000'
 d = Domain(srsString, extentString)
-d.write_map(oFileName + '02_stereo_map.png')
+d.write_map(oFileName + '02_stereo_map_a.png')
 print 'Stereo Domain:', d, '\n'
+
+# -- Create Domain with stereographic projection and resolution 1000m
+srsString = "+proj=stere +lon_0=5 +lat_0=60"
+extentString = "-lle 25 70 35 72 -ts 500 500"
+d = Domain(srsString, extentString)
+d.write_map(oFileName + '02_stereo_map_b.png')
+print 'Stereo Domain:', d, '\n'
+
 
 
 print '\n*** domain_test completed successfully. Output files are found here:' + oFileName

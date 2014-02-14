@@ -37,6 +37,7 @@ class NSR(osr.SpatialReference, object):
         '''
         # create SRS
         osr.SpatialReference.__init__(self)
+        # parse input parameters
         status = 1
         if srs is 0:
             # generate default WGS84 SRS
@@ -53,3 +54,9 @@ class NSR(osr.SpatialReference, object):
         elif type(srs) in [osr.SpatialReference, NSR]:
             # parse from input Spatial Reference
             status = self.ImportFromWkt(srs.ExportToWkt())
+        
+        # set WKT
+        self.wkt = self.ExportToWkt()
+
+        # set validity
+        self.valid = self.wkt > ''

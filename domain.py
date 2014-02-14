@@ -166,11 +166,9 @@ class Domain():
                               'dataset, srs- and ext-strings.')
 
         # if srs is given, convert it to WKT
-        if srs is not None:
-            # parse input and create WKT
-            dstWKT = NSR(srs).ExportToWkt()
-            if dstWKT == '':
-                raise ProjectionError('srs (%s) is wrong' % (srs))
+        srs = NSR(srs)
+        if not srs.valid:
+            raise ProjectionError('srs (%s) is wrong' % (srs))
 
         # choose between input opitons:
         # ds
@@ -186,7 +184,7 @@ class Domain():
         # If dataset and srs are given (but not ext):
         #   use AutoCreateWarpedVRT to determine bounds and resolution
         elif ds is not None and srs is not None:
-            tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, dstWKT)
+            tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
             if tmpVRT is None:
                 raise ProjectionError('Could not warp the given dataset'
                                       'to the given SRS.')
@@ -200,14 +198,14 @@ class Domain():
 
             # convert -lle to -te
             if 'lle' in extentDic.keys():
-                extentDic = self._convert_extentDic(dstWKT, extentDic)
+                extentDic = self._convert_extentDic(srs, extentDic)
 
             # get size/extent from the created extet dictionary
             [geoTransform,
              rasterXSize, rasterYSize] = self._get_geotransform(extentDic)
             # create VRT object with given geo-reference parameters
             self.vrt = VRT(srcGeoTransform=geoTransform,
-                           srcProjection=dstWKT,
+                           srcProjection=srs.wkt,
                            srcRasterXSize=rasterXSize,
                            srcRasterYSize=rasterYSize)
             self.extentDic = extentDic
@@ -426,7 +424,7 @@ class Domain():
 
         return longitude, latitude
 
-    def _convert_extentDic(self, dstWKT, extentDic):
+    def _convert_extentDic(self, dstSRS, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
 
         Source SRS from LAT/LON projection and target SRS from dstWKT.
@@ -448,10 +446,6 @@ class Domain():
             input dictionary + 'te' key and its values
 
         '''
-        # Set destination SRS from dstWKT
-        dstSRS = osr.SpatialReference()
-        dstSRS.ImportFromWkt(dstWKT)
-
         coorTrans = osr.CoordinateTransformation(latlongSRS, dstSRS)
 
         # convert lat/lon given by 'lle' to the target coordinate system and
