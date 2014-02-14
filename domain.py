@@ -228,15 +228,12 @@ class Domain():
         Print size, projection and corner coordinates
 
         '''
-        toPrettyWKT = osr.SpatialReference()
-        toPrettyWKT.ImportFromWkt(self.vrt.get_projection())
-        prettyWKT = toPrettyWKT.ExportToPrettyWkt(1)
         corners = self.get_corners()
         outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
                                          self.vrt.dataset.RasterYSize)
         outStr += '-' * 40 + '\n'
         outStr += 'Projection:\n'
-        outStr += prettyWKT + '\n'
+        outStr += NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n'
         outStr += '-' * 40 + '\n'
         outStr += 'Corners (lon, lat):\n'
         outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
