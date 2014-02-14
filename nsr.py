@@ -73,12 +73,18 @@ class NSR(osr.SpatialReference, object):
             if status > 0:
                 # parse as WKT string
                 status = self.ImportFromWkt(str(srs))
+            if status > 0:
+                raise ProjectionError('Proj4 or WKT (%s) is wrong' % srs)
         elif type(srs) in [long, int]:
             # parse as EPSG code
             status = self.ImportFromEPSG(srs)
+            if status > 0:
+                raise ProjectionError('EPSG %d is wrong' % srs)
         elif type(srs) in [osr.SpatialReference, NSR]:
             # parse from input Spatial Reference
             status = self.ImportFromWkt(srs.ExportToWkt())
+            if status > 0:
+                raise ProjectionError('NSR %s is wrong' % srs)
         
         # set WKT
         self.wkt = self.ExportToWkt()

@@ -7,7 +7,7 @@
 
 #import os
 from vrt import *
-from nansat_tools import Node, latlongSRS
+from nansat_tools import Node
 import numpy as np
 
 
@@ -179,7 +179,7 @@ class Mapper(VRT):
         if len(projection) == 0:
             # no projection was found in dataset or metadata:
             # generate WGS84 by default
-            projection = latlongSRS.ExportToWkt()
+            projection = NSR().wkt
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
 

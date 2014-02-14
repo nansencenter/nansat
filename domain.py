@@ -138,11 +138,6 @@ class Domain():
             raise OptionError('Ambiguous specification of both '
                               'dataset, srs- and ext-strings.')
 
-        # if srs is given, convert it to WKT
-        srs = NSR(srs)
-        if not srs.valid:
-            raise ProjectionError('srs (%s) is wrong' % (srs))
-
         # choose between input opitons:
         # ds
         # ds and srs
@@ -157,6 +152,7 @@ class Domain():
         # If dataset and srs are given (but not ext):
         #   use AutoCreateWarpedVRT to determine bounds and resolution
         elif ds is not None and srs is not None:
+            srs = NSR(srs)
             tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
             if tmpVRT is None:
                 raise ProjectionError('Could not warp the given dataset'
@@ -166,6 +162,7 @@ class Domain():
 
         # If SpatialRef and extent string are given (but not dataset)
         elif srs is not None and ext is not None:
+            srs = NSR(srs)
             # create full dictionary of parameters
             extentDic = self._create_extentDic(ext)
 

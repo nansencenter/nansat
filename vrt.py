@@ -1725,8 +1725,8 @@ class VRT():
         '''
 
         # Make tranformer from GCP SRS to destination SRS
-        dstSRS = NSR(dstSRS)
-        srcSRS = NSR(self.dataset.GetGCPProjection())
+        dstSRS = osr.SpatialReference(NSR(dstSRS).wkt)
+        srcSRS = osr.SpatialReference(self.dataset.GetGCPProjection())
         transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
 
         # Reproject all GCPs
