@@ -23,6 +23,13 @@ import math
 
 # import nansat parts
 try:
+    from nsr import NSR
+except ImportError:
+    warnings.warn('Cannot import NSR!'
+                  'Nansat will not work.')
+
+# import nansat parts
+try:
     from domain import Domain
 except ImportError:
     warnings.warn('Cannot import Domain!'
@@ -1384,9 +1391,6 @@ class Nansat(Domain):
             points = tuple(browser.coordinates)
             latlon = False
 
-        # get wkt
-        wkt = self.vrt.get_projection()
-
         pixlinCoord = np.array([[], []])
         for iPoint in range(len(points)):
             # if one point is given
@@ -1494,9 +1498,7 @@ class Nansat(Domain):
             for i, iBand in enumerate(bandList):
                 fieldValues['transect_' + str(iBand)] = transect[i]
             # Create Nansatshape object
-            srs = osr.SpatialReference()
-            srs.ImportFromWkt(wkt)
-            NansatOGR = Nansatshape(srs=srs)
+            NansatOGR = Nansatshape(NSR(self.vrt.get_projection()))
             # Set features and geometries into the Nansatshape
             NansatOGR.add_features(coordinates=[lonVector, latVector],
                                    values=fieldValues,
@@ -1643,17 +1645,14 @@ class Nansat(Domain):
         if len(gcps) > 0:
             dstGCPs = []
             # create new 100 GPCs (10 x 10 regular matrix)
-            srcGCPProjectionWKT = self.vrt.dataset.GetGCPProjection()
             for newPix in np.r_[0:xSize:10j]:
                 for newLin in np.r_[0:ySize:10j]:
                     newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
                     dstGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
             # set new GCPss
-            self.vrt.dataset.SetGCPs(dstGCPs, latlongSRS.ExportToWkt())
+            self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
             # reproject new GCPs to the SRS of original GCPs
-            dstSRS = osr.SpatialReference()
-            dstSRS.ImportFromWkt(srcGCPProjectionWKT)
-            self.vrt.reproject_GCPs(dstSRS.ExportToProj4())
+            self.vrt.reproject_GCPs(NSR(self.vrt.dataset.GetGCPProjection()))
             # remove geotranform which was automatically added
             self.vrt._remove_geotransform()
         else:
