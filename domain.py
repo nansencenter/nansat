@@ -88,29 +88,8 @@ class Domain():
 
         Parameters
         ----------
-        srs : PROJ4 or EPSG or WKT
-            Specifies spatial reference system (SRS)
-            PROJ4:
-            string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
-            '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
-            '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10
-             +no_defs'
-            EPSG:
-            integer with EPSG number, [http://spatialreference.org/],
-            e.g. 4326
-            WKT:
-            string with Well Know Text of SRS. E.g.:
-            'GEOGCS["WGS 84",
-                DATUM["WGS_1984",
-                    SPHEROID["WGS 84",6378137,298.257223563,
-                        AUTHORITY["EPSG","7030"]],
-                    TOWGS84[0,0,0,0,0,0,0],
-                    AUTHORITY["EPSG","6326"]],
-                PRIMEM["Greenwich",0,
-                    AUTHORITY["EPSG","8901"]],
-                UNIT["degree",0.0174532925199433,
-                    AUTHORITY["EPSG","9108"]],
-                AUTHORITY["EPSG","4326"]]'
+        srs : PROJ4 or EPSG or WKT or NSR or osr.SpatialReference()
+            Input parameter for nansat.NSR()
         ext : string
             some gdalwarp options + additional options
             [http://www.gdal.org/gdalwarp.html]
@@ -191,7 +170,7 @@ class Domain():
             else:
                 self.vrt = VRT(gdalDataset=tmpVRT)
 
-        # If proj4 and extent string are given (but not dataset)
+        # If SpatialRef and extent string are given (but not dataset)
         elif srs is not None and ext is not None:
             # create full dictionary of parameters
             extentDic = self._create_extentDic(ext)
@@ -435,8 +414,8 @@ class Domain():
 
         Parameters
         -----------
-        dstWKT : WKT
-            destination WKT
+        dstSRS : NSR
+            Destination Spatial Reference
         extentDic : dictionary
             dictionary with 'lle' key
 
@@ -446,7 +425,7 @@ class Domain():
             input dictionary + 'te' key and its values
 
         '''
-        coorTrans = osr.CoordinateTransformation(latlongSRS, dstSRS)
+        coorTrans = osr.CoordinateTransformation(NSR(), dstSRS)
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic

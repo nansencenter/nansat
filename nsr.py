@@ -27,16 +27,41 @@ class NSR(osr.SpatialReference, object):
         
         Input
         -----
-        srs : 0, None, WKT, proj4, int, osr.SpatialReference, NSR
-            0: default WGS 84 SRS is generated
-            None: None is created
-            string: parsed as proj4 or WKT
-            integerer: parsed as EPSG code
-            osr.SpatialReference or NSR: same as input
-            
+        srs : 0, PROJ4 or EPSG or WKT or osr.SpatialReference, NSR
+            Specifies spatial reference system (SRS)
+            PROJ4:
+            string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
+            '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
+            '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10
+             +no_defs'
+            EPSG:
+            integer with EPSG number, [http://spatialreference.org/],
+            e.g. 4326
+            WKT:
+            string with Well Know Text of SRS. E.g.:
+            'GEOGCS["WGS 84",
+                DATUM["WGS_1984",
+                    SPHEROID["WGS 84",6378137,298.257223563,
+                        AUTHORITY["EPSG","7030"]],
+                    TOWGS84[0,0,0,0,0,0,0],
+                    AUTHORITY["EPSG","6326"]],
+                PRIMEM["Greenwich",0,
+                    AUTHORITY["EPSG","8901"]],
+                UNIT["degree",0.0174532925199433,
+                    AUTHORITY["EPSG","9108"]],
+                AUTHORITY["EPSG","4326"]]'            
+
+        See Also
+        ---------
+        [http://www.gdal.org/gdalwarp.html]
+        [http://trac.osgeo.org/proj/]
+        [http://spatialreference.org/]
+        [http://www.gdal.org/ogr/osr_tutorial.html]
+
         '''
         # create SRS
         osr.SpatialReference.__init__(self)
+
         # parse input parameters
         status = 1
         if srs is 0:
