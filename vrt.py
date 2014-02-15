@@ -1622,7 +1622,8 @@ class VRT():
         srcWKT = self.get_projection()
 
         # prepare options
-        options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
+        #options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
+        options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + srcWKT]
         if self.tps:
             options += 'METHOD=GCP_TPS'
         
