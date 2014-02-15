@@ -9,7 +9,7 @@
 
 from numpy import array, arange
 from datetime import datetime
-from vrt import *
+from nansat.vrt import *
 from nansat_tools import Node
 
 

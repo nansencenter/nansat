@@ -5,7 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import *
+from nansat.vrt import *
 from nansat_tools import Node, latlongSRS
 import numpy as np
 import mapper_generic as mg

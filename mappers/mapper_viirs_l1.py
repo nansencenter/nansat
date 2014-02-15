@@ -6,7 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 import glob
-from vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
+from nansat.vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
 from datetime import datetime, timedelta
 from math import ceil
 from scipy.ndimage.filters import gaussian_filter

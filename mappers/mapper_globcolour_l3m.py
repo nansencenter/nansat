@@ -13,7 +13,7 @@ import gdal
 
 import numpy as np
 
-from vrt import VRT, GeolocationArray
+from nansat.vrt import VRT, GeolocationArray
 from globcolour import Globcolour
 
 

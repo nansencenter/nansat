@@ -8,7 +8,7 @@
 
 from datetime import datetime, timedelta
 import numpy as np
-import vrt
+import nansat.vrt
 from nansat_tools import latlongSRS
 
 

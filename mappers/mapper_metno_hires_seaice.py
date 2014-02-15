@@ -18,7 +18,7 @@
 import sys
 import urllib2
 from datetime import datetime, timedelta
-from vrt import *
+from nansat.vrt import *
 import osr
 
 try:

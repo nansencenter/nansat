@@ -12,7 +12,7 @@ from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
 
-from vrt import VRT, GeolocationArray
+from nansat.vrt import VRT, GeolocationArray
 from globcolour import Globcolour
 
 
