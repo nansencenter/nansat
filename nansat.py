@@ -1502,9 +1502,8 @@ class Nansat(Domain):
             # Create Nansatshape object
             NansatOGR = Nansatshape(srs=NSR(self.vrt.get_projection()))
             # Set features and geometries into the Nansatshape
-            NansatOGR.add_features(coordinates=[lonVector, latVector],
-                                   values=fieldValues,
-                                   AddPixLine=False)
+            NansatOGR.add_features(coordinates=np.array([lonVector, latVector]),
+                                   values=fieldValues)
             # Return Nansatshape object
             return NansatOGR
         else:

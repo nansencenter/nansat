@@ -165,11 +165,11 @@ n.undo(100)
 # Get transect of the 1st and 2nd bands corresponding to the given points
 points=((29.287, 71.153),
         (29.275, 71.145),
-        (29.210, 71.154)),
+        (29.210, 71.154))
+#import pdb; pdb.set_trace()
 values, lonlat, pixlinCoord = n.get_transect(points,
                                              transect=False,
                                              bandList=[1, 2])
-ogrObject = n.get_transect(points, returnOGR=True)
 # print the results
 print '1stBandVal  2ndBandVal       pix/lin         lon/lat '
 for i in range (len(values[0])):
@@ -180,5 +180,8 @@ for i in range (len(values[0])):
                                                     lonlat[0][i],
                                                     lonlat[1][i])
 print ''
+
+ogrObject = n.get_transect(points, returnOGR=True)
+ogrObject.export(oFileName + '_10_transect.shp')
 
 print '\n***nansat_test completed successfully. Output files are found here:' + oFileName
