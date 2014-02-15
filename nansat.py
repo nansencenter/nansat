@@ -21,34 +21,36 @@ from nansat_tools import *
 import scipy
 import math
 
+
+
 # import nansat parts
 try:
-    from nsr import NSR
+    from .nsr import NSR
 except ImportError:
     warnings.warn('Cannot import NSR!'
                   'Nansat will not work.')
 
 # import nansat parts
 try:
-    from domain import Domain
+    from .domain import Domain
 except ImportError:
     warnings.warn('Cannot import Domain!'
                   'Nansat will not work.')
 
 try:
-    from figure import Figure
+    from .figure import Figure
 except ImportError:
     warnings.warn('Cannot import Figure!'
                   'Nansat will not work.')
 
 try:
-    from vrt import VRT
+    from .vrt import VRT
 except ImportError:
     warnings.warn('Cannot import VRT!'
                   'Nansat will not work.')
 
 try:
-    from nansatshape import Nansatshape
+    from .nansatshape import Nansatshape
 except ImportError:
     warnings.warn('Cannot import NansatOGR!'
                   'Nansat will not work.')
@@ -1652,7 +1654,9 @@ class Nansat(Domain):
             # set new GCPss
             self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
             # reproject new GCPs to the SRS of original GCPs
-            self.vrt.reproject_GCPs(NSR(self.vrt.dataset.GetGCPProjection()))
+            #import pdb; pdb.set_trace()
+            nsr = NSR(self.vrt.dataset.GetGCPProjection())
+            self.vrt.reproject_GCPs(nsr)
             # remove geotranform which was automatically added
             self.vrt._remove_geotransform()
         else:

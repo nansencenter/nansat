@@ -19,9 +19,9 @@ import tempfile
 from nansat_tools import *
 
 try:
-    from nsr import NSR
+    from .nsr import NSR
 except ImportError:
-    warnings.warn('Cannot import nsr! Domain will not work.')
+    warnings.warn('Cannot import nsr! VRT will not work.')
 
 
 class GeolocationArray():
@@ -1723,10 +1723,9 @@ class VRT():
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
         '''
-
         # Make tranformer from GCP SRS to destination SRS
-        dstSRS = osr.SpatialReference(NSR(dstSRS).wkt)
-        srcSRS = osr.SpatialReference(self.dataset.GetGCPProjection())
+        dstSRS = NSR(dstSRS)
+        srcSRS = NSR(self.dataset.GetGCPProjection())
         transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
 
         # Reproject all GCPs

@@ -16,15 +16,22 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-from nansat import NSR
+from nansat import osr, NSR
 
-print 'NSR(None)', NSR(None)
-print 'NSR()', NSR()
-print 'NSR(+proj=longlat)', NSR('+proj=longlat')
-print 'NSR(crap)', NSR('crap')
-print 'NSR(osr.SRS_WKT_WGS84)', NSR(osr.SRS_WKT_WGS84)
-print 'NSR(4326)', NSR(4326)
-print 'NSR(NSR(4326))', NSR(NSR(4326))
-print 'NSR(+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs)', NSR('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
+print 'NSR(None)', NSR(None), '\n\n\n'
+print 'NSR()', NSR(), '\n\n\n'
+print 'NSR(+proj=longlat)', NSR('+proj=longlat'), '\n\n\n'
+try:
+    n = NSR('crap')
+except:
+    print 'NSR(crap) raises Error', '\n\n\n'
+else:
+    print n, '\n\n\n'
+print 'NSR(osr.SRS_WKT_WGS84)', NSR(osr.SRS_WKT_WGS84), '\n\n\n'
+print 'NSR(4326)', NSR(4326), '\n\n\n'
+srs = osr.SpatialReference(NSR(4326).wkt)
+print 'NSR(osr.SpatialReference())', NSR(srs), '\n\n\n'
+print 'NSR(NSR(4326))', NSR(NSR(4326)), '\n\n\n'
+print 'NSR(+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs)', NSR('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs'), '\n\n\n'
 
-print '\n*** nsr_test completed successfully. Output files are found here:' + oFileName
+print '\n*** nsr_test completed successfully.\n\n\n'

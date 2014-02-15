@@ -18,47 +18,46 @@
 import warnings
 
 try:
-    from nsr import NSR
+    from .nsr import NSR
 except ImportError:
     warnings.warn('''Cannot import NSR! Nansat will not work''')
 
 try:
-    from domain import Domain
+    from .domain import Domain
 except ImportError:
     warnings.warn('''Cannot import Domain! Nansat will not work''')
 
 try:
-    from nansat import Nansat
+    from .nansat import Nansat
 except ImportError:
     warnings.warn('''Cannot import VRT! Nansat will not work''')
 
 try:
-    from figure import Figure
+    from .figure import Figure
 except ImportError:
     warnings.warn('''Cannot import Figure! Nansat will not work''')
 
 try:
-    from nansatmap import Nansatmap
+    from .nansatmap import Nansatmap
 except ImportError:
     warnings.warn('''Cannot import Nansatmap! Nansat will not work''')
 
 try:
-    from nansatshape import Nansatshape
+    from .nansatshape import Nansatshape
 except ImportError:
     warnings.warn('''Cannot import NansatOGR! Nansat will not work''')
 
-
 try:
-    from nansat_tools import np, plt, Basemap, os
+    from nansat_tools import np, plt, Basemap, os, osr, ogr, gdal
 except ImportError:
     warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
 
 try:
-    from mosaic import Mosaic
+    from .mosaic import Mosaic
 except ImportError:
     warnings.warn('''Cannot import Mosaic! Mosaic will not work''')
 
 os.environ['LOG_LEVEL'] = '30'
 
 __all__ = ['NSR', 'Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
-           'np', 'plt', 'Basemap', 'Mosaic']
+           'Mosaic', 'np', 'plt', 'Basemap', 'gdal', 'ogr', 'osr']

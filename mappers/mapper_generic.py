@@ -6,10 +6,10 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 #import os
-from vrt import *
+from nansat.nsr import NSR
+from nansat.vrt import *
 from nansat_tools import Node
 import numpy as np
-
 
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,

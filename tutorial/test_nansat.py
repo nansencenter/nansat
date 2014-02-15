@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from scipy.io import savemat
 import os
 
-from nansat import Nansat, Domain
+from nansat import *
 
 # input and output file names
 from testio import testio
@@ -133,6 +133,7 @@ n.export(oFileName + '06b.nc', bottomup=True)
 # create a GTiff file with one band (default driver is NetCDF)
 n.export_band(oFileName + '07.tif', bandID=1, driver='GTiff')
 
+n.crop(lonlim=[28, 29], latlim=[70.7, 71])
 # get array with watermask (landmask)
 # -- Get Nansat object with watermask
 wm = n.watermask()[1]

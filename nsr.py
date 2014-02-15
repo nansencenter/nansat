@@ -15,7 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-from nansat_tools import osr
+from nansat_tools import ProjectionError, osr
 
 class NSR(osr.SpatialReference, object):
     '''Nansat Spatial Reference
@@ -88,6 +88,3 @@ class NSR(osr.SpatialReference, object):
         
         # set WKT
         self.wkt = self.ExportToWkt()
-
-        # set validity
-        self.valid = self.wkt > ''
