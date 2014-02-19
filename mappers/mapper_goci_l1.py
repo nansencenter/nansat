@@ -5,7 +5,7 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import VRT, gdal, osr, parse
+from nansat.vrt import VRT, gdal, osr, parse
 
 
 class Mapper(VRT):

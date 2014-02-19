@@ -12,7 +12,7 @@ import os.path
 import datetime
 import gdal
 
-from vrt import VRT, GeolocationArray
+from nansat.vrt import VRT, GeolocationArray
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV '''

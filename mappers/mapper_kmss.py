@@ -15,8 +15,8 @@ try:
 except ImportError:
     import gdal
 
-from vrt import *
-from domain import Domain
+from nansat.vrt import *
+from nansat.domain import Domain
 
 
 class Mapper(VRT):

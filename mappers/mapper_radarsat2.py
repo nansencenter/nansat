@@ -10,8 +10,8 @@ from math import asin
 import tarfile
 import zipfile
 
-from vrt import *
-from domain import Domain
+from nansat.vrt import *
+from nansat.domain import Domain
 from nansat_tools import Node
 
 try:

@@ -7,7 +7,7 @@
 
 from dateutil.parser import parse
 import struct
-from vrt import VRT, GeolocationArray
+from nansat.vrt import VRT, GeolocationArray
 import gdal
 import numpy as np
 import scipy.ndimage

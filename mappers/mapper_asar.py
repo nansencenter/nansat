@@ -5,9 +5,9 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import VRT
+from nansat.vrt import VRT
 from envisat import Envisat
-from domain import Domain
+from nansat.domain import Domain
 import numpy as np
 
 

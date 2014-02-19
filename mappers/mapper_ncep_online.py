@@ -7,7 +7,7 @@
 #
 # Made for GRIB files downloaded from http://nomads.ncep.noaa.gov/data/gfs4/
 
-from vrt import VRT, datetime
+from nansat.vrt import VRT, datetime
 
 
 class Mapper(VRT):
