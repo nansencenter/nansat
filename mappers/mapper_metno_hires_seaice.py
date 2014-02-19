@@ -51,10 +51,9 @@ class Mapper(VRT):
                     foundDataset = False
                     pass # No data for this day
 
-            if foundDataset is False:
-                AttributeError("Not Met.no Svalbard-ice Thredds URL")
-                sys.exit()
-
+        if foundDataset is False:
+            AttributeError("Not Met.no Svalbard-ice Thredds URL")
+            sys.exit()
 
         # Then check if a valid OPeNDAP URL is given (or has been constructed from keyword)
         if fileName[0:len(ThreddsBase)] != ThreddsBase:
