@@ -10,8 +10,10 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata,
                  GCP_COUNT=10, **kwargs):
 
+        # quit if file is not online
         assert fileName[:7] == 'http://'
 
+        # open file through OpenDAP using netCDF4 library
         f = Dataset(fileName)
 
         # assume CF-compatibility:
@@ -20,6 +22,7 @@ class Mapper(VRT):
         # find grid_mapping_name
         # and get all parameters
         # generate proj4 and WKT strings
+        srcProjection = ''
         for varName in f.variables:
             var = f.variables[varName]
             attrs = var.ncattrs()
@@ -57,7 +60,7 @@ class Mapper(VRT):
         # and/or
         # etc
 
-        # assign time, x, y dimension names
+        # assign x, y dimension names
         xDim = 'None'
         yDim = 'None'
         for dim in validDims:
@@ -65,7 +68,7 @@ class Mapper(VRT):
                 xDim = dim
             if 'y' in dim or 'lat' in dim or 'north' in dim:
                 yDim = dim
-        
+
         # get X/Y size
         var0 = f.variables[validVars[0]]
         xDimI = var0.dimensions.index(xDim)
@@ -144,7 +147,6 @@ class Mapper(VRT):
             
                 metaDict.append(metaEntry)
 
-        gdalDataset = gdal.Open(metaDict[0]['src']['SourceFilename'])
         VRT.__init__(self, srcGeoTransform=srcGeoTransform,
                             srcProjection=srcProjection,
                             srcRasterXSize=srcRasterXSize,
