@@ -41,11 +41,13 @@ mosaicing methods:
 '''
 
 # Create target domain
-domain = Domain(4326, '-lle 27 70 31 72 -ts 1400 1300')
+domain = Domain(4326, '-lle 27 70 31 72 -ts 700 650')
 
+
+print '\n\n\n ============== AVERAGE =============\n\n\n'
 # A. Perform averaging of several files
 # 1. Create destination Nansat object with desired projection
-nMosaic = Mosaic(domain=domain)
+nMosaic = Mosaic(domain=domain, logLevel=10)
 # 2. Perfom averaging
 nMosaic.average(iFileNames, bands=['L_645', 'L_555', 'L_469'])
 # 3. Get mask of valid pixels
@@ -59,19 +61,22 @@ nMosaic.write_figure(fileName=oFileName + '.png',
 # 5. Get values of standard deviation from averaging of input files
 L_469_std = nMosaic['L_469_std']
 
+print '\n\n\n ============== MEDIAN =============\n\n\n'
 # B. calculate median from the first band (very slow thus comented)
-#nMosaic.median(['gcps.tif', 'stere.tif'])
+nMosaic.median(iFileNames)
 
+print '\n\n\n ============== LATEST =============\n\n\n'
 # C. fill the result with the latest image
 nMosaic.latest(iFileNames)
 
 # D. Average only files that fall within given period
 # create new Mosaic
-nMosaic = Mosaic(domain=domain, logLevel=0)
+nMosaic = Mosaic(domain=domain, logLevel=10)
 # define period
 period = [dt.datetime(2011, 8, 15, 0, 0), dt.datetime(2011, 8, 15, 23, 59)]
 # run averaging of only files within period.
 # Only gcps.tif will be averaged since stere.tif has no time information
+print '\n\n\n ============== AVERAGE WITHIN PERIOD =============\n\n\n'
 nMosaic.average(iFileNames, period=period)
 
 print '\n*** mosaic_test completed successfully. Output files are found here:' + oFileName
