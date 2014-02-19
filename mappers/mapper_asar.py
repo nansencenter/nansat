@@ -5,9 +5,9 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import VRT
+from nansat.vrt import VRT
 from envisat import Envisat
-from domain import Domain
+from nansat.domain import Domain
 import numpy as np
 
 
@@ -154,9 +154,6 @@ class Mapper(VRT, Envisat):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # set time
-        self._set_envisat_time(gdalMetadata)
-
         # add geolocation arrays
 
         if geolocation:
@@ -201,3 +198,6 @@ class Mapper(VRT, Envisat):
                    'suffix': 'VV'}
             self._create_band(srcFiles, dst)
             self.dataset.FlushCache()
+
+        # set time
+        self._set_envisat_time(gdalMetadata)

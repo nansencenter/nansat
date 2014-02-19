@@ -5,7 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import VRT, osr, os
+from nansat.vrt import VRT, osr, os
 
 import numpy as np
 from scipy.io import loadmat

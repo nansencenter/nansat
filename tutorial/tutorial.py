@@ -5,7 +5,6 @@
 # This file is part of NANSAT. You can redistribute it or modify
 # under the terms of GNU General Public License, v.3
 # http://www.gnu.org/licenses/gpl-3.0.html
-
 import matplotlib.pyplot as plt
 import os
 
@@ -46,11 +45,14 @@ n.export(oFileName + '.nc')
 values, lonlat, pixlinCoord = n.get_transect()
 plt.plot(lonlat[0], values[0], '.-'); plt.show()
 
+
 # run tests of other nansat components
 import test_domain
 import test_nansat
 import test_figure
 import test_nansatmap
 import test_nansatshape
-import test_mosaic
+import test_mosaic; test_mosaic.main() # run this way due to multiprocessing
 import test_pointbrowser
+
+

@@ -11,7 +11,7 @@
 import sys
 import struct
 import datetime
-from vrt import *
+from nansat.vrt import *
 
 dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
 dataSetQualityIndicatorOffset = 114

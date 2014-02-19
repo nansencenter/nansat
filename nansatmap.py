@@ -15,6 +15,8 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+
+from .nsr import NSR
 from nansat_tools import *
 
 
@@ -86,10 +88,7 @@ class Nansatmap(Basemap):
         self.domain = domain
 
         # get proj4
-        spatialRef = osr.SpatialReference()
-        projection = domain.vrt.get_projection()
-        spatialRef.ImportFromWkt(projection)
-        proj4 = spatialRef.ExportToProj4()
+        proj4 = NSR(domain.vrt.get_projection()).ExportToProj4()
 
         # convert proj4 to basemap projection
         projStr = proj4.split(' ')[0][6:]

@@ -9,7 +9,7 @@
 # NB: Band numbers is hardcoded for band subsets extracted at NERSC,
 # mapper will not work for other NCEP GFS files before made more generic
 
-from vrt import VRT, datetime
+from nansat.vrt import VRT, datetime
 
 
 class Mapper(VRT):

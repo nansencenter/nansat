@@ -11,7 +11,7 @@
 import sys
 import struct
 import datetime
-from vrt import *
+from nansat.vrt import *
 
 satIDs = {4: 'NOAA-15', 2: 'NOAA-16', 6: 'NOAA-17', 7: 'NOAA-18', 8: 'NOAA-19',
           11: 'Metop-B (Metop-1)', 12: 'Metop-A (Metop-2)',
