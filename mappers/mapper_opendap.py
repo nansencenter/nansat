@@ -1,4 +1,4 @@
-from vrt import VRT, gdal, osr, latlongSRS, np
+from nansat.vrt import VRT, gdal, osr, NSR, np
 from netCDF4 import Dataset
 
 #f = Dataset()
@@ -28,8 +28,7 @@ class Mapper(VRT):
             attrs = var.ncattrs()
             if 'grid_mapping_name' in attrs:
                 proj4str = self.get_proj4_from_ncvar(var)
-                latlongSRS.ImportFromProj4(proj4str)
-                srcProjection = latlongSRS.ExportToWkt()
+                srcProjection = NSR(proj4str).wkt
                 break
 
         print 'WKT:', srcProjection
