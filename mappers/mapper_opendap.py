@@ -33,19 +33,27 @@ class Mapper(VRT):
 
         print 'WKT:', srcProjection
         
-        # find bands with grid_mapping
-        validVars = []
-        validDims = []
-        for varName in f.variables:
-            var = f.variables[varName]
-            attrs = var.ncattrs()
-            if 'grid_mapping' in attrs:
-                validVars.append(str(varName))
-                for dim in var.dimensions:
-                    validDims.append(str(dim))
+        # if grid_mapping_name is found: find all bands that have grid_mapping
+        # else: find lon/lat variables that have 1D
         
-        validDims = list(set(validDims))
-        print validVars, validDims
+        if srcProjection != ''
+            # find bands with grid_mapping
+            validVars = []
+            validDims = []
+            for varName in f.variables:
+                var = f.variables[varName]
+                attrs = var.ncattrs()
+                if 'grid_mapping' in attrs:
+                    validVars.append(str(varName))
+                    for dim in var.dimensions:
+                        validDims.append(str(dim))
+            
+            validDims = list(set(validDims))
+            print validVars, validDims
+            
+        else:
+            # find 1D lon, lat (longitude, latitude) dims
+            for varName in f.variables:
         
         # assume NORMAP compatibility:
         # diemnsions should be
