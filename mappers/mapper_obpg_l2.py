@@ -5,7 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat.vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
+from nansat.vrt import GeolocationArray, VRT, gdal, osr, NSR
 from datetime import datetime, timedelta
 from math import ceil
 
@@ -232,6 +232,8 @@ class Mapper(VRT):
                           GCP_COUNT, step0, step1)
 
         # generate list of GCPs
+        dx = .5
+        dy = .5
         gcps = []
         k = 0
         for i0 in range(0, latitude.shape[0], step0):
@@ -240,7 +242,7 @@ class Mapper(VRT):
                 lon = float(longitude[i0, i1])
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
-                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep, i0 * lineStep)
+                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep + dx, i0 * lineStep + dy)
                     self.logger.debug('%d %d %d %f %f',
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)
@@ -248,4 +250,4 @@ class Mapper(VRT):
                     k += 1
 
         # append GCPs and lat/lon projection to the vsiDataset
-        self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
+        self.dataset.SetGCPs(gcps, NSR().wkt)
