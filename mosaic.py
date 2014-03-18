@@ -316,7 +316,7 @@ class Mosaic(Nansat):
         fQueue.join()
         
         # get data from result queue
-        cntMat, maskMat, avgMat, stdMat, fName  = matQueue.get()
+        cntMat, maskMat, avgMat, stdMat, fName = matQueue.get()
 
         # average products
         cntMat[cntMat == 0] = np.nan

@@ -276,6 +276,10 @@ class Nansat(Domain):
         # add the array band into self.vrt and get bandName
         bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
                                           'SourceBand': 1}, parameters)
+        # create subVRTs as dict
+        if self.vrt.subVRTs is None:
+            self.vrt.subVRTs = {}
+
         self.vrt.subVRTs[bandName] = bandVRT
         self.vrt.dataset.FlushCache()  # required after adding bands
 
