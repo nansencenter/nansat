@@ -182,7 +182,7 @@ class VRT():
     # main sub VRT
     vrt = None
     # other sub VRTs
-    subVRTs = {}
+    subVRTs = None
     # use Thin Spline Transformation of the VRT has GCPs?
     tps = False
 
