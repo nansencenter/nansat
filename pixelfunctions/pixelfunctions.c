@@ -1048,8 +1048,8 @@ double RawcountsIncidenceToSigma0Function(double *b){
 
 double Sigma0HHToSigma0VVFunction(double *b){
 	double pi = 3.14159265;
-        double s0hh, factor;
-        s0hh = RawcountsIncidenceToSigma0Function(b);
+    double s0hh, factor;
+    s0hh = (pow(b[0], 2.0) * sin(b[1] *  pi / 180.0));
 	/* Polarisation ratio from Thompson et al. with alpha=1 */
 	factor = pow( (1 + 2 * pow(tan(b[1]*pi/180.0), 2)) / (1 + 1 * pow(tan(b[1]*pi/180.0), 2)), 2);
 	return s0hh * factor;
