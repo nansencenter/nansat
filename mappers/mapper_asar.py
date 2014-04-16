@@ -1,6 +1,6 @@
 # Name:         mapper_asar.py
 # Purpose:      Mapper for Envisat/ASAR data
-# Authors:      Asuka Yamakava, Anton Korosov
+# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
@@ -9,7 +9,9 @@ from nansat import Nansat
 from nansat.vrt import VRT
 from envisat import Envisat
 from nansat.domain import Domain
+from nansat_tools import initial_bearing
 import numpy as np
+import scipy.ndimage
 
 
 class Mapper(VRT, Envisat):
@@ -79,25 +81,40 @@ class Mapper(VRT, Envisat):
         for iPolarization in polarization:
             metaDict.append({'src': {'SourceFilename': fileName,
                                      'SourceBand': iPolarization['bandNum']},
-                             'dst': {'short_name': 'RawCounts_%s'
+                             'dst': {'name': 'raw_counts_%s'
                                      % iPolarization['channel']}})
 
         # Add incidence angle through small Nansat object
         lon = self.get_array_from_ADS('first_line_longs')
         lat = self.get_array_from_ADS('first_line_lats')
         inc = self.get_array_from_ADS('first_line_incidence_angle')
-        n = Nansat(domain=Domain(lon=lon, lat=lat), array=inc)
+        ADS = Nansat(domain=Domain(lon=lon, lat=lat), array=inc)
+
+        # Calculate SAR look direction (ASAR is always right-looking)
+        SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
+                                             lon[:, 1:], lat[:, 1:])
+        # Interpolate to regain lost row
+        SAR_look_direction = scipy.ndimage.interpolation.zoom(
+                                SAR_look_direction, (1, 11./10.))
+        ADS.add_band(array=SAR_look_direction)
+
         # Reproject small array onto full SAR domain
-        n.reproject(Domain(ds=gdalDataset), eResampleAlg=1)
+        ADS.reproject(Domain(ds=gdalDataset), eResampleAlg=1)
         self.subVRTs = {}
-        self.subVRTs['incidence_angle'] = n.vrt
+        self.subVRTs['ADS_arrays'] = ADS.vrt
         # Add band to VRT
-        iaFileName = self.subVRTs['incidence_angle'].fileName
+        ADSFileName = self.subVRTs['ADS_arrays'].fileName
         metaDict.append({'src':
-                            {'SourceFilename': iaFileName,
+                            {'SourceFilename': ADSFileName,
                              'SourceBand': 1},
                          'dst':
-                            {'name': 'incidence_angle'}})
+                            {'wkv': 'angle_of_incidence'}})
+        metaDict.append({'src':
+                            {'SourceFilename': ADSFileName,
+                             'SourceBand': 2},
+                         'dst':
+                            {'wkv': 'sensor_azimuth_angle',
+                             'name': 'SAR_look_direction'}})
 
         if gotCalibration:
             for iPolarization in polarization:
@@ -109,7 +126,7 @@ class Mapper(VRT, Envisat):
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
                 sphPass = [gdalMetadata['SPH_PASS'], '', '']
-                sourceFileNames = [fileName, iaFileName]
+                sourceFileNames = [fileName, ADSFileName]
 
                 pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                       'Sigma0NormalizedIce']
