@@ -176,7 +176,7 @@
     <wkv>
         <standard_name>sensor_azimuth_angle</standard_name>
         <long_name>Sensor Azimuth Angle</long_name>
-        <short_name>sensor_azimuth</short_name>
+        <short_name>sat_azimuth</short_name>
         <units>degrees</units>
         <minmax>0 360</minmax>
         <colormap>jet</colormap>
