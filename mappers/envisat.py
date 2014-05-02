@@ -223,9 +223,7 @@ class Envisat():
         # adjust the scale
         if '(10)^-6' in adsParams['units']:
             array /= 1000000.0
-            # Commenting out line below, otherwise subsequent calls for lon and lat
-            # results in modified unit, and hence necessary scaling is not performed
-            #adsParams['units'] = adsParams['units'].replace('(10)^-6 ', '')
+            adsParams['units'] = adsParams['units'].replace('(10)^-6 ', '')
 
         # reshape the array into 2D matrix
         array = array.reshape(adsHeight, adsWidth)
