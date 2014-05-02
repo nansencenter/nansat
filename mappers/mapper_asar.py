@@ -84,9 +84,7 @@ class Mapper(VRT, Envisat):
                              'dst': {'name': 'raw_counts_%s'
                                      % iPolarization['channel']}})
 
-        #####################################################################
-        # Add incidence angle and look direction through small Nansat object
-        #####################################################################
+        # Add incidence angle through small Nansat object
         lon = self.get_array_from_ADS('first_line_longs')
         lat = self.get_array_from_ADS('first_line_lats')
         inc = self.get_array_from_ADS('first_line_incidence_angle')
@@ -97,22 +95,10 @@ class Mapper(VRT, Envisat):
                                              lon[:, 1:], lat[:, 1:])
         # Interpolate to regain lost row
         SAR_look_direction = scipy.ndimage.interpolation.zoom(
-                                SAR_look_direction, (1, 11./10.)) 
-        # Decompose, to avoid interpolation errors around 0 <-> 360
-        SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
-        SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
-        ADS.add_band(array=SAR_look_direction_u)
-        ADS.add_band(array=SAR_look_direction_v)
-        ADS.vrt._create_band(
-                [{'SourceFilename': ADS.vrt.fileName, 'SourceBand': 2},
-                 {'SourceFilename': ADS.vrt.fileName, 'SourceBand': 3}],
-                 {'PixelFunctionType': 'UVToDirectionTo'})
-        x = ADS[4][0][0] # necessary, for some strange reason!
+                                SAR_look_direction, (1, 11./10.))
+        ADS.add_band(array=SAR_look_direction)
 
         # Reproject small array onto full SAR domain
-        # Reproject first GCPs for better accuracy 
-        ADS.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0='+
-                str(lat[0][0]) + ' +lon_0=' + str(lon[0][0]))
         ADS.reproject(Domain(ds=gdalDataset), eResampleAlg=1)
         self.subVRTs = {}
         self.subVRTs['ADS_arrays'] = ADS.vrt
@@ -125,17 +111,14 @@ class Mapper(VRT, Envisat):
                             {'wkv': 'angle_of_incidence'}})
         metaDict.append({'src':
                             {'SourceFilename': ADSFileName,
-                             'SourceBand': 4},
+                             'SourceBand': 2},
                          'dst':
                             {'wkv': 'sensor_azimuth_angle',
                              'name': 'SAR_look_direction'}})
 
-        ####################
-        # Add Sigma0-bands
-        ####################
         if gotCalibration:
             for iPolarization in polarization:
-                # add dictionary for sigma0, ice and water
+                # add dicrtionary for sigma0, ice and water
                 short_names = ['sigma0', 'sigma0_normalized_ice',
                                'sigma0_normalized_water']
                 wkt = [
@@ -177,10 +160,21 @@ class Mapper(VRT, Envisat):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # Add oribit and look information to metadata domain
+        # Add SAR look direction to metadata domain
         self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')  # ASAR is always right-looking
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
                                      gdalMetadata['SPH_PASS'].upper())
+
+        # "SAR_center_look_direction" below is obsolete, and may soon be deleted
+        #
+        # Note that this is the look direction in the center of the domain. For
+        # longer domains, especially at high latitudes, the azimuth direction
+        # may vary a lot over the domain, and using the center angle will be a
+        # coarse approximation.
+        self.dataset.SetMetadataItem('SAR_center_look_direction',
+                                     str(np.mod(Domain(ds=gdalDataset).
+                                         upwards_azimuth_direction() + 90,
+                                                360)))
 
         ###################################################################
         # Add sigma0_VV
