@@ -331,16 +331,15 @@ class Nansatmap(Basemap):
         self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl) - 1
 
-    def pcolormesh(self, data, validValues=None, **kwargs):
+    def pcolormesh(self, data, **kwargs):
         '''Make a pseudo-color plot over the map
 
         Parameters
         ----------
         data : numpy 2D array
             Input data
-        validValues : list with two scalars (e.g. [min, max])
-            minimum and maximum valid values
-        Parameters for Basemap.pcolormesh
+        **kwargs: 
+            Parameters for Basemap.pcolormesh (e.g. vmin, vmax)
 
         Modifies
         ---------
