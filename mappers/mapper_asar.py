@@ -85,13 +85,12 @@ class Mapper(VRT, Envisat):
                                      % iPolarization['channel']}})
 
         #####################################################################
-        # Add incidence angle and look direction through small Nansat object
+        # Add incidence angle and look direction through small VRT objects
         #####################################################################
         lon = self.get_array_from_ADS('first_line_longs')
         lat = self.get_array_from_ADS('first_line_lats')
         inc = self.get_array_from_ADS('first_line_incidence_angle')
-        ADS = Nansat(domain=Domain(lon=lon, lat=lat), array=inc)
-
+        
         # Calculate SAR look direction (ASAR is always right-looking)
         SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
                                              lon[:, 1:], lat[:, 1:])
@@ -101,31 +100,41 @@ class Mapper(VRT, Envisat):
         # Decompose, to avoid interpolation errors around 0 <-> 360
         SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
         SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
-        ADS.add_band(array=SAR_look_direction_u)
-        ADS.add_band(array=SAR_look_direction_v)
-        ADS.vrt._create_band(
-                [{'SourceFilename': ADS.vrt.fileName, 'SourceBand': 2},
-                 {'SourceFilename': ADS.vrt.fileName, 'SourceBand': 3}],
-                 {'PixelFunctionType': 'UVToDirectionTo'})
-        x = ADS[4][0][0] # necessary, for some strange reason!
+        look_u_VRT = VRT(array=SAR_look_direction_u, lat=lat, lon=lon)
+        look_v_VRT = VRT(array=SAR_look_direction_v, lat=lat, lon=lon)
 
-        # Reproject small array onto full SAR domain
-        # Reproject first GCPs for better accuracy 
-        ADS.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0='+
-                str(lat[0][0]) + ' +lon_0=' + str(lon[0][0]))
-        ADS.reproject(Domain(ds=gdalDataset), eResampleAlg=1)
-        self.subVRTs = {}
-        self.subVRTs['ADS_arrays'] = ADS.vrt
-        # Add band to VRT
-        ADSFileName = self.subVRTs['ADS_arrays'].fileName
+        # Note: If incidence angle and look direction are stored in
+        #       same VRT, access time is about twice as large
+        incVRT = VRT(array=inc, lat=lat, lon=lon)
+        lookVRT = VRT(lat=lat, lon=lon)
+        lookVRT._create_band(
+                [{'SourceFilename': look_u_VRT.fileName, 'SourceBand': 1},
+                 {'SourceFilename': look_v_VRT.fileName, 'SourceBand': 1}],
+                 {'PixelFunctionType': 'UVToDirectionTo'})
+
+        # Blow up bands to full size
+        incVRT = incVRT.get_resized_vrt(
+                    gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        lookVRT = lookVRT.get_resized_vrt(
+                    gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        # Store VRTs so that they are accessible later
+        self.subVRTs = {'incVRT': incVRT,
+                        'look_u_VRT': look_u_VRT,
+                        'look_v_VRT': look_v_VRT,
+                        'lookVRT': lookVRT}
+
+        # Add band to full sized VRT
+        incFileName = self.subVRTs['incVRT'].fileName
+        lookFileName = self.subVRTs['lookVRT'].fileName
         metaDict.append({'src':
-                            {'SourceFilename': ADSFileName,
+                            {'SourceFilename': incFileName,
                              'SourceBand': 1},
                          'dst':
-                            {'wkv': 'angle_of_incidence'}})
+                            {'wkv': 'angle_of_incidence',
+                             'name': 'incidence_angle'}})
         metaDict.append({'src':
-                            {'SourceFilename': ADSFileName,
-                             'SourceBand': 4},
+                            {'SourceFilename': lookFileName,
+                             'SourceBand': 1},
                          'dst':
                             {'wkv': 'sensor_azimuth_angle',
                              'name': 'SAR_look_direction'}})
@@ -143,7 +152,7 @@ class Mapper(VRT, Envisat):
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
                 sphPass = [gdalMetadata['SPH_PASS'], '', '']
-                sourceFileNames = [fileName, ADSFileName]
+                sourceFileNames = [fileName, incFileName]
 
                 pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                       'Sigma0NormalizedIce']
