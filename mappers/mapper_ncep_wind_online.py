@@ -18,6 +18,7 @@
 import os
 import sys
 from datetime import datetime, timedelta
+import inspect
 
 from nansat.vrt import VRT
 from nansat import Nansat
@@ -88,8 +89,10 @@ class Mapper(VRT):
                 print 'Downloading ' + url + fileName
 
                 # Download subset of grib file
-                get_inv = 'get_inv.pl '
-                get_grib = 'get_grib.pl '
+                mapperDir = os.path.dirname(os.path.abspath(
+                                inspect.getfile(inspect.currentframe())))
+                get_inv = mapperDir + '/get_inv.pl '
+                get_grib = mapperDir + '/get_grib.pl '
                 if not os.path.exists(fileName):
                     command = get_inv + url + baseName \
                           + '.inv | egrep "(:UGRD:10 m |:VGRD:10 m )" | ' \
