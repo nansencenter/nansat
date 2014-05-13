@@ -52,6 +52,8 @@ class Mapper(VRT):
         nearestModelRun = datetime(time.year, time.month, time.day) \
             + timedelta(hours=modelRunHour)
         forecastHour = (time - nearestModelRun).total_seconds()/3600.
+        if modelRunHour == 24:
+            modelRunHour = 0
         if forecastHour < 1.5:
             forecastHour = 0
         else:
@@ -63,7 +65,8 @@ class Mapper(VRT):
         # - avaliable approximately the latest month
         #########################################################
         url = 'ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/' \
-                + 'gfs.' + time.strftime('%Y%m%d') + '%.2d' % modelRunHour \
+                + 'gfs.' + nearestModelRun.strftime('%Y%m%d') \
+                + '%.2d' % modelRunHour \
                 + '/gfs.t' + '%.2d' % modelRunHour + 'z.master.grbf' \
                 + '%.2d' % forecastHour + '.10m.uv.grib2'
         outFileName = outFolder + 'ncep_gfs_' + nearestModelRun.strftime(
