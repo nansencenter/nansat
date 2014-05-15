@@ -204,22 +204,26 @@ class Domain():
         Print size, projection and corner coordinates
 
         '''
-        corners = self.get_corners()
         outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
                                          self.vrt.dataset.RasterYSize)
         outStr += '-' * 40 + '\n'
-        outStr += 'Projection:\n'
-        outStr += NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n'
-        outStr += '-' * 40 + '\n'
-        outStr += 'Corners (lon, lat):\n'
-        outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
-                                                           corners[1][0],
-                                                           corners[0][2],
-                                                           corners[1][2])
-        outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
-                                                           corners[1][1],
-                                                           corners[0][3],
-                                                           corners[1][3])
+        try:
+            corners = self.get_corners()
+        except:
+            self.logger.error('Cannot read projection from source!')
+        else:
+            outStr += 'Projection:\n'
+            outStr += NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n'
+            outStr += '-' * 40 + '\n'
+            outStr += 'Corners (lon, lat):\n'
+            outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
+                                                               corners[1][0],
+                                                               corners[0][2],
+                                                               corners[1][2])
+            outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
+                                                               corners[1][1],
+                                                               corners[0][3],
+                                                               corners[1][3])
         return outStr
 
     def write_kml(self, xmlFileName=None, kmlFileName=None):

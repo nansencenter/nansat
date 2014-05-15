@@ -10,7 +10,7 @@ import os.path
 import glob
 import gdal
 import numpy as np
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT, GeolocationArray, NSR
 
 
 class Mapper(VRT):
@@ -147,7 +147,7 @@ class Mapper(VRT):
         VRT.__init__(self,
                      srcGeoTransform=(-180.0, longitudeStep, 0.0,
                                       90.0, 0.0, -longitudeStep),
-                     srcProjection=gdalDataset.GetProjection(),
+                     srcProjection=NSR().wkt,
                      srcRasterXSize=numberOfColumns,
                      srcRasterYSize=numberOfLines)
 

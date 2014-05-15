@@ -164,7 +164,7 @@ class Envisat():
         #get only values required for the mapper
         return [allGADSValues[i] for i in indeces]
 
-    def create_VRT_from_ADS(self, adsName, zoomSize=500):
+    def get_array_from_ADS(self, adsName):
         ''' Create VRT with a band from Envisat ADS metadata
 
         Read offsets of the <adsName> ADS.
@@ -223,10 +223,43 @@ class Envisat():
         # adjust the scale
         if '(10)^-6' in adsParams['units']:
             array /= 1000000.0
-            adsParams['units'] = adsParams['units'].replace('(10)^-6 ', '')
+            # Commenting out line below, otherwise subsequent calls for lon and lat
+            # results in modified unit, and hence necessary scaling is not performed
+            #adsParams['units'] = adsParams['units'].replace('(10)^-6 ', '')
 
         # reshape the array into 2D matrix
         array = array.reshape(adsHeight, adsWidth)
+        return array
+
+    def create_VRT_from_ADS(self, adsName, zoomSize=500):
+        ''' Create VRT with a band from Envisat ADS metadata
+
+        Read offsets of the <adsName> ADS.
+        Read 2D matrix of binary values from ADS from file.
+        Read 'last_line_...' ADS (in case of ASAR).
+        Zoom array with ADS data to <zoomSize>. Zooming is needed to create
+        smooth matrices. Array is zoomed to small size because it is stred in
+        memory. Later the VRT with zoomed array is VRT.get_resized_vrt() in order to
+        match the size of the Nansat onject.
+        Create VRT from the ADS array.
+
+        Parameters
+        ----------
+            adsName : str
+                name of variable from ADS to read. should match allADSParams
+            fileType: string, 'ASA_' or 'MER_'
+                type of file (from GDAL metadata)
+            zoomSize :  int, optional, 500
+                size, to which original matrix from ADSR is zoomed using
+                scipy.zoom
+        Returns:
+        ---------
+            adsVrt : VRT, vrt with a band created from ADS array
+
+        '''
+        adsHeight = self.dsOffsetDict["NUM_DSR"]
+        adsParams = self.allADSParams['list'][adsName]
+        array = self.get_array_from_ADS(adsName)
 
         # zoom the array
         array = scipy.ndimage.interpolation.zoom(array,

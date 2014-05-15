@@ -276,6 +276,10 @@ class Nansat(Domain):
         # add the array band into self.vrt and get bandName
         bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
                                           'SourceBand': 1}, parameters)
+        # create subVRTs as dict
+        if self.vrt.subVRTs is None:
+            self.vrt.subVRTs = {}
+
         self.vrt.subVRTs[bandName] = bandVRT
         self.vrt.dataset.FlushCache()  # required after adding bands
 
@@ -1327,7 +1331,7 @@ class Nansat(Domain):
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,
-                           smoothRadius=0, smoothAlg=0,
+                           smoothRadius=0, smoothAlg=0, onlypixline=False,
                            **kwargs):
 
         '''Get transect from two poins and retun the values by numpy array
@@ -1434,6 +1438,9 @@ class Nansat(Domain):
             pixlinCoord = np.append(pixlinCoord,
                                     [pixVector, linVector],
                                     axis=1)
+        if onlypixline:
+            return pixlinCoord
+
         if smoothRadius:
             # get start/end coordinates of subwindows
             pixlinCoord0 = pixlinCoord - smoothRadius
