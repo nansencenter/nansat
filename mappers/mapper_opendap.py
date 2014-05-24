@@ -36,7 +36,7 @@ class Mapper(VRT):
         # if grid_mapping_name is found: find all bands that have grid_mapping
         # else: find lon/lat variables that have 1D
         
-        if srcProjection != ''
+        if srcProjection != '':
             # find bands with grid_mapping
             validVars = []
             validDims = []
@@ -51,9 +51,10 @@ class Mapper(VRT):
             validDims = list(set(validDims))
             print validVars, validDims
             
-        else:
-            # find 1D lon, lat (longitude, latitude) dims
-            for varName in f.variables:
+        #else:
+        #    # find 1D lon, lat (longitude, latitude) dims
+        #    for varName in f.variables:
+                
         
         # assume NORMAP compatibility:
         # diemnsions should be
