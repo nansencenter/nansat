@@ -584,10 +584,10 @@ class Nansat(Domain):
         ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
         ncOVar.axis = 'T'
 
+        time = filter(None, self.get_time())
         # create value of time variable
-        if len(self.get_time()) > 0:
-            print '**TIME**', self.get_time()
-            td = self.get_time()[0] - datetime.datetime(1900, 1, 1)
+        if len(time) > 0:
+            td = time[0] - datetime.datetime(1900, 1, 1)
             print 'td:', td
             td = td.days
             print 'td:', td
