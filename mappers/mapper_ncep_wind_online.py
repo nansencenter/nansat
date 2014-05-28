@@ -1,6 +1,6 @@
 # Name:         mapper_ncep_wind_online.py
 # Purpose:      Nansat mapping for NCEP GFS model data, stored online
-# Author:       Knut-Frode Dagestad
+# Author:       Knut-Frode Dagestad, Morten W. Hansen
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
@@ -27,7 +27,7 @@ from nansat import Nansat
 # Could be input as argument, or defined as environment variable
 outFolder = './'
 
-class Mapper(VRT):
+class Mapper(VRT,object):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -52,6 +52,8 @@ class Mapper(VRT):
         nearestModelRun = datetime(time.year, time.month, time.day) \
             + timedelta(hours=modelRunHour)
         forecastHour = (time - nearestModelRun).total_seconds()/3600.
+        if modelRunHour == 24:
+            modelRunHour = 0
         if forecastHour < 1.5:
             forecastHour = 0
         else:
@@ -63,7 +65,8 @@ class Mapper(VRT):
         # - avaliable approximately the latest month
         #########################################################
         url = 'ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/' \
-                + 'gfs.' + time.strftime('%Y%m%d') + '%.2d' % modelRunHour \
+                + 'gfs.' + nearestModelRun.strftime('%Y%m%d') \
+                + '%.2d' % modelRunHour \
                 + '/gfs.t' + '%.2d' % modelRunHour + 'z.master.grbf' \
                 + '%.2d' % forecastHour + '.10m.uv.grib2'
         outFileName = outFolder + 'ncep_gfs_' + nearestModelRun.strftime(
@@ -112,3 +115,11 @@ class Mapper(VRT):
         VRT.__init__(self, vrtDataset=w.vrt.dataset)
 
         return
+
+    def __del__(self):
+        super(Mapper,self).__del__()
+        # Delete the downloaded ncep data
+        try:
+            os.unlink(self.dataset.GetFileList()[0])
+        except:
+            pass
