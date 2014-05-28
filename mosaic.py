@@ -18,7 +18,7 @@
 #
 import multiprocessing as mp
 import scipy.stats as st
-import pdb; 
+import pdb;
 # import standard and additional libraries
 from nansat import *
 
@@ -130,7 +130,7 @@ class Mosaic(Nansat):
             self.logger.error('Cannot get mask from %s' % n.fileName)
             n.add_band(array=mask, parameters={'name': self.maskName})
         self.logger.debug('Got raw mask - OK')
-        
+
         if self.doReproject:
             # reproject image and get reprojected mask
             self.logger.debug('Try to get reprojected mask')
@@ -140,7 +140,7 @@ class Mosaic(Nansat):
             except:
                 self.logger.error('Unable to get reprojected mask!')
             self.logger.debug('Get reprojected mask - OK')
-                
+
         return mask
 
     def _get_layer(self, f):
@@ -291,7 +291,7 @@ class Mosaic(Nansat):
         # put 2D matrices into result queue (variable shared by sub-processes)
         matQueue = mp.Queue()
         matQueue.put((cntMat, maskMat, avgMat, stdMat, files[0]))
-        
+
         # create task queue with file names
         fQueue = mp.JoinableQueue()
 
@@ -314,7 +314,7 @@ class Mosaic(Nansat):
 
         # wait until sub-processes get all tasks from the task queue
         fQueue.join()
-        
+
         # get data from result queue
         cntMat, maskMat, avgMat, stdMat, fName = matQueue.get()
 
@@ -360,7 +360,7 @@ class Mosaic(Nansat):
 
     def _average_one_file(self, fQueue, matQueue):
         ''' Parallel processing of one file
-        
+
         In infinite loop wait for tasks in the task queue
         If the task is available, get it and proceed
         If task is None (poison pill) quit the infinite loop
@@ -371,14 +371,14 @@ class Mosaic(Nansat):
             get intermediate result from the result queue
             add data from file into the result
             put the intermedieate result back to the queue
-        
+
         Parameters
         ----------
             fQueue : multiprocessing.JoinableQueue
                 task queue with file names
             matQueue : multiprocessing.Queue
                 result queue with cntMat, avgMat, stdMat and maskMat
-        
+
         Modifies
         --------
             fQueue : get results from the task queue
@@ -388,7 +388,7 @@ class Mosaic(Nansat):
         while True:
             # get task from the queue
             f = fQueue.get()
-            
+
             if f is None:
                 # if poison pill received, quit infinite loop
                 fQueue.task_done()
@@ -396,13 +396,13 @@ class Mosaic(Nansat):
 
             # otherwise start processing of task
             self.logger.info('Processing %s' % f)
-    
+
             dstShape = self.shape()
-            
+
             # get image and mask
             self.logger.info('Open %s and get mask' % f)
             n, mask = self._get_layer(f)
-    
+
             # skip processing of invalid image
             if n is None:
                 self.logger.error('%s invalid file!' % f)
@@ -414,7 +414,7 @@ class Mosaic(Nansat):
             cntMatTmp[mask == 64] = 1
             avgMatTmp = np.zeros((len(self.bandIDs), dstShape[0], dstShape[1]), 'float16')
             stdMatTmp = np.zeros((len(self.bandIDs), dstShape[0], dstShape[1]), 'float16')
-    
+
             # add data to summation matrices
             for bi, b in enumerate(self.bandIDs):
                 self.logger.info('    Adding %s to sum' % b)
@@ -435,7 +435,7 @@ class Mosaic(Nansat):
 
             # get intermediate results from queue
             cntMat, maskMat, avgMat, stdMat, fName  = matQueue.get()
-            
+
             # add data to the counting matrix
             cntMat += cntMatTmp
 
@@ -448,7 +448,7 @@ class Mosaic(Nansat):
             stdMat += stdMatTmp
 
             # remember file name
-            fName = f            
+            fName = f
 
             # update intermediate results into queue
             matQueue.put((cntMat, maskMat, avgMat, stdMat, fName))
@@ -542,7 +542,7 @@ class Mosaic(Nansat):
         self.doReproject = doReproject
         self.maskName = maskName
         self._set_defaults(kwargs)
-        
+
         # collect ordinals of times of each input file
         itimes = np.zeros(len(files))
         for i in range(len(files)):

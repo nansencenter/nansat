@@ -338,7 +338,7 @@ class Nansatmap(Basemap):
         ----------
         data : numpy 2D array
             Input data
-        **kwargs: 
+        **kwargs:
             Parameters for Basemap.pcolormesh (e.g. vmin, vmax)
 
         Modifies
@@ -392,7 +392,24 @@ class Nansatmap(Basemap):
         lon2 = self.lon[::step0, ::step1]
         lat2 = self.lat[::step0, ::step1]
         x2, y2 = self(lon2, lat2)
-        self.mpl.append(Basemap.quiver(self, x2, y2, dataX2, dataY2, **kwargs))
+
+        qKwargs = {}
+        for iKey in ['width', 'scale', 'units', 'angles', 'scale_units']:
+            if iKey in kwargs.keys():
+                qKwargs[iKey] = kwargs.pop(iKey)
+        Q = Basemap.quiver(self, x2, y2, dataX2, dataY2, **qKwargs)
+
+        qkargs = {}
+        for iKey in ['X', 'Y', 'U', 'label']:
+            if iKey in kwargs.keys():
+                qkargs[iKey] = kwargs.pop(iKey)
+
+        if all (iKey in qkargs.keys() for iKey in ('X', 'Y', 'U', 'label')):
+            self.mpl.append(plt.quiverkey(Q, qkargs['X'], qkargs['Y'],
+                                          qkargs['U'], qkargs['label'],
+                                          **kwargs))
+        else:
+            self.mpl.append(Q)
 
     def add_colorbar(self, fontsize=6, **kwargs):
         '''Add color bar
