@@ -247,19 +247,46 @@ class PointBrowser():
         img = self.ax.imshow(self.data, extent=(0, self.data.shape[1],
                                                 0, self.data.shape[0]),
                              origin='lower', **kwargs)
+
         self.fig.colorbar(img)
         self.points, = self.ax.plot([], [], '+', ms=12, color='b')
-        self.line, = self.ax.plot([], [])
+        self.lines = []
         self.coordinates = []
+        self.connect = []
 
     def onclick(self, event):
         if event.xdata is not None and event.ydata is not None:
             self.coordinates.append((event.xdata, event.ydata))
+            # press (any) key means to start new line.
+            # if pressed, then set 0 to self.connect. otherwise set 1.
+            if event.key is None:
+                self.connect.append(1)
+            else:
+                self.connect.append(0)
+
+            # get coordinate of clicked point
             tCoordinates = map(tuple, zip(*self.coordinates))
             self.points.set_data(tCoordinates)
             self.points.figure.canvas.draw()
-            self.line.set_data(tCoordinates)
-            self.line.figure.canvas.draw()
+
+            # separate points by each line
+            linesCoords = []
+            for i, iLine in enumerate(self.coordinates):
+                if i == 0:
+                    oneLine = [self.coordinates[0]]
+                elif self.connect[i] == 0:
+                    linesCoords.append(oneLine)
+                    oneLine = [self.coordinates[i]]
+                else:
+                    oneLine.append(self.coordinates[i])
+            linesCoords.append(oneLine)
+
+            # draw lines
+            line, = self.ax.plot([], [])
+            for iLinePoints in linesCoords:
+                tCoordinates = map(tuple, zip(*iLinePoints))
+                self.lines.append(line.set_data(tCoordinates))
+                line.figure.canvas.draw()
 
     def get_points(self):
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
@@ -417,7 +444,7 @@ class Node(object):
         '''Recoursively find child of the dom'''
         children = dom.childNodes
         theChild = None
-        
+
         chn = 0
         for child in children:
             print child, child.nodeType, chn
@@ -428,15 +455,15 @@ class Node(object):
                     if chn == n:
                         theChild = child
                     chn += 1
-    
+
             if theChild is not None:
                 break
-    
+
             if child.hasChildNodes():
                 print 'has childs'
                 theChild = self.find_dom_child(child, tagName, n)
-            
-        
+
+
         return theChild
 
     def _replace_dom_Node(self, tag, nodeNumber, contents):
@@ -446,7 +473,7 @@ class Node(object):
         oldChild = self.find_dom_child(dom0, tag, nodeNumber)
         newChild = xdm.parseString(contents).childNodes[0]
         dom0.replaceChild(newChild, oldChild)
-        
+
         return Node.create(dom0)
 
     def nodeList(self, tag):
@@ -636,13 +663,13 @@ def initial_bearing(lon1, lat1, lon2, lat2):
         return mod(np.degrees(bearing) + 360, 360)
 
 def haversine(lon1, lat1, lon2, lat2):
-    """ 
-    Calculate the great circle distance between two points 
+    """
+    Calculate the great circle distance between two points
     on the spherical earth (specified in decimal degrees)
-    """                      
-    # convert decimal degrees to radians  
+    """
+    # convert decimal degrees to radians
     lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
-    # haversine formula 
+    # haversine formula
     dlon = lon2 - lon1
     dlat = lat2 - lat1
     a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2

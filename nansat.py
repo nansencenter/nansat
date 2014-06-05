@@ -308,7 +308,7 @@ class Nansat(Domain):
         Returns
         -------
             True/False if band exists or not
-                
+
         '''
         bandExists = False
         for b in self.bands():
@@ -490,7 +490,7 @@ class Nansat(Domain):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor)
-        If desired width, height or pixelsize is specified, 
+        If desired width, height or pixelsize is specified,
         the scaling factor is calculated accordingly.
         If GCPs are given in a dataset, they are also rewritten.
 
@@ -504,9 +504,9 @@ class Nansat(Domain):
             Desired new width in pixels
         height : int, optional
             Desired new height in pixels
-        pixelsize : float, optional 
-            Desired new pixelsize in meters (approximate). 
-            A factor is calculated from ratio of the 
+        pixelsize : float, optional
+            Desired new pixelsize in meters (approximate).
+            A factor is calculated from ratio of the
             current pixelsize to the desired pixelsize.
         eResampleAlg : int (GDALResampleAlg), optional
                -1 : Average,
@@ -533,7 +533,7 @@ class Nansat(Domain):
             factorX = deltaX / float(pixelsize)
             factorY = deltaY / float(pixelsize)
             factor = (factorX + factorY)/2
-          
+
         # estimate factor if width or height is given
         if width is not None:
             factor = float(width) / rasterXSize
@@ -579,7 +579,7 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
-        
+
         return factor
 
     def get_GDALRasterBand(self, bandID=1):
@@ -1329,8 +1329,8 @@ class Nansat(Domain):
         tmpNansat.export(fileName, driver=driver)
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
-                           transect=True, returnOGR=False, layerNum=0,
-                           smoothRadius=0, smoothAlg=0,
+                           returnOGR=False, layerNum=0,
+                           smoothRadius=0, smoothAlg=0, transect=True,
                            **kwargs):
 
         '''Get transect from two poins and retun the values by numpy array
@@ -1338,16 +1338,20 @@ class Nansat(Domain):
         Parameters
         ----------
         points : tuple with one or more points or shape file name
-            i.e. ((lon1, lat1),(lon2, lat2),(lon3, lat3), ...) or
-                 ((col1, row1),(col2, row2),(col3, row3), ...)
+            i.e. ( # get all transect values
+                   ((lon_T1, lat_T1), (lon_T2, lat_T2), (lon_T3, lat_T3), ...)
+                   # get point values
+                   (lon_P1, lat_P1), (lon_P2, lat_P2), ... )
+                 or
+                 ( # get all transect values
+                   ((col_T1, row_T1), (col_T2, row_T2), (col_T3, row_T3), ...),
+                   # get point values
+                   (col_P1, row_P1), (col_P2, row_P2), ... )
         bandList : list of int or string
             elements of the list are band number or band Name
         latlon : bool
             If the points in lat/lon, then True.
             If the points in pixel/line, then False.
-        transect : bool
-            If True, get all transact values
-            If False, get values of points
         returnOGR: bool
             If True, then return numpy array
             If False, return OGR object
@@ -1358,6 +1362,9 @@ class Nansat(Domain):
             pixel as the median or mean value in a circule with radius
             equal to the given number.
         smoothAlg: 0 or 1 for median or mean
+        transect : bool
+            used if a shape file name is given as the input.
+            If True, return the transect. If False, return the points.
         vmin, vmax : int (optional)
             minimum and maximum pixel values of an image shown
             in case points is None.
@@ -1367,23 +1374,33 @@ class Nansat(Domain):
         if returnOGR:
             transect : OGR object with points coordinates and values
         else:
-            transect : list or
-                values of the transect or OGR object with the transect values
-            [lonVector, latVector] : list with longitudes, latitudes
-            pixlinCoord : numpy array with pixels and lines coordinates
+            transectDict: dictionary
+                key is band name.
+                Value is a dictionary of the transect values of each shape.
+            vectorsDict: dictionary
+                keys are shape ID. values are dictionaries
+                with longitude and latitude lists of each shape.
+            pixlinCoordDic: dictionary
+                keys are shape ID. values are numpy array
+                with pixels and lines coordinates
+
+        NB
+        ----
+        If points are given from GUI,
+        it is possible to select multiple shapes by pressing any key
 
         '''
         smooth_function = scipy.stats.nanmedian
         if smoothAlg == 1:
             smooth_function = scipy.stats.nanmean
 
-
         data = None
         # if shapefile is given, get corner points from it
         if type(points) == str:
             nansatOGR = Nansatshape(fileName=points)
-            #nansatOGR = NansatOGR(fileName=points, layerNum=layerNum)
-            points, latlon = nansatOGR.get_corner_points(latlon)
+            points, latlon = nansatOGR.get_points(latlon)
+            if transect:
+                points = [points]
 
         # if points is not given, get points from GUI ...
         if points is None:
@@ -1394,70 +1411,88 @@ class Nansat(Domain):
 
             browser = PointBrowser(data, **kwargs)
             browser.get_points()
-            points = tuple(browser.coordinates)
+            points = []
+            for i, iCoord in enumerate (browser.coordinates):
+                transect = browser.connect[i]
+                if i == 0:
+                    oneLine = [iCoord]
+                elif transect:
+                    oneLine.append(iCoord)
+                else:
+                    if len(oneLine) == 1:
+                        points.append(oneLine[0])
+                    else:
+                        points.append(tuple(oneLine))
+                    oneLine = [iCoord]
+            if len(oneLine) == 1:
+                points.append(oneLine[0])
+            else:
+                points.append(tuple(oneLine))
             latlon = False
 
-        pixlinCoord = np.array([[], []])
-        for iPoint in range(len(points)):
-            # if one point is given
-            if type(points[iPoint]) != tuple:
-                point0 = (points[0], points[1])
-                point1 = (points[0], points[1])
-            # if we want points ...
-            elif not transect:
-                point0 = (points[iPoint][0], points[iPoint][1])
-                point1 = (points[iPoint][0], points[iPoint][1])
-            # if we want a transect ...
-            else:
-                try:
-                    point0 = points[iPoint]
-                    point1 = points[iPoint + 1]
-                except:
-                    break
-            # if points in degree, convert them into pix/lin
-            if latlon:
-                pix, lin = self.transform_points([point0[0], point1[0]],
-                                                  [point0[1], point1[1]],
-                                                  DstToSrc=1)
-                point0 = (pix[0], lin[0])
-                point1 = (pix[1], lin[1])
-            # compute Euclidean distance between point0 and point1
-            length = int(np.hypot(point0[0] - point1[0],
-                                  point0[1] - point1[1]))
-            # if a point is given
-            if length == 0:
-                length = 1
-            # get sequential coordinates on pix/lin between two points
-            pixVector = list(np.linspace(point0[0],
-                                         point1[0],
-                                         length).astype(int))
-            linVector = list(np.linspace(point0[1],
-                                         point1[1],
-                                         length).astype(int))
-            pixlinCoord = np.append(pixlinCoord,
-                                    [pixVector, linVector],
-                                    axis=1)
+        pixlinCoordDic = {}
+        for i, iShape in enumerate (points):
+            pixlinCoord = np.array([[], []])
+            for j in range(len(iShape) - 1):
+                if type(iShape[0]) != tuple:
+                    point0 = iShape
+                    point1 = iShape
+                else:
+                    point0 = iShape[j]
+                    point1 = iShape[j + 1]
+                # if points in degree, convert them into pix/lin
+                if latlon:
+                    pix, lin = self.transform_points([point0[0], point1[0]],
+                                                     [point0[1], point1[1]],
+                                                      DstToSrc=1)
+                    point0 = (pix[0], lin[0])
+                    point1 = (pix[1], lin[1])
+
+                # compute Euclidean distance between point0 and point1
+                length = int(np.hypot(point0[0] - point1[0],
+                                      point0[1] - point1[1]))
+                # if a point is given
+                if length == 0:
+                    length = 1
+                # get sequential coordinates on pix/lin between two points
+                pixVector = list(np.linspace(point0[0],
+                                             point1[0],
+                                             length).astype(int))
+                linVector = list(np.linspace(point0[1],
+                                             point1[1],
+                                             length).astype(int))
+                pixlinCoord = np.append(pixlinCoord,
+                                        [pixVector, linVector],
+                                        axis=1)
+            pixlinCoordDic['shape%d' %i] = pixlinCoord
+
         if smoothRadius:
-            # get start/end coordinates of subwindows
-            pixlinCoord0 = pixlinCoord - smoothRadius
-            pixlinCoord1 = pixlinCoord + smoothRadius
-            # truncate out-of-image points 
-            gpi = ((pixlinCoord0[0] >= 0) *
-                   (pixlinCoord0[1] >= 0) *
-                   (pixlinCoord1[0] >= 0) *
-                   (pixlinCoord1[1] >= 0) *
-                   (pixlinCoord0[0] < self.vrt.dataset.RasterXSize) *
-                   (pixlinCoord0[1] < self.vrt.dataset.RasterXSize) *
-                   (pixlinCoord1[0] < self.vrt.dataset.RasterYSize) *
-                   (pixlinCoord1[1] < self.vrt.dataset.RasterYSize))
-            pixlinCoord0 = pixlinCoord0[:, gpi]
-            pixlinCoord1 = pixlinCoord1[:, gpi]
-            pixlinCoord = pixlinCoord[:, gpi]
+            pixlinCoordSmoothDic = {}
+            for iShapeKey, iShapePoints in pixlinCoordDic.items():
+                # get start/end coordinates of subwindows
+                pixlinCoordSmoothDic[iShapeKey+'_0'] = iShapePoints - smoothRadius
+                pixlinCoordSmoothDic[iShapeKey+'_1'] = iShapePoints + smoothRadius
+                # truncate out-of-image points
+                gpi = ((pixlinCoordSmoothDic[iShapeKey+'_0'][0] >= 0) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_0'][1] >= 0) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_1'][0] >= 0) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_1'][1] >= 0) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_0'][0] < self.vrt.dataset.RasterXSize) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_0'][1] < self.vrt.dataset.RasterYSize) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_1'][0] < self.vrt.dataset.RasterXSize) *
+                       (pixlinCoordSmoothDic[iShapeKey+'_1'][1] < self.vrt.dataset.RasterYSize))
+                pixlinCoordSmoothDic[iShapeKey+'_0'] = pixlinCoordSmoothDic[iShapeKey+'_0'][:, gpi]
+                pixlinCoordSmoothDic[iShapeKey+'_1'] = pixlinCoordSmoothDic[iShapeKey+'_1'][:, gpi]
+                pixlinCoordDic[iShapeKey] = pixlinCoordDic[iShapeKey][:, gpi]
 
         # convert pix/lin into lon/lat
-        lonVector, latVector = self.transform_points(pixlinCoord[0],
-                                                      pixlinCoord[1],
-                                                      DstToSrc=0)
+        vectorsDict = {}
+        for iShapeKey, iShapePoints in pixlinCoordDic.items():
+            lonVector, latVector = self.transform_points(iShapePoints[0],
+                                                         iShapePoints[1],
+                                                         DstToSrc=0)
+            vectorsDict[iShapeKey] = {'longitude': lonVector,
+                                      'latitude': latVector}
 
         # if smoothRadius, create a mask to extract circular area from a box area
         if smoothRadius:
@@ -1465,62 +1500,83 @@ class Nansat(Domain):
             distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
             mask = distance <= smoothRadius
 
-        transect = []
-
+        transectDict = {}
         # get data
         for iBand in bandList:
+            tmpDic = {}
             if type(iBand) == str:
                 iBand = self._get_band_number(iBand)
             if data is None:
                 data = self[iBand]
             # extract values
-            if smoothRadius:
-                transect0 = []
-                for xmin, xmax, ymin, ymax in zip(
-                    pixlinCoord0[1], pixlinCoord1[1],
-                    pixlinCoord0[0], pixlinCoord1[0]):
-                    subdata = data[int(xmin):int(xmax + 1), int(ymin):int(ymax + 1)]
-                    transect0.append(smooth_function(subdata[mask]))
-                transect.append(transect0)
-            else:
-                transect.append(data[list(pixlinCoord[1]),
-                                     list(pixlinCoord[0])].tolist())
-
+            for iShapeKey, iShapePoints in pixlinCoordDic.items():
+                if smoothRadius:
+                    transect0 = []
+                    for xmin, xmax, ymin, ymax in zip(
+                        pixlinCoordSmoothDic[iShapeKey+'_0'][1],
+                        pixlinCoordSmoothDic[iShapeKey+'_1'][1],
+                        pixlinCoordSmoothDic[iShapeKey+'_0'][0],
+                        pixlinCoordSmoothDic[iShapeKey+'_1'][0]):
+                        subdata = data[int(xmin):int(xmax + 1), int(ymin):int(ymax + 1)]
+                        transect0.append(smooth_function(subdata[mask]))
+                    tmpDic[iShapeKey] = transect0
+                else:
+                    tmpDic[iShapeKey] = data[list(iShapePoints[1]),
+                                             list(iShapePoints[0])].tolist()
+            transectDict['band%d' %iBand]= tmpDic
             data = None
+
         if returnOGR:
             # Lists for field names and datatype
             names = ['X (pixel)', 'Y (line)']
             formats = ['i4', 'i4']
-            for iBand in bandList:
+            for iBand in transectDict.keys():
                 names.append('transect_' + str(iBand))
                 formats.append('f8')
             # Create zeros structured numpy array
-            fieldValues = np.zeros(len(pixlinCoord[1]),
-                                   dtype={'names': names,
-                                          'formats': formats})
+            pixel = np.array([])
+            line = np.array([])
+            longitude = np.array([])
+            latitude = np.array([])
+            transect = {}
+
+            for iShape, iCoords in pixlinCoordDic.items():
+                pixel = np.append(pixel, iCoords[0])
+                line =  np.append(line, iCoords[1])
+                longitude = np.append(longitude, vectorsDict[iShape]['longitude'])
+                latitude =  np.append(latitude, vectorsDict[iShape]['latitude'])
+                for iBand in transectDict.keys():
+                    if not (iBand in transect.keys()):
+                        transect[iBand] = np.array([])
+                    transect[iBand] = np.append(transect[iBand], transectDict[iBand][iShape])
+
+            fieldValues = np.zeros(len(line), dtype={'names': names,
+                                                     'formats': formats})
             # Set values into the structured numpy array
-            fieldValues['X (pixel)'] = pixlinCoord[0]
-            fieldValues['Y (line)'] = pixlinCoord[1]
-            for i, iBand in enumerate(bandList):
-                fieldValues['transect_' + str(iBand)] = transect[i]
+            fieldValues['X (pixel)'] = pixel
+            fieldValues['Y (line)'] = line
+            for iBand in transect.keys():
+                fieldValues['transect_'+iBand] = transect[iBand]
+
             # Create Nansatshape object
             NansatOGR = Nansatshape(srs=NSR(self.vrt.get_projection()))
             # Set features and geometries into the Nansatshape
-            NansatOGR.add_features(coordinates=np.array([lonVector, latVector]),
+            NansatOGR.add_features(coordinates=np.array([longitude, latitude]),
                                    values=fieldValues)
             # Return Nansatshape object
             return NansatOGR
         else:
-            return transect, [lonVector, latVector], pixlinCoord.astype(int)
+            return transectDict, vectorsDict, pixlinCoordDic
+
 
     def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
         '''Crop Nansat object
-        
+
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
         Rectangle (DstRect) tags in the VRT file for each band in order
         to take only part of the original image,
         create new GCPs or new GeoTransform for the cropped object.
-        
+
         Parameters
         ----------
         xOff : int
@@ -1531,7 +1587,7 @@ class Nansat(Domain):
             width in pixels of subimage
         ySize : int
             height in pizels of subimage
-        
+
         Modifies
         --------
             self.vrt : VRT
@@ -1593,7 +1649,7 @@ class Nansat(Domain):
                                                                         xSize,
                                                                         ySize))
             return 1
-            
+
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
             xSize += xOff
@@ -1640,11 +1696,11 @@ class Nansat(Domain):
             iNode3 = iNode2.node('DstRect')
             iNode3.replaceAttribute('xSize', str(xSize))
             iNode3.replaceAttribute('ySize', str(ySize))
-            
+
         # write modified XML
         xml = node0.rawxml()
         self.vrt.write_xml(xml)
-        
+
         # modify GCPs or GeoTranfrom to fit the new shape of image
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
@@ -1674,5 +1730,5 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
-        
+
         return 0
