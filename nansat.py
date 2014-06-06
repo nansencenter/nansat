@@ -1181,12 +1181,13 @@ class Nansat(Domain):
 
         '''
         # open GDAL dataset. It will be parsed to all mappers for testing
-        try:
-            gdalDataset = gdal.Open(self.fileName)
-        except RuntimeError:
-            print ('GDAL could not open ' + self.fileName +
-                   ', trying to read with Nansat mappers...')
-            gdalDataset = None
+        gdalDataset = None
+        if self.fileName[:4] != 'http':
+            try:
+                gdalDataset = gdal.Open(self.fileName)
+            except RuntimeError:
+                print ('GDAL could not open ' + self.fileName +
+                       ', trying to read with Nansat mappers...')
         if gdalDataset is not None:
             # get metadata from the GDAL dataset
             metadata = gdalDataset.GetMetadata()
