@@ -1402,13 +1402,14 @@ class Nansat(Domain):
             if transect:
                 points = [points]
 
+        bandNameDict ={}
+        bandsMeta = self.bands()
+        for iKey in bandsMeta.keys():
+            bandNameDict[iKey] = bandsMeta[iKey]['name']
+
         # if points is not given, get points from GUI ...
         if points is None:
-            firstBand = bandList[0]
-            if type(firstBand) == str:
-                firstBand = self._get_band_number(firstBand)
-            data = self[firstBand]
-
+            data = self[bandList[0]]
             browser = PointBrowser(data, **kwargs)
             browser.get_points()
             points = []
@@ -1523,7 +1524,8 @@ class Nansat(Domain):
                 else:
                     tmpDic[iShapeKey] = data[list(iShapePoints[1]),
                                              list(iShapePoints[0])].tolist()
-            transectDict['band%d' %iBand]= tmpDic
+            #transectDict['band%d' %iBand]= tmpDic
+            transectDict[str(iBand)+':'+bandNameDict[iBand]] = tmpDic
             data = None
 
         if returnOGR:
