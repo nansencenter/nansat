@@ -654,13 +654,13 @@ class Nansat(Domain):
                 # replace non-value
                 if (ncIVar.name in products.keys() and
                     ncIVar.name in datatypes.keys()):
-                    # non-values are filled by 'FillValue'
-                    if 'FillValue' in products[ncIVar.name].keys():
-                        data[np.isnan(data)] = products[ncIVar.name]['FillValue']
+                    # non-values are filled by '_FillValue'
+                    if '_FillValue' in products[ncIVar.name].keys():
+                        data[np.isnan(data)] = products[ncIVar.name]['_FillValue']
                     """
                     # non-values are filled by minimum values of the datatype
                     # NB: if '>i2', np.nan is converted to '0'.
-                    if ('FillValue' in products[ncIVar.name].keys() and
+                    if ('_FillValue' in products[ncIVar.name].keys() and
                         isinstance(datatypes[ncIVar.name], types.ListType)):
                         dt = np.dtype(datatypes[ncIVar.name][0])
                         if dt.name.startswith('int'):
@@ -672,7 +672,7 @@ class Nansat(Domain):
                 for inAttrName in ncIVar._attributes:
                     if inAttrName not in ['dataType', 'SourceFilename',
                                           'SourceBand', '_Unsigned',
-                                          '_FillValue']:
+                                          'FillValue']:
                         ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
 
                 # add custom attributes
