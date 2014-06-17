@@ -171,6 +171,14 @@ class Nansat(Domain):
             self.mapperList.pop(self.mapperList.index('mapper_generic.py'))
             self.mapperList.append('mapper_generic.py')
 
+        # In some cases there may be several mappers that work for the same
+        # data. The base of the filenames of non-default mappers could be the
+        # same as the default mapper but with a number or string appended.
+        # Alternatively, make sure that the mapper filenames are sorted in the
+        # correct order.
+        # Sort mapperList to select default mappers first
+        mapperList.sort()
+
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
         # set input file name
