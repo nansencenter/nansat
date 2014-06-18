@@ -5,7 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat.vrt import GeolocationArray, VRT, gdal, osr, latlongSRS, parse
+from nansat.vrt import GeolocationArray, VRT, gdal, osr, NSR, parse
 from datetime import datetime, timedelta
 from math import ceil
 

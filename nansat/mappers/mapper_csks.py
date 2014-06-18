@@ -7,11 +7,12 @@
 
 from dateutil.parser import parse
 from struct import unpack
-from nansat.vrt import VRT, GeolocationArray
 import numpy as np
 import os
 import gdal
-import osr
+
+from nansat.nansat_tools import osr
+from nansat.vrt import VRT, GeolocationArray
 
 
 class Mapper(VRT):

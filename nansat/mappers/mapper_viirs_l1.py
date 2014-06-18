@@ -6,7 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 import glob
-from nansat.vrt import GeolocationArray, VRT, gdal, osr, latlongSRS
+from nansat.vrt import GeolocationArray, VRT, gdal, osr, NSR
 from datetime import datetime, timedelta
 from math import ceil
 from scipy.ndimage.filters import gaussian_filter
@@ -101,7 +101,7 @@ class Mapper(VRT):
                     k += 1
 
         # append GCPs and lat/lon projection to the vsiDataset
-        self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
+        self.dataset.SetGCPs(gcps, NSR().wkt)
 
         # remove geolocation array
         self.remove_geolocationArray()

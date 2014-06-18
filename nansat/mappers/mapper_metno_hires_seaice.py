@@ -19,7 +19,7 @@ import sys
 import urllib2
 from datetime import datetime, timedelta
 from nansat.vrt import *
-import osr
+from nansat.nansat_tools import osr
 
 try:
     from osgeo import gdal

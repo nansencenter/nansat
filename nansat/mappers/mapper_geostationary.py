@@ -9,8 +9,9 @@
 
 from numpy import array, arange
 from datetime import datetime
+
 from nansat.vrt import *
-from nansat_tools import Node
+from nansat.nansat_tools import Node
 
 
 def arrays2LUTString(a, b):

@@ -7,7 +7,7 @@
 
 from dateutil.parser import parse
 import struct
-from vrt import VRT, GeolocationArray
+from nansat.vrt import VRT, GeolocationArray
 import gdal
 import numpy as np
 from scipy import interpolate
@@ -266,7 +266,7 @@ class Doppler():
         return zdtArray
 
 
-from domain import Domain
+from nansat.domain import Domain
 
 class Mapper(VRT, Doppler):
     ''' VRT with mapping of WKV for ASAR Level 0

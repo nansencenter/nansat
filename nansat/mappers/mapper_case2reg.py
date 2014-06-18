@@ -6,7 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from nansat.vrt import *
-from nansat_tools import Node, latlongSRS
+from nansat.nansat_tools import Node
 import numpy as np
 import mapper_generic as mg
 

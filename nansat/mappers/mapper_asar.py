@@ -9,7 +9,7 @@ from nansat import Nansat
 from nansat.vrt import VRT
 from envisat import Envisat
 from nansat.domain import Domain
-from nansat_tools import initial_bearing
+from nansat.nansat_tools import initial_bearing
 import numpy as np
 import scipy.ndimage
 

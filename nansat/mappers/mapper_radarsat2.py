@@ -13,7 +13,7 @@ import zipfile
 
 from nansat.vrt import *
 from nansat.domain import Domain
-from nansat_tools import Node
+from nansat.nansat_tools import Node
 
 try:
     from osgeo import gdal

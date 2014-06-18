@@ -8,7 +8,7 @@
 #import os
 from nansat.nsr import NSR
 from nansat.vrt import *
-from nansat_tools import Node
+from nansat.nansat_tools import Node
 import numpy as np
 
 class Mapper(VRT):
