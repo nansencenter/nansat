@@ -62,24 +62,6 @@ except:
     warnings.warn('GDAL will not raise exceptions.'
                   'Probably GDAL is not installed')
 
-# Set environment variables, the script directory
-nansathome = os.path.dirname(os.path.abspath(inspect.getfile(
-                                             inspect.currentframe())))
-sys.path.append(nansathome)
-sys.path.append(nansathome + '/mappers/')
-if not 'GDAL_DRIVER_PATH' in os.environ:
-    os.environ['GDAL_DRIVER_PATH'] = nansathome + '/pixelfunctions/'
-
-# Compile pixelfunctions if not already done.
-if sys.platform.startswith('win'):
-    if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.DLL'):
-        print 'Cannot find "gdal_PIXFUN.dll". Compile pixelfunctions !!'
-else:
-    if not os.path.exists(nansathome + '/pixelfunctions/gdal_PIXFUN.so'):
-        print 'Cannot find "gdal_PIXFUN.so". Compiling pixelfunctions...'
-        os.system('cd ' + nansathome + '/pixelfunctions/; make clean; make')
-
-
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
 
@@ -177,7 +159,7 @@ class Nansat(Domain):
         # Alternatively, make sure that the mapper filenames are sorted in the
         # correct order.
         # Sort mapperList to select default mappers first
-        mapperList.sort()
+        self.mapperList.sort()
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
