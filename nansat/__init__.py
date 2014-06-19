@@ -65,7 +65,7 @@ except ImportError:
     warnings.warn('''Cannot import NansatOGR! Nansat will not work''')
 
 try:
-    from nansat_tools import np, plt, Basemap, osr, ogr, gdal
+    from .nansat_tools import np, plt, Basemap, osr, ogr, gdal
 except ImportError:
     warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
 
