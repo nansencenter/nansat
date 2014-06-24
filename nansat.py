@@ -488,8 +488,8 @@ class Nansat(Domain):
                                                           options=[options])
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, fileName, bands=[1], datatypes={},
-                       maskName=None, metadata={}, products={}):
+    def export2thredds(self, fileName, bands=[1], datatypes=None,
+                       maskName=None, metadata=None, products=None):
         ''' Export data formatted for THREDDS server
 
         Parameters
@@ -502,13 +502,19 @@ class Nansat(Domain):
             key is name of band.
             value is a datatype string or list [datatype string, offset, scale].
             e.g.) "'mask': '>i1'" or "'V': ['>i2', 0.0, 0.01]"
+            keys should match names of the object
+            datatypes can include all bands or less
+            if None: datatype is copied from all input bands
         maskName: string
-            if data include a mask band, give the mask name.
+            if data include a mask band: give the mask name.
             Non-masked value is 64.
+            if None: no mask is added
         metadata : dictionary
             global metadata to add
+            if None: no additional global metadata is added
         products : dictionary
             key is band name to export. values are the band metadata.
+            if None: no additional band metadata is added
 
         Modifies
         ---------
@@ -522,16 +528,30 @@ class Nansat(Domain):
         # Create Nansat object with self domain (no band)
         data = Nansat(domain=self)
 
+        # check some input data
+        if products is None:
+            products = {}
+
+        # get mask (if exist)
+        if maskName is not None:
+            mask = self[maskName]
+
         # add required bands to data
+        iDatatypes = {}
         for iBand in bands:
             array = self[iBand]
             # set np.nan to Non-value
-            if iBand != maskName:
-                array[self[maskName]!=64] = np.nan
+            if maskName is not None and iBand != maskName:
+                array[mask != 64] = np.nan
             if type(iBand) is str:
                 iBand = self._get_band_number(iBand)
             bandMetadata = self.get_metadata(bandID=iBand)
             data.add_band(array=array, parameters = bandMetadata)
+            iDatatypes[bandMetadata['name']] = array.dtype.str.replace('u','i')
+
+        # use same datatypes as in input object
+        if datatypes is None:
+            datatypes = iDatatypes
 
         # get corners of reprojected data
         lonCrn,latCrn = data.get_corners()
@@ -548,8 +568,10 @@ class Nansat(Domain):
             'history': ' ',
             }
 
-        #join common and custom global metadata
-        metadata = dict(metadata, **globMetadata)
+        #join or replace default by custom global metadata
+        if metadata is not None:
+            for metaKey in metadata:
+                globMetadata[metaKey] = metadata[metaKey]
 
         fid, tmpName = tempfile.mkstemp(suffix='.nc')
         data.export(tmpName)
@@ -588,9 +610,7 @@ class Nansat(Domain):
         # create value of time variable
         if len(time) > 0:
             td = time[0] - datetime.datetime(1900, 1, 1)
-            print 'td:', td
             td = td.days
-            print 'td:', td
             # add date
             ncOVar[:] = np.int32(td).astype('>i4')
 
@@ -600,7 +620,6 @@ class Nansat(Domain):
             print 'Creating variable: ', ncIVarName
             if ncIVarName in ['x', 'y', 'lon', 'lat']:
                 # create simple x/y variables
-                print '    make :', ncIVarName
                 ncOVar = ncO.createVariable(ncIVarName, '>f4',
                                             ncIVar.dimensions)
             elif ncIVarName in ['stereographic', 'crs']:
@@ -691,8 +710,8 @@ class Nansat(Domain):
                 ncO._attributes[globAttr] = ncI._attributes[globAttr]
 
         # add common and custom global attributes
-        for glbMeta in metadata:
-            ncO._attributes[glbMeta] = metadata[glbMeta]
+        for globMeta in globMetadata:
+            ncO._attributes[globMeta] = globMetadata[globMeta]
 
         # write output file
         ncO.close()
