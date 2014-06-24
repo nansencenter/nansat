@@ -76,6 +76,7 @@ class Mosaic(Nansat):
         # the line below is for debugging
         #n = self.nClass(f, logLevel=self.logger.level)
         self.logger.info('Try to open %s' % f)
+        #n = self.nClass(f, logLevel=self.logger.level)
         try:
             n = self.nClass(f, logLevel=self.logger.level)
         except:
@@ -345,6 +346,7 @@ class Mosaic(Nansat):
                                                  'long_name': 'L2-mask',
                                                  'standard_name': 'mask'})
         firstN = self._get_layer_image(fName)
+
         # add averaged bands with metadata
         for bi, b in enumerate(bands):
             self.logger.debug('    %s' % b)
