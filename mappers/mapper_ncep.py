@@ -18,26 +18,38 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create NCEP VRT '''
 
-        if (gdalDataset.GetGeoTransform() != (-0.25, 0.5, 0.0,
-                                              90.25, 0.0, -0.5) or
-                gdalDataset.RasterCount != 9):  # Not water proof
-            raise AttributeError("NCEP BAD MAPPER")
+        if (gdalDataset.GetGeoTransform() == (-0.25, 0.5, 0.0,
+                                               90.25, 0.0, -0.5) or
+             gdalDataset.GetGeoTransform() == (-0.5, 1.0, 0.0,
+                                               90.5, 0.0, -1.0)):
+            if gdalDataset.RasterCount == 4:
+                srcBandId = {'temperature': 2,
+                              'u-component': 3,
+                              'v-component': 4}
+            elif gdalDataset.RasterCount == 9:
+                srcBandId = {'temperature': 6,
+                              'u-component': 8,
+                              'v-component': 9}
+            else:
+                raise AttributeError("NCEP BAD MAPPER")
+        else:
+            raise AttributeError("NCEP BAD MAPPER") # Not water proof
 
         metaDict = [{'src': {'SourceFilename': fileName,
-                             'SourceBand': 8},
+                             'SourceBand': srcBandId['u-component']},
                      'dst': {'wkv': 'eastward_wind',
                              'height': '10 m'}},
                     {'src': {'SourceFilename': fileName,
-                             'SourceBand': 9},
+                             'SourceBand': srcBandId['v-component']},
                      'dst': {'wkv': 'northward_wind',
                              'height': '10 m'}},
                     {'src': [{'SourceFilename': fileName,
-                              'SourceBand': 8,
-                              'DataType': gdalDataset.GetRasterBand(8).DataType
+                              'SourceBand': srcBandId['u-component'],
+                              'DataType': gdalDataset.GetRasterBand(srcBandId['u-component']).DataType
                               },
                              {'SourceFilename': fileName,
-                              'SourceBand': 9,
-                              'DataType': gdalDataset.GetRasterBand(9).DataType
+                              'SourceBand': srcBandId['v-component'],
+                              'DataType': gdalDataset.GetRasterBand(srcBandId['v-component']).DataType
                               }],
                      'dst': {'wkv': 'wind_speed',
                              'PixelFunctionType': 'UVToMagnitude',
@@ -45,12 +57,12 @@ class Mapper(VRT):
                              'height': '2 m'
                              }},
                     {'src': [{'SourceFilename': fileName,
-                              'SourceBand': 8,
-                              'DataType': gdalDataset.GetRasterBand(8).DataType
+                              'SourceBand': srcBandId['u-component'],
+                              'DataType': gdalDataset.GetRasterBand(srcBandId['u-component']).DataType
                               },
                              {'SourceFilename': fileName,
-                              'SourceBand': 9,
-                              'DataType': gdalDataset.GetRasterBand(9).DataType
+                              'SourceBand': srcBandId['v-component'],
+                              'DataType': gdalDataset.GetRasterBand(srcBandId['v-component']).DataType
                               }],
                      'dst': {'wkv': 'wind_from_direction',
                              'PixelFunctionType': 'UVToDirectionFrom',
@@ -58,7 +70,7 @@ class Mapper(VRT):
                              'height': '2 m'
                              }},
                     {'src': {'SourceFilename': fileName,
-                             'SourceBand': 6},
+                             'SourceBand': srcBandId['temperature']},
                      'dst': {'wkv': 'air_temperature',
                              'name': 'air_t',
                              'height': '2 m'}
@@ -71,7 +83,7 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Adding valid time from the GRIB file to dataset
-        band = gdalDataset.GetRasterBand(8)
+        band = gdalDataset.GetRasterBand(srcBandId['u-component'])
         validTime = band.GetMetadata()['GRIB_VALID_TIME']
         self._set_time(datetime.datetime.
                        utcfromtimestamp(int(validTime.strip().split(' ')[0])))
