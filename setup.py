@@ -41,8 +41,21 @@ skip_compile = False
 libraries = []
 include_dirs = []
 library_dirs = []
-extra_compile_args = ['-fPIC', '-Wall', '-Wno-long-long', '-pedantic', '-O3']
-extra_link_args = [] # not used currently
+if sys.platform == 'win32':
+    extra_compile_args = ['-nologo', '-DLL']
+    path = os.environ['LIB'].split(';')
+    for iFolder in path:
+        try:
+            files = os.listdir(iFolder)
+        except:
+            extra_link_args = []
+        else:
+            if 'gdal_i.lib' in files:
+                extra_link_args = [iFolder + '/gdal_i.lib']
+                break
+else:
+    extra_compile_args = ['-fPIC', '-Wall', '-Wno-long-long', '-pedantic', '-O3']
+    extra_link_args = [] # not used currently
 
 def _ask_gdal_config(resultlist, option, result_prefix):
     try:
@@ -98,7 +111,7 @@ def run_setup(skip_compile):
     else:
         kw = dict(
             ext_modules = [
-                Extension(NAME + '._pixfun', 
+                Extension(NAME + '._pixfun',
                           [NAME + '/pixelfunctions/pixelfunctions.c',
                            NAME + '/pixelfunctions/_pixfun.c'],
                           include_dirs=include_dirs,
@@ -122,11 +135,11 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages={NAME, NAME + '.mappers'},
+        packages=[NAME, NAME + '.mappers'],
         package_data={NAME: ['wkv.xml', "fonts/*.ttf"]},
         **kw
         )
-    
+
 try:
     run_setup(skip_compile)
 except ext_errors:

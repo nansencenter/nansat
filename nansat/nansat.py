@@ -148,10 +148,8 @@ class Nansat(Domain):
             for folder in sys.path:
                 for mapper in glob.glob(folder + '/mapper_*.py'):
                     self.mapperList.append(os.path.basename(mapper))
-
-            # pop and append generic mapper to the end
-            self.mapperList.pop(self.mapperList.index('mapper_generic.py'))
-            self.mapperList.append('mapper_generic.py')
+            # delete overlapped data
+            self.mapperList = list(set(self.mapperList))
 
         # In some cases there may be several mappers that work for the same
         # data. The base of the filenames of non-default mappers could be the
@@ -160,6 +158,11 @@ class Nansat(Domain):
         # correct order.
         # Sort mapperList to select default mappers first
         self.mapperList.sort()
+
+        if'mapper_generic.py' in self.mapperList:
+            # pop and append generic mapper to the end
+            self.mapperList.remove('mapper_generic.py')
+            self.mapperList.append('mapper_generic.py')
 
         self.logger.debug('Mappers: ' + str(self.mapperList))
 
@@ -298,7 +301,7 @@ class Nansat(Domain):
         Returns
         -------
             True/False if band exists or not
-                
+
         '''
         bandExists = False
         for b in self.bands():
@@ -480,7 +483,7 @@ class Nansat(Domain):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor)
-        If desired width, height or pixelsize is specified, 
+        If desired width, height or pixelsize is specified,
         the scaling factor is calculated accordingly.
         If GCPs are given in a dataset, they are also rewritten.
 
@@ -494,9 +497,9 @@ class Nansat(Domain):
             Desired new width in pixels
         height : int, optional
             Desired new height in pixels
-        pixelsize : float, optional 
-            Desired new pixelsize in meters (approximate). 
-            A factor is calculated from ratio of the 
+        pixelsize : float, optional
+            Desired new pixelsize in meters (approximate).
+            A factor is calculated from ratio of the
             current pixelsize to the desired pixelsize.
         eResampleAlg : int (GDALResampleAlg), optional
                -1 : Average,
@@ -523,7 +526,7 @@ class Nansat(Domain):
             factorX = deltaX / float(pixelsize)
             factorY = deltaY / float(pixelsize)
             factor = (factorX + factorY)/2
-          
+
         # estimate factor if width or height is given
         if width is not None:
             factor = float(width) / rasterXSize
@@ -569,7 +572,7 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
-        
+
         return factor
 
     def get_GDALRasterBand(self, bandID=1):
@@ -1435,7 +1438,7 @@ class Nansat(Domain):
             # get start/end coordinates of subwindows
             pixlinCoord0 = pixlinCoord - smoothRadius
             pixlinCoord1 = pixlinCoord + smoothRadius
-            # truncate out-of-image points 
+            # truncate out-of-image points
             gpi = ((pixlinCoord0[0] >= 0) *
                    (pixlinCoord0[1] >= 0) *
                    (pixlinCoord1[0] >= 0) *
@@ -1509,12 +1512,12 @@ class Nansat(Domain):
 
     def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
         '''Crop Nansat object
-        
+
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
         Rectangle (DstRect) tags in the VRT file for each band in order
         to take only part of the original image,
         create new GCPs or new GeoTransform for the cropped object.
-        
+
         Parameters
         ----------
         xOff : int
@@ -1525,7 +1528,7 @@ class Nansat(Domain):
             width in pixels of subimage
         ySize : int
             height in pizels of subimage
-        
+
         Modifies
         --------
             self.vrt : VRT
@@ -1587,7 +1590,7 @@ class Nansat(Domain):
                                                                         xSize,
                                                                         ySize))
             return 1
-            
+
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
             xSize += xOff
@@ -1634,11 +1637,11 @@ class Nansat(Domain):
             iNode3 = iNode2.node('DstRect')
             iNode3.replaceAttribute('xSize', str(xSize))
             iNode3.replaceAttribute('ySize', str(ySize))
-            
+
         # write modified XML
         xml = node0.rawxml()
         self.vrt.write_xml(xml)
-        
+
         # modify GCPs or GeoTranfrom to fit the new shape of image
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
@@ -1668,5 +1671,5 @@ class Nansat(Domain):
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
-        
+
         return 0

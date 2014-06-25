@@ -15,8 +15,12 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import os
+import os, sys
 import warnings
+
+# Set environment variables, the script directory
+nansathome = os.path.dirname(__file__)
+sys.path.append(nansathome + '/mappers/')
 
 try:
     from ._pixfun import registerPixelFunctions
