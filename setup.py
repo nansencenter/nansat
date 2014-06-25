@@ -14,6 +14,7 @@ from subprocess import Popen
 import subprocess
 import sys
 import errno
+import os
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -36,7 +37,6 @@ VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 #----------------------------------------------------------------------------#
 #                   Prepare compilation of C pixel functions
 #----------------------------------------------------------------------------#
-# TODO no Windows support yet
 skip_compile = False
 libraries = []
 include_dirs = []
