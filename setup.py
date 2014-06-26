@@ -159,7 +159,7 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages=[NAME, NAME + '.mappers'],
+        packages=[NAME, NAME + '.mappers', NAME + '.tests'],
         package_data={NAME: ['wkv.xml', "fonts/*.ttf"]},
         install_requires=REQS,
         **kw
