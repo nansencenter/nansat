@@ -1,21 +1,14 @@
-#-------------------------------------------------------------------------------
 # Name:        mapper_kmssL1
 # Purpose:     Mapping for KMSS-L1 data
 # Author:      Evgeny Morozov
 # Licence:     This file is part of NANSAT. You can redistribute it or modify
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
-#-------------------------------------------------------------------------------
-
 from datetime import datetime
-from numpy import mod
 
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+from osgeo import gdal
 
-from nansat.vrt import *
+from nansat.vrt import VRT
 from nansat.domain import Domain
 
 

@@ -4,11 +4,12 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
-from nansat.vrt import GeolocationArray, VRT, gdal, osr, NSR
 from datetime import datetime, timedelta
 from math import ceil
 
+from osgeo import gdal, osr
+from nansat.vrt import GeolocationArray, VRT
+from nansat.nsr import NSR
 
 class Mapper(VRT):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
@@ -32,7 +33,7 @@ class Mapper(VRT):
                   'MERIS Level-2 Data',
                   'GOCI Level-2 Data',
                   'VIIRSN Level-2 Data']
-                  
+
         # should raise error in case of not obpg_l2 file
         title = gdalMetadata["Title"]
         assert title in titles, 'obpg_l2 BAD MAPPER'
@@ -208,7 +209,7 @@ class Mapper(VRT):
 
         yDatasetSource = geolocationMetadata['Y_DATASET']
         yDataset = gdal.Open(yDatasetSource)
-    
+
         longitude = xDataset.ReadAsArray()
         latitude = yDataset.ReadAsArray()
 

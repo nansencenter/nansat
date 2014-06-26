@@ -7,11 +7,11 @@
 
 # Description of file format:
 # http://research.metoffice.gov.uk/research/interproj/nwpsaf/aapp/NWPSAF-MF-UD-003_Formats.pdf (page 120-)
-
 import sys
 import struct
 import datetime
-from nansat.vrt import *
+
+from nansat.vrt import VRT, GeolocationArray
 
 dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
 dataSetQualityIndicatorOffset = 114

@@ -8,8 +8,9 @@
 # Made for GRIB files downloaded from http://nomads.ncep.noaa.gov/
 # NB: Band numbers is hardcoded for band subsets extracted at NERSC,
 # mapper will not work for other NCEP GFS files before made more generic
+import datetime
 
-from nansat.vrt import VRT, datetime
+from nansat.vrt import VRT
 
 
 class Mapper(VRT):

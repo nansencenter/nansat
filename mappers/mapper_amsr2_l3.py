@@ -4,13 +4,16 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
+from dateutil.parser import parse
 import datetime
 import os.path
 import glob
-import gdal
+
+from osgeo import gdal
 import numpy as np
-from nansat.vrt import VRT, GeolocationArray, NSR, parse
+
+from nansat.vrt import VRT, GeolocationArray
+from nansat.nsr import NSR
 
 
 class Mapper(VRT):
@@ -37,7 +40,7 @@ class Mapper(VRT):
         assert gdalMetadata['PlatformShortName'] == 'GCOM-W1'
         assert gdalMetadata['SensorShortName'] == 'AMSR2'
         assert gdalMetadata['ProductName'] == 'AMSR2-L3'
-        
+
 
         # get list of similar (same date, A/D orbit) files in the directory
         iDir, iFile = os.path.split(fileName)

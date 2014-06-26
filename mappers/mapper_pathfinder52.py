@@ -9,7 +9,7 @@
 from datetime import datetime, timedelta
 import numpy as np
 import nansat.vrt
-from nansat_tools import latlongSRS
+from nansat.nrs import NSR
 
 
 class Mapper(vrt.VRT):
@@ -84,7 +84,7 @@ class Mapper(vrt.VRT):
         self._create_bands(metaDict)
 
         # append fixed projection and geotransform
-        self.dataset.SetProjection(latlongSRS.ExportToWkt())
+        self.dataset.SetProjection(NSR().wkt)
         self.dataset.SetGeoTransform((-180, 0.0417, 0, 90, 0, -0.0417))
 
         # set TIMEstart_time

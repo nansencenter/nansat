@@ -6,11 +6,12 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #
 # NB: This mapper works only together with a modified version of the GDAL MSG driver
+from datetime import datetime
 
 from numpy import array, arange
-from datetime import datetime
-from nansat.vrt import *
-from nansat_tools import Node
+
+from nansat.vrt import VRT
+from nansat.node import Node
 
 
 def arrays2LUTString(a, b):

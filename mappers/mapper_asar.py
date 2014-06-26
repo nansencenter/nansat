@@ -5,13 +5,13 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat import Nansat
+import numpy as np
+import scipy.ndimage
+
 from nansat.vrt import VRT
 from envisat import Envisat
 from nansat.domain import Domain
-from nansat_tools import initial_bearing
-import numpy as np
-import scipy.ndimage
+from nansat.tools import initial_bearing
 
 
 class Mapper(VRT, Envisat):
@@ -90,13 +90,13 @@ class Mapper(VRT, Envisat):
         lon = self.get_array_from_ADS('first_line_longs')
         lat = self.get_array_from_ADS('first_line_lats')
         inc = self.get_array_from_ADS('first_line_incidence_angle')
-        
+
         # Calculate SAR look direction (ASAR is always right-looking)
         SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
                                              lon[:, 1:], lat[:, 1:])
         # Interpolate to regain lost row
         SAR_look_direction = scipy.ndimage.interpolation.zoom(
-                                SAR_look_direction, (1, 11./10.)) 
+                                SAR_look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
         SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
         SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))

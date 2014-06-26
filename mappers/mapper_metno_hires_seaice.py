@@ -14,18 +14,13 @@
 #   'metno_hires_seaice:20140109'
 #
 # The latter syntax will construct the URL, and will return the closest available data within +/- 3 days
-
 import sys
 import urllib2
 from datetime import datetime, timedelta
-from nansat.vrt import *
-import osr
 
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+from osgeo import gdal, osr
 
+from nansat.vrt import VRT
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Met.no seaice '''
@@ -61,7 +56,7 @@ class Mapper(VRT):
         else:
             timestr = fileName[-15:-3]
             validTime = datetime.datetime.strptime(timestr, '%Y%m%d%H%M')
-        
+
         fileName = fileName + '?ice_concentration[0][y][x]'
         srcProjection = osr.SpatialReference()
         srcProjection.ImportFromProj4('+proj=stere lon_0=0.0 +lat_0=90 +datum=WGS84 +ellps=WGS84 +units=km +no_defs')
@@ -70,7 +65,7 @@ class Mapper(VRT):
         srcGeotransform = (-1243.008 - 1, 1, 0, -3190.026 - 7, 0, 1) # From thredds web, with manual shift
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, 
+        VRT.__init__(self,
                     srcGeoTransform=srcGeotransform,
                     srcProjection=srcProjection,
                     srcRasterXSize=3812,
@@ -80,7 +75,7 @@ class Mapper(VRT):
                                 'sourceBand': 1},
                     'dst': {'name': 'sea_ice_area_fraction',
                             'wkv': 'sea_ice_area_fraction'}}]
-                            
+
         # Add band
         self._create_bands(metaDict)
 
