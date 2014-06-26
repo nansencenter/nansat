@@ -4,7 +4,7 @@
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2011 - 2014
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -15,49 +15,42 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+import os
 import warnings
 
-try:
-    from .nsr import NSR
-except ImportError:
-    warnings.warn('''Cannot import NSR! Nansat will not work''')
+from .nsr import NSR
 
-try:
-    from .domain import Domain
-except ImportError:
-    warnings.warn('''Cannot import Domain! Nansat will not work''')
+from .domain import Domain
 
-try:
-    from .nansat import Nansat
-except ImportError:
-    warnings.warn('''Cannot import VRT! Nansat will not work''')
+from .nansat import Nansat
+
+__all__ = ['NSR', 'Domain', 'Nansat']
 
 try:
     from .figure import Figure
 except ImportError:
-    warnings.warn('''Cannot import Figure! Nansat will not work''')
+    warnings.warn('''Cannot import Figure! Nansat will not make figures!''')
+else:
+    __all__.append('Figure')
 
 try:
     from .nansatmap import Nansatmap
 except ImportError:
-    warnings.warn('''Cannot import Nansatmap! Nansat will not work''')
-
-try:
-    from .nansatshape import Nansatshape
-except ImportError:
-    warnings.warn('''Cannot import NansatOGR! Nansat will not work''')
-
-try:
-    from nansat_tools import np, plt, Basemap, os, osr, ogr, gdal
-except ImportError:
-    warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
+    warnings.warn('''Cannot import Nansatmap! Nansat will not make maps!''')
+else:
+    __all__.append('Nansatmap')
 
 try:
     from .mosaic import Mosaic
 except ImportError:
-    warnings.warn('''Cannot import Mosaic! Mosaic will not work''')
+    warnings.warn('''Cannot import Mosaic! Nansat will not mosaic files!''')
+else:
+    __all__.append('Mosaic')
 
 os.environ['LOG_LEVEL'] = '30'
 
-__all__ = ['NSR', 'Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
-           'Mosaic', 'np', 'plt', 'Basemap', 'gdal', 'ogr', 'osr']
+# import some libraries for convenience
+import gdal, ogr
+import numpy as np
+import matplotlib.pyplot as plt
+__all__ += ['gdal', 'ogr', 'np', 'plt']
