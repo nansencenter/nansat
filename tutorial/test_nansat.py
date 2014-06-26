@@ -54,7 +54,7 @@ Nansat inherits from Domain (container of geo-reference information)
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
-n = Nansat(iFileName)
+#n = Nansat(iFileName)
 
 # Open an input file, specify which Mapper to use, set logging level
 n = Nansat(iFileName, mapperName='generic', logLevel=10)

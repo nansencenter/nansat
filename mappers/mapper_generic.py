@@ -4,12 +4,14 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+import os
 
-#import os
-from nansat.nsr import NSR
-from nansat.vrt import *
-from nansat_tools import Node
+import gdal, ogr
 import numpy as np
+
+from nansat.nsr import NSR
+from nansat.vrt import VRT
+from nansat.node import Node
 
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,

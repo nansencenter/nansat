@@ -14,10 +14,15 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+import re
 
+from mpl_toolkits.basemap import Basemap
+from matplotlib import cm
+import matplotlib.pyplot as plt
+from scipy import ndimage
+import numpy as np
 
 from .nsr import NSR
-from nansat_tools import *
 
 
 class Nansatmap(Basemap):

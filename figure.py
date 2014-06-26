@@ -14,9 +14,16 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+import os
+from math import floor, log10, pow
 
-from nansat_tools import *
+import numpy as np
+from matplotlib import cm
+import Image
+import ImageDraw
+import ImageFont
 
+from .tools import add_logger
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
@@ -193,8 +200,6 @@ class Figure():
             longName and units.
 
         '''
-        from nansat_tools import add_logger
-
         # make a copy of nparray (otherwise a new reference to the same data is
         # created and the original input data is destroyed at process())
         array = np.array(nparray)
@@ -461,14 +466,14 @@ class Figure():
         # modify default values
         self._set_defaults(kwargs)
         ratio = self.ratio
-        
+
         # find masked pixels if mask_array and mask_lut provided
         masked = None
         if self.mask_array is not None and self.mask_lut is not None:
             masked = np.zeros(self.mask_array.shape, 'bool')
             for lutVal in self.mask_lut:
                 masked = masked + (self.mask_array == lutVal)
-        
+
         # create a ratio list for each band
         if isinstance(ratio, float) or isinstance(ratio, int):
             ratioList = np.ones(self.array.shape[0]) * float(ratio)
@@ -848,7 +853,7 @@ class Figure():
         except:
             self.logger.error('%s is not a valid colormap' % self.cmapName)
             self.cmapName = self._cmapName
-        
+
         # get colormap by name
         cmap = cm.get_cmap(self.cmapName)
 

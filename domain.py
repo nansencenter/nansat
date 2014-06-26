@@ -14,22 +14,21 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+import re
+from math import sin, pi, cos, acos, copysign
+import string
+from xml.etree.ElementTree import ElementTree
 
-from nansat_tools import *
 
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
+from matplotlib.patches import Polygon
+from osgeo import gdal, osr
 
-# import nansat parts
-try:
-    from .nsr import NSR
-except ImportError:
-    warnings.warn('Cannot import NSR!'
-                  'Nansat will not work.')
-
-try:
-    from .vrt import VRT
-except ImportError:
-    warnings.warn('Cannot import vrt! Domain will not work.')
-
+from .tools import add_logger, initial_bearing
+from .nsr import NSR
+from .vrt import VRT
 
 class Domain():
     '''Container for geographical reference of a raster
@@ -392,7 +391,7 @@ class Domain():
         X = range(0, self.vrt.dataset.RasterXSize, stepSize)
         Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
         Xm, Ym = np.meshgrid(X, Y)
-        
+
         if len(self.vrt.geolocationArray.d) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
@@ -695,7 +694,7 @@ class Domain():
         Returns
         -------
         OGR Geometry, type Polygon
-        
+
         '''
 
         return ogr.CreateGeometryFromWkt(self.get_border_wkt())
@@ -740,7 +739,7 @@ class Domain():
         deltaX, deltaY : float
         pixel size in X and Y directions given in meters
         '''
-                
+
         srs=osr.SpatialReference(self.vrt.dataset.GetProjection())
         if srs.IsProjected:
             if srs.GetAttrValue('unit') == 'metre':
@@ -748,7 +747,7 @@ class Domain():
                 deltaX = abs(geoTransform[1])
                 deltaY = abs(geoTransform[5])
                 return deltaX, deltaY
-        
+
         # Estimate pixel size in center of domain using haversine formula
         centerCol = round(self.vrt.dataset.RasterXSize/2)
         centerRow = round(self.vrt.dataset.RasterYSize/2)
@@ -889,16 +888,16 @@ class Domain():
 
     def azimuth_up(self, reductionFactor=1):
         '''Calculate the azimuth of 'upward' direction in each pixel
-        
+
         Generaly speaking, azimuth is angle from the reference vector
         (direction to North) to the chosen direction. Azimuth increases
         clockwise from direction to North. http://en.wikipedia.org/wiki/Azimuth
-        
+
         Here we calcluate azimuth of 'upward' direction.
         'Upward' direction coincides with Y-axis direction (and hence is
         opposite to the ROW-axis direction). For lon-lat (cylindrical,
         Plate Caree) and Mercator projections 'upward' direction coincides with
-        direction to North, hence azimuth is 0. 
+        direction to North, hence azimuth is 0.
 
         Parameters
         -----------

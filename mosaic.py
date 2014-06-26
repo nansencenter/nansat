@@ -15,12 +15,13 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
 import multiprocessing as mp
+import datetime
+
+import numpy as np
 import scipy.stats as st
-import pdb;
-# import standard and additional libraries
-from nansat import *
+
+from .nansat import Nansat
 
 
 class Mosaic(Nansat):

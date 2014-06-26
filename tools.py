@@ -14,11 +14,13 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
+import os
 import warnings
+import logging
 
 from matplotlib import cm
 import numpy as np
+from scipy import mod
 
 '''
 # import standard modules
@@ -128,25 +130,6 @@ except ImportError:
                   'Figure.create_legend will not work.'
                   'Try installing numpy.')
 
-try:
-    import Image
-    import ImageDraw
-    import ImageFont
-except ImportError:
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-    except ImportError:
-        warnings.warn('Cannot import PIL!'
-                      'Figure will not work'
-                      'Try installing PIL.')
-
-## used in nansat_tools and nansatmap
-try:
-    from scipy import mod, ndimage
-except ImportError:
-    warnings.warn('Cannot import scipy.mod!'
-                  'nansat_toolds will not work'
-                  'Try installing scipy.')
 '''
 obpg = {
 'red': [  (0.00, 0.56, 0.56),

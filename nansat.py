@@ -15,47 +15,31 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-# import standard and additional libraries
-from nansat_tools import *
-import scipy
-import math
+import os
+import sys
+import inspect
+import warnings
 import tempfile
-from scipy.io.netcdf import netcdf_file
+import math
 import types
+import glob
+import datetime
+import dateutil.parser
 
+from osgeo import gdal
+import scipy
+from scipy.io.netcdf import netcdf_file
+import numpy as np
+from matplotlib import cm
 
-# import nansat parts
-try:
-    from .nsr import NSR
-except ImportError:
-    warnings.warn('Cannot import NSR!'
-                  'Nansat will not work.')
-
-# import nansat parts
-try:
-    from .domain import Domain
-except ImportError:
-    warnings.warn('Cannot import Domain!'
-                  'Nansat will not work.')
-
-try:
-    from .figure import Figure
-except ImportError:
-    warnings.warn('Cannot import Figure!'
-                  'Nansat will not work.')
-
-try:
-    from .vrt import VRT
-except ImportError:
-    warnings.warn('Cannot import VRT!'
-                  'Nansat will not work.')
-
-try:
-    from .nansatshape import Nansatshape
-except ImportError:
-    warnings.warn('Cannot import NansatOGR!'
-                  'Nansat will not work.')
+from .nsr import NSR
+from .domain import Domain
+from .figure import Figure
+from .vrt import VRT
+from .nansatshape import Nansatshape
+from .tools import add_logger, Error
+from .node import Node
+from .pointbrowser import PointBrowser
 
 # Force GDAL to raise exceptions
 try:
@@ -1268,16 +1252,16 @@ class Nansat(Domain):
             colormap = band.GetMetadataItem('colormap')
         except:
             colormap = 'jet'
-        try:
-            cmap = cm.get_cmap(colormap, 256)
-            cmap = cmap(arange(256)) * 255
-            colorTable = gdal.ColorTable()
-            for i in range(cmap.shape[0]):
-                colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
-                              int(cmap[i, 2]), int(cmap[i, 3]))
-                colorTable.SetColorEntry(i, colorEntry)
-        except:
-            print 'Could not add colormap; Matplotlib may not be available.'
+        #try:
+        cmap = cm.get_cmap(colormap, 256)
+        cmap = cmap(np.arange(256)) * 255
+        colorTable = gdal.ColorTable()
+        for i in range(cmap.shape[0]):
+            colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
+                          int(cmap[i, 2]), int(cmap[i, 3]))
+            colorTable.SetColorEntry(i, colorEntry)
+        #except:
+        #    print 'Could not add colormap; Matplotlib may not be available.'
         # Write Tiff image, with data scaled to values between 0 and 255
         outDataset = gdal.GetDriverByName('Gtiff').Create(fileName,
                                                           band.XSize,
