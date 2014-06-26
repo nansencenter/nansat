@@ -1,5 +1,5 @@
-# Name:    nansat_tools.py
-# Purpose: collection of libraries used in NANSAT modules
+# Name:    tools.py
+# Purpose: collection of data and funcs used in NANSAT modules
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
@@ -22,115 +22,6 @@ from matplotlib import cm
 import numpy as np
 from scipy import mod
 
-'''
-# import standard modules
-
-## used in domain and nansat_tools
-import os.path
-import re
-
-## used in nansat, vrt, figure
-import os
-
-## used in vrt and nansat_tools
-import logging
-
-## used in domain
-from math import atan2, sin, pi, cos, acos, radians, degrees, copysign
-import string
-from xml.etree.ElementTree import ElementTree
-
-## used in nansat
-import dateutil.parser
-import glob
-import inspect
-import pdb
-import sys
-
-## used in vrt
-import datetime
-from dateutil.parser import parse
-from random import choice
-from string import Template, ascii_uppercase, digits
-
-## used in figure, nansat_map
-from math import floor, log10, pow
-
-## used in nansat_tools
-import copy
-import warnings
-import xml.dom.minidom as xdm
-
-# try to import additional modules
-## used in domain, nansat, vrt and nansat_tools
-try:
-    from osgeo import gdal, osr, ogr
-except ImportError:
-    try:
-        import gdal
-        import osr
-        import ogr
-    except ImportError:
-        warnings.warn('Cannot import GDAL!'
-                      'Nansat, Vrt, Domain and nansat_tools will not work'
-                      'Try installing GDAL.')
-
-## used in nansat, domain, vrt and figure
-try:
-    import numpy as np
-except ImportError:
-    warnings.warn('Cannot import numpy!'
-                  'Domain, Figure and Vrt will not work.'
-                  'Try installing numpy.')
-
-## used in domain and figure
-try:
-    import matplotlib.pyplot as plt
-except:
-    warnings.warn('Cannot import matplotlib.pyplot!'
-                  'Domain.write_map() and Figure will not work'
-                  'Try installing matplotlib.')
-
-## used in nansat and figure
-try:
-    from matplotlib import cm
-except:
-    warnings.warn('Cannot import matplotlib.cm!'
-                  'Nansat.write_geotiffimage and Figure will not work.'
-                  'Try installing matplotlib.')
-
-## used in domain
-try:
-    from matplotlib.patches import Polygon
-except:
-    warnings.warn('Cannot import matplotlib.patches.Polygon!'
-                  'Domain.write_map() will not work'
-                  'Try installing matplotlib.')
-
-try:
-    from mpl_toolkits.basemap import Basemap
-except:
-    warnings.warn('Cannot import mpl_toolkits.basemap.Basemap!'
-                  'Domain.write_map() will not work'
-                  'Try installing Basemap.')
-
-## used in nansat
-try:
-    from numpy import arange
-except ImportError:
-    warnings.warn('Cannot import numpy.arange!'
-                  'Nansat.write_geotiffimage will not work.'
-                  'Try installing numpy.')
-
-## used in figure
-try:
-    from numpy import outer
-except ImportError:
-    warnings.warn('Cannot import numpy.outer!'
-                  'Figure.create_legend will not work.'
-                  'Try installing numpy.')
-
-'''
 obpg = {
 'red': [  (0.00, 0.56, 0.56),
           (0.19, 0.00, 0.00),
@@ -195,9 +86,8 @@ ak01 = {
 (0.88,0,0,),
 (1,0.5,0.5,)],
 
-
-
 }
+
 try:
     cm.register_cmap(name='obpg', data=obpg, lut=256)
     cm.register_cmap(name='ak01', data=ak01, lut=256)
@@ -311,26 +201,3 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger
-
-
-def set_defaults(dictionary, newParm):
-        '''Check input params and set defaut values
-
-        Look throught default parameters (self.d) and given parameters (dict)
-        and paste value from input if the key matches
-
-        Parameters
-        ----------
-        dict : dictionary
-            parameter names and values
-
-        Modifies
-        ---------
-        self.d
-
-        '''
-        for key in newParm:
-            if key in dictionary:
-                dictionary[key] = newParm[key]
-
-        return dictionary
