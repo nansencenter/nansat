@@ -7,11 +7,18 @@
 
 from dateutil.parser import parse
 import struct
-from nansat.vrt import VRT, GeolocationArray
-import gdal
 import numpy as np
 import scipy.ndimage
 
+try:
+    from osgeo import gdal
+except ImportError:
+    try:
+        import gdal
+    except ImportError:
+        raise ImportError("Nansat requires gdal, which should be installed separately")
+
+from nansat.vrt import VRT, GeolocationArray
 
 class Envisat():
     '''Methods/data shared between Envisat mappers
