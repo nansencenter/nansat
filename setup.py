@@ -50,8 +50,8 @@ PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
 MINOR               = 6
 MICRO               = 0
-ISRELEASED          = True
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+ISRELEASED          = False
+VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "scipy",
                         "matplotlib",
