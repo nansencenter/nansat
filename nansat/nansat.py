@@ -159,7 +159,7 @@ class Nansat(Domain):
         # Sort mapperList to select default mappers first
         self.mapperList.sort()
 
-        if'mapper_generic.py' in self.mapperList:
+        if 'mapper_generic.py' in self.mapperList:
             # pop and append generic mapper to the end
             self.mapperList.remove('mapper_generic.py')
             self.mapperList.append('mapper_generic.py')

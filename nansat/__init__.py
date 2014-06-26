@@ -18,8 +18,8 @@
 import os, sys
 import warnings
 
-# Set environment variables, the script directory
-nansathome = os.path.dirname(__file__)
+# Add the mappers directory to pythonpath
+nansathome = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(nansathome + '/mappers/')
 
 try:

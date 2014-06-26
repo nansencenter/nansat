@@ -14,24 +14,49 @@ from subprocess import Popen
 import subprocess
 import sys
 import errno
+import os
+
+# Check if numpy, gdal, and basemap packages are installed
+try:
+    import numpy
+except ImportError:
+    raise ImportError("Nansat requires numpy, which should be installed separately")
+try:
+    from osgeo import gdal, osr, ogr
+except ImportError:
+    try:
+        import gdal
+        import osr
+        import ogr
+    except ImportError:
+        raise ImportError("Nansat requires gdal, which should be installed separately")
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError:
+        raise ImportError("Nansat requires Basemap, which should be installed separately")
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
-MAINTAINER_EMAIL    = "numpy-discussion@scipy.org"
-DESCRIPTION         = "***"   # DOCLINES[0]
-LONG_DESCRIPTION    = "***"   # "\n".join(DOCLINES[2:])
-URL                 = "http://normap.nersc.no/"
-DOWNLOAD_URL        = "http://normap.nersc.no/"
-LICENSE             = '***'
+MAINTAINER_EMAIL    = "nansat-dev@googlegroups.com"
+DESCRIPTION         = "A scientist friendly Python toolbox for processing 2D satellite Earth observation data"
+LONG_DESCRIPTION    = "A scientist friendly Python toolbox for processing 2D satellite Earth observation data"
+URL                 = "https://github.com/nansencenter/nansat"
+DOWNLOAD_URL        = "https://github.com/nansencenter/nansat"
+LICENSE             = "GNU General Public License"
 CLASSIFIERS         = '***'  # filter(None, CLASSIFIERS.split('\n'))
 AUTHOR              = ("Asuka Yamakawa, Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad")
-AUTHOR_EMAIL        = "asuka.yamakawa@nersc.no"
+AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
-MAJOR               = 1
-MINOR               = 0
+MAJOR               = 0
+MINOR               = 6
 MICRO               = 0
-ISRELEASED          = True
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+ISRELEASED          = False
+VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+REQS                = [
+                        "scipy",
+                        "matplotlib",
+                        "Pillow",
+                    ]
 
 #----------------------------------------------------------------------------#
 #                   Prepare compilation of C pixel functions
@@ -89,7 +114,7 @@ except Exception as e:
 #----------------------------------------------------------------------------#
 #                               Install package
 #----------------------------------------------------------------------------#
-from distutils.core import setup
+from setuptools import setup
 from distutils.extension import Extension
 from distutils.errors import CCompilerError, DistutilsExecError,\
     DistutilsPlatformError
@@ -134,8 +159,9 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages= [NAME, NAME + '.mappers'],
+        packages=[NAME, NAME + '.mappers', NAME + '.tests'],
         package_data={NAME: ['wkv.xml', "fonts/*.ttf"]},
+        install_requires=REQS,
         **kw
         )
 
@@ -156,3 +182,4 @@ except ext_errors:
     print(BUILD_EXT_WARNING)
     print("Plain-Python installation succeeded.")
     print('*' * 75)
+
