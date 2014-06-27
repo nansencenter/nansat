@@ -2,11 +2,11 @@
 # Name:         test_nansat.py
 # Purpose:      To test nansat
 #
-# Author:       Morten Wergeland Hansen
+# Author:       Morten Wergeland Hansen, Asuka Yamakawa
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:27.06.2014 11:00
+# Last modified:27.06.2014 11:04
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
