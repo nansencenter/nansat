@@ -113,7 +113,7 @@ class VRT():
     The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
     information and information ABOUT each band including band metadata,
     reference to the bands in the source file.
-    VRT-class perfroms all operation on VRT-files: create, copy, modify,
+    VRT-class performs all operation on VRT-files: create, copy, modify,
     read, write, add band, add GeoTransform, SetProjection, etc. It uses
     either GDAL methods for these operations (e.g. Create, AddBand,
     SetMetadata, AutoCreateWarpedVRT, etc.) or reads/writes the XML-file
@@ -233,7 +233,7 @@ class VRT():
         lat : Numpy array
             grid with latitudes
         subVRTs : dict
-            dictionray with VRTs that are used inside VRT
+            dictionary with VRTs that are used inside VRT
 
         Modifies
         ---------
@@ -955,6 +955,7 @@ class VRT():
         Modifies the input VRT according to the input options
         Creates simple WarpedVRT with AutoCreateWarpedVRT
         Modifies the WarpedVRT according to the input options
+        The original VRT is stored as WarpedVRT.vrt 
 
         The function tries to use geolocation array by default;
         if not present (or canceled) tries to use GCPs;
@@ -1163,7 +1164,7 @@ class VRT():
             warpedVRT.add_geolocationArray(dstGeolocationArray)
             warpedVRT.dataset.SetProjection('')
 
-        # Copy self into self.vrt
+        # Copy self to warpedVRT
         warpedVRT.vrt = self.copy()
 
         # replace the reference from srcVRT to self
@@ -1675,7 +1676,9 @@ class VRT():
 
         ''' Resize VRT
 
-        Create Warped VRT with modidied RasterXSize, RasterYSize, GeoTransform
+        Create Warped VRT with modified RasterXSize, RasterYSize, GeoTransform.
+        The returned VRT object has a copy of its original source VRT in its
+        own vrt object (e.g. warpedVRT.vrt = originalVRT.copy()).
 
         Parameters
         -----------
