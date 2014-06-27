@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	13.03.2014
-# Last modified:20.03.2014 14:24
+# Last modified:05.05.2014 09:49
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
 #               redistribute it and/or modify it under the terms of the GNU
@@ -42,16 +42,14 @@ class Mapper(VRT):
 
         # List of Sentinel-1 level-2 components
         unwanted_product_components = ['osw','owi','rvl']
+        # Remove requested 'product_type' from list of unwanted
         unwanted_product_components.pop( unwanted_product_components.index(
             product_type.lower() ) )
-
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
         title = gdalMetadata['NC_GLOBAL#TITLE']
         # Raise error if it is not Sentinel-1 format
-        assert 'Sentinel-1' in title, 's1a_l2 BAD MAPPER'
-
-        pdb.set_trace()
+        assert 'Sentinel-1' or 'ASA' in title, 's1a_l2 BAD MAPPER'
 
         metadata = {}
         for key, val in gdalMetadata.iteritems():
@@ -60,6 +58,8 @@ class Mapper(VRT):
 
         subDatasets = gdalDataset.GetSubDatasets()
         fileNames = [f[0] for f in subDatasets]
+
+        #pdb.set_trace()
 
         rm_bands = []
         # Find all data that is not relevant for the selected product type

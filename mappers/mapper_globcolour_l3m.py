@@ -33,7 +33,7 @@ class Mapper(VRT, Globcolour):
         iFileName, iFileExt = os.path.splitext(iFile)
         print 'idir:', iDir, iFile, iFileName[0:30], iFileExt[0:8]
 
-        simFilesMask = os.path.join(iDir, iFileName[0:30] + '*')
+        simFilesMask = os.path.join(iDir, iFileName[0:30] + '*.nc')
         simFiles = glob.glob(simFilesMask)
         print 'simFilesMask, simFiles', simFilesMask, simFiles
 

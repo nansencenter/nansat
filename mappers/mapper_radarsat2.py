@@ -6,6 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from numpy import mod
+import scipy.ndimage
 from math import asin
 import tarfile
 import zipfile
@@ -18,8 +19,6 @@ try:
     from osgeo import gdal
 except ImportError:
     import gdal
-
-import pdb
 
 
 class Mapper(VRT):
@@ -112,11 +111,59 @@ class Mapper(VRT):
                     if polString == s0datasetPol:
                         b0datasetBand = j
 
-        # Add Sigma0 bands with metadata
-        self._create_bands(metaDict)
+        ###############################
+        # Add SAR look direction
+        ###############################
+        d = Domain(ds=gdalDataset)
+        lon, lat = d.get_geolocation_grids(100)
+       
+        # Calculate SAR look direction (assuming right-looking)
+        SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
+                  lon[:, 1:], lat[:, 1:]) + antennaPointing + 90.0
+        # Interpolate to regain lost row
+        SAR_look_direction = np.mod(SAR_look_direction, 360)
+        SAR_look_direction = scipy.ndimage.interpolation.zoom(
+                                SAR_look_direction, (1, 11./10.))
+        # Decompose, to avoid interpolation errors around 0 <-> 360
+        SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
+        SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
+        look_u_VRT = VRT(array=SAR_look_direction_u, lat=lat, lon=lon)
+        look_v_VRT = VRT(array=SAR_look_direction_v, lat=lat, lon=lon)
 
-        # Add derived band (incidence angle) calculated using pixel function
-        # "BetaSigmaToIncidence":
+        # Note: If incidence angle and look direction are stored in
+        #       same VRT, access time is about twice as large
+        lookVRT = VRT(lat=lat, lon=lon)
+        lookVRT._create_band(
+                [{'SourceFilename': look_u_VRT.fileName, 'SourceBand': 1},
+                 {'SourceFilename': look_v_VRT.fileName, 'SourceBand': 1}],
+                 {'PixelFunctionType': 'UVToDirectionTo'})
+
+        # Blow up to full size
+        lookVRT = lookVRT.get_resized_vrt(
+                    gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        # Store VRTs so that they are accessible later
+        self.subVRTs = {'look_u_VRT': look_u_VRT,
+                        'look_v_VRT': look_v_VRT,
+                        'lookVRT': lookVRT}
+        
+        # Add band to full sized VRT
+        lookFileName = self.subVRTs['lookVRT'].fileName
+        metaDict.append({'src':
+                            {'SourceFilename': lookFileName,
+                             'SourceBand': 1},
+                         'dst':
+                            {'wkv': 'sensor_azimuth_angle',
+                             'name': 'SAR_look_direction'}})
+
+        ###############################
+        # Create bands
+        ###############################
+        self._create_bands(metaDict)
+        
+        ###################################################
+        # Add derived band (incidence angle) calculated
+        # using pixel function "BetaSigmaToIncidence":
+        ###################################################
         src = [{'SourceFilename': b0datasetName,
                 'SourceBand':  b0datasetBand,
                 'DataType': dtype},
@@ -156,20 +203,13 @@ class Mapper(VRT):
             self.dataset.FlushCache()
 
         ############################################
-        # Add SAR look direction to metadata domain
+        # Add SAR metadata
         ############################################
         if antennaPointing == 90:
             self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')
         if antennaPointing == -90:
             self.dataset.SetMetadataItem('ANTENNA_POINTING', 'LEFT')
         self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(passDirection).upper())
-        # "center look direction" below is obsolete, and can soon be deleted
-        self.dataset.SetMetadataItem(
-            'SAR_center_look_direction',
-            str(mod(
-                Domain(ds=gdalDataset).upwards_azimuth_direction(
-                    orbit_direction=str(passDirection)) + antennaPointing,
-                360)))
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']

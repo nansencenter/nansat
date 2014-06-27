@@ -1,5 +1,5 @@
-# Name:         mapper_ncep_online
-# Purpose:      Nansat mapping for NCEP GFS model data subset as downloaded by OpenWind
+# Name:         mapper_ncep_wind
+# Purpose:      Nansat mapping for NCEP GFS model data subset as downloaded by mapper_ncep_wind_online
 # Author:       Knut-Frode Dagestad
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
