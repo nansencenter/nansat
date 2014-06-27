@@ -62,7 +62,10 @@ class Envisat():
                           "last_line_incidence_angle"   : {"offset": 25+11*4*5+34+11*4*2, "dataType": gdal.GDT_Float32, "units": "deg"},
                           "last_line_lats"              : {"offset": 25+11*4*5+34+11*4*3, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"},
                           "last_line_longs"             : {"offset": 25+11*4*5+34+11*4*4, "dataType": gdal.GDT_Int32  , "units": "(10)^-6 deg"}
-                          }}}
+                          }
+                 }
+            }
+
     # map: GDAL TYPES ==> struct format strings
     structFmt = {gdal.GDT_Int16: ">h",
                  gdal.GDT_UInt16: ">H",
