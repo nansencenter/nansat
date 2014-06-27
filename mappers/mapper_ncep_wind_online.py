@@ -116,10 +116,10 @@ class Mapper(VRT,object):
 
         return
 
-    def __del__(self):
-        super(Mapper,self).__del__()
-        # Delete the downloaded ncep data
-        try:
-            os.unlink(self.dataset.GetFileList()[0])
-        except:
-            pass
+    #def __del__(self):
+    #    super(Mapper,self).__del__()
+    #    # Delete the downloaded ncep data
+    #    try:
+    #        os.unlink(self.dataset.GetFileList()[0])
+    #    except:
+    #        pass
