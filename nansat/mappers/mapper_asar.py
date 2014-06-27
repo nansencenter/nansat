@@ -1,6 +1,7 @@
 # Name:         mapper_asar.py
 # Purpose:      Mapper for Envisat/ASAR data
-# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad
+# Authors:      Asuka Yamakava, Anton Korosov, Knut-Frode Dagestad, 
+#               Morten W. Hansen
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
