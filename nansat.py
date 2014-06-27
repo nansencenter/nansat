@@ -673,7 +673,7 @@ class Nansat(Domain):
                 # replace non-value by '_FillValue'
                 if (ncIVar.name in dstBands):
                     if '_FillValue' in dstBands[ncIVar.name].keys():
-                        data[np.isnan(data)] = products[ncIVar.name]['_FillValue']
+                        data[np.isnan(data)] = bands[ncIVar.name]['_FillValue']
 
                 ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
 
@@ -688,7 +688,7 @@ class Nansat(Domain):
                 if ncIVar.name in bands:
                     for newAttr in bands[ncIVar.name]:
                         if newAttr not in ['type', 'scale', 'offset']:
-                            ncOVar._attributes[newAttr] = products[ncIVar.name][newAttr]
+                            ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
@@ -713,6 +713,8 @@ class Nansat(Domain):
         # Delete the temprary netCDF file
         fid = None
         os.remove(tmpName)
+
+        return 0
 
     def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
