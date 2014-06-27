@@ -92,6 +92,9 @@ print '1st Band Metadata:', n.get_metadata(bandID=1), '\n'
 # add a band from numpy array (copy the 1st band to the end (5th band))
 n.add_band(n[1], parameters={'name': 'Name1',
                              'info':  'copy from the 1st band array'})
+
+n.add_bands([n[1], n[2]], [{'name': 'n1'}, {'name': 'n2'}])
+
 # print band list
 n.list_bands()
 # get GDAL raster band (2nd band)

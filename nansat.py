@@ -256,8 +256,10 @@ class Nansat(Domain):
 
         Parameters
         -----------
-        array : Numpy array with band data
-        parameters : dictionary, band metadata: wkv, name, etc.
+        array : ndarray
+            band data
+        parameters : dictionary
+            band metadata: wkv, name, etc. (or for several bands)
         nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
@@ -266,23 +268,46 @@ class Nansat(Domain):
         Adds band to the self.vrt
 
         '''
-        # None => {} in input p
-        if parameters is None:
-            parameters = {}
+        self.add_bands([array], [parameters], nomem)
 
-        # create VRT from array
-        bandVRT = VRT(array=array, nomem=nomem)
+    def add_bands(self, arrays, parameters=None, nomem=False):
+        '''Add band from the array to self.vrt
+
+        Create VRT object which contains VRT and RAW binary file and append it
+        to self.vrt.subVRTs
+
+        Parameters
+        -----------
+        array : ndarray or list
+            band data (or data for several bands)
+        parameters : dictionary or list
+            band metadata: wkv, name, etc. (or for several bands)
+        nomem : boolean, saves the vrt to a tempfile if nomem is True
+
+        Modifies
+        ---------
+        Creates VRT object with VRT-file and RAW-file
+        Adds band to the self.vrt
+
+        '''
+        # create VRTs from arrays
+        bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
 
-        # add the array band into self.vrt and get bandName
-        bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
-                                          'SourceBand': 1}, parameters)
         # create subVRTs as dict
         if self.vrt.subVRTs is None:
             self.vrt.subVRTs = {}
 
-        self.vrt.subVRTs[bandName] = bandVRT
+        # add the array band into self.vrt and get bandName
+        for bi, bandVRT in enumerate(bandVRTs):
+            params = parameters[bi]
+            if params is None:
+                params = {}
+            bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
+                                              'SourceBand': 1}, params)
+            self.vrt.subVRTs[bandName] = bandVRT
+
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
