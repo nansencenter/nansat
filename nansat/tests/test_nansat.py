@@ -3,10 +3,10 @@
 # Purpose:      To test nansat
 #
 # Author:       Morten Wergeland Hansen
-# Modified:	    Morten Wergeland Hansen, Asuka Yamakawa
+# Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:26.06.2014 10:36
+# Last modified:27.06.2014 11:00
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import numpy as np
 
 from nansat import *
 
-import test_nansat_archive as tna
+import nansat_test_archive as tna
 test_data = tna.TestData()
 
 class NansatTest(unittest.TestCase):
