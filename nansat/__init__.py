@@ -21,6 +21,19 @@ import warnings
 nansathome = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(nansathome + '/mappers/')
 
+# check if pixel functions were compiled using setup_tools
+try:
+    from ._pixfun import registerPixelFunctions
+    registerPixelFunctions()
+except Exception as e:
+    print repr(e)
+    warnings.warn('''Cannot register C pixel functions!\n
+                     Either nansat was not installed using setup.py or
+                     pixel functions were not compiled automatically.
+                     Make sure pixel functions are compiled manualy:
+                     cd NANSATHOME/nansat/pixelfunctios; make
+                     ''')
+
 from .nsr import NSR
 from .domain import Domain
 from .nansat import Nansat
