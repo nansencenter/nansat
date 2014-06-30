@@ -54,7 +54,7 @@ Nansat inherits from Domain (container of geo-reference information)
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
-n = Nansat(iFileName)
+#n = Nansat(iFileName)
 
 # Open an input file, specify which Mapper to use, set logging level
 n = Nansat(iFileName, mapperName='generic', logLevel=10)
@@ -184,4 +184,11 @@ print ''
 ogrObject = n.get_transect(points, returnOGR=True)
 ogrObject.export(oFileName + '_10_transect.shp')
 
+# export into THREDDS friendly file
+iFileName = os.path.join(iPath, 'stere.tif')
+n = Nansat(iFileName)
+n.export2thredds(oFileName + 'thredds.nc', [1,2,3])
+
+
 print '\n***nansat_test completed successfully. Output files are found here:' + oFileName
+

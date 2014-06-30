@@ -4,14 +4,14 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
 import datetime
 import os.path
 import glob
 import gdal
 import numpy as np
-from nansat.vrt import VRT, GeolocationArray, NSR
 
+from nansat.vrt import VRT, GeolocationArray
+from nansat.nsr import NSR
 
 class Mapper(VRT):
     ''' Mapper for Level-3 Standard Mapped Image from

@@ -14,9 +14,10 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from string import Template, ascii_uppercase, digits
+from random import choice
 
-# import standard and additional libraries
-from nansat_tools import *
+from osgeo import ogr
 
 
 class Nansatshape():

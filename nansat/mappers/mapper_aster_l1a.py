@@ -1,14 +1,17 @@
-# Name:        mapper_obpg_l2
+# Name:        mapper_aster_l1a
 # Purpose:     Mapping for L2 data from the OBPG web-site
 # Authors:      Anton Korosov
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
-from nansat.vrt import GeolocationArray, VRT, gdal, osr, NSR, parse
 from datetime import datetime, timedelta
 from math import ceil
+from dateutil.parser import parse
 
+from osgeo import gdal, osr
+
+from nansat.vrt import GeolocationArray, VRT
+from nansat.nsr import NSR
 
 class Mapper(VRT):
     ''' Mapper for ASTER L1A VNIR data'''
@@ -116,6 +119,6 @@ class Mapper(VRT):
                     gcps.append(gcp)
                     k += 1
         # append GCPs and lat/lon projection to the vsiDataset
-        self.dataset.SetGCPs(gcps, latlongSRS.ExportToWkt())
+        self.dataset.SetGCPs(gcps, NSR().wkt)
 
         self._set_time(parse(gdalMetadata['FIRSTPACKETTIME']))

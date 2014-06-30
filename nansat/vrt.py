@@ -14,15 +14,18 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+import os
 import tempfile
+from string import Template, ascii_uppercase, digits
+from random import choice
+import datetime
 
-from nansat_tools import *
+from osgeo import gdal, osr
+import numpy as np
 
-try:
-    from .nsr import NSR
-except ImportError:
-    warnings.warn('Cannot import nsr! VRT will not work.')
-
+from .node import Node
+from .nsr import NSR
+from .tools import add_logger
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
@@ -93,7 +96,7 @@ class GeolocationArray():
         self.d['LINE_STEP'] = str(lineStep)
         self.d['PIXEL_OFFSET'] = str(pixelOffset)
         self.d['PIXEL_STEP'] = str(pixelStep)
-    
+
     def get_geolocation_grids(self):
         '''Read values of geolocation grids'''
         lonDS = gdal.Open(self.d['X_DATASET'])
@@ -102,9 +105,9 @@ class GeolocationArray():
         latDS = gdal.Open(self.d['Y_DATASET'])
         latBand = latDS.GetRasterBand(int(self.d['Y_BAND']))
         latGrid = latBand.ReadAsArray()
-        
+
         return lonGrid, latGrid
-        
+
 
 
 class VRT():
@@ -138,7 +141,7 @@ class VRT():
 
     Nansat has one instances of Mapper-class (<=VRT-class): self.vrt.
     It holds VRT-file in original projection (derived from the
-    input file). After most of the operations with Nansat object 
+    input file). After most of the operations with Nansat object
     (e.g. reproject, crop, resize, add_band) self.vrt is replaced with a new
     VRT object (super VRT or supVRT) which has the previous VRT object inside
     (subVRT). The supVRT references subVRT and adds any kind of transformation:
@@ -146,7 +149,7 @@ class VRT():
     subVRT = self.vrt
     self.vrt = method_to_create_super_VRT()
     self.vrt.vrt = subVRT
-    
+
     '''
     ComplexSource = Template('''
             <$SourceType>
@@ -811,7 +814,7 @@ class VRT():
         # add subVRTs: dictionary with several VRTs generated in mappers
         # or with added bands
         vrt.subVRTs = self.subVRTs
-        
+
         # set TPS flag
         vrt.tps = bool(self.tps)
 
@@ -1138,7 +1141,7 @@ class VRT():
             tmpVRTXML = warpedVRT.read_xml()
             tmpVRTXML = tmpVRTXML.replace('GCPTransformer', 'TPSTransformer')
             warpedVRT.write_xml(tmpVRTXML)
-            
+
         """
         # TODO: implement the below option for proper handling stereo
         # projections over the pole get source projection from GCPs or
@@ -1469,7 +1472,7 @@ class VRT():
         # read xml and create the node
         XML = shiftVRT.read_xml()
         node0 = Node.create(XML)
-        
+
         # divide into two bands and switch the bands
         for i in range(len(node0.nodeList('VRTRasterBand'))):
             # create i-th 'VRTRasterBand' node
@@ -1490,7 +1493,7 @@ class VRT():
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
             cloneNode.node('DstRect').replaceAttribute('xSize', shiftStr)
-            
+
             # get VRTRasterBand with inserted ComplexSource
             node1 = node1.insert(cloneNode.rawxml())
             node0.replaceNode('VRTRasterBand', i, node1)
@@ -1560,7 +1563,7 @@ class VRT():
             src = {'SourceFilename': superVRT.vrt.fileName,
                    'SourceBand': iBand + 1}
             dst = superVRT.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
-            # remove PixelFunctionType from metadata to prevent its application 
+            # remove PixelFunctionType from metadata to prevent its application
             if 'PixelFunctionType' in dst:
                 dst.pop('PixelFunctionType')
             superVRT._create_band(src, dst)
@@ -1626,18 +1629,18 @@ class VRT():
         options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
         if self.tps:
             options += 'METHOD=GCP_TPS'
-        
+
         # create transformer
         transformer = gdal.Transformer(self.dataset, None, options)
-        
+
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([colVector, rowVector]).transpose()
-        
+
         # transfrom coordinates
         #lonlat = transformer.TransformPoints(DstToSrc, xy)#[0]
         #import pdb; pdb.set_trace()
         lonlat = transformer.TransformPoints(DstToSrc, xy)[0]
-        
+
         # convert return to lon,lat vectors
         lonlat = np.array(lonlat)
         if lonlat.shape[0] > 0:
@@ -1645,7 +1648,7 @@ class VRT():
             latVector = lonlat[:, 1]
         else:
             lonVector, latVector = [], []
-        
+
         return lonVector, latVector
 
     def get_projection(self):

@@ -12,19 +12,14 @@
 # and [optional] keyword: iceFolder = <local folder where netCDF files with ice are stored>
 #
 # The closest available data within +/- 3 days is returned
-
 import sys
 import os
 import urllib2
 from datetime import datetime, timedelta
-from nansat.vrt import *
-from nansat.nansat_tools import osr
 
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+import osr, gdal
 
+from nansat.vrt import VRT
 import mapper_generic as mg
 
 
@@ -39,9 +34,9 @@ class Mapper(mg.Mapper):
         except:
             #iceFolderName = '/vol/istjenesten/data/metnoCharts/'
             iceFolderName = '/vol/data/metnoCharts/'
-            
+
         keywordBase = 'metno_local_hires_seaice'
-        
+
         if fileName[0:len(keywordBase)] != keywordBase:
             raise AttributeError("Wrong mapper")
 
@@ -59,7 +54,7 @@ class Mapper(mg.Mapper):
                 gdalMetadata = gdalDataset.GetMetadata()
                 mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
                 foundDataset = True
-                # Modify GeoTransform from netCDF file - otherwise a shift is seen! 
+                # Modify GeoTransform from netCDF file - otherwise a shift is seen!
                 self.dataset.SetGeoTransform(
                     (-1243508 -1000, 1000, 0, -210526 -7000, 0, -1000))
                 break # Data is found for this day

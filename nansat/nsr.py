@@ -1,10 +1,8 @@
 # Name:    domain.py
-# Purpose: Container of Domain class
-# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
-#               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
-# Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Purpose: Container of NSR class
+# Authors:      Anton Korosov
+# Created:      01.02.2014
+# Copyright:    (c) NERSC 2011 - 2014
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -14,17 +12,17 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-from nansat_tools import ProjectionError, osr
+from osgeo import osr
+from .tools import ProjectionError
 
 class NSR(osr.SpatialReference, object):
     '''Nansat Spatial Reference
-    
+
     Overrides only constructor of osr.SpatialReference
     '''
     def __init__(self, srs=0):
         '''Create Spatial Reference System from input parameter
-        
+
         Input
         -----
         srs : 0, PROJ4 or EPSG or WKT or osr.SpatialReference, NSR
@@ -49,7 +47,7 @@ class NSR(osr.SpatialReference, object):
                     AUTHORITY["EPSG","8901"]],
                 UNIT["degree",0.0174532925199433,
                     AUTHORITY["EPSG","9108"]],
-                AUTHORITY["EPSG","4326"]]'            
+                AUTHORITY["EPSG","4326"]]'
 
         See Also
         ---------
@@ -85,6 +83,6 @@ class NSR(osr.SpatialReference, object):
             status = self.ImportFromWkt(srs.ExportToWkt())
             if status > 0:
                 raise ProjectionError('NSR %s is wrong' % srs)
-        
+
         # set WKT
         self.wkt = self.ExportToWkt()

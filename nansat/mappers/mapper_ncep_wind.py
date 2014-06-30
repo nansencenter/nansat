@@ -6,8 +6,9 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #
 # Made for GRIB files downloaded from http://nomads.ncep.noaa.gov/data/gfs4/
+import datetime
 
-from nansat.vrt import VRT, datetime
+from nansat.vrt import VRT
 
 
 class Mapper(VRT):

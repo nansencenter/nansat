@@ -19,7 +19,7 @@
 import os
 
 from nansat import Nansat
-from nansat_tools import PointBrowser
+from pointbrowser import PointBrowser
 
 # input and output file names
 from testio import testio

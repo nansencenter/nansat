@@ -6,11 +6,14 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 import glob
-from nansat.vrt import GeolocationArray, VRT, gdal, osr, NSR
 from datetime import datetime, timedelta
 from math import ceil
-from scipy.ndimage.filters import gaussian_filter
 
+from scipy.ndimage.filters import gaussian_filter
+import gdal, osr
+
+from nansat.nsr import NSR
+from nansat.vrt import GeolocationArray, VRT
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
