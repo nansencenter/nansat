@@ -17,11 +17,7 @@ from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
 from nansat.tools import Error, initial_bearing
-
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+from nansat.tools import gdal, ogr
 
 
 class Mapper(VRT):

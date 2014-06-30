@@ -19,14 +19,12 @@ from math import sin, pi, cos, acos, copysign
 import string
 from xml.etree.ElementTree import ElementTree
 
-
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
-from osgeo import gdal, osr
 
-from .tools import add_logger, initial_bearing
+from .tools import add_logger, initial_bearing, gdal, osr
 from .nsr import NSR
 from .vrt import VRT
 

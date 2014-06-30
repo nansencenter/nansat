@@ -8,6 +8,9 @@
 import matplotlib.pyplot as plt
 import os
 
+import sys
+sys.path.append('../')
+
 from nansat import Nansat, Domain
 from testio import testio
 

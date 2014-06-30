@@ -17,8 +17,7 @@ import os
 import urllib2
 from datetime import datetime, timedelta
 
-import osr, gdal
-
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 import mapper_generic as mg
 

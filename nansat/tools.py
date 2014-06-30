@@ -22,6 +22,11 @@ from matplotlib import cm
 import numpy as np
 from scipy import mod
 
+try:
+    import gdal, ogr, osr
+except:
+    from osgeo import gdal, ogr, osr
+
 obpg = {
 'red': [  (0.00, 0.56, 0.56),
           (0.19, 0.00, 0.00),

@@ -10,8 +10,7 @@
 import os.path
 import datetime
 
-import gdal
-
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 
 class Mapper(VRT):

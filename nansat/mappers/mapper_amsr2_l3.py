@@ -9,11 +9,11 @@ import datetime
 import os.path
 import glob
 
-from osgeo import gdal
 import numpy as np
 
 from nansat.vrt import VRT, GeolocationArray
 from nansat.nsr import NSR
+from nansat.tools import gdal, ogr
 
 
 class Mapper(VRT):

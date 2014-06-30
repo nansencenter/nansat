@@ -20,12 +20,11 @@ from string import Template, ascii_uppercase, digits
 from random import choice
 import datetime
 
-from osgeo import gdal, osr
 import numpy as np
 
 from .node import Node
 from .nsr import NSR
-from .tools import add_logger
+from .tools import add_logger, gdal, osr
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
@@ -958,7 +957,7 @@ class VRT():
         Modifies the input VRT according to the input options
         Creates simple WarpedVRT with AutoCreateWarpedVRT
         Modifies the WarpedVRT according to the input options
-        The original VRT is stored as WarpedVRT.vrt 
+        The original VRT is stored as WarpedVRT.vrt
 
         The function tries to use geolocation array by default;
         if not present (or canceled) tries to use GCPs;

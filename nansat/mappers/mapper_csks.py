@@ -9,9 +9,8 @@ from struct import unpack
 
 import numpy as np
 import os
-import gdal
 
-from nansat.nansat_tools import osr
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 
 

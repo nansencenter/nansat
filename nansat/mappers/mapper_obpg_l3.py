@@ -7,9 +7,10 @@
 import datetime
 import os.path
 import glob
-import gdal
+
 import numpy as np
 
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 from nansat.nsr import NSR
 

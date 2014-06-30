@@ -7,11 +7,11 @@
 from dateutil.parser import parse
 import struct
 
-import gdal
 import numpy as np
 import scipy.ndimage
 
 from nansat.vrt import VRT, GeolocationArray
+from nansat.tools import gdal, ogr
 
 
 class Envisat():

@@ -6,11 +6,11 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 
-from osgeo import osr
 import numpy as np
 from scipy.io import loadmat
 
 from nansat.vrt import VRT
+from nansat.tools import gdal, ogr
 
 class Mapper(VRT):
     ''' MApper for Matlab files with SMOS data '''

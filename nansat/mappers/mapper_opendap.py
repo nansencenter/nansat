@@ -1,6 +1,19 @@
-from osgeo import gdal, osr
+# Name:         mapper_opendap.py
+# Purpose:      Mapping for generic OpenDAP online data
+# Author:       Anton Korosov
+# Created:      01.01.2014
+# Copyright:    (c) NERSC
+# License:      This file is part of NANSAT. NANSAT is free software: you can
+#               redistribute it and/or modify it under the terms of the GNU
+#               General Public License as published by the Free Software
+#               Foundation, version 3 of the License.
+#               http://www.gnu.org/licenses/gpl-3.0.html This program is
+#               distributed in the hope that it will be useful, but WITHOUT ANY
+#               WARRANTY without even the implied warranty of MERCHANTABILITY
+#               or FITNESS FOR A PARTICULAR PURPOSE.
 from netCDF4 import Dataset
 
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 

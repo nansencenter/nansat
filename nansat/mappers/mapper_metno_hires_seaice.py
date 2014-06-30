@@ -18,8 +18,7 @@ import sys
 import urllib2
 from datetime import datetime, timedelta
 
-from osgeo import gdal, osr
-
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 
 class Mapper(VRT):

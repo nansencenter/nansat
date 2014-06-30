@@ -26,7 +26,6 @@ import glob
 import datetime
 import dateutil.parser
 
-from osgeo import gdal
 import scipy
 from scipy.io.netcdf import netcdf_file
 import numpy as np
@@ -37,7 +36,7 @@ from .domain import Domain
 from .figure import Figure
 from .vrt import VRT
 from .nansatshape import Nansatshape
-from .tools import add_logger, Error
+from .tools import add_logger, Error, gdal
 from .node import Node
 from .pointbrowser import PointBrowser
 

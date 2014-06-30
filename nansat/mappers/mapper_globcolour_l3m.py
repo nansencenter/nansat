@@ -9,12 +9,11 @@ import datetime
 import os.path
 import glob
 
-import gdal
-
 import numpy as np
 
 from nansat.vrt import VRT, GeolocationArray
 from globcolour import Globcolour
+from nansat.tools import gdal, ogr
 
 
 class Mapper(VRT, Globcolour):

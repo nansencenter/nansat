@@ -8,8 +8,7 @@ from datetime import datetime, timedelta
 from math import ceil
 from dateutil.parser import parse
 
-from osgeo import gdal, osr
-
+from nansat.tools import gdal, ogr
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
 

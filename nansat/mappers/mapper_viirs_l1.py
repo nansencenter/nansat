@@ -10,10 +10,10 @@ from datetime import datetime, timedelta
 from math import ceil
 
 from scipy.ndimage.filters import gaussian_filter
-import gdal, osr
 
 from nansat.nsr import NSR
 from nansat.vrt import GeolocationArray, VRT
+from nansat.tools import gdal, ogr
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''

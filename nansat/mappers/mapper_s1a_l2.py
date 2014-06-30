@@ -1,4 +1,3 @@
-#-------------------------------------------------------------------------------
 # Name:     mapper_s1a_l2.py
 # Purpose:      Mapping for Sentinel-1 level-2 data
 #
@@ -16,7 +15,6 @@
 #               distributed in the hope that it will be useful, but WITHOUT ANY
 #               WARRANTY without even the implied warranty of MERCHANTABILITY
 #               or FITNESS FOR A PARTICULAR PURPOSE.
-#-------------------------------------------------------------------------------
 import os
 
 from nansat.vrt import VRT

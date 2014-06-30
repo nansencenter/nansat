@@ -6,8 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 
-from osgeo import gdal
-
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 
 

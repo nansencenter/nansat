@@ -22,9 +22,7 @@ nansathome = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(nansathome + '/mappers/')
 
 from .nsr import NSR
-
 from .domain import Domain
-
 from .nansat import Nansat
 
 __all__ = ['NSR', 'Domain', 'Nansat']
@@ -53,7 +51,7 @@ else:
 os.environ['LOG_LEVEL'] = '30'
 
 # import some libraries for convenience
-import gdal, ogr
+from .tools import gdal, ogr
 import numpy as np
 import matplotlib.pyplot as plt
 __all__ += ['gdal', 'ogr', 'np', 'plt']

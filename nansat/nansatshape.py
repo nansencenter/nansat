@@ -17,7 +17,7 @@
 from string import Template, ascii_uppercase, digits
 from random import choice
 
-from osgeo import ogr
+from .tools import ogr
 
 
 class Nansatshape():

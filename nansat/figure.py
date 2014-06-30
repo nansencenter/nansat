@@ -19,9 +19,10 @@ from math import floor, log10, pow
 
 import numpy as np
 from matplotlib import cm
-import Image
-import ImageDraw
-import ImageFont
+try:
+    import Image, ImageDraw, ImageFont
+except:
+    from PIL import Image, ImageDraw, ImageFont
 
 from .tools import add_logger
 

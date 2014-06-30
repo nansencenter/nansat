@@ -5,8 +5,7 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 
-from osgeo import osr
-
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 
 
