@@ -572,6 +572,8 @@ class Nansat(Domain):
                 dstBands[iband]['offset'] = float(bands[iband]['offset'])
             else:
                 dstBands[iband]['offset'] = 0.0
+            if '_FillValue' in bands[iband]:
+                dstBands[iband]['_FillValue'] = float(bands[iband]['_FillValue'])
 
             # mask values with np.nan
             if maskName is not None and iband != maskName:
@@ -694,7 +696,6 @@ class Nansat(Domain):
                     ncOVar._attributes['add_offset'] = offset
                     ncOVar._attributes['scale_factor'] = scale
                     data = (data - offset) / scale
-
                 # replace non-value by '_FillValue'
                 if (ncIVar.name in dstBands):
                     if '_FillValue' in dstBands[ncIVar.name].keys():
