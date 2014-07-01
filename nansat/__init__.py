@@ -27,11 +27,11 @@ try:
     registerPixelFunctions()
 except Exception as e:
     print repr(e)
-    warnings.warn('''Cannot register C pixel functions!\n
+    warnings.warn('''Cannot register C pixel functions!
                      Either nansat was not installed using setup.py or
                      pixel functions were not compiled automatically.
-                     Make sure pixel functions are compiled manualy:
-                     cd NANSATHOME/nansat/pixelfunctios; make
+                     For development, use "python setup.py build_ext --inplace"
+                     to compile pixel functions manually into the source tree.
                      ''')
 
 from .nsr import NSR
