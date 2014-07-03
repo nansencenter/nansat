@@ -54,29 +54,15 @@ print mappers.__path__
 
 nansatMappers = {}
 for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__):
-    print name,
     loader = finder.find_module(name)
     try:
         module = loader.load_module(name)
     except:
-        print sys.exc_info()
+        print name, sys.exc_info()
     else:
-        print '- OK!'
         if hasattr(module, 'Mapper'):
             nansatMappers[name] = module.Mapper
-print nansatMappers
 #import pdb; pdb.set_trace()
-
-'''
-    if not ispkg:
-        print name
-        mappers_name = __import__('nansat.mappers.' + name)
-        print dir(mappers_name)
-        mapper = getattr(mappers_name, name)
-        if hasattr(mapper, 'Mapper'):
-            nansatMappers[name] = mapper.Mapper
-print nansatMappers
-'''
 
 
 class Nansat(Domain):
@@ -1442,29 +1428,29 @@ class Nansat(Domain):
 
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
-            # Stripping off eventual 'mapper_' and '.py' and converting
-            # to lowercase
-            mapperName = mapperName.replace('mapper_',
-                                            '').replace('.py', '').lower()
-            # create VRT
-            try:
-                mapper_module = __import__('mapper_' + mapperName)
-            except ImportError:
-                raise Error('Mapper ' + mapperName + ' not in PYTHONPATH')
-            tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
-                                          metadata, **kwargs)
+            # get module name
+            mapperName = 'mapper_' + mapperName.replace('mapper_',
+                                                        '').replace('.py',
+                                                                    '').lower()
+            # check if mappers is available
+            if mapperName not in nansatMappers:
+                raise Error('Mapper ' + mapperName + ' not found')
+            # create VRT using the selected mapper
+            tmpVRT = nansatMappers[mapperName](self.fileName,
+                                               gdalDataset,
+                                               metadata,
+                                               **kwargs)
             self.mapper = mapperName
         else:
             # We test all mappers, import one by one
-            for iMapper in self.mapperList:
-                # get rid of .py extension
-                iMapper = iMapper.replace('.py', '')
+            for iMapper in nansatMappers:
                 self.logger.debug('Trying %s...' % iMapper)
                 try:
-                    mapper_module = __import__(iMapper)
                     # create a Mapper object and get VRT dataset from it
-                    tmpVRT = mapper_module.Mapper(self.fileName, gdalDataset,
-                                                  metadata, **kwargs)
+                    tmpVRT = nansatMappers[iMapper](self.fileName,
+                                                    gdalDataset,
+                                                    metadata,
+                                                    **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper
                     break
