@@ -5,7 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #
-# Mapper searches two online archives for NCEP GFS grib files 
+# Mapper searches two online archives for NCEP GFS grib files
 # covering the requested time, and downloads using curl, if found:
 #    1. ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/ (~last month)
 #    2. http://nomads.ncdc.noaa.gov/data/gfs4/ (back to June 2012, with holes)
@@ -21,13 +21,11 @@ from datetime import datetime, timedelta
 import inspect
 
 from nansat.vrt import VRT
-from nansat import Nansat
-
 
 # Could be input as argument, or defined as environment variable
 outFolder = './'
 
-class Mapper(VRT,object):
+class Mapper(VRT, object):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -60,7 +58,7 @@ class Mapper(VRT,object):
             forecastHour = 3
 
         #########################################################
-        # Try first to get NRT data from 
+        # Try first to get NRT data from
         # ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/
         # - avaliable approximately the latest month
         #########################################################
@@ -110,7 +108,8 @@ class Mapper(VRT,object):
         ######################################################
         # Open downloaded grib file with a(ny) Nansat mapper
         ######################################################
-
+        # baaaad solution!
+        from nansat import Nansat
         w = Nansat(outFileName)
         VRT.__init__(self, vrtDataset=w.vrt.dataset)
 

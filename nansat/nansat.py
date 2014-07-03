@@ -25,6 +25,7 @@ import types
 import glob
 import datetime
 import dateutil.parser
+import pkgutil
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -50,6 +51,32 @@ except:
 # get available mappers
 import mappers
 print mappers.__path__
+
+nansatMappers = {}
+for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__):
+    print name,
+    loader = finder.find_module(name)
+    try:
+        module = loader.load_module(name)
+    except:
+        print sys.exc_info()
+    else:
+        print '- OK!'
+        if hasattr(module, 'Mapper'):
+            nansatMappers[name] = module.Mapper
+print nansatMappers
+#import pdb; pdb.set_trace()
+
+'''
+    if not ispkg:
+        print name
+        mappers_name = __import__('nansat.mappers.' + name)
+        print dir(mappers_name)
+        mapper = getattr(mappers_name, name)
+        if hasattr(mapper, 'Mapper'):
+            nansatMappers[name] = mapper.Mapper
+print nansatMappers
+'''
 
 
 class Nansat(Domain):
