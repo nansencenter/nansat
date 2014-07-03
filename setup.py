@@ -32,7 +32,10 @@ except ImportError:
         raise ImportError("Nansat requires gdal, which should be installed separately")
 try:
     from mpl_toolkits.basemap import Basemap
-except ImportError:
+except ImportError as e:
+    if 'No module named matplotlib' in e.message:
+        pass
+    else:
         raise ImportError("Nansat requires Basemap, which should be installed separately")
 
 NAME                = 'nansat'
