@@ -14,6 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os, sys
 import warnings
 import logging
@@ -29,6 +30,7 @@ try:
 except:
     from osgeo import gdal, ogr, osr
 
+import nansat.mappers
 
 # Force GDAL to raise exceptions
 try:
@@ -47,14 +49,14 @@ def import_mappers():
             value: class Mapper(VRT) from the mapper module
 
     '''
-    # import the namespace package nansat.mappers
-    import mappers
+    ## import the namespace package nansat.mappers
+    #import mappers
 
     # create ordered dict for string mappers
     nansatMappers = collections.OrderedDict()
 
     # scan through modules and load all modules that contain class Mapper
-    for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__[::-1]):
+    for finder, name, ispkg in pkgutil.iter_modules(nansat.mappers.__path__[::-1]):
         loader = finder.find_module(name)
         try:
             module = loader.load_module(name)
