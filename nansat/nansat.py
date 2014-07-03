@@ -33,9 +33,7 @@ from .nansatshape import Nansatshape
 from .tools import add_logger, Error, gdal, import_mappers
 from .node import Node
 from .pointbrowser import PointBrowser
-
-# import available mappers
-nansatMappers = import_mappers()
+from . import nansatMappers
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations

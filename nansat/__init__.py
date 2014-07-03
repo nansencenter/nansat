@@ -30,6 +30,10 @@ except Exception as e:
                      to compile pixel functions manually into the source tree.
                      ''')
 
+# import nansat mappers
+from .tools import import_mappers
+nansatMappers = import_mappers()
+
 from .nsr import NSR
 from .domain import Domain
 from .nansat import Nansat

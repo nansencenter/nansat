@@ -11,7 +11,7 @@ from nansat.vrt import VRT
 from nansat.node import Node
 from nansat.nsr import NSR
 
-import mapper_generic as mg
+from nansat.mappers import mapper_generic as mg
 
 
 class Mapper(mg.Mapper):
