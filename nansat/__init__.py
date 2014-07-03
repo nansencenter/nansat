@@ -17,10 +17,6 @@
 import os, sys
 import warnings
 
-# Add the mappers directory to pythonpath
-nansathome = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(nansathome + '/mappers/')
-
 # check if pixel functions were compiled using setup_tools
 try:
     from ._pixfun import registerPixelFunctions
