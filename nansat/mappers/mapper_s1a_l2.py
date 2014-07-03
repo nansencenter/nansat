@@ -2,10 +2,10 @@
 # Purpose:      Mapping for Sentinel-1 level-2 data
 #
 # Author:       Morten Wergeland Hansen
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
-# Created:  13.03.2014
-# Last modified:05.05.2014 09:49
+# Created:	13.03.2014
+# Last modified:03.07.2014 14:55
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
 #               redistribute it and/or modify it under the terms of the GNU
@@ -169,5 +169,28 @@ class Mapper(VRT):
             # append band with src and dst dictionaries
             metaDict.append({'src': src, 'dst': dst})
 
+        # add bands with metadata and corresponding values to the empty VRT
+        self._create_bands(metaDict)
+
+        metaDict = []
+        for i in range(self.dataset.RasterCount):
+            if 'Nrcs' in self.dataset.GetRasterBand(i+1).GetMetadata()['name']:
+                metaDict.append({
+                    'src': {
+                        'SourceFilename': self.dataset.GetRasterBand(i+1).GetMetadata()['SourceFilename'],
+                        'SourceBand': 1,
+                        },
+                    'dst': {
+                        'short_name': 'sigma0',
+                        'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                        'PixelFunctionType':  'dB2pow',
+                        'polarization': self.dataset.GetMetadata()['POLARISATION'],
+                        'suffix': self.dataset.GetMetadata()['POLARISATION'],
+                        'dataType': 6,
+                    }
+                })
+
+        import pdb
+        pdb.set_trace()
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
