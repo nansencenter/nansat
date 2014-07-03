@@ -47,6 +47,11 @@ except:
     warnings.warn('GDAL will not raise exceptions.'
                   'Probably GDAL is not installed')
 
+# get available mappers
+import mappers
+print mappers.__path__
+
+
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
 
