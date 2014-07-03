@@ -23,7 +23,7 @@ class Mapper(VRT):
             # load file
             matFile = loadmat(fileName)
         else:
-            AttributeError("SMOS BAD MAPPER");
+            raise AttributeError("SMOS BAD MAPPER");
             
         # get geolocation
         geolocArray = matFile['geolocation'][0]
