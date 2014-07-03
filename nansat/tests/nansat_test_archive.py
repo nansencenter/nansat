@@ -6,11 +6,11 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:27.06.2014 11:04
+# Last modified:03.07.2014 15:09
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
-import os
+import os, warnings
 
 dirname = os.path.dirname(os.path.abspath(__file__))
 
