@@ -26,6 +26,7 @@ import glob
 import datetime
 import dateutil.parser
 import pkgutil
+import collections
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -52,8 +53,10 @@ except:
 import mappers
 print mappers.__path__
 
-nansatMappers = {}
-for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__):
+nansatMappers = collections.OrderedDict()
+
+# scan through modules and load all modules that contain class Mapper
+for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__[::-1]):
     loader = finder.find_module(name)
     try:
         module = loader.load_module(name)
@@ -62,7 +65,14 @@ for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__):
     else:
         if hasattr(module, 'Mapper'):
             nansatMappers[name] = module.Mapper
-#import pdb; pdb.set_trace()
+
+# move generic_mapper to the end
+if 'mapper_generic' in nansatMappers:
+    gm = nansatMappers.pop('mapper_generic')
+    nansatMappers['mapper_generic'] = gm
+
+for key in nansatMappers:
+    print key
 
 
 class Nansat(Domain):
@@ -122,8 +132,8 @@ class Nansat(Domain):
 
         Creates
         --------
-        self.mapperList : list of file names
-            list of available working mappers
+        self.mapper : str
+            name of the used mapper
         self.fileName : file name
             set file name given by the argument
         self.vrt : VRT object
@@ -143,31 +153,6 @@ class Nansat(Domain):
 
         # empty dict of VRTs with added bands
         self.addedBands = {}
-
-        # add all available mappers if mapperName is not given
-        self.mapper = 'None'
-        self.mapperList = []
-        if mapperName is '':
-            for folder in sys.path:
-                for mapper in glob.glob(folder + '/mapper_*.py'):
-                    self.mapperList.append(os.path.basename(mapper))
-            # delete overlapped data
-            self.mapperList = list(set(self.mapperList))
-
-        # In some cases there may be several mappers that work for the same
-        # data. The base of the filenames of non-default mappers could be the
-        # same as the default mapper but with a number or string appended.
-        # Alternatively, make sure that the mapper filenames are sorted in the
-        # correct order.
-        # Sort mapperList to select default mappers first
-        self.mapperList.sort()
-
-        if 'mapper_generic.py' in self.mapperList:
-            # pop and append generic mapper to the end
-            self.mapperList.remove('mapper_generic.py')
-            self.mapperList.append('mapper_generic.py')
-
-        self.logger.debug('Mappers: ' + str(self.mapperList))
 
         # set input file name
         self.fileName = fileName
