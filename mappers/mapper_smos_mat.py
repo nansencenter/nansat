@@ -23,8 +23,8 @@ class Mapper(VRT):
             # load file
             matFile = loadmat(fileName)
         else:
-            AttributeError("SMOS BAD MAPPER")
-
+            raise AttributeError("SMOS BAD MAPPER");
+            
         # get geolocation
         geolocArray = matFile['geolocation'][0]
         srcProj4 = '+proj=stere +lon_0=%f +lat_0=%f +datum=WGS84 +ellps=WGS84 +units=km +no_defs' % (geolocArray[0], geolocArray[1])

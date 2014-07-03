@@ -445,7 +445,7 @@ class VRT():
         elif type(src) in [list, tuple]:
             srcs = src
         else:
-            AttributeError('Wrong src!')
+            raise AttributeError('Wrong src!')
 
         # Check if dst is given, or create empty dict
         if dst is None:
@@ -461,7 +461,7 @@ class VRT():
         for src in srcs:
             # check if SourceFilename is given
             if 'SourceFilename' not in src:
-                AttributeError('SourceFilename not given!')
+                raise AttributeError('SourceFilename not given!')
 
             # set default values
             for srcDefault in srcDefaults:
