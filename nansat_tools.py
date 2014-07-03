@@ -28,7 +28,7 @@ import os
 import logging
 
 ## used in domain
-from math import atan2, sin, cos, radians, degrees
+from math import atan2, sin, pi, cos, acos, radians, degrees, copysign
 import string
 from xml.etree.ElementTree import ElementTree
 
@@ -45,8 +45,8 @@ from dateutil.parser import parse
 from random import choice
 from string import Template, ascii_uppercase, digits
 
-## used in figure
-from math import floor, log10
+## used in figure, nansat_map
+from math import floor, log10, pow
 
 ## used in nansat_tools
 import copy
@@ -56,11 +56,12 @@ import xml.dom.minidom as xdm
 # try to import additional modules
 ## used in domain, nansat, vrt and nansat_tools
 try:
-    from osgeo import gdal, osr
+    from osgeo import gdal, osr, ogr
 except ImportError:
     try:
         import gdal
         import osr
+        import ogr
     except ImportError:
         warnings.warn('Cannot import GDAL!'
                       'Nansat, Vrt, Domain and nansat_tools will not work'
@@ -127,15 +128,15 @@ try:
     import ImageFont
 except ImportError:
     try:
-        from PIL import Image, ImabeDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageFont
     except ImportError:
         warnings.warn('Cannot import PIL!'
                       'Figure will not work'
                       'Try installing PIL.')
 
-## used in nansat_tools
+## used in nansat_tools and nansatmap
 try:
-    from scipy import mod
+    from scipy import mod, ndimage
 except ImportError:
     warnings.warn('Cannot import scipy.mod!'
                   'nansat_toolds will not work'
@@ -145,8 +146,8 @@ LOG_LEVEL = 30
 
 try:
     latlongSRS = osr.SpatialReference()
-    latlongSRS.ImportFromProj4('+proj=latlong +ellps=WGS84'
-                               '+datum=WGS84 +no_defs')
+    latlongSRS.ImportFromProj4('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+
 except:
     warnings.warn('Cannot generate latlongSRS. Nansat will not work!')
 
@@ -169,6 +170,43 @@ class ProjectionError(Error):
 class GDALError(Error):
     '''Error from GDAL '''
     pass
+
+
+class PointBrowser():
+    '''
+    Click on points and get the X-Y coordinates.
+
+    '''
+    def __init__(self, data, **kwargs):
+        self.fig = plt.figure()
+        self.data = data
+        self.ax = self.fig.add_subplot(111)
+        img = self.ax.imshow(self.data, extent=(0, self.data.shape[1],
+                                                0, self.data.shape[0]),
+                             origin='lower', **kwargs)
+        self.fig.colorbar(img)
+        self.points, = self.ax.plot([], [], '+', ms=12, color='b')
+        self.line, = self.ax.plot([], [])
+        self.coordinates = []
+
+    def onclick(self, event):
+        if event.xdata is not None and event.ydata is not None:
+            self.coordinates.append((event.xdata, event.ydata))
+            tCoordinates = map(tuple, zip(*self.coordinates))
+            self.points.set_data(tCoordinates)
+            self.points.figure.canvas.draw()
+            self.line.set_data(tCoordinates)
+            self.line.figure.canvas.draw()
+
+    def get_points(self):
+        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        self.fig.axes[0].set_xlim([0, self.data.shape[1]])
+        self.fig.axes[0].set_ylim([0, self.data.shape[0]])
+        text = "1. Please click on the figure and mark a point or draw a line.\n2. Then close the figure."
+        plt.text(0, int(self.data.shape[0]*1.05), text, fontsize=13,
+                 verticalalignment='top', horizontalalignment='left')
+        plt.gca().invert_yaxis()
+        plt.show()
 
 
 class Node(object):
@@ -249,25 +287,44 @@ class Node(object):
         del self.attributes[name]
         self.attributes[name] = value
 
-    def node(self, tag):
-        ''' Recursively find the first subnode with this tag. '''
+    def node(self, tag, elemNum=0):
+        ''' Recursively find the first subnode with this tag.
+
+        elemNum : int
+            if there are several same tag, specify which element to take.
+
+        '''
         if self.tag == tag:
             return self
+        ielm = 0
         for child in self.children:
             result = child.node(tag)
-            if result:
+            if result and ielm == elemNum:
                 return result
+            elif result:
+                ielm += 1
         return False
 
-    def delNode(self, tag):
+    def delNode(self, tag, options=None):
         '''
         Recursively find the all subnodes with this tag and remove
         from self.children.
 
+        options : dictionary
+            if there are several same tags, specify a node by their attributes.
+
         '''
         for i, child in enumerate(self.children):
-            if child.node(tag):
+            if child.node(tag) and options is None:
                 self.children.pop(i)
+            elif child.node(tag):
+                for j, jKey in enumerate(options.keys()):
+                    try:
+                        if (child.getAttribute(jKey) == str(options[jKey]) and
+                                len(options.keys()) == j+1):
+                            self.children.pop(i)
+                    except:
+                        break
             else:
                 child.delNode(tag)
 
@@ -306,11 +363,19 @@ class Node(object):
             valList.append(val)
         return nameList, valList
 
-    def insert(self, contents):
+    def insert(self, contents, childNode=None, iElem=0):
+        '''insert contents into the node'''
         dom2 = xdm.parseString(contents)
         dom1 = xdm.parseString(self.dom().toxml())
-        dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0],
-                                                       True))
+
+        if childNode is None:
+            dom1.childNodes[0].appendChild(dom1.importNode(dom2.childNodes[0],
+                                                           True))
+        else:
+            elements = dom1.getElementsByTagName(childNode)
+            elements[iElem].appendChild(dom1.importNode(dom2.childNodes[0],
+                                                        True))
+
         contents = str(dom1.toxml())
         if contents.find('<?') != -1 and contents.find('?>'):
             contents = contents[contents.find('?>')+2:]
@@ -448,15 +513,16 @@ def initial_bearing(lon1, lat1, lon2, lat2):
             from the start point towards the end point along a great circle.
 
         '''
-        rlon1 = radians(lon1)
-        rlat1 = radians(lat1)
-        rlon2 = radians(lon2)
-        rlat2 = radians(lat2)
+        rlon1 = np.radians(lon1)
+        rlat1 = np.radians(lat1)
+        rlon2 = np.radians(lon2)
+        rlat2 = np.radians(lat2)
         deltalon = rlon2 - rlon1
-        bearing = atan2(sin(rlon2 - rlon1) * cos(rlat2),
-                        cos(rlat1) * sin(rlat2) -
-                        sin(rlat1) * cos(rlat2) * cos(rlon2 - rlon1))
-        return mod(degrees(bearing) + 360, 360)
+        bearing = np.arctan2(np.sin(rlon2 - rlon1) * np.cos(rlat2),
+                             np.cos(rlat1) * np.sin(rlat2) -
+                             np.sin(rlat1) * np.cos(rlat2) *
+                             np.cos(rlon2 - rlon1))
+        return mod(np.degrees(bearing) + 360, 360)
 
 
 def add_logger(logName='', logLevel=None):
@@ -501,3 +567,26 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(LOG_LEVEL)
 
     return logger
+
+
+def set_defaults(dictionary, newParm):
+        '''Check input params and set defaut values
+
+        Look throught default parameters (self.d) and given parameters (dict)
+        and paste value from input if the key matches
+
+        Parameters
+        ----------
+        dict : dictionary
+            parameter names and values
+
+        Modifies
+        ---------
+        self.d
+
+        '''
+        for key in newParm:
+            if key in dictionary:
+                dictionary[key] = newParm[key]
+
+        return dictionary

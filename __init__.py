@@ -32,5 +32,28 @@ try:
 except ImportError:
     warnings.warn('''Cannot import Figure! Nansat will not work''')
 
-__all__ = ["Nansat", "Domain", "Figure"]
+try:
+    from nansatmap import Nansatmap
+except ImportError:
+    warnings.warn('''Cannot import Nansatmap! Nansat will not work''')
 
+try:
+    from nansatshape import Nansatshape
+except ImportError:
+    warnings.warn('''Cannot import NansatOGR! Nansat will not work''')
+
+
+try:
+    from nansat_tools import np, plt, Basemap, os
+except ImportError:
+    warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
+
+try:
+    from mosaic import Mosaic
+except ImportError:
+    warnings.warn('''Cannot import Mosaic! Mosaic will not work''')
+
+os.environ['LOG_LEVEL'] = '30'
+
+__all__ = ['Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
+           'np', 'plt', 'Basemap', 'Mosaic']
