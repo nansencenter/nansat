@@ -5,7 +5,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	13.03.2014
-# Last modified:03.07.2014 14:55
+# Last modified:03.07.2014 15:37
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
 #               redistribute it and/or modify it under the terms of the GNU
@@ -18,6 +18,8 @@
 import os
 
 from nansat.vrt import VRT
+from nansat.tools import gdal
+from nansat.nsr import NSR
 
 import pdb
 
@@ -190,7 +192,5 @@ class Mapper(VRT):
                     }
                 })
 
-        import pdb
-        pdb.set_trace()
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
