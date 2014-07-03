@@ -195,8 +195,10 @@ class Nansat(Domain):
 
         Parameters
         -----------
-        array : Numpy array with band data
-        parameters : dictionary, band metadata: wkv, name, etc.
+        array : ndarray
+            band data
+        parameters : dictionary
+            band metadata: wkv, name, etc. (or for several bands)
         nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
@@ -205,23 +207,46 @@ class Nansat(Domain):
         Adds band to the self.vrt
 
         '''
-        # None => {} in input p
-        if parameters is None:
-            parameters = {}
+        self.add_bands([array], [parameters], nomem)
 
-        # create VRT from array
-        bandVRT = VRT(array=array, nomem=nomem)
+    def add_bands(self, arrays, parameters=None, nomem=False):
+        '''Add band from the array to self.vrt
+
+        Create VRT object which contains VRT and RAW binary file and append it
+        to self.vrt.subVRTs
+
+        Parameters
+        -----------
+        array : ndarray or list
+            band data (or data for several bands)
+        parameters : dictionary or list
+            band metadata: wkv, name, etc. (or for several bands)
+        nomem : boolean, saves the vrt to a tempfile if nomem is True
+
+        Modifies
+        ---------
+        Creates VRT object with VRT-file and RAW-file
+        Adds band to the self.vrt
+
+        '''
+        # create VRTs from arrays
+        bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
 
-        # add the array band into self.vrt and get bandName
-        bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
-                                          'SourceBand': 1}, parameters)
         # create subVRTs as dict
         if self.vrt.subVRTs is None:
             self.vrt.subVRTs = {}
 
-        self.vrt.subVRTs[bandName] = bandVRT
+        # add the array band into self.vrt and get bandName
+        for bi, bandVRT in enumerate(bandVRTs):
+            params = parameters[bi]
+            if params is None:
+                params = {}
+            bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
+                                              'SourceBand': 1}, params)
+            self.vrt.subVRTs[bandName] = bandVRT
+
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
@@ -427,70 +452,76 @@ class Nansat(Domain):
                                                           options=[options])
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, fileName, bands=[1], datatypes=None,
-                       maskName=None, metadata=None, products=None):
-        ''' Export data formatted for THREDDS server
+    def export2thredds(self, fileName, bands=None, metadata=None,
+                                                   maskName=None):
+        ''' Export data into a netCDF formatted for THREDDS server
 
         Parameters
         -----------
         fileName : str
             output file name
-        bands : list
-            band number or band name to export
-        datatypes : dictionary
-            key is name of band.
-            value is a datatype string or list [datatype string, offset, scale].
-            e.g.) "'mask': '>i1'" or "'V': ['>i2', 0.0, 0.01]"
-            keys should match names of the object
-            datatypes can include all bands or less
-            if None: datatype is copied from all input bands
+        bands : dict
+            {'band_name': {'type'     :  '>i1',
+                           'scale'    : 0.1,
+                           'offset'   : 1000,
+                           'metaKey1' : 'meta value 1',
+                           'metaKey2' : 'meta value 2'}}
         maskName: string
             if data include a mask band: give the mask name.
             Non-masked value is 64.
             if None: no mask is added
-        metadata : dictionary
-            global metadata to add
-            if None: no additional global metadata is added
-        products : dictionary
-            key is band name to export. values are the band metadata.
-            if None: no additional band metadata is added
-
-        Modifies
-        ---------
-        Create a netCDF file
 
         !! NB
         ------
-        nansat object (self) has to have GeoTransform.
+        Nansat object (self) has to be projected (with valid GeoTransform and
+        valid Spatial reference information) but not wth GCPs
 
         '''
-        # Create Nansat object with self domain (no band)
+        # Create temporary empty Nansat object with self domain
         data = Nansat(domain=self)
 
         # check some input data
-        if products is None:
-            products = {}
+        if bands is None:
+            bands = {}
 
         # get mask (if exist)
         if maskName is not None:
             mask = self[maskName]
 
         # add required bands to data
-        iDatatypes = {}
-        for iBand in bands:
-            array = self[iBand]
-            # set np.nan to Non-value
-            if maskName is not None and iBand != maskName:
-                array[mask != 64] = np.nan
-            if type(iBand) is str:
-                iBand = self._get_band_number(iBand)
-            bandMetadata = self.get_metadata(bandID=iBand)
-            data.add_band(array=array, parameters = bandMetadata)
-            iDatatypes[bandMetadata['name']] = array.dtype.str.replace('u','i')
+        dstBands = {}
+        for iband in bands:
+            try:
+                array = self[iband]
+            except:
+                self.logger.error('%s is not found' % str(iBand))
+                continue
 
-        # use same datatypes as in input object
-        if datatypes is None:
-            datatypes = iDatatypes
+            # set type, scale and offset from input data or by default
+            dstBands[iband] = {}
+            if 'type' in bands[iband]:
+                dstBands[iband]['type'] = bands[iband]['type']
+            else:
+                dstBands[iband]['type'] = array.dtype.str.replace('u','i')
+            if 'scale' in bands[iband]:
+                dstBands[iband]['scale'] = float(bands[iband]['scale'])
+            else:
+                dstBands[iband]['scale'] = 1.0
+            if 'offset' in bands[iband]:
+                dstBands[iband]['offset'] = float(bands[iband]['offset'])
+            else:
+                dstBands[iband]['offset'] = 0.0
+            if '_FillValue' in bands[iband]:
+                dstBands[iband]['_FillValue'] = float(bands[iband]['_FillValue'])
+
+            # mask values with np.nan
+            if maskName is not None and iband != maskName:
+                array[mask != 64] = np.nan
+
+            # add array to a temporary Nansat object
+            bandMetadata = self.get_metadata(bandID=iband)
+            data.add_band(array=array, parameters = bandMetadata)
+        self.logger.debug('Bands for export: %s'  % str(dstBands))
 
         # get corners of reprojected data
         lonCrn,latCrn = data.get_corners()
@@ -512,10 +543,11 @@ class Nansat(Domain):
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
 
+        # export temporary Nansat object to a temporary netCDF
         fid, tmpName = tempfile.mkstemp(suffix='.nc')
         data.export(tmpName)
 
-        # open files for input output
+        # open files for input and output
         ncI = netcdf_file(tmpName, 'r')
         ncO = netcdf_file(fileName, 'w')
 
@@ -556,7 +588,7 @@ class Nansat(Domain):
         # recreate file
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]
-            print 'Creating variable: ', ncIVarName
+            self.logger.debug('Creating variable: %s' % ncIVarName)
             if ncIVarName in ['x', 'y', 'lon', 'lat']:
                 # create simple x/y variables
                 ncOVar = ncO.createVariable(ncIVarName, '>f4',
@@ -565,22 +597,16 @@ class Nansat(Domain):
                 # create projection var
                 ncOVar = ncO.createVariable(ncIVarName, ncIVar.typecode(),
                                             ncIVar.dimensions)
-            elif 'name' in ncIVar._attributes and ncIVar.name in datatypes:
+            elif 'name' in ncIVar._attributes and ncIVar.name in dstBands:
                 # dont add time-axis to lon/lat grids
                 if ncIVar.name in ['lon', 'lat']:
                     dimensions = ncIVar.dimensions
                 else:
                     dimensions = ('time', ) + ncIVar.dimensions
-                # create data var
-                if isinstance(datatypes[ncIVar.name], list):
-                    dataType = datatypes[ncIVar.name][0]
-                    offset = datatypes[ncIVar.name][1]
-                    scale = datatypes[ncIVar.name][2]
-                else:
-                    dataType = datatypes[ncIVar.name]
-                    offset = 0.0
-                    scale = 1.0
-                ncOVar = ncO.createVariable(ncIVar.name, dataType, dimensions)
+
+                ncOVar = ncO.createVariable(ncIVar.name,
+                                            dstBands[ncIVar.name]['type'],
+                                            dimensions)
 
             data = ncIVar.data
             # copy rounded data from x/y
@@ -602,29 +628,20 @@ class Nansat(Domain):
 
             # copy data from variables in the list
             if (len(ncIVar.dimensions) > 0 and
-                'name' in ncIVar._attributes and ncIVar.name in datatypes):
+                'name' in ncIVar._attributes and ncIVar.name in dstBands):
                 # add offset and scale attributes
+                scale = dstBands[ncIVar.name]['scale']
+                offset = dstBands[ncIVar.name]['offset']
                 if not (offset==0.0 and scale==1.0):
                     ncOVar._attributes['add_offset'] = offset
                     ncOVar._attributes['scale_factor'] = scale
                     data = (data - offset) / scale
+                # replace non-value by '_FillValue'
+                if (ncIVar.name in dstBands):
+                    if '_FillValue' in dstBands[ncIVar.name].keys():
+                        data[np.isnan(data)] = bands[ncIVar.name]['_FillValue']
 
-                # replace non-value
-                if (ncIVar.name in products.keys() and
-                    ncIVar.name in datatypes.keys()):
-                    # non-values are filled by '_FillValue'
-                    if '_FillValue' in products[ncIVar.name].keys():
-                        data[np.isnan(data)] = products[ncIVar.name]['_FillValue']
-                    """
-                    # non-values are filled by minimum values of the datatype
-                    # NB: if '>i2', np.nan is converted to '0'.
-                    if ('_FillValue' in products[ncIVar.name].keys() and
-                        isinstance(datatypes[ncIVar.name], list)):
-                        dt = np.dtype(datatypes[ncIVar.name][0])
-                        if dt.name.startswith('int'):
-                            data[np.isnan(data)] = - (2 ** (dt.itemsize * 8)) / 2
-                    """
-                ncOVar[:] = data.astype(dataType)
+                ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
 
                 # copy (some) attributes
                 for inAttrName in ncIVar._attributes:
@@ -634,9 +651,10 @@ class Nansat(Domain):
                         ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
 
                 # add custom attributes
-                if ncIVar.name in products:
-                    for newAttr in products[ncIVar.name]:
-                        ncOVar._attributes[newAttr] = products[ncIVar.name][newAttr]
+                if ncIVar.name in bands:
+                    for newAttr in bands[ncIVar.name]:
+                        if newAttr not in ['type', 'scale', 'offset']:
+                            ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
@@ -659,7 +677,10 @@ class Nansat(Domain):
         ncI.close()
 
         # Delete the temprary netCDF file
+        fid = None
         os.remove(tmpName)
+
+        return 0
 
     def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.

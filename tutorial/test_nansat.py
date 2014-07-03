@@ -92,6 +92,9 @@ print '1st Band Metadata:', n.get_metadata(bandID=1), '\n'
 # add a band from numpy array (copy the 1st band to the end (5th band))
 n.add_band(n[1], parameters={'name': 'Name1',
                              'info':  'copy from the 1st band array'})
+
+n.add_bands([n[1], n[2]], [{'name': 'n1'}, {'name': 'n2'}])
+
 # print band list
 n.list_bands()
 # get GDAL raster band (2nd band)
@@ -184,10 +187,13 @@ print ''
 ogrObject = n.get_transect(points, returnOGR=True)
 ogrObject.export(oFileName + '_10_transect.shp')
 
+
 # export into THREDDS friendly file
 iFileName = os.path.join(iPath, 'stere.tif')
-n = Nansat(iFileName)
-n.export2thredds(oFileName + 'thredds.nc', [1,2,3])
+n = Nansat(iFileName, logLevel=10)
+print n
+bands = {'L_469':{'scale': 10, 'type': '>f4'}}
+n.export2thredds(oFileName + 'thredds.nc', bands)
 
 
 print '\n***nansat_test completed successfully. Output files are found here:' + oFileName
