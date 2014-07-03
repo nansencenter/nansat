@@ -8,6 +8,9 @@
 import matplotlib.pyplot as plt
 import os
 
+import sys
+sys.path.append('../')
+
 from nansat import Nansat, Domain
 from testio import testio
 
@@ -44,7 +47,7 @@ n.export(oFileName + '.nc')
 # 2. plot the values
 values, lonlat, pixlinCoord = n.get_transect()
 plt.plot(lonlat[0], values[0], '.-'); plt.show()
-
+plt.close()
 
 # run tests of other nansat components
 import test_domain

@@ -1,5 +1,22 @@
-from nansat.vrt import VRT, gdal, osr, NSR, np
+# Name:         mapper_opendap.py
+# Purpose:      Mapping for generic OpenDAP online data
+# Author:       Anton Korosov
+# Created:      01.01.2014
+# Copyright:    (c) NERSC
+# License:      This file is part of NANSAT. NANSAT is free software: you can
+#               redistribute it and/or modify it under the terms of the GNU
+#               General Public License as published by the Free Software
+#               Foundation, version 3 of the License.
+#               http://www.gnu.org/licenses/gpl-3.0.html This program is
+#               distributed in the hope that it will be useful, but WITHOUT ANY
+#               WARRANTY without even the implied warranty of MERCHANTABILITY
+#               or FITNESS FOR A PARTICULAR PURPOSE.
 from netCDF4 import Dataset
+
+from nansat.tools import gdal, ogr
+from nansat.vrt import VRT
+from nansat.nsr import NSR
+
 
 #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
 #fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'
@@ -37,10 +54,10 @@ class Mapper(VRT):
                 0: '+longlat ',
             }
         }
-        
+
         attrs = var.ncattrs()
         gmName = str(var.getncattr('grid_mapping_name'))
-        
+
         if gmName in projDict:
             projSubDict = projDict[gmName]
             proj4 = projSubDict[0]
@@ -54,13 +71,13 @@ class Mapper(VRT):
 
         # quit if file is not online
         assert fileName[:7] == 'http://'
-        
+
         # open file through OpenDAP using netCDF4 library
         f = Dataset(fileName)
-        
+
         # assume CF-compatibility:
         # compulsory grid_mapping_name
-        
+
         # find grid_mapping_name
         # and get all parameters
         # generate proj4 and WKT strings
@@ -72,17 +89,17 @@ class Mapper(VRT):
                 proj4str = self.get_proj4_from_ncvar(var)
                 srcProjection = NSR(proj4str).wkt
                 break
-        
+
         print 'WKT:', srcProjection
-        
+
         xDim = None
         yDim = None
         validVars = []
         validDims = []
-        
+
         # if grid_mapping_name is found: find all bands that have grid_mapping
         # else: find lon/lat variables that have 1D
-        
+
         if srcProjection != '':
             # find bands with grid_mapping
             for varName in f.variables:
@@ -91,7 +108,7 @@ class Mapper(VRT):
                 if 'grid_mapping' in attrs:
                     validVars.append(str(varName))
                     validDims += [str(dim) for dim in var.dimensions]
-            
+
             # assume NORMAP compatibility:
             # dimensions should be
             # x, or xc, or lon, or longitude
@@ -103,14 +120,14 @@ class Mapper(VRT):
             # depth
             # and/or
             # etc
-            
+
             # assign x, y dimension names
             for dim in validDims:
                 if 'x' in dim or 'lon' in dim or 'east' in dim:
                     xDim = dim
                 if 'y' in dim or 'lat' in dim or 'north' in dim:
                     yDim = dim
-            
+
         else:
             # if input file is not CF-compliant but has 1D lon/lat dimensions
             # find 1D lon, lat (longitude, latitude) dims
@@ -120,30 +137,30 @@ class Mapper(VRT):
                     xDim = varName
                 if 'lat' in varName and var.ndim == 1:
                     yDim = varName
-            
+
             # find all datasets with lon/lat dimensions
             for varName in f.variables:
                 var = f.variables[varName]
                 if xDim in var.dimensions and yDim in var.dimensions:
                     validVars.append(str(varName))
                     validDims += [str(dim) for dim in var.dimensions]
-            
+
             if len(validVars) > 1:
                 srcProjection = NSR().wkt
             else:
                 # cancel usage of this mapper a input file seem unappropriate
                 raise
-        
-        
+
+
         # get X/Y size
         var0 = f.variables[validVars[0]]
         xDimI = var0.dimensions.index(xDim)
         srcRasterXSize = var0.shape[xDimI]
         yDimI = var0.dimensions.index(yDim)
         srcRasterYSize = var0.shape[yDimI]
-        
+
         print 'x/ySize', srcRasterXSize, srcRasterYSize
-        
+
         # get GDAL GeoTransform
         xdata = f.variables[xDim][:]
         ydata = f.variables[yDim][:]
@@ -153,14 +170,14 @@ class Mapper(VRT):
         dy = ydata[1] - ydata[0]
         srcGeoTransform = ( x0, dx, 0, y0, 0, dy )
         print srcGeoTransform
-        
+
         # make list of metadata dictionary entries
         # for each var make [k][i][j][x][y] depending on order of dims
         metaDict = []
         for varName in validVars:
             var = f.variables[varName]
             dims = var.dimensions
-            
+
             # find nor X neither Y dimensions (e.g. time, depth, etc)
             nonxyDims = []
             nonxyDimValues = []
@@ -170,18 +187,18 @@ class Mapper(VRT):
                     dimValues = f.variables[dim][:]
                     dimValuesStr = [str(val) for val in dimValues]
                     nonxyDimValues.append(dimValues)
-                    
+
             # calculate total dimensionality in addition to X/Y
             # make vector of nonXY dimensions
             nonXYShape = []
             for nonxyDim in nonxyDims:
                 dimVar = f.variables[nonxyDim]
                 nonXYShape.append(dimVar.shape[0])
-        
+
             if len(nonXYShape) == 0:
                 nonXYShape = [1]
             totNonXYDims = np.cumprod(nonXYShape)[-1]
-            
+
             urls = []
             # generate bands for each additional dimension
             for nonxyi in range(totNonXYDims):
@@ -205,33 +222,33 @@ class Mapper(VRT):
                         url += '[%d]' % dimV
                         dimMetadata[dim] = nonxyDimValues[dimN][dimV]
                         dstVarName += '%03d' % dimV
-        
+
                 # get band metadata
                 attrs = var.ncattrs()
-                
+
                 metaEntry = {'src': {'SourceFilename': url, 'sourceBand':  1},
                              'dst': {'name': dstVarName}
                              }
-            
+
                 # put band metadata
                 for attr in attrs:
                     metaEntry['dst'][str(attr)] = str(var.getncattr(attr))
-        
+
                 # add wkv
                 if 'standard_name' in attrs:
                     metaEntry['dst']['wkv'] = metaEntry['dst']['standard_name']
-                
+
                 # add dim metadata (location within each dimension)
                 for dimKey in dimMetadata:
                     metaEntry['dst'][str(dimKey)] = dimMetadata[dimKey]
-            
+
                 metaDict.append(metaEntry)
 
         # read global metadata
         srcMetadata = {}
         for attr in f.ncattrs():
             srcMetadata[str(attr)] = str(attr)
-            
+
         # create VRT with bands
         VRT.__init__(self, srcGeoTransform=srcGeoTransform,
                             srcProjection=srcProjection,

@@ -15,45 +15,30 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-# import standard and additional libraries
-from nansat_tools import *
-import scipy
+import os
+import sys
+import inspect
+import warnings
+import tempfile
 import math
+import types
+import glob
+import datetime
+import dateutil.parser
 
+import scipy
+from scipy.io.netcdf import netcdf_file
+import numpy as np
+from matplotlib import cm
 
-
-# import nansat parts
-try:
-    from .nsr import NSR
-except ImportError:
-    warnings.warn('Cannot import NSR!'
-                  'Nansat will not work.')
-
-# import nansat parts
-try:
-    from .domain import Domain
-except ImportError:
-    warnings.warn('Cannot import Domain!'
-                  'Nansat will not work.')
-
-try:
-    from .figure import Figure
-except ImportError:
-    warnings.warn('Cannot import Figure!'
-                  'Nansat will not work.')
-
-try:
-    from .vrt import VRT
-except ImportError:
-    warnings.warn('Cannot import VRT!'
-                  'Nansat will not work.')
-
-try:
-    from .nansatshape import Nansatshape
-except ImportError:
-    warnings.warn('Cannot import NansatOGR!'
-                  'Nansat will not work.')
+from .nsr import NSR
+from .domain import Domain
+from .figure import Figure
+from .vrt import VRT
+from .nansatshape import Nansatshape
+from .tools import add_logger, Error, gdal
+from .node import Node
+from .pointbrowser import PointBrowser
 
 # Force GDAL to raise exceptions
 try:
@@ -478,6 +463,240 @@ class Nansat(Domain):
                                                           exportVRT.dataset,
                                                           options=[options])
         self.logger.debug('Export - OK!')
+
+    def export2thredds(self, fileName, bands=[1], datatypes=None,
+                       maskName=None, metadata=None, products=None):
+        ''' Export data formatted for THREDDS server
+
+        Parameters
+        -----------
+        fileName : str
+            output file name
+        bands : list
+            band number or band name to export
+        datatypes : dictionary
+            key is name of band.
+            value is a datatype string or list [datatype string, offset, scale].
+            e.g.) "'mask': '>i1'" or "'V': ['>i2', 0.0, 0.01]"
+            keys should match names of the object
+            datatypes can include all bands or less
+            if None: datatype is copied from all input bands
+        maskName: string
+            if data include a mask band: give the mask name.
+            Non-masked value is 64.
+            if None: no mask is added
+        metadata : dictionary
+            global metadata to add
+            if None: no additional global metadata is added
+        products : dictionary
+            key is band name to export. values are the band metadata.
+            if None: no additional band metadata is added
+
+        Modifies
+        ---------
+        Create a netCDF file
+
+        !! NB
+        ------
+        nansat object (self) has to have GeoTransform.
+
+        '''
+        # Create Nansat object with self domain (no band)
+        data = Nansat(domain=self)
+
+        # check some input data
+        if products is None:
+            products = {}
+
+        # get mask (if exist)
+        if maskName is not None:
+            mask = self[maskName]
+
+        # add required bands to data
+        iDatatypes = {}
+        for iBand in bands:
+            array = self[iBand]
+            # set np.nan to Non-value
+            if maskName is not None and iBand != maskName:
+                array[mask != 64] = np.nan
+            if type(iBand) is str:
+                iBand = self._get_band_number(iBand)
+            bandMetadata = self.get_metadata(bandID=iBand)
+            data.add_band(array=array, parameters = bandMetadata)
+            iDatatypes[bandMetadata['name']] = array.dtype.str.replace('u','i')
+
+        # use same datatypes as in input object
+        if datatypes is None:
+            datatypes = iDatatypes
+
+        # get corners of reprojected data
+        lonCrn,latCrn = data.get_corners()
+
+        # common global attributes:
+        globMetadata = {
+            'institution': 'NERSC',
+            'source': 'satellite remote sensing',
+            'creation_date': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'northernmost_latitude': np.float(max(latCrn)),
+            'southernmost_latitude': np.float(min(latCrn)),
+            'westernmost_longitude': np.float(min(lonCrn)),
+            'easternmost_longitude': np.float(max(lonCrn)),
+            'history': ' ',
+            }
+
+        #join or replace default by custom global metadata
+        if metadata is not None:
+            for metaKey in metadata:
+                globMetadata[metaKey] = metadata[metaKey]
+
+        fid, tmpName = tempfile.mkstemp(suffix='.nc')
+        data.export(tmpName)
+
+        # open files for input output
+        ncI = netcdf_file(tmpName, 'r')
+        ncO = netcdf_file(fileName, 'w')
+
+        # collect info on dimention names
+        dimNames = []
+        for ncIVarName in ncI.variables:
+            ncIVar = ncI.variables[ncIVarName]
+            dimNames += list(ncIVar.dimensions)
+        dimNames = list(set(dimNames))
+
+        # collect info on dimention shapes
+        dimShapes = {}
+        for dimName in dimNames:
+            dimVar = ncI.variables[dimName]
+            dimShapes[dimName] = dimVar.shape[0]
+
+        # create dimensions
+        for dimName in dimNames:
+            ncO.createDimension(dimName, dimShapes[dimName])
+
+        # add time dimention
+        ncO.createDimension('time', 1)
+        ncOVar = ncO.createVariable('time', '>i4', ('time', ))
+        ncOVar.calendar = 'standard'
+        ncOVar.long_name = 'time'
+        ncOVar.standard_name = 'time'
+        ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
+        ncOVar.axis = 'T'
+
+        time = filter(None, self.get_time())
+        # create value of time variable
+        if len(time) > 0:
+            td = time[0] - datetime.datetime(1900, 1, 1)
+            td = td.days
+            # add date
+            ncOVar[:] = np.int32(td).astype('>i4')
+
+        # recreate file
+        for ncIVarName in ncI.variables:
+            ncIVar = ncI.variables[ncIVarName]
+            print 'Creating variable: ', ncIVarName
+            if ncIVarName in ['x', 'y', 'lon', 'lat']:
+                # create simple x/y variables
+                ncOVar = ncO.createVariable(ncIVarName, '>f4',
+                                            ncIVar.dimensions)
+            elif ncIVarName in ['stereographic', 'crs']:
+                # create projection var
+                ncOVar = ncO.createVariable(ncIVarName, ncIVar.typecode(),
+                                            ncIVar.dimensions)
+            elif 'name' in ncIVar._attributes and ncIVar.name in datatypes:
+                # dont add time-axis to lon/lat grids
+                if ncIVar.name in ['lon', 'lat']:
+                    dimensions = ncIVar.dimensions
+                else:
+                    dimensions = ('time', ) + ncIVar.dimensions
+                # create data var
+                if isinstance(datatypes[ncIVar.name], types.ListType):
+                    dataType = datatypes[ncIVar.name][0]
+                    offset = datatypes[ncIVar.name][1]
+                    scale = datatypes[ncIVar.name][2]
+                else:
+                    dataType = datatypes[ncIVar.name]
+                    offset = 0.0
+                    scale = 1.0
+                ncOVar = ncO.createVariable(ncIVar.name, dataType, dimensions)
+
+            data = ncIVar.data
+            # copy rounded data from x/y
+            if ncIVarName in ['x', 'y']:
+                ncOVar[:] = np.floor(data).astype('>f4')
+                ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName] #add axis=X or axis=Y
+                for attrib in ncIVar._attributes:
+                    if len(ncIVar._attributes[attrib]) > 0:
+                        ncOVar._attributes[attrib] = ncIVar._attributes[attrib]
+
+            # copy data from lon/lat
+            if ncIVarName in ['lon', 'lat']:
+                ncOVar[:] = data.astype('>f4')
+                ncOVar._attributes = ncIVar._attributes
+
+            # copy projection data (only all attributes)
+            if ncIVarName in ['stereographic', 'crs']:
+                ncOVar._attributes = ncIVar._attributes
+
+            # copy data from variables in the list
+            if (len(ncIVar.dimensions) > 0 and
+                'name' in ncIVar._attributes and ncIVar.name in datatypes):
+                # add offset and scale attributes
+                if not (offset==0.0 and scale==1.0):
+                    ncOVar._attributes['add_offset'] = offset
+                    ncOVar._attributes['scale_factor'] = scale
+                    data = (data - offset) / scale
+
+                # replace non-value
+                if (ncIVar.name in products.keys() and
+                    ncIVar.name in datatypes.keys()):
+                    # non-values are filled by '_FillValue'
+                    if '_FillValue' in products[ncIVar.name].keys():
+                        data[np.isnan(data)] = products[ncIVar.name]['_FillValue']
+                    """
+                    # non-values are filled by minimum values of the datatype
+                    # NB: if '>i2', np.nan is converted to '0'.
+                    if ('_FillValue' in products[ncIVar.name].keys() and
+                        isinstance(datatypes[ncIVar.name], types.ListType)):
+                        dt = np.dtype(datatypes[ncIVar.name][0])
+                        if dt.name.startswith('int'):
+                            data[np.isnan(data)] = - (2 ** (dt.itemsize * 8)) / 2
+                    """
+                ncOVar[:] = data.astype(dataType)
+
+                # copy (some) attributes
+                for inAttrName in ncIVar._attributes:
+                    if inAttrName not in ['dataType', 'SourceFilename',
+                                          'SourceBand', '_Unsigned',
+                                          'FillValue']:
+                        ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
+
+                # add custom attributes
+                if ncIVar.name in products:
+                    for newAttr in products[ncIVar.name]:
+                        ncOVar._attributes[newAttr] = products[ncIVar.name][newAttr]
+
+        # copy (some) global attributes
+        for globAttr in ncI._attributes:
+            """
+            if globAttr not in ['GDAL', 'GDAL_NANSAT_GeoTransform',
+                                'GDAL_sensstart', 'GDAL_NANSAT_Projection',
+                                'GDAL_fileName',  'GDAL_sensend', 'history']:
+            """
+            if not(globAttr.strip().startswith('GDAL')):
+                ncO._attributes[globAttr] = ncI._attributes[globAttr]
+
+        # add common and custom global attributes
+        for globMeta in globMetadata:
+            ncO._attributes[globMeta] = globMetadata[globMeta]
+
+        # write output file
+        ncO.close()
+
+        # close original files
+        ncI.close()
+
+        # Delete the temprary netCDF file
+        os.remove(tmpName)
 
     def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
@@ -1025,16 +1244,16 @@ class Nansat(Domain):
             colormap = band.GetMetadataItem('colormap')
         except:
             colormap = 'jet'
-        try:
-            cmap = cm.get_cmap(colormap, 256)
-            cmap = cmap(arange(256)) * 255
-            colorTable = gdal.ColorTable()
-            for i in range(cmap.shape[0]):
-                colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
-                              int(cmap[i, 2]), int(cmap[i, 3]))
-                colorTable.SetColorEntry(i, colorEntry)
-        except:
-            print 'Could not add colormap; Matplotlib may not be available.'
+        #try:
+        cmap = cm.get_cmap(colormap, 256)
+        cmap = cmap(np.arange(256)) * 255
+        colorTable = gdal.ColorTable()
+        for i in range(cmap.shape[0]):
+            colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
+                          int(cmap[i, 2]), int(cmap[i, 3]))
+            colorTable.SetColorEntry(i, colorEntry)
+        #except:
+        #    print 'Could not add colormap; Matplotlib may not be available.'
         # Write Tiff image, with data scaled to values between 0 and 255
         outDataset = gdal.GetDriverByName('Gtiff').Create(fileName,
                                                           band.XSize,

@@ -4,14 +4,13 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
 from dateutil.parser import parse
 from struct import unpack
+
 import numpy as np
 import os
-import gdal
 
-from nansat.nansat_tools import osr
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 
 

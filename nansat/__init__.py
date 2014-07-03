@@ -14,7 +14,6 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
 import os, sys
 import warnings
 
@@ -22,55 +21,50 @@ import warnings
 nansathome = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(nansathome + '/mappers/')
 
+# check if pixel functions were compiled using setup_tools
 try:
     from ._pixfun import registerPixelFunctions
     registerPixelFunctions()
 except Exception as e:
     print repr(e)
-    warnings.warn('''Cannot register C pixel functions! Nansat will have reduced functionality''')
+    warnings.warn('''Cannot register C pixel functions!
+                     Either nansat was not installed using setup.py or
+                     pixel functions were not compiled automatically.
+                     For development, use "python setup.py build_ext --inplace"
+                     to compile pixel functions manually into the source tree.
+                     ''')
 
-try:
-    from .nsr import NSR
-except ImportError:
-    warnings.warn('''Cannot import NSR! Nansat will not work''')
+from .nsr import NSR
+from .domain import Domain
+from .nansat import Nansat
 
-try:
-    from .domain import Domain
-except ImportError:
-    warnings.warn('''Cannot import Domain! Nansat will not work''')
-
-try:
-    from .nansat import Nansat
-except ImportError:
-    warnings.warn('''Cannot import VRT! Nansat will not work''')
+__all__ = ['NSR', 'Domain', 'Nansat']
 
 try:
     from .figure import Figure
 except ImportError:
-    warnings.warn('''Cannot import Figure! Nansat will not work''')
+    warnings.warn('''Cannot import Figure! Nansat will not make figures!''')
+else:
+    __all__.append('Figure')
 
 try:
     from .nansatmap import Nansatmap
 except ImportError:
-    warnings.warn('''Cannot import Nansatmap! Nansat will not work''')
-
-try:
-    from .nansatshape import Nansatshape
-except ImportError:
-    warnings.warn('''Cannot import NansatOGR! Nansat will not work''')
-
-try:
-    from .nansat_tools import np, plt, Basemap, osr, ogr, gdal
-except ImportError:
-    warnings.warn('''Cannot import Numpy, Matplotlib! Nansat will not work''')
+    warnings.warn('''Cannot import Nansatmap! Nansat will not make maps!''')
+else:
+    __all__.append('Nansatmap')
 
 try:
     from .mosaic import Mosaic
 except ImportError:
-    warnings.warn('''Cannot import Mosaic! Mosaic will not work''')
+    warnings.warn('''Cannot import Mosaic! Nansat will not mosaic files!''')
+else:
+    __all__.append('Mosaic')
 
 os.environ['LOG_LEVEL'] = '30'
 
-__all__ = ['NSR', 'Nansat',  'Nansatshape', 'Domain', 'Figure', 'Nansatmap',
-           'Mosaic', 'np', 'plt', 'Basemap', 'gdal', 'ogr', 'osr']
-
+# import some libraries for convenience
+from .tools import gdal, ogr
+import numpy as np
+import matplotlib.pyplot as plt
+__all__ += ['gdal', 'ogr', 'np', 'plt']

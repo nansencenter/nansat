@@ -1,11 +1,10 @@
-#-------------------------------------------------------------------------------
-# Name:		mapper_s1a_l2.py
+# Name:     mapper_s1a_l2.py
 # Purpose:      Mapping for Sentinel-1 level-2 data
 #
 # Author:       Morten Wergeland Hansen
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
-# Created:	13.03.2014
+# Created:  13.03.2014
 # Last modified:05.05.2014 09:49
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
@@ -16,13 +15,14 @@
 #               distributed in the hope that it will be useful, but WITHOUT ANY
 #               WARRANTY without even the implied warranty of MERCHANTABILITY
 #               or FITNESS FOR A PARTICULAR PURPOSE.
-#-------------------------------------------------------------------------------
-from nansat.vrt import *
+import os
+
+from nansat.vrt import VRT
 
 import pdb
 
 class Mapper(VRT):
-    ''' 
+    '''
         Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
     '''
 
@@ -80,15 +80,15 @@ class Mapper(VRT):
         # object
         fileNames = [f for i,f in enumerate(fileNames) if not i in rm_bands]
            #     (
-           # 'Lon' in f.split(':')[-1] or 
+           # 'Lon' in f.split(':')[-1] or
            # 'Lat' in f.split(':')[-1] or
            # 'ZeroDopplerTime' in f.split(':')[-1] )]
 
-        # create empty VRT dataset 
+        # create empty VRT dataset
         VRT.__init__(self, gdal.Open(subDatasets[0][0]), srcMetadata=metadata)
 
 
-        
+
         # The zero Doppler time grid is 3-dimensional - the last dimension is a
         # char array with the time as year, month, day, etc.
         # Will not bother with it yet...
@@ -97,7 +97,7 @@ class Mapper(VRT):
 
         XSize = lon_ds.RasterXSize
         YSize = lon_ds.RasterYSize
-        
+
         # get projection from the lon and lat datasets
         longitude = lon_ds.ReadAsArray()
         latitude = lat_ds.ReadAsArray()
@@ -155,7 +155,7 @@ class Mapper(VRT):
                     'SourceFilename': fileName,
                     'SourceBand': 1
                 }
-            
+
             # Generate dst metadata
             short_name = fileName.split(':')[-1]
             dst = {

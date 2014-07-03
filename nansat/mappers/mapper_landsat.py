@@ -4,15 +4,12 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
 import tarfile
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
 
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
-from nansat.nansat_tools import *
+from nansat.node import Node
+
 
 class Mapper(VRT):
     ''' Mapper for LANDSAT3,4,5,6,7,8.tar.gz files'''

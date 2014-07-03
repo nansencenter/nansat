@@ -4,10 +4,13 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
-from nansat.vrt import *
-from nansat.nansat_tools import Node
+import os.path
 import numpy as np
+
+from nansat.vrt import VRT
+from nansat.node import Node
+from nansat.nsr import NSR
+
 import mapper_generic as mg
 
 
@@ -19,9 +22,9 @@ class Mapper(mg.Mapper):
 
         fPathName, fExt = os.path.splitext(fileName)
         fPath, fName = os.path.split(fPathName)
+        assert fExt == '.nc' and 'MER_' in fName and 'N1_C2IOP' in fName
         # get all metadata using the GENERIC Mapper
-        if fExt == '.nc' and 'MER_' in fName and 'N1_C2IOP' in fName:
-            mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
+        mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
 
         #add metadata for Rrs bands
         rrsDict = self._get_wkv('surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air')

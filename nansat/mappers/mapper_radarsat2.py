@@ -4,21 +4,20 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
-from numpy import mod
-import scipy.ndimage
-from math import asin
+import os
 import tarfile
 import zipfile
+from dateutil.parser import parse
 
-from nansat.vrt import *
+import numpy as np
+import scipy.ndimage
+from math import asin
+
+from nansat.vrt import VRT
 from nansat.domain import Domain
-from nansat.nansat_tools import Node
-
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
+from nansat.node import Node
+from nansat.tools import Error, initial_bearing
+from nansat.tools import gdal, ogr
 
 
 class Mapper(VRT):
@@ -116,7 +115,7 @@ class Mapper(VRT):
         ###############################
         d = Domain(ds=gdalDataset)
         lon, lat = d.get_geolocation_grids(100)
-       
+
         # Calculate SAR look direction (assuming right-looking)
         SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
                   lon[:, 1:], lat[:, 1:]) + antennaPointing + 90.0
@@ -145,7 +144,7 @@ class Mapper(VRT):
         self.subVRTs = {'look_u_VRT': look_u_VRT,
                         'look_v_VRT': look_v_VRT,
                         'lookVRT': lookVRT}
-        
+
         # Add band to full sized VRT
         lookFileName = self.subVRTs['lookVRT'].fileName
         metaDict.append({'src':
@@ -159,7 +158,7 @@ class Mapper(VRT):
         # Create bands
         ###############################
         self._create_bands(metaDict)
-        
+
         ###################################################
         # Add derived band (incidence angle) calculated
         # using pixel function "BetaSigmaToIncidence":

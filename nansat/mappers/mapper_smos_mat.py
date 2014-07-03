@@ -4,12 +4,13 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
-from nansat.vrt import VRT, osr, os
+import os
 
 import numpy as np
 from scipy.io import loadmat
 
+from nansat.vrt import VRT
+from nansat.tools import gdal, ogr
 
 class Mapper(VRT):
     ''' MApper for Matlab files with SMOS data '''

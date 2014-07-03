@@ -4,11 +4,13 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from dateutil.parser import parse
 
-
-from datetime import datetime, timedelta
 import numpy as np
+
 import nansat.vrt as vrt
+from nansat.nsr import NSR
+
 
 class Mapper(vrt.VRT):
     ''' Mapper PATHFINDER (local files)
@@ -82,7 +84,7 @@ class Mapper(vrt.VRT):
         self._create_bands(metaDict)
 
         # append fixed projection and geotransform
-        self.dataset.SetProjection(vrt.NSR().wkt)
+        self.dataset.SetProjection(NSR().wkt)
         self.dataset.SetGeoTransform((-180, 0.0417, 0, 90, 0, -0.0417))
 
         # set TIMEstart_time

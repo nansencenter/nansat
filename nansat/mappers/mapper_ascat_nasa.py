@@ -7,11 +7,10 @@
 #
 # For NetCDF files of ASCAT wind data from the NASA JPL archive:
 # ftp://podaac-ftp.jpl.nasa.gov/allData/ascat/preview/L2/metop_a/12km/
-
 import os.path
 import datetime
-import gdal
 
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 
 class Mapper(VRT):
@@ -28,7 +27,7 @@ class Mapper(VRT):
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
-        # test if input files is ASCAT 
+        # test if input files is ASCAT
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         assert iFileName[0:6] == 'ascat_' and iFileExt == '.nc'
@@ -37,12 +36,12 @@ class Mapper(VRT):
         subDataset = gdal.Open('NETCDF:"' + fileName + '":lat')
         self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
                         srcRasterYSize=subDataset.RasterYSize)
-        
-        GeolocMetaDict = [{'src': 
+
+        GeolocMetaDict = [{'src':
                 {'SourceFilename': 'NETCDF:"' + fileName + '":lon',
                  'SourceBand': 1,
                  'ScaleRatio': 0.00001,
-                 'ScaleOffset': -360}, 
+                 'ScaleOffset': -360},
              'dst': {}},
                    {'src':
                 {'SourceFilename': 'NETCDF:"' + fileName + '":lat',
@@ -61,9 +60,9 @@ class Mapper(VRT):
                                         lineStep=1, pixelStep=1)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, srcRasterXSize = subDataset.RasterXSize, 
+        VRT.__init__(self, srcRasterXSize = subDataset.RasterXSize,
                            srcRasterYSize = subDataset.RasterYSize,
-                        gdalDataset = subDataset, 
+                        gdalDataset = subDataset,
                         geolocationArray = GeolocObject,
                         srcProjection = GeolocObject.d['SRS'])
 
@@ -88,8 +87,8 @@ class Mapper(VRT):
         self.dataset.SetProjection(GeolocObject.d['SRS'])
 
         # Add time
-        startTime = datetime.datetime(int(iFileName[6:10]), 
-            int(iFileName[10:12]), int(iFileName[12:14]), 
-            int(iFileName[15:17]), int(iFileName[17:19]), 
+        startTime = datetime.datetime(int(iFileName[6:10]),
+            int(iFileName[10:12]), int(iFileName[12:14]),
+            int(iFileName[15:17]), int(iFileName[17:19]),
             int(iFileName[19:21]))
         self._set_time(startTime)
