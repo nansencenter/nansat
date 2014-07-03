@@ -16,17 +16,9 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 import os
-import sys
-import inspect
-import warnings
 import tempfile
-import math
-import types
-import glob
 import datetime
 import dateutil.parser
-import pkgutil
-import collections
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -38,42 +30,12 @@ from .domain import Domain
 from .figure import Figure
 from .vrt import VRT
 from .nansatshape import Nansatshape
-from .tools import add_logger, Error, gdal
+from .tools import add_logger, Error, gdal, import_mappers
 from .node import Node
 from .pointbrowser import PointBrowser
 
-# Force GDAL to raise exceptions
-try:
-    gdal.UseExceptions()
-except:
-    warnings.warn('GDAL will not raise exceptions.'
-                  'Probably GDAL is not installed')
-
-# get available mappers
-import mappers
-print mappers.__path__
-
-nansatMappers = collections.OrderedDict()
-
-# scan through modules and load all modules that contain class Mapper
-for finder, name, ispkg in pkgutil.iter_modules(mappers.__path__[::-1]):
-    loader = finder.find_module(name)
-    try:
-        module = loader.load_module(name)
-    except:
-        print name, sys.exc_info()
-    else:
-        if hasattr(module, 'Mapper'):
-            nansatMappers[name] = module.Mapper
-
-# move generic_mapper to the end
-if 'mapper_generic' in nansatMappers:
-    gm = nansatMappers.pop('mapper_generic')
-    nansatMappers['mapper_generic'] = gm
-
-for key in nansatMappers:
-    print key
-
+# import available mappers
+nansatMappers = import_mappers()
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -612,7 +574,7 @@ class Nansat(Domain):
                 else:
                     dimensions = ('time', ) + ncIVar.dimensions
                 # create data var
-                if isinstance(datatypes[ncIVar.name], types.ListType):
+                if isinstance(datatypes[ncIVar.name], list):
                     dataType = datatypes[ncIVar.name][0]
                     offset = datatypes[ncIVar.name][1]
                     scale = datatypes[ncIVar.name][2]
@@ -659,7 +621,7 @@ class Nansat(Domain):
                     # non-values are filled by minimum values of the datatype
                     # NB: if '>i2', np.nan is converted to '0'.
                     if ('_FillValue' in products[ncIVar.name].keys() and
-                        isinstance(datatypes[ncIVar.name], types.ListType)):
+                        isinstance(datatypes[ncIVar.name], list)):
                         dt = np.dtype(datatypes[ncIVar.name][0])
                         if dt.name.startswith('int'):
                             data[np.isnan(data)] = - (2 ** (dt.itemsize * 8)) / 2
