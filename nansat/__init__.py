@@ -17,6 +17,9 @@
 import os, sys
 import warnings
 
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __name__)
+
 # check if pixel functions were compiled using setup_tools
 try:
     from ._pixfun import registerPixelFunctions
@@ -29,10 +32,6 @@ except Exception as e:
                      For development, use "python setup.py build_ext --inplace"
                      to compile pixel functions manually into the source tree.
                      ''')
-
-# import nansat mappers
-from .tools import import_mappers
-nansatMappers = import_mappers()
 
 from .nsr import NSR
 from .domain import Domain

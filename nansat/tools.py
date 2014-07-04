@@ -18,8 +18,6 @@ from __future__ import absolute_import
 import os, sys
 import warnings
 import logging
-import pkgutil
-import collections
 
 from matplotlib import cm
 import numpy as np
@@ -30,48 +28,12 @@ try:
 except:
     from osgeo import gdal, ogr, osr
 
-import nansat.mappers
-
 # Force GDAL to raise exceptions
 try:
     gdal.UseExceptions()
 except:
     warnings.warn('GDAL will not raise exceptions.'
                   'Probably GDAL is not installed')
-
-def import_mappers():
-    ''' Import available mappers into a dictionary
-
-        Returns
-        --------
-        nansatMappers : dict
-            key  : mapper name
-            value: class Mapper(VRT) from the mapper module
-
-    '''
-    ## import the namespace package nansat.mappers
-    #import mappers
-
-    # create ordered dict for string mappers
-    nansatMappers = collections.OrderedDict()
-
-    # scan through modules and load all modules that contain class Mapper
-    for finder, name, ispkg in pkgutil.iter_modules(nansat.mappers.__path__[::-1]):
-        loader = finder.find_module(name)
-        try:
-            module = loader.load_module(name)
-        except:
-            print name, sys.exc_info()
-        else:
-            if hasattr(module, 'Mapper'):
-                nansatMappers[name] = module.Mapper
-
-    # move generic_mapper to the end
-    if 'mapper_generic' in nansatMappers:
-        gm = nansatMappers.pop('mapper_generic')
-        nansatMappers['mapper_generic'] = gm
-
-    return nansatMappers
 
 obpg = {
 'red': [  (0.00, 0.56, 0.56),

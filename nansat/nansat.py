@@ -15,25 +15,69 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os
 import tempfile
 import datetime
 import dateutil.parser
+import collections
+import pkgutil
 
 import scipy
 from scipy.io.netcdf import netcdf_file
 import numpy as np
 from matplotlib import cm
 
-from .nsr import NSR
-from .domain import Domain
-from .figure import Figure
-from .vrt import VRT
-from .nansatshape import Nansatshape
-from .tools import add_logger, Error, gdal, import_mappers
-from .node import Node
-from .pointbrowser import PointBrowser
-from . import nansatMappers
+from nansat.nsr import NSR
+from nansat.domain import Domain
+from nansat.figure import Figure
+from nansat.vrt import VRT
+from nansat.nansatshape import Nansatshape
+from nansat.tools import add_logger, Error, GDALError, gdal
+from nansat.node import Node
+from nansat.pointbrowser import PointBrowser
+
+import nansat.mappers
+
+def import_mappers():
+    ''' Import available mappers into a dictionary
+
+        Returns
+        --------
+        nansatMappers : dict
+            key  : mapper name
+            value: class Mapper(VRT) from the mapper module
+
+    '''
+    ## import the namespace package nansat.mappers
+    #import mappers
+
+    # create ordered dict for string mappers
+    nansatMappers = collections.OrderedDict()
+
+    # scan through modules and load all modules that contain class Mapper
+    for finder, name, ispkg in pkgutil.iter_modules(nansat.mappers.__path__[::-1]):
+        loader = finder.find_module(name)
+        try:
+            module = loader.load_module(name)
+        except:
+            print name, sys.exc_info()
+        else:
+            if hasattr(module, 'Mapper'):
+                nansatMappers[name] = module.Mapper
+
+    # move generic_mapper to the end
+    if 'mapper_generic' in nansatMappers:
+        gm = nansatMappers.pop('mapper_generic')
+        nansatMappers['mapper_generic'] = gm
+
+    return nansatMappers
+
+# Should these also come here?
+#def register_mapper():
+#def unregister_mapper():
+
+nansatMappers = import_mappers()
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
