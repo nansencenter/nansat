@@ -24,7 +24,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 
-from .tools import add_logger, initial_bearing, gdal, osr
+from .tools import add_logger, initial_bearing, gdal, osr, OptionError, \
+        haversine
 from .nsr import NSR
 from .vrt import VRT
 
