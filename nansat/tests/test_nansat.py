@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:04.07.2014 16:04
+# Last modified:08.07.2014 10:11
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -15,8 +15,8 @@ import os, sys, glob
 from types import ModuleType, FloatType
 import numpy as np
 
-from nansat import *
-
+from nansat import Nansat, Domain
+from nansat.nansat import nansatMappers 
 import nansat_test_archive as tna
 
 class NansatTest(unittest.TestCase):
@@ -26,10 +26,8 @@ class NansatTest(unittest.TestCase):
             raise ValueError('No test data available')
 
     def test_mapper_imports(self):
-        for folder in sys.path:
-            for mapper in glob.glob(folder + '/mapper_*.py'):
-                mm = os.path.basename(mapper.replace('.py',''))
-                assert type(__import__(mm)) is ModuleType
+        for mapper in nansatMappers:
+            assert type(__import__('nansat.mappers.'+mapper)) is ModuleType
 
     def test_pixel_functions(self):
         n = Nansat(self.test_data.asar[0])
@@ -38,12 +36,36 @@ class NansatTest(unittest.TestCase):
         else:
             self.assertIsInstance(n['sigma0_VV'], np.ndarray)
 
+    def test_resize_by_pixelsize(self):
+        n = Nansat(self.test_data.asar[0])
+        n.resize(pixelsize=500, eResampleAlg=1)
+        self.assertIsInstance(n[1], np.ndarray)
+
+    def test_resize_by_factor(self):
+        n = Nansat(self.test_data.asar[0])
+        n.resize(0.5, eResampleAlg=1)
+        self.assertIsInstance(n[1], np.ndarray)
+
+    def test_resize_by_width(self):
+        n = Nansat(self.test_data.asar[0])
+        n.resize(width=100, eResampleAlg=1)
+        self.assertIsInstance(n[1], np.ndarray)
+
+    def test_resize_by_height(self):
+        n = Nansat(self.test_data.asar[0])
+        n.resize(height=500, eResampleAlg=1)
+        self.assertIsInstance(n[1], np.ndarray)
+
+    def test_reproject(self):
+        n = Nansat(self.test_data.asar[0])
+        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", 
+                "-te 15 -35 35 -25 -ts 500 500") 
+        n.reproject(d)
+        self.assertIsInstance(n[1], np.ndarray)
+
     def tearDown(self):
-        # This will delete the downloaded data after every test - it
-        # seems to be the only solution if we don't want to keep the test data
-        # Later we could make a data folder under tests and add that to
-        # .gitignore
-        self.test_data.delete_downloaded()
+        # if any test plots are created, they could be deleted here
+        pass
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
@@ -58,7 +80,8 @@ class DomainTest(unittest.TestCase):
         self.assertIsInstance(dY, FloatType)
 
     def tearDown(self):
-        self.test_data.delete_downloaded()
+        #self.test_data.delete_downloaded()
+        pass
 
 
 

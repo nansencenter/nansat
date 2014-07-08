@@ -2,3 +2,7 @@
 *.swp
 *.so
 *.o
+test_data/
+build/
+dist/
+nansat.egg-info/
