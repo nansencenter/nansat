@@ -17,6 +17,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 import os
+import sys
 import tempfile
 import datetime
 import dateutil.parser
