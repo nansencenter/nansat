@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 import inspect
 
 from nansat.vrt import VRT
+from nansat.tools import WrongMapperError
 
 # Place to store downloads - this can be changed via the "outFolder" argument
 # to Mapper.__init__
@@ -40,7 +41,9 @@ class Mapper(VRT, object):
         ##############
         keywordBase = 'ncep_wind_online'
         if fileName[0:len(keywordBase)] != keywordBase:
-            raise AttributeError("Wrong mapper")
+            raise WrongMapperError(__file__, "Wrong mapper")
+
+        raise IOError('test')
 
         timestr = fileName[len(keywordBase)+1::]
         time = datetime.strptime(timestr, '%Y%m%d%H%M')
