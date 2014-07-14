@@ -33,7 +33,7 @@ from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
-from nansat.tools import add_logger, Error, GDALError, gdal
+from nansat.tools import add_logger, gdal, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -1464,7 +1464,7 @@ class Nansat(Domain):
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper
                     break
-                except:
+                except WrongMapperError:
                     pass
 
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
