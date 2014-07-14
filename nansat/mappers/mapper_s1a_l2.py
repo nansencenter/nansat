@@ -5,7 +5,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	13.03.2014
-# Last modified:03.07.2014 15:37
+# Last modified:07.07.2014 09:52
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
 #               redistribute it and/or modify it under the terms of the GNU
@@ -16,6 +16,7 @@
 #               WARRANTY without even the implied warranty of MERCHANTABILITY
 #               or FITNESS FOR A PARTICULAR PURPOSE.
 import os
+from dateutil.parser import parse
 
 from nansat.vrt import VRT
 from nansat.tools import gdal
@@ -194,3 +195,6 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+
+        # set time
+        self._set_time(parse(self.dataset.GetMetadata()['SOURCE_ACQUISITION_UTC_TIME']))

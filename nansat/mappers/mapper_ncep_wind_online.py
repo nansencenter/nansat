@@ -22,14 +22,18 @@ import inspect
 
 from nansat.vrt import VRT
 
-# Could be input as argument, or defined as environment variable
-outFolder = './'
+# Place to store downloads - this can be changed via the "outFolder" argument
+# to Mapper.__init__
+downloads = os.path.join(os.path.expanduser('~'), 'ncep_gfs_downloads')
 
 class Mapper(VRT, object):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, outFolder=downloads, **kwargs):
         ''' Create NCEP VRT '''
+
+        if not os.path.exists(outFolder):
+            os.mkdir(outFolder)
 
         ##############
         # Get time
@@ -67,8 +71,8 @@ class Mapper(VRT, object):
                 + '%.2d' % modelRunHour \
                 + '/gfs.t' + '%.2d' % modelRunHour + 'z.master.grbf' \
                 + '%.2d' % forecastHour + '.10m.uv.grib2'
-        outFileName = outFolder + 'ncep_gfs_' + nearestModelRun.strftime(
-                    '%Y%m%d_%HH_') + '%.2d' % forecastHour + '.10m.uv.grib2'
+        outFileName = os.path.join(outFolder, 'ncep_gfs_' + nearestModelRun.strftime(
+                    '%Y%m%d_%HH_') + '%.2d' % forecastHour + '.10m.uv.grib2' )
         if os.path.exists(outFileName):
             print 'NCEP wind is already downloaded: ' + outFileName
         else:
@@ -86,22 +90,27 @@ class Mapper(VRT, object):
                         + nearestModelRun.strftime('%H%M_') \
                         + '%.3d' % forecastHour
                 fileName = baseName + '.grb2'
-                outFileName = outFolder + fileName
+                outFileName = os.path.join(outFolder, fileName)
                 print 'Downloading ' + url + fileName
 
                 # Download subset of grib file
-                mapperDir = os.path.dirname(os.path.abspath(
-                                inspect.getfile(inspect.currentframe())))
-                get_inv = mapperDir + '/get_inv.pl '
-                get_grib = mapperDir + '/get_grib.pl '
-                if not os.path.exists(fileName):
-                    command = get_inv + url + baseName \
+                mapperDir = os.path.dirname(os.path.abspath(__file__))
+                get_inv = os.path.join(mapperDir, 'get_inv.pl')
+                if not os.path.isfile(get_inv):
+                    raise IOError('%s: File not found' %get_inv)
+                get_grib = os.path.join(mapperDir, 'get_grib.pl')
+                if not os.path.isfile(get_grib):
+                    raise IOError('%s: File not found' %get_grib)
+                if not os.path.isfile(outFileName):
+                    command = get_inv + ' ' + url + baseName \
                           + '.inv | egrep "(:UGRD:10 m |:VGRD:10 m )" | ' \
-                          + get_grib + url + fileName + ' ' + outFileName
+                          + get_grib + ' ' + url + fileName + ' ' + outFileName
                     os.system(command)
+                    if os.path.isfile(outFileName):
+                        print 'Downloaded ' + fileName + ' to ' + outFolder
                 else:
-                    print 'Already downloaded'
-                if not os.path.exists(outFileName):
+                    print 'Already downloaded %s' %outFileName
+                if not os.path.isfile(outFileName):
                     sys.exit('No NCEP wind files found for requested time')
 
 

@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:08.07.2014 10:11
+# Last modified:08.07.2014 13:54
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -70,6 +70,8 @@ class NansatTest(unittest.TestCase):
 
     def test_reproject(self):
         n = Nansat(self.test_data.asar[0])
+        # resize to avoid memory problems
+        n.resize(0.1) 
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-lle 15 -35 35 -25 -ts 500 500")
         n.reproject(d)

@@ -16,8 +16,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import os
-import sys
+import os, sys
 import tempfile
 import datetime
 import dateutil.parser
@@ -1479,6 +1478,9 @@ class Nansat(Domain):
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
+            # check if given data file exists 
+            if not os.path.isfile(self.fileName):
+                raise IOError('%s: File does not exist' %(self.fileName))
             raise GDALError('NANSAT can not open the file ' + self.fileName)
 
         return tmpVRT
