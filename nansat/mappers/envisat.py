@@ -75,11 +75,12 @@ class Envisat():
         if not gdalMetadata or not gdalMetadata.has_key('MPH_PRODUCT'):
             raise WrongMapperError(__file__, "Envisat N1 bad mapper")
         
+        self.product = gdalMetadata["MPH_PRODUCT"]
         self.iFileName = fileName
         self.prodType = gdalMetadata["MPH_PRODUCT"][0:4]
-        self.allADSParams = self.allADSParams[prodType]
+        self.allADSParams = self.allADSParams[self.prodType]
         self.dsOffsetDict = self.read_offset_from_header(self.allADSParams['name'])
-        self.lonlatNames = self.lonlatNames[prodType]
+        self.lonlatNames = self.lonlatNames[self.prodType]
 
     def _set_envisat_time(self, gdalMetadata):
         ''' Get time from metadata, set time to VRT'''
