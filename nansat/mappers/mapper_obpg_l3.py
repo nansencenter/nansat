@@ -10,7 +10,7 @@ import glob
 
 import numpy as np
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 from nansat.nsr import NSR
 
@@ -34,8 +34,11 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' OBPG L3 VRT '''
 
+        if not gdalMetadata:
+            raise WrongMapperError(__file__, 'OBPG L3 bad mapper')
+        
         if 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
-            raise AttributeError("OBPG L3 Standard Mapped Image BAD MAPPER")
+            raise WrongMapperError(__file__, "OBPG L3 Standard Mapped Image BAD MAPPER")
 
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)

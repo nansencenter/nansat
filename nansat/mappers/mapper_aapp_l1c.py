@@ -10,7 +10,9 @@
 import sys
 import struct
 import datetime
+import warnings
 
+from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 
 dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
@@ -28,7 +30,12 @@ class Mapper(VRT):
         ########################################
         # Read metadata from binary file
         ########################################
-        fp = open(fileName, 'rb')
+        try:
+            fp = open(fileName, 'rb')
+        except IOError:
+            warnings.warn(__file__+' may need a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
         fp.seek(24)
         satID = int(struct.unpack('<l', fp.read(4))[0])
 
@@ -39,8 +46,13 @@ class Mapper(VRT):
         year = int(struct.unpack('<l', fp.read(4))[0])
         dayofyear = int(struct.unpack('<l', fp.read(4))[0])
         millisecondsOfDay = int(struct.unpack('<l', fp.read(4))[0])
-        time = datetime.datetime(year, 1, 1) + \
-            datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
+        try:
+            time = datetime.datetime(year, 1, 1) + \
+                datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
+        except ValueError:
+            warnings.warn(__file__+' may need a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         fp.seek(72)
         numScanLines = int(struct.unpack('<l', fp.read(4))[0])

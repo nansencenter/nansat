@@ -13,7 +13,7 @@
 #               or FITNESS FOR A PARTICULAR PURPOSE.
 from netCDF4 import Dataset
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 
@@ -70,7 +70,8 @@ class Mapper(VRT):
         ''' Create VRT from OpenDAP dataset'''
 
         # quit if file is not online
-        assert fileName[:7] == 'http://'
+        if fileName[:7] != 'http://':
+            raise WrongMapperError(__file__, "Bad mapper")
 
         # open file through OpenDAP using netCDF4 library
         f = Dataset(fileName)

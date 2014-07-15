@@ -6,7 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import datetime
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 
 
@@ -14,13 +14,16 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
                  **kwargs):
 
+        if not gdalMetadata:
+            raise WrongMapperError(__file__, "Not Hirlam converted from felt to netCDF")
+
         isHirlam = False
         for key in gdalMetadata.keys():
             if 'creation by fimex from file' in gdalMetadata[key]:
                 isHirlam = True
 
         if not isHirlam:
-            raise AttributeError("Not Hirlam converted from felt to netCDF")
+            raise WrongMapperError(__file__, "Not Hirlam converted from felt to netCDF")
 
         #GeolocMetaDict = [{'src':
         #        {'SourceFilename': 'NETCDF:"' + fileName + '":longitude',

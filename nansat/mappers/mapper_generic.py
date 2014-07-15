@@ -11,7 +11,7 @@ import numpy as np
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.node import Node
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,

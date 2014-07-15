@@ -10,7 +10,7 @@ from struct import unpack
 import numpy as np
 import os
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 
 
@@ -21,7 +21,7 @@ class Mapper(VRT):
         ''' Create CSKS VRT '''
 
         if fileName.split('/')[-1][0:4] != "CSKS":
-            raise AttributeError("COSMO-SKYMED BAD MAPPER")
+            raise WrongMapperError(__file__, "COSMO-SKYMED bad mapper")
 
         # Get coordinates
         metadata = gdalMetadata['Estimated_Bottom_Left_Geodetic_Coordinates']

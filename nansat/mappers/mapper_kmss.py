@@ -4,9 +4,10 @@
 # Licence:     This file is part of NANSAT. You can redistribute it or modify
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
+import os
 from datetime import datetime
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 from nansat.domain import Domain
 
@@ -16,10 +17,14 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
-        product = gdalDataset.GetDriver().LongName
+        try:
+            product = gdalDataset.GetDriver().LongName
+        except AttributeError:
+            raise WrongMapperError(__file__, "Wrong mapper")
+
         if cmp(os.path.split(fileName)[1][0:4], '101_') != 0:
             if cmp(os.path.split(fileName)[1][0:4], '102_') != 0:
-                raise AttributeError("NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'")
+                raise WrongMapperError(__file__, "NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'")
 
         if product != 'GeoTIFF':
             raise AttributeError("Not_GeoTIFF")

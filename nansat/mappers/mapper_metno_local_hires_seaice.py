@@ -17,7 +17,7 @@ import os
 import urllib2
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 import mapper_generic as mg
 
@@ -37,7 +37,7 @@ class Mapper(mg.Mapper):
         keywordBase = 'metno_local_hires_seaice'
 
         if fileName[0:len(keywordBase)] != keywordBase:
-            raise AttributeError("Wrong mapper")
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         keywordTime = fileName[len(keywordBase)+1:]
         requestedTime = datetime.datetime.strptime(keywordTime, '%Y%m%d')

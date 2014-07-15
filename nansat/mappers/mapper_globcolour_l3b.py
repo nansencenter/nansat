@@ -12,6 +12,7 @@ from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
 
+from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 from globcolour import Globcolour
 
@@ -36,7 +37,10 @@ class Mapper(VRT, Globcolour):
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
-        assert iFileName[0:4] == 'L3b_' and iFileExt == '.nc'
+        try:
+            assert iFileName[0:4] == 'L3b_' and iFileExt == '.nc'
+        except:
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         # define shape of GLOBCOLOUR grid
         GLOBCOLOR_ROWS = 180 * 24

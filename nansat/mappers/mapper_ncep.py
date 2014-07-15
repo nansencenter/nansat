@@ -11,6 +11,7 @@
 import datetime
 
 from nansat.vrt import VRT
+from nansat.tools import WrongMapperError
 
 
 class Mapper(VRT):
@@ -19,10 +20,12 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create NCEP VRT '''
 
-        if (gdalDataset.GetGeoTransform() == (-0.25, 0.5, 0.0,
-                                               90.25, 0.0, -0.5) or
-             gdalDataset.GetGeoTransform() == (-0.5, 1.0, 0.0,
-                                               90.5, 0.0, -1.0)):
+        if not gdalDataset:
+            raise WrongMapperError(__file__, 'NCEP bad mapper')
+
+        geotransform = gdalDataset.GetGeoTransform()
+        if ( geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
+                geotransform == (-0.5, 1.0, 0.0, 90.5, 0.0, -1.0) ):
             if gdalDataset.RasterCount == 4:
                 srcBandId = {'temperature': 2,
                               'u-component': 3,
@@ -32,9 +35,9 @@ class Mapper(VRT):
                               'u-component': 8,
                               'v-component': 9}
             else:
-                raise AttributeError("NCEP BAD MAPPER")
+                raise WrongMapperError(__file__, "NCEP BAD MAPPER")
         else:
-            raise AttributeError("NCEP BAD MAPPER") # Not water proof
+            raise WrongMapperError(__file__, "NCEP BAD MAPPER") # Not water proof
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['u-component']},

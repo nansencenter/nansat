@@ -13,6 +13,7 @@ from nansat.vrt import VRT
 from envisat import Envisat
 from nansat.domain import Domain
 from nansat.tools import initial_bearing
+from nansat.tools import WrongMapperError
 
 
 class Mapper(VRT, Envisat):
@@ -36,11 +37,10 @@ class Mapper(VRT, Envisat):
 
         '''
 
-        product = gdalMetadata.get("MPH_PRODUCT")
-        if product[0:4] != "ASA_":
-            raise AttributeError("ASAR_L1 BAD MAPPER")
+        Envisat.__init__(self, fileName, gdalMetadata)
 
-        Envisat.__init__(self, fileName, product[0:4])
+        if self.product[0:4] != "ASA_":
+            raise WrongMapperError(__file__, "ASAR_L1 wrong mapper")
 
         # get channel string (remove '/', since NetCDF
         # does not support that in metadata)

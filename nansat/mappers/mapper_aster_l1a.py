@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from math import ceil
 from dateutil.parser import parse
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
 
@@ -37,9 +37,12 @@ class Mapper(VRT):
 
         '''
         # check if it is ASTER L1A
-        assert 'AST_L1A_' in fileName
-        shortName = gdalMetadata['INSTRUMENTSHORTNAME']
-        assert shortName == 'ASTER'
+        try:
+            assert 'AST_L1A_' in fileName
+            shortName = gdalMetadata['INSTRUMENTSHORTNAME']
+            assert shortName == 'ASTER'
+        except:
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         subDatasets = gdalDataset.GetSubDatasets()
 

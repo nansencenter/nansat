@@ -5,7 +5,7 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 
 
@@ -16,8 +16,13 @@ class Mapper(VRT):
         ''' Create MODIS_L1 VRT '''
 
         # raise error in case of not GOCI L1B
-        title = gdalMetadata['HDFEOS_POINTS_Scene_Header_Scene_Title']
-        assert title == 'GOCI Level-1B Data'
+        try:
+            title = gdalMetadata['HDFEOS_POINTS_Scene_Header_Scene_Title']
+        except (TypeError, KeyError):
+            raise WrongMapperError(__file__, "Wrong mapper")
+        if not title == 'GOCI Level-1B Data':
+            raise WrongMapperError(__file__, "Wrong mapper")
+
 
         # set GOCI projection parameters
         lat_0 = gdalMetadata['HDFEOS_POINTS_Map_Projection_Central_Latitude_(parallel)']

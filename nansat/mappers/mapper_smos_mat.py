@@ -10,7 +10,7 @@ import numpy as np
 from scipy.io import loadmat
 
 from nansat.vrt import VRT
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 
 class Mapper(VRT):
     ''' MApper for Matlab files with SMOS data '''
@@ -24,7 +24,7 @@ class Mapper(VRT):
             # load file
             matFile = loadmat(fileName)
         else:
-            raise AttributeError("SMOS BAD MAPPER");
+            raise WrongMapperError(__file__, "SMOS BAD MAPPER");
             
         # get geolocation
         geolocArray = matFile['geolocation'][0]

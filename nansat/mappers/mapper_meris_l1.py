@@ -6,6 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
 from nansat.vrt import VRT
+from nansat.tools import WrongMapperError
 from envisat import Envisat
 
 
@@ -37,14 +38,12 @@ class Mapper(VRT, Envisat):
             generated at that step
 
         '''
-        # get ENVISAT MPH_PRODUCT
-        product = gdalMetadata.get("MPH_PRODUCT")
-
-        if product[0:9] != "MER_FRS_1" and product[0:9] != "MER_RR__1":
-            raise AttributeError("MERIS_L1 BAD MAPPER")
 
         # init ADS parameters
-        Envisat.__init__(self, fileName, product[0:4])
+        Envisat.__init__(self, fileName, gdalMetadata)
+
+        if self.product[0:9] != "MER_FRS_1" and self.product[0:9] != "MER_RR__1":
+            raise WrongMapperError(__file__, "MERIS_L1 bad mapper")
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',

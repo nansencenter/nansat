@@ -10,6 +10,7 @@ import numpy as np
 from nansat.vrt import VRT
 from nansat.node import Node
 from nansat.nsr import NSR
+from nansat.tools import WrongMapperError
 
 from nansat.mappers import mapper_generic as mg
 
@@ -22,7 +23,11 @@ class Mapper(mg.Mapper):
 
         fPathName, fExt = os.path.splitext(fileName)
         fPath, fName = os.path.split(fPathName)
-        assert fExt == '.nc' and 'MER_' in fName and 'N1_C2IOP' in fName
+        try:
+            assert fExt == '.nc' and 'MER_' in fName and 'N1_C2IOP' in fName
+        except:
+            raise WrongMapperError(__file__, "Wrong mapper")
+
         # get all metadata using the GENERIC Mapper
         mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
 

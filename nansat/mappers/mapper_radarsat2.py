@@ -16,8 +16,8 @@ from math import asin
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
-from nansat.tools import Error, initial_bearing
-from nansat.tools import gdal, ogr
+from nansat.tools import initial_bearing, gdal, ogr
+from nansat.tools import WrongMapperError
 
 
 class Mapper(VRT):
@@ -35,9 +35,11 @@ class Mapper(VRT):
             gdalMetadata = gdalDataset.GetMetadata()
 
         #if it is not RADARSAT-2, return
+        if not gdalMetadata.has_key("SATELLITE_IDENTIFIER"):
+            raise WrongMapperError(__file__, "RADARSAT-2 BAD MAPPER")
         product = gdalMetadata.get("SATELLITE_IDENTIFIER", "Not_RADARSAT-2")
         if product != 'RADARSAT-2':
-            raise AttributeError("RADARSAT-2 BAD MAPPER")
+            raise WrongMapperError(__file__, "RADARSAT-2 BAD MAPPER")
 
         # read product.xml
         productXmlName = os.path.join(fileName, 'product.xml')

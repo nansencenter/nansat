@@ -5,8 +5,9 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
+import warnings
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 
 
@@ -16,7 +17,12 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MODIS_L1 VRT '''
         #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
-        gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
+        try:
+            gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
+        except (AttributeError, IndexError):
+            warnings.warn(__file__+' may need a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         #list of available modis names:resolutions
         modisResolutions = {'MYD02QKM': 250, 'MOD02QKM': 250,

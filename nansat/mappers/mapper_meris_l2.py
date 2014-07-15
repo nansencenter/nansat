@@ -32,12 +32,10 @@ class Mapper(VRT, Envisat):
             generated at that step
         '''
 
-        product = gdalMetadata["MPH_PRODUCT"]
+        Envisat.__init__(self, fileName, gdalMetadata)
 
-        if product[0:9] != "MER_FRS_2" and product[0:9] != "MER_RR__2":
-            raise AttributeError("MERIS_L2 BAD MAPPER")
-
-        Envisat.__init__(self, fileName, product[0:4])
+        if self.product[0:9] != "MER_FRS_2" and self.product[0:9] != "MER_RR__2":
+            raise WrongMapperError(__file__, "MERIS_L2 BAD MAPPER")
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',

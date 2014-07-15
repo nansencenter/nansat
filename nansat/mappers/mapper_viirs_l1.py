@@ -13,7 +13,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 from nansat.nsr import NSR
 from nansat.vrt import GeolocationArray, VRT
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
@@ -23,7 +23,8 @@ class Mapper(VRT):
                  lineStep=1, **kwargs):
         ''' Create VIIRS VRT '''
 
-        assert 'GMTCO_npp_' in fileName, 'viirs_l1 BAD MAPPER'
+        if not 'GMTCO_npp_' in fileName:
+            raise WrongMapperError(__file__, 'viirs_l1 BAD MAPPER')
         ifiledir = os.path.split(fileName)[0]
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()

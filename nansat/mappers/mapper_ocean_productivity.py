@@ -11,7 +11,7 @@ import glob
 
 import numpy as np
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 
 
@@ -34,10 +34,13 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Ocean Productivity website VRT '''
 
+        if not gdalMetadata:
+            raise WrongMapperError(__file__, 'BAD MAPPER')
+
         if ('IDL' not in gdalMetadata['Projection Category'] and
                 'Source' not in gdalMetadata and
                 '-9999' not in gdalMetadata['Hole Value']):
-                raise AttributeError("BAD MAPPER")
+            raise WrongMapperError(__file__, 'BAD MAPPER')
         print 'Ocean Productivity website data'
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)

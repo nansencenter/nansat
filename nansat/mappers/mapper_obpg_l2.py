@@ -7,7 +7,7 @@
 from datetime import datetime, timedelta
 from math import ceil
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
 
@@ -35,8 +35,12 @@ class Mapper(VRT):
                   'VIIRSN Level-2 Data']
 
         # should raise error in case of not obpg_l2 file
+        if not gdalMetadata:
+            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
+
         title = gdalMetadata["Title"]
-        assert title in titles, 'obpg_l2 BAD MAPPER'
+        if not title in titles:
+            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
 
         # get subdataset and parse to VRT.__init__() for retrieving geo-metadata
         # but NOT from longitude or latitude because it can be smaller!

@@ -13,7 +13,7 @@ import numpy as np
 
 from nansat.vrt import VRT, GeolocationArray
 from globcolour import Globcolour
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 
 
 class Mapper(VRT, Globcolour):
@@ -22,10 +22,13 @@ class Mapper(VRT, Globcolour):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' GLOBCOLOR L3M VRT '''
 
-        print "=>%s<=" % gdalMetadata['NC_GLOBAL#title']
+        try:
+            print "=>%s<=" % gdalMetadata['NC_GLOBAL#title']
+        except (TypeError, KeyError):
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         if 'GlobColour' not in gdalMetadata['NC_GLOBAL#title']:
-            raise AttributeError("GlobColour BAD MAPPER")
+            raise WrongMapperError(__file__, "GlobColour BAD MAPPER")
 
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)

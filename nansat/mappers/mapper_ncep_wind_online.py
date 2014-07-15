@@ -43,8 +43,6 @@ class Mapper(VRT, object):
         if fileName[0:len(keywordBase)] != keywordBase:
             raise WrongMapperError(__file__, "Wrong mapper")
 
-        raise IOError('test')
-
         timestr = fileName[len(keywordBase)+1::]
         time = datetime.strptime(timestr, '%Y%m%d%H%M')
         print time

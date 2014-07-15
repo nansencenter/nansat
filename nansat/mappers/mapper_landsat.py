@@ -5,7 +5,9 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import tarfile
+import warnings
 
+from nansat.tools import WrongMapperError
 from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 from nansat.node import Node
@@ -17,7 +19,12 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create LANDSAT VRT '''
         # try to open .tar or .tar.gz or .tgz file with tar
-        tarFile = tarfile.open(fileName)
+        try:
+            tarFile = tarfile.open(fileName)
+        except:
+            warnings.warn(__file__+' probably needs a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         tarNames = tarFile.getnames()
         #print tarNames

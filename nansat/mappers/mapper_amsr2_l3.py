@@ -13,7 +13,8 @@ import numpy as np
 
 from nansat.vrt import VRT, GeolocationArray
 from nansat.nsr import NSR
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
+
 
 
 class Mapper(VRT):
@@ -37,9 +38,12 @@ class Mapper(VRT):
         ''' OBPG L3 VRT '''
 
         # test the product
-        assert gdalMetadata['PlatformShortName'] == 'GCOM-W1'
-        assert gdalMetadata['SensorShortName'] == 'AMSR2'
-        assert gdalMetadata['ProductName'] == 'AMSR2-L3'
+        try:
+            assert gdalMetadata['PlatformShortName'] == 'GCOM-W1'
+            assert gdalMetadata['SensorShortName'] == 'AMSR2'
+            assert gdalMetadata['ProductName'] == 'AMSR2-L3'
+        except:
+            raise WrongMapperError(__file__, "Wrong mapper")
 
 
         # get list of similar (same date, A/D orbit) files in the directory

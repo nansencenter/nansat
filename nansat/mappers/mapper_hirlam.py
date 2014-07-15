@@ -9,6 +9,7 @@ import datetime
 import numpy
 
 from nansat.vrt import VRT
+from nansat.tools import WrongMapperError
 
 
 class Mapper(VRT):
@@ -16,8 +17,12 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
 
-        if gdalDataset.GetGeoTransform()[0:5] != (-12.1, 0.2, 0.0, 81.95, 0.0):
-            raise AttributeError("HIRLAM BAD MAPPER")
+        try:
+            geo_transform = gdalDataset.GetGeoTransform()[0:5]
+        except AttributeError:
+            raise WrongMapperError(__file__, "HIRLAM wrong mapper")
+        if geo_transform != (-12.1, 0.2, 0.0, 81.95, 0.0):
+            raise WrongMapperError(__file__, "HIRLAM wrong mapper")
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': 2,

@@ -5,7 +5,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	13.03.2014
-# Last modified:07.07.2014 09:52
+# Last modified:15.07.2014 14:38
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
 #               redistribute it and/or modify it under the terms of the GNU
@@ -19,10 +19,8 @@ import os
 from dateutil.parser import parse
 
 from nansat.vrt import VRT
-from nansat.tools import gdal
+from nansat.tools import gdal, WrongMapperError
 from nansat.nsr import NSR
-
-import pdb
 
 class Mapper(VRT):
     '''
@@ -52,7 +50,8 @@ class Mapper(VRT):
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
         title = gdalMetadata['NC_GLOBAL#TITLE']
         # Raise error if it is not Sentinel-1 format
-        assert 'Sentinel-1' or 'ASA' in title, 's1a_l2 BAD MAPPER'
+        if not 'Sentinel-1' or 'ASA' in title:
+            raise WrongMapperError(__file__, 's1a_l2 BAD MAPPER')
 
         metadata = {}
         for key, val in gdalMetadata.iteritems():
@@ -61,8 +60,6 @@ class Mapper(VRT):
 
         subDatasets = gdalDataset.GetSubDatasets()
         fileNames = [f[0] for f in subDatasets]
-
-        #pdb.set_trace()
 
         rm_bands = []
         # Find all data that is not relevant for the selected product type

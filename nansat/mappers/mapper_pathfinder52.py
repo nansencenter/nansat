@@ -10,6 +10,7 @@ import numpy as np
 
 import nansat.vrt as vrt
 from nansat.nsr import NSR
+from nansat.tools import WrongMapperError
 
 
 class Mapper(vrt.VRT):
@@ -23,7 +24,8 @@ class Mapper(vrt.VRT):
                  **kwargs):
         ''' Create VRT '''
 
-        assert 'AVHRR_Pathfinder-PFV5.2' in fileName, 'pathfinder52 BAD MAPPER'
+        if not 'AVHRR_Pathfinder-PFV5.2' in fileName:
+            raise WrongMapperError(__file__, 'pathfinder52 BAD MAPPER')
 
         subDatasets = gdalDataset.GetSubDatasets()
         metaDict = []

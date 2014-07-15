@@ -7,6 +7,7 @@
 import os.path
 
 from nansat.vrt import VRT
+from nansat.tools import WrongMapperError
 
 
 
@@ -18,7 +19,7 @@ class Mapper(VRT):
 
         fileBaseName = os.path.basename(fileName)
         if not fileBaseName == 'MOD44W.vrt':
-            raise AttributeError("MOD44W BAD MAPPER")
+            raise WrongMapperError(__file__, "MOD44W BAD MAPPER")
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1},
                      'dst': {'wkv': 'land_binary_mask'}}]

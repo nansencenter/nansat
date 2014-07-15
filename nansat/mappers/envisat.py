@@ -11,7 +11,7 @@ import numpy as np
 import scipy.ndimage
 
 from nansat.vrt import VRT, GeolocationArray
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 
 
 class Envisat():
@@ -70,10 +70,13 @@ class Envisat():
     lonlatNames = {'ASA_': ['first_line_longs', 'first_line_lats'],
                    'MER_': ['longitude', 'latitude']}
 
-    def __init__(self, fileName, prodType):
+    def __init__(self, fileName, gdalMetadata):
         '''Select set of params and read offset of ADS'''
+        if not gdalMetadata or not gdalMetadata.has_key('MPH_PRODUCT'):
+            raise WrongMapperError(__file__, "Envisat N1 bad mapper")
+        
         self.iFileName = fileName
-        self.prodType = prodType
+        self.prodType = gdalMetadata["MPH_PRODUCT"][0:4]
         self.allADSParams = self.allADSParams[prodType]
         self.dsOffsetDict = self.read_offset_from_header(self.allADSParams['name'])
         self.lonlatNames = self.lonlatNames[prodType]

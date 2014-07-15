@@ -18,7 +18,7 @@ import sys
 import urllib2
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, ogr
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 
 class Mapper(VRT):
@@ -30,6 +30,7 @@ class Mapper(VRT):
         ThreddsBase = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-svalbard/'
         # First check if mapper is called with keyword syntax: filename = metno_hires_seaice:YYYYmmdd
         keywordBase = 'metno_hires_seaice'
+        foundDataset = False
         if fileName[0:len(keywordBase)] == keywordBase:
             keywordTime = fileName[len(keywordBase)+1:]
             requestedTime = datetime.datetime.strptime(keywordTime, '%Y%m%d')
@@ -42,12 +43,10 @@ class Mapper(VRT):
                     foundDataset = True
                     break # Data is found for this day
                 except:
-                    foundDataset = False
                     pass # No data for this day
 
-        if foundDataset is False:
-            AttributeError("Not Met.no Svalbard-ice Thredds URL")
-            sys.exit()
+        if not foundDataset:
+            raise WrongMapperError(__file__, "Not Met.no Svalbard-ice Thredds URL")
 
         # Then check if a valid OPeNDAP URL is given (or has been constructed from keyword)
         if fileName[0:len(ThreddsBase)] != ThreddsBase:

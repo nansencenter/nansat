@@ -7,9 +7,10 @@
 #
 # NB: This mapper works only together with a modified version of the GDAL MSG driver
 from datetime import datetime
-
 from numpy import array, arange
+import warnings
 
+from nansat.tools import WrongMapperError
 from nansat.vrt import VRT
 from nansat.node import Node
 
@@ -153,7 +154,12 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
 
-        satellite = gdalDataset.GetDescription().split(",")[2]
+        try:
+            satellite = gdalDataset.GetDescription().split(",")[2]
+        except (AttributeError, IndexError):
+            warnings.warn(__file__+' probably needs a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         for sat in satDict:
             if sat['name'] == satellite:

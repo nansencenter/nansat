@@ -12,6 +12,7 @@ import datetime
 
 from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
+from nansat.tools import WrongMapperError
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV '''
@@ -30,7 +31,10 @@ class Mapper(VRT):
         # test if input files is ASCAT
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
-        assert iFileName[0:6] == 'ascat_' and iFileExt == '.nc'
+        try:
+            assert iFileName[0:6] == 'ascat_' and iFileExt == '.nc'
+        except:
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         # Create geolocation
         subDataset = gdal.Open('NETCDF:"' + fileName + '":lat')

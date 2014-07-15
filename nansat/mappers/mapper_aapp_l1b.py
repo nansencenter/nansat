@@ -11,6 +11,9 @@
 import sys
 import struct
 import datetime
+import warnings
+
+from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 
 satIDs = {4: 'NOAA-15', 2: 'NOAA-16', 6: 'NOAA-17', 7: 'NOAA-18', 8: 'NOAA-19',
@@ -31,14 +34,24 @@ class Mapper(VRT):
         ########################################
         # Read metadata from binary file
         ########################################
-        fp = open(fileName, 'rb')
+        try:
+            fp = open(fileName, 'rb')
+        except IOError:
+            warnings.warn(__file__+' may need a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
         fp.seek(72)
         satNum = int(struct.unpack('<H', fp.read(2))[0])
         if satNum >= 11:
             isMetop = True
         else:
             isMetop = False
-        satID = satIDs[satNum]
+        try:
+            satID = satIDs[satNum]
+        except KeyError:
+            warnings.warn(__file__+' probably needs a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
         fp.seek(76)
         dataFormatNum = int(struct.unpack('<H', fp.read(2))[0])
         dataFormat = dataFormats[dataFormatNum]
