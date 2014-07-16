@@ -30,7 +30,10 @@ class Mapper(VRT):
                             'MYD021KM': 1000, 'MOD021KM': 1000}
 
         #should raise error in case of not MODIS_L1
-        mResolution = modisResolutions[gdalMetadata["SHORTNAME"]]
+        try:
+            mResolution = modisResolutions[gdalMetadata["SHORTNAME"]]
+        except KeyError:
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalSubDataset)
