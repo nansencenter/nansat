@@ -25,12 +25,17 @@ if not os.path.exists(dirname_test_data):
 '''
 class TestData(object):
     asar = []
+    generic = []
     noData = False
 
     def __init__(self):
         # OBS: SAR and wind data must be added in pairs for each test
         self.get_asar_agulhas()
         if not self.asar:
+            self.noData = True
+
+        self.get_generic_agulhas()
+        if not self.generic:
             self.noData = True
 
     def get_asar_agulhas(self):
@@ -54,3 +59,25 @@ class TestData(object):
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
             self.asar.append(asar_agulhas)
+
+    def get_generic_agulhas(self):
+        generic_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/generic/mapperTest_generic.tif'
+        fname = os.path.basename(generic_agulhas_url)
+
+        generic_agulhas = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(generic_agulhas):
+            print "Downloading test data"
+            start = timeit.timeit()
+            os.system('curl -so ' + generic_agulhas + ' ' + generic_agulhas_url )
+            end = timeit.timeit()
+            print end-start
+
+        if not os.path.isfile(generic_agulhas):
+            generic_agulhas = None
+            warnings.warn( "Could not access ftp-site with test data - contact " \
+                    "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
+        else:
+            self.generic.append(generic_agulhas)
+
+
+

@@ -36,8 +36,10 @@ class Mapper(VRT):
 
         if not gdalMetadata:
             raise WrongMapperError(__file__, 'OBPG L3 bad mapper')
-        
-        if 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
+
+        if not "Title" in gdalMetadata.keys():
+            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
+        elif 'Level-3 Standard Mapped Image' not in gdalMetadata['Title']:
             raise WrongMapperError(__file__, "OBPG L3 Standard Mapped Image BAD MAPPER")
 
         # get list of similar (same date) files in the directory

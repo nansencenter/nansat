@@ -38,7 +38,11 @@ class Mapper(VRT):
         if not gdalMetadata:
             raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
 
-        title = gdalMetadata["Title"]
+        if not "Title" in gdalMetadata.keys():
+            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
+        else:
+            title = gdalMetadata["Title"]
+
         if not title in titles:
             raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
 

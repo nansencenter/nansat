@@ -71,7 +71,7 @@ class NansatTest(unittest.TestCase):
     def test_reproject(self):
         n = Nansat(self.test_data.asar[0])
         # resize to avoid memory problems
-        n.resize(0.1) 
+        n.resize(0.1)
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-lle 15 -35 35 -25 -ts 500 500")
         n.reproject(d)
@@ -83,6 +83,22 @@ class NansatTest(unittest.TestCase):
     def tearDown(self):
         # if any test plots are created, they could be deleted here
         pass
+
+
+class MapperGenericTest(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noData:
+            raise ValueError('No test data available')
+
+    def test_mapper_generic(self):
+        print self.test_data.generic[0]
+        n = Nansat(self.test_data.generic[0])
+
+    def tearDown(self):
+        #self.test_data.delete_downloaded()
+        pass
+
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
@@ -103,7 +119,6 @@ class DomainTest(unittest.TestCase):
     def tearDown(self):
         #self.test_data.delete_downloaded()
         pass
-
 
 
 if __name__=='__main__':

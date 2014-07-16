@@ -48,7 +48,11 @@ class Mapper(VRT):
             product_type.lower() ) )
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
-        title = gdalMetadata['NC_GLOBAL#TITLE']
+        if not 'NC_GLOBAL' in gdalMetadata.keys():
+            raise WrongMapperError(__file__, 's1a_l2 BAD MAPPER')
+        else:
+            title = gdalMetadata['NC_GLOBAL#TITLE']
+
         # Raise error if it is not Sentinel-1 format
         if not 'Sentinel-1' or 'ASA' in title:
             raise WrongMapperError(__file__, 's1a_l2 BAD MAPPER')
