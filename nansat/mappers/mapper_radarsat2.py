@@ -35,7 +35,7 @@ class Mapper(VRT):
             gdalMetadata = gdalDataset.GetMetadata()
 
         #if it is not RADARSAT-2, return
-        if not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys():
+        if not gdalMetadata or not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys():
             raise WrongMapperError(__file__, "RADARSAT-2 BAD MAPPER")
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
             raise WrongMapperError(__file__, "RADARSAT-2 BAD MAPPER")

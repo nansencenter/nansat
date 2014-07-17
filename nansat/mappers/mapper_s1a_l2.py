@@ -5,7 +5,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	13.03.2014
-# Last modified:15.07.2014 14:38
+# Last modified:17.07.2014 11:57
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
 #               redistribute it and/or modify it under the terms of the GNU
@@ -48,7 +48,7 @@ class Mapper(VRT):
             product_type.lower() ) )
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
-        if not 'NC_GLOBAL' in gdalMetadata.keys():
+        if not gdalMetadata or not 'NC_GLOBAL' in gdalMetadata.keys():
             raise WrongMapperError(__file__, 's1a_l2 BAD MAPPER')
         else:
             title = gdalMetadata['NC_GLOBAL#TITLE']
