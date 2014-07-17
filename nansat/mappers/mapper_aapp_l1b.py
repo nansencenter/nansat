@@ -41,7 +41,14 @@ class Mapper(VRT):
                     'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
         fp.seek(72)
-        satNum = int(struct.unpack('<H', fp.read(2))[0])
+
+        try:
+            satNum = int(struct.unpack('<H', fp.read(2))[0])
+        except:
+            warnings.warn(__file__+' may need a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
+
         if satNum >= 11:
             isMetop = True
         else:

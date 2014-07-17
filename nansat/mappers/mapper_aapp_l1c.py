@@ -37,7 +37,12 @@ class Mapper(VRT):
                     'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
         fp.seek(24)
-        satID = int(struct.unpack('<l', fp.read(4))[0])
+        try:
+            satID = int(struct.unpack('<l', fp.read(4))[0])
+        except:
+            warnings.warn(__file__+' may need a better test for data ' \
+                    'fitness')
+            raise WrongMapperError(__file__, "Wrong mapper")
 
         ##################
         # Read time
