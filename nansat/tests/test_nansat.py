@@ -22,7 +22,7 @@ import nansat_test_archive as tna
 class NansatTest(unittest.TestCase):
     def setUp(self):
         self.test_data = tna.TestData()
-        if self.test_data.noData:
+        if self.test_data.noAsarData:
             raise ValueError('No test data available')
 
     def test_mapper_imports(self):
@@ -84,11 +84,114 @@ class NansatTest(unittest.TestCase):
         # if any test plots are created, they could be deleted here
         pass
 
+class MapperAsterL1aTest(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noAsterL1aData:
+            raise ValueError('No test data available')
+
+    def test_mapper_hirlam(self):
+        print self.test_data.asterL1a[0]
+        n = Nansat(self.test_data.asterL1a[0])
+
+    def tearDown(self):
+        pass
+
+class MapperHirlamTest(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noHirlamData:
+            raise ValueError('No test data available')
+
+    def test_mapper_hirlam(self):
+        print self.test_data.hirlam[0]
+        n = Nansat(self.test_data.hirlam[0])
+
+    def tearDown(self):
+        pass
+
+class MapperCosmoskymedTest(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noCosmoskymedData:
+            raise ValueError('No test data available')
+
+    def test_mapper_cosmoskymed(self):
+        print self.test_data.cosmoskymed[0]
+        n = Nansat(self.test_data.cosmoskymed[0])
+
+    def tearDown(self):
+        pass
+
+class MapperLandsatTest(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noLandsatData:
+            raise ValueError('No test data available')
+
+    def test_mapper_landsat(self):
+        print self.test_data.landsat[0]
+        n = Nansat(self.test_data.landsat[0])
+
+    def tearDown(self):
+        pass
+
+class MapperMeris2Test(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noMerisData:
+            raise ValueError('No test data available')
+
+    def test_mapper_meris(self):
+        print self.test_data.meris[0]
+        n = Nansat(self.test_data.meris[0])
+
+    def tearDown(self):
+        pass
+
+class MapperModisL1Test(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noModisL1Data:
+            raise ValueError('No test data available')
+
+    def test_mapper_modisL1(self):
+        print self.test_data.modisL1[0]
+        n = Nansat(self.test_data.modisL1[0])
+
+    def tearDown(self):
+        pass
+
+class MapperNcepTest(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noNcepData:
+            raise ValueError('No test data available')
+
+    def test_mapper_generic(self):
+        print self.test_data.ncep[0]
+        n = Nansat(self.test_data.ncep[0])
+
+    def tearDown(self):
+        pass
+
+class MapperRadarsat2Test(unittest.TestCase):
+    def setUp(self):
+        self.test_data = tna.TestData()
+        if self.test_data.noRadarsat2Data:
+            raise ValueError('No test data available')
+
+    def test_mapper_radarsat2(self):
+        print self.test_data.radarsat2[0]
+        n = Nansat(self.test_data.radarsat2[0])
+
+    def tearDown(self):
+        pass
 
 class MapperGenericTest(unittest.TestCase):
     def setUp(self):
         self.test_data = tna.TestData()
-        if self.test_data.noData:
+        if self.test_data.noGenericData:
             raise ValueError('No test data available')
 
     def test_mapper_generic(self):
@@ -96,14 +199,12 @@ class MapperGenericTest(unittest.TestCase):
         n = Nansat(self.test_data.generic[0])
 
     def tearDown(self):
-        #self.test_data.delete_downloaded()
         pass
-
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_data = tna.TestData()
-        if self.test_data.noData:
+        if self.test_data.noAsarData:
             raise ValueError('No test data available')
 
     def test_get_pixelsize_meters(self):
@@ -117,12 +218,12 @@ class DomainTest(unittest.TestCase):
             self.assertIsInstance(dY, FloatType)
 
     def tearDown(self):
-        #self.test_data.delete_downloaded()
         pass
 
 
 if __name__=='__main__':
     unittest.main()
+
 
 
 
