@@ -10,7 +10,7 @@ from struct import unpack
 import numpy as np
 import os
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr, osr, WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 
 
@@ -31,14 +31,14 @@ class Mapper(VRT):
         bottom_right_lon = float(metadata.split(' ')[1])
         bottom_right_lat = float(metadata.split(' ')[0])
         metadata = gdalMetadata['Estimated_Top_Left_Geodetic_Coordinates']
-        top_left_lon = float(metdata.split(' ')[1])
-        top_left_lat = float(metdata.split(' ')[0])
+        top_left_lon = float(metadata.split(' ')[1])
+        top_left_lat = float(metadata.split(' ')[0])
         metadata = gdalMetadata['Estimated_Top_Right_Geodetic_Coordinates']
-        top_right_lon = float(metdata.split(' ')[1])
-        top_right_lat = float(metdata.split(' ')[0])
+        top_right_lon = float(metadata.split(' ')[1])
+        top_right_lat = float(metadata.split(' ')[0])
         metadata = gdalMetadata['Scene_Centre_Geodetic_Coordinates']
-        center_lon = float(metdata.split(' ')[1])
-        center_lat = float(metdata.split(' ')[0])
+        center_lon = float(metadata.split(' ')[1])
+        center_lat = float(metadata.split(' ')[0])
 
         # Get sub-datasets
         subDatasets = gdalDataset.GetSubDatasets()
