@@ -5,7 +5,6 @@ virtualenv:
   system_site_packages: true
 install:
   - sudo apt-get update
-  - sudo apt-get install python-numpy python-gdal
-  - pip install basemap
+  - sudo apt-get install python-numpy python-gdal python-mpltoolkits.basemap
   - pip install .
 script: nosetests
