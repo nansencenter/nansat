@@ -1478,7 +1478,7 @@ class Nansat(Domain):
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
-            # check if given data file exists 
+            # check if given data file exists
             if not os.path.isfile(self.fileName):
                 raise IOError('%s: File does not exist' %(self.fileName))
             raise GDALError('NANSAT can not open the file ' + self.fileName)
