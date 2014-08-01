@@ -1478,7 +1478,7 @@ class Nansat(Domain):
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
-            # check if given data file exists 
+            # check if given data file exists
             if not os.path.isfile(self.fileName):
                 raise IOError('%s: File does not exist' %(self.fileName))
             raise GDALError('NANSAT can not open the file ' + self.fileName)
@@ -1830,6 +1830,7 @@ class Nansat(Domain):
         if ySize is None:
             ySize = RasterYSize - yOff
 
+        extent   = [xOff,yOff,xSize,ySize]
         # test if crop is totally outside
         if    (xOff > RasterXSize or (xOff + xSize) < 0 or
                yOff > RasterYSize or (yOff + ySize) < 0):
@@ -1839,7 +1840,7 @@ class Nansat(Domain):
                                                                         yOff,
                                                                         xSize,
                                                                         ySize))
-            return 1
+            return 1, extent
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
@@ -1855,6 +1856,7 @@ class Nansat(Domain):
         if (ySize + yOff) > RasterYSize:
             ySize = RasterYSize - yOff
 
+        extent   = [xOff,yOff,xSize,ySize]
         self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
                                                                         yOff,
                                                                         xSize,
@@ -1863,7 +1865,7 @@ class Nansat(Domain):
         if    (xOff == 0 and xSize == RasterXSize and
                yOff == 0 and ySize == RasterYSize):
             self.logger.error('WARNING! Cropping region is larger or equal to image!')
-            return 2
+            return 2, extent
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
@@ -1922,4 +1924,4 @@ class Nansat(Domain):
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
 
-        return 0
+        return 0, extent

@@ -19,6 +19,8 @@ from math import floor, log10, pow
 
 import numpy as np
 from matplotlib import cm
+import matplotlib.pyplot as plt
+
 try:
     import Image, ImageDraw, ImageFont
 except:
