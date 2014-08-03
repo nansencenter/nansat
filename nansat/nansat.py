@@ -1654,11 +1654,14 @@ class Nansat(Domain):
         # if points is not given, get points from GUI ...
         if points is None:
             data = self[bandList[0]]
-            browser = PointBrowser(data, **kwargs)
+            browser = PointBrowser(data, transect, **kwargs)
             browser.get_points()
             points = []
             for i, iCoord in enumerate (browser.coordinates):
-                transect = browser.connect[i]
+                if transect:
+                    transect = browser.connect[i]
+                else:
+                    transect = 0
                 if i == 0:
                     oneLine = [iCoord]
                 elif transect:

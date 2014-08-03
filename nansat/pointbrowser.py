@@ -22,13 +22,16 @@ class PointBrowser():
     Click on raster images shown by plt.imshow and get the X-Y coordinates.
 
     '''
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, draw_line=True, **kwargs):
         ''' Open figure with imshow and colorbar
 
         Parameters
         -----------
         data : ndarray
             image to imshow
+        draw_line : bool
+            if True, get transects / points
+            if False, get only points
         **kwargs : dict
             optional parameters for imshow
 
@@ -53,6 +56,7 @@ class PointBrowser():
         self.lines = []
         self.coordinates = []
         self.connect = []
+        self.drawLine = draw_line
 
     def onclick(self, event):
         ''' Append onclick event '''
@@ -90,11 +94,12 @@ class PointBrowser():
                 linesCoords.append(oneLine)
 
                 # draw lines
-                line, = self.ax.plot([], [])
-                for iLinePoints in linesCoords:
-                   tCoordinates = map(tuple, zip(*iLinePoints))
-                   self.lines.append(line.set_data(tCoordinates))
-                   line.figure.canvas.draw()
+                if self.drawLine:
+                    line, = self.ax.plot([], [])
+                    for iLinePoints in linesCoords:
+                       tCoordinates = map(tuple, zip(*iLinePoints))
+                       self.lines.append(line.set_data(tCoordinates))
+                       line.figure.canvas.draw()
 
     def get_points(self):
         ''' Process click event '''
