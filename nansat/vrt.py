@@ -1627,7 +1627,7 @@ class VRT():
         # prepare options
         options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
         if self.tps:
-            options += 'METHOD=GCP_TPS'
+            options.append('METHOD=GCP_TPS')
 
         # create transformer
         transformer = gdal.Transformer(self.dataset, None, options)
