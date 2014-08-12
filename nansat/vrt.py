@@ -1605,15 +1605,22 @@ class VRT():
 
         return subsamVRT
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0):
+    def transform_points(self, colVector, rowVector, DstToSrc=0,
+                         dstDs=None, options = None):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
         -----------
-        colVector : lists
+        colVector, rowVector : lists
             X and Y coordinates with any coordinate system
         DstToSrc : 0 or 1
             1 for inverse transformation, 0 for forward transformation.
+        dstDs : dataset
+            destination dataset. The default is None.
+            It means transform ownPixLin <--> ownXY.
+
+        option : string
+            if 'METHOD=GEOLOC_ARRAY', specify here.
 
         Returns
         --------
@@ -1625,12 +1632,13 @@ class VRT():
         srcWKT = self.get_projection()
 
         # prepare options
-        options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
-        if self.tps:
-            options.append('METHOD=GCP_TPS')
+        if  options is None:
+            options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
+            if self.tps:
+                options.append('METHOD=GCP_TPS')
 
         # create transformer
-        transformer = gdal.Transformer(self.dataset, None, options)
+        transformer = gdal.Transformer(self.dataset, dstDs, options)
 
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([colVector, rowVector]).transpose()
