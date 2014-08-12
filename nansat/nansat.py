@@ -1909,15 +1909,24 @@ class Nansat(Domain):
                     dstGCPs.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
                                             igcp.GCPPixel - xOff,
                                             igcp.GCPLine - yOff, '', str(i)))
+            numOfGCPs = i
 
-            if i < 100:
+            if numOfGCPs < 100:
                 # create new 100 GPCs (10 x 10 regular matrix)
+                pixArray = []
+                linArray = []
                 for newPix in np.r_[0:xSize:10j]:
                     for newLin in np.r_[0:ySize:10j]:
-                        i += 1
-                        newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
-                        dstGCPs.append(gdal.GCP(newLon[0], newLat[0], 0,
-                                                newPix, newLin, '', str(i)))
+                        pixArray.append(newPix + xOff)
+                        linArray.append(newLin + yOff)
+
+                lonArray, latArray = self.vrt.transform_points(pixArray, linArray)
+
+                for i in range(len(lonArray)):
+                    dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
+                                            pixArray[i] - xOff,
+                                            linArray[i] - yOff,
+                                            '', str(numOfGCPs+i+1)))
 
             # set new GCPss
             self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
