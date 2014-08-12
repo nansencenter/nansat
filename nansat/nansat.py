@@ -1760,7 +1760,8 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None,
+             lonlim=None, latlim=None):
         '''Crop Nansat object
 
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1898,11 +1899,26 @@ class Nansat(Domain):
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
             dstGCPs = []
-            # create new 100 GPCs (10 x 10 regular matrix)
-            for newPix in np.r_[0:xSize:10j]:
-                for newLin in np.r_[0:ySize:10j]:
-                    newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
-                    dstGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
+            i=0
+            # keep current GCPs
+            for igcp in gcps:
+                if (0 < igcp.GCPPixel - xOff and
+                    igcp.GCPPixel - xOff < xSize and
+                    0 < igcp.GCPLine - yOff and igcp.GCPLine - yOff < ySize):
+                    i += 1
+                    dstGCPs.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
+                                            igcp.GCPPixel - xOff,
+                                            igcp.GCPLine - yOff, '', str(i)))
+
+            if i < 100:
+                # create new 100 GPCs (10 x 10 regular matrix)
+                for newPix in np.r_[0:xSize:10j]:
+                    for newLin in np.r_[0:ySize:10j]:
+                        i += 1
+                        newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
+                        dstGCPs.append(gdal.GCP(newLon[0], newLat[0], 0,
+                                                newPix, newLin, '', str(i)))
+
             # set new GCPss
             self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
             # reproject new GCPs to the SRS of original GCPs
