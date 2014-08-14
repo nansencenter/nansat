@@ -884,7 +884,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, **kwargs):
+                  WorkingDataType=None, tps=None, **kwargs):
         ''' Change projection of the object based on the given Domain
 
         Create superVRT from self.vrt with AutoCreateWarpedVRT() using
@@ -909,6 +909,11 @@ class Nansat(Domain):
             but increase accuracy at the edge
         WorkingDataType : int (GDT_int, ...)
             type of data in bands. Shuold be integer for int32 bands
+        tps : bool
+            Apply Thin Spline Transfromation if source or destination has GCPs
+            Usage of TPS can also be triggered by setting self.vrt.tps=True
+            before calling to reproject.
+            This options has priority over self.vrt.tps
 
         Modifies
         ---------
@@ -957,6 +962,12 @@ class Nansat(Domain):
             geoTransform = d.vrt.dataset.GetGeoTransform()
         else:
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+
+        # set trigger for using TPS
+        if tps is True:
+            self.vrt.tps = True
+        elif tps is False:
+            self.vrt.tps = False
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
