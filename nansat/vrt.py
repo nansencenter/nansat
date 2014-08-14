@@ -1634,7 +1634,8 @@ class VRT():
         # prepare options
         if  options is None:
             options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
-            if self.tps:
+            # add TPS method if we have GCPs and self.tps is True
+            if self.tps and len(self.dataset.GetGCPs()) > 0:
                 options.append('METHOD=GCP_TPS')
 
         # create transformer
