@@ -652,7 +652,9 @@ class Nansat(Domain):
                                             dstBands[ncIVar.name]['type'],
                                             dimensions)
 
-            data = ncIVar.data
+            # copy array from input data
+            data = np.array(ncIVar.data)
+
             # copy rounded data from x/y
             if ncIVarName in ['x', 'y']:
                 ncOVar[:] = np.floor(data).astype('>f4')
@@ -691,7 +693,7 @@ class Nansat(Domain):
                 for inAttrName in ncIVar._attributes:
                     if inAttrName not in ['dataType', 'SourceFilename',
                                           'SourceBand', '_Unsigned',
-                                          'FillValue']:
+                                          'FillValue', 'time']:
                         ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
 
                 # add custom attributes
@@ -702,11 +704,6 @@ class Nansat(Domain):
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
-            """
-            if globAttr not in ['GDAL', 'GDAL_NANSAT_GeoTransform',
-                                'GDAL_sensstart', 'GDAL_NANSAT_Projection',
-                                'GDAL_fileName',  'GDAL_sensend', 'history']:
-            """
             if not(globAttr.strip().startswith('GDAL')):
                 ncO._attributes[globAttr] = ncI._attributes[globAttr]
 

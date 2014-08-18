@@ -38,6 +38,7 @@ class Mosaic(Nansat):
     maskName = 'mask'
     doReproject = True
     bandIDs = [1]
+    mapper='mosaic'
 
     def _set_defaults(self, idict):
         '''Check input params and set defaut values

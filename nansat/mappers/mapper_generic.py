@@ -5,6 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
+from dateutil.parser import parse
 
 import numpy as np
 
