@@ -910,10 +910,17 @@ class Nansat(Domain):
         WorkingDataType : int (GDT_int, ...)
             type of data in bands. Shuold be integer for int32 bands
         tps : bool
-            Apply Thin Spline Transfromation if source or destination has GCPs
+            Apply Thin Spline Transformation if source or destination has GCPs
             Usage of TPS can also be triggered by setting self.vrt.tps=True
             before calling to reproject.
             This options has priority over self.vrt.tps
+        skip_gcps : int
+            Using TPS can be very slow if the number of GCPs are large.
+            If this parameter is given, only every [skip_gcp] GCP is used,
+            improving calculation time at the cost of accuracy.
+            If not given explicitly, 'skip_gcps' is fetched from the 
+            metadata of self, or from dstDomain (as set by mapper or user).
+            [defaults to 1 if not specified, i.e. using all GCPs]
 
         Modifies
         ---------
@@ -968,6 +975,17 @@ class Nansat(Domain):
             self.vrt.tps = True
         elif tps is False:
             self.vrt.tps = False
+
+        # Reduce number of GCPs for faster reprojection
+        # when using TPS (if requested)
+        src_skip_gcps = self.vrt.dataset.GetMetadataItem('skip_gcps')
+        dst_skip_gcps = dstDomain.vrt.dataset.GetMetadataItem('skip_gcps')
+        if not 'skip_gcps' in kwargs.keys(): # If not given explicitly...
+            kwargs['skip_gcps'] = 1 # default (use all GCPs)
+            if dst_skip_gcps is not None: # ...or use setting from dst
+                kwargs['skip_gcps'] = int(dst_skip_gcps)
+            if src_skip_gcps is not None: # ...or use setting from src
+                kwargs['skip_gcps'] = int(src_skip_gcps)
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,

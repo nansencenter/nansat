@@ -949,7 +949,8 @@ class VRT():
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
                        use_geolocationArray=True,
-                       use_gcps=True, use_geotransform=True,
+                       use_gcps=True, skip_gcps = 1,
+                       use_geotransform=True,
                        dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
@@ -1022,6 +1023,8 @@ class VRT():
             Use geolocation array in input dataset (if present) for warping
         use_gcps : Boolean (True)
             Use GCPs in input dataset (if present) for warping
+        skip_gcps : int
+            See nansat.reproject() for explanation
         use_geotransform : Boolean (True)
             Use GeoTransform in input dataset for warping or make artificial
             GeoTransform : (0, 1, 0, srcVRT.xSize, -1)
@@ -1039,7 +1042,7 @@ class VRT():
 
         # if destination GCPs are given: create and add fake GCPs to src
         if len(dstGCPs) > 0 and use_gcps:
-            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
+            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, skip_gcps)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
             use_geolocationArray = False
@@ -1180,7 +1183,7 @@ class VRT():
 
         return warpedVRT
 
-    def _create_fake_gcps(self, gcps):
+    def _create_fake_gcps(self, gcps, skip_gcps):
         '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
 
         GCPs from a destination image (dstGCP) are converted to a gcp of source
@@ -1195,6 +1198,8 @@ class VRT():
         -----------
         gcps : list
             GDAL GCPs
+        skip_gcps : int
+            See nansat.reproject() for explanation
 
         Returns
         --------
@@ -1209,7 +1214,7 @@ class VRT():
 
         # create 'fake' GCPs
         fakeGCPs = []
-        for g in gcps:
+        for g in gcps[::skip_gcps]:
             # transform DST lat/lon to SRC pixel/line
             succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
             srcPixel = point[0]
