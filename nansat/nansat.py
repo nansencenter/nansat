@@ -918,7 +918,7 @@ class Nansat(Domain):
             Using TPS can be very slow if the number of GCPs are large.
             If this parameter is given, only every [skip_gcp] GCP is used,
             improving calculation time at the cost of accuracy.
-            If not given explicitly, 'skip_gcps' is fetched from the 
+            If not given explicitly, 'skip_gcps' is fetched from the
             metadata of self, or from dstDomain (as set by mapper or user).
             [defaults to 1 if not specified, i.e. using all GCPs]
 
@@ -1020,7 +1020,7 @@ class Nansat(Domain):
 
         self.vrt = self.vrt.get_sub_vrt(steps)
 
-    def watermask(self, mod44path=None, dstDomain=None):
+    def watermask(self, mod44path=None, dstDomain=None, **kwargs):
         ''' Create numpy array with watermask (water=1, land=0)
 
         250 meters resolution watermask from MODIS 44W Product:
@@ -1077,9 +1077,9 @@ class Nansat(Domain):
                                logLevel=self.logger.level)
             # reproject on self or given Domain
             if dstDomain is None:
-                watermask.reproject(self)
+                watermask.reproject(self, **kwargs)
             else:
-                watermask.reproject(dstDomain)
+                watermask.reproject(dstDomain, **kwargs)
 
         return watermask
 
