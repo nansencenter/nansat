@@ -33,7 +33,8 @@ from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
-from nansat.tools import add_logger, gdal, WrongMapperError, Error, GDALError
+from nansat.tools import add_logger, gdal
+from nansat.tools import OptionError, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
