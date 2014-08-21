@@ -1044,6 +1044,14 @@ class Nansat(Domain):
         -----------
         mod44path : string, optional, default=None
             path with MOD44W Products and a VRT file
+        dstDomain : Domain
+            destination domain other than self
+        tps : Bool
+            Use Thin Spline Transformation in reprojection of watermask?
+            See also Nansat.reproject()
+        skip_gcps : int
+            Factor to reduce the number of GCPs by and increase speed
+            See also Nansat.reproject()
 
         Returns
         --------
