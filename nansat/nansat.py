@@ -908,10 +908,17 @@ class Nansat(Domain):
         WorkingDataType : int (GDT_int, ...)
             type of data in bands. Shuold be integer for int32 bands
         tps : bool
-            Apply Thin Spline Transfromation if source or destination has GCPs
+            Apply Thin Spline Transformation if source or destination has GCPs
             Usage of TPS can also be triggered by setting self.vrt.tps=True
             before calling to reproject.
             This options has priority over self.vrt.tps
+        skip_gcps : int
+            Using TPS can be very slow if the number of GCPs are large.
+            If this parameter is given, only every [skip_gcp] GCP is used,
+            improving calculation time at the cost of accuracy.
+            If not given explicitly, 'skip_gcps' is fetched from the
+            metadata of self, or from dstDomain (as set by mapper or user).
+            [defaults to 1 if not specified, i.e. using all GCPs]
 
         Modifies
         ---------
@@ -967,6 +974,17 @@ class Nansat(Domain):
         elif tps is False:
             self.vrt.tps = False
 
+        # Reduce number of GCPs for faster reprojection
+        # when using TPS (if requested)
+        src_skip_gcps = self.vrt.dataset.GetMetadataItem('skip_gcps')
+        dst_skip_gcps = dstDomain.vrt.dataset.GetMetadataItem('skip_gcps')
+        if not 'skip_gcps' in kwargs.keys(): # If not given explicitly...
+            kwargs['skip_gcps'] = 1 # default (use all GCPs)
+            if dst_skip_gcps is not None: # ...or use setting from dst
+                kwargs['skip_gcps'] = int(dst_skip_gcps)
+            if src_skip_gcps is not None: # ...or use setting from src
+                kwargs['skip_gcps'] = int(src_skip_gcps)
+
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
                                             dstGCPs=dstGCPs,
@@ -1000,7 +1018,7 @@ class Nansat(Domain):
 
         self.vrt = self.vrt.get_sub_vrt(steps)
 
-    def watermask(self, mod44path=None, dstDomain=None):
+    def watermask(self, mod44path=None, dstDomain=None, **kwargs):
         ''' Create numpy array with watermask (water=1, land=0)
 
         250 meters resolution watermask from MODIS 44W Product:
@@ -1024,6 +1042,14 @@ class Nansat(Domain):
         -----------
         mod44path : string, optional, default=None
             path with MOD44W Products and a VRT file
+        dstDomain : Domain
+            destination domain other than self
+        tps : Bool
+            Use Thin Spline Transformation in reprojection of watermask?
+            See also Nansat.reproject()
+        skip_gcps : int
+            Factor to reduce the number of GCPs by and increase speed
+            See also Nansat.reproject()
 
         Returns
         --------
@@ -1057,9 +1083,9 @@ class Nansat(Domain):
                                logLevel=self.logger.level)
             # reproject on self or given Domain
             if dstDomain is None:
-                watermask.reproject(self)
+                watermask.reproject(self, **kwargs)
             else:
-                watermask.reproject(dstDomain)
+                watermask.reproject(dstDomain, **kwargs)
 
         return watermask
 
