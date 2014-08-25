@@ -180,6 +180,9 @@ class Nansat(Domain):
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
+        # default mapper
+        self.mapper = ''
+
     def __getitem__(self, bandID):
         ''' Returns the band as a NumPy array, by overloading []
 
