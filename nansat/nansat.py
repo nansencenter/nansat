@@ -652,7 +652,9 @@ class Nansat(Domain):
                                             dstBands[ncIVar.name]['type'],
                                             dimensions)
 
-            data = ncIVar.data
+            # copy array from input data
+            data = np.array(ncIVar.data)
+
             # copy rounded data from x/y
             if ncIVarName in ['x', 'y']:
                 ncOVar[:] = np.floor(data).astype('>f4')
@@ -691,7 +693,7 @@ class Nansat(Domain):
                 for inAttrName in ncIVar._attributes:
                     if inAttrName not in ['dataType', 'SourceFilename',
                                           'SourceBand', '_Unsigned',
-                                          'FillValue']:
+                                          'FillValue', 'time']:
                         ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
 
                 # add custom attributes
@@ -702,11 +704,6 @@ class Nansat(Domain):
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
-            """
-            if globAttr not in ['GDAL', 'GDAL_NANSAT_GeoTransform',
-                                'GDAL_sensstart', 'GDAL_NANSAT_Projection',
-                                'GDAL_fileName',  'GDAL_sensend', 'history']:
-            """
             if not(globAttr.strip().startswith('GDAL')):
                 ncO._attributes[globAttr] = ncI._attributes[globAttr]
 
@@ -884,7 +881,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, **kwargs):
+                  WorkingDataType=None, tps=None, **kwargs):
         ''' Change projection of the object based on the given Domain
 
         Create superVRT from self.vrt with AutoCreateWarpedVRT() using
@@ -909,6 +906,11 @@ class Nansat(Domain):
             but increase accuracy at the edge
         WorkingDataType : int (GDT_int, ...)
             type of data in bands. Shuold be integer for int32 bands
+        tps : bool
+            Apply Thin Spline Transfromation if source or destination has GCPs
+            Usage of TPS can also be triggered by setting self.vrt.tps=True
+            before calling to reproject.
+            This options has priority over self.vrt.tps
 
         Modifies
         ---------
@@ -957,6 +959,12 @@ class Nansat(Domain):
             geoTransform = d.vrt.dataset.GetGeoTransform()
         else:
             geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+
+        # set trigger for using TPS
+        if tps is True:
+            self.vrt.tps = True
+        elif tps is False:
+            self.vrt.tps = False
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
@@ -1478,7 +1486,7 @@ class Nansat(Domain):
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
-            # check if given data file exists 
+            # check if given data file exists
             if not os.path.isfile(self.fileName):
                 raise IOError('%s: File does not exist' %(self.fileName))
             raise GDALError('NANSAT can not open the file ' + self.fileName)
@@ -1760,7 +1768,8 @@ class Nansat(Domain):
         else:
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None, lonlim=None, latlim=None):
+    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None,
+             lonlim=None, latlim=None):
         '''Crop Nansat object
 
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1830,6 +1839,7 @@ class Nansat(Domain):
         if ySize is None:
             ySize = RasterYSize - yOff
 
+        extent   = [xOff,yOff,xSize,ySize]
         # test if crop is totally outside
         if    (xOff > RasterXSize or (xOff + xSize) < 0 or
                yOff > RasterYSize or (yOff + ySize) < 0):
@@ -1839,7 +1849,7 @@ class Nansat(Domain):
                                                                         yOff,
                                                                         xSize,
                                                                         ySize))
-            return 1
+            return 1, extent
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
@@ -1855,6 +1865,7 @@ class Nansat(Domain):
         if (ySize + yOff) > RasterYSize:
             ySize = RasterYSize - yOff
 
+        extent   = [xOff,yOff,xSize,ySize]
         self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
                                                                         yOff,
                                                                         xSize,
@@ -1863,7 +1874,7 @@ class Nansat(Domain):
         if    (xOff == 0 and xSize == RasterXSize and
                yOff == 0 and ySize == RasterYSize):
             self.logger.error('WARNING! Cropping region is larger or equal to image!')
-            return 2
+            return 2, extent
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
@@ -1896,11 +1907,35 @@ class Nansat(Domain):
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
             dstGCPs = []
-            # create new 100 GPCs (10 x 10 regular matrix)
-            for newPix in np.r_[0:xSize:10j]:
-                for newLin in np.r_[0:ySize:10j]:
-                    newLon, newLat = self.vrt.transform_points([newPix+xOff], [newLin+yOff])
-                    dstGCPs.append(gdal.GCP(newLon[0], newLat[0], 0, newPix, newLin))
+            i=0
+            # keep current GCPs
+            for igcp in gcps:
+                if (0 < igcp.GCPPixel - xOff and
+                    igcp.GCPPixel - xOff < xSize and
+                    0 < igcp.GCPLine - yOff and igcp.GCPLine - yOff < ySize):
+                    i += 1
+                    dstGCPs.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
+                                            igcp.GCPPixel - xOff,
+                                            igcp.GCPLine - yOff, '', str(i)))
+            numOfGCPs = i
+
+            if numOfGCPs < 100:
+                # create new 100 GPCs (10 x 10 regular matrix)
+                pixArray = []
+                linArray = []
+                for newPix in np.r_[0:xSize:10j]:
+                    for newLin in np.r_[0:ySize:10j]:
+                        pixArray.append(newPix + xOff)
+                        linArray.append(newLin + yOff)
+
+                lonArray, latArray = self.vrt.transform_points(pixArray, linArray)
+
+                for i in range(len(lonArray)):
+                    dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
+                                            pixArray[i] - xOff,
+                                            linArray[i] - yOff,
+                                            '', str(numOfGCPs+i+1)))
+
             # set new GCPss
             self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
             # reproject new GCPs to the SRS of original GCPs
@@ -1922,4 +1957,4 @@ class Nansat(Domain):
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
 
-        return 0
+        return 0, extent
