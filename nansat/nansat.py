@@ -329,7 +329,7 @@ class Nansat(Domain):
         return bandExists
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF', bottomup=False):
+               addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -349,6 +349,11 @@ class Nansat(Domain):
             False: Write swath-projected data with rows and columns organized
                    as in the original product.
             True:  Use the default behaviour of GDAL, which is to flip the rows
+        options : str or list
+            GDAL export options in format of: 'OPT=VAL', or
+            ['OPT1=VAL1', 'OP2='VAL2']
+            See also http://www.gdal.org/frmt_netcdf.html
+
 
         Modifies
         ---------
@@ -484,17 +489,25 @@ class Nansat(Domain):
             # remove source bands
             self.vrt.delete_bands(range(1, numOfBands))
 
-        # set CreateCopy() options
+        # get CreateCopy() options
+        if options is None:
+            options = []
+        if type(options) == str:
+            options = [options]
+
+        # set bottomup option
         if bottomup:
-            options = 'WRITE_BOTTOMUP=NO'
+            options += ['WRITE_BOTTOMUP=NO']
         else:
-            options = 'WRITE_BOTTOMUP=YES'
+            options += ['WRITE_BOTTOMUP=YES']
 
         # Create an output file using GDAL
-        self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
+        self.logger.debug('Exporting to %s using %s and %s...' % (fileName,
+                                                                  driver,
+                                                                  options))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
-                                                          options=[options])
+                                                          options=options)
         self.logger.debug('Export - OK!')
 
     def export2thredds(self, fileName, bands=None, metadata=None,
