@@ -220,3 +220,7 @@ class Mapper(VRT, Envisat):
 
         # set time
         self._set_envisat_time(gdalMetadata)
+
+        # When using TPS for reprojection, use only every 3rd GCP
+        # to improve performance (tradeoff vs accuracy)
+        self.dataset.SetMetadataItem('skip_gcps', '3')

@@ -33,7 +33,8 @@ from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
-from nansat.tools import add_logger, gdal, WrongMapperError, Error, GDALError
+from nansat.tools import add_logger, gdal
+from nansat.tools import OptionError, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -328,7 +329,7 @@ class Nansat(Domain):
         return bandExists
 
     def export(self, fileName, rmMetadata=[], addGeolocArray=True,
-               addGCPs=True, driver='netCDF', bottomup=False):
+               addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -348,6 +349,11 @@ class Nansat(Domain):
             False: Write swath-projected data with rows and columns organized
                    as in the original product.
             True:  Use the default behaviour of GDAL, which is to flip the rows
+        options : str or list
+            GDAL export options in format of: 'OPT=VAL', or
+            ['OPT1=VAL1', 'OP2='VAL2']
+            See also http://www.gdal.org/frmt_netcdf.html
+
 
         Modifies
         ---------
@@ -483,17 +489,25 @@ class Nansat(Domain):
             # remove source bands
             self.vrt.delete_bands(range(1, numOfBands))
 
-        # set CreateCopy() options
+        # get CreateCopy() options
+        if options is None:
+            options = []
+        if type(options) == str:
+            options = [options]
+
+        # set bottomup option
         if bottomup:
-            options = 'WRITE_BOTTOMUP=NO'
+            options += ['WRITE_BOTTOMUP=NO']
         else:
-            options = 'WRITE_BOTTOMUP=YES'
+            options += ['WRITE_BOTTOMUP=YES']
 
         # Create an output file using GDAL
-        self.logger.debug('Exporting to %s using %s...' % (fileName, driver))
+        self.logger.debug('Exporting to %s using %s and %s...' % (fileName,
+                                                                  driver,
+                                                                  options))
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
-                                                          options=[options])
+                                                          options=options)
         self.logger.debug('Export - OK!')
 
     def export2thredds(self, fileName, bands=None, metadata=None,
@@ -907,10 +921,17 @@ class Nansat(Domain):
         WorkingDataType : int (GDT_int, ...)
             type of data in bands. Shuold be integer for int32 bands
         tps : bool
-            Apply Thin Spline Transfromation if source or destination has GCPs
+            Apply Thin Spline Transformation if source or destination has GCPs
             Usage of TPS can also be triggered by setting self.vrt.tps=True
             before calling to reproject.
             This options has priority over self.vrt.tps
+        skip_gcps : int
+            Using TPS can be very slow if the number of GCPs are large.
+            If this parameter is given, only every [skip_gcp] GCP is used,
+            improving calculation time at the cost of accuracy.
+            If not given explicitly, 'skip_gcps' is fetched from the
+            metadata of self, or from dstDomain (as set by mapper or user).
+            [defaults to 1 if not specified, i.e. using all GCPs]
 
         Modifies
         ---------
@@ -966,6 +987,17 @@ class Nansat(Domain):
         elif tps is False:
             self.vrt.tps = False
 
+        # Reduce number of GCPs for faster reprojection
+        # when using TPS (if requested)
+        src_skip_gcps = self.vrt.dataset.GetMetadataItem('skip_gcps')
+        dst_skip_gcps = dstDomain.vrt.dataset.GetMetadataItem('skip_gcps')
+        if not 'skip_gcps' in kwargs.keys(): # If not given explicitly...
+            kwargs['skip_gcps'] = 1 # default (use all GCPs)
+            if dst_skip_gcps is not None: # ...or use setting from dst
+                kwargs['skip_gcps'] = int(dst_skip_gcps)
+            if src_skip_gcps is not None: # ...or use setting from src
+                kwargs['skip_gcps'] = int(src_skip_gcps)
+
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
                                             dstGCPs=dstGCPs,
@@ -999,7 +1031,7 @@ class Nansat(Domain):
 
         self.vrt = self.vrt.get_sub_vrt(steps)
 
-    def watermask(self, mod44path=None, dstDomain=None):
+    def watermask(self, mod44path=None, dstDomain=None, **kwargs):
         ''' Create numpy array with watermask (water=1, land=0)
 
         250 meters resolution watermask from MODIS 44W Product:
@@ -1023,6 +1055,14 @@ class Nansat(Domain):
         -----------
         mod44path : string, optional, default=None
             path with MOD44W Products and a VRT file
+        dstDomain : Domain
+            destination domain other than self
+        tps : Bool
+            Use Thin Spline Transformation in reprojection of watermask?
+            See also Nansat.reproject()
+        skip_gcps : int
+            Factor to reduce the number of GCPs by and increase speed
+            See also Nansat.reproject()
 
         Returns
         --------
@@ -1056,9 +1096,9 @@ class Nansat(Domain):
                                logLevel=self.logger.level)
             # reproject on self or given Domain
             if dstDomain is None:
-                watermask.reproject(self)
+                watermask.reproject(self, **kwargs)
             else:
-                watermask.reproject(dstDomain)
+                watermask.reproject(dstDomain, **kwargs)
 
         return watermask
 
