@@ -22,6 +22,7 @@ import inspect
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
+from nansat.nansat import Nansat
 
 # Place to store downloads - this can be changed via the "outFolder" argument
 # to Mapper.__init__
@@ -118,7 +119,6 @@ class Mapper(VRT, object):
         ######################################################
         # Open downloaded grib file with a(ny) Nansat mapper
         ######################################################
-        from nansat.nansat import Nansat
         w = Nansat(outFileName)
         VRT.__init__(self, vrtDataset=w.vrt.dataset)
 

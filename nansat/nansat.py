@@ -38,8 +38,6 @@ from nansat.tools import OptionError, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
-import nansat.mappers
-
 def import_mappers():
     ''' Import available mappers into a dictionary
 
@@ -50,8 +48,8 @@ def import_mappers():
             value: class Mapper(VRT) from the mapper module
 
     '''
-    ## import the namespace package nansat.mappers
-    #import mappers
+
+    import nansat.mappers
 
     # create ordered dict for string mappers
     nansatMappers = collections.OrderedDict()
@@ -77,8 +75,6 @@ def import_mappers():
 # Should these also come here?
 #def register_mapper():
 #def unregister_mapper():
-
-nansatMappers = import_mappers()
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -1487,6 +1483,7 @@ class Nansat(Domain):
 
         tmpVRT = None
 
+        nansatMappers = import_mappers()
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
             # get module name
