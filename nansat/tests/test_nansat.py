@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:08.07.2014 13:54
+# Last modified:26.08.2014 15:45
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -16,8 +16,10 @@ from types import ModuleType, FloatType
 import numpy as np
 
 from nansat import Nansat, Domain
-from nansat.nansat import nansatMappers
+from nansat.nansat import import_mappers 
 import nansat_test_archive as tna
+
+nansatMappers = import_mappers()
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
