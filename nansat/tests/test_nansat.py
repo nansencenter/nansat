@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.06.2014
-# Last modified:26.08.2014 15:45
+# Last modified:27.08.2014 10:58
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -118,6 +118,9 @@ class MapperCosmoskymedTest(unittest.TestCase):
         if self.test_data.noCosmoskymedData:
             raise ValueError('No test data available')
 
+    # Proprietary data cannot be shared and will not be available for all users
+    @unittest.skipIf(tna.TestData().noCosmoskymedData, 
+            "No Cosmo-Skymed data available (this is proprietary and cannot be shared)")
     def test_mapper_cosmoskymed(self):
         print self.test_data.cosmoskymed[0]
         n = Nansat(self.test_data.cosmoskymed[0])
@@ -180,9 +183,10 @@ class MapperNcepTest(unittest.TestCase):
 class MapperRadarsat2Test(unittest.TestCase):
     def setUp(self):
         self.test_data = tna.TestData()
-        if self.test_data.noRadarsat2Data:
-            raise ValueError('No test data available')
 
+    # Proprietary data cannot be shared and will not be available for all users
+    @unittest.skipIf(tna.TestData().noRadarsat2Data, 
+            "No Radarsat-2 data available (this is proprietary and cannot be shared)")
     def test_mapper_radarsat2(self):
         print self.test_data.radarsat2[0]
         n = Nansat(self.test_data.radarsat2[0])
