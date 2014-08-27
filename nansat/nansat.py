@@ -528,6 +528,13 @@ class Nansat(Domain):
             if data include a mask band: give the mask name.
             Non-masked value is 64.
             if None: no mask is added
+        rmGlobMetadata, rmMetadata : list
+            unsanted metadata names
+        duplicateMetadata : dictionary
+            if copy globalmetadata with another name,
+            keys are new names and values are key names of underlying data
+        time : list with datetime objects
+            produced time of original data
 
         !! NB
         ------
@@ -628,9 +635,14 @@ class Nansat(Domain):
 
         # collect info on dimention names
         dimNames = []
+        gridMappingName = None
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]
             dimNames += list(ncIVar.dimensions)
+            # get grid_mapping_name
+            if (ncIVarName in ['stereographic', 'crs'] and
+                hasattr(ncIVar, 'grid_mapping_name')):
+                    gridMappingName = ncIVar.grid_mapping_name
         dimNames = list(set(dimNames))
 
         # collect info on dimention shapes
@@ -734,6 +746,10 @@ class Nansat(Domain):
                     for newAttr in bands[ncIVar.name]:
                         if newAttr not in ['type', 'scale', 'offset']:
                             ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
+                        # add grid_mapping info
+                        if gridMappingName is not None:
+                            ncOVar._attributes['grid_mapping'] = gridMappingName
+
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
