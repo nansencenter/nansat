@@ -510,7 +510,8 @@ class Nansat(Domain):
         self.logger.debug('Export - OK!')
 
     def export2thredds(self, fileName, bands=None, metadata=None,
-                                                   maskName=None):
+                       maskName=None, rmGlobMetadata=[], rmMetadata=[],
+                       duplicateMetadata=None, time=None):
         ''' Export data into a netCDF formatted for THREDDS server
 
         Parameters
@@ -577,6 +578,12 @@ class Nansat(Domain):
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(bandID=iband)
+
+            # remove unwanted metadata from bands
+            for rmMeta in rmMetadata:
+                if rmMeta in bandMetadata.keys():
+                    bandMetadata.pop(rmMeta)
+
             data.add_band(array=array, parameters = bandMetadata)
         self.logger.debug('Bands for export: %s'  % str(dstBands))
 
@@ -599,6 +606,17 @@ class Nansat(Domain):
         if metadata is not None:
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
+
+        # create duplicate metadata
+        if duplicateMetadata is not None:
+            for metaKey in duplicateMetadata.keys():
+                if duplicateMetadata[metaKey] in globMetadata.keys():
+                    globMetadata[metaKey] = globMetadata[duplicateMetadata[metaKey]]
+
+        # remove unwanted metadata from global metadata
+        for rmMeta in rmGlobMetadata:
+            if rmMeta in globMetadata.keys():
+                globMetadata.pop(rmMeta)
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmpName = tempfile.mkstemp(suffix='.nc')
@@ -634,7 +652,9 @@ class Nansat(Domain):
         ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
         ncOVar.axis = 'T'
 
-        time = filter(None, self.get_time())
+        if time is None:
+            time = filter(None, self.get_time())
+
         # create value of time variable
         if len(time) > 0:
             td = time[0] - datetime.datetime(1900, 1, 1)
