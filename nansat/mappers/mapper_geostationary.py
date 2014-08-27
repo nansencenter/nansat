@@ -157,8 +157,6 @@ class Mapper(VRT):
         try:
             satellite = gdalDataset.GetDescription().split(",")[2]
         except (AttributeError, IndexError):
-            warnings.warn(__file__+' probably needs a better test for data ' \
-                    'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
 
         for sat in satDict:

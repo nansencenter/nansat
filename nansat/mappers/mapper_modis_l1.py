@@ -20,8 +20,6 @@ class Mapper(VRT):
         try:
             gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
         except (AttributeError, IndexError):
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
 
         #list of available modis names:resolutions
