@@ -645,7 +645,7 @@ class Nansat(Domain):
 
         # add time dimention
         ncO.createDimension('time', 1)
-        ncOVar = ncO.createVariable('time', '>i4', ('time', ))
+        ncOVar = ncO.createVariable('time', '>f8',  ('time', ))
         ncOVar.calendar = 'standard'
         ncOVar.long_name = 'time'
         ncOVar.standard_name = 'time'
@@ -658,9 +658,9 @@ class Nansat(Domain):
         # create value of time variable
         if len(time) > 0:
             td = time[0] - datetime.datetime(1900, 1, 1)
-            td = td.days
+            days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
             # add date
-            ncOVar[:] = np.int32(td).astype('>i4')
+            ncOVar[:] = days
 
         # recreate file
         for ncIVarName in ncI.variables:
