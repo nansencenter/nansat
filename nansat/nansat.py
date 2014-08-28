@@ -510,8 +510,8 @@ class Nansat(Domain):
         self.logger.debug('Export - OK!')
 
     def export2thredds(self, fileName, bands=None, metadata=None,
-                       maskName=None, rmGlobMetadata=[], rmMetadata=[],
-                       duplicateMetadata=None, time=None):
+                       maskName=None, rmMetadata=[],
+                       time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
 
         Parameters
@@ -598,10 +598,13 @@ class Nansat(Domain):
         lonCrn,latCrn = data.get_corners()
 
         # common global attributes:
+        if createdTime is None:
+            createdTime = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+
         globMetadata = {
             'institution': 'NERSC',
             'source': 'satellite remote sensing',
-            'creation_date': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'creation_date': createdTime,
             'northernmost_latitude': np.float(max(latCrn)),
             'southernmost_latitude': np.float(min(latCrn)),
             'westernmost_longitude': np.float(min(lonCrn)),
@@ -610,18 +613,13 @@ class Nansat(Domain):
             }
 
         #join or replace default by custom global metadata
+
         if metadata is not None:
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
 
-        # create duplicate metadata
-        if duplicateMetadata is not None:
-            for metaKey in duplicateMetadata.keys():
-                if duplicateMetadata[metaKey] in globMetadata.keys():
-                    globMetadata[metaKey] = globMetadata[duplicateMetadata[metaKey]]
-
         # remove unwanted metadata from global metadata
-        for rmMeta in rmGlobMetadata:
+        for rmMeta in rmMetadata:
             if rmMeta in globMetadata.keys():
                 globMetadata.pop(rmMeta)
 
@@ -749,7 +747,6 @@ class Nansat(Domain):
                         # add grid_mapping info
                         if gridMappingName is not None:
                             ncOVar._attributes['grid_mapping'] = gridMappingName
-
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
