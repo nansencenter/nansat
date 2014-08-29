@@ -55,7 +55,13 @@ class Mapper(VRT, object):
         modelRunHour = round((time.hour + time.minute/60.)/6)*6
         nearestModelRun = datetime(time.year, time.month, time.day) \
             + timedelta(hours=modelRunHour)
-        forecastHour = (time - nearestModelRun).total_seconds()/3600.
+        if sys.version_info < (2, 7):
+            td = (time - nearestModelRun)
+            forecastHour =  (td.microseconds +
+                                (td.seconds + td.days * 24 * 3600)
+                                * 10**6) / 10**6 /3600.
+        else: 
+            forecastHour = (time - nearestModelRun).total_seconds()/3600.
         if modelRunHour == 24:
             modelRunHour = 0
         if forecastHour < 1.5:
