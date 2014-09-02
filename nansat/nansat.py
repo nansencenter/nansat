@@ -744,9 +744,9 @@ class Nansat(Domain):
                     for newAttr in bands[ncIVar.name]:
                         if newAttr not in ['type', 'scale', 'offset']:
                             ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
-                        # add grid_mapping info
-                        if gridMappingName is not None:
-                            ncOVar._attributes['grid_mapping'] = gridMappingName
+                    # add grid_mapping info
+                    if gridMappingName is not None:
+                        ncOVar._attributes['grid_mapping'] = gridMappingName
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:
