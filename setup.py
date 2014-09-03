@@ -85,20 +85,15 @@ else:
     extra_link_args = [] # not used currently
 
 def _ask_gdal_config(resultlist, option, result_prefix):
-    try:
-        p = Popen(['gdal-config', option], stdout=subprocess.PIPE)
-    except OSError as e:
-        if e.errno != errno.ENOENT:
-            raise
-    else:
-        t = p.stdout.read().decode().strip()
-        if p.wait() != 0:
-            return
-        res = t.split()
-        res = filter(lambda x: x.startswith(result_prefix), res)
-        # '-I/usr/...' -> '/usr/...'
-        res = [x[len(result_prefix):] for x in res]
-        resultlist[:] = res
+    p = Popen(['gdal-config', option], stdout=subprocess.PIPE)
+    t = p.stdout.read().decode().strip()
+    if p.wait() != 0:
+        return
+    res = t.split()
+    res = filter(lambda x: x.startswith(result_prefix), res)
+    # '-I/usr/...' -> '/usr/...'
+    res = [x[len(result_prefix):] for x in res]
+    resultlist[:] = res
 
 def use_gdal_config():
     _ask_gdal_config(include_dirs, '--cflags', '-I')
@@ -164,6 +159,15 @@ def run_setup(skip_compile):
         platforms=PLATFORMS,
         packages=[NAME, NAME + '.mappers', NAME + '.tests'],
         package_data={NAME: ['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
+        entry_points = {
+            'console_scripts': [
+                'nansatinfo = nansat.cli.nansatinfo:main',
+                'nansat_add_coastline = nansat.cli.nansat_add_coastline:main',
+                'nansat_geotiffimage = nansat.cli.nansat_geotiffimage:main',
+                'nansat_show = nansat.cli.nansat_show:main',
+                'nansat_translate = nansat.cli.nansat_translate:main',
+            ],
+        },
         install_requires=REQS,
         **kw
         )
