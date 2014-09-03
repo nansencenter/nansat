@@ -638,9 +638,9 @@ class Nansat(Domain):
             ncIVar = ncI.variables[ncIVarName]
             dimNames += list(ncIVar.dimensions)
             # get grid_mapping_name
-            if (ncIVarName in ['stereographic', 'crs'] and
-                hasattr(ncIVar, 'grid_mapping_name')):
-                    gridMappingName = ncIVar.grid_mapping_name
+            if hasattr(ncIVar, 'grid_mapping_name'):
+                gridMappingName = ncIVar.grid_mapping_name
+                gridMappingVarName = ncIVarName
         dimNames = list(set(dimNames))
 
         # collect info on dimention shapes
@@ -680,7 +680,7 @@ class Nansat(Domain):
                 # create simple x/y variables
                 ncOVar = ncO.createVariable(ncIVarName, '>f4',
                                             ncIVar.dimensions)
-            elif ncIVarName in ['stereographic', 'crs']:
+            elif ncIVarName == gridMappingVarName:
                 # create projection var
                 ncOVar = ncO.createVariable(ncIVarName, ncIVar.typecode(),
                                             ncIVar.dimensions)
@@ -712,7 +712,7 @@ class Nansat(Domain):
                 ncOVar._attributes = ncIVar._attributes
 
             # copy projection data (only all attributes)
-            if ncIVarName in ['stereographic', 'crs']:
+            if ncIVarName == gridMappingVarName:
                 ncOVar._attributes = ncIVar._attributes
 
             # copy data from variables in the list
