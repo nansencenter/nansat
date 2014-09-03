@@ -117,9 +117,17 @@ class Mapper(VRT):
         d = Domain(ds=gdalDataset)
         lon, lat = d.get_geolocation_grids(100)
 
+        # Offset for ascending or descending pass
+        if str(passDirection).upper() == 'DESCENDING':
+            lookOffset = 90
+        elif str(passDirection).upper() == 'ASCENDING':
+            lookOffset = -90
+        else:
+            print 'Can not decode pass direction: ' + str(passDirection)
+
         # Calculate SAR look direction (assuming right-looking)
         SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
-                  lon[:, 1:], lat[:, 1:]) + antennaPointing + 90.0
+                  lon[:, 1:], lat[:, 1:]) + antennaPointing + lookOffset
         # Interpolate to regain lost row
         SAR_look_direction = np.mod(SAR_look_direction, 360)
         SAR_look_direction = scipy.ndimage.interpolation.zoom(
