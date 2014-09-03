@@ -1742,8 +1742,8 @@ class Nansat(Domain):
                    (pixlinCoord1[0] >= 0) *
                    (pixlinCoord1[1] >= 0) *
                    (pixlinCoord0[0] < self.vrt.dataset.RasterXSize) *
-                   (pixlinCoord0[1] < self.vrt.dataset.RasterXSize) *
-                   (pixlinCoord1[0] < self.vrt.dataset.RasterYSize) *
+                   (pixlinCoord0[1] < self.vrt.dataset.RasterYSize) *
+                   (pixlinCoord1[0] < self.vrt.dataset.RasterXSize) *
                    (pixlinCoord1[1] < self.vrt.dataset.RasterYSize))
             pixlinCoord0 = pixlinCoord0[:, gpi]
             pixlinCoord1 = pixlinCoord1[:, gpi]
@@ -1979,7 +1979,6 @@ class Nansat(Domain):
             # set new GCPss
             self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
             # reproject new GCPs to the SRS of original GCPs
-            #import pdb; pdb.set_trace()
             nsr = NSR(self.vrt.dataset.GetGCPProjection())
             self.vrt.reproject_GCPs(nsr)
             # remove geotranform which was automatically added
