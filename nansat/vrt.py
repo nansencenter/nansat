@@ -14,6 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os
 import tempfile
 from string import Template, ascii_uppercase, digits
@@ -22,9 +23,9 @@ import datetime
 
 import numpy as np
 
-from .node import Node
-from .nsr import NSR
-from .tools import add_logger, gdal, osr
+from nansat.node import Node
+from nansat.nsr import NSR
+from nansat.tools import add_logger, gdal, osr
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data

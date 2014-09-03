@@ -14,15 +14,13 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os, sys
 import warnings
 
-from pkgutil import extend_path
-__path__ = extend_path(__path__, __name__)
-
 # check if pixel functions were compiled using setup_tools
 try:
-    from ._pixfun import registerPixelFunctions
+    from nansat._pixfun import registerPixelFunctions
     registerPixelFunctions()
 except Exception as e:
     print repr(e)
@@ -33,28 +31,28 @@ except Exception as e:
                      to compile pixel functions manually into the source tree.
                      ''')
 
-from .nsr import NSR
-from .domain import Domain
-from .nansat import Nansat
+from nansat.nsr import NSR
+from nansat.domain import Domain
+from nansat.nansat import Nansat
 
 __all__ = ['NSR', 'Domain', 'Nansat']
 
 try:
-    from .figure import Figure
+    from nansat.figure import Figure
 except ImportError:
     warnings.warn('''Cannot import Figure! Nansat will not make figures!''')
 else:
     __all__.append('Figure')
 
 try:
-    from .nansatmap import Nansatmap
+    from nansat.nansatmap import Nansatmap
 except ImportError:
     warnings.warn('''Cannot import Nansatmap! Nansat will not make maps!''')
 else:
     __all__.append('Nansatmap')
 
 try:
-    from .mosaic import Mosaic
+    from nansat.mosaic import Mosaic
 except ImportError:
     warnings.warn('''Cannot import Mosaic! Nansat will not mosaic files!''')
 else:
@@ -63,7 +61,7 @@ else:
 os.environ['LOG_LEVEL'] = '30'
 
 # import some libraries for convenience
-from .tools import gdal, ogr
+from nansat.tools import gdal, ogr
 import numpy as np
 import matplotlib.pyplot as plt
 __all__ += ['gdal', 'ogr', 'np', 'plt']

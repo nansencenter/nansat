@@ -12,7 +12,8 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from .tools import ProjectionError, osr
+from __future__ import absolute_import
+from nansat.tools import ProjectionError, osr
 
 class NSR(osr.SpatialReference, object):
     '''Nansat Spatial Reference

@@ -20,8 +20,6 @@ import os, sys
 import tempfile
 import datetime
 import dateutil.parser
-import collections
-import pkgutil
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -33,48 +31,13 @@ from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
-from nansat.tools import add_logger, gdal
+from nansat.tools import add_logger, gdal, import_mappers
 from nansat.tools import OptionError, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
-def import_mappers():
-    ''' Import available mappers into a dictionary
-
-        Returns
-        --------
-        nansatMappers : dict
-            key  : mapper name
-            value: class Mapper(VRT) from the mapper module
-
-    '''
-
-    import nansat.mappers
-
-    # create ordered dict for string mappers
-    nansatMappers = collections.OrderedDict()
-
-    # scan through modules and load all modules that contain class Mapper
-    for finder, name, ispkg in pkgutil.iter_modules(nansat.mappers.__path__[::-1]):
-        loader = finder.find_module(name)
-        try:
-            module = loader.load_module(name)
-        except:
-            print name, sys.exc_info()
-        else:
-            if hasattr(module, 'Mapper'):
-                nansatMappers[name] = module.Mapper
-
-    # move generic_mapper to the end
-    if 'mapper_generic' in nansatMappers:
-        gm = nansatMappers.pop('mapper_generic')
-        nansatMappers['mapper_generic'] = gm
-
-    return nansatMappers
-
-# Should these also come here?
-#def register_mapper():
-#def unregister_mapper():
+# import nansat mappers only once at import of nansat
+nansatMappers = import_mappers()
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -1516,7 +1479,6 @@ class Nansat(Domain):
 
         tmpVRT = None
 
-        nansatMappers = import_mappers()
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
             # get module name

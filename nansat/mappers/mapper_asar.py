@@ -15,6 +15,7 @@ from nansat.domain import Domain
 from nansat.tools import initial_bearing
 from nansat.tools import WrongMapperError
 
+print 'Import ASAR mapper'
 
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1
