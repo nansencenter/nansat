@@ -37,16 +37,12 @@ class Mapper(VRT):
         try:
             fp = open(fileName, 'rb')
         except IOError:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
         fp.seek(72)
 
         try:
             satNum = int(struct.unpack('<H', fp.read(2))[0])
         except:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
 
         if satNum >= 11:
@@ -57,8 +53,6 @@ class Mapper(VRT):
         if satNum in satIDs.keys():
             satID = satIDs[satNum]
         else:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
 
         fp.seek(76)
@@ -66,8 +60,6 @@ class Mapper(VRT):
         if dataFormatNum in dataFormats.keys():
             dataFormat = dataFormats[dataFormatNum]
         else:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
             raise WrongMapperError(__file__, "Wrong mapper")
 
         fp.seek(dataSetQualityIndicatorOffset + 14)

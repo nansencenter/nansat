@@ -117,9 +117,28 @@ class Mapper(VRT):
         d = Domain(ds=gdalDataset)
         lon, lat = d.get_geolocation_grids(100)
 
-        # Calculate SAR look direction (assuming right-looking)
-        SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
-                  lon[:, 1:], lat[:, 1:]) + antennaPointing + 90.0
+        '''
+        (GDAL?) Radarsat-2 data is stored with maximum latitude at first
+        element of each column and minimum longitude at first element of each
+        row (e.g. np.shape(lat)=(59,55) -> latitude maxima are at lat[0,:],
+        and longitude minima are at lon[:,0]) 
+
+        In addition, there is an interpolation error for direct estimate along
+        azimuth. We therefore estimate the heading along range and add 90
+        degrees to get the "satellite" heading.
+
+        '''
+        if str(passDirection).upper() == 'DESCENDING':
+            sat_heading = initial_bearing(lon[:,:-1], lat[:,:-1],
+                    lon[:,1:], lat[:,1:]) + 90
+        elif str(passDirection).upper() == 'ASCENDING':
+            sat_heading = initial_bearing(lon[:,1:], lat[:,1:],
+                    lon[:,:-1], lat[:,:-1]) + 90
+        else:
+            print 'Can not decode pass direction: ' + str(passDirection)
+
+        # Calculate SAR look direction
+        SAR_look_direction = sat_heading + antennaPointing
         # Interpolate to regain lost row
         SAR_look_direction = np.mod(SAR_look_direction, 360)
         SAR_look_direction = scipy.ndimage.interpolation.zoom(

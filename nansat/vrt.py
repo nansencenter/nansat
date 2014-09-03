@@ -1709,12 +1709,12 @@ class VRT():
 
         '''
         # modify GeoTransform: set resolution from new X/Y size
-        geoTransform = (0,
-                        float(self.dataset.RasterXSize) / float(xSize),
+        geoTransform = (0.5,
+                        float(self.dataset.RasterXSize - 1.0) / float(xSize),
                         0,
-                        self.dataset.RasterYSize,
+                        self.dataset.RasterYSize - 0.5,
                         0,
-                        - float(self.dataset.RasterYSize) / float(ySize))
+                        - float(self.dataset.RasterYSize - 1.0) / float(ySize))
 
         # update size and GeoTranform in XML of the warped VRT object
         warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
