@@ -36,6 +36,7 @@ from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, Error, GDALError
+from nansat.tools import MapperImportError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -2036,7 +2037,16 @@ def _import_mappers(logLevel=None):
         for finder, name, ispkg in pkgutil.iter_modules(mappersPackage.__path__):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
-            module = loader.load_module(name)
+            # try to import mapper module
+            try:
+                module = loader.load_module(name)
+            except MapperImportError as inst:
+                logger.error(inst)
+            except:
+                continue
+
+            # add module to nansatMappers if it was imported without errors or
+            # with the MapperImportError
             if hasattr(module, 'Mapper'):
                 nansatMappers[name] = module.Mapper
 

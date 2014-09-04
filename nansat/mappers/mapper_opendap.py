@@ -15,16 +15,15 @@ import warnings
 
 import numpy as np
 
-try:
-    from netCDF4 import Dataset
-except ImportError:
-    warnings.warn('Cannot import Dataset from netCDF4!')
-    Dataset = None
-
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr, WrongMapperError, MapperImportError
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 
+try:
+    from netCDF4 import Dataset
+except ImportError:
+    Dataset = None
+    raise MapperImportError('Cannot import Dataset from netCDF4! in mapper_opendap')
 
 #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
 #fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'

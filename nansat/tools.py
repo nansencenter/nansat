@@ -136,6 +136,14 @@ class WrongMapperError(Exception):
     def __str__(self):
         return self.mapper_name + ' - ' + self.msg
 
+class MapperImportError(Exception):
+    ''' Error for handling non-importable mappers due to unmet dependencies'''
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.mapper_name + ' - ' + self.msg
+
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
