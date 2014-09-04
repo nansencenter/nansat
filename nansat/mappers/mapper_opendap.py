@@ -18,7 +18,7 @@ import numpy as np
 try:
     from netCDF4 import Dataset
 except ImportError:
-    warnings.warn('Cannot import Dataset from netCDF4!')
+    print 'OpenDAP mapper: Cannot import Dataset from netCDF4!'
     Dataset = None
 
 from nansat.tools import gdal, ogr, WrongMapperError
@@ -83,7 +83,7 @@ class Mapper(VRT):
 
         # open file through OpenDAP using netCDF4 library (if it exists)
         if Dataset is None:
-            raise WrongMapperError(__file__, "Cannot import Dataset from netCDF4")
+            raise ImportError("\n\n Cannot import Dataset from netCDF4. Install netCDF4 for using opendap mapper \n\n")
         else:
             f = Dataset(fileName)
 
