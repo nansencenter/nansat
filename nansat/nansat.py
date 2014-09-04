@@ -2024,7 +2024,7 @@ def _import_mappers(logLevel=None):
     except:
         pass
     else:
-        warnings.warn('User defined mappers found in %s' % nansat_mappers.__path__)
+        logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
         mappersPackages = [nansat_mappers, nansat.mappers]
 
     # create ordered dict for mappers
@@ -2036,13 +2036,9 @@ def _import_mappers(logLevel=None):
         for finder, name, ispkg in pkgutil.iter_modules(mappersPackage.__path__):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
-            try:
-                module = loader.load_module(name)
-            except ImportError:
-                warnings.warn('Cannot import mapper %s' % name)
-            else:
-                if hasattr(module, 'Mapper'):
-                    nansatMappers[name] = module.Mapper
+            module = loader.load_module(name)
+            if hasattr(module, 'Mapper'):
+                nansatMappers[name] = module.Mapper
 
         # move generic_mapper to the end
         if 'mapper_generic' in nansatMappers:

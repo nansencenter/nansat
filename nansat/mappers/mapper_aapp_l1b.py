@@ -7,11 +7,9 @@
 
 # Description of file format:
 # http://research.metoffice.gov.uk/research/interproj/nwpsaf/aapp/NWPSAF-MF-UD-003_Formats.pdf (page 8-)
-
 import sys
 import struct
 import datetime
-import warnings
 
 from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray

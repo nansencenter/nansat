@@ -11,8 +11,15 @@
 #               distributed in the hope that it will be useful, but WITHOUT ANY
 #               WARRANTY without even the implied warranty of MERCHANTABILITY
 #               or FITNESS FOR A PARTICULAR PURPOSE.
+import warnings
+
 import numpy as np
-from netCDF4 import Dataset
+
+try:
+    from netCDF4 import Dataset
+except ImportError:
+    warnings.warn('Cannot import Dataset from netCDF4!')
+    Dataset = None
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
@@ -74,8 +81,11 @@ class Mapper(VRT):
         if fileName[:7] != 'http://':
             raise WrongMapperError(__file__, "Bad mapper")
 
-        # open file through OpenDAP using netCDF4 library
-        f = Dataset(fileName)
+        # open file through OpenDAP using netCDF4 library (if it exists)
+        if Dataset is None:
+            raise WrongMapperError(__file__, "Cannot import Dataset from netCDF4")
+        else:
+            f = Dataset(fileName)
 
         # assume CF-compatibility:
         # compulsory grid_mapping_name
