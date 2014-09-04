@@ -19,8 +19,6 @@ from __future__ import absolute_import
 import os, sys
 import warnings
 import logging
-import collections
-import pkgutil
 
 from matplotlib import cm
 import numpy as np
@@ -37,8 +35,6 @@ try:
 except:
     warnings.warn('GDAL will not raise exceptions.'
                   'Probably GDAL is not installed')
-
-import nansat.mappers
 
 obpg = {
 'red': [  (0.00, 0.56, 0.56),
@@ -228,34 +224,3 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger
-
-def import_mappers():
-    ''' Import available mappers into a dictionary
-
-        Returns
-        --------
-        nansatMappers : dict
-            key  : mapper name
-            value: class Mapper(VRT) from the mapper module
-
-    '''
-    # create ordered dict for string mappers
-    nansatMappers = collections.OrderedDict()
-
-    # scan through modules and load all modules that contain class Mapper
-    for finder, name, ispkg in pkgutil.iter_modules(nansat.mappers.__path__[::-1]):
-        loader = finder.find_module(name)
-        try:
-            module = loader.load_module(name)
-        except:
-            print name, sys.exc_info()
-        else:
-            if hasattr(module, 'Mapper'):
-                nansatMappers[name] = module.Mapper
-
-    # move generic_mapper to the end
-    if 'mapper_generic' in nansatMappers:
-        gm = nansatMappers.pop('mapper_generic')
-        nansatMappers['mapper_generic'] = gm
-
-    return nansatMappers

@@ -20,6 +20,9 @@ import os, sys
 import tempfile
 import datetime
 import dateutil.parser
+import warnings
+import collections
+import pkgutil
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -31,13 +34,14 @@ from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
-from nansat.tools import add_logger, gdal, import_mappers
+from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
-# import nansat mappers only once at import of nansat
-nansatMappers = import_mappers()
+# container for all mappers
+nansatMappers = None
+
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -1463,6 +1467,12 @@ class Nansat(Domain):
         Error : occurs if given mapper cannot open the input file
 
         '''
+        # lazy import of nansat mappers
+        # if nansat mappers were not imported yet
+        global nansatMappers
+        if nansatMappers is None:
+            nansatMappers = self._import_mappers()
+
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = None
         if self.fileName[:4] != 'http':
@@ -1992,3 +2002,45 @@ class Nansat(Domain):
         self.set_metadata(subMetaData)
 
         return 0, extent
+
+    def _import_mappers(self):
+        ''' Import available mappers into a dictionary
+
+        Returns
+        --------
+        nansatMappers : dict
+            key  : mapper name
+            value: class Mapper(VRT) from the mapper module
+
+        '''
+
+        # import built-in mappers
+        import nansat.mappers
+        mappersPackages = [nansat.mappers]
+
+        # import user-defined mappers (if any)
+        try:
+            import nansat_mappers
+        except:
+            pass
+        else:
+            warnings.warn('User defined mappers found in %s' % nansat_mappers.__path__)
+            mappersPackages = [nansat_mappers, nansat_mappers]
+
+        # create ordered dict for string mappers
+        nansatMappers = collections.OrderedDict()
+
+        for mappersPackage in mappersPackages:
+            # scan through modules and load all modules that contain class Mapper
+            for finder, name, ispkg in pkgutil.iter_modules(mappersPackage.__path__):
+                loader = finder.find_module(name)
+                module = loader.load_module(name)
+                if hasattr(module, 'Mapper'):
+                    nansatMappers[name] = module.Mapper
+
+            # move generic_mapper to the end
+            if 'mapper_generic' in nansatMappers:
+                gm = nansatMappers.pop('mapper_generic')
+                nansatMappers['mapper_generic'] = gm
+
+        return nansatMappers
