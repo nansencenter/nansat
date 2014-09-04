@@ -2025,14 +2025,16 @@ class Nansat(Domain):
             pass
         else:
             warnings.warn('User defined mappers found in %s' % nansat_mappers.__path__)
-            mappersPackages = [nansat_mappers, nansat_mappers]
+            mappersPackages = [nansat_mappers, nansat.mappers]
 
-        # create ordered dict for string mappers
+        # create ordered dict for mappers
         nansatMappers = collections.OrderedDict()
 
         for mappersPackage in mappersPackages:
+            self.logger.debug('From package: %s' % mappersPackage.__path__)
             # scan through modules and load all modules that contain class Mapper
             for finder, name, ispkg in pkgutil.iter_modules(mappersPackage.__path__):
+                self.logger.debug('Loading mapper %s' % name)
                 loader = finder.find_module(name)
                 module = loader.load_module(name)
                 if hasattr(module, 'Mapper'):
