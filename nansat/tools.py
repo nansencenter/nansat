@@ -142,7 +142,7 @@ class MapperImportError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return self.mapper_name + ' - ' + self.msg
+        return self.msg
 
 
 def initial_bearing(lon1, lat1, lon2, lat2):

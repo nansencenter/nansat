@@ -1499,7 +1499,14 @@ class Nansat(Domain):
             # check if mappers is available
             if mapperName not in nansatMappers:
                 raise Error('Mapper ' + mapperName + ' not found')
+
+            # check if mapper is importbale
+            if type(nansatMappers[mapperName]) == MapperImportError:
+                self.logger.error(nansatMappers[mapperName])
+                raise nansatMappers[mapperName]
+
             # create VRT using the selected mapper
+            print nansatMappers[mapperName]
             tmpVRT = nansatMappers[mapperName](self.fileName,
                                                gdalDataset,
                                                metadata,
@@ -1509,6 +1516,11 @@ class Nansat(Domain):
             # We test all mappers, import one by one
             for iMapper in nansatMappers:
                 self.logger.debug('Trying %s...' % iMapper)
+                # skip non-importable mappers
+                print type(nansatMappers[iMapper])
+                if type(nansatMappers[iMapper]) == MapperImportError:
+                    print 'Skip non-importbale mapper'
+                    continue
                 try:
                     # create a Mapper object and get VRT dataset from it
                     tmpVRT = nansatMappers[iMapper](self.fileName,
@@ -2042,13 +2054,14 @@ def _import_mappers(logLevel=None):
                 module = loader.load_module(name)
             except MapperImportError as inst:
                 logger.error(inst)
+                nansatMappers[name] = inst
             except:
                 continue
-
-            # add module to nansatMappers if it was imported without errors or
-            # with the MapperImportError
-            if hasattr(module, 'Mapper'):
-                nansatMappers[name] = module.Mapper
+            else:
+                # add module to nansatMappers if it was imported without errors or
+                # with the MapperImportError
+                if hasattr(module, 'Mapper'):
+                    nansatMappers[name] = module.Mapper
 
         # move generic_mapper to the end
         if 'mapper_generic' in nansatMappers:
