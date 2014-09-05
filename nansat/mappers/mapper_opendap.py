@@ -15,15 +15,16 @@ import warnings
 
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError, MapperImportError
+from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 
 try:
-    from netCDF4 import Dataset, garbage
+    from netCDF4 import Dataset
 except ImportError:
-    Dataset = None
-    raise MapperImportError('mapper_opendap:Cannot import Dataset from netCDF4!')
+    raise ImportError('''\n\n
+                         Cannot import Dataset from netCDF4.\n
+                         Please install netCDF4 to access the OpenDAP\n\n''')
 
 #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
 #fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'
@@ -75,17 +76,12 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT from OpenDAP dataset'''
-        print 'opendap Dataset:', Dataset
         # quit if file is not online
         if fileName[:7] != 'http://':
-            print 'Bad mapper opendap'
             raise WrongMapperError(__file__, "Bad mapper")
 
-        # open file through OpenDAP using netCDF4 library (if it exists)
-        if Dataset is None:
-            raise ImportError("\n\n Cannot import Dataset from netCDF4. Install netCDF4 for using opendap mapper \n\n")
-        else:
-            f = Dataset(fileName)
+        # open file through OpenDAP using netCDF4 library
+        f = Dataset(fileName)
 
         # assume CF-compatibility:
         # compulsory grid_mapping_name

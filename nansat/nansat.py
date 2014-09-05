@@ -36,7 +36,6 @@ from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, Error, GDALError
-from nansat.tools import MapperImportError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -1480,7 +1479,7 @@ class Nansat(Domain):
             try:
                 gdalDataset = gdal.Open(self.fileName)
             except RuntimeError:
-                print ('GDAL could not open ' + self.fileName +
+                self.logger.error('GDAL could not open ' + self.fileName +
                        ', trying to read with Nansat mappers...')
         if gdalDataset is not None:
             # get metadata from the GDAL dataset
@@ -1492,21 +1491,20 @@ class Nansat(Domain):
 
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
-            # get module name
+            # get the module name
             mapperName = 'mapper_' + mapperName.replace('mapper_',
                                                         '').replace('.py',
                                                                     '').lower()
-            # check if mappers is available
+            # check if the mapper is available
             if mapperName not in nansatMappers:
                 raise Error('Mapper ' + mapperName + ' not found')
 
-            # check if mapper is importbale
-            if type(nansatMappers[mapperName]) == MapperImportError:
+            # check if mapper is importbale or raise an ImportError error
+            if isinstance(nansatMappers[mapperName], ImportError):
                 self.logger.error(nansatMappers[mapperName])
                 raise nansatMappers[mapperName]
 
             # create VRT using the selected mapper
-            print nansatMappers[mapperName]
             tmpVRT = nansatMappers[mapperName](self.fileName,
                                                gdalDataset,
                                                metadata,
@@ -1515,14 +1513,13 @@ class Nansat(Domain):
         else:
             # We test all mappers, import one by one
             for iMapper in nansatMappers:
-                self.logger.debug('Trying %s...' % iMapper)
                 # skip non-importable mappers
-                print type(nansatMappers[iMapper])
-                if type(nansatMappers[iMapper]) == MapperImportError:
-                    print 'Skip non-importbale mapper'
+                if isinstance(nansatMappers[iMapper], ImportError):
                     continue
+
+                self.logger.debug('Trying %s...' % iMapper)
+                # create a Mapper object and get VRT dataset from it
                 try:
-                    # create a Mapper object and get VRT dataset from it
                     tmpVRT = nansatMappers[iMapper](self.fileName,
                                                     gdalDataset,
                                                     metadata,
@@ -2052,14 +2049,12 @@ def _import_mappers(logLevel=None):
             # try to import mapper module
             try:
                 module = loader.load_module(name)
-            except MapperImportError as inst:
+            except ImportError as inst:
+                # keep ImportError instance instead of the mapper
                 logger.error(inst)
                 nansatMappers[name] = inst
-            except:
-                continue
             else:
-                # add module to nansatMappers if it was imported without errors or
-                # with the MapperImportError
+                # add the imported mapper to nansatMappers
                 if hasattr(module, 'Mapper'):
                     nansatMappers[name] = module.Mapper
 
