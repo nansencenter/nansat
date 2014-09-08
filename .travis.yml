@@ -1,13 +1,18 @@
 language: python
 python:
   - 2.7
-virtualenv:
-  system_site_packages: true
+  - 3.4
+
+# Setup anaconda
+before_install:
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+
 install:
-  - sudo mv /etc/apt/sources.list.d/pgdg-source.list* /tmp
-  - sudo apt-get remove -y libgdal1
-  - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-  - sudo apt-get update
-  - sudo apt-get install python-numpy python-scipy python-gdal libgdal-dev python-mpltoolkits.basemap
-  - pip install .
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose
+  - python setup.py install
+  
 script: nosetests
