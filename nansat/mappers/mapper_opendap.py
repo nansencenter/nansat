@@ -20,11 +20,11 @@ from nansat.vrt import VRT
 from nansat.nsr import NSR
 
 try:
-    from netCDF4 import Dataset, crap
+    from netCDF4 import Dataset
 except ImportError:
-    raise ImportError('''\n
-                         Cannot import Dataset from netCDF4.
-                         Please install netCDF4 to access the OpenDAP\n''')
+    raise ImportError('''
+         Cannot import Dataset from netCDF4.
+         Please install netCDF4 to access the OpenDAP\n''')
 
 #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
 #fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'

@@ -214,6 +214,8 @@ class Mapper(VRT):
         if 'start_date' in gdalMetadata:
             self._set_time(parse(gdalMetadata['start_date']))
 
+        self.logger.warning('Use generic mapper - OK!')
+
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
         return projection.replace("|", ",").replace("&", '"')

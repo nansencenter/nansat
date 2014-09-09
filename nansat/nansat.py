@@ -1489,6 +1489,7 @@ class Nansat(Domain):
 
         tmpVRT = None
 
+        importErrors = []
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
             # get the module name
@@ -1515,10 +1516,19 @@ class Nansat(Domain):
             # We test all mappers, import one by one
             for iMapper in nansatMappers:
                 # skip non-importable mappers
-                if isinstance(nansatMappers[iMapper], ImportError):
+                if isinstance(nansatMappers[iMapper], tuple):
+                    # keep errors to show before use of generic mapper
+                    importErrors.append(nansatMappers[iMapper][1])
                     continue
 
                 self.logger.debug('Trying %s...' % iMapper)
+
+                # show all ImportError warnings before trying generic_mapper
+                if iMapper == 'mapper_generic' and len(importErrors) > 0:
+                    self.logger.error('\nWarning! The following mappers failed:')
+                    for ie in importErrors:
+                        self.logger.error(importErrors)
+
                 # create a Mapper object and get VRT dataset from it
                 try:
                     tmpVRT = nansatMappers[iMapper](self.fileName,
