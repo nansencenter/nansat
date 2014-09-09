@@ -32,15 +32,12 @@ class Mapper(VRT, Globcolour):
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
-        #import pdb;pdb.set_trace()
         # test if input files is GLOBCOLOUR L3B
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
-        try:
-            assert iFileName[0:4] == 'L3b_' and iFileExt == '.nc'
-        except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+        if iFileName[0:4] != 'L3b_' or iFileExt != '.nc':
+            raise WrongMapperError
 
         # define shape of GLOBCOLOUR grid
         GLOBCOLOR_ROWS = 180 * 24

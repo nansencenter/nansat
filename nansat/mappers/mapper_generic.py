@@ -24,7 +24,7 @@ class Mapper(VRT):
         geoMetadata = {}
         origin_is_nansat = False
         if not gdalMetadata:
-            raise WrongMapperError(__file__, "BAD MAPPER")
+            raise WrongMapperError
         for key in gdalMetadata.keys():
             newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
             if 'NANSAT_' in newKey:

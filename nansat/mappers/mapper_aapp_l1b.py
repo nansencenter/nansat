@@ -35,13 +35,13 @@ class Mapper(VRT):
         try:
             fp = open(fileName, 'rb')
         except IOError:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
         fp.seek(72)
 
         try:
             satNum = int(struct.unpack('<H', fp.read(2))[0])
         except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         if satNum >= 11:
             isMetop = True
@@ -51,14 +51,14 @@ class Mapper(VRT):
         if satNum in satIDs.keys():
             satID = satIDs[satNum]
         else:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         fp.seek(76)
         dataFormatNum = int(struct.unpack('<H', fp.read(2))[0])
         if dataFormatNum in dataFormats.keys():
             dataFormat = dataFormats[dataFormatNum]
         else:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         fp.seek(dataSetQualityIndicatorOffset + 14)
         numScanLines = int(struct.unpack('<H', fp.read(2))[0])

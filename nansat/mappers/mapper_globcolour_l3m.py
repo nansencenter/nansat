@@ -25,10 +25,10 @@ class Mapper(VRT, Globcolour):
         try:
             print "=>%s<=" % gdalMetadata['NC_GLOBAL#title']
         except (TypeError, KeyError):
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         if 'GlobColour' not in gdalMetadata['NC_GLOBAL#title']:
-            raise WrongMapperError(__file__, "GlobColour BAD MAPPER")
+            raise WrongMapperError
 
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)

@@ -78,7 +78,7 @@ class Mapper(VRT):
         ''' Create VRT from OpenDAP dataset'''
         # quit if file is not online
         if fileName[:7] != 'http://':
-            raise WrongMapperError(__file__, "Bad mapper")
+            raise WrongMapperError
 
         # open file through OpenDAP using netCDF4 library
         f = Dataset(fileName)

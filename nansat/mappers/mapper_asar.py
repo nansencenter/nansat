@@ -39,7 +39,7 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, gdalMetadata)
 
         if self.product[0:4] != "ASA_":
-            raise WrongMapperError(__file__, "ASAR_L1 wrong mapper")
+            raise WrongMapperError
 
         # get channel string (remove '/', since NetCDF
         # does not support that in metadata)

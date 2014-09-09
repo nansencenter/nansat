@@ -24,7 +24,7 @@ class Mapper(VRT):
         ''' Create VIIRS VRT '''
 
         if not 'GMTCO_npp_' in fileName:
-            raise WrongMapperError(__file__, 'viirs_l1 BAD MAPPER')
+            raise WrongMapperError
         ifiledir = os.path.split(fileName)[0]
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()

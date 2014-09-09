@@ -42,7 +42,7 @@ class Mapper(VRT, object):
         ##############
         keywordBase = 'ncep_wind_online'
         if fileName[0:len(keywordBase)] != keywordBase:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         timestr = fileName[len(keywordBase)+1::]
         time = datetime.strptime(timestr, '%Y%m%d%H%M')

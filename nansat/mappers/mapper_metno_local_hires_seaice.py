@@ -37,7 +37,7 @@ class Mapper(mg.Mapper):
         keywordBase = 'metno_local_hires_seaice'
 
         if fileName[0:len(keywordBase)] != keywordBase:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         keywordTime = fileName[len(keywordBase)+1:]
         requestedTime = datetime.datetime.strptime(keywordTime, '%Y%m%d')

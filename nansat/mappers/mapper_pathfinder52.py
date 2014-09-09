@@ -25,7 +25,7 @@ class Mapper(vrt.VRT):
         ''' Create VRT '''
 
         if not 'AVHRR_Pathfinder-PFV5.2' in fileName:
-            raise WrongMapperError(__file__, 'pathfinder52 BAD MAPPER')
+            raise WrongMapperError
 
         subDatasets = gdalDataset.GetSubDatasets()
         metaDict = []
