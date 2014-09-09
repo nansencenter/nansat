@@ -1500,9 +1500,10 @@ class Nansat(Domain):
                 raise Error('Mapper ' + mapperName + ' not found')
 
             # check if mapper is importbale or raise an ImportError error
-            if isinstance(nansatMappers[mapperName], ImportError):
-                self.logger.error(nansatMappers[mapperName])
-                raise nansatMappers[mapperName]
+            if isinstance(nansatMappers[mapperName], tuple):
+                errType, err, traceback = nansatMappers[mapperName]
+                #self.logger.error(err, exc_info=(errType, err, traceback))
+                raise errType, err, traceback
 
             # create VRT using the selected mapper
             tmpVRT = nansatMappers[mapperName](self.fileName,
@@ -2049,10 +2050,11 @@ def _import_mappers(logLevel=None):
             # try to import mapper module
             try:
                 module = loader.load_module(name)
-            except ImportError as inst:
+            except ImportError:
                 # keep ImportError instance instead of the mapper
-                logger.error(inst)
-                nansatMappers[name] = inst
+                exc_info = sys.exc_info()
+                logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
+                nansatMappers[name] = exc_info
             else:
                 # add the imported mapper to nansatMappers
                 if hasattr(module, 'Mapper'):
