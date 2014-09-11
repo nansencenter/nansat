@@ -16,11 +16,29 @@ import sys
 import errno
 import os
 
-# Check if numpy, gdal, and basemap packages are installed
+import_error_msg = "Nansat requires %s, which should be installed separately"
+
+# Check if required packages are installed
 try:
     import numpy
 except ImportError:
-    raise ImportError("Nansat requires numpy, which should be installed separately")
+    raise ImportError(import_error_msg %'numpy')
+
+try:
+    import scipy
+except ImportError:
+    raise ImportError(import_error_msg %'scipy')
+
+try:
+    import matplotlib
+except ImportError:
+    raise ImportError(import_error_msg %'matplotlib')
+
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError as e:
+    raise ImportError(import_error_msg %'basemap')
+
 try:
     from osgeo import gdal, osr, ogr
 except ImportError:
@@ -29,14 +47,7 @@ except ImportError:
         import osr
         import ogr
     except ImportError:
-        raise ImportError("Nansat requires gdal, which should be installed separately")
-try:
-    from mpl_toolkits.basemap import Basemap
-except ImportError as e:
-    if 'No module named matplotlib' in e.message:
-        pass
-    else:
-        raise ImportError("Nansat requires Basemap, which should be installed separately")
+        raise ImportError(import_error_msg %'gdal')
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -56,8 +67,6 @@ MICRO               = 0
 ISRELEASED          = False
 VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
-                        "scipy",
-                        "matplotlib",
                         "Pillow",
                     ]
 
@@ -85,6 +94,7 @@ else:
     extra_link_args = [] # not used currently
 
 def _ask_gdal_config(resultlist, option, result_prefix):
+<<<<<<< HEAD
     p = Popen(['gdal-config', option], stdout=subprocess.PIPE)
     t = p.stdout.read().decode().strip()
     if p.wait() != 0:
@@ -94,6 +104,22 @@ def _ask_gdal_config(resultlist, option, result_prefix):
     # '-I/usr/...' -> '/usr/...'
     res = [x[len(result_prefix):] for x in res]
     resultlist[:] = res
+=======
+    try:
+        p = Popen(['gdal-config', option], stdout=subprocess.PIPE)
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    else:
+        t = p.stdout.read().decode().strip()
+        if p.wait() != 0:
+            return
+        res = t.split()
+        res = filter(lambda x: x.startswith(result_prefix), res)
+        # '-I/usr/...' -> '/usr/...'
+        res = [x[len(result_prefix):] for x in res]
+        resultlist[:] = res
+>>>>>>> develop
 
 def use_gdal_config():
     _ask_gdal_config(include_dirs, '--cflags', '-I')
@@ -159,6 +185,7 @@ def run_setup(skip_compile):
         platforms=PLATFORMS,
         packages=[NAME, NAME + '.mappers', NAME + '.tests'],
         package_data={NAME: ['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
+<<<<<<< HEAD
         entry_points = {
             'console_scripts': [
                 'nansatinfo = nansat.cli.nansatinfo:main',
@@ -168,6 +195,8 @@ def run_setup(skip_compile):
                 'nansat_translate = nansat.cli.nansat_translate:main',
             ],
         },
+=======
+>>>>>>> develop
         install_requires=REQS,
         **kw
         )
