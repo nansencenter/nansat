@@ -120,7 +120,7 @@ except Exception as e:
 #----------------------------------------------------------------------------#
 #                               Install package
 #----------------------------------------------------------------------------#
-from setuptools import setup
+from setuptools import setup, find_packages
 from distutils.extension import Extension
 from distutils.errors import CCompilerError, DistutilsExecError,\
     DistutilsPlatformError
@@ -165,7 +165,7 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages=[NAME, NAME + '.mappers', NAME + '.tests', NAME + '.cli'],
+        packages= find_packages(),
         package_data={NAME: ['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
         entry_points = {
             'console_scripts': [
