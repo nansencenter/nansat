@@ -20,9 +20,9 @@ class Mapper(VRT):
         try:
             geo_transform = gdalDataset.GetGeoTransform()[0:5]
         except AttributeError:
-            raise WrongMapperError(__file__, "HIRLAM wrong mapper")
+            raise WrongMapperError
         if geo_transform != (-12.1, 0.2, 0.0, 81.95, 0.0):
-            raise WrongMapperError(__file__, "HIRLAM wrong mapper")
+            raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': 2,

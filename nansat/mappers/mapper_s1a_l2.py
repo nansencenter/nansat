@@ -2,9 +2,9 @@
 # Purpose:      Mapping for Sentinel-1 level-2 data
 #
 # Author:       Morten Wergeland Hansen
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
-# Created:	13.03.2014
+# Created:  13.03.2014
 # Last modified:17.07.2014 11:57
 # Copyright:    (c) NERSC
 # License:      This file is part of NANSAT. NANSAT is free software: you can
@@ -49,13 +49,13 @@ class Mapper(VRT):
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
         if not gdalMetadata or not 'NC_GLOBAL' in gdalMetadata.keys():
-            raise WrongMapperError(__file__, 's1a_l2 BAD MAPPER')
+            raise WrongMapperError
         else:
             title = gdalMetadata['NC_GLOBAL#TITLE']
 
         # Raise error if it is not Sentinel-1 format
         if not 'Sentinel-1' or 'ASA' in title:
-            raise WrongMapperError(__file__, 's1a_l2 BAD MAPPER')
+            raise WrongMapperError
 
         metadata = {}
         for key, val in gdalMetadata.iteritems():

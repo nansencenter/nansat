@@ -14,6 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os
 from math import floor, log10, pow
 
@@ -26,7 +27,7 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from .tools import add_logger
+from nansat.tools import add_logger
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.

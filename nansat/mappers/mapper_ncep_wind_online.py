@@ -42,7 +42,7 @@ class Mapper(VRT, object):
         ##############
         keywordBase = 'ncep_wind_online'
         if fileName[0:len(keywordBase)] != keywordBase:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         timestr = fileName[len(keywordBase)+1::]
         time = datetime.strptime(timestr, '%Y%m%d%H%M')
@@ -60,7 +60,7 @@ class Mapper(VRT, object):
             forecastHour =  (td.microseconds +
                                 (td.seconds + td.days * 24 * 3600)
                                 * 10**6) / 10**6 /3600.
-        else: 
+        else:
             forecastHour = (time - nearestModelRun).total_seconds()/3600.
         if modelRunHour == 24:
             modelRunHour = 0

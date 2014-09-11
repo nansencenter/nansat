@@ -43,7 +43,7 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, gdalMetadata)
 
         if self.product[0:9] != "MER_FRS_1" and self.product[0:9] != "MER_RR__1":
-            raise WrongMapperError(__file__, "MERIS_L1 bad mapper")
+            raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',

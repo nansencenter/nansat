@@ -22,7 +22,7 @@ class Mapper(VRT):
         try:
             tarFile = tarfile.open(fileName)
         except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         tarNames = tarFile.getnames()
         #print tarNames

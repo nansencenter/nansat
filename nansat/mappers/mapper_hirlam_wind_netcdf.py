@@ -15,7 +15,7 @@ class Mapper(VRT):
                  **kwargs):
 
         if not gdalMetadata:
-            raise WrongMapperError(__file__, "Not Hirlam converted from felt to netCDF")
+            raise WrongMapperError
 
         isHirlam = False
         for key in gdalMetadata.keys():
@@ -23,7 +23,7 @@ class Mapper(VRT):
                 isHirlam = True
 
         if not isHirlam:
-            raise WrongMapperError(__file__, "Not Hirlam converted from felt to netCDF")
+            raise WrongMapperError
 
         #GeolocMetaDict = [{'src':
         #        {'SourceFilename': 'NETCDF:"' + fileName + '":longitude',

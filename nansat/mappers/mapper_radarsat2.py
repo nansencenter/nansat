@@ -36,9 +36,9 @@ class Mapper(VRT):
 
         #if it is not RADARSAT-2, return
         if not gdalMetadata or not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys():
-            raise WrongMapperError(__file__, "RADARSAT-2 BAD MAPPER")
+            raise WrongMapperError
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
-            raise WrongMapperError(__file__, "RADARSAT-2 BAD MAPPER")
+            raise WrongMapperError
 
         # read product.xml
         productXmlName = os.path.join(fileName, 'product.xml')
@@ -121,7 +121,7 @@ class Mapper(VRT):
         (GDAL?) Radarsat-2 data is stored with maximum latitude at first
         element of each column and minimum longitude at first element of each
         row (e.g. np.shape(lat)=(59,55) -> latitude maxima are at lat[0,:],
-        and longitude minima are at lon[:,0]) 
+        and longitude minima are at lon[:,0])
 
         In addition, there is an interpolation error for direct estimate along
         azimuth. We therefore estimate the heading along range and add 90

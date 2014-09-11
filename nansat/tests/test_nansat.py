@@ -3,9 +3,9 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
-# Created:	18.06.2014
+# Created:  18.06.2014
 # Last modified:27.08.2014 10:58
 # Copyright:    (c) NERSC
 # License:
@@ -16,10 +16,10 @@ from types import ModuleType, FloatType
 import numpy as np
 
 from nansat import Nansat, Domain
-from nansat.nansat import import_mappers 
+from nansat.nansat import _import_mappers
 import nansat_test_archive as tna
 
-nansatMappers = import_mappers()
+nansatMappers = _import_mappers()
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
@@ -119,7 +119,7 @@ class MapperCosmoskymedTest(unittest.TestCase):
             raise ValueError('No test data available')
 
     # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(tna.TestData().noCosmoskymedData, 
+    @unittest.skipIf(tna.TestData().noCosmoskymedData,
             "No Cosmo-Skymed data available (this is proprietary and cannot be shared)")
     def test_mapper_cosmoskymed(self):
         print self.test_data.cosmoskymed[0]
@@ -185,7 +185,7 @@ class MapperRadarsat2Test(unittest.TestCase):
         self.test_data = tna.TestData()
 
     # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(tna.TestData().noRadarsat2Data, 
+    @unittest.skipIf(tna.TestData().noRadarsat2Data,
             "No Radarsat-2 data available (this is proprietary and cannot be shared)")
     def test_mapper_radarsat2(self):
         print self.test_data.radarsat2[0]

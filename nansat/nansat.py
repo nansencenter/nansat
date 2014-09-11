@@ -20,6 +20,7 @@ import os, sys
 import tempfile
 import datetime
 import dateutil.parser
+import warnings
 import collections
 import pkgutil
 
@@ -38,43 +39,9 @@ from nansat.tools import OptionError, WrongMapperError, Error, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
-def import_mappers():
-    ''' Import available mappers into a dictionary
+# container for all mappers
+nansatMappers = None
 
-        Returns
-        --------
-        nansatMappers : dict
-            key  : mapper name
-            value: class Mapper(VRT) from the mapper module
-
-    '''
-
-    import nansat.mappers
-
-    # create ordered dict for string mappers
-    nansatMappers = collections.OrderedDict()
-
-    # scan through modules and load all modules that contain class Mapper
-    for finder, name, ispkg in pkgutil.iter_modules(nansat.mappers.__path__[::-1]):
-        loader = finder.find_module(name)
-        try:
-            module = loader.load_module(name)
-        except:
-            print name, sys.exc_info()
-        else:
-            if hasattr(module, 'Mapper'):
-                nansatMappers[name] = module.Mapper
-
-    # move generic_mapper to the end
-    if 'mapper_generic' in nansatMappers:
-        gm = nansatMappers.pop('mapper_generic')
-        nansatMappers['mapper_generic'] = gm
-
-    return nansatMappers
-
-# Should these also come here?
-#def register_mapper():
-#def unregister_mapper():
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -1500,13 +1467,19 @@ class Nansat(Domain):
         Error : occurs if given mapper cannot open the input file
 
         '''
+        # lazy import of nansat mappers
+        # if nansat mappers were not imported yet
+        global nansatMappers
+        if nansatMappers is None:
+            nansatMappers = _import_mappers()
+
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = None
         if self.fileName[:4] != 'http':
             try:
                 gdalDataset = gdal.Open(self.fileName)
             except RuntimeError:
-                print ('GDAL could not open ' + self.fileName +
+                self.logger.error('GDAL could not open ' + self.fileName +
                        ', trying to read with Nansat mappers...')
         if gdalDataset is not None:
             # get metadata from the GDAL dataset
@@ -1516,16 +1489,23 @@ class Nansat(Domain):
 
         tmpVRT = None
 
-        nansatMappers = import_mappers()
+        importErrors = []
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
-            # get module name
+            # get the module name
             mapperName = 'mapper_' + mapperName.replace('mapper_',
                                                         '').replace('.py',
                                                                     '').lower()
-            # check if mappers is available
+            # check if the mapper is available
             if mapperName not in nansatMappers:
                 raise Error('Mapper ' + mapperName + ' not found')
+
+            # check if mapper is importbale or raise an ImportError error
+            if isinstance(nansatMappers[mapperName], tuple):
+                errType, err, traceback = nansatMappers[mapperName]
+                #self.logger.error(err, exc_info=(errType, err, traceback))
+                raise errType, err, traceback
+
             # create VRT using the selected mapper
             tmpVRT = nansatMappers[mapperName](self.fileName,
                                                gdalDataset,
@@ -1535,9 +1515,22 @@ class Nansat(Domain):
         else:
             # We test all mappers, import one by one
             for iMapper in nansatMappers:
+                # skip non-importable mappers
+                if isinstance(nansatMappers[iMapper], tuple):
+                    # keep errors to show before use of generic mapper
+                    importErrors.append(nansatMappers[iMapper][1])
+                    continue
+
                 self.logger.debug('Trying %s...' % iMapper)
+
+                # show all ImportError warnings before trying generic_mapper
+                if iMapper == 'mapper_generic' and len(importErrors) > 0:
+                    self.logger.error('\nWarning! The following mappers failed:')
+                    for ie in importErrors:
+                        self.logger.error(importErrors)
+
+                # create a Mapper object and get VRT dataset from it
                 try:
-                    # create a Mapper object and get VRT dataset from it
                     tmpVRT = nansatMappers[iMapper](self.fileName,
                                                     gdalDataset,
                                                     metadata,
@@ -2030,3 +2023,56 @@ class Nansat(Domain):
         self.set_metadata(subMetaData)
 
         return 0, extent
+
+def _import_mappers(logLevel=None):
+    ''' Import available mappers into a dictionary
+
+    Returns
+    --------
+    nansatMappers : dict
+        key  : mapper name
+        value: class Mapper(VRT) from the mapper module
+
+    '''
+    logger = add_logger('import_mappers', logLevel=logLevel)
+    # import built-in mappers
+    import nansat.mappers
+    mappersPackages = [nansat.mappers]
+
+    # import user-defined mappers (if any)
+    try:
+        import nansat_mappers
+    except:
+        pass
+    else:
+        logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
+        mappersPackages = [nansat_mappers, nansat.mappers]
+
+    # create ordered dict for mappers
+    nansatMappers = collections.OrderedDict()
+
+    for mappersPackage in mappersPackages:
+        logger.debug('From package: %s' % mappersPackage.__path__)
+        # scan through modules and load all modules that contain class Mapper
+        for finder, name, ispkg in pkgutil.iter_modules(mappersPackage.__path__):
+            logger.debug('Loading mapper %s' % name)
+            loader = finder.find_module(name)
+            # try to import mapper module
+            try:
+                module = loader.load_module(name)
+            except ImportError:
+                # keep ImportError instance instead of the mapper
+                exc_info = sys.exc_info()
+                logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
+                nansatMappers[name] = exc_info
+            else:
+                # add the imported mapper to nansatMappers
+                if hasattr(module, 'Mapper'):
+                    nansatMappers[name] = module.Mapper
+
+        # move generic_mapper to the end
+        if 'mapper_generic' in nansatMappers:
+            gm = nansatMappers.pop('mapper_generic')
+            nansatMappers['mapper_generic'] = gm
+
+    return nansatMappers

@@ -35,7 +35,7 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, gdalMetadata)
 
         if self.product[0:9] != "MER_FRS_2" and self.product[0:9] != "MER_RR__2":
-            raise WrongMapperError(__file__, "MERIS_L2 BAD MAPPER")
+            raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',

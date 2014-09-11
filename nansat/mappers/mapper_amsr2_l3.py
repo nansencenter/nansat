@@ -20,18 +20,6 @@ from nansat.tools import gdal, ogr, WrongMapperError
 class Mapper(VRT):
     ''' Mapper for Level-3 AMSR2 data from https://gcom-w1.jaxa.jp'''
 
-    # detect wkv from metadata 'Parameter'
-    param2wkv = {'Chlorophyll a concentration': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                 'Diffuse attenuation coefficient': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water',
-                 'Remote sensing reflectance': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                 'CDOM Index': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
-                 'Sea Surface Salinity': 'sea_surface_salinity',
-                 'Sea Surface Temperature': 'sea_surface_temperature',
-                 'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
-                 'Particle backscatter at 443 nm': 'volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles',
-                 'Chlorophyll a concentration, Garver-Siegel-Maritorena Model': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                 'Photosynthetically Available Radiation': 'photosynthetically_available_radiation',
-                 }
     freqs = [6, 7, 10, 18, 23, 36, 89]
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -43,7 +31,7 @@ class Mapper(VRT):
             assert gdalMetadata['SensorShortName'] == 'AMSR2'
             assert gdalMetadata['ProductName'] == 'AMSR2-L3'
         except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
 
         # get list of similar (same date, A/D orbit) files in the directory

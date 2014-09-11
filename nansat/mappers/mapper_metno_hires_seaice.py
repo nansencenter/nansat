@@ -46,7 +46,7 @@ class Mapper(VRT):
                     pass # No data for this day
 
         if not foundDataset:
-            raise WrongMapperError(__file__, "Not Met.no Svalbard-ice Thredds URL")
+            raise WrongMapperError
 
         # Then check if a valid OPeNDAP URL is given (or has been constructed from keyword)
         if fileName[0:len(ThreddsBase)] != ThreddsBase:

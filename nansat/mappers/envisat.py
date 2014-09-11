@@ -73,8 +73,8 @@ class Envisat():
     def __init__(self, fileName, gdalMetadata):
         '''Select set of params and read offset of ADS'''
         if not gdalMetadata or not gdalMetadata.has_key('MPH_PRODUCT'):
-            raise WrongMapperError(__file__, "Envisat N1 bad mapper")
-        
+            raise WrongMapperError
+
         self.product = gdalMetadata["MPH_PRODUCT"]
         self.iFileName = fileName
         self.prodType = gdalMetadata["MPH_PRODUCT"][0:4]
