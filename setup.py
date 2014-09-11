@@ -165,7 +165,7 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages=[NAME, NAME + '.mappers', NAME + '.tests'],
+        packages=[NAME, NAME + '.mappers', NAME + '.tests', NAME + '.cli'],
         package_data={NAME: ['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
         entry_points = {
             'console_scripts': [
