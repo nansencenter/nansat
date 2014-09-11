@@ -16,11 +16,29 @@ import sys
 import errno
 import os
 
-# Check if numpy, gdal, and basemap packages are installed
+import_error_msg = "Nansat requires %s, which should be installed separately"
+
+# Check if required packages are installed
 try:
     import numpy
 except ImportError:
-    raise ImportError("Nansat requires numpy, which should be installed separately")
+    raise ImportError(import_error_msg %'numpy')
+
+try:
+    import scipy
+except ImportError:
+    raise ImportError(import_error_msg %'scipy')
+
+try:
+    import matplotlib
+except ImportError:
+    raise ImportError(import_error_msg %'matplotlib')
+
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError as e:
+    raise ImportError(import_error_msg %'basemap')
+
 try:
     from osgeo import gdal, osr, ogr
 except ImportError:
@@ -29,14 +47,7 @@ except ImportError:
         import osr
         import ogr
     except ImportError:
-        raise ImportError("Nansat requires gdal, which should be installed separately")
-try:
-    from mpl_toolkits.basemap import Basemap
-except ImportError as e:
-    if 'No module named matplotlib' in e.message:
-        pass
-    else:
-        raise ImportError("Nansat requires Basemap, which should be installed separately")
+        raise ImportError(import_error_msg %'gdal')
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -56,8 +67,6 @@ MICRO               = 0
 ISRELEASED          = False
 VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
-                        "scipy",
-                        "matplotlib",
                         "Pillow",
                     ]
 
