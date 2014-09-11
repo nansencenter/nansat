@@ -510,7 +510,8 @@ class Nansat(Domain):
         self.logger.debug('Export - OK!')
 
     def export2thredds(self, fileName, bands=None, metadata=None,
-                                                   maskName=None):
+                       maskName=None, rmMetadata=[],
+                       time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
 
         Parameters
@@ -527,6 +528,13 @@ class Nansat(Domain):
             if data include a mask band: give the mask name.
             Non-masked value is 64.
             if None: no mask is added
+        rmGlobMetadata, rmMetadata : list
+            unsanted metadata names
+        duplicateMetadata : dictionary
+            if copy globalmetadata with another name,
+            keys are new names and values are key names of underlying data
+        time : list with datetime objects
+            produced time of original data
 
         !! NB
         ------
@@ -577,6 +585,12 @@ class Nansat(Domain):
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(bandID=iband)
+
+            # remove unwanted metadata from bands
+            for rmMeta in rmMetadata:
+                if rmMeta in bandMetadata.keys():
+                    bandMetadata.pop(rmMeta)
+
             data.add_band(array=array, parameters = bandMetadata)
         self.logger.debug('Bands for export: %s'  % str(dstBands))
 
@@ -584,10 +598,13 @@ class Nansat(Domain):
         lonCrn,latCrn = data.get_corners()
 
         # common global attributes:
+        if createdTime is None:
+            createdTime = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+
         globMetadata = {
             'institution': 'NERSC',
             'source': 'satellite remote sensing',
-            'creation_date': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'creation_date': createdTime,
             'northernmost_latitude': np.float(max(latCrn)),
             'southernmost_latitude': np.float(min(latCrn)),
             'westernmost_longitude': np.float(min(lonCrn)),
@@ -596,9 +613,15 @@ class Nansat(Domain):
             }
 
         #join or replace default by custom global metadata
+
         if metadata is not None:
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
+
+        # remove unwanted metadata from global metadata
+        for rmMeta in rmMetadata:
+            if rmMeta in globMetadata.keys():
+                globMetadata.pop(rmMeta)
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmpName = tempfile.mkstemp(suffix='.nc')
@@ -610,9 +633,14 @@ class Nansat(Domain):
 
         # collect info on dimention names
         dimNames = []
+        gridMappingName = None
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]
             dimNames += list(ncIVar.dimensions)
+            # get grid_mapping_name
+            if hasattr(ncIVar, 'grid_mapping_name'):
+                gridMappingName = ncIVar.grid_mapping_name
+                gridMappingVarName = ncIVarName
         dimNames = list(set(dimNames))
 
         # collect info on dimention shapes
@@ -627,20 +655,22 @@ class Nansat(Domain):
 
         # add time dimention
         ncO.createDimension('time', 1)
-        ncOVar = ncO.createVariable('time', '>i4', ('time', ))
+        ncOVar = ncO.createVariable('time', '>f8',  ('time', ))
         ncOVar.calendar = 'standard'
         ncOVar.long_name = 'time'
         ncOVar.standard_name = 'time'
         ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
         ncOVar.axis = 'T'
 
-        time = filter(None, self.get_time())
+        if time is None:
+            time = filter(None, self.get_time())
+
         # create value of time variable
         if len(time) > 0:
             td = time[0] - datetime.datetime(1900, 1, 1)
-            td = td.days
+            days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
             # add date
-            ncOVar[:] = np.int32(td).astype('>i4')
+            ncOVar[:] = days
 
         # recreate file
         for ncIVarName in ncI.variables:
@@ -650,7 +680,7 @@ class Nansat(Domain):
                 # create simple x/y variables
                 ncOVar = ncO.createVariable(ncIVarName, '>f4',
                                             ncIVar.dimensions)
-            elif ncIVarName in ['stereographic', 'crs']:
+            elif ncIVarName == gridMappingVarName:
                 # create projection var
                 ncOVar = ncO.createVariable(ncIVarName, ncIVar.typecode(),
                                             ncIVar.dimensions)
@@ -682,7 +712,7 @@ class Nansat(Domain):
                 ncOVar._attributes = ncIVar._attributes
 
             # copy projection data (only all attributes)
-            if ncIVarName in ['stereographic', 'crs']:
+            if ncIVarName == gridMappingVarName:
                 ncOVar._attributes = ncIVar._attributes
 
             # copy data from variables in the list
@@ -714,6 +744,9 @@ class Nansat(Domain):
                     for newAttr in bands[ncIVar.name]:
                         if newAttr not in ['type', 'scale', 'offset']:
                             ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
+                    # add grid_mapping info
+                    if gridMappingName is not None:
+                        ncOVar._attributes['grid_mapping'] = gridMappingName
 
         # copy (some) global attributes
         for globAttr in ncI._attributes:

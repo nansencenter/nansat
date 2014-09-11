@@ -11,6 +11,7 @@
 #               distributed in the hope that it will be useful, but WITHOUT ANY
 #               WARRANTY without even the implied warranty of MERCHANTABILITY
 #               or FITNESS FOR A PARTICULAR PURPOSE.
+import numpy as np
 from netCDF4 import Dataset
 
 from nansat.tools import gdal, ogr, WrongMapperError
