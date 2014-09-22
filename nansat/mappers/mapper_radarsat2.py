@@ -31,6 +31,8 @@ class Mapper(VRT):
             # Open zip file using VSI
             fPath, fName = os.path.split(fPathName)
             fileName = '/vsizip/%s/%s' % (fileName, fName)
+            if not 'RS' in fName[0:2]:
+                raise WrongMapperError('Provided data is not Radarsat-2')
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
 
