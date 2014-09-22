@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	12.09.2014
-# Last modified:22.09.2014 13:33
+# Last modified:22.09.2014 17:00
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -26,16 +26,7 @@ class Mapper(VRT):
         Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, product_type='RVL',
-            GCP_COUNT=10, **kwargs):
-        '''
-        Parameters
-        ----------
-        product_type: string
-            Sentinel-1 level-1 product, i.e. 
-        GCP_COUNT : int
-            number of GCPs along each dimention
-        '''
+    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
 
         gdalDatasets = []
         mds_filenames = []
