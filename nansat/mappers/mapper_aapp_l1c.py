@@ -50,7 +50,7 @@ class Mapper(VRT):
         try:
             time = datetime.datetime(year, 1, 1) + \
                 datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
-        except ValueError:
+        except:
             raise WrongMapperError
 
         fp.seek(72)
