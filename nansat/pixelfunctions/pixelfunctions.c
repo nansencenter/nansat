@@ -1046,13 +1046,42 @@ double RawcountsIncidenceToSigma0Function(double *b){
 	return (pow(b[0], 2.0) * sin(b[1] *  pi / 180.0));
 }
 
+double Sentinel1CalibrationFunction(double *b){
+
+    // With noise removal
+    return ( pow(b[1],2.0) - pow(b[2],2.0) ) / pow(b[0], 2.0);
+    // Without noise removal
+    //return pow(b[1],2.0) / pow(b[0], 2.0);
+
+}
+
 double Sigma0HHToSigma0VVFunction(double *b){
-	double pi = 3.14159265;
+    double pi = 3.14159265;
     double s0hh, factor;
     s0hh = (pow(b[0], 2.0) * sin(b[1] *  pi / 180.0));
-	/* Polarisation ratio from Thompson et al. with alpha=1 */
-	factor = pow( (1 + 2 * pow(tan(b[1]*pi/180.0), 2)) / (1 + 1 * pow(tan(b[1]*pi/180.0), 2)), 2);
-	return s0hh * factor;
+    /* Polarisation ratio from Thompson et al. with alpha=1 */
+    factor = pow( (1 + 2 * pow(tan(b[1]*pi/180.0), 2)) / (1 + 1 * pow(tan(b[1]*pi/180.0), 2)), 2);
+    return s0hh * factor;
+}
+
+double Sentinel1Sigma0HHToSigma0VVFunction( double *b ){
+
+    double s0hh, s0vv;
+    double bcal[3];
+    double s0hh2s0vv[2];
+
+    bcal[0] = b[0]; // sigmaNought LUT
+    bcal[1] = b[2]; // DN
+    bcal[2] = b[3]; // noise
+    s0hh = Sentinel1CalibrationFunction(bcal);
+
+    s0hh2s0vv[0] = s0hh;
+    s0hh2s0vv[1] = b[1];
+
+    s0vv = Sigma0HHToSigma0VVFunction(s0hh2s0vv);
+
+    return s0vv;
+
 }
 
 double Sigma0NormalizedIceFunction(double *b){
@@ -1130,6 +1159,32 @@ CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, voi
         nXSize, nYSize, eSrcType, eBufType,
         nPixelSpace, nLineSpace);
     
+    return CE_None;
+}
+
+CPLErr Sentinel1Calibration(void **papoSources, 
+		int nSources, void *pData, int nXSize, int nYSize,
+                GDALDataType eSrcType, GDALDataType eBufType,
+                int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunction(Sentinel1CalibrationFunction,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+    
+    return CE_None;
+}
+
+CPLErr Sentinel1Sigma0HHToSigma0VV(void **papoSources,
+		int nSources, void *pData, int nXSize, int nYSize,
+                GDALDataType eSrcType, GDALDataType eBufType,
+                int nPixelSpace, int nLineSpace){
+
+    GenericPixelFunction(Sentinel1Sigma0HHToSigma0VVFunction,
+        papoSources, nSources, pData,
+        nXSize, nYSize, eSrcType, eBufType,
+        nPixelSpace, nLineSpace);
+
     return CE_None;
 }
 
@@ -1211,27 +1266,30 @@ void GenericPixelFunction(double f(double*), void **papoSources,
         GDALDataType eSrcType, GDALDataType eBufType,
         int nPixelSpace, int nLineSpace)
 {
-	int ii, iLine, iCol, iSrc;
-	double *bVal, result;
+    int ii, iLine, iCol, iSrc;
+    double *bVal, result;
     bVal = malloc(nSources * sizeof (double));
     
-	/* ---- Set pixels ---- */
-	for( iLine = 0; iLine < nYSize; iLine++ )
-	{
-		for( iCol = 0; iCol < nXSize; iCol++ )
-		{
-			ii = iLine * nXSize + iCol;
-			/* Source raster pixels may be obtained with SRCVAL macro */
-            for (iSrc = 0; iSrc < nSources; iSrc ++)
+    /* ---- Set pixels ---- */
+    for( iLine = 0; iLine < nYSize; iLine++ ){
+        for( iCol = 0; iCol < nXSize; iCol++ ){
+	    ii = iLine * nXSize + iCol;
+	    /* Source raster pixels may be obtained with SRCVAL macro */
+            for (iSrc = 0; iSrc < nSources; iSrc ++){
                 bVal[iSrc] = SRCVAL(papoSources[iSrc], eSrcType, ii);
+                //if (iLine==0 && iCol==0){
+                //    printf("%d ",iSrc);
+                //    printf("%.4f\n",bVal[iSrc]);
+                //}
+            }
 
-			result = f(bVal);
+	    result = f(bVal);
 
-			GDALCopyWords(&result, GDT_Float64, 0,
-			              ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
-			              eBufType, nPixelSpace, 1);
-		}
+	    GDALCopyWords(&result, GDT_Float64, 0,
+			    ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+			    eBufType, nPixelSpace, 1);
 	}
+    }
 }
 
 // From the 1st to (N-1)th bands are full size (XSize x YSize), 
@@ -1399,6 +1457,9 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("Sigma0NormalizedIce", Sigma0NormalizedIce);
     GDALAddDerivedBandPixelFunc("Sigma0HHNormalizedWater", Sigma0HHNormalizedWater);
     GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater", Sigma0VVNormalizedWater);
+    GDALAddDerivedBandPixelFunc("Sentinel1Calibration", Sentinel1Calibration);
+    GDALAddDerivedBandPixelFunc("Sentinel1Sigma0HHToSigma0VV", Sentinel1Sigma0HHToSigma0VV);
 
     return CE_None;
 }
+
