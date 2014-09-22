@@ -1048,7 +1048,7 @@ double RawcountsIncidenceToSigma0Function(double *b){
 
 double Sentinel1CalibrationFunction(double *b){
 
-    return (pow(b[1],2.0)-b[2]) / b[0];
+    return (pow(b[1],2.0)-b[2]) / pow(b[0], 2.0);
 
 }
 
