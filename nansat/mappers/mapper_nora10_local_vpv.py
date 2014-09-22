@@ -97,10 +97,10 @@ class Mapper(VRT):
                     {'SourceFilename': self.subVRTs['v_VRT'].fileName,
                     'SourceBand': 1,
                     'DataType': 6 }],
-                  'dst': {'wkv': 'wind_from_direction',
+                  'dst': {'wkv': 'wind_to_direction',
                     'name': 'winddir',
                     'height': '10 m',
-                    'PixelFunctionType': 'UVToDirectionFrom'}
+                    'PixelFunctionType': 'UVToDirectionTo'}
                   })
 
         # create empty VRT dataset with geolocation only
