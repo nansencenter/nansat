@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	12.09.2014
-# Last modified:19.09.2014 17:08
+# Last modified:22.09.2014 10:20
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -280,54 +280,7 @@ class Mapper(VRT):
 
         self._create_bands(metaDict)
 
-        # Add incidence angle
-        name = 'incidence_angle'
-        bandNumberDict[name] = bnmax+1
-        bnmax = bandNumberDict[name]
-        src = [{
-                'SourceFilename': self.fileName,
-                'SourceBand': bandNumberDict['DN_%s' %polarizations[0]],
-            },{
-                'SourceFilename': self.subVRTs['LUT_noise_VRT'].fileName,
-                'SourceBand': 1
-            },{
-                'SourceFilename': self.subVRTs['LUT_sigmaNought_VRT'].fileName,
-                'SourceBand': 1
-            },{
-                 'SourceFilename': self.subVRTs['LUT_betaNought_VRT'].fileName,
-                 'SourceBand': 1
-        }]
-        dst = {'wkv': 'angle_of_incidence',
-               'PixelFunctionType': 'Sentinel1IncidenceAngle',
-               '_FillValue': -10000,
-               'name': name}
-
-        #import pdb
-        #pdb.set_trace()
-
-        self._create_band(src, dst)
-        self.dataset.FlushCache()
-
-        ##check landsat mapper!
-
-        ## Add sigma0_VV
-        #if 'VV' not in pol and 'HH' in pol:
-        #    name = 'sigma0_VV'
-        #    bandNumberDict[name] = bnmax+1
-        #    bnmax = bandNumberDict[name]
-        #    src = [{'SourceFilename': self.fileName,
-        #            'SourceBand': bandNumberDict['sigma0_HH'],
-        #            'DataType': 6},
-        #           {'SourceFilename': self.fileName,
-        #            'SourceBand': bandNumberDict['beta0_HH'],
-        #            'DataType': 6}]
-        #    dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
-        #           'PixelFunctionType': 'Sigma0HHBetaToSigma0VV',
-        #           'polarization': 'VV',
-        #           'suffix': 'VV'}
-        #    self._create_band(src, dst)
-        #    self.dataset.FlushCache()
-
+        # Get incidence angle
         self.n = Node.create(annotationXML)
         n = Node.create(annotationXML)
         ga = n.node('generalAnnotation')
@@ -335,11 +288,72 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(pi['pass']))
         # Incidence angles are found in
         #<geolocationGrid>
-        #    <geolocationGridPointList count="252">
+        #    <geolocationGridPointList count="#">
         #          <geolocationGridPoint>
         geolocationGridPointList = n.node('geolocationGrid').children[0]
+        X = []
+        Y = []
+        lon = []
+        lat = []
+        inc = []
         for gridPoint in geolocationGridPointList.children:
-            # Get the data and do like above for the LUTs
+            X.append(int(gridPoint['pixel']))
+            Y.append(int(gridPoint['line']))
+            lon.append(float(gridPoint['longitude']))
+            lat.append(float(gridPoint['latitude']))
+            inc.append(float(gridPoint['incidenceAngle']))
+
+        X = np.unique(X)
+        Y = np.unique(Y)
+
+        lon = np.array(lon).reshape(len(Y), len(X))
+        lat = np.array(lat).reshape(len(Y), len(X))
+        inc = np.array(inc).reshape(len(Y), len(X))
+
+        incVRT = VRT(array=inc, lat=lat, lon=lon)
+        incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
+                self.dataset.RasterYSize, eResampleAlg=1)
+        self.subVRTs['incVRT'] = incVRT
+
+        # Add incidence angle as band
+        name = 'incidence_angle'
+        bandNumberDict[name] = bnmax+1
+        bnmax = bandNumberDict[name]
+        src = {
+            'SourceFilename': self.subVRTs['incVRT'].fileName,
+            'SourceBand': 1}
+        dst = {
+                'wkv': 'angle_of_incidence',
+                'name': name}
+        self._create_band(src, dst)
+        self.dataset.FlushCache()
+
+        ##check landsat mapper!
+
+        # Add sigma0_VV
+        if 'VV' not in polarizations and 'HH' in polarizations:
+            name = 'sigma0_VV'
+            bandNumberDict[name] = bnmax+1
+            bnmax = bandNumberDict[name]
+            src = [{
+                'SourceFilename': self.fileName,
+                'SourceBand': bandNumberDict['DN_HH'],
+                },{
+                'SourceFilename': self.subVRTs['LUT_noise_VRT'].fileName,
+                'SourceBand': 1
+                },{
+                'SourceFilename': self.subVRTs['LUT_sigmaNought_VRT'].fileName,
+                'SourceBand': 1,
+                },{
+                'SourceFilename': self.subVRTs['incVRT'].fileName,
+                'SourceBand': 1}]
+            dst = {
+                'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                'PixelFunctionType': 'Sentinel1Sigma0HHToSigma0VV',
+                'polarization': 'VV',
+                'suffix': 'VV'}
+            self._create_band(src, dst)
+            self.dataset.FlushCache()
 
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
