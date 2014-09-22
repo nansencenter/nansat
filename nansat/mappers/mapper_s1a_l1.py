@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	12.09.2014
-# Last modified:22.09.2014 10:20
+# Last modified:22.09.2014 13:33
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -327,8 +327,6 @@ class Mapper(VRT):
                 'name': name}
         self._create_band(src, dst)
         self.dataset.FlushCache()
-
-        ##check landsat mapper!
 
         # Add sigma0_VV
         if 'VV' not in polarizations and 'HH' in polarizations:
