@@ -23,7 +23,10 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create LANDSAT VRT '''
         # try to open .tar or .tar.gz or .tgz file with tar
-        tarFile = tarfile.open(fileName)
+        try:
+            tarFile = tarfile.open(fileName)
+        except:
+            raise WrongMapperError
 
         tarNames = tarFile.getnames()
         metaDictAll = []
