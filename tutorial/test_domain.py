@@ -16,13 +16,9 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import savemat
-import inspect, os
+import os
 
-from nansat import Nansat, Domain, Mosaic
-#from mosaic import Mosaic
+from nansat import Domain
 
 # input and output file names
 from testio import testio
@@ -43,12 +39,24 @@ reference of a raster:
 '''
 
 # Create Domain object. It describes the desired grid of reprojected image:
-#    projection, resolution, size, etc. In this case it is geographic projection;
-#    -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
-d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs", "-te 25 70 35 72 -ts 2000 2000")
-d = Domain(4326, "-te 25 70 35 72 -ts 2000 2000")
+# projection, resolution, size, etc. In this case it is geographic projection;
+# -10 - 30 E, 50 - 70 W; 2000 x 2000 pixels
+d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+           "-te 25 70 35 72 -ts 2000 2000")
+print d
+
+d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+print d
+
+d = Domain(4326, "-lle 25 70 35 72 -ts 500 500")
+print d
+
+
 d.write_map(oFileName + '01_latlong_map.png')
 print 'Latlong Domain:', d, '\n'
+
+# write to KML
+d.write_kml(kmlFileName=oFileName + '01_latlong_map.kml')
 
 # get shape
 print 'shape:', d.shape(), '\n'
@@ -69,7 +77,7 @@ meanLon = sum(lons, 0.0) / 4.
 meanLat = sum(lats, 0.0) / 4.
 
 # get string with WKT representation of the border polygon
-print 'BorderPolygon:', d.get_border_polygon(), '\n'
+print 'BorderPolygon:', d.get_border_wkt(), '\n'
 
 # longitude and latitude grids representing the full data grid
 longitude, latitude = d.get_geolocation_grids()
@@ -82,8 +90,16 @@ d.write_kml(kmlFileName=oFileName + '03_preview.kml')
 srsString = "+proj=stere +lon_0=5 +lat_0=60"
 extentString = '-te -1000000 -1000000 1000000 1000000 -tr 1000 1000'
 d = Domain(srsString, extentString)
-d.write_map(oFileName + '02_stereo_map.png')
+d.write_map(oFileName + '02_stereo_map_a.png')
 print 'Stereo Domain:', d, '\n'
+
+# -- Create Domain with stereographic projection and resolution 1000m
+srsString = "+proj=stere +lon_0=5 +lat_0=60"
+extentString = "-lle 25 70 35 72 -ts 500 500"
+d = Domain(srsString, extentString)
+d.write_map(oFileName + '02_stereo_map_b.png')
+print 'Stereo Domain:', d, '\n'
+
 
 
 print '\n*** domain_test completed successfully. Output files are found here:' + oFileName

@@ -18,10 +18,9 @@
 
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-import inspect, os
+import os
 
-from nansat import Nansat, Domain
-from mosaic import Mosaic
+from nansat import *
 
 # input and output file names
 from testio import testio
@@ -55,10 +54,21 @@ Nansat inherits from Domain (container of geo-reference information)
 
 # Open an input file
 # Create a Nansat object <n> for futher high-level operations
-n = Nansat(iFileName)
+#n = Nansat(iFileName)
 
 # Open an input file, specify which Mapper to use, set logging level
 n = Nansat(iFileName, mapperName='generic', logLevel=10)
+
+# create nansat object from grids of lon, lat and values
+# first get the grids from existing nansat objects
+lonGrid, latGrid = n.get_geolocation_grids()
+valGrid = n[1]
+# next create a domain
+d = Domain(lon=lonGrid, lat=latGrid)
+# at last generate nansat from given domain and array
+n2 = Nansat(domain=d, array=valGrid, parameters={'name': 'new_band'})
+print n
+
 
 # list bands and georeference of the object
 print 'Raw Nansat:', n, '\n'
@@ -79,10 +89,12 @@ n.set_metadata(key='BandKey', value='BandVal', bandID=1)
 # get 1st Band Metadata
 print '1st Band Metadata:', n.get_metadata(bandID=1), '\n'
 
-# add a band from file (copy the 2nd band to the end (4th band)
-n.add_band(fileName=n.fileName, bandID=2)
 # add a band from numpy array (copy the 1st band to the end (5th band))
-n.add_band(array=n[1], parameters={'name':'Name1', 'wkt':'copy from the 1st band array'})
+n.add_band(n[1], parameters={'name': 'Name1',
+                             'info':  'copy from the 1st band array'})
+
+n.add_bands([n[1], n[2]], [{'name': 'n1'}, {'name': 'n2'}])
+
 # print band list
 n.list_bands()
 # get GDAL raster band (2nd band)
@@ -96,20 +108,20 @@ plt.imshow(a);plt.colorbar();plt.savefig(oFileName + '01_imshow.png');plt.close(
 # -- Save as Matlab file
 savemat(oFileName + '01.mat', {'band_1': a})
 
-# Resize the data to 50%
+# Resize the data to 50% using averaging
 n.resize(0.5)
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '02.png', clim='hist')
 # undo resize
-n.resize()
+n.undo()
 
-# Resize the data to 50% using CubicSpline
-n.resize_lite(0.5, eResampleAlg=3)
+# Smooth the data by resizing to 50% and to 200% using CubicSpline
+n.resize(0.5, eResampleAlg=3)
+n.resize(2.0, eResampleAlg=3)
 # make simple indexed image from 1st band with default colormap
 n.write_figure(oFileName + '02CubicSpline.png', clim='hist')
-# undo resize
-n.resize()
-
+# undo smoothing (undo two resizing)
+n.undo(2)
 
 # make image with map of the file location
 n.write_map(oFileName + '04_map.png')
@@ -124,6 +136,7 @@ n.export(oFileName + '06b.nc', bottomup=True)
 # create a GTiff file with one band (default driver is NetCDF)
 n.export_band(oFileName + '07.tif', bandID=1, driver='GTiff')
 
+n.crop(lonlim=[28, 29], latlim=[70.7, 71])
 # get array with watermask (landmask)
 # -- Get Nansat object with watermask
 wm = n.watermask()[1]
@@ -133,14 +146,55 @@ d = Domain(4326, "-te 27 70.3 31 71.5 -ts 300 300")
 n.reproject(d, 2)
 # -- Write image
 n.write_figure(oFileName + '08_pro.png', clim='hist')
+print n.vrt
+n.undo()
+print n.vrt
+
+# crop image using xOff, yOff, xSize, ySize
+n.crop(100, 110, 50, 60)
+n.write_figure(oFileName + '09_crop.png', clim='hist')
+n.undo()
+
+# crop image using lonlim, latlim
+n.crop(lonlim=[28, 29], latlim=[70.7, 71])
+
+# automatically reproject cropped image
+d = Domain(4326, ds=n.vrt.dataset)
+n.reproject(d)
+n.write_figure(oFileName + '09_crop_pro.png', clim='hist')
+# undo croping and reproject
+n.undo(100)
 
 # Get transect of the 1st and 2nd bands corresponding to the given points
-values, lonlat, pixlinCoord =n.get_transect(points=((29.287, 71.153), (29.275, 71.145), (29.210, 71.154)), transect=False, bandList=[1, 2])
+points=((29.287, 71.153),
+        (29.275, 71.145),
+        (29.210, 71.154))
+#import pdb; pdb.set_trace()
+values, lonlat, pixlinCoord = n.get_transect(points,
+                                             transect=False,
+                                             bandList=[1, 2])
 # print the results
 print '1stBandVal  2ndBandVal       pix/lin         lon/lat '
 for i in range (len(values[0])):
-    print '%6d %10d %13.2f /%6.2f  %7.2f /%6.2f' %(values[0][i], values[1][i], pixlinCoord[0][i], pixlinCoord[1][i], lonlat[0][i], lonlat[1][i])
+    print '%6d %10d %13.2f /%6.2f  %7.2f /%6.2f' % (values[0][i],
+                                                    values[1][i],
+                                                    pixlinCoord[0][i],
+                                                    pixlinCoord[1][i],
+                                                    lonlat[0][i],
+                                                    lonlat[1][i])
 print ''
+
+ogrObject = n.get_transect(points, returnOGR=True)
+ogrObject.export(oFileName + '_10_transect.shp')
+
+
+# export into THREDDS friendly file
+iFileName = os.path.join(iPath, 'stere.tif')
+n = Nansat(iFileName, logLevel=10)
+print n
+bands = {'L_469':{'scale': 10, 'type': '>f4'}}
+n.export2thredds(oFileName + 'thredds.nc', bands)
+
 
 print '\n***nansat_test completed successfully. Output files are found here:' + oFileName
 

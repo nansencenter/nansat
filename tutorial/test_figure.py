@@ -17,7 +17,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 import numpy as np
-import inspect, os
+import os
 
 from nansat import Nansat, Figure
 
@@ -44,23 +44,39 @@ This class has fllolowing methods:
 # Create a Nansat object (n)
 n = Nansat(iFileName)
 # get numpy array from the Nansat object
-array = n[1]
+array = n[2]
 
 # Create a Figure object (fig)
 fig = Figure(array)
 # Set minimum and maximum values
 fig.process(cmin=10, cmax=60)
 # Save the figure
-fig.save(oFileName+'01_clim.png')
+fig.save(oFileName + '01_clim.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
-# Compute min and max valuse from ratio
-clim = fig.clim_from_histogram(ratio=1.0)
+# Set minimum and maximum values and custom colormap
+fig.process(cmin=10, cmax=60, cmapName='obpg')
+# Save the figure
+fig.save(oFileName + '01_clim_obpg.png')
+
+# Create a Figure object (fig)
+fig = Figure(array)
+# Compute min and max valuse from histogram
+clim = fig.clim_from_histogram(ratio=0.7)
 # Set cmin and cmax values
 fig.process(cmin=clim[0], cmax=clim[1])
 # Save the figure
-fig.save(oFileName+'02_clim.png')
+fig.save(oFileName + '02_clim.png')
+
+# Create a Figure object (fig)
+fig = Figure(array)
+# Compute min and max valuse from histogram
+clim = fig.clim_from_histogram(ratio=0.7)
+# Set cmin and cmax values
+fig.process(cmin=10, cmax=60, logarithm=True, gamma=2)
+# Save the figure
+fig.save(oFileName + '03_logscale.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
@@ -68,16 +84,17 @@ fig = Figure(array)
 fig.process(cmin=10, cmax=60, legend=True, titleString='NANSAT figure_test',
          LEGEND_HEIGHT=0.3, fontSize=10)
 # Save the figure
-fig.save(oFileName+'03_title.png')
+fig.save(oFileName + '04_title.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
-# add logo to image to the lower left corner (make sure file is in the current folder)
+# add logo to image to the lower left corner
+# (make sure file is in the current folder)
 fig.process(cmin=10, cmax=60, logoFileName='nansat_logo_s.png',
             logoLocation=[10, -35], logoSize=[20, 20],
             legend=True, LEGEND_HEIGHT=0.3)
 # Save the figure
-fig.save(oFileName + '04_logo.png')
+fig.save(oFileName + '05_logo.png')
 
 # Create a Figure object (fig)
 fig = Figure(array)
@@ -87,7 +104,7 @@ lonGrid, latGrid = n.get_geolocation_grids()
 fig.process(cmin=10, cmax=60, latGrid=latGrid, lonGrid=lonGrid,
             latlonGridSpacing=10, latlonLabels=10)
 # save the fig
-fig.save(oFileName + '05_latlon.png', )
+fig.save(oFileName + '06_latlon.png', )
 
 # Create a Figure object (fig)
 fig = Figure(array)
@@ -95,13 +112,13 @@ fig = Figure(array)
 wm = n.watermask()
 # Get array from Nansat object. 0 - land, 1 - water
 wmArray = wm[1]
-# Compute min and max valuse from ratio
-clim = fig.clim_from_histogram(ratio=1.0)
-# Make figure with land overlay (gray color) and apply brightness gamma correction
-fig.process(cmin=clim[0], cmax=clim[1], mask_array=wmArray,
-               mask_lut={2: [128, 128, 128]}, logarithm=True, gamma=3)
+# Compute min and max valuse from ratio using non masked pixels only
+clim = fig.clim_from_histogram(ratio=0.8, mask_array=wmArray,
+                                          mask_lut={2: [128, 128, 128]})
+# Make figure with land overlay (gray) and apply brightness logarithm correction
+fig.process(cmin=clim[0], cmax=clim[1])
 # save the fig
-fig.save(oFileName + '06_land.png', )
+fig.save(oFileName + '07_land.png')
 
 # create 3D numpy array
 array = np.array([n[1], n[2], n[3]])
@@ -112,6 +129,6 @@ clim = fig.clim_from_histogram(ratio=0.9)
 # Set cmin and cmax values
 fig.process(cmin=clim[0], cmax=clim[1])
 # make RGB image from bands 1,2,3 with brightness correction
-fig.save(oFileName + '07_rgb.png', bands=[1,2,3])
+fig.save(oFileName + '08_rgb.png', bands=[1, 2, 3])
 
 print '\n***figure_test completed successfully. Output files are found here:' + oFileName
