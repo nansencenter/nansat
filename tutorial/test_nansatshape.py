@@ -19,8 +19,8 @@
 import os
 import numpy as np
 
-from nansat import Nansatshape
-from nansat.nansat_tools import latlongSRS
+from nansat.nansatshape import Nansatshape
+from nansat.nsr import NSR
 
 # input and output file names
 from testio import testio
@@ -38,7 +38,7 @@ Nansatshape support points
 
 '''
 # Create a nansatShape object with point geometry, lonlat spatial reference
-nansatOGR = Nansatshape(srs=latlongSRS)
+nansatOGR = Nansatshape(srs=NSR())
 
 # Create numpy array for coordinates of points
 coordinates = np.array([[5.3,  30.2, 116.4, 34.0],
