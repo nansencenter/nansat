@@ -5,17 +5,14 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
-from vrt import VRT
+
 import tarfile
+import warnings
 
-# import standard and additional libraries
-from nansat_tools import *
-
-try:
-    from osgeo import gdal
-except ImportError:
-    import gdal
-
+from nansat.tools import WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.vrt import VRT
+from nansat.node import Node
 
 class Mapper(VRT):
     ''' Mapper for high resolution band of LANDSAT8.tar.gz files'''
