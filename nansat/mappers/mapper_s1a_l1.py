@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	12.09.2014
-# Last modified:22.09.2014 17:00
+# Last modified:24.09.2014 13:21
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -59,6 +59,10 @@ class Mapper(VRT):
                         %(fileName,noiseFile[0]))
                 annotationXML = self.read_xml('/vsizip/%s/%s'
                         %(fileName,annotationFile[0]))
+            manifestFile = [fn for fn in zz.namelist() if \
+                        'manifest.safe' in fn]
+            manifestXML = self.read_xml('/vsizip/%s/%s'
+                        %(fileName,manifestFile[0]))
             zz.close()
 
         if not gdalDatasets:
@@ -81,9 +85,6 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalDatasets[0])
-
-        # set time
-        self._set_time(parse(metadata['TIFFTAG_DATETIME']))
 
         metaDict = []
         bandNumberDict = {}
@@ -344,6 +345,14 @@ class Mapper(VRT):
             self._create_band(src, dst)
             self.dataset.FlushCache()
 
+        # set time as acquisition start time
+        n = Node.create(manifestXML)
+        meta = n.node('metadataSection')
+        for nn in meta.children:
+            if nn.getAttribute('ID')==u'acquisitionPeriod':
+                self._set_time( parse( nn.node( 'metadataWrap' ).node(
+                    'xmlData' ).node( 'safe:acquisitionPeriod'
+                        )['safe:startTime']))
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)
