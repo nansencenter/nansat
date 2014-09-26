@@ -4,6 +4,7 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from pytz import UTC
 from dateutil.parser import parse
 
 from nansat.vrt import VRT
