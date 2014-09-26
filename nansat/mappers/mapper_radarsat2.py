@@ -163,9 +163,9 @@ class Mapper(VRT):
         lookVRT = lookVRT.get_resized_vrt(
                     gdalDataset.RasterXSize, gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
-        self.subVRTs = {'look_u_VRT': look_u_VRT,
-                        'look_v_VRT': look_v_VRT,
-                        'lookVRT': lookVRT}
+        self.subVRTs['look_u_VRT'] = look_u_VRT
+        self.subVRTs['look_v_VRT'] = look_v_VRT
+        self.subVRTs['lookVRT'] = lookVRT
 
         # Add band to full sized VRT
         lookFileName = self.subVRTs['lookVRT'].fileName

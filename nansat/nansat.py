@@ -245,10 +245,6 @@ class Nansat(Domain):
 
         self.vrt = self.vrt.get_super_vrt()
 
-        # create subVRTs as dict
-        if self.vrt.subVRTs is None:
-            self.vrt.subVRTs = {}
-
         # add the array band into self.vrt and get bandName
         for bi, bandVRT in enumerate(bandVRTs):
             params = parameters[bi]

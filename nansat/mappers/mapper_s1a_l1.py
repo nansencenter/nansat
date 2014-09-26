@@ -6,12 +6,13 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	12.09.2014
-# Last modified:24.09.2014 13:21
+# Last modified:26.09.2014 11:27
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
+import warnings
 
-import os, zipfile
+import os, glob, zipfile
 import numpy as np
 import scipy
 from dateutil.parser import parse
@@ -28,83 +29,159 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
 
-        gdalDatasets = []
-        mds_filenames = []
-        polarizations = []
         if zipfile.is_zipfile(fileName):
             zz = zipfile.PyZipFile(fileName)
-            mds = [fn for fn in zz.namelist() if 'measurement/s1a' in fn]
-            if not mds:
+            # Assuming the file names are consistent, the polarization
+            # dependent data should be sorted equally such that we can use the
+            # same indices consistently for all the following lists
+            # THIS IS NOT THE CASE...
+            mdsFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if
+                    'measurement/s1a' in fn]
+            if not mdsFiles:
                 raise WrongMapperError
-            for i,mm in enumerate(mds):
-                # Open zip file using VSI
-                mds_filenames.append('/vsizip/%s/%s' % (fileName, mm))
-                gdalDatasets.append(gdal.Open(mds_filenames[i]))
-
-                # read noise and calibration xml-files in folder annotation/calibration
-                dsPath, dsName = os.path.split(mm)
-                pol = dsName[11:13]
-                polarizations.append(pol.upper())
-                calFile = [fn for fn in zz.namelist() if \
-                        'annotation/calibration/calibration-s1a' in fn and \
-                        pol in fn]
-                noiseFile = [fn for fn in zz.namelist() if \
-                        'annotation/calibration/noise-s1a' in fn and \
-                        pol in fn]
-                annotationFile = [fn for fn in zz.namelist() if \
-                        'annotation/s1a' in fn and \
-                        pol in fn]
-                calXML = self.read_xml('/vsizip/%s/%s' %(fileName,calFile[0]))
-                noiseXML = self.read_xml('/vsizip/%s/%s'
-                        %(fileName,noiseFile[0]))
-                annotationXML = self.read_xml('/vsizip/%s/%s'
-                        %(fileName,annotationFile[0]))
-            manifestFile = [fn for fn in zz.namelist() if \
+            calFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if \
+                    'annotation/calibration/calibration-s1a' in fn]
+            noiseFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if \
+                    'annotation/calibration/noise-s1a' in fn]
+            annotationFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if \
+                    'annotation/s1a' in fn]
+            manifestFile = ['/vsizip/%s/%s'%(fileName,fn) for fn in zz.namelist() if \
                         'manifest.safe' in fn]
-            manifestXML = self.read_xml('/vsizip/%s/%s'
-                        %(fileName,manifestFile[0]))
             zz.close()
+        else:
+            mdsFiles = glob.glob('%s/measurement/s1a*'%fileName)
+            if not mdsFiles:
+                raise WrongMapperError
+            calFiles = glob.glob('%s/annotation/calibration/calibration-s1a*'%fileName)
+            noiseFiles = glob.glob('%s/annotation/calibration/noise-s1a*'%fileName)
+            annotationFiles = glob.glob('%s/annotation/s1a*'%fileName)
+            manifestFile = glob.glob('%s/manifest.safe'%fileName)
+
+        mdsDict = {}
+        for mds in mdsFiles:
+            mdsDict[int(os.path.splitext(os.path.basename(mds
+                ))[0].split('-')[-1:][0])] = mds
+        calDict = {}
+        for ff in calFiles:
+            calDict[int(os.path.splitext(os.path.basename(ff
+                ))[0].split('-')[-1:][0])] = ff
+        noiseDict = {}
+        for ff in noiseFiles:
+            noiseDict[int(os.path.splitext(os.path.basename(ff
+                ))[0].split('-')[-1:][0])] = ff
+        annotationDict = {}
+        for ff in annotationFiles:
+            annotationDict[int(os.path.splitext(os.path.basename(ff
+                ))[0].split('-')[-1:][0])] = ff
+
+        manifestXML = self.read_xml(manifestFile[0])
+
+        gdalDatasets = {}
+        for key in mdsDict.keys():
+            # Open data files 
+            gdalDatasets[key] = gdal.Open(mdsDict[key])
 
         if not gdalDatasets:
             raise WrongMapperError('No Sentinel-1 datasets found')
 
         # Check metadata to confirm it is Sentinel-1 L1
-        metadata = gdalDatasets[0].GetMetadata()
+        metadata = gdalDatasets[1].GetMetadata()
         if not 'TIFFTAG_IMAGEDESCRIPTION' in metadata.keys():
             raise WrongMapperError
         if not 'Sentinel-1' in metadata['TIFFTAG_IMAGEDESCRIPTION'] \
                 and not 'L1' in metadata['TIFFTAG_IMAGEDESCRIPTION']:
             raise WrongMapperError
 
-        ''' Other metadata:
-
-            - incidence angles, pass direction + more in annotation folder
-            - the pass direction can be found in manifest.safe as s1:pass
-
-        '''
+        warnings.warn('Sentinel-1 level-1 mapper is not yet adapted to ' \
+                'complex data. In addition, the band names should be ' \
+                'updated for multi-swath data - and there might be other ' \
+                'issues.')
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDatasets[0])
+        VRT.__init__(self, gdalDatasets[1])
+
+        # Read annotation, noise and calibration xml-files
+        pol = {}
+        for key in annotationDict.keys():
+            xml = Node.create(self.read_xml(annotationDict[key]))
+            pol[key] = xml.node('product').node('adsHeader'
+                )['polarisation'].upper()
+            if key==1:
+                # Get incidence angle
+                pi = xml.node('generalAnnotation').node('productInformation')
+                self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(pi['pass']))
+                # Incidence angles are found in
+                #<geolocationGrid>
+                #    <geolocationGridPointList count="#">
+                #          <geolocationGridPoint>
+                geolocationGridPointList = xml.node('geolocationGrid').children[0]
+                X = []
+                Y = []
+                lon = []
+                lat = []
+                inc = []
+                for gridPoint in geolocationGridPointList.children:
+                    X.append(int(gridPoint['pixel']))
+                    Y.append(int(gridPoint['line']))
+                    lon.append(float(gridPoint['longitude']))
+                    lat.append(float(gridPoint['latitude']))
+                    inc.append(float(gridPoint['incidenceAngle']))
+
+                X = np.unique(X)
+                Y = np.unique(Y)
+
+                lon = np.array(lon).reshape(len(Y), len(X))
+                lat = np.array(lat).reshape(len(Y), len(X))
+                inc = np.array(inc).reshape(len(Y), len(X))
+
+                incVRT = VRT(array=inc, lat=lat, lon=lon)
+                incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
+                        self.dataset.RasterYSize, eResampleAlg=1)
+                self.subVRTs['incVRT'] = incVRT
+        for key in calDict.keys():
+            xml = self.read_xml(calDict[key])
+            calibration_LUT_VRTs, longitude, latitude  = self.get_LUT_VRTs(xml,
+                    'calibrationVectorList', ['sigmaNought', 'betaNought',
+                        'gamma', 'dn'])
+            self.subVRTs['LUT_sigmaNought_VRT_'+pol[key]] = \
+                calibration_LUT_VRTs['sigmaNought'].get_resized_vrt(
+                self.dataset.RasterXSize,
+                self.dataset.RasterYSize, eResampleAlg=1)
+            self.subVRTs['LUT_betaNought_VRT_'+pol[key]] = \
+                calibration_LUT_VRTs['betaNought'].get_resized_vrt(
+                self.dataset.RasterXSize,
+                self.dataset.RasterYSize, eResampleAlg=1)
+            self.subVRTs['LUT_gamma_VRT'] = calibration_LUT_VRTs['gamma']
+            self.subVRTs['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
+        for key in noiseDict.keys():
+            xml = self.read_xml(noiseDict[key])
+            noise_LUT_VRT = self.get_LUT_VRTs(xml,
+                'noiseVectorList',
+                ['noiseLut'])[0]
+            self.subVRTs['LUT_noise_VRT_'+pol[key]] = \
+                    noise_LUT_VRT['noiseLut'].get_resized_vrt(
+                            self.dataset.RasterXSize, self.dataset.RasterYSize,
+                            eResampleAlg=1)
 
         metaDict = []
         bandNumberDict = {}
-        for i,dataset in enumerate(gdalDatasets):
-            dsPath, dsName = os.path.split(mds[i])
-            suffix = dsName[11:13].upper() # polarization
-            name = 'DN_%s' %suffix
+        bnmax = 0
+        for key in gdalDatasets.keys():
+            dsPath, dsName = os.path.split(mdsDict[key])
+            name = 'DN_%s' %pol[key]
             # A dictionary of band numbers is needed for the pixel function
             # bands further down. This is not the best solution. It would be
             # better to have a function in VRT that returns the number given a
             # band name. This function exists in Nansat but could perhaps be
             # moved to VRT? The existing nansat function could just call the
             # VRT one...
-            bandNumberDict[name] = i + 1
+            bandNumberDict[name] = bnmax + 1
             bnmax = bandNumberDict[name]
-            band = dataset.GetRasterBand(1)
+            band = gdalDatasets[key].GetRasterBand(1)
             dtype = band.DataType
             metaDict.append({
                 'src': {
-                    'SourceFilename': mds_filenames[i],
+                    'SourceFilename': mdsDict[key],
                     'SourceBand': 1,
                     'DataType': dtype,
                 },
@@ -131,15 +208,6 @@ class Mapper(VRT):
         See
         https://sentinel.esa.int/web/sentinel/sentinel-1-sar-wiki/-/wiki/Sentinel%20One/Application+of+Radiometric+Calibration+LUT
         '''
-        # Get calibration data
-        calibration_LUT_VRTs, longitude, latitude  = self.get_LUT_VRTs(calXML,
-                'calibrationVectorList', 
-                ['sigmaNought', 'betaNought', 'gamma', 'dn'])
-        # Get noise data
-        noise_LUT_VRTs = self.get_LUT_VRTs(noiseXML,
-                'noiseVectorList',
-                ['noiseLut'])[0]
-
         # Get look direction
         sat_heading = initial_bearing(longitude[:-1,:], latitude[:-1,:],
                 longitude[1:,:], latitude[1:,:])
@@ -161,57 +229,42 @@ class Mapper(VRT):
         # Blow up to full size
         lookVRT = lookVRT.get_resized_vrt(self.dataset.RasterXSize,
                 self.dataset.RasterYSize, eResampleAlg=1)
-        LUT_sigmaNought_VRT = \
-                calibration_LUT_VRTs['sigmaNought'].get_resized_vrt(
-                self.dataset.RasterXSize,
-                self.dataset.RasterYSize, eResampleAlg=1)
-        LUT_betaNought_VRT = \
-                calibration_LUT_VRTs['betaNought'].get_resized_vrt(
-                self.dataset.RasterXSize,
-                self.dataset.RasterYSize, eResampleAlg=1)
-        LUT_noise_VRT = noise_LUT_VRTs['noiseLut'].get_resized_vrt(
-                self.dataset.RasterXSize,
-                self.dataset.RasterYSize, eResampleAlg=1)
 
         # Store VRTs so that they are accessible later
-        self.subVRTs = {
-                'look_u_VRT': look_u_VRT,
-                'look_v_VRT': look_v_VRT,
-                'lookVRT': lookVRT,
-                'LUT_sigmaNought_VRT': LUT_sigmaNought_VRT,
-                'LUT_betaNought_VRT': LUT_betaNought_VRT,
-                'LUT_gamma_VRT': calibration_LUT_VRTs['gamma'],
-                'LUT_dn_VRT': calibration_LUT_VRTs['dn'],
-                'LUT_noise_VRT': LUT_noise_VRT,
-            }
+        self.subVRTs['look_u_VRT'] = look_u_VRT
+        self.subVRTs['look_v_VRT'] = look_v_VRT
+        self.subVRTs['lookVRT'] = lookVRT
 
         metaDict = []
-        # Add bands to full sized VRT
-        name = 'LUT_sigmaNought'
-        bandNumberDict[name] = bnmax+1
-        bnmax = bandNumberDict[name]
-        metaDict.append({
-            'src': {
-                'SourceFilename': self.subVRTs['LUT_sigmaNought_VRT'].fileName,
-                'SourceBand': 1
-            },
-            'dst': {
-                'name': name
-            }
-        })
-        name = 'LUT_noise'
-        bandNumberDict[name] = bnmax+1
-        bnmax = bandNumberDict[name]
-        metaDict.append({
-            'src': {
-                'SourceFilename': self.subVRTs['LUT_noise_VRT'].fileName,
-                'SourceBand': 1
-            },
-            'dst': {
-                'name': name
-            }
-        })
-        name = 'look_direction'
+        # Add bands to full size VRT
+        for key in pol:
+            name = 'LUT_sigmaNought_%s'%pol[key]
+            bandNumberDict[name] = bnmax+1
+            bnmax = bandNumberDict[name]
+            metaDict.append({
+                'src': {
+                    'SourceFilename': \
+                        self.subVRTs['LUT_sigmaNought_VRT_'+pol[key]].fileName, 
+                    'SourceBand': 1
+                },
+                'dst': {
+                    'name': name
+                }
+            })
+            name = 'LUT_noise_%s'%pol[key]
+            bandNumberDict[name] = bnmax+1
+            bnmax = bandNumberDict[name]
+            metaDict.append({
+                'src': {
+                    'SourceFilename': self.subVRTs['LUT_noise_VRT_'+pol[key]].fileName,
+                    'SourceBand': 1
+                },
+                'dst': {
+                    'name': name
+                }
+            })
+
+        name = 'SAR_look_direction'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
         metaDict.append({
@@ -224,88 +277,54 @@ class Mapper(VRT):
                 'name': name
             }
         })
-        for i,dataset in enumerate(gdalDatasets):
-            dsPath, dsName = os.path.split(mds[i])
-            suffix = dsName[11:13].upper() # polarization
-            name = 'sigma0_'+suffix
+
+        for key in gdalDatasets.keys():
+            dsPath, dsName = os.path.split(mdsDict[key])
+            name = 'sigma0_%s'%pol[key]
             bandNumberDict[name] = bnmax+1
             bnmax = bandNumberDict[name]
             metaDict.append({
                 'src': [{
                     'SourceFilename': self.fileName,
-                    'SourceBand': bandNumberDict['DN_%s' %suffix],
+                    'SourceBand': bandNumberDict['DN_%s' %pol[key]],
                 },{
-                    'SourceFilename': self.subVRTs['LUT_noise_VRT'].fileName,
+                    'SourceFilename': self.subVRTs['LUT_noise_VRT_%s'%pol[key]].fileName,
                     'SourceBand': 1
                 },{
-                    'SourceFilename': self.subVRTs['LUT_sigmaNought_VRT'].fileName,
+                    'SourceFilename': \
+                        self.subVRTs['LUT_sigmaNought_VRT_%s'%pol[key]].fileName,
                     'SourceBand': 1
                 }],
                 'dst': {
                     'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                     'PixelFunctionType': 'Sentinel1Calibration',
-                    'polarization': suffix,
-                    'suffix': suffix,
+                    'polarization': pol[key],
+                    'suffix': pol[key],
                 },
             })
-            name = 'beta0_'+suffix
+            name = 'beta0_%s'%pol[key]
             bandNumberDict[name] = bnmax+1
             bnmax = bandNumberDict[name]
             metaDict.append({
                 'src': [{
                     'SourceFilename': self.fileName,
-                    'SourceBand': bandNumberDict['DN_%s' %suffix],
+                    'SourceBand': bandNumberDict['DN_%s' %pol[key]],
                 },{
-                    'SourceFilename': self.subVRTs['LUT_noise_VRT'].fileName,
+                    'SourceFilename': self.subVRTs['LUT_noise_VRT_%s'%pol[key]].fileName,
                     'SourceBand': 1
                 },{
-                    'SourceFilename': self.subVRTs['LUT_betaNought_VRT'].fileName,
+                    'SourceFilename': self.subVRTs['LUT_betaNought_VRT_%s'%pol[key]].fileName,
                     'SourceBand': 1
                 }],
                 'dst': {
                     'wkv': 'radar_brightness_coefficient',
                     'PixelFunctionType': 'Sentinel1Calibration',
-                    'polarization': suffix,
-                    'suffix': suffix,
+                    'polarization': pol[key],
+                    'suffix': pol[key],
                 },
             })
 
         self._create_bands(metaDict)
-
-        # Get incidence angle
-        self.n = Node.create(annotationXML)
-        n = Node.create(annotationXML)
-        ga = n.node('generalAnnotation')
-        pi = ga.node('productInformation')
-        self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(pi['pass']))
-        # Incidence angles are found in
-        #<geolocationGrid>
-        #    <geolocationGridPointList count="#">
-        #          <geolocationGridPoint>
-        geolocationGridPointList = n.node('geolocationGrid').children[0]
-        X = []
-        Y = []
-        lon = []
-        lat = []
-        inc = []
-        for gridPoint in geolocationGridPointList.children:
-            X.append(int(gridPoint['pixel']))
-            Y.append(int(gridPoint['line']))
-            lon.append(float(gridPoint['longitude']))
-            lat.append(float(gridPoint['latitude']))
-            inc.append(float(gridPoint['incidenceAngle']))
-
-        X = np.unique(X)
-        Y = np.unique(Y)
-
-        lon = np.array(lon).reshape(len(Y), len(X))
-        lat = np.array(lat).reshape(len(Y), len(X))
-        inc = np.array(inc).reshape(len(Y), len(X))
-
-        incVRT = VRT(array=inc, lat=lat, lon=lon)
-        incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
-                self.dataset.RasterYSize, eResampleAlg=1)
-        self.subVRTs['incVRT'] = incVRT
 
         # Add incidence angle as band
         name = 'incidence_angle'
@@ -321,7 +340,8 @@ class Mapper(VRT):
         self.dataset.FlushCache()
 
         # Add sigma0_VV
-        if 'VV' not in polarizations and 'HH' in polarizations:
+        pp = [pol[key] for key in pol]
+        if 'VV' not in pp and 'HH' in pp:
             name = 'sigma0_VV'
             bandNumberDict[name] = bnmax+1
             bnmax = bandNumberDict[name]
@@ -329,10 +349,10 @@ class Mapper(VRT):
                 'SourceFilename': self.fileName,
                 'SourceBand': bandNumberDict['DN_HH'],
                 },{
-                'SourceFilename': self.subVRTs['LUT_noise_VRT'].fileName,
+                'SourceFilename': self.subVRTs['LUT_noise_VRT_HH'].fileName,
                 'SourceBand': 1
                 },{
-                'SourceFilename': self.subVRTs['LUT_sigmaNought_VRT'].fileName,
+                'SourceFilename': self.subVRTs['LUT_sigmaNought_VRT_HH'].fileName,
                 'SourceBand': 1,
                 },{
                 'SourceFilename': self.subVRTs['incVRT'].fileName,
