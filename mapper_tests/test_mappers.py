@@ -17,13 +17,13 @@ import numpy as np
 
 from nansat import Nansat, Domain
 from nansat.nansat import _import_mappers
-import nansat_test_archive as tna
+import mapper_test_archive as mta
 
 nansatMappers = _import_mappers()
 
 class MapperAsterL1aTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noAsterL1aData:
             raise ValueError('No test data available')
 
@@ -36,7 +36,7 @@ class MapperAsterL1aTest(unittest.TestCase):
 
 class MapperHirlamTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noHirlamData:
             raise ValueError('No test data available')
 
@@ -49,12 +49,12 @@ class MapperHirlamTest(unittest.TestCase):
 
 class MapperCosmoskymedTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noCosmoskymedData:
             raise ValueError('No test data available')
 
     # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(tna.TestData().noCosmoskymedData,
+    @unittest.skipIf(mta.TestData().noCosmoskymedData,
             "No Cosmo-Skymed data available (this is proprietary and cannot be shared)")
     def test_mapper_cosmoskymed(self):
         print self.test_data.cosmoskymed[0]
@@ -65,7 +65,7 @@ class MapperCosmoskymedTest(unittest.TestCase):
 
 class MapperLandsatTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noLandsatData:
             raise ValueError('No test data available')
 
@@ -78,7 +78,7 @@ class MapperLandsatTest(unittest.TestCase):
 
 class MapperMeris2Test(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noMerisData:
             raise ValueError('No test data available')
 
@@ -91,7 +91,7 @@ class MapperMeris2Test(unittest.TestCase):
 
 class MapperModisL1Test(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noModisL1Data:
             raise ValueError('No test data available')
 
@@ -104,7 +104,7 @@ class MapperModisL1Test(unittest.TestCase):
 
 class MapperNcepTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noNcepData:
             raise ValueError('No test data available')
 
@@ -117,10 +117,10 @@ class MapperNcepTest(unittest.TestCase):
 
 class MapperRadarsat2Test(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
 
     # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(tna.TestData().noRadarsat2Data,
+    @unittest.skipIf(mta.TestData().noRadarsat2Data,
             "No Radarsat-2 data available (this is proprietary and cannot be shared)")
     def test_mapper_radarsat2(self):
         print self.test_data.radarsat2[0]
@@ -131,7 +131,7 @@ class MapperRadarsat2Test(unittest.TestCase):
 
 class MapperGenericTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noGenericData:
             raise ValueError('No test data available')
 
@@ -144,7 +144,7 @@ class MapperGenericTest(unittest.TestCase):
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
+        self.test_data = mta.TestData()
         if self.test_data.noAsarData:
             raise ValueError('No test data available')
 
