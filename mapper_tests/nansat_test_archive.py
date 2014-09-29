@@ -3,9 +3,9 @@
 # Purpose:      To test nansat
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
-# Created:	18.06.2014
+# Created:  18.06.2014
 # Last modified:08.07.2014 11:03
 # Copyright:    (c) NERSC
 # License:
@@ -47,238 +47,238 @@ class TestData(object):
 
     def __init__(self):
         # OBS: SAR and wind data must be added in pairs for each test
-        self.get_asar_agulhas()
+        self.get_asar()
         if not self.asar:
             self.noAsarData = True
 
-        self.get_asterL1a_agulhas()
+        self.get_asterL1a()
         if not self.asterL1a:
             self.noAsterL1aData = True
 
-        self.get_cosmoskymed_agulhas()
+        self.get_cosmoskymed()
         if not self.cosmoskymed:
             self.noCosmoskymedData = True
 
-        self.get_hirlam_agulhas()
+        self.get_hirlam()
         if not self.hirlam:
             self.noHirlamData = True
 
-        self.get_landsat_agulhas()
+        self.get_landsat()
         if not self.landsat:
             self.noLandsatData = True
 
-        self.get_meris_agulhas()
+        self.get_meris()
         if not self.meris:
             self.noMerisData = True
 
-        self.get_modisL1_agulhas()
+        self.get_modisL1()
         if not self.modisL1:
             self.noModisL1Data = True
 
-        self.get_ncep_agulhas()
+        self.get_ncep()
         if not self.ncep:
             self.noNcepData = True
 
-        self.get_radarsat2_agulhas()
+        self.get_radarsat2()
         if not self.radarsat2:
             self.noRadarsat2Data = True
 
-        self.get_generic_agulhas()
+        self.get_generic()
         if not self.generic:
             self.noGenericData = True
 
 
-    def get_asar_agulhas(self):
+    def get_asar(self):
         '''
             Download and assign online datasets
         '''
-        asar_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_WSM_1PNPDE20120327_205532_000002143113_00100_52700_6903.N1'
-        fname = os.path.basename(asar_agulhas_url)
+        asar_url = 'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_WSM_1PNPDE20120327_205532_000002143113_00100_52700_6903.N1'
+        fname = os.path.basename(asar_url)
 
-        asar_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(asar_agulhas):
+        asar = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(asar):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + asar_agulhas + ' ' + asar_agulhas_url )
+            os.system('curl -so ' + asar + ' ' + asar_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(asar_agulhas):
-            asar_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(asar):
+            asar = None
+            warnings.warn( "Could not access ASAR on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.asar.append(asar_agulhas)
+            self.asar.append(asar)
 
-    def get_asterL1a_agulhas(self):
-        asterL1a_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/aster_l1a/AST_L1A_00306192003124632_20120731044546_8073.hdf'
-        fname = os.path.basename(asterL1a_agulhas_url)
+    def get_asterL1a(self):
+        asterL1a_url = 'ftp://ftp.nersc.no/pub/python_test_data/aster_l1a/AST_L1A_00306192003124632_20120731044546_8073.hdf'
+        fname = os.path.basename(asterL1a_url)
 
-        asterL1a_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(asterL1a_agulhas):
+        asterL1a = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(asterL1a):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + asterL1a_agulhas + ' ' + asterL1a_agulhas_url )
+            os.system('curl -so ' + asterL1a + ' ' + asterL1a_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(asterL1a_agulhas):
-            asterL1a_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(asterL1a):
+            asterL1a = None
+            warnings.warn( "Could not access ASTER L1A on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.asterL1a.append(asterL1a_agulhas)
+            self.asterL1a.append(asterL1a)
 
-    def get_cosmoskymed_agulhas(self):
-        cosmoskymed_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/cosmoskymed/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5'
-        fname = os.path.basename(cosmoskymed_agulhas_url)
+    def get_cosmoskymed(self):
+        cosmoskymed_url = 'ftp://ftp.nersc.no/pub/python_test_data/cosmoskymed/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5'
+        fname = os.path.basename(cosmoskymed_url)
 
-        cosmoskymed_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(cosmoskymed_agulhas):
+        cosmoskymed = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(cosmoskymed):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + cosmoskymed_agulhas + ' ' + cosmoskymed_agulhas_url )
+            os.system('curl -so ' + cosmoskymed + ' ' + cosmoskymed_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(cosmoskymed_agulhas):
-            cosmoskymed_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(cosmoskymed):
+            cosmoskymed = None
+            warnings.warn( "Could not access CosmoSkyMed on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.cosmoskymed.append(cosmoskymed_agulhas)
+            self.cosmoskymed.append(cosmoskymed)
 
-    def get_hirlam_agulhas(self):
-        hirlam_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/hirlam/DNMI-NEurope.grb'
-        fname = os.path.basename(hirlam_agulhas_url)
+    def get_hirlam(self):
+        hirlam_url = 'ftp://ftp.nersc.no/pub/python_test_data/hirlam/DNMI-NEurope.grb'
+        fname = os.path.basename(hirlam_url)
 
-        hirlam_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(hirlam_agulhas):
+        hirlam = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(hirlam):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + hirlam_agulhas + ' ' + hirlam_agulhas_url )
+            os.system('curl -so ' + hirlam + ' ' + hirlam_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(hirlam_agulhas):
-            hirlam_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(hirlam):
+            hirlam = None
+            warnings.warn( "Could not access HIRLAM on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.hirlam.append(hirlam_agulhas)
+            self.hirlam.append(hirlam)
 
-    def get_landsat_agulhas(self):
-        landsat_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz'
-        fname = os.path.basename(landsat_agulhas_url)
+    def get_landsat(self):
+        landsat_url = 'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz'
+        fname = os.path.basename(landsat_url)
 
-        landsat_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(landsat_agulhas):
+        landsat = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(landsat):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + landsat_agulhas + ' ' + landsat_agulhas_url )
+            os.system('curl -so ' + landsat + ' ' + landsat_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(landsat_agulhas):
-            landsat_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(landsat):
+            landsat = None
+            warnings.warn( "Could not access Landsat ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.landsat.append(landsat_agulhas)
+            self.landsat.append(landsat)
 
-    def get_meris_agulhas(self):
-        meris_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/meris/MER_FRS_1PNUPA20100916_105248_000001012093_00037_44680_8756.N1'
-        fname = os.path.basename(meris_agulhas_url)
+    def get_meris(self):
+        meris_url = 'ftp://ftp.nersc.no/pub/python_test_data/meris/MER_FRS_1PNUPA20100916_105248_000001012093_00037_44680_8756.N1'
+        fname = os.path.basename(meris_url)
 
-        meris_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(meris_agulhas):
+        meris = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(meris):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + meris_agulhas + ' ' + meris_agulhas_url )
+            os.system('curl -so ' + meris + ' ' + meris_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(meris_agulhas):
-            meris_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(meris):
+            meris = None
+            warnings.warn( "Could not access MERIS ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.meris.append(meris_agulhas)
+            self.meris.append(meris)
 
-    def get_modisL1_agulhas(self):
-        modisL1_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/modis_l1/MOD021KM.A2010105.2120.005.2010106075131.hdf'
-        fname = os.path.basename(modisL1_agulhas_url)
+    def get_modisL1(self):
+        modisL1_url = 'ftp://ftp.nersc.no/pub/python_test_data/modis_l1/MOD021KM.A2010105.2120.005.2010106075131.hdf'
+        fname = os.path.basename(modisL1_url)
 
-        modisL1_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(modisL1_agulhas):
+        modisL1 = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(modisL1):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + modisL1_agulhas + ' ' + modisL1_agulhas_url )
+            os.system('curl -so ' + modisL1 + ' ' + modisL1_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(modisL1_agulhas):
-            modisL1_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(modisL1):
+            modisL1 = None
+            warnings.warn( "Could not access MODIS L1B ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.modisL1.append(modisL1_agulhas)
+            self.modisL1.append(modisL1)
 
-    def get_ncep_agulhas(self):
-        ncep_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs/gfs20120328/gfs.t00z.master.grbf00'
-        fname = os.path.basename(ncep_agulhas_url)
+    def get_ncep(self):
+        ncep_url = 'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs/gfs20120328/gfs.t00z.master.grbf00'
+        fname = os.path.basename(ncep_url)
 
-        ncep_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(ncep_agulhas):
+        ncep = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(ncep):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + ncep_agulhas + ' ' + ncep_agulhas_url )
+            os.system('curl -so ' + ncep + ' ' + ncep_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(ncep_agulhas):
-            ncep_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(ncep):
+            ncep = None
+            warnings.warn( "Could not access NCEP on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.ncep.append(ncep_agulhas)
+            self.ncep.append(ncep)
 
-    def get_radarsat2_agulhas(self):
-        radarsat2_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20140716_061819_0076_SCWA_HHHV_SGF_336560_2501_9900957.zip'
-        fname = os.path.basename(radarsat2_agulhas_url)
+    def get_radarsat2(self):
+        radarsat2_url = 'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20140716_061819_0076_SCWA_HHHV_SGF_336560_2501_9900957.zip'
+        fname = os.path.basename(radarsat2_url)
 
-        radarsat2_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(radarsat2_agulhas):
+        radarsat2 = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(radarsat2):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + radarsat2_agulhas + ' ' + radarsat2_agulhas_url )
+            os.system('curl -so ' + radarsat2 + ' ' + radarsat2_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(radarsat2_agulhas):
-            radarsat2_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(radarsat2):
+            radarsat2 = None
+            warnings.warn( "Could not access Radarsat2 on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.radarsat2.append(radarsat2_agulhas)
+            self.radarsat2.append(radarsat2)
 
-    def get_generic_agulhas(self):
-        generic_agulhas_url = 'ftp://ftp.nersc.no/pub/python_test_data/generic/mapperTest_generic.tif'
-        fname = os.path.basename(generic_agulhas_url)
+    def get_generic(self):
+        generic_url = 'ftp://ftp.nersc.no/pub/python_test_data/generic/mapperTest_generic.tif'
+        fname = os.path.basename(generic_url)
 
-        generic_agulhas = os.path.join(dirname_test_data, fname)
-        if not os.path.exists(generic_agulhas):
+        generic = os.path.join(dirname_test_data, fname)
+        if not os.path.exists(generic):
             print "Downloading test data"
             start = timeit.timeit()
-            os.system('curl -so ' + generic_agulhas + ' ' + generic_agulhas_url )
+            os.system('curl -so ' + generic + ' ' + generic_url )
             end = timeit.timeit()
             print end-start
 
-        if not os.path.isfile(generic_agulhas):
-            generic_agulhas = None
-            warnings.warn( "Could not access ftp-site with test data - contact " \
+        if not os.path.isfile(generic):
+            generic = None
+            warnings.warn( "Could not access Generic data on ftp-site with test data - contact " \
                     "morten.stette@nersc.no to get the ftp-server at NERSC restarted" )
         else:
-            self.generic.append(generic_agulhas)
+            self.generic.append(generic)
 
 
