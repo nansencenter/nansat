@@ -66,7 +66,7 @@ class DomainTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
         d.write_kml(kmlFileName=tmpfilename)
 
-        self.assertEqual(os.path.exists(tmpfilename), True)
+        self.assertTrue(os.path.exists(tmpfilename))
 
     def test_get_geolocation_grids(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -91,28 +91,28 @@ class DomainTest(unittest.TestCase):
         bwkt = d.get_border_wkt()
 
         self.assertEqual(type(bwkt), str)
-        self.assertEqual('POLYGON' in bwkt, True)
+        self.assertTrue('POLYGON' in bwkt)
 
     def test_get_border_geometry(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         geom = d.get_border_geometry()
 
         self.assertEqual(type(geom), ogr.Geometry)
-        self.assertEqual(geom.IsValid(), True)
+        self.assertTrue(geom.IsValid())
 
     def test_get_corners(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         lon, lat = d.get_corners()
 
-        self.assertEqual(all(lon - [ 25.,  25.,  35.,  35.] < 0.01), True)
-        self.assertEqual(all(lat - [ 72.,  70.,  72.,  70.] < 0.01), True)
+        self.assertTrue(all(lon - [ 25.,  25.,  35.,  35.] < 0.01))
+        self.assertTrue(all(lat - [ 72.,  70.,  72.,  70.] < 0.01))
 
     def test_get_pixelsize_meters(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         x, y = d.get_pixelsize_meters()
 
-        self.assertEqual(x - 444 < 1, True)
-        self.assertEqual(y - 723 < 1, True)
+        self.assertTrue(x - 444 < 1)
+        self.assertTrue(y - 723 < 1)
 
     def test_transform_points(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -125,8 +125,8 @@ class DomainTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         x, y = d.transform_points([25, 26, 27], [70, 71, 72], 1)
 
-        self.assertEqual(all(np.round(x) == [0, 50, 100]), True)
-        self.assertEqual(all(np.round(y) == [500, 250, 0]), True)
+        self.assertTrue(all(np.round(x) == [0, 50, 100]))
+        self.assertTrue(all(np.round(y) == [500, 250, 0]))
 
     def test_upwards_azimuth_direction(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -152,7 +152,7 @@ class DomainTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
         d.write_map(tmpfilename)
 
-        self.assertEqual(os.path.exists(tmpfilename), True)
+        self.assertTrue(os.path.exists(tmpfilename))
         i = Image.open(tmpfilename)
         i.verify()
         self.assertEqual(i.info['dpi'], (50, 50))
@@ -162,14 +162,16 @@ class DomainTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map_dpi100.png')
         d.write_map(tmpfilename, dpi=100)
 
-        self.assertEqual(os.path.exists(tmpfilename), True)
+        self.assertTrue(os.path.exists(tmpfilename))
         i = Image.open(tmpfilename)
         i.verify()
         self.assertEqual(i.info['dpi'], (100, 100))
 
-    def tearDown(self):
-        # if any test plots are created, they could be deleted here
-        pass
-        #tmpfiles = glob.glob(os.path.join(self.data_path, 'temp_domain*'))
-        #for tmpfile in tmpfiles:
-        #    os.remove(tmpfile)
+    def test_reproject_GCPs(self):
+        ds = gdal.Open(self.test_file)
+        d = Domain(ds=ds)
+        d.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
+        gcp = d.vrt.dataset.GetGCPs()[0]
+
+        self.assertTrue(gcp.GCPX > 636161)
+        self.assertTrue(gcp.GCPY < -288344)
