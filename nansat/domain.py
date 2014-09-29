@@ -25,12 +25,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 
-from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr
+from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
-class Domain():
+class Domain(object):
     '''Container for geographical reference of a raster
 
     A Domain object describes all attributes of geographical

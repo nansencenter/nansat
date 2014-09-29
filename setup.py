@@ -151,6 +151,12 @@ def run_setup(skip_compile):
                           extra_link_args=extra_link_args)
             ])
 
+
+    # remove nansat_tests from installed packages
+    packages = find_packages()
+    if 'mapper_tests' in packages:
+        packages.remove('mapper_tests')
+
     setup(
         name=NAME,
         version=VERSION,
@@ -165,10 +171,10 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages= find_packages(),
-        package_data={NAME: ['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
-        entry_points = {
-            'console_scripts': [
+        packages=packages,
+        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl', 'tests/data/*']},
+        entry_points={
+                'console_scripts': [
                 'nansatinfo = nansat.cli.nansatinfo:main',
                 'nansat_add_coastline = nansat.cli.nansat_add_coastline:main',
                 'nansat_geotiffimage = nansat.cli.nansat_geotiffimage:main',
