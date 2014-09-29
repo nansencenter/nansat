@@ -6,3 +6,5 @@ test_data/
 build/
 dist/
 nansat.egg-info/
+.project
+.pydevproject
