@@ -29,27 +29,27 @@ class NansatTest(unittest.TestCase):
             raise ValueError('No test data available')
 
     def test_resize_by_pixelsize(self):
-        n = Nansat(self.test_data)
+        n = Nansat(self.test_data, logLevel=40)
         n.resize(pixelsize=500, eResampleAlg=1)
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_factor(self):
-        n = Nansat(self.test_data)
+        n = Nansat(self.test_data, logLevel=40)
         n.resize(0.5, eResampleAlg=1)
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_width(self):
-        n = Nansat(self.test_data)
+        n = Nansat(self.test_data, logLevel=40)
         n.resize(width=100, eResampleAlg=1)
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_height(self):
-        n = Nansat(self.test_data)
+        n = Nansat(self.test_data, logLevel=40)
         n.resize(height=500, eResampleAlg=1)
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_reproject(self):
-        n = Nansat(self.test_data)
+        n = Nansat(self.test_data, logLevel=40)
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-lle 15 -35 35 -25 -ts 500 500")
         n.reproject(d)
