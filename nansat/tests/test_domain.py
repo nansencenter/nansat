@@ -1,14 +1,14 @@
 #-------------------------------------------------------------------------------
-# Name:         test_nansat.py
-# Purpose:      Test the nansat module
+# Name:         test_domain.py
+# Purpose:      Test the Domain class
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Author:       Anton Korosov
 #
-# Created:  18.06.2014
-# Last modified:27.08.2014 10:58
+# Created:      29.09.2014
 # Copyright:    (c) NERSC
-# License:
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
 import unittest, warnings
 import os, sys, glob
@@ -19,23 +19,13 @@ from nansat import Domain
 from nansat.tools import OptionError, gdal, ogr
 from nansat.figure import Image
 
-tmp_data_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                'data', 'test_data')
-
-if not os.path.exists(tmp_data_path):
-    os.mkdir(tmp_data_path)
-
+import nansat_test_data as ntd
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
-        self.data_path = os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)),
-                        'data')
+        self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
 
-        self.test_data = os.path.join(self.data_path, 'gcps.tif')
-
-        if not os.path.exists(self.test_data):
+        if not os.path.exists(self.test_file):
             raise ValueError('No test data available')
 
     def test_init_from_strings(self):
@@ -62,7 +52,7 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(d.shape(), lat.shape)
 
     def test_init_from_GDALDataset(self):
-        ds = gdal.Open(self.test_data)
+        ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
 
         self.assertEqual(type(d), Domain)
@@ -73,7 +63,7 @@ class DomainTest(unittest.TestCase):
 
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(tmp_data_path, 'domain_write_kml.kml')
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
         d.write_kml(kmlFileName=tmpfilename)
 
         self.assertEqual(os.path.exists(tmpfilename), True)
@@ -159,7 +149,7 @@ class DomainTest(unittest.TestCase):
 
     def test_write_map(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(tmp_data_path, 'domain_write_map.png')
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
         d.write_map(tmpfilename)
 
         self.assertEqual(os.path.exists(tmpfilename), True)
@@ -169,7 +159,7 @@ class DomainTest(unittest.TestCase):
 
     def test_write_map_dpi100(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(tmp_data_path, 'domain_write_map_dpi100.png')
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map_dpi100.png')
         d.write_map(tmpfilename, dpi=100)
 
         self.assertEqual(os.path.exists(tmpfilename), True)
