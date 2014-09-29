@@ -14,6 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import re
 from math import sin, pi, cos, acos, copysign
 import string
@@ -24,12 +25,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 
-from .tools import add_logger, initial_bearing, gdal, osr, OptionError, \
-        haversine
-from .nsr import NSR
-from .vrt import VRT
+from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
+from nansat.tools import OptionError
+from nansat.nsr import NSR
+from nansat.vrt import VRT
 
-class Domain():
+class Domain(object):
     '''Container for geographical reference of a raster
 
     A Domain object describes all attributes of geographical

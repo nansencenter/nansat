@@ -34,16 +34,12 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Ocean Productivity website VRT '''
 
-        if not gdalMetadata:
-            raise WrongMapperError(__file__, 'BAD MAPPER')
+        try:
+            assert 'IDL' in gdalMetadata['Projection Category']
+            assert '-9999' in gdalMetadata['Hole Value']
+        except:
+            raise WrongMapperError
 
-        if not ('Projection Category' in gdalMetadata.keys() and
-                'Source' in gdalMetadata.keys() and
-                'Hole Value' in gdalMetadata.keys()):
-            raise WrongMapperError(__file__, 'BAD MAPPER')
-        elif ('IDL' not in gdalMetadata['Projection Category'] and
-            '-9999' not in gdalMetadata['Hole Value']):
-            raise WrongMapperError(__file__, 'BAD MAPPER')
         print 'Ocean Productivity website data'
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(fileName)

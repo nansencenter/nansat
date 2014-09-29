@@ -10,7 +10,7 @@ from dateutil.parser import parse
 import numpy as np
 
 from nansat.nsr import NSR
-from nansat.vrt import VRT
+from nansat.vrt import VRT, GeolocationArray
 from nansat.node import Node
 from nansat.tools import gdal, ogr, WrongMapperError
 
@@ -24,7 +24,7 @@ class Mapper(VRT):
         geoMetadata = {}
         origin_is_nansat = False
         if not gdalMetadata:
-            raise WrongMapperError(__file__, "BAD MAPPER")
+            raise WrongMapperError
         for key in gdalMetadata.keys():
             newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
             if 'NANSAT_' in newKey:
@@ -213,6 +213,8 @@ class Mapper(VRT):
 
         if 'start_date' in gdalMetadata:
             self._set_time(parse(gdalMetadata['start_date']))
+
+        self.logger.warning('Use generic mapper - OK!')
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''

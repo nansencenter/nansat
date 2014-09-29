@@ -42,7 +42,7 @@ class Mapper(VRT):
             shortName = gdalMetadata['INSTRUMENTSHORTNAME']
             assert shortName == 'ASTER'
         except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         subDatasets = gdalDataset.GetSubDatasets()
 

@@ -19,9 +19,9 @@ class Mapper(VRT):
         try:
             title = gdalMetadata['HDFEOS_POINTS_Scene_Header_Scene_Title']
         except (TypeError, KeyError):
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
         if not title == 'GOCI Level-1B Data':
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
 
         # set GOCI projection parameters

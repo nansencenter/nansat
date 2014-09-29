@@ -34,7 +34,7 @@ class Mapper(VRT):
         try:
             assert iFileName[0:6] == 'ascat_' and iFileExt == '.nc'
         except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         # Create geolocation
         subDataset = gdal.Open('NETCDF:"' + fileName + '":lat')

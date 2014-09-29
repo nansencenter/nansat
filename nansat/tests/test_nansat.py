@@ -1,236 +1,350 @@
 #-------------------------------------------------------------------------------
 # Name:         test_nansat.py
-# Purpose:      Test the nansat module
+# Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified:     Anton Korosov
 #
-# Created:	18.06.2014
-# Last modified:27.08.2014 10:58
+# Created:      18.06.2014
+# Last modified:29.09.2014
 # Copyright:    (c) NERSC
-# License:
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
 import unittest, warnings
 import os, sys, glob
 from types import ModuleType, FloatType
+import datetime
+import matplotlib.pyplot as plt
 import numpy as np
 
 from nansat import Nansat, Domain
-from nansat.nansat import import_mappers 
-import nansat_test_archive as tna
+from nansat.tools import gdal
 
-nansatMappers = import_mappers()
+import nansat_test_data as ntd
+
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noAsarData:
+        self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
+
+        if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
 
-    def test_mapper_imports(self):
-        for mapper in nansatMappers:
-            assert type(__import__('nansat.mappers.'+mapper)) is ModuleType
+    def test_init_filename(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
 
-    def test_pixel_functions(self):
-        n = Nansat(self.test_data.asar[0])
-        if sys.version_info < (2, 7):
-            type(n['sigma0_VV']) == np.ndarray
-        else:
-            self.assertIsInstance(n['sigma0_VV'], np.ndarray)
+        self.assertEqual(type(n), Nansat)
+
+    def test_init_domain(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(n.shape(), (500, 500))
+
+    def test_init_domain_array(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d,
+                    array=np.random.randn(500, 500),
+                    parameters={'name': 'band1'},
+                    logLevel=40)
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(n.get_metadata('name', 1), 'band1')
+        self.assertEqual(n[1].shape, (500, 500))
+
+    def test_add_band(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+        n = Nansat(domain=d, logLevel=40)
+        n.add_band(arr, {'name': 'band1'})
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(n.get_metadata('name', 1), 'band1')
+        self.assertEqual(n[1].shape, (500, 500))
+
+    def test_add_bands(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+
+        n = Nansat(domain=d, logLevel=40)
+        n.add_bands([arr, arr],
+                    [{'name': 'band1'}, {'name': 'band2'}])
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(type(n[2]), np.ndarray)
+        self.assertEqual(n.get_metadata('name', 1), 'band1')
+        self.assertEqual(n.get_metadata('name', 2), 'band2')
+
+    def test_bands(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        bands = n.bands()
+
+        self.assertEqual(type(bands), dict)
+        self.assertTrue(1 in bands)
+        self.assertTrue('name' in bands[1])
+        self.assertEqual(bands[1]['name'], 'L_645')
+
+    def test_has_band(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        hb = n.has_band('L_645')
+
+        self.assertTrue(hb)
+
+    def test_export(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
+        n.export(tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_export2thredds_stere(self):
+        n = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export2thredds.nc')
+        n.export(tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_dont_export2thredds_gcps(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export2thredds.nc')
+
+        self.assertRaises(RuntimeError, n.export2thredds, tmpfilename)
 
     def test_resize_by_pixelsize(self):
-        n = Nansat(self.test_data.asar[0])
+        n = Nansat(self.test_file_gcps, logLevel=40)
         n.resize(pixelsize=500, eResampleAlg=1)
-        if sys.version_info < (2, 7):
-            type(n[1]) == np.ndarray
-        else:
-            self.assertIsInstance(n[1], np.ndarray)
+
+        self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_factor(self):
-        n = Nansat(self.test_data.asar[0])
+        n = Nansat(self.test_file_gcps, logLevel=40)
         n.resize(0.5, eResampleAlg=1)
-        if sys.version_info < (2, 7):
-            type(n[1]) == np.ndarray
-        else:
-            self.assertIsInstance(n[1], np.ndarray)
+
+        self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_width(self):
-        n = Nansat(self.test_data.asar[0])
+        n = Nansat(self.test_file_gcps, logLevel=40)
         n.resize(width=100, eResampleAlg=1)
-        if sys.version_info < (2, 7):
-            type(n[1]) == np.ndarray
-        else:
-            self.assertIsInstance(n[1], np.ndarray)
+
+        self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_height(self):
-        n = Nansat(self.test_data.asar[0])
+        n = Nansat(self.test_file_gcps, logLevel=40)
         n.resize(height=500, eResampleAlg=1)
-        if sys.version_info < (2, 7):
-            type(n[1]) == np.ndarray
-        else:
-            self.assertIsInstance(n[1], np.ndarray)
 
-    def test_reproject(self):
-        n = Nansat(self.test_data.asar[0])
-        # resize to avoid memory problems
+        self.assertEqual(type(n[1]), np.ndarray)
+
+    def test_resize_resize(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
         n.resize(0.1)
-        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                   "-lle 15 -35 35 -25 -ts 500 500")
+        n.resize(10)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_resize_resize.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+
+        self.assertEqual(type(n[1]), np.ndarray)
+
+    def test_get_GDALRasterBand(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        b = n.get_GDALRasterBand(1)
+        arr = b.ReadAsArray()
+
+        self.assertEqual(type(b), gdal.Band)
+        self.assertEqual(type(arr), np.ndarray)
+
+    def test_list_bands_false(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        lb = n.list_bands(False)
+
+        self.assertEqual(type(lb), str)
+
+    def test_reproject_domain(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
         n.reproject(d)
-        if sys.version_info < (2, 7):
-            type(n[1]) == np.ndarray
-        else:
-            self.assertIsInstance(n[1], np.ndarray)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
 
-    def tearDown(self):
-        # if any test plots are created, they could be deleted here
-        pass
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
 
-class MapperAsterL1aTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noAsterL1aData:
-            raise ValueError('No test data available')
+    def test_reproject_stere(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        n2 = Nansat(self.test_file_stere, logLevel=40)
+        n1.reproject(n2)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_reproject_stere.png')
+        n1.write_figure(tmpfilename, 2, clim='hist')
 
-    def test_mapper_hirlam(self):
-        print self.test_data.asterL1a[0]
-        n = Nansat(self.test_data.asterL1a[0])
+        self.assertEqual(n1.shape(), n2.shape())
+        self.assertEqual(type(n1[1]), np.ndarray)
 
-    def tearDown(self):
-        pass
+    def test_reproject_gcps(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        n2 = Nansat(self.test_file_gcps, logLevel=40)
+        n1.reproject(n2)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_reproject_gcps.png')
+        n1.write_figure(tmpfilename, 2, clim='hist')
 
-class MapperHirlamTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noHirlamData:
-            raise ValueError('No test data available')
+        self.assertEqual(n1.shape(), n2.shape())
+        self.assertEqual(type(n1[1]), np.ndarray)
 
-    def test_mapper_hirlam(self):
-        print self.test_data.hirlam[0]
-        n = Nansat(self.test_data.hirlam[0])
+    def test_reproject_gcps_resize(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        n2 = Nansat(self.test_file_gcps, logLevel=40)
+        n1.reproject(n2)
+        n1.resize(2)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_reproject_gcps_resize.png')
+        n1.write_figure(tmpfilename, 2, clim='hist')
 
-    def tearDown(self):
-        pass
+        self.assertEqual(n1.shape()[0], n2.shape()[0]*2)
+        self.assertEqual(n1.shape()[1], n2.shape()[1]*2)
+        self.assertEqual(type(n1[1]), np.ndarray)
 
-class MapperCosmoskymedTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noCosmoskymedData:
-            raise ValueError('No test data available')
+    def test_undo(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        shape1 = n1.shape()
+        n1.resize(10)
+        n1.undo()
+        shape2 = n1.shape()
 
-    # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(tna.TestData().noCosmoskymedData, 
-            "No Cosmo-Skymed data available (this is proprietary and cannot be shared)")
-    def test_mapper_cosmoskymed(self):
-        print self.test_data.cosmoskymed[0]
-        n = Nansat(self.test_data.cosmoskymed[0])
+        self.assertEqual(shape1, shape2)
 
-    def tearDown(self):
-        pass
+    def test_write_figure(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_figure.png')
+        n1.write_figure(tmpfilename)
 
-class MapperLandsatTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noLandsatData:
-            raise ValueError('No test data available')
+        self.assertTrue(os.path.exists(tmpfilename))
 
-    def test_mapper_landsat(self):
-        print self.test_data.landsat[0]
-        n = Nansat(self.test_data.landsat[0])
+    def test_write_figure_band(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_figure_band.png')
+        n1.write_figure(tmpfilename, 2)
 
-    def tearDown(self):
-        pass
+        self.assertTrue(os.path.exists(tmpfilename))
 
-class MapperMeris2Test(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noMerisData:
-            raise ValueError('No test data available')
+    def test_write_figure_clim(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_figure_clim.png')
+        n1.write_figure(tmpfilename, 3, clim='hist')
 
-    def test_mapper_meris(self):
-        print self.test_data.meris[0]
-        n = Nansat(self.test_data.meris[0])
+        self.assertTrue(os.path.exists(tmpfilename))
 
-    def tearDown(self):
-        pass
+    def test_write_figure_clim(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_figure_legend.png')
+        n1.write_figure(tmpfilename, 3, clim='hist', legend=True)
 
-class MapperModisL1Test(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noModisL1Data:
-            raise ValueError('No test data available')
+        self.assertTrue(os.path.exists(tmpfilename))
 
-    def test_mapper_modisL1(self):
-        print self.test_data.modisL1[0]
-        n = Nansat(self.test_data.modisL1[0])
+    def test_write_geotiffimage(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_geotiffimage.tif')
+        n1.write_geotiffimage(tmpfilename)
 
-    def tearDown(self):
-        pass
+        self.assertTrue(os.path.exists(tmpfilename))
 
-class MapperNcepTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noNcepData:
-            raise ValueError('No test data available')
+    def test_get_time(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        t = n1.get_time()
 
-    def test_mapper_generic(self):
-        print self.test_data.ncep[0]
-        n = Nansat(self.test_data.ncep[0])
+        self.assertEqual(len(t), len(n1.bands()))
+        self.assertEqual(type(t[0]), datetime.datetime)
 
-    def tearDown(self):
-        pass
+    def test_get_metadata(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        m = n1.get_metadata()
 
-class MapperRadarsat2Test(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
+        self.assertEqual(type(m), dict)
+        self.assertTrue('fileName' in m)
 
-    # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(tna.TestData().noRadarsat2Data, 
-            "No Radarsat-2 data available (this is proprietary and cannot be shared)")
-    def test_mapper_radarsat2(self):
-        print self.test_data.radarsat2[0]
-        n = Nansat(self.test_data.radarsat2[0])
+    def test_get_metadata_key(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        m = n1.get_metadata('fileName')
 
-    def tearDown(self):
-        pass
+        self.assertEqual(type(m), str)
 
-class MapperGenericTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noGenericData:
-            raise ValueError('No test data available')
+    def test_get_metadata_wrong_key(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        m = n1.get_metadata('some_crap')
 
-    def test_mapper_generic(self):
-        print self.test_data.generic[0]
-        n = Nansat(self.test_data.generic[0])
+        self.assertTrue(m is None)
 
-    def tearDown(self):
-        pass
+    def test_get_metadata_bandid(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        m = n1.get_metadata(bandID=1)
 
-class DomainTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = tna.TestData()
-        if self.test_data.noAsarData:
-            raise ValueError('No test data available')
+        self.assertEqual(type(m), dict)
+        self.assertTrue('name' in m)
 
-    def test_get_pixelsize_meters(self):
-        n = Nansat(self.test_data.asar[0])
-        dX, dY = n.get_pixelsize_meters()
-        if sys.version_info < (2, 7):
-            type(dX) == FloatType
-            type(dY) == FloatType
-        else:
-            self.assertIsInstance(dX, FloatType)
-            self.assertIsInstance(dY, FloatType)
+    def test_set_metadata(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        n1.set_metadata('newKey', 'newVal')
+        m = n1.get_metadata('newKey')
 
-    def tearDown(self):
-        pass
+        self.assertEqual(m, 'newVal')
 
+    def test_set_metadata_bandid(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        n1.set_metadata('newKey', 'newVal', 1)
+        m = n1.get_metadata('newKey', 1)
 
-if __name__=='__main__':
-    unittest.main()
+        self.assertEqual(m, 'newVal')
 
+    def test_export_band(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_geotiffimage.tif')
+        n1.export_band(tmpfilename)
 
+        self.assertTrue(os.path.exists(tmpfilename))
 
+    def test_get_transect(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
+                                     (28.93691525, 70.69646524)))
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_get_transect.png')
+        plt.plot(v[0], xy[0])
+        plt.savefig(tmpfilename)
+        plt.close('all')
 
+        self.assertTrue(len(v[0]) > 50)
+        self.assertEqual(len(v[0]), len(xy[0]))
+        self.assertEqual(len(v[0]), len(pl[0]))
+        self.assertEqual(type(xy[0]), np.ndarray)
+        self.assertEqual(type(pl), np.ndarray)
 
+    def test_get_transect_outside(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
+                                     (0., 0.)))
+
+        self.assertTrue(len(v[0]) > 50)
+        self.assertEqual(len(v[0]), len(xy[0]))
+        self.assertEqual(len(v[0]), len(pl[0]))
+        self.assertEqual(type(xy[0]), np.ndarray)
+        self.assertEqual(type(pl), np.ndarray)
+
+    def test_get_transect_false(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
+                                     (28.93691525, 70.69646524)),
+                                    transect=False)
+
+        self.assertEqual(len(v[0]), 2)
+        self.assertEqual(len(v[0]), len(xy[0]))
+        self.assertEqual(len(v[0]), len(pl[0]))
+        self.assertEqual(type(xy[0]), np.ndarray)
+        self.assertEqual(type(pl), np.ndarray)
+
+    def test_crop(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        n1.crop(10, 10, 50, 50)
+
+        self.assertEqual(n1.shape(), (50, 50))
+        self.assertEqual(type(n1[1]), np.ndarray)

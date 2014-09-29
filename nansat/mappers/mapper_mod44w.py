@@ -19,7 +19,7 @@ class Mapper(VRT):
 
         fileBaseName = os.path.basename(fileName)
         if not fileBaseName == 'MOD44W.vrt':
-            raise WrongMapperError(__file__, "MOD44W BAD MAPPER")
+            raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1},
                      'dst': {'wkv': 'land_binary_mask'}}]
