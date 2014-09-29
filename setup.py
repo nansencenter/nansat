@@ -172,7 +172,7 @@ def run_setup(skip_compile):
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
         packages=packages,
-        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
+        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl', 'tests/data/*']},
         entry_points={
                 'console_scripts': [
                 'nansatinfo = nansat.cli.nansatinfo:main',

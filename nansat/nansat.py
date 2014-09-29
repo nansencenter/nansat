@@ -111,6 +111,9 @@ class Nansat(Domain):
         self.name : string
             name of object (for writing KML)
 
+        Examples
+        --------
+
         '''
         # check the arguments
         if fileName == '' and domain is None:
