@@ -30,7 +30,7 @@ from nansat.tools import OptionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
-class Domain():
+class Domain(object):
     '''Container for geographical reference of a raster
 
     A Domain object describes all attributes of geographical
