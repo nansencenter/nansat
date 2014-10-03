@@ -36,7 +36,7 @@ class Mapper(VRT):
 
         # should raise error in case of not obpg_l2 file
         try:
-            assert gdalMetadata["Title"] in titles
+            title = gdalMetadata["Title"]
         except:
             raise WrongMapperError
 
