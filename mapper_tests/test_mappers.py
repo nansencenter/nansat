@@ -28,6 +28,13 @@ class TestDataTest(unittest.TestCase):
         self.assertTrue(hasattr(t, 'mapperData'))
         self.assertTrue(hasattr(t, 'testDataDir'))
 
+    def test_testDataDir_from_env(self):
+        ''' should create TestData instance '''
+        fakeDir = '/fake/dir/to/test/data'
+        os.environ['MAPPER_TEST_DATA_DIR'] = fakeDir
+        t = TestData()
+        self.assertEqual(t.testDataDir, fakeDir)
+
     def test_testDataDir_exists(self):
         ''' should create TestData instance '''
         t = TestData()
@@ -57,6 +64,13 @@ class AllMappersTest(unittest.TestCase):
             mapperFiles = self.testData.mapperData[mapper]
             for mapperFile in mapperFiles:
                 n = Nansat(mapperFile)
+
+    def test_specific_mapper(self):
+        ''' Should open all downloaded files with automatically selected mapper '''
+        for mapper in self.testData.mapperData:
+            mapperFiles = self.testData.mapperData[mapper]
+            for mapperFile in mapperFiles:
+                n = Nansat(mapperFile, mapperName=mapper)
 
 if __name__=='__main__':
     unittest.main()

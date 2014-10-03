@@ -19,7 +19,9 @@ class TestData(object):
 
     def __init__(self):
         ''' Set directory to store test data '''
-        self.testDataDir = os.path.join(
+        self.testDataDir = os.getenv('MAPPER_TEST_DATA_DIR')
+        if self.testDataDir is None:
+            self.testDataDir = os.path.join(
                         os.path.dirname(os.path.abspath(__file__)),
                         'test_data')
 
