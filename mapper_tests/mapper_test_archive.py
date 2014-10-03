@@ -13,7 +13,7 @@
 import os, warnings, time
 
 
-class TestData(object):
+class DataForTestingMappers(object):
     ''' Download test data and keep info about each file '''
     mapperData = None
 
