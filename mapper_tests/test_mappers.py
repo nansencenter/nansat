@@ -44,7 +44,7 @@ class TestDataTest(unittest.TestCase):
         ''' Should download the selected file and put into mapperData'''
         t = TestData()
         t.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs/gfs20120328/gfs.t00z.master.grbf00',
+                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs.t00z.master.grbf00',
                 'ncep')
         self.assertTrue('ncep' in t.mapperData)
         self.assertEqual(type(t.mapperData['ncep']), list)
@@ -53,23 +53,24 @@ class TestDataTest(unittest.TestCase):
 
 
 class AllMappersTest(unittest.TestCase):
-    def setUp(self):
-        # download all data
-        self.testData = TestData()
-        self.testData.download_all_test_data()
-
     def test_automatic_mapper(self):
         ''' Should open all downloaded files with automatically selected mapper '''
-        for mapper in self.testData.mapperData:
-            mapperFiles = self.testData.mapperData[mapper]
+        testData = TestData()
+        testData.download_all_test_data()
+        for mapper in testData.mapperData:
+            mapperFiles = testData.mapperData[mapper]
             for mapperFile in mapperFiles:
+                print mapperFile
                 n = Nansat(mapperFile)
 
     def test_specific_mapper(self):
         ''' Should open all downloaded files with automatically selected mapper '''
-        for mapper in self.testData.mapperData:
-            mapperFiles = self.testData.mapperData[mapper]
+        testData = TestData()
+        testData.download_all_test_data()
+        for mapper in testData.mapperData:
+            mapperFiles = testData.mapperData[mapper]
             for mapperFile in mapperFiles:
+                print mapper, '->', mapperFile
                 n = Nansat(mapperFile, mapperName=mapper)
 
 if __name__=='__main__':

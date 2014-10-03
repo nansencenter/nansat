@@ -15,10 +15,15 @@ import os, warnings, time
 
 class TestData(object):
     ''' Download test data and keep info about each file '''
-    mapperData = {}
+    mapperData = None
 
     def __init__(self):
-        ''' Set directory to store test data '''
+        ''' Set directory to store test data
+
+        If MAPPER_TEST_DATA_DIR is in the environment its value will be used
+        This is convenient for testing localy and sharing downloaded
+        data among several users on the server
+        '''
         self.testDataDir = os.getenv('MAPPER_TEST_DATA_DIR')
         if self.testDataDir is None:
             self.testDataDir = os.path.join(
@@ -56,7 +61,7 @@ class TestData(object):
                 'modis_l1')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs/gfs20120328/gfs.t00z.master.grbf00',
+                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs.t00z.master.grbf00',
                 'ncep')
 
         self.download_test_file(
@@ -66,6 +71,10 @@ class TestData(object):
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/generic/mapperTest_generic.tif',
                 'generic')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/obpg_l2/A2014275111000.L2_LAC.NorthNorwegianSeas.hdf',
+                'obpg_l2')
 
     def download_test_file(self, inputURL, mapperName):
         ''' Download one file for one mapper
@@ -87,7 +96,7 @@ class TestData(object):
         ---------
             self.mapper_data : dict
                 adds new <mapper_name> : [<testFileName>]
-                or appends to existing key
+                or appends <testFileName> to the existing key
 
         '''
         fName = os.path.basename(inputURL)
@@ -110,6 +119,8 @@ class TestData(object):
                     morten.stette@nersc.no to get the ftp-server at NERSC restarted"""
                     % mapperFName)
         else:
+            if self.mapperData is None:
+                self.mapperData = {}
             if mapperName in self.mapperData:
                 self.mapperData[mapperName].append(mapperFName)
             else:
