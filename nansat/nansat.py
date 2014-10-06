@@ -1654,16 +1654,20 @@ class Nansat(Domain):
 
         Parameters
         ----------
-        points : tuple with one or more points or shape file name
-            i.e. ( # get all transect values
-                   ((lon_T1, lat_T1), (lon_T2, lat_T2), (lon_T3, lat_T3), ...)
+        points : list with one or more points or shape file name
+            i.e. [
+                   # get all transect values
+                   [(lon_T1, lat_T1), (lon_T2, lat_T2), (lon_T3, lat_T3), ...]
                    # get point values
-                   (lon_P1, lat_P1), (lon_P2, lat_P2), ... )
+                   (lon_P1, lat_P1), (lon_P2, lat_P2), ...
+                 ]
                  or
-                 ( # get all transect values
-                   ((col_T1, row_T1), (col_T2, row_T2), (col_T3, row_T3), ...),
+                 [
+                   # get all transect values
+                   [(col_T1, row_T1), (col_T2, row_T2), (col_T3, row_T3), ...],
                    # get point values
-                   (col_P1, row_P1), (col_P2, row_P2), ... )
+                   (col_P1, row_P1), (col_P2, row_P2), ...
+                 ]
         bandList : list of int or string
             elements of the list are band number or band Name
         latlon : bool
@@ -1726,32 +1730,30 @@ class Nansat(Domain):
 
         # if points is not given, get points from GUI ...
         if points is None:
+            latlon = False
             data = self[bandList[0]]
             browser = PointBrowser(data, transect, **kwargs)
             browser.get_points()
             points = []
-            for i, iCoord in enumerate (browser.coordinates):
-                if transect:
-                    transect = browser.connect[i]
-                else:
-                    transect = 0
-                if i == 0:
-                    oneLine = [iCoord]
-                elif transect:
-                    oneLine.append(iCoord)
-                else:
-                    if len(oneLine) == 1:
-                        points.append(oneLine[0])
-                    else:
-                        points.append(tuple(oneLine))
-                    oneLine = [iCoord]
-            if len(oneLine) == 1:
-                points.append(oneLine[0])
-            else:
-                points.append(tuple(oneLine))
-            latlon = False
+            oneLine = []
 
+            for i in range(len(browser.coordinates)):
+                transect = browser.connect[i]
+                if transect:
+                    oneLine.append(browser.coordinates[i])
+                else:
+                    if i == 0:
+                        oneLine = [browser.coordinates[i]]
+                    if len(oneLine) == 1:
+                        oneLine.append(oneLine[-1])
+                    points.append(oneLine)
+                    oneLine = [browser.coordinates[i]]
+                if i == len(browser.coordinates) - 1:
+                    if len(oneLine) == 1:
+                        oneLine.append(oneLine[-1])
+                    points.append(oneLine)
         pixlinCoordDic = {}
+
         for i, iShape in enumerate (points):
             pixlinCoord = np.array([[], []])
             for j in range(len(iShape) - 1):
@@ -1761,6 +1763,7 @@ class Nansat(Domain):
                 else:
                     point0 = iShape[j]
                     point1 = iShape[j + 1]
+
                 # if points in degree, convert them into pix/lin
                 if latlon:
                     pix, lin = self.transform_points([point0[0], point1[0]],
