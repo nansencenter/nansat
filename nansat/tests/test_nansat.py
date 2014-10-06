@@ -33,6 +33,7 @@ class NansatTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
+        plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
