@@ -16,13 +16,6 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MODIS_L1 VRT '''
-        #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
-        try:
-            gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
-        except (AttributeError, IndexError):
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
-            raise WrongMapperError(__file__, "Wrong mapper")
 
         #list of available modis names:resolutions
         modisResolutions = {'MYD02QKM': 250, 'MOD02QKM': 250,
@@ -32,8 +25,14 @@ class Mapper(VRT):
         #should raise error in case of not MODIS_L1
         try:
             mResolution = modisResolutions[gdalMetadata["SHORTNAME"]]
-        except KeyError:
-            raise WrongMapperError(__file__, "Wrong mapper")
+        except:
+            raise WrongMapperError
+
+        #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
+        try:
+            gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
+        except (AttributeError, IndexError):
+            raise WrongMapperError
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, gdalSubDataset)

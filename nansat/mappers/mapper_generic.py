@@ -5,11 +5,12 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
+from dateutil.parser import parse
 
 import numpy as np
 
 from nansat.nsr import NSR
-from nansat.vrt import VRT
+from nansat.vrt import VRT, GeolocationArray
 from nansat.node import Node
 from nansat.tools import gdal, ogr, WrongMapperError
 
@@ -23,7 +24,7 @@ class Mapper(VRT):
         geoMetadata = {}
         origin_is_nansat = False
         if not gdalMetadata:
-            raise WrongMapperError(__file__, "BAD MAPPER")
+            raise WrongMapperError
         for key in gdalMetadata.keys():
             newKey = key.replace('NC_GLOBAL#', '').replace('GDAL_', '')
             if 'NANSAT_' in newKey:
@@ -106,20 +107,22 @@ class Mapper(VRT):
                         dst = bandMetadata
                         # set wkv and bandname
                         dst['wkv'] = bandMetadata.get('standard_name', '')
-                        bandName = bandMetadata.get('NETCDF_VARNAME', '')  # could we also use bandMetadata.get('name')?
+                        # first, try the name metadata
+                        bandName = bandMetadata.get('name', '')
+                        # if it doesn't exist get name from NETCDF_VARNAME
                         if len(bandName) == 0:
-                            bandName = bandMetadata.get('dods_variable', '')
-                        if len(bandName) > 0:
-                            if origin_is_nansat and fileExt == '.nc':
-                                # remove digits added by gdal in exporting to
-                                # netcdf...
-                                if bandName[-1:].isdigit():
-                                    bandName = bandName[:-1]
-                                if bandName[-1:].isdigit():
-                                    bandName = bandName[:-1]
-                                dst['name'] = bandName
-                            else:
-                                dst['name'] = bandName
+                            bandName = bandMetadata.get('NETCDF_VARNAME', '')
+                            if len(bandName) == 0:
+                                bandName = bandMetadata.get('dods_variable', '')
+                            if len(bandName) > 0:
+                                if origin_is_nansat and fileExt == '.nc':
+                                    # remove digits added by gdal in
+                                    # exporting to netcdf...
+                                    if bandName[-1:].isdigit():
+                                        bandName = bandName[:-1]
+                                    if bandName[-1:].isdigit():
+                                        bandName = bandName[:-1]
+                        dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
                         for rmMetadata in rmMetadatas:
@@ -210,6 +213,8 @@ class Mapper(VRT):
 
         if 'start_date' in gdalMetadata:
             self._set_time(parse(gdalMetadata['start_date']))
+
+        self.logger.warning('Use generic mapper - OK!')
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''

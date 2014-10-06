@@ -15,6 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
+
 import os, sys
 import warnings
 import logging
@@ -128,13 +129,7 @@ class GDALError(Error):
 
 class WrongMapperError(Exception):
     '''Error for handling data that does not fit a given mapper'''
-    def __init__(self, mapper_name, msg):
-        self.mapper_name = mapper_name
-        self.msg = msg
-
-    def __str__(self):
-        return self.mapper_name + ' - ' + self.msg
-
+    pass
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)

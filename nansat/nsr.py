@@ -12,7 +12,8 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from .tools import ProjectionError, osr
+from __future__ import absolute_import
+from nansat.tools import ProjectionError, osr
 
 class NSR(osr.SpatialReference, object):
     '''Nansat Spatial Reference
@@ -29,8 +30,7 @@ class NSR(osr.SpatialReference, object):
             PROJ4:
             string with proj4 options [http://trac.osgeo.org/proj/] e.g.:
             '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
-            '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10
-             +no_defs'
+            '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs'
             EPSG:
             integer with EPSG number, [http://spatialreference.org/],
             e.g. 4326

@@ -23,10 +23,8 @@ class Mapper(mg.Mapper):
 
         fPathName, fExt = os.path.splitext(fileName)
         fPath, fName = os.path.split(fPathName)
-        try:
-            assert fExt == '.nc' and 'MER_' in fName and 'N1_C2IOP' in fName
-        except:
-            raise WrongMapperError(__file__, "Wrong mapper")
+        if fExt != '.nc' or 'MER_' not in fName or 'N1_C2IOP' not in fName:
+            raise WrongMapperError
 
         # get all metadata using the GENERIC Mapper
         mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
