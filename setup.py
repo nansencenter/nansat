@@ -121,7 +121,7 @@ except Exception as e:
 #                               Install package
 #----------------------------------------------------------------------------#
 from setuptools import setup, find_packages
-from setuptools.command import install_scripts
+from setuptools.command.install_scripts import install_scripts
 from distutils import log
 from distutils.extension import Extension
 from distutils.errors import CCompilerError, DistutilsExecError,\
@@ -214,7 +214,7 @@ def run_setup(skip_compile):
         platforms=PLATFORMS,
         packages=packages,
         package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl', 'tests/data/*']},
-        scripts=[os.path.join('utilities', name) for name in 
+        scripts=[os.path.join('utilities', name) for name in
                     ['nansatinfo',
                      'nansat_add_coastline',
                      'nansat_geotiffimage',
