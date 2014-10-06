@@ -12,8 +12,8 @@ before_install:
 
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose netcdf4
-  - conda install -c jjhelmus gdal-data
-  - conda install -c rsignell proj4
+  - conda install --yes -c jjhelmus gdal-data
+  - conda install --yes -c rsignell proj4
   - python setup.py install
 
 after_install:
