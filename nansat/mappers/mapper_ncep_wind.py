@@ -19,12 +19,12 @@ class Mapper(VRT):
         ''' Create NCEP VRT '''
 
         if not gdalDataset:
-            raise WrongMapperError(__file__, "NCEP bad mapper")
+            raise WrongMapperError
 
         geotransform = gdalDataset.GetGeoTransform()
         if ( geotransform != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
                 gdalDataset.RasterCount != 2):  # Not water proof
-            raise WrongMapperError(__file__,"NCEP BAD MAPPER")
+            raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': 1},

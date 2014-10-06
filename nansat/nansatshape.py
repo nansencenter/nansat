@@ -14,10 +14,11 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 from string import Template, ascii_uppercase, digits
 from random import choice
 
-from .tools import ogr
+from nansat.tools import ogr
 
 
 class Nansatshape():

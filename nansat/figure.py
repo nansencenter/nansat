@@ -14,17 +14,20 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os
 from math import floor, log10, pow
 
 import numpy as np
 from matplotlib import cm
+import matplotlib.pyplot as plt
+
 try:
     import Image, ImageDraw, ImageFont
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from .tools import add_logger
+from nansat.tools import add_logger
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
@@ -46,7 +49,8 @@ class Figure():
     numOfTicks = 5
     titleString = ''
     caption = ''
-    fontSize = 12
+    fontRatio = 1
+    fontSize = None
     logarithm = False
     legend = False
     mask_array = None
@@ -72,9 +76,9 @@ class Figure():
     CBTICK_LOC_ADJUST_X = 5
     CBTICK_LOC_ADJUST_Y = 3
     CAPTION_LOCATION_X = 0.1
-    CAPTION_LOCATION_Y = 0.3
+    CAPTION_LOCATION_Y = 0.25
     TITLE_LOCATION_X = 0.1
-    TITLE_LOCATION_Y = 0.1
+    TITLE_LOCATION_Y = 0.05
     DEFAULT_EXTENSION = '.png'
 
     palette = None
@@ -116,8 +120,13 @@ class Figure():
             '', title of legend (1st line)
         caption : string
             '', caption of the legend (2nd line, e.g. long name and units)
+        fontRatio : positive float
+            1, factor for changing the fontSize.
         fontSize : int
-            12, size of the font of title, caption and ticks
+            12, size of the font of title, caption and ticks.
+            If not given, fontSize is calculated using fontRatio:
+            fontSize = height / 45 * fontRatio.
+            fontSize has priority over fontRatio
         logarithm : boolean, defult = False
             If True, tone curve is used to convert pixel values.
             If False, linear.
@@ -735,6 +744,10 @@ class Figure():
         '''
         # modify default parameters
         self._set_defaults(kwargs)
+
+        # set fontSize using fontRatio if fontSize is not given at input
+        if self.fontSize is None:
+            self.fontSize = int(self.array.shape[1] / 45. * self.fontRatio)
 
         # if the image is reprojected it has 0 values
         # we replace them with mask before creating PIL Image

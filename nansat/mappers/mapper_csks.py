@@ -21,7 +21,7 @@ class Mapper(VRT):
         ''' Create CSKS VRT '''
 
         if fileName.split('/')[-1][0:4] != "CSKS":
-            raise WrongMapperError(__file__, "COSMO-SKYMED bad mapper")
+            raise WrongMapperError
 
         # Get coordinates
         metadata = gdalMetadata['Estimated_Bottom_Left_Geodetic_Coordinates']

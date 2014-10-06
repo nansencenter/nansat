@@ -35,16 +35,10 @@ class Mapper(VRT):
                   'VIIRSN Level-2 Data']
 
         # should raise error in case of not obpg_l2 file
-        if not gdalMetadata:
-            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
-
-        if not "Title" in gdalMetadata.keys():
-            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
-        else:
+        try:
             title = gdalMetadata["Title"]
-
-        if not title in titles:
-            raise WrongMapperError(__file__, 'obpg_l2 BAD MAPPER')
+        except:
+            raise WrongMapperError
 
         # get subdataset and parse to VRT.__init__() for retrieving geo-metadata
         # but NOT from longitude or latitude because it can be smaller!

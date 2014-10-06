@@ -21,7 +21,7 @@ class Mapper(VRT):
         ''' Create NCEP VRT '''
 
         if not gdalDataset:
-            raise WrongMapperError(__file__, 'NCEP bad mapper')
+            raise WrongMapperError
 
         geotransform = gdalDataset.GetGeoTransform()
         if ( geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
@@ -35,9 +35,9 @@ class Mapper(VRT):
                               'u-component': 8,
                               'v-component': 9}
             else:
-                raise WrongMapperError(__file__, "NCEP BAD MAPPER")
+                raise WrongMapperError
         else:
-            raise WrongMapperError(__file__, "NCEP BAD MAPPER") # Not water proof
+            raise WrongMapperError # Not water proof
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['u-component']},

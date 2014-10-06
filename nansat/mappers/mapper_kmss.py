@@ -17,21 +17,18 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
+        if (os.path.split(fileName)[1][0:4] != '101_' or
+            os.path.split(fileName)[1][0:4] != '102_'):
+                raise WrongMapperError
+
         try:
             product = gdalDataset.GetDriver().LongName
-        except AttributeError:
-            raise WrongMapperError(__file__, "Wrong mapper")
+        except:
+            raise WrongMapperError
 
-        if cmp(os.path.split(fileName)[1][0:4], '101_') != 0:
-            if cmp(os.path.split(fileName)[1][0:4], '102_') != 0:
-                raise WrongMapperError(__file__, "NTSOMZ GeoTIFF KMSS filename usually starts with '101' or '102'")
 
-        if product != 'GeoTIFF':
-            raise AttributeError("Not_GeoTIFF")
-        if cmp(fileName[-3:], 'tif') != 0:
-            raise AttributeError("for NTSOMZ GeoTIFF extension must be tif")
-        if gdalDataset.RasterCount != 3:
-            raise AttributeError("Not_NTSOMZ_KMSS_geotiff! does not have 3 bands!")
+        if product != 'GeoTIFF' or fileName[-3:] != 'tif' or gdalDataset.RasterCount != 3:
+            raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',

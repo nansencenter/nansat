@@ -14,6 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import absolute_import
 import os
 import tempfile
 from string import Template, ascii_uppercase, digits
@@ -22,9 +23,9 @@ import datetime
 
 import numpy as np
 
-from .node import Node
-from .nsr import NSR
-from .tools import add_logger, gdal, osr
+from nansat.node import Node
+from nansat.nsr import NSR
+from nansat.tools import add_logger, gdal, osr
 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
@@ -184,7 +185,7 @@ class VRT():
     # main sub VRT
     vrt = None
     # other sub VRTs
-    subVRTs = None
+    subVRTs = {}
     # use Thin Spline Transformation of the VRT has GCPs?
     tps = False
 
@@ -949,7 +950,8 @@ class VRT():
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
                        use_geolocationArray=True,
-                       use_gcps=True, use_geotransform=True,
+                       use_gcps=True, skip_gcps = 1,
+                       use_geotransform=True,
                        dstGCPs=[], dstGeolocationArray=None):
 
         ''' Create VRT object with WarpedVRT
@@ -1022,6 +1024,8 @@ class VRT():
             Use geolocation array in input dataset (if present) for warping
         use_gcps : Boolean (True)
             Use GCPs in input dataset (if present) for warping
+        skip_gcps : int
+            See nansat.reproject() for explanation
         use_geotransform : Boolean (True)
             Use GeoTransform in input dataset for warping or make artificial
             GeoTransform : (0, 1, 0, srcVRT.xSize, -1)
@@ -1039,7 +1043,7 @@ class VRT():
 
         # if destination GCPs are given: create and add fake GCPs to src
         if len(dstGCPs) > 0 and use_gcps:
-            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs)
+            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, skip_gcps)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
             use_geolocationArray = False
@@ -1180,7 +1184,7 @@ class VRT():
 
         return warpedVRT
 
-    def _create_fake_gcps(self, gcps):
+    def _create_fake_gcps(self, gcps, skip_gcps):
         '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
 
         GCPs from a destination image (dstGCP) are converted to a gcp of source
@@ -1195,6 +1199,8 @@ class VRT():
         -----------
         gcps : list
             GDAL GCPs
+        skip_gcps : int
+            See nansat.reproject() for explanation
 
         Returns
         --------
@@ -1209,7 +1215,7 @@ class VRT():
 
         # create 'fake' GCPs
         fakeGCPs = []
-        for g in gcps:
+        for g in gcps[::skip_gcps]:
             # transform DST lat/lon to SRC pixel/line
             succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
             srcPixel = point[0]
@@ -1605,15 +1611,22 @@ class VRT():
 
         return subsamVRT
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0):
+    def transform_points(self, colVector, rowVector, DstToSrc=0,
+                         dstDs=None, options = None):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
         -----------
-        colVector : lists
+        colVector, rowVector : lists
             X and Y coordinates with any coordinate system
         DstToSrc : 0 or 1
             1 for inverse transformation, 0 for forward transformation.
+        dstDs : dataset
+            destination dataset. The default is None.
+            It means transform ownPixLin <--> ownXY.
+
+        option : string
+            if 'METHOD=GEOLOC_ARRAY', specify here.
 
         Returns
         --------
@@ -1625,12 +1638,14 @@ class VRT():
         srcWKT = self.get_projection()
 
         # prepare options
-        options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
-        if self.tps:
-            options += 'METHOD=GCP_TPS'
+        if  options is None:
+            options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
+            # add TPS method if we have GCPs and self.tps is True
+            if self.tps and len(self.dataset.GetGCPs()) > 0:
+                options.append('METHOD=GCP_TPS')
 
         # create transformer
-        transformer = gdal.Transformer(self.dataset, None, options)
+        transformer = gdal.Transformer(self.dataset, dstDs, options)
 
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([colVector, rowVector]).transpose()
@@ -1695,12 +1710,12 @@ class VRT():
 
         '''
         # modify GeoTransform: set resolution from new X/Y size
-        geoTransform = (0,
-                        float(self.dataset.RasterXSize) / float(xSize),
+        geoTransform = (0.5,
+                        float(self.dataset.RasterXSize - 1.0) / float(xSize),
                         0,
-                        self.dataset.RasterYSize,
+                        self.dataset.RasterYSize - 0.5,
                         0,
-                        - float(self.dataset.RasterYSize) / float(ySize))
+                        - float(self.dataset.RasterYSize - 1.0) / float(ySize))
 
         # update size and GeoTranform in XML of the warped VRT object
         warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,

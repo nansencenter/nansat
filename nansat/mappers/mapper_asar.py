@@ -15,7 +15,6 @@ from nansat.domain import Domain
 from nansat.tools import initial_bearing
 from nansat.tools import WrongMapperError
 
-
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1
 
@@ -40,7 +39,7 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, gdalMetadata)
 
         if self.product[0:4] != "ASA_":
-            raise WrongMapperError(__file__, "ASAR_L1 wrong mapper")
+            raise WrongMapperError
 
         # get channel string (remove '/', since NetCDF
         # does not support that in metadata)
@@ -220,3 +219,7 @@ class Mapper(VRT, Envisat):
 
         # set time
         self._set_envisat_time(gdalMetadata)
+
+        # When using TPS for reprojection, use only every 3rd GCP
+        # to improve performance (tradeoff vs accuracy)
+        self.dataset.SetMetadataItem('skip_gcps', '3')

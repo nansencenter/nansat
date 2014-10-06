@@ -33,16 +33,12 @@ class Mapper(VRT):
         try:
             fp = open(fileName, 'rb')
         except IOError:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
         fp.seek(24)
         try:
             satID = int(struct.unpack('<l', fp.read(4))[0])
         except:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
-            raise WrongMapperError(__file__, "Wrong mapper")
+            raise WrongMapperError
 
         ##################
         # Read time
@@ -54,10 +50,8 @@ class Mapper(VRT):
         try:
             time = datetime.datetime(year, 1, 1) + \
                 datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
-        except ValueError:
-            warnings.warn(__file__+' may need a better test for data ' \
-                    'fitness')
-            raise WrongMapperError(__file__, "Wrong mapper")
+        except:
+            raise WrongMapperError
 
         fp.seek(72)
         numScanLines = int(struct.unpack('<l', fp.read(4))[0])
