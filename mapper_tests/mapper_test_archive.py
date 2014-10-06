@@ -3,12 +3,14 @@
 # Purpose:      To test nansat
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Modified:     Anton Korosov
 #
 # Created:  18.06.2014
-# Last modified:08.07.2014 11:03
+# Last modified:06.10.2014
 # Copyright:    (c) NERSC
-# License:
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
 import os, warnings, time
 

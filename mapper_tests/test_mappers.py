@@ -2,13 +2,15 @@
 # Name:         test_nansat.py
 # Purpose:      Test the nansat module
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
+# Modified:     Anton Korosov
 #
-# Created:  18.06.2014
-# Last modified:27.08.2014 10:58
+# Created:      18.06.2014
+# Last modified:06.10.2014
 # Copyright:    (c) NERSC
-# License:
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
 import unittest, warnings
 import os, sys, glob
@@ -21,7 +23,7 @@ from mapper_test_archive import DataForTestingMappers
 
 nansatMappers = _import_mappers()
 
-class TestDataTest(unittest.TestCase):
+class TestDataForTestingMappers(unittest.TestCase):
     def test_create_test_data(self):
         ''' should create TestData instance '''
         t = DataForTestingMappers()
@@ -82,7 +84,7 @@ class TestAllMappers(object):
         ''' Perform call to Nansat with each file as a separate test '''
         n = Nansat(mapperFile, mapperName=mapperName)
         assert type(n) == Nansat
-        
+
 
 if __name__=='__main__':
     unittest.main()
