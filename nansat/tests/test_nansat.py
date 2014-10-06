@@ -24,6 +24,7 @@ from nansat.tools import gdal
 
 import nansat_test_data as ntd
 
+IS_CONDA = 'conda' in os.environ['PATH']
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
@@ -100,11 +101,14 @@ class NansatTest(unittest.TestCase):
     def test_export(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
-        n.export(tmpfilename)
+        n.export(tmpfilename, driver='GTiff')
 
         self.assertTrue(os.path.exists(tmpfilename))
 
     def test_export2thredds_stere(self):
+        # skip the test if anaconda is used
+        if IS_CONDA:
+            return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export2thredds.nc')
         n.export(tmpfilename)
@@ -300,7 +304,7 @@ class NansatTest(unittest.TestCase):
     def test_export_band(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_geotiffimage.tif')
-        n1.export_band(tmpfilename)
+        n1.export_band(tmpfilename, driver='GTiff')
 
         self.assertTrue(os.path.exists(tmpfilename))
 
