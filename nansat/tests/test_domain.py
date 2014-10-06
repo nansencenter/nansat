@@ -10,10 +10,14 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
+import matplotlib
+matplotlib.use('Agg')
+
 import unittest, warnings
 import os, sys, glob
 from types import ModuleType, FloatType
 import numpy as np
+import matplotlib.pyplot as plt
 
 from nansat import Domain
 from nansat.tools import OptionError, gdal, ogr
@@ -24,6 +28,7 @@ import nansat_test_data as ntd
 class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
+        plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file):
             raise ValueError('No test data available')

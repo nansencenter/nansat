@@ -11,7 +11,10 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose netcdf4
+  - conda install --yes -c jjhelmus gdal-data
+  - conda install --yes -c rsignell proj4
   - python setup.py install
+  - export GDAL_DATA=/home/travis/miniconda/share/gdal
 
 script: "cd ..; nosetests nansat.tests"
