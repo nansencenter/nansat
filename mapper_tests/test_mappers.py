@@ -2,13 +2,15 @@
 # Name:         test_nansat.py
 # Purpose:      Test the nansat module
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
+# Modified:     Anton Korosov
 #
-# Created:  18.06.2014
-# Last modified:27.08.2014 10:58
+# Created:      18.06.2014
+# Last modified:06.10.2014
 # Copyright:    (c) NERSC
-# License:
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
 import unittest, warnings
 import os, sys, glob
@@ -17,149 +19,71 @@ import numpy as np
 
 from nansat import Nansat, Domain
 from nansat.nansat import _import_mappers
-import mapper_test_archive as mta
+from mapper_test_archive import DataForTestingMappers
 
 nansatMappers = _import_mappers()
 
-class MapperAsterL1aTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noAsterL1aData:
-            raise ValueError('No test data available')
+class TestDataForTestingMappers(unittest.TestCase):
+    def test_create_test_data(self):
+        ''' should create TestData instance '''
+        t = DataForTestingMappers()
+        self.assertTrue(hasattr(t, 'mapperData'))
+        self.assertTrue(hasattr(t, 'testDataDir'))
 
-    def test_mapper_hirlam(self):
-        print self.test_data.asterL1a[0]
-        n = Nansat(self.test_data.asterL1a[0])
+    def test_testDataDir_from_env(self):
+        ''' should create TestData instance '''
+        fakeDir = '/fake/dir/to/test/data'
+        os.environ['MAPPER_TEST_DATA_DIR'] = fakeDir
+        t = DataForTestingMappers()
+        self.assertEqual(t.testDataDir, fakeDir)
 
-    def tearDown(self):
-        pass
+    def test_testDataDir_exists(self):
+        ''' should create TestData instance '''
+        t = DataForTestingMappers()
+        self.assertTrue(os.path.exists(t.testDataDir))
 
-class MapperHirlamTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noHirlamData:
-            raise ValueError('No test data available')
+    def test_download_file(self):
+        ''' Should download the selected file and put into mapperData'''
+        t = DataForTestingMappers()
+        t.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs.t00z.master.grbf00',
+                'ncep')
+        self.assertTrue('ncep' in t.mapperData)
+        self.assertEqual(type(t.mapperData['ncep']), list)
+        for ifile in t.mapperData['ncep']:
+            self.assertTrue(os.path.exists(ifile))
 
-    def test_mapper_hirlam(self):
-        print self.test_data.hirlam[0]
-        n = Nansat(self.test_data.hirlam[0])
 
-    def tearDown(self):
-        pass
+class TestAllMappers(object):
+    def test_automatic_mapper(self):
+        ''' Should open all downloaded files with automatically selected mapper '''
+        testData = DataForTestingMappers()
+        testData.download_all_test_data()
+        for mapper in testData.mapperData:
+            mapperFiles = testData.mapperData[mapper]
+            for mapperFile in mapperFiles:
+                print mapperFile
+                yield self.open_with_automatic_mapper, mapperFile
 
-class MapperCosmoskymedTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noCosmoskymedData:
-            raise ValueError('No test data available')
+    def open_with_automatic_mapper(self, mapperFile):
+        ''' Perform call to Nansat with each file as a separate test '''
+        n = Nansat(mapperFile)
+        assert type(n) == Nansat
 
-    # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(mta.TestData().noCosmoskymedData,
-            "No Cosmo-Skymed data available (this is proprietary and cannot be shared)")
-    def test_mapper_cosmoskymed(self):
-        print self.test_data.cosmoskymed[0]
-        n = Nansat(self.test_data.cosmoskymed[0])
+    def test_specific_mapper(self):
+        ''' Should open all downloaded files with automatically selected mapper '''
+        testData = DataForTestingMappers()
+        testData.download_all_test_data()
+        for mapperName in testData.mapperData:
+            mapperFiles = testData.mapperData[mapperName]
+            for mapperFile in mapperFiles:
+                print mapperName, '->', mapperFile
+                yield self.open_with_specific_mapper, mapperFile, mapperName
 
-    def tearDown(self):
-        pass
-
-class MapperLandsatTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noLandsatData:
-            raise ValueError('No test data available')
-
-    def test_mapper_landsat(self):
-        print self.test_data.landsat[0]
-        n = Nansat(self.test_data.landsat[0])
-
-    def tearDown(self):
-        pass
-
-class MapperMeris2Test(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noMerisData:
-            raise ValueError('No test data available')
-
-    def test_mapper_meris(self):
-        print self.test_data.meris[0]
-        n = Nansat(self.test_data.meris[0])
-
-    def tearDown(self):
-        pass
-
-class MapperModisL1Test(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noModisL1Data:
-            raise ValueError('No test data available')
-
-    def test_mapper_modisL1(self):
-        print self.test_data.modisL1[0]
-        n = Nansat(self.test_data.modisL1[0])
-
-    def tearDown(self):
-        pass
-
-class MapperNcepTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noNcepData:
-            raise ValueError('No test data available')
-
-    def test_mapper_generic(self):
-        print self.test_data.ncep[0]
-        n = Nansat(self.test_data.ncep[0])
-
-    def tearDown(self):
-        pass
-
-class MapperRadarsat2Test(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-
-    # Proprietary data cannot be shared and will not be available for all users
-    @unittest.skipIf(mta.TestData().noRadarsat2Data,
-            "No Radarsat-2 data available (this is proprietary and cannot be shared)")
-    def test_mapper_radarsat2(self):
-        print self.test_data.radarsat2[0]
-        n = Nansat(self.test_data.radarsat2[0])
-
-    def tearDown(self):
-        pass
-
-class MapperGenericTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noGenericData:
-            raise ValueError('No test data available')
-
-    def test_mapper_generic(self):
-        print self.test_data.generic[0]
-        n = Nansat(self.test_data.generic[0])
-
-    def tearDown(self):
-        pass
-
-class DomainTest(unittest.TestCase):
-    def setUp(self):
-        self.test_data = mta.TestData()
-        if self.test_data.noAsarData:
-            raise ValueError('No test data available')
-
-    def test_get_pixelsize_meters(self):
-        n = Nansat(self.test_data.asar[0])
-        dX, dY = n.get_pixelsize_meters()
-        if sys.version_info < (2, 7):
-            type(dX) == FloatType
-            type(dY) == FloatType
-        else:
-            self.assertIsInstance(dX, FloatType)
-            self.assertIsInstance(dY, FloatType)
-
-    def tearDown(self):
-        pass
+    def open_with_specific_mapper(self, mapperFile, mapperName):
+        ''' Perform call to Nansat with each file as a separate test '''
+        n = Nansat(mapperFile, mapperName=mapperName)
+        assert type(n) == Nansat
 
 
 if __name__=='__main__':

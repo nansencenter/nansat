@@ -24,7 +24,9 @@ try:
 except ImportError:
     raise ImportError('''
          Cannot import Dataset from netCDF4.
-         Please install netCDF4 to access the OpenDAP\n''')
+         You cannot access data thought opendap but
+         Nansat will work.
+         ''')
 
 #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
 #fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'
