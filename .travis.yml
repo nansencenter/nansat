@@ -15,8 +15,6 @@ install:
   - conda install --yes -c jjhelmus gdal-data
   - conda install --yes -c rsignell proj4
   - python setup.py install
-
-after_install:
   - export GDAL_DATA=/home/travis/miniconda/share/gdal
 
 script: "cd ..; nosetests nansat.tests"
