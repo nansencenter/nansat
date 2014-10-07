@@ -1645,6 +1645,7 @@ class Nansat(Domain):
         # export
         tmpNansat.export(fileName, driver=driver)
 
+
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            returnOGR=False, layerNum=0,
                            smoothRadius=0, smoothAlg=0, transect=True,
@@ -1654,16 +1655,20 @@ class Nansat(Domain):
 
         Parameters
         ----------
-        points : tuple with one or more points or shape file name
-            i.e. ( # get all transect values
-                   ((lon_T1, lat_T1), (lon_T2, lat_T2), (lon_T3, lat_T3), ...)
+        points : list with one or more points or shape file name
+            i.e. [
+                   # get all transect values
+                   [(lon_T1, lat_T1), (lon_T2, lat_T2), (lon_T3, lat_T3), ...]
                    # get point values
-                   (lon_P1, lat_P1), (lon_P2, lat_P2), ... )
+                   (lon_P1, lat_P1), (lon_P2, lat_P2), ...
+                 ]
                  or
-                 ( # get all transect values
-                   ((col_T1, row_T1), (col_T2, row_T2), (col_T3, row_T3), ...),
+                 [
+                   # get all transect values
+                   [(col_T1, row_T1), (col_T2, row_T2), (col_T3, row_T3), ...],
                    # get point values
-                   (col_P1, row_P1), (col_P2, row_P2), ... )
+                   (col_P1, row_P1), (col_P2, row_P2), ...
+                 ]
         bandList : list of int or string
             elements of the list are band number or band Name
         latlon : bool
@@ -1726,30 +1731,30 @@ class Nansat(Domain):
 
         # if points is not given, get points from GUI ...
         if points is None:
+            latlon = False
             data = self[bandList[0]]
-            browser = PointBrowser(data, **kwargs)
+            browser = PointBrowser(data, transect, **kwargs)
             browser.get_points()
             points = []
-            for i, iCoord in enumerate (browser.coordinates):
+            oneLine = []
+
+            for i in range(len(browser.coordinates)):
                 transect = browser.connect[i]
-                if i == 0:
-                    oneLine = [iCoord]
-                elif transect:
-                    oneLine.append(iCoord)
+                if transect:
+                    oneLine.append(browser.coordinates[i])
                 else:
+                    if i == 0:
+                        oneLine = [browser.coordinates[i]]
                     if len(oneLine) == 1:
-                        points.append(oneLine[0])
-                    else:
-                        points.append(tuple(oneLine))
-                    oneLine = [iCoord]
-            if len(oneLine) == 1:
-                points.append(oneLine[0])
-            else:
-                points.append(tuple(oneLine))
-            latlon = False
-        """
-        <<<<<<< HEAD
+                        oneLine.append(oneLine[-1])
+                    points.append(oneLine)
+                    oneLine = [browser.coordinates[i]]
+                if i == len(browser.coordinates) - 1:
+                    if len(oneLine) == 1:
+                        oneLine.append(oneLine[-1])
+                    points.append(oneLine)
         pixlinCoordDic = {}
+
         for i, iShape in enumerate (points):
             pixlinCoord = np.array([[], []])
             for j in range(len(iShape) - 1):
@@ -1759,6 +1764,7 @@ class Nansat(Domain):
                 else:
                     point0 = iShape[j]
                     point1 = iShape[j + 1]
+
                 # if points in degree, convert them into pix/lin
                 if latlon:
                     pix, lin = self.transform_points([point0[0], point1[0]],
@@ -1803,78 +1809,6 @@ class Nansat(Domain):
                 pixlinCoordSmoothDic[iShapeKey+'_0'] = pixlinCoordSmoothDic[iShapeKey+'_0'][:, gpi]
                 pixlinCoordSmoothDic[iShapeKey+'_1'] = pixlinCoordSmoothDic[iShapeKey+'_1'][:, gpi]
                 pixlinCoordDic[iShapeKey] = pixlinCoordDic[iShapeKey][:, gpi]
-        =======
-        """
-        pixlinCoord = np.array([[], []])
-        for iPoint in range(len(points)):
-            # if one point is given
-            if type(points[iPoint]) != tuple:
-                point0 = (points[0], points[1])
-                point1 = (points[0], points[1])
-            # if we want points ...
-            elif not transect:
-                point0 = (points[iPoint][0], points[iPoint][1])
-                point1 = (points[iPoint][0], points[iPoint][1])
-            # if we want a transect ...
-            else:
-                try:
-                    point0 = points[iPoint]
-                    point1 = points[iPoint + 1]
-                except:
-                    break
-            # if points in degree, convert them into pix/lin
-            if latlon:
-                pix, lin = self.transform_points([point0[0], point1[0]],
-                                                  [point0[1], point1[1]],
-                                                  DstToSrc=1)
-                point0 = (pix[0], lin[0])
-                point1 = (pix[1], lin[1])
-            # compute Euclidean distance between point0 and point1
-            length = int(np.hypot(point0[0] - point1[0],
-                                  point0[1] - point1[1]))
-            # if a point is given
-            if length == 0:
-                length = 1
-            # get sequential coordinates on pix/lin between two points
-            pixVector = list(np.linspace(point0[0],
-                                         point1[0],
-                                         length).astype(int))
-            linVector = list(np.linspace(point0[1],
-                                         point1[1],
-                                         length).astype(int))
-            pixlinCoord = np.append(pixlinCoord,
-                                    [pixVector, linVector],
-                                    axis=1)
-
-        # truncate out-of-image points
-        gpi = ((pixlinCoord[0] >= 0) *
-               (pixlinCoord[1] >= 0) *
-               (pixlinCoord[0] < self.vrt.dataset.RasterXSize) *
-               (pixlinCoord[1] < self.vrt.dataset.RasterYSize))
-
-        if onlypixline:
-            return pixlinCoord[:, gpi]
-
-        if smoothRadius:
-            # get start/end coordinates of subwindows
-            pixlinCoord0 = pixlinCoord - smoothRadius
-            pixlinCoord1 = pixlinCoord + smoothRadius
-
-            # truncate out-of-image points
-            gpi = (gpi *
-                   (pixlinCoord0[0] >= 0) *
-                   (pixlinCoord0[1] >= 0) *
-                   (pixlinCoord1[0] >= 0) *
-                   (pixlinCoord1[1] >= 0) *
-                   (pixlinCoord0[0] < self.vrt.dataset.RasterXSize) *
-                   (pixlinCoord0[1] < self.vrt.dataset.RasterYSize) *
-                   (pixlinCoord1[0] < self.vrt.dataset.RasterXSize) *
-                   (pixlinCoord1[1] < self.vrt.dataset.RasterYSize))
-            pixlinCoord0 = pixlinCoord0[:, gpi]
-            pixlinCoord1 = pixlinCoord1[:, gpi]
-
-        pixlinCoord = pixlinCoord[:, gpi]
-        #>>>>>>> f5025c3daa0c73c0d1ba020795256e9ff2826c05
 
         # convert pix/lin into lon/lat
         vectorsDict = {}
