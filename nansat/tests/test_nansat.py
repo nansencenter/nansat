@@ -12,9 +12,6 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #-------------------------------------------------------------------------------
-import matplotlib
-matplotlib.use('Agg')
-
 import unittest, warnings
 import os, sys, glob
 from types import ModuleType, FloatType
@@ -364,6 +361,6 @@ class NansatTest(unittest.TestCase):
         st, ext = n1.crop(lonlim=[28, 29], latlim=[70.5, 71])
 
         self.assertEqual(st, 0)
-        self.assertEqual(n1.shape(), (111, 100))
+        self.assertEqual(n1.shape(), (111, 110))
         self.assertEqual(ext, [31, 89, 110, 111])
         self.assertEqual(type(n1[1]), np.ndarray)
