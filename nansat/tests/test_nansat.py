@@ -352,7 +352,18 @@ class NansatTest(unittest.TestCase):
 
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        n1.crop(10, 10, 50, 50)
+        st, ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(n1.shape(), (50, 50))
+        self.assertEqual(st, 0)
+        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(ext, [10, 20, 50, 60])
+        self.assertEqual(type(n1[1]), np.ndarray)
+
+    def test_crop_lonlat_lims(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        st, ext = n1.crop(lonlim=[28, 29], latlim=[70.5, 71])
+
+        self.assertEqual(st, 0)
+        self.assertEqual(n1.shape(), (111, 100))
+        self.assertEqual(ext, [31, 89, 110, 111])
         self.assertEqual(type(n1[1]), np.ndarray)

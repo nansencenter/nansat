@@ -1844,7 +1844,7 @@ class Nansat(Domain):
             return transect, [lonVector, latVector], pixlinCoord.astype(int)
 
     def crop(self, xOff=0, yOff=0, xSize=None, ySize=None,
-             lonlim=None, latlim=None):
+                   lonlim=None, latlim=None):
         '''Crop Nansat object
 
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1862,6 +1862,10 @@ class Nansat(Domain):
             width in pixels of subimage
         ySize : int
             height in pizels of subimage
+        lonlim : [float, float]
+            longitdal limits
+        latlim : [float, float]
+            latitudal limits
 
         Modifies
         --------
@@ -1873,6 +1877,23 @@ class Nansat(Domain):
                 0 - everyhting is OK, image is cropped
                 1 - if crop is totally outside, image is NOT cropped
                 2 - crop area is too large and crop is not needed
+            extent : [xOff, yOff, xSize, ySize]
+                xOff  - X offset in the original dataset
+                yOff  - Y offset in the original dataset
+                xSize - width of the new dataset
+                ySize - height of the new dataset
+
+        Examples
+        --------
+            # crop a subimage of size 100x200 pix from X/Y offset 10, 20 pix
+            status, extent = n.crop(10, 20, 100, 200)
+
+            # crop a subimage within the lon/lat limits
+            status, extent = n.crop(lonlim=[-20, 20], latlim=[50, 60])
+
+            # crop a subimage interactively
+            status, extent = n.crop()
+
         '''
         # use interactive PointBrowser for selecting extent
         if      (xOff==0 and yOff==0 and
@@ -1940,7 +1961,7 @@ class Nansat(Domain):
         if (ySize + yOff) > RasterYSize:
             ySize = RasterYSize - yOff
 
-        extent   = [xOff,yOff,xSize,ySize]
+        extent   = [int(xOff), int(yOff), int(xSize), int(ySize)]
         self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
                                                                         yOff,
                                                                         xSize,
