@@ -1877,7 +1877,7 @@ class Nansat(Domain):
                 0 - everyhting is OK, image is cropped
                 1 - if crop is totally outside, image is NOT cropped
                 2 - crop area is too large and crop is not needed
-            extent : [xOff, yOff, xSize, ySize]
+            extent : (xOff, yOff, xSize, ySize)
                 xOff  - X offset in the original dataset
                 yOff  - Y offset in the original dataset
                 xSize - width of the new dataset
@@ -1935,17 +1935,13 @@ class Nansat(Domain):
         if ySize is None:
             ySize = RasterYSize - yOff
 
-        extent   = [xOff,yOff,xSize,ySize]
         # test if crop is totally outside
         if    (xOff > RasterXSize or (xOff + xSize) < 0 or
                yOff > RasterYSize or (yOff + ySize) < 0):
             self.logger.error('WARNING! Cropping region is outside the image!')
             self.logger.error('xOff: %d, yOff: %d, xSize: %d, ySize: %d' %
-                                                                       (xOff,
-                                                                        yOff,
-                                                                        xSize,
-                                                                        ySize))
-            return 1, extent
+                                                   (xOff,  yOff, xSize, ySize))
+            return 1
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
@@ -1961,16 +1957,14 @@ class Nansat(Domain):
         if (ySize + yOff) > RasterYSize:
             ySize = RasterYSize - yOff
 
-        extent   = [int(xOff), int(yOff), int(xSize), int(ySize)]
-        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
-                                                                        yOff,
-                                                                        xSize,
-                                                                        ySize))
+        extent = (int(xOff), int(yOff), int(xSize), int(ySize))
+        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % extent)
+
         # test if crop is too large
         if    (xOff == 0 and xSize == RasterXSize and
                yOff == 0 and ySize == RasterYSize):
             self.logger.error('WARNING! Cropping region is larger or equal to image!')
-            return 2, extent
+            return 2
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()

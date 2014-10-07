@@ -353,7 +353,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(st, 0)
         self.assertEqual(n1.shape(), (60, 50))
-        self.assertEqual(ext, [10, 20, 50, 60])
+        self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_crop_lonlat_lims(self):
@@ -362,5 +362,5 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(st, 0)
         self.assertEqual(n1.shape(), (111, 110))
-        self.assertEqual(ext, [31, 89, 110, 111])
+        self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)
