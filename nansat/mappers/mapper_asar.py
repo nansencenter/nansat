@@ -8,6 +8,7 @@
 
 import numpy as np
 import scipy.ndimage
+import gdal
 
 from nansat.vrt import VRT
 from envisat import Envisat
@@ -79,10 +80,38 @@ class Mapper(VRT, Envisat):
         # add dictionary for raw counts
         metaDict = []
         for iPolarization in polarization:
+            iBand = gdalDataset.GetRasterBand(iPolarization['bandNum'])
+            dtype = iBand.DataType
+            shortName = 'RawCounts_%s' %iPolarization['channel']
+            bandName = shortName
+            if (8 <= dtype and dtype < 12):
+                bandName = shortName+'_complex'
+
             metaDict.append({'src': {'SourceFilename': fileName,
                                      'SourceBand': iPolarization['bandNum']},
                              'dst': {'name': 'raw_counts_%s'
                                      % iPolarization['channel']}})
+
+            # if raw data is complex, add the intensity band
+            if (8 <= dtype and dtype < 12):
+                # choose pixelfunction type
+                if (dtype == 8 or dtype == 9):
+                    pixelFunctionType = 'IntensityInt'
+                else:
+                    pixelFunctionType = 'intensity'
+                # get data type of the intensity band
+                intensityDataType = {'8': 3, '9': 4,
+                                     '10': 5, '11': 6}.get(str(dtype), 4)
+                # add intensity band
+                metaDict.append(
+                    {'src': {'SourceFilename': fileName,
+                             'SourceBand': iPolarization['bandNum'],
+                             'DataType': dtype},
+                     'dst': {'name': 'raw_counts_%s_intensity'
+                                     % iPolarization['channel'],
+                             'PixelFunctionType': pixelFunctionType,
+                             'SourceTransferType': gdal.GetDataTypeName(dtype),
+                             'dataType': intensityDataType}})
 
         #####################################################################
         # Add incidence angle and look direction through small VRT objects

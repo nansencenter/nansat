@@ -781,7 +781,7 @@ CPLErr BetaSigmaToIncidence(void **papoSources, int nSources, void *pData,
 	if (nSources != 2) return CE_Failure;
 	#define PI 3.14159265;
 
-        //printf("%d",eSrcType);
+        /*printf("%d",eSrcType);*/
 
         if (GDALDataTypeIsComplex( eSrcType ))
         {
@@ -1031,6 +1031,68 @@ CPLErr ComplexData(void **papoSources, int nSources, void *pData,
 	/* ---- Return success ---- */
 return CE_None;
 }
+
+CPLErr IntensityInt(void **papoSources, int nSources, void *pData,
+                    int nXSize, int nYSize,
+                    GDALDataType eSrcType, GDALDataType eBufType,
+                    int nPixelSpace, int nLineSpace)
+{
+    int ii, iLine, iCol;
+    int dfPixVal;
+
+    /* ---- Init ---- */
+    if (nSources != 1) return CE_Failure;
+
+	    int dfReal, dfImag;
+        int nOffset = GDALGetDataTypeSize( eSrcType ) / 8 / 2;
+        void *pReal = papoSources[0];
+        void *pImag = ((GByte *)papoSources[0]) + nOffset;
+	
+        // ---- Set pixels ---- 
+	
+    if (GDALDataTypeIsComplex( eSrcType ))
+    {
+        int dfReal, dfImag;
+        int nOffset = GDALGetDataTypeSize( eSrcType ) / 8 / 2;
+        void *pReal = papoSources[0];
+        void *pImag = ((GByte *)papoSources[0]) + nOffset;
+	
+        // ---- Set pixels ---- 
+	
+        for( iLine = 0, ii = 0; iLine < nYSize; ++iLine ) {
+            for( iCol = 0; iCol < nXSize; ++iCol, ++ii ) {
+
+                // Source raster pixels may be obtained with SRCVAL macro 
+                dfReal = SRCVAL(pReal, eSrcType, ii);
+                dfImag = SRCVAL(pImag, eSrcType, ii);
+
+                dfPixVal = dfReal * dfReal + dfImag * dfImag;
+				
+                GDALCopyWords(&dfPixVal, GDT_Int16, 0,
+                              ((GByte *)pData) + nLineSpace * iLine +
+                              iCol * nPixelSpace, eBufType, nPixelSpace, 1);
+            }
+        }
+    } else {
+        // ---- Set pixels ---- 
+        for( iLine = 0, ii = 0; iLine < nYSize; ++iLine ) {
+            for( iCol = 0; iCol < nXSize; ++iCol, ++ii ) {
+
+                // Source raster pixels may be obtained with SRCVAL macro 
+                dfPixVal = SRCVAL(papoSources[0], eSrcType, ii);
+                dfPixVal *= dfPixVal;
+
+                GDALCopyWords(&dfPixVal, GDT_Int32, 0,
+                              ((GByte *)pData) + nLineSpace * iLine +
+                              iCol * nPixelSpace, eBufType, nPixelSpace, 1);
+            }
+        }
+    }
+    /* ---- Return success ---- */
+    return CE_None;
+} /* IntensityInt */
+
+
 
 
 /************************************************************************/
@@ -1460,6 +1522,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("Sigma0VVNormalizedWater", Sigma0VVNormalizedWater);
     GDALAddDerivedBandPixelFunc("Sentinel1Calibration", Sentinel1Calibration);
     GDALAddDerivedBandPixelFunc("Sentinel1Sigma0HHToSigma0VV", Sentinel1Sigma0HHToSigma0VV);
+	GDALAddDerivedBandPixelFunc("IntensityInt", IntensityInt);
 
     return CE_None;
 }
