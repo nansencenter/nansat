@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:		mapper_asar_netcdf_doppler.py
+# Name:		mapper_asar_netcdf_old_doppler.py
 # Purpose:      To read previously processed ASAR WS Doppler data saved as
 #               netcdf files
 #
@@ -7,7 +7,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	09.10.2014
-# Last modified:10.10.2014 09:47
+# Last modified:13.10.2014 17:09
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -31,6 +31,8 @@ class Mapper(VRT):
     def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         # Check this is ASAR old doppler netcdf
+        if not len(filename.split('.'))==3:
+            raise WrongMapperError
         if not (filename.split('.')[2]=='nc' and
                 filename.split('.')[1]=='doppler' and
                 filename.split('.')[0][0:3]=='ASA'):
