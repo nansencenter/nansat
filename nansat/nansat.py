@@ -293,7 +293,7 @@ class Nansat(Domain):
 
         return bandExists
 
-    def export(self, fileName, rmMetadata=[], addGeolocArray=True,
+    def export(self, fileName, bands=None, rmMetadata=[], addGeolocArray=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -301,6 +301,9 @@ class Nansat(Domain):
         -----------
         fileName : str
             output file name
+        bands: list (default=None)
+            Specify band numbers to export.
+            If None, all bands are exported.
         rmMetadata : list
             metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
@@ -342,6 +345,14 @@ class Nansat(Domain):
         exportVRT = self.vrt.copy()
         exportVRT.real = []
         exportVRT.imag = []
+
+        # delete unnecessary bands
+        if bands is not None:
+            srcBands = np.arange(self.vrt.dataset.RasterCount) + 1
+            dstBands = np.array(bands)
+            mask = np.in1d(srcBands, dstBands)
+            rmBands = srcBands[mask==False]
+            exportVRT.delete_bands(rmBands.tolist())
 
         # Find complex data band
         complexBands = []
@@ -1615,35 +1626,6 @@ class Nansat(Domain):
 
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Overloaded in childs.'''
-
-    def export_band(self, fileName, bandID=1, driver='netCDF'):
-        '''Export only one band of the Nansat object
-        Get array from the required band
-        Create temporary Nansat from the array
-        Export temporary Nansat to file
-
-        Parameters
-        ----------
-        fileName : str
-            name of the output file
-        bandID : int or str, [1]
-            number of name of the band
-        driver : str, ['netCDF']
-            name of the GDAL Driver (format) to use
-
-        '''
-        # get array from self
-        bandArray = self[bandID]
-        # get root, band metadata
-        rootMetadata = self.get_metadata()
-        bandMetadata = self.get_metadata(bandID=bandID)
-        # create temporary nansat
-        tmpNansat = Nansat(domain=self, array=bandArray)
-        # set metadata
-        tmpNansat.set_metadata(rootMetadata)
-        tmpNansat.set_metadata(bandMetadata, bandID=1)
-        # export
-        tmpNansat.export(fileName, driver=driver)
 
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            transect=True, returnOGR=False, layerNum=0,
