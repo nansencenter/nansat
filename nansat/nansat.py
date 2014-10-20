@@ -113,6 +113,23 @@ class Nansat(Domain):
 
         Examples
         --------
+        n = Nansat(filename)
+        # opens file for reading. Opening is lazy - no data is read at this
+        # point, only metadata that describes the dataset and bands
+
+        n = Nansat(domain=d)
+        # create an empty Nansat object. <d> is the Domain object which
+        # describes the grid (projection, resolution and extent)
+
+        n = Nansat(domain=d, array=a, parameters=p)
+        # create a Nansat object in memory with one band from input array <a>.
+        # <p> is a dictionary with metadata for the band
+
+        a = n[1]
+        # fetch data from Nansat object from the first band
+
+        a = n['band_name']
+        # fetch data from the band which has name 'band_name'
 
         '''
         # check the arguments
@@ -220,6 +237,15 @@ class Nansat(Domain):
         Creates VRT object with VRT-file and RAW-file
         Adds band to the self.vrt
 
+        Examples
+        --------
+        n.add_band(a, p)
+        # add new band from numpy array <a> with metadata <p> in memory
+        # Shape of a should be equal to the shape of <n>
+
+        n.add_band(a, p, nomem=True)
+        # add new band from an array <a> with metadata <p> but keep it
+        # temporarli on disk intead of memory
         '''
         self.add_bands([array], [parameters], nomem)
 
@@ -242,6 +268,12 @@ class Nansat(Domain):
         Creates VRT object with VRT-file and RAW-file
         Adds band to the self.vrt
 
+        Examples
+        --------
+        n.add_bands([a1, a2], [p1, p2])
+        # add two new bands from numpy arrays <a1> and <a2> with metadata in
+        # <p1> and <p2>
+
         '''
         # create VRTs from arrays
         bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
@@ -260,7 +292,7 @@ class Nansat(Domain):
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
-        ''' Make a dictionary with all bands metadata
+        ''' Make a dictionary with all metadata from all bands
 
         Returns
         --------
@@ -307,7 +339,7 @@ class Nansat(Domain):
         addGeolocArray : bool
             add geolocation array datasets to exported file?
         addGCPs : bool
-            add GCPs?  to exported file?
+            add GCPs to exported file?
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
@@ -336,6 +368,14 @@ class Nansat(Domain):
 
         CreateCopy fails in case the band name has special characters,
         e.g. the slash in 'HH/VV'.
+
+        Examples
+        --------
+        n.export(netcdfile)
+        # export all the bands into a netDCF 3 file
+
+        n.export(driver='GTiff')
+        # export all bands into a GeoTiff
 
         '''
         # temporary VRT for exporting
@@ -485,28 +525,41 @@ class Nansat(Domain):
         fileName : str
             output file name
         bands : dict
-            {'band_name': {'type'     :  '>i1',
+            {'band_name': {'type'     : '>i1',
                            'scale'    : 0.1,
                            'offset'   : 1000,
                            'metaKey1' : 'meta value 1',
                            'metaKey2' : 'meta value 2'}}
-        maskName: string
+            dictionary sets parameters for band creation
+            'type' - string representation of data type in the output band
+            'scale' - sets scale_factor and applies scaling
+            'offset' - sets 'scale_offset and applies offsetting
+            other entries (e.g. 'units': 'K') set other metadata
+        metadata : dict
+            Glbal metadata to add
+        maskName: string;
             if data include a mask band: give the mask name.
             Non-masked value is 64.
             if None: no mask is added
-        rmGlobMetadata, rmMetadata : list
-            unsanted metadata names
-        duplicateMetadata : dictionary
-            if copy globalmetadata with another name,
-            keys are new names and values are key names of underlying data
+        rmMetadata : list
+            unwanted metadata names which will be removed
         time : list with datetime objects
-            produced time of original data
+            aqcuisition time of original data. That value will be in time dim
+        createdTime : datetime
+            date of creation. Will be in metadata 'created'
 
         !! NB
         ------
         Nansat object (self) has to be projected (with valid GeoTransform and
         valid Spatial reference information) but not wth GCPs
 
+        Examples
+        --------
+        n.export2thredds(filename)
+        # create THREDDS formatted netcdf file with all bands and time variable
+
+        n.export2thredds(filename, [1], {'description': 'example'})
+        # export only the first band and add global metadata
         '''
         # Create temporary empty Nansat object with self domain
         data = Nansat(domain=self)
@@ -770,6 +823,16 @@ class Nansat(Domain):
         self.vrt.dataset : VRT dataset of VRT object
             raster size are modified to downscaled size.
             If GCPs are given in the dataset, they are also overwritten.
+
+        Examples
+        --------
+        n.resize(0.1)
+        # resize the Nansat object to e 10 times smaller
+        # resampling method is 'average'
+
+        n.resize(width=100, eResampleAlg=0)
+        # resize the object proportionally to make width equal 100 pix
+        # resamling method is 'nearest neighbour'
 
         '''
         # get current shape
