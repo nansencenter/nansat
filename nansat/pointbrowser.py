@@ -42,6 +42,8 @@ class PointBrowser():
         self.line       : plot with points
 
         '''
+        if plt.get_backend() == 'agg':
+            plt.switch_backend('QT4Agg')
         self.fig = plt.figure()
         self.data = data
         self.ax = self.fig.add_subplot(111)
