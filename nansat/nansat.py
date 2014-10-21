@@ -1339,11 +1339,15 @@ class Nansat(Domain):
                     plt.show()
                 except:
                     fig.pilImg.show()
-            elif type(fileName) == str:
+            elif type(fileName) in [str, unicode]:
                 fig.save(fileName, **kwargs)
                 # If tiff image, convert to GeoTiff
                 if fileName[-3:] == 'tif':
                     self.vrt.copyproj(fileName)
+            else:
+                raise OptionError('%s is of wrong type %s' % (str(fileName),
+                                                        str(type(fileName))))
+
 
         return fig
 
