@@ -134,7 +134,7 @@ class DomainTest(unittest.TestCase):
 
     def test_azimuth_y(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        au = d.azimuth_up()
+        au = d.azimuth_y()
 
         self.assertEqual(np.round(au[0,0]), 0)
         self.assertEqual(np.round(au[10,10]), 0)
