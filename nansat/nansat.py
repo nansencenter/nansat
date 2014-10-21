@@ -1324,7 +1324,6 @@ class Nansat(Domain):
         if fileName is not None:
             if type(fileName) == bool and fileName:
                 import matplotlib.pyplot as plt
-                from matplotlib.pyplot import imshow, show
                 from numpy import array
                 try:
                     if plt.get_backend() == 'agg':
