@@ -52,7 +52,6 @@ class Mapper(VRT):
                     'Control_Flags_3', 'Control_Flags_4',
                     'Science_Flags_1', 'Science_Flags_2',
                     'Science_Flags_3', 'Science_Flags_4']
-        self.subVRTs = {}
         metaDict = []
         for varName in varNames:
             var = matFile[varName]

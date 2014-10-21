@@ -4,6 +4,7 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from pytz import UTC
 from dateutil.parser import parse
 
 from nansat.vrt import VRT
@@ -137,8 +138,8 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date', parse(gdalMetadata['SPH_FIRST_LINE_TIME']).isoformat())
-        self.dataset.SetMetadataItem('stop_date', parse(gdalMetadata['SPH_LAST_LINE_TIME']).isoformat())
+        self.dataset.SetMetadataItem('start_date', parse(gdalMetadata['SPH_FIRST_LINE_TIME']).isoformat() + '+00:00')
+        self.dataset.SetMetadataItem('stop_date', parse(gdalMetadata['SPH_LAST_LINE_TIME']).isoformat() + '+00:00')
         self.dataset.SetMetadataItem('sensor', 'MERIS')
         self.dataset.SetMetadataItem('satellite', 'ENVISAT')
         self.dataset.SetMetadataItem('mapper', 'meris_l1')

@@ -121,9 +121,50 @@ except Exception as e:
 #                               Install package
 #----------------------------------------------------------------------------#
 from setuptools import setup, find_packages
+from setuptools.command.install_scripts import install_scripts
+from distutils import log
 from distutils.extension import Extension
 from distutils.errors import CCompilerError, DistutilsExecError,\
     DistutilsPlatformError
+
+# Windows batch file handling
+# from https://matthew-brett.github.io/pydagogue/installing_scripts.html
+BAT_TEMPLATE = \
+r"""@echo off
+set mypath=%~dp0
+set pyscript="%mypath%{FNAME}"
+set /p line1=<%pyscript%
+if "%line1:~0,2%" == "#!" (goto :goodstart)
+echo First line of %pyscript% does not start with "#!"
+exit /b 1
+:goodstart
+set py_exe=%line1:~2%
+call %py_exe% %pyscript% %*
+"""
+class my_install_scripts(install_scripts):
+    def run(self):
+        install_scripts.run(self)
+        if not os.name == "nt":
+            return
+        for filepath in self.get_outputs():
+            # If we can find an executable name in the #! top line of the script
+            # file, make .bat wrapper for script.
+            with open(filepath, 'rt') as fobj:
+                first_line = fobj.readline()
+            if not (first_line.startswith('#!') and
+                    'python' in first_line.lower()):
+                log.info("No #!python executable found, skipping .bat "
+                            "wrapper")
+                continue
+            pth, fname = os.path.split(filepath)
+            froot, _ = os.path.splitext(fname)
+            bat_file = os.path.join(pth, froot + '.bat')
+            bat_contents = BAT_TEMPLATE.replace('{FNAME}', fname)
+            log.info("Making %s wrapper for %s" % (bat_file, filepath))
+            if self.dry_run:
+                continue
+            with open(bat_file, 'wt') as fobj:
+                fobj.write(bat_contents)
 
 # the following is adapted from simplejson's setup.py
 if sys.platform == 'win32' and sys.version_info > (2, 6):
@@ -151,6 +192,12 @@ def run_setup(skip_compile):
                           extra_link_args=extra_link_args)
             ])
 
+
+    # remove nansat_tests from installed packages
+    packages = find_packages()
+    if 'mapper_tests' in packages:
+        packages.remove('mapper_tests')
+
     setup(
         name=NAME,
         version=VERSION,
@@ -165,17 +212,16 @@ def run_setup(skip_compile):
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
-        packages= find_packages(),
-        package_data={NAME: ['wkv.xml', "fonts/*.ttf", 'mappers/*.pl']},
-        entry_points = {
-            'console_scripts': [
-                'nansatinfo = nansat.cli.nansatinfo:main',
-                'nansat_add_coastline = nansat.cli.nansat_add_coastline:main',
-                'nansat_geotiffimage = nansat.cli.nansat_geotiffimage:main',
-                'nansat_show = nansat.cli.nansat_show:main',
-                'nansat_translate = nansat.cli.nansat_translate:main',
-            ],
-        },
+        packages=packages,
+        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl', 'tests/data/*']},
+        scripts=[os.path.join('utilities', name) for name in
+                    ['nansatinfo',
+                     'nansat_add_coastline',
+                     'nansat_geotiffimage',
+                     'nansat_show',
+                     'nansat_translate',
+                     ]],
+        cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
         **kw
         )

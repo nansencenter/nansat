@@ -163,9 +163,9 @@ class Mapper(VRT):
         lookVRT = lookVRT.get_resized_vrt(
                     gdalDataset.RasterXSize, gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
-        self.subVRTs = {'look_u_VRT': look_u_VRT,
-                        'look_v_VRT': look_v_VRT,
-                        'lookVRT': lookVRT}
+        self.subVRTs['look_u_VRT'] = look_u_VRT
+        self.subVRTs['look_v_VRT'] = look_v_VRT
+        self.subVRTs['lookVRT'] = lookVRT
 
         # Add band to full sized VRT
         lookFileName = self.subVRTs['lookVRT'].fileName
@@ -236,3 +236,10 @@ class Mapper(VRT):
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
         self.logger.info('Valid time: %s', str(validTime))
         self._set_time(parse(validTime))
+
+        # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('start_date', parse(gdalMetadata['FIRST_LINE_TIME']).isoformat())
+        self.dataset.SetMetadataItem('stop_date', parse(gdalMetadata['LAST_LINE_TIME']).isoformat())
+        self.dataset.SetMetadataItem('sensor', 'SAR')
+        self.dataset.SetMetadataItem('satellite', 'Radarsat2')
+        self.dataset.SetMetadataItem('mapper', 'radarsat2')
