@@ -1323,20 +1323,20 @@ class Nansat(Domain):
         # == finally SAVE to a image file or SHOW ==
         if fileName is not None:
             if type(fileName) == bool and fileName:
+                import matplotlib.pyplot as plt
+                from matplotlib.pyplot import imshow, show
+                from numpy import array
                 try:
-                    if __IPYTHON__:
-                        from matplotlib.pyplot import imshow, show
-                        from numpy import array
-                        sz = fig.pilImg.size
-                        image = array(fig.pilImg.im)
-                        if fig.pilImg.getbands() == ('P',):
-                            image.resize(sz[0], sz[1])
-                        elif fig.pilImg.getbands() == ('R', 'G', 'B'):
-                            image.resize(sz[0], sz[1], 3)
-                        imshow(image)
-                        show()
-                    else:
-                        fig.pilImg.show()
+                    if plt.get_backend() == 'agg':
+                        plt.switch_backend('QT4Agg')
+                    sz = fig.pilImg.size
+                    imgArray = array(fig.pilImg.im)
+                    if fig.pilImg.getbands() == ('P',):
+                        imgArray.resize(sz[1], sz[0])
+                    elif fig.pilImg.getbands() == ('R', 'G', 'B'):
+                        imgArray.resize(sz[1], sz[0], 3)
+                    plt.imshow(imgArray)
+                    plt.show()
                 except:
                     fig.pilImg.show()
             elif type(fileName) == str:
