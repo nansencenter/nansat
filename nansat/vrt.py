@@ -186,7 +186,7 @@ class VRT():
     # main sub VRT
     vrt = None
     # other sub VRTs
-    subVRTs = None
+    subVRTs = {}
     # use Thin Spline Transformation of the VRT has GCPs?
     tps = False
 
@@ -674,7 +674,12 @@ class VRT():
         '''
         self.logger.debug('Put: %s ' % str(metadataDict))
         for key in metadataDict:
-            rasterBand.SetMetadataItem(key, str(metadataDict[key]))
+            try:
+                metaValue = str(metadataDict[key])
+            except UnicodeEncodeError:
+                self.logger.error('Cannot add %s to metadata' % key)
+            else:
+                rasterBand.SetMetadataItem(key, metaValue)
 
         return rasterBand
 

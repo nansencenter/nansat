@@ -8,6 +8,7 @@
 
 import numpy as np
 import scipy.ndimage
+from dateutil.parser import parse
 
 from nansat.vrt import VRT
 from envisat import Envisat
@@ -223,3 +224,12 @@ class Mapper(VRT, Envisat):
         # When using TPS for reprojection, use only every 3rd GCP
         # to improve performance (tradeoff vs accuracy)
         self.dataset.SetMetadataItem('skip_gcps', '3')
+
+        # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('start_date',
+                parse(gdalMetadata['MPH_SENSING_START']).isoformat())
+        self.dataset.SetMetadataItem('stop_date',
+                parse(gdalMetadata['MPH_SENSING_STOP']).isoformat())
+        self.dataset.SetMetadataItem('sensor', 'ASAR')
+        self.dataset.SetMetadataItem('satellite', 'Envisat')
+        self.dataset.SetMetadataItem('mapper', 'asar')
