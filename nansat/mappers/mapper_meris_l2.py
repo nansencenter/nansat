@@ -4,8 +4,10 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from dateutil.parser import parse
 
 from nansat.vrt import VRT
+from nansat.tools import WrongMapperError
 from envisat import Envisat
 
 
@@ -35,7 +37,7 @@ class Mapper(VRT, Envisat):
         Envisat.__init__(self, fileName, gdalMetadata)
 
         if self.product[0:9] != "MER_FRS_2" and self.product[0:9] != "MER_RR__2":
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
@@ -156,3 +158,9 @@ class Mapper(VRT, Envisat):
         if geolocation:
             self.add_geolocation_from_ads(gdalDataset,
                                           zoomSize=zoomSize, step=step)
+
+        # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('start_date', parse(gdalMetadata['SPH_FIRST_LINE_TIME']).isoformat())
+        self.dataset.SetMetadataItem('stop_date', parse(gdalMetadata['SPH_LAST_LINE_TIME']).isoformat())
+        self.dataset.SetMetadataItem('sensor', 'MERIS')
+        self.dataset.SetMetadataItem('satellite', 'ENVISAT')
