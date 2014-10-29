@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	12.09.2014
-# Last modified:26.09.2014 11:27
+# Last modified:14.10.2014 16:13
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -37,8 +37,6 @@ class Mapper(VRT):
             # THIS IS NOT THE CASE...
             mdsFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if
                     'measurement/s1a' in fn]
-            if not mdsFiles:
-                raise WrongMapperError
             calFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if \
                     'annotation/calibration/calibration-s1a' in fn]
             noiseFiles = ['/vsizip/%s/%s' % (fileName, fn) for fn in zz.namelist() if \
@@ -50,12 +48,14 @@ class Mapper(VRT):
             zz.close()
         else:
             mdsFiles = glob.glob('%s/measurement/s1a*'%fileName)
-            if not mdsFiles:
-                raise WrongMapperError
             calFiles = glob.glob('%s/annotation/calibration/calibration-s1a*'%fileName)
             noiseFiles = glob.glob('%s/annotation/calibration/noise-s1a*'%fileName)
             annotationFiles = glob.glob('%s/annotation/s1a*'%fileName)
             manifestFile = glob.glob('%s/manifest.safe'%fileName)
+
+        if not mdsFiles or not calFiles or not noiseFiles or not \
+                annotationFiles or not manifestFile:
+            raise WrongMapperError
 
         mdsDict = {}
         for mds in mdsFiles:
@@ -85,7 +85,9 @@ class Mapper(VRT):
             raise WrongMapperError('No Sentinel-1 datasets found')
 
         # Check metadata to confirm it is Sentinel-1 L1
-        metadata = gdalDatasets[1].GetMetadata()
+        for key in gdalDatasets:
+            metadata = gdalDatasets[key].GetMetadata()
+            break
         if not 'TIFFTAG_IMAGEDESCRIPTION' in metadata.keys():
             raise WrongMapperError
         if not 'Sentinel-1' in metadata['TIFFTAG_IMAGEDESCRIPTION'] \
@@ -98,15 +100,19 @@ class Mapper(VRT):
                 'issues.')
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDatasets[1])
+        for key in gdalDatasets:
+            VRT.__init__(self, gdalDatasets[key])
+            break
 
         # Read annotation, noise and calibration xml-files
         pol = {}
+        it = 0
         for key in annotationDict.keys():
             xml = Node.create(self.read_xml(annotationDict[key]))
             pol[key] = xml.node('product').node('adsHeader'
                 )['polarisation'].upper()
-            if key==1:
+            it += 1
+            if it==1:
                 # Get incidence angle
                 pi = xml.node('generalAnnotation').node('productInformation')
                 self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(pi['pass']))
@@ -373,6 +379,19 @@ class Mapper(VRT):
                 self._set_time( parse( nn.node( 'metadataWrap' ).node(
                     'xmlData' ).node( 'safe:acquisitionPeriod'
                         )['safe:startTime']))
+                # set SADCAT specific metadata
+                self.dataset.SetMetadataItem('start_date',
+                    parse(nn.node( 'metadataWrap' ).node(
+                    'xmlData' ).node( 'safe:acquisitionPeriod'
+                        )['safe:startTime']).isoformat())
+                self.dataset.SetMetadataItem('stop_date',
+                    parse(nn.node( 'metadataWrap' ).node(
+                    'xmlData' ).node( 'safe:acquisitionPeriod'
+                        )['safe:stopTime']).isoformat())
+
+        self.dataset.SetMetadataItem('sensor', 'SAR')
+        self.dataset.SetMetadataItem('satellite', 'Sentinel-1')
+        self.dataset.SetMetadataItem('mapper', 's1a_l1')
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)
