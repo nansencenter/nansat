@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+#---------------    ----------------------------------------------------------------
 # Name:         test_nansat.py
 # Purpose:      Test the Nansat class
 #
@@ -30,6 +30,7 @@ class NansatTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
+        self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
@@ -154,6 +155,47 @@ class NansatTest(unittest.TestCase):
         n.write_figure(tmpfilename, 2, clim='hist')
 
         self.assertEqual(type(n[1]), np.ndarray)
+
+    def test_resize_complex_algAverage(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            n.resize(0.5, eResampleAlg=-1)
+
+            self.assertTrue(len(w)==1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue("Imaginary parts of the complex number are lost" in str(w[-1].message))
+
+    def test_resize_complex_alg0(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=0)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg1(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=1)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg2(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=2)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg3(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=3)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg4(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=4)
+
+        self.assertTrue(np.any(n[1].imag!=0))
 
     def test_get_GDALRasterBand(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -364,3 +406,5 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n1.shape(), (111, 110))
         self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)
+
+

@@ -821,27 +821,6 @@ class Nansat(Domain):
             raster size are modified to downscaled size.
             If GCPs are given in the dataset, they are also overwritten.
 
-<<<<<<< HEAD
-        !! NB !!
-        ---------
-        - Integer data is returnd by integer. Round off to decimal place.
-          If you do not want to round off, convert the data types
-          to GDT_Float32, GDT_Float64, or GDT_CFloat32.
-
-        - eResampleAlg = -1 does not work for complex data. Imaginary parts
-          are lost.
-=======
-        Examples
-        --------
-        n.resize(0.1)
-        # resize the Nansat object to e 10 times smaller
-        # resampling method is 'average'
-
-        n.resize(width=100, eResampleAlg=0)
-        # resize the object proportionally to make width equal 100 pix
-        # resamling method is 'nearest neighbour'
->>>>>>> e2bad7620e5654e3def335531ca6f13a99b2824b
-
         '''
         # get current shape
         rasterYSize = float(self.shape()[0])
