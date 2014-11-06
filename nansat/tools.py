@@ -16,7 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 
-import os, sys
+import os
+import sys
 import warnings
 import logging
 
@@ -25,7 +26,9 @@ import numpy as np
 from scipy import mod
 
 try:
-    import gdal, ogr, osr
+    import gdal
+    import ogr
+    import osr
 except:
     from osgeo import gdal, ogr, osr
 
@@ -36,77 +39,75 @@ except:
     warnings.warn('GDAL will not raise exceptions.'
                   'Probably GDAL is not installed')
 
-obpg = {
-'red': [  (0.00, 0.56, 0.56),
-          (0.19, 0.00, 0.00),
-          (0.38, 0.00, 0.00),
-          (0.50, 0.00, 0.00),
-          (0.63, 1.00, 1.00),
-          (0.88, 1.00, 1.00),
-          (1.00, 0.40, 0.40)],
-'green': [(0.00, 0.00, 0.00),
-          (0.19, 0.00, 0.00),
-          (0.38, 1.00, 1.00),
-          (0.50, 1.00, 1.00),
-          (0.63, 1.00, 1.00),
-          (0.88, 0.00, 0.00),
-          (1.00, 0.00, 0.00)],
-'blue': [ (0.00, 0.43, 0.43),
-          (0.19, 1.00, 1.00),
-          (0.38, 1.00, 1.00),
-          (0.50, 0.00, 0.00),
-          (0.63, 0.00, 0.00),
-          (0.88, 0.00, 0.00),
-          (1.00, 0.00, 0.00)],
-}
+obpg = {'red': [(0.00, 0.56, 0.56),
+                (0.19, 0.00, 0.00),
+                (0.38, 0.00, 0.00),
+                (0.50, 0.00, 0.00),
+                (0.63, 1.00, 1.00),
+                (0.88, 1.00, 1.00),
+                (1.00, 0.40, 0.40)],
 
-ak01 = {
+        'green': [(0.00, 0.00, 0.00),
+                  (0.19, 0.00, 0.00),
+                  (0.38, 1.00, 1.00),
+                  (0.50, 1.00, 1.00),
+                  (0.63, 1.00, 1.00),
+                  (0.88, 0.00, 0.00),
+                  (1.00, 0.00, 0.00)],
 
-'red': [  (0,0.1,0.1,),
-(0.1,0.56,0.56,),
-(0.22,0,0,),
-(0.27,0,0,),
-(0.37,0.3,0.3,),
-(0.47,0,0,),
-(0.52,0,0,),
-(0.64,1,1,),
-(0.76,1,1,),
-(0.88,0.4,0.4,),
-(1,1,1,)],
+        'blue': [(0.00, 0.43, 0.43),
+                 (0.19, 1.00, 1.00),
+                 (0.38, 1.00, 1.00),
+                 (0.50, 0.00, 0.00),
+                 (0.63, 0.00, 0.00),
+                 (0.88, 0.00, 0.00),
+                 (1.00, 0.00, 0.00)],
+        }
 
 
-'green': [(0,0,0,),
-(0.1,0,0,),
-(0.22,0,0,),
-(0.27,0,0,),
-(0.37,0.6,0.6,),
-(0.47,0.6,0.6,),
-(0.52,1,1,),
-(0.64,1,1,),
-(0.76,0,0,),
-(0.88,0,0,),
-(1,0.5,0.5,)],
+ak01 = {'red': [(0, 0.1, 0.1,),
+                (0.1, 0.56, 0.56,),
+                (0.22, 0, 0,),
+                (0.27, 0, 0,),
+                (0.37, 0.3, 0.3,),
+                (0.47, 0, 0,),
+                (0.52, 0, 0,),
+                (0.64, 1, 1,),
+                (0.76, 1, 1,),
+                (0.88, 0.4, 0.4,),
+                (1, 1, 1,)],
 
+        'green': [(0, 0, 0,),
+                  (0.1, 0, 0,),
+                  (0.22, 0, 0,),
+                  (0.27, 0, 0,),
+                  (0.37, 0.6, 0.6,),
+                  (0.47, 0.6, 0.6,),
+                  (0.52, 1, 1,),
+                  (0.64, 1, 1,),
+                  (0.76, 0, 0,),
+                  (0.88, 0, 0,),
+                  (1, 0.5, 0.5,)],
 
-'blue': [ (0,0.1,0.1,),
-(0.1,0.5,0.5,),
-(0.22,0.5,0.5,),
-(0.27,1,1,),
-(0.37,1,1,),
-(0.47,0,0,),
-(0.52,0,0,),
-(0.64,0,0,),
-(0.76,0,0,),
-(0.88,0,0,),
-(1,0.5,0.5,)],
-
-}
+        'blue': [(0, 0.1, 0.1,),
+                 (0.1, 0.5, 0.5,),
+                 (0.22, 0.5, 0.5,),
+                 (0.27, 1, 1,),
+                 (0.37, 1, 1,),
+                 (0.47, 0, 0,),
+                 (0.52, 0, 0,),
+                 (0.64, 0, 0,),
+                 (0.76, 0, 0,),
+                 (0.88, 0, 0,),
+                 (1, 0.5, 0.5,)],
+        }
 
 try:
     cm.register_cmap(name='obpg', data=obpg, lut=256)
     cm.register_cmap(name='ak01', data=ak01, lut=256)
 except:
     warnings.warn('Cannot generate and register the OBPG colormap!')
+
 
 class Error(Exception):
     '''Base class for exceptions in this module.'''
@@ -127,9 +128,11 @@ class GDALError(Error):
     '''Error from GDAL '''
     pass
 
+
 class WrongMapperError(Exception):
     '''Error for handling data that does not fit a given mapper'''
     pass
+
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
@@ -162,6 +165,7 @@ def initial_bearing(lon1, lat1, lon2, lat2):
                              np.cos(rlon2 - rlon1))
         return mod(np.degrees(bearing) + 360, 360)
 
+
 def haversine(lon1, lat1, lon2, lat2):
     """
     Calculate the great circle distance between two points
@@ -176,6 +180,7 @@ def haversine(lon1, lat1, lon2, lat2):
     c = 2 * np.arcsin(np.sqrt(a))
     distance_meters = 6367000 * c
     return distance_meters
+
 
 def add_logger(logName='', logLevel=None):
     ''' Creates and returns logger with default formatting for Nansat

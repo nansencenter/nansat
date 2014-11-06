@@ -28,10 +28,12 @@ from nansat.nansat import Nansat
 # to Mapper.__init__
 downloads = os.path.join(os.path.expanduser('~'), 'ncep_gfs_downloads')
 
+
 class Mapper(VRT, object):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, outFolder=downloads, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 outFolder=downloads, **kwargs):
         ''' Create NCEP VRT '''
 
         if not os.path.exists(outFolder):
@@ -53,13 +55,13 @@ class Mapper(VRT, object):
         ########################################
         # Find closest 6 hourly modelrun and forecast hour
         modelRunHour = round((time.hour + time.minute/60.)/6)*6
-        nearestModelRun = datetime(time.year, time.month, time.day) \
-            + timedelta(hours=modelRunHour)
+        nearestModelRun = (datetime(time.year, time.month, time.day)
+                           + timedelta(hours=modelRunHour))
         if sys.version_info < (2, 7):
             td = (time - nearestModelRun)
-            forecastHour =  (td.microseconds +
-                                (td.seconds + td.days * 24 * 3600)
-                                * 10**6) / 10**6 /3600.
+            forecastHour = (td.microseconds +
+                            (td.seconds + td.days * 24 * 3600)
+                            * 10**6) / 10**6 / 3600.
         else:
             forecastHour = (time - nearestModelRun).total_seconds()/3600.
         if modelRunHour == 24:
@@ -74,13 +76,16 @@ class Mapper(VRT, object):
         # ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/
         # - avaliable approximately the latest month
         #########################################################
-        url = 'ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/' \
-                + 'gfs.' + nearestModelRun.strftime('%Y%m%d') \
-                + '%.2d' % modelRunHour \
-                + '/gfs.t' + '%.2d' % modelRunHour + 'z.master.grbf' \
-                + '%.2d' % forecastHour + '.10m.uv.grib2'
-        outFileName = os.path.join(outFolder, 'ncep_gfs_' + nearestModelRun.strftime(
-                    '%Y%m%d_%HH_') + '%.2d' % forecastHour + '.10m.uv.grib2' )
+        url = ('ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/' +
+               'gfs.' + nearestModelRun.strftime('%Y%m%d') +
+               '%.2d' % modelRunHour +
+               '/gfs.t' + '%.2d' % modelRunHour + 'z.master.grbf' +
+               '%.2d' % forecastHour + '.10m.uv.grib2')
+        outFileName = os.path.join(outFolder,
+                                   ('ncep_gfs_' +
+                                    nearestModelRun.strftime('%Y%m%d_%HH_') +
+                                    '%.2d' % forecastHour +
+                                    '.10m.uv.grib2'))
         if os.path.exists(outFileName):
             print 'NCEP wind is already downloaded: ' + outFileName
         else:
@@ -92,11 +97,11 @@ class Mapper(VRT, object):
                 #########################################################
                 # If NRT file not available, search in long term archive
                 #########################################################
-                url = 'http://nomads.ncdc.noaa.gov/data/gfs4/' + \
-                    nearestModelRun.strftime('%Y%m/%Y%m%d/')
-                baseName = 'gfs_4_' + nearestModelRun.strftime('%Y%m%d_') \
-                        + nearestModelRun.strftime('%H%M_') \
-                        + '%.3d' % forecastHour
+                url = ('http://nomads.ncdc.noaa.gov/data/gfs4/' +
+                       nearestModelRun.strftime('%Y%m/%Y%m%d/'))
+                baseName = ('gfs_4_' + nearestModelRun.strftime('%Y%m%d_') +
+                            nearestModelRun.strftime('%H%M_') +
+                            '%.3d' % forecastHour)
                 fileName = baseName + '.grb2'
                 outFileName = os.path.join(outFolder, fileName)
                 print 'Downloading ' + url + fileName
@@ -105,22 +110,22 @@ class Mapper(VRT, object):
                 mapperDir = os.path.dirname(os.path.abspath(__file__))
                 get_inv = os.path.join(mapperDir, 'get_inv.pl')
                 if not os.path.isfile(get_inv):
-                    raise IOError('%s: File not found' %get_inv)
+                    raise IOError('%s: File not found' % get_inv)
                 get_grib = os.path.join(mapperDir, 'get_grib.pl')
                 if not os.path.isfile(get_grib):
-                    raise IOError('%s: File not found' %get_grib)
+                    raise IOError('%s: File not found' % get_grib)
                 if not os.path.isfile(outFileName):
-                    command = get_inv + ' ' + url + baseName \
-                          + '.inv | egrep "(:UGRD:10 m |:VGRD:10 m )" | ' \
-                          + get_grib + ' ' + url + fileName + ' ' + outFileName
+                    command = (get_inv + ' ' + url + baseName +
+                               '.inv | egrep "(:UGRD:10 m |:VGRD:10 m )" | ' +
+                               get_grib + ' ' + url + fileName +
+                               ' ' + outFileName)
                     os.system(command)
                     if os.path.isfile(outFileName):
                         print 'Downloaded ' + fileName + ' to ' + outFolder
                 else:
-                    print 'Already downloaded %s' %outFileName
+                    print 'Already downloaded %s' % outFileName
                 if not os.path.isfile(outFileName):
                     sys.exit('No NCEP wind files found for requested time')
-
 
         ######################################################
         # Open downloaded grib file with a(ny) Nansat mapper

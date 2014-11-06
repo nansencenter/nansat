@@ -30,6 +30,7 @@ from nansat.tools import OptionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
+
 class Domain(object):
     '''Container for geographical reference of a raster
 
@@ -212,7 +213,8 @@ class Domain(object):
             self.logger.error('Cannot read projection from source!')
         else:
             outStr += 'Projection:\n'
-            outStr += NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n'
+            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1)
+                       + '\n')
             outStr += '-' * 40 + '\n'
             outStr += 'Corners (lon, lat):\n'
             outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
@@ -740,7 +742,7 @@ class Domain(object):
         pixel size in X and Y directions given in meters
         '''
 
-        srs=osr.SpatialReference(self.vrt.dataset.GetProjection())
+        srs = osr.SpatialReference(self.vrt.dataset.GetProjection())
         if srs.IsProjected:
             if srs.GetAttrValue('unit') == 'metre':
                 geoTransform = self.vrt.dataset.GetGeoTransform()

@@ -127,13 +127,13 @@ class Mapper(VRT, Envisat):
                      ]
 
         # get list with resized VRTs from ADS
-        self.subVRTs = {'adsVRTs' : self.get_ads_vrts(gdalDataset,
-                                         ['sun zenith angles',
-                                          'sun azimuth angles',
-                                          'zonal winds',
-                                          'meridional winds'],
-                                         zoomSize=zoomSize,
-                                         step=step)}
+        self.subVRTs = {'adsVRTs': self.get_ads_vrts(gdalDataset,
+                                                     ['sun zenith angles',
+                                                      'sun azimuth angles',
+                                                      'zonal winds',
+                                                      'meridional winds'],
+                                                     zoomSize=zoomSize,
+                                                     step=step)}
 
         # add bands from the ADS VRTs
         for adsVRT in self.subVRTs['adsVRTs']:
