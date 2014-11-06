@@ -176,6 +176,18 @@ class DomainTest(unittest.TestCase):
         i.verify()
         self.assertEqual(i.info['dpi'], (100, 100))
 
+    def test_write_map_labels(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'domain_write_map_labels.png')
+        d.write_map(tmpfilename,
+                    merLabels=[False, False, False, True],
+                    parLabels=[True, False, False, False])
+
+        self.assertTrue(os.path.exists(tmpfilename))
+        i = Image.open(tmpfilename)
+        i.verify()
+
     def test_reproject_GCPs(self):
         ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)

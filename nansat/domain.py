@@ -935,7 +935,9 @@ class Domain(object):
                   lonVec=None, latVec=None, lonBorder=10., latBorder=10.,
                   figureSize=(6, 6), dpi=50, projection='cyl', resolution='c',
                   continetsColor='coral', meridians=10, parallels=10,
-                  pColor='r', pLine='k', pAlpha=0.5, padding=0.):
+                  pColor='r', pLine='k', pAlpha=0.5, padding=0.,
+                  merLabels=[False, False, False, False],
+                  parLabels=[False, False, False, False]):
         ''' Create an image with a map of the domain
 
         Uses Basemap to create a World Map
@@ -977,6 +979,10 @@ class Domain(object):
             0.5, transparency of Domain patch
         padding : float
             0., width of white padding around the map
+        merLabels : list of 4 booleans
+            where to put meridian labels, see also Basemap.drawmeridians()
+        parLables : list of 4 booleans
+            where to put parallel labels, see also Basemap.drawparallels()
 
         '''
         # if lat/lon vectors are not given as input
@@ -1013,8 +1019,8 @@ class Domain(object):
         # add content: coastline, continents, meridians, parallels
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
-        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
-        bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
+        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians), labels=merLabels)
+        bmap.drawparallels(np.linspace(minLat, maxLat, parallels), labels=parLabels)
 
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given
