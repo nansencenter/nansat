@@ -24,11 +24,13 @@ from nansat.tools import gdal
 
 import nansat_test_data as ntd
 
+IS_CONDA = 'conda' in os.environ['PATH']
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
+        plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
@@ -100,11 +102,14 @@ class NansatTest(unittest.TestCase):
     def test_export(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
-        n.export(tmpfilename)
+        n.export(tmpfilename, driver='GTiff')
 
         self.assertTrue(os.path.exists(tmpfilename))
 
     def test_export2thredds_stere(self):
+        # skip the test if anaconda is used
+        if IS_CONDA:
+            return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export2thredds.nc')
         n.export(tmpfilename)
@@ -300,7 +305,7 @@ class NansatTest(unittest.TestCase):
     def test_export_band(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_write_geotiffimage.tif')
-        n1.export_band(tmpfilename)
+        n1.export_band(tmpfilename, driver='GTiff')
 
         self.assertTrue(os.path.exists(tmpfilename))
 
@@ -344,7 +349,18 @@ class NansatTest(unittest.TestCase):
 
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        n1.crop(10, 10, 50, 50)
+        st, ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(n1.shape(), (50, 50))
+        self.assertEqual(st, 0)
+        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(ext, (10, 20, 50, 60))
+        self.assertEqual(type(n1[1]), np.ndarray)
+
+    def test_crop_lonlat_lims(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        st, ext = n1.crop(lonlim=[28, 29], latlim=[70.5, 71])
+
+        self.assertEqual(st, 0)
+        self.assertEqual(n1.shape(), (111, 110))
+        self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)

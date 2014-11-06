@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+#
+# Utility to make a figure with coastline from any file supported by Nansat
+# Useful to e.g. check accuracy of reprojections
+
+import sys
+from os.path import dirname, abspath
+from numpy import linspace, flipud
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.basemap import Basemap
+
+try:
+    from nansat import Nansat
+except ImportError: # development
+    sys.path.append(dirname(dirname(abspath(__file__))))
+    from nansat import Nansat
+
+bandNo = 1 # Could be an input parameter
+
+def Usage():
+    sys.exit('Usage: nansat_add_coastline <input_filename> [<output_filename>]')
+
+if (len(sys.argv) < 1):
+    Usage()
+
+inFileName = sys.argv[1]
+try:
+    n = Nansat(inFileName)
+except:
+    Usage()
+
+# Currently only implemented for lonlat-projection (Plate Carree)
+if n.vrt.dataset.GetProjection()[0:4] != 'GEOG':
+    sys.exit('Utility currently only implemented for datasets with '\
+           'geographical (lonlat / Plate Carree) coordiante systems')
+
+try:
+    outFileName = sys.argv[2]
+except:
+    outFileName = inFileName + '_coastline.png'
+
+imsize = n.vrt.dataset.RasterXSize, n.vrt.dataset.RasterYSize
+lon, lat = n.get_corners()
+fig = plt.figure()
+ax = plt.axes([0,0,1,1])
+fig.set_size_inches(imsize[0]/1, imsize[1]/1)
+m = Basemap(llcrnrlon=lon[1], llcrnrlat=lat[1], urcrnrlon=lon[2],urcrnrlat=lat[2], resolution='i',projection='cyl')
+lons = linspace(lon[1], lon[2], imsize[0])
+lats = linspace(lat[1], lat[2], imsize[1])
+m.imshow(flipud(n[bandNo]), cm.gray, interpolation='nearest', extent=[lon[1]-5,lon[2]+5,lat[1],lat[2]])
+m.drawcoastlines(linewidth=100, color='blue')
+plt.savefig(outFileName, dpi=1)
