@@ -24,20 +24,20 @@ class Mapper(VRT):
             raise WrongMapperError
 
         geotransform = gdalDataset.GetGeoTransform()
-        if ( geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
-                geotransform == (-0.5, 1.0, 0.0, 90.5, 0.0, -1.0) ):
+        if (geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
+                geotransform == (-0.5, 1.0, 0.0, 90.5, 0.0, -1.0)):
             if gdalDataset.RasterCount == 4:
                 srcBandId = {'temperature': 2,
-                              'u-component': 3,
-                              'v-component': 4}
+                             'u-component': 3,
+                             'v-component': 4}
             elif gdalDataset.RasterCount == 9:
                 srcBandId = {'temperature': 6,
-                              'u-component': 8,
-                              'v-component': 9}
+                             'u-component': 8,
+                             'v-component': 9}
             else:
                 raise WrongMapperError
         else:
-            raise WrongMapperError # Not water proof
+            raise WrongMapperError  # Not water proof
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['u-component']},
@@ -49,7 +49,7 @@ class Mapper(VRT):
                              'height': '10 m'}},
                     {'src': [{'SourceFilename': fileName,
                               'SourceBand': srcBandId['u-component'],
-                              'DataType': gdalDataset.GetRasterBand(srcBandId['u-component']).DataType
+                              'DataType': (gdalDataset.GetRasterBand(srcBandId['u-component']).DataType)
                               },
                              {'SourceFilename': fileName,
                               'SourceBand': srcBandId['v-component'],

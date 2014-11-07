@@ -23,7 +23,6 @@ class Mapper(VRT):
         if not title == 'GOCI Level-1B Data':
             raise WrongMapperError
 
-
         # set GOCI projection parameters
         lat_0 = gdalMetadata['HDFEOS_POINTS_Map_Projection_Central_Latitude_(parallel)']
         lon_0 = gdalMetadata['HDFEOS_POINTS_Map_Projection_Central_Longitude_(meridian)']

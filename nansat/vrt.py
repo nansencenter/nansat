@@ -27,6 +27,7 @@ from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.tools import add_logger, gdal, osr
 
+
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
 
@@ -109,8 +110,7 @@ class GeolocationArray():
         return lonGrid, latGrid
 
 
-
-class VRT():
+class VRT(object):
     '''Wrapper around GDAL VRT-file
 
     The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
@@ -926,17 +926,27 @@ class VRT():
         # fill string with values
         for iRow in range(row):
             for jColumn in range(column):
-                gspStrings[0] = '%s%05d| ' % (gspStrings[0],
-                                              int(gcps[iRow][jColumn].GCPPixel))
-                gspStrings[1] = '%s%05d| ' % (gspStrings[1],
-                                              int(gcps[iRow][jColumn].GCPLine))
+                gspStrings[0] = ('%s%05d| ' %
+                                 (gspStrings[0],
+                                  int(gcps[iRow][jColumn].GCPPixel)))
+                gspStrings[1] = ('%s%05d| ' %
+                                 (gspStrings[1],
+                                  int(gcps[iRow][jColumn].GCPLine)))
                 # if bottomup is True (=image is filpped), gcps are flipped
                 if bottomup:
-                    gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[row-iRow-1][jColumn].GCPX)
-                    gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[row-iRow-1][jColumn].GCPY)
+                    gspStrings[2] = ('%s%012.8f| ' %
+                                     (gspStrings[2],
+                                      gcps[row-iRow-1][jColumn].GCPX))
+                    gspStrings[3] = ('%s%012.8f| ' %
+                                     (gspStrings[3],
+                                      gcps[row-iRow-1][jColumn].GCPY))
                 else:
-                    gspStrings[2] = '%s%012.8f| ' % (gspStrings[2], gcps[iRow][jColumn].GCPX)
-                    gspStrings[3] = '%s%012.8f| ' % (gspStrings[3], gcps[iRow][jColumn].GCPY)
+                    gspStrings[2] = ('%s%012.8f| ' %
+                                     (gspStrings[2],
+                                      gcps[iRow][jColumn].GCPX))
+                    gspStrings[3] = ('%s%012.8f| ' %
+                                     (gspStrings[3],
+                                      gcps[iRow][jColumn].GCPY))
 
         for i, gspString in enumerate(gspStrings):
             #split string into chunks
@@ -955,7 +965,7 @@ class VRT():
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
                        use_geolocationArray=True,
-                       use_gcps=True, skip_gcps = 1,
+                       use_gcps=True, skip_gcps=1,
                        use_geotransform=True,
                        dstGCPs=[], dstGeolocationArray=None):
 
@@ -1141,7 +1151,8 @@ class VRT():
             giptNode += rtNode
             print 'node0.xml()', node0.xml()
         """
-        # overwrite XML of the warped VRT file with uprated size and geotranform
+        # overwrite XML of the warped VRT file with uprated size
+        # and geotranform
         warpedVRT.write_xml(node0.rawxml())
 
         # apply thin-spline-transformation option
@@ -1491,9 +1502,12 @@ class VRT():
             # modify the 1st band
             shiftStr = str(shiftPixel)
             sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
-            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', shiftStr)
-            node1.node('ComplexSource').node('DstRect').replaceAttribute('xSize', sizeStr)
-            node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
+            (node1.node('ComplexSource').node('DstRect').
+                replaceAttribute('xOff', shiftStr))
+            (node1.node('ComplexSource').node('DstRect').
+                replaceAttribute('xSize', sizeStr))
+            (node1.node('ComplexSource').node('SrcRect').
+                replaceAttribute('xSize', sizeStr))
 
             # add the 2nd band
             xmlSource = node1.rawxml()
@@ -1581,7 +1595,8 @@ class VRT():
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, factor, eResampleAlg):
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize,
+                           factor, eResampleAlg):
         '''Create VRT and replace step in the source'''
 
         subsamVRT = self.get_super_vrt()
@@ -1617,7 +1632,7 @@ class VRT():
         return subsamVRT
 
     def transform_points(self, colVector, rowVector, DstToSrc=0,
-                         dstDs=None, options = None):
+                         dstDs=None, options=None):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -1643,7 +1658,7 @@ class VRT():
         srcWKT = self.get_projection()
 
         # prepare options
-        if  options is None:
+        if options is None:
             options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
             # add TPS method if we have GCPs and self.tps is True
             if self.tps and len(self.dataset.GetGCPs()) > 0:
