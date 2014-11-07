@@ -15,22 +15,27 @@ from nansat.vrt import VRT
 baseFolder = '/vol/mis/dmf2/midlertidig/hindcast/hildeh/nora10/NetCDF/'
 keywordBase = __name__[7:]
 
+
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
                  **kwargs):
 
         if fileName[0:len(keywordBase)] != keywordBase:
-            raise WrongMapperError(__file__, "Not Nora10 data converted from felt to netCDF")
+            raise WrongMapperError(__file__,
+                                   "Not Nora10 data converted from felt to netCDF")
 
         requestedTime = datetime.strptime(fileName[len(keywordBase)+1:],
-                                            '%Y%m%d%H%M')
-        fileTime = requestedTime + timedelta(minutes=30) # For correct rounding
-        fileTime = fileTime - timedelta(minutes = fileTime.minute)
+                                          '%Y%m%d%H%M')
+        # For correct rounding
+        fileTime = requestedTime + timedelta(minutes=30)
+        fileTime = fileTime - timedelta(minutes=fileTime.minute)
 
-        nc_file = baseFolder + 'windspeed_10m' + fileTime.strftime('/%Y/%m/') \
-                    + 'windspeed_' + fileTime.strftime('%Y%m%d%H.nc')
-        nc_file_winddir = baseFolder + 'winddir_10m' + fileTime.strftime('/%Y/%m/') \
-                    + 'winddir_' + fileTime.strftime('%Y%m%d%H.nc')
+        nc_file = (baseFolder + 'windspeed_10m' +
+                   fileTime.strftime('/%Y/%m/') + 'windspeed_' +
+                   fileTime.strftime('%Y%m%d%H.nc'))
+        nc_file_winddir = (baseFolder + 'winddir_10m' +
+                           fileTime.strftime('/%Y/%m/') +
+                           'winddir_' + fileTime.strftime('%Y%m%d%H.nc'))
 
         # Would prefer to use geotransform, but ob_tran
         # (General Oblique Transformation) is not supported by GDAL
@@ -63,45 +68,40 @@ class Mapper(VRT):
                         'v_VRT': VRT_v10}
 
         metaDict = []
-        metaDict.append({'src':
-                            {'SourceFilename': VRT_u10.fileName,
-                             'SourceBand': 1},
-                         'dst':
-                            {'wkv': 'eastward_wind',
-                             'name': 'eastward_wind'}})
-        metaDict.append({'src':
-                            {'SourceFilename': VRT_v10.fileName,
-                             'SourceBand': 1},
-                         'dst':
-                            {'wkv': 'northward_wind',
-                             'name': 'northward_wind'}})
+        metaDict.append({'src': {'SourceFilename': VRT_u10.fileName,
+                                 'SourceBand': 1},
+                         'dst': {'wkv': 'eastward_wind',
+                                 'name': 'eastward_wind'}})
+        metaDict.append({'src': {'SourceFilename': VRT_v10.fileName,
+                                 'SourceBand': 1},
+                         'dst': {'wkv': 'northward_wind',
+                                 'name': 'northward_wind'}})
 
         # Add pixel function with wind speed
-        metaDict.append({'src': [{'SourceFilename': 
-                        self.subVRTs['u_VRT'].fileName,
-                    'SourceBand': 1,
-                    'DataType': 6},
+        metaDict.append({
+            'src': [{'SourceFilename': self.subVRTs['u_VRT'].fileName,
+                     'SourceBand': 1,
+                     'DataType': 6},
                     {'SourceFilename': self.subVRTs['v_VRT'].fileName,
-                    'SourceBand': 1,
-                    'DataType': 6 }],
-                  'dst': {'wkv': 'wind_speed',
+                     'SourceBand': 1,
+                     'DataType': 6}],
+            'dst': {'wkv': 'wind_speed',
                     'name': 'windspeed',
                     'height': '10 m',
-                    'PixelFunctionType': 'UVToMagnitude'}
-                  })
+                    'PixelFunctionType': 'UVToMagnitude'}})
+
         # Add pixel function with wind direction
-        metaDict.append({'src': [{'SourceFilename': 
-                        self.subVRTs['u_VRT'].fileName,
-                    'SourceBand': 1,
-                    'DataType': 6},
+        metaDict.append({
+            'src': [{'SourceFilename': self.subVRTs['u_VRT'].fileName,
+                     'SourceBand': 1,
+                     'DataType': 6},
                     {'SourceFilename': self.subVRTs['v_VRT'].fileName,
-                    'SourceBand': 1,
-                    'DataType': 6 }],
-                  'dst': {'wkv': 'wind_to_direction',
+                     'SourceBand': 1,
+                     'DataType': 6}],
+            'dst': {'wkv': 'wind_to_direction',
                     'name': 'winddir',
                     'height': '10 m',
-                    'PixelFunctionType': 'UVToDirectionTo'}
-                  })
+                    'PixelFunctionType': 'UVToDirectionTo'}})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, lat=lat, lon=lon)

@@ -1,5 +1,6 @@
 # Name:         mapper_metno_hires_seaice.py
-# Purpose:      Nansat mapping for high resolution sea ice from met.no Thredds server
+# Purpose:      Nansat mapping for high resolution sea ice
+#                   from met.no Thredds server
 # Authors:      Knut-Frode Dagestad
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -13,13 +14,15 @@
 # or with keyword (fake filename):
 #   'metno_hires_seaice:20140109'
 #
-# The latter syntax will construct the URL, and will return the closest available data within +/- 3 days
+# The latter syntax will construct the URL,
+# and will return the closest available data within +/- 3 days
 import sys
 import urllib2
 from datetime import datetime, timedelta
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
+
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Met.no seaice '''
@@ -28,7 +31,8 @@ class Mapper(VRT):
         ''' Create VRT '''
 
         ThreddsBase = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-svalbard/'
-        # First check if mapper is called with keyword syntax: filename = metno_hires_seaice:YYYYmmdd
+        # First check if mapper is called with keyword syntax:
+        # filename = metno_hires_seaice:YYYYmmdd
         keywordBase = 'metno_hires_seaice'
         foundDataset = False
         if fileName[0:len(keywordBase)] == keywordBase:
@@ -36,19 +40,25 @@ class Mapper(VRT):
             requestedTime = datetime.datetime.strptime(keywordTime, '%Y%m%d')
             # Search for nearest available file, within the closest 3 days
             for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
-                validTime = requestedTime + timedelta(days=deltaDay) + timedelta(hours=15)
-                fileName = ThreddsBase + validTime.strftime('%Y/%m/ice_conc_svalbard_%Y%m%d1500.nc')
+                validTime = (requestedTime + timedelta(days=deltaDay) +
+                             timedelta(hours=15))
+                fileName = (ThreddsBase +
+                            validTime.strftime(
+                                '%Y/%m/ice_conc_svalbard_%Y%m%d1500.nc'))
                 try:
                     urllib2.urlopen(fileName + '.dds')
                     foundDataset = True
-                    break # Data is found for this day
+                    # Data is found for this day
+                    break
                 except:
-                    pass # No data for this day
+                    # No data for this day
+                    pass
 
         if not foundDataset:
             raise WrongMapperError
 
-        # Then check if a valid OPeNDAP URL is given (or has been constructed from keyword)
+        # Then check if a valid OPeNDAP URL is given
+        # (or has been constructed from keyword)
         if fileName[0:len(ThreddsBase)] != ThreddsBase:
             AttributeError("Not Met.no Svalbard-ice Thredds URL")
         else:
@@ -60,19 +70,20 @@ class Mapper(VRT):
         srcProjection.ImportFromProj4('+proj=stere lon_0=0.0 +lat_0=90 +datum=WGS84 +ellps=WGS84 +units=km +no_defs')
         srcProjection = srcProjection.ExportToWkt()
 
-        srcGeotransform = (-1243.008 - 1, 1, 0, -3190.026 - 7, 0, 1) # From thredds web, with manual shift
+        # From thredds web, with manual shift
+        srcGeotransform = (-1243.008 - 1, 1, 0, -3190.026 - 7, 0, 1)
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self,
-                    srcGeoTransform=srcGeotransform,
-                    srcProjection=srcProjection,
-                    srcRasterXSize=3812,
-                    srcRasterYSize=2980)
+                     srcGeoTransform=srcGeotransform,
+                     srcProjection=srcProjection,
+                     srcRasterXSize=3812,
+                     srcRasterYSize=2980)
 
         metaDict = [{'src': {'SourceFilename': fileName,
-                                'sourceBand': 1},
-                    'dst': {'name': 'sea_ice_area_fraction',
-                            'wkv': 'sea_ice_area_fraction'}}]
+                             'sourceBand': 1},
+                     'dst': {'name': 'sea_ice_area_fraction',
+                             'wkv': 'sea_ice_area_fraction'}}]
 
         # Add band
         self._create_bands(metaDict)

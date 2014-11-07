@@ -23,11 +23,14 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 
 try:
-    import Image, ImageDraw, ImageFont
+    import Image
+    import ImageDraw
+    import ImageFont
 except:
     from PIL import Image, ImageDraw, ImageFont
 
 from nansat.tools import add_logger
+
 
 class Figure():
     '''Perform opeartions with graphical files: create, append legend, save.
@@ -512,9 +515,9 @@ class Figure():
                     cumhist = hist.cumsum()
                     cumhist /= cumhist[-1]
                     clim[0][iBand] = bins[len(cumhist[cumhist <
-                                           (1 - ratioList[iBand]) / 2])]
+                                              (1 - ratioList[iBand]) / 2])]
                     clim[1][iBand] = bins[len(cumhist[cumhist <
-                                           1 - ((1 - ratioList[iBand]) / 2)])]
+                                          1 - ((1 - ratioList[iBand]) / 2)])]
         self.color_limits = clim
         return clim
 
@@ -927,7 +930,7 @@ class Figure():
                 frmt = frmts[digit]
             else:
                 #frmt = '%4.2e'
-                frmt = '%.'+'%d'%abs(digit)+'f'
+                frmt = '%.' + '%d' % abs(digit) + 'f'
 
         return str(frmt % val)
 

@@ -55,6 +55,10 @@ class DataForTestingMappers(object):
                 'landsat')
 
         self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz',
+                'landsat_highresolution')
+
+        self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/meris/MER_FRS_1PNUPA20100916_105248_000001012093_00037_44680_8756.N1',
                 'meris_l1')
 

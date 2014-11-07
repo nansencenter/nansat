@@ -16,6 +16,7 @@ from nansat.domain import Domain
 from nansat.tools import initial_bearing
 from nansat.tools import WrongMapperError
 
+
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for ASAR Level 1
 
@@ -37,7 +38,7 @@ class Mapper(VRT, Envisat):
 
         '''
 
-        Envisat.__init__(self, fileName, gdalMetadata)
+        self.setup_ads_parameters(fileName, gdalMetadata)
 
         if self.product[0:4] != "ASA_":
             raise WrongMapperError
@@ -97,7 +98,7 @@ class Mapper(VRT, Envisat):
                                              lon[:, 1:], lat[:, 1:])
         # Interpolate to regain lost row
         SAR_look_direction = scipy.ndimage.interpolation.zoom(
-                                SAR_look_direction, (1, 11./10.))
+            SAR_look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
         SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
         SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
@@ -108,16 +109,17 @@ class Mapper(VRT, Envisat):
         #       same VRT, access time is about twice as large
         incVRT = VRT(array=inc, lat=lat, lon=lon)
         lookVRT = VRT(lat=lat, lon=lon)
-        lookVRT._create_band(
-                [{'SourceFilename': look_u_VRT.fileName, 'SourceBand': 1},
-                 {'SourceFilename': look_v_VRT.fileName, 'SourceBand': 1}],
-                 {'PixelFunctionType': 'UVToDirectionTo'})
+        lookVRT._create_band([{'SourceFilename': look_u_VRT.fileName,
+                               'SourceBand': 1},
+                              {'SourceFilename': look_v_VRT.fileName,
+                               'SourceBand': 1}],
+                             {'PixelFunctionType': 'UVToDirectionTo'})
 
         # Blow up bands to full size
-        incVRT = incVRT.get_resized_vrt(
-                    gdalDataset.RasterXSize, gdalDataset.RasterYSize)
-        lookVRT = lookVRT.get_resized_vrt(
-                    gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        incVRT = incVRT.get_resized_vrt(gdalDataset.RasterXSize,
+                                        gdalDataset.RasterYSize)
+        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize,
+                                          gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
         self.subVRTs = {'incVRT': incVRT,
                         'look_u_VRT': look_u_VRT,
@@ -127,18 +129,14 @@ class Mapper(VRT, Envisat):
         # Add band to full sized VRT
         incFileName = self.subVRTs['incVRT'].fileName
         lookFileName = self.subVRTs['lookVRT'].fileName
-        metaDict.append({'src':
-                            {'SourceFilename': incFileName,
-                             'SourceBand': 1},
-                         'dst':
-                            {'wkv': 'angle_of_incidence',
-                             'name': 'incidence_angle'}})
-        metaDict.append({'src':
-                            {'SourceFilename': lookFileName,
-                             'SourceBand': 1},
-                         'dst':
-                            {'wkv': 'sensor_azimuth_angle',
-                             'name': 'SAR_look_direction'}})
+        metaDict.append({'src': {'SourceFilename': incFileName,
+                                 'SourceBand': 1},
+                         'dst': {'wkv': 'angle_of_incidence',
+                                 'name': 'incidence_angle'}})
+        metaDict.append({'src': {'SourceFilename': lookFileName,
+                                 'SourceBand': 1},
+                         'dst': {'wkv': 'sensor_azimuth_angle',
+                                 'name': 'SAR_look_direction'}})
 
         ####################
         # Add Sigma0-bands
@@ -169,26 +167,31 @@ class Mapper(VRT, Envisat):
                         sourceFile = {'SourceFilename': jFileName}
                         if j == 0:
                             sourceFile['SourceBand'] = iPolarization['bandNum']
-                            # if ASA_full_incAng, set 'ScaleRatio' into source file dict
-                            sourceFile['ScaleRatio'] = np.sqrt(1.0 / iPolarization['calibrationConst'])
+                            # if ASA_full_incAng,
+                            # set 'ScaleRatio' into source file dict
+                            sourceFile['ScaleRatio'] = np.sqrt(
+                                1.0 / iPolarization['calibrationConst'])
                         else:
                             sourceFile['SourceBand'] = 1
                         srcFiles.append(sourceFile)
 
-                    metaDict.append({'src': srcFiles,
-                                     'dst': {'short_name': short_names[iPixFunc],
-                                             'wkv': wkt[iPixFunc],
-                                             'PixelFunctionType': pixelFunctionTypes[iPixFunc],
-                                             'polarization': iPolarization['channel'],
-                                             'suffix': iPolarization['channel'],
-                                             'pass': sphPass[iPixFunc],
-                                             'dataType': 6}})
+                    metaDict.append({
+                        'src': srcFiles,
+                        'dst': {'short_name': short_names[iPixFunc],
+                                'wkv': wkt[iPixFunc],
+                                'PixelFunctionType': (
+                                pixelFunctionTypes[iPixFunc]),
+                                'polarization': iPolarization['channel'],
+                                'suffix': iPolarization['channel'],
+                                'pass': sphPass[iPixFunc],
+                                'dataType': 6}})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
         # Add oribit and look information to metadata domain
-        self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')  # ASAR is always right-looking
+        # ASAR is always right-looking
+        self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
                                      gdalMetadata['SPH_PASS'].upper())
 
@@ -204,14 +207,15 @@ class Mapper(VRT, Envisat):
                 sourceFile = {'SourceFilename': jFileName}
                 if j == 0:
                     sourceFile['SourceBand'] = iPolarization['bandNum']
-                    # if ASA_full_incAng, set 'ScaleRatio' into source file dict
+                    # if ASA_full_incAng,
+                    # set 'ScaleRatio' into source file dict
                     sourceFile['ScaleRatio'] = np.sqrt(
                         1.0 / iPolarization['calibrationConst'])
                 else:
                     sourceFile['SourceBand'] = 1
                 srcFiles.append(sourceFile)
-            dst = {'wkv':
-                      'surface_backwards_scattering_coefficient_of_radar_wave',
+            dst = {'wkv': (
+                   'surface_backwards_scattering_coefficient_of_radar_wave'),
                    'PixelFunctionType': 'Sigma0HHToSigma0VV',
                    'polarization': 'VV',
                    'suffix': 'VV'}
@@ -227,9 +231,11 @@ class Mapper(VRT, Envisat):
 
         # set SADCAT specific metadata
         self.dataset.SetMetadataItem('start_date',
-                parse(gdalMetadata['MPH_SENSING_START']).isoformat())
+                                     (parse(gdalMetadata['MPH_SENSING_START']).
+                                      isoformat()))
         self.dataset.SetMetadataItem('stop_date',
-                parse(gdalMetadata['MPH_SENSING_STOP']).isoformat())
+                                     (parse(gdalMetadata['MPH_SENSING_STOP']).
+                                      isoformat()))
         self.dataset.SetMetadataItem('sensor', 'ASAR')
         self.dataset.SetMetadataItem('satellite', 'Envisat')
         self.dataset.SetMetadataItem('mapper', 'asar')
