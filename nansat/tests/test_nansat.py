@@ -105,7 +105,7 @@ class NansatTest(unittest.TestCase):
 
     def test_export(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.tif')
         n.export(tmpfilename, driver='GTiff')
 
         self.assertTrue(os.path.exists(tmpfilename))
@@ -113,7 +113,7 @@ class NansatTest(unittest.TestCase):
     def test_export_band(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export_band.nc')
+                                   'nansat_export_band.tif')
         n.export(tmpfilename, bands= [1], driver='GTiff')
         n = Nansat(tmpfilename, mapperName='generic')
 
