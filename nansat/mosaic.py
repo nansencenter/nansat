@@ -39,7 +39,7 @@ class Mosaic(Nansat):
     maskName = 'mask'
     doReproject = True
     bandIDs = [1]
-    mapper='mosaic'
+    mapper = 'mosaic'
 
     def _set_defaults(self, idict):
         '''Check input params and set defaut values
@@ -333,7 +333,7 @@ class Mosaic(Nansat):
             #                                2*mean(x)*sum(x) +
             #                                sum(mean(x)^2))/n))
             stdMat[bi] = np.sqrt((stdMat[bi] - 2.0 * avg * avgMat[bi] +
-                                np.square(avg) * cntMat) / cntMat)
+                                  np.square(avg) * cntMat) / cntMat)
             # set mean
             avgMat[bi] = avg
 
@@ -417,8 +417,10 @@ class Mosaic(Nansat):
             # create temporary matrices to store results
             cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
             cntMatTmp[mask == 64] = 1
-            avgMatTmp = np.zeros((len(self.bandIDs), dstShape[0], dstShape[1]), 'float16')
-            stdMatTmp = np.zeros((len(self.bandIDs), dstShape[0], dstShape[1]), 'float16')
+            avgMatTmp = np.zeros((len(self.bandIDs),
+                                  dstShape[0], dstShape[1]), 'float16')
+            stdMatTmp = np.zeros((len(self.bandIDs),
+                                  dstShape[0], dstShape[1]), 'float16')
 
             # add data to summation matrices
             for bi, b in enumerate(self.bandIDs):
@@ -439,7 +441,7 @@ class Mosaic(Nansat):
             n = None
 
             # get intermediate results from queue
-            cntMat, maskMat, avgMat, stdMat, fName  = matQueue.get()
+            cntMat, maskMat, avgMat, stdMat, fName = matQueue.get()
 
             # add data to the counting matrix
             cntMat += cntMatTmp
@@ -635,7 +637,8 @@ class Mosaic(Nansat):
         timeString = ''
         dt = datetime.datetime(1, 1, 1)
         for i in range(len(itimes)):
-            timeString += dt.fromordinal(int(itimes[ars[i]])).strftime('%Y-%m-%dZ%H:%M ')
+            timeString += (dt.fromordinal(int(itimes[ars[i]])).
+                           strftime('%Y-%m-%dZ%H:%M '))
         # add band with mask of coverage of each frame
         self.add_band(array=maxIndex, parameters={'name': 'date_index',
                                                   'values': timeString})

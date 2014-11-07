@@ -152,13 +152,13 @@ class Nansatmap(Basemap):
         self.latMax = min(max(latCrn), 90.)
 
         if not('llcrnrlat' in kwargs.keys()):
-            kwargs['llcrnrlat'] = self.latMin
+            kwargs['llcrnrlat'] = latCrn[1]
         if not('urcrnrlat' in kwargs.keys()):
-            kwargs['urcrnrlat'] = self.latMax
+            kwargs['urcrnrlat'] = latCrn[2]
         if not('llcrnrlon' in kwargs.keys()):
-            kwargs['llcrnrlon'] = self.lonMin
+            kwargs['llcrnrlon'] = lonCrn[1]
         if not('urcrnrlon' in kwargs.keys()):
-            kwargs['urcrnrlon'] = self.lonMax
+            kwargs['urcrnrlon'] = lonCrn[2]
 
         # separate kwarge of plt.figure() from kwargs
         figArgs = ['num', 'figsize', 'dpi', 'facecolor', 'edgecolor',
@@ -361,7 +361,7 @@ class Nansatmap(Basemap):
                                            **kwargs))
         self.colorbar = len(self.mpl) - 1
 
-    def quiver(self, dataX, dataY, quivectors=30, **kwargs):
+    def quiver(self, dataX, dataY, step=None, quivectors=None, **kwargs):
         '''Draw quiver plots
 
         Parameters
@@ -370,7 +370,9 @@ class Nansatmap(Basemap):
             Input data with X-component
         dataY :  numpy array
             Input data with Y-component
-        quivectors : int
+        step : int or (int, int)
+            Skip <step> pixels along both dimentions(alternative to quivectors)
+        quivectors : int or (int,int)
             Number of vectors along both dimentions
         Parameters for Basemap.quiver()
 
@@ -383,15 +385,25 @@ class Nansatmap(Basemap):
         # if Nan is included, apply mask
         dataX = np.ma.array(dataX, mask=np.isnan(dataX))
         dataY = np.ma.array(dataY, mask=np.isnan(dataY))
-        # subset grids for quiver plot
-        if type(quivectors) in [list, tuple]:
-            quivectors0 = quivectors[0]
-            quivectors1 = quivectors[1]
+
+        # get subsetting parameters
+        if type(step) is int:
+            step0 = step1 = step
+        elif type(step) in [list, tuple]:
+            step0 = step[0]
+            step1 = step[1]
+        elif quivectors is not None:
+            if type(quivectors) is int:
+                quivectors0 = quivectors
+                quivectors1 = quivectors
+            if type(quivectors) in [list, tuple]:
+                quivectors0 = quivectors[0]
+                quivectors1 = quivectors[1]
+            step0 = dataX.shape[0] / quivectors0
+            step1 = dataX.shape[1] / quivectors1
         else:
-            quivectors0 = quivectors
-            quivectors1 = quivectors
-        step0 = dataX.shape[0] / quivectors0
-        step1 = dataX.shape[1] / quivectors1
+            step0 = step1 = 5
+
         dataX2 = dataX[::step0, ::step1]
         dataY2 = dataY[::step0, ::step1]
         self._create_lonlat_grids()
@@ -410,7 +422,7 @@ class Nansatmap(Basemap):
             if iKey in kwargs.keys():
                 qkargs[iKey] = kwargs.pop(iKey)
 
-        if all (iKey in qkargs.keys() for iKey in ('X', 'Y', 'U', 'label')):
+        if all(iKey in qkargs.keys() for iKey in ('X', 'Y', 'U', 'label')):
             self.mpl.append(plt.quiverkey(Q, qkargs['X'], qkargs['Y'],
                                           qkargs['U'], qkargs['label'],
                                           **kwargs))

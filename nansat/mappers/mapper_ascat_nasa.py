@@ -14,10 +14,12 @@ from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 from nansat.tools import WrongMapperError
 
+
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, latlonGrid=None, mask='', **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 latlonGrid=None, mask='', **kwargs):
 
         ''' Create VRT
 
@@ -39,20 +41,20 @@ class Mapper(VRT):
         # Create geolocation
         subDataset = gdal.Open('NETCDF:"' + fileName + '":lat')
         self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
-                        srcRasterYSize=subDataset.RasterYSize)
+                             srcRasterYSize=subDataset.RasterYSize)
 
-        GeolocMetaDict = [{'src':
-                {'SourceFilename': 'NETCDF:"' + fileName + '":lon',
-                 'SourceBand': 1,
-                 'ScaleRatio': 0.00001,
-                 'ScaleOffset': -360},
-             'dst': {}},
-                   {'src':
-                {'SourceFilename': 'NETCDF:"' + fileName + '":lat',
-                 'SourceBand': 1,
-                 'ScaleRatio': 0.00001,
-                 'ScaleOffset': 0},
-             'dst': {}}]
+        GeolocMetaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                                                      '":lon'),
+                                   'SourceBand': 1,
+                                   'ScaleRatio': 0.00001,
+                                   'ScaleOffset': -360},
+                           'dst': {}},
+                          {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                                                      '":lat'),
+                                   'SourceBand': 1,
+                                   'ScaleRatio': 0.00001,
+                                   'ScaleOffset': 0},
+                           'dst': {}}]
 
         self.GeolocVRT._create_bands(GeolocMetaDict)
 
@@ -64,25 +66,27 @@ class Mapper(VRT):
                                         lineStep=1, pixelStep=1)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, srcRasterXSize = subDataset.RasterXSize,
-                           srcRasterYSize = subDataset.RasterYSize,
-                        gdalDataset = subDataset,
-                        geolocationArray = GeolocObject,
-                        srcProjection = GeolocObject.d['SRS'])
+        VRT.__init__(self,
+                     srcRasterXSize=subDataset.RasterXSize,
+                     srcRasterYSize=subDataset.RasterYSize,
+                     gdalDataset=subDataset,
+                     geolocationArray=GeolocObject,
+                     srcProjection=GeolocObject.d['SRS'])
 
         # Scale and NODATA should ideally be taken directly from raw file
-        metaDict = [{'src': {
-            'SourceFilename': 'NETCDF:"' + fileName + '":wind_speed',
-            'ScaleRatio': 0.01,
-            'NODATA': -32767},
-            'dst': {'name': 'wind_speed',
-                    'wkv': 'wind_speed'}},
-                    {'src': {
-            'SourceFilename': 'NETCDF:"' + fileName + '":wind_dir',
-            'ScaleRatio': 0.1,
-            'NODATA': -32767},
-            'dst': {'name': 'wind_direction',
-                    'wkv': 'wind_direction'}}]
+        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                                                '":wind_speed'),
+                             'ScaleRatio': 0.01,
+                             'NODATA': -32767},
+                     'dst': {'name': 'wind_speed',
+                             'wkv': 'wind_speed'}
+                     },
+                    {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                                                '":wind_dir'),
+                             'ScaleRatio': 0.1,
+                             'NODATA': -32767},
+                     'dst': {'name': 'wind_direction',
+                             'wkv': 'wind_direction'}}]
 
         self._create_bands(metaDict)
 
@@ -92,7 +96,9 @@ class Mapper(VRT):
 
         # Add time
         startTime = datetime.datetime(int(iFileName[6:10]),
-            int(iFileName[10:12]), int(iFileName[12:14]),
-            int(iFileName[15:17]), int(iFileName[17:19]),
-            int(iFileName[19:21]))
+                                      int(iFileName[10:12]),
+                                      int(iFileName[12:14]),
+                                      int(iFileName[15:17]),
+                                      int(iFileName[17:19]),
+                                      int(iFileName[19:21]))
         self._set_time(startTime)
