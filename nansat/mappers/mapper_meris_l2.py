@@ -34,7 +34,7 @@ class Mapper(VRT, Envisat):
             generated at that step
         '''
 
-        Envisat.__init__(self, fileName, gdalMetadata)
+        self.setup_ads_parameters(fileName, gdalMetadata)
 
         if self.product[0:9] != "MER_FRS_2" and self.product[0:9] != "MER_RR__2":
             raise WrongMapperError(fileName)
@@ -127,13 +127,13 @@ class Mapper(VRT, Envisat):
                      ]
 
         # get list with resized VRTs from ADS
-        self.subVRTs = {'adsVRTs' : self.get_ads_vrts(gdalDataset,
-                                         ['sun zenith angles',
-                                          'sun azimuth angles',
-                                          'zonal winds',
-                                          'meridional winds'],
-                                         zoomSize=zoomSize,
-                                         step=step)}
+        self.subVRTs = {'adsVRTs': self.get_ads_vrts(gdalDataset,
+                                                     ['sun zenith angles',
+                                                      'sun azimuth angles',
+                                                      'zonal winds',
+                                                      'meridional winds'],
+                                                     zoomSize=zoomSize,
+                                                     step=step)}
 
         # add bands from the ADS VRTs
         for adsVRT in self.subVRTs['adsVRTs']:

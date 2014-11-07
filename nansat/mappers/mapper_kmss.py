@@ -18,7 +18,7 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
         if (os.path.split(fileName)[1][0:4] != '101_' or
-            os.path.split(fileName)[1][0:4] != '102_'):
+                os.path.split(fileName)[1][0:4] != '102_'):
                 raise WrongMapperError
 
         try:
@@ -26,8 +26,8 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-
-        if product != 'GeoTIFF' or fileName[-3:] != 'tif' or gdalDataset.RasterCount != 3:
+        if (product != 'GeoTIFF' or fileName[-3:] != 'tif' or
+                gdalDataset.RasterCount != 3):
             raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},

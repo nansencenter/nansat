@@ -1,5 +1,6 @@
 # Name:         mapper_metno_hires_seaice.py
-# Purpose:      Nansat mapping for high resolution sea ice from met.no Thredds server
+# Purpose:      Nansat mapping for high resolution sea ice
+#               from met.no Thredds server
 # Authors:      Knut-Frode Dagestad
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -9,7 +10,8 @@
 #
 # Mapper is called with keyword (fake filename):
 #   'metno_hires_seaice_20140109'
-# and [optional] keyword: iceFolder = <local folder where netCDF files with ice are stored>
+# and [optional] keyword: iceFolder = <local folder
+# where netCDF files with ice are stored>
 #
 # The closest available data within +/- 3 days is returned
 import sys
@@ -44,8 +46,10 @@ class Mapper(mg.Mapper):
         # Search for nearest available file, within the closest 3 days
         foundDataset = False
         for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
-            validTime = requestedTime + timedelta(days=deltaDay) + timedelta(hours=15)
-            fileName = iceFolderName + 'ice_conc_svalbard_' + validTime.strftime('%Y%m%d1500.nc')
+            validTime = (requestedTime + timedelta(days=deltaDay) +
+                         timedelta(hours=15))
+            fileName = (iceFolderName + 'ice_conc_svalbard_' +
+                        validTime.strftime('%Y%m%d1500.nc'))
             if os.path.exists(fileName):
                 print 'Found file:'
                 print fileName
@@ -53,10 +57,11 @@ class Mapper(mg.Mapper):
                 gdalMetadata = gdalDataset.GetMetadata()
                 mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
                 foundDataset = True
-                # Modify GeoTransform from netCDF file - otherwise a shift is seen!
+                # Modify GeoTransform from netCDF file
+                # - otherwise a shift is seen!
                 self.dataset.SetGeoTransform(
-                    (-1243508 -1000, 1000, 0, -210526 -7000, 0, -1000))
-                break # Data is found for this day
+                    (-1243508 - 1000, 1000, 0, -210526 - 7000, 0, -1000))
+                break  # Data is found for this day
 
         if foundDataset is False:
             AttributeError("No local Svalbard-ice files available")

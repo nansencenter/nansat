@@ -393,7 +393,7 @@ class Nansatmap(Basemap):
             step0 = step[0]
             step1 = step[1]
         elif quivectors is not None:
-            if type(quivectors) is int :
+            if type(quivectors) is int:
                 quivectors0 = quivectors
                 quivectors1 = quivectors
             if type(quivectors) in [list, tuple]:
@@ -403,7 +403,6 @@ class Nansatmap(Basemap):
             step1 = dataX.shape[1] / quivectors1
         else:
             step0 = step1 = 5
-
 
         dataX2 = dataX[::step0, ::step1]
         dataY2 = dataY[::step0, ::step1]
@@ -423,7 +422,7 @@ class Nansatmap(Basemap):
             if iKey in kwargs.keys():
                 qkargs[iKey] = kwargs.pop(iKey)
 
-        if all (iKey in qkargs.keys() for iKey in ('X', 'Y', 'U', 'label')):
+        if all(iKey in qkargs.keys() for iKey in ('X', 'Y', 'U', 'label')):
             self.mpl.append(plt.quiverkey(Q, qkargs['X'], qkargs['Y'],
                                           qkargs['U'], qkargs['label'],
                                           **kwargs))
