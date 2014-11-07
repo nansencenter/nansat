@@ -48,8 +48,9 @@ class Mapper(VRT):
         dayofyear = int(struct.unpack('<l', fp.read(4))[0])
         millisecondsOfDay = int(struct.unpack('<l', fp.read(4))[0])
         try:
-            time = datetime.datetime(year, 1, 1) + \
-                datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
+            time = (datetime.datetime(year, 1, 1) +
+                    datetime.timedelta(dayofyear - 1,
+                                       milliseconds=millisecondsOfDay))
         except:
             raise WrongMapperError
 
@@ -82,16 +83,18 @@ class Mapper(VRT):
             endsWith3A = False
 
         if startsWith3A != endsWith3A:
-            print '#####################################################################'
-            print 'WARNING: channel 3 switches between daytime and nighttime (3A <-> 3B)'
-            print '#####################################################################'
+            print '############################################'
+            print 'WARNING: channel 3 switches '
+            print 'between daytime and nighttime (3A <-> 3B)'
+            print '###########################################'
 
         ###########################
         # Make Geolocation Arrays
         ###########################
         srcRasterYSize = numCalibratedScanLines
 
-        # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
+        # Making VRT with raw (unscaled) lon and lat
+        # (smaller bands than full dataset)
         self.subVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
                                             srcRasterYSize=srcRasterYSize)}
         RawGeolocMetaDict = []
@@ -116,7 +119,8 @@ class Mapper(VRT):
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': self.subVRTs['RawGeolocVRT'].fileName,
+                {'src': {'SourceFilename': (self.subVRTs['RawGeolocVRT'].
+                                            fileName),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,
@@ -134,7 +138,8 @@ class Mapper(VRT):
         #######################
         # Initialize dataset
         #######################
-        # create empty VRT dataset with geolocation only (from Geolocation Array)
+        # create empty VRT dataset with geolocation only
+        # (from Geolocation Array)
         VRT.__init__(self,
                      srcRasterXSize=2048,
                      srcRasterYSize=numCalibratedScanLines,
@@ -153,8 +158,9 @@ class Mapper(VRT):
         ##################
         # Create bands
         ##################
-        self.subVRTs['RawBandsVRT'] = VRT(srcRasterXSize=2048,
-                                          srcRasterYSize=numCalibratedScanLines)
+        self.subVRTs['RawBandsVRT'] = VRT(
+            srcRasterXSize=2048,
+            srcRasterYSize=numCalibratedScanLines)
         RawMetaDict = []
         metaDict = []
 
@@ -186,7 +192,8 @@ class Mapper(VRT):
                 minmax = '290 210'
 
             metaDict.append(
-                {'src': {'SourceFilename': self.subVRTs['RawBandsVRT'].fileName,
+                {'src': {'SourceFilename': (self.subVRTs['RawBandsVRT'].
+                                            fileName),
                          'SourceBand': bandNo,
                          'ScaleRatio': 0.01,
                          'ScaleOffset': 0,
@@ -201,11 +208,13 @@ class Mapper(VRT):
         # Add temperature difference between ch3 and ch 4 as pixelfunction
         if not startsWith3A:  # Only if ch3 is IR (nighttime)
             metaDict.append(
-                {'src': [{'SourceFilename': self.subVRTs['RawBandsVRT'].fileName,
+                {'src': [{'SourceFilename': (self.subVRTs['RawBandsVRT'].
+                                             fileName),
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 4},
-                         {'SourceFilename': self.subVRTs['RawBandsVRT'].fileName,
+                         {'SourceFilename': (self.subVRTs['RawBandsVRT'].
+                                             fileName),
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 3}],

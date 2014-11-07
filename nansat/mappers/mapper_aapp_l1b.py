@@ -97,7 +97,8 @@ class Mapper(VRT):
         #        avh_h_radtempcnv[IRchannelNo, coeffNo] = \
         #           int(struct.unpack('<l', fp.read(4))[0])
         #print avh_h_radtempcnv
-        #IRcalibration['centralWavenumber'] = avh_h_radtempcnv[:,0] / [1E2, 1E3, 1E3]
+        #IRcalibration['centralWavenumber'] = (avh_h_radtempcnv[:,0] /
+        #                                      [1E2, 1E3, 1E3])
         #IRcalibration['c1'] = avh_h_radtempcnv[:,1] / 1E5
         #IRcalibration['c2'] = avh_h_radtempcnv[:,2] / 1E6
 
@@ -138,8 +139,10 @@ class Mapper(VRT):
         #for IRchannelNo in range(3):
         #    for coeffNo in range(3):
         #        # NB: apparently stored "backwards", therefore 2-coeffNo
-        #        a[IRchannelNo, 2-coeffNo] = avh_calir[setNo, IRchannelNo, coeffNo] \
-        #                                 / np.power(10, avh_filler2[coeffNo])
+        #        a[IRchannelNo, 2-coeffNo] = (avh_calir[setNo, IRchannelNo,
+        #                                               coeffNo]
+        #                                     / np.power(10,
+        #                                                avh_filler2[coeffNo]))
         #
         ###########################
         # Apply calibration
@@ -164,9 +167,10 @@ class Mapper(VRT):
         ###########################
         srcRasterYSize = numCalibratedScanLines
 
-        # Making VRT with raw (unscaled) lon and lat (smaller bands than full dataset)
-        self.subVRTs = {'RawGeolocVRT' : VRT(srcRasterXSize=51,
-                                             srcRasterYSize=srcRasterYSize)}
+        # Making VRT with raw (unscaled) lon and lat
+        # (smaller bands than full dataset)
+        self.subVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
+                                            srcRasterYSize=srcRasterYSize)}
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
             RawGeolocMetaDict.append(
@@ -189,7 +193,8 @@ class Mapper(VRT):
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': self.subVRTs['RawGeolocVRT'].fileName,
+                {'src': {'SourceFilename': (self.subVRTs['RawGeolocVRT'].
+                                            fileName),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,
@@ -207,7 +212,8 @@ class Mapper(VRT):
         #######################
         # Initialize dataset
         #######################
-        # create empty VRT dataset with geolocation only (from Geolocation Array)
+        # create empty VRT dataset with geolocation only
+        # (from Geolocation Array)
         VRT.__init__(self,
                      srcRasterXSize=2048,
                      srcRasterYSize=numCalibratedScanLines,

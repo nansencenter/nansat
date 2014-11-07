@@ -6,6 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from copy import deepcopy
 
+
 class Globcolour():
     ''' Mapper for GLOBCOLOR L3M products'''
 
@@ -36,7 +37,8 @@ class Globcolour():
             wavelength = nlwMetaEntry['dst']['wavelength']
             metaEntry = deepcopy(nlwMetaEntry)
             metaEntry['dst']['wkv'] = 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water'
-            metaEntry['dst']['expression'] = 'self["nLw_%s"] / %s' % (wavelength, solarIrradiance)
+            metaEntry['dst']['expression'] = ('self["nLw_%s"] / %s'
+                                              % (wavelength, solarIrradiance))
         else:
             metaEntry = None
 
