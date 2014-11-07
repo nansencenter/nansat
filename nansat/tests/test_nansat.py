@@ -106,9 +106,26 @@ class NansatTest(unittest.TestCase):
     def test_export(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
+        n.export(tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_export_gtiff(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.tif')
         n.export(tmpfilename, driver='GTiff')
 
         self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_export_band(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export_band.tif')
+        n.export(tmpfilename, bands= [1], driver='GTiff')
+        n = Nansat(tmpfilename, mapperName='generic')
+
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
     def test_export2thredds_stere(self):
         # skip the test if anaconda is used
@@ -317,14 +334,6 @@ class NansatTest(unittest.TestCase):
         m = n1.get_metadata('newKey', 1)
 
         self.assertEqual(m, 'newVal')
-
-    def test_export_band(self):
-        n1 = Nansat(self.test_file_stere, logLevel=40)
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_write_geotiffimage.tif')
-        n1.export_band(tmpfilename, driver='GTiff')
-
-        self.assertTrue(os.path.exists(tmpfilename))
 
     def test_get_transect(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
