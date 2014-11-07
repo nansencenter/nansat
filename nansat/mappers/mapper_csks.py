@@ -62,35 +62,40 @@ class Mapper(VRT):
         gcp = gdal.GCP(float(bottom_left_lon),
                        float(bottom_left_lat), 0, 0, 0)
         gcps.append(gcp)
-        #self.logger.debug('%d %d %d %f %f', 0, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+        #self.logger.debug('%d %d %d %f %f', 0, gcp.GCPPixel, gcp.GCPLine,
+        #                  gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(bottom_right_lon),
                        float(bottom_right_lat),
                        0,
                        subDataset.RasterXSize,
                        0)
         gcps.append(gcp)
-        #self.logger.debug('%d %d %d %f %f', 1, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+        #self.logger.debug('%d %d %d %f %f', 1, gcp.GCPPixel, gcp.GCPLine,
+        #                  gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(top_left_lon),
                        float(top_left_lat),
                        0,
                        0,
                        subDataset.RasterYSize)
         gcps.append(gcp)
-        #self.logger.debug('%d %d %d %f %f', 2, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+        #self.logger.debug('%d %d %d %f %f', 2, gcp.GCPPixel, gcp.GCPLine,
+        #                  gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(top_right_lon),
                        float(top_right_lat),
                        0,
                        subDataset.RasterXSize,
                        subDataset.RasterYSize)
         gcps.append(gcp)
-        #self.logger.debug('%d %d %d %f %f', 3, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+        #self.logger.debug('%d %d %d %f %f', 3, gcp.GCPPixel, gcp.GCPLine,
+        #                  gcp.GCPX, gcp.GCPY)
         gcp = gdal.GCP(float(center_lon),
                        float(center_lat),
                        0,
                        int(np.round(subDataset.RasterXSize/2.)),
                        int(round(subDataset.RasterYSize/2.)))
         gcps.append(gcp)
-        #self.logger.debug('%d %d %d %f %f', 4, gcp.GCPPixel, gcp.GCPLine, gcp.GCPX, gcp.GCPY)
+        #self.logger.debug('%d %d %d %f %f', 4, gcp.GCPPixel, gcp.GCPLine,
+        #                  gcp.GCPX, gcp.GCPY)
 
         # append GCPs and lat/lon projection to the vsiDataset
         latlongSRS = osr.SpatialReference()
@@ -163,7 +168,8 @@ class Mapper(VRT):
                                                           '_Polarisation'],
                        'SatelliteID': gdalMetadata['Satellite_ID'],
                        'dataType': gdal.GDT_Float32}
-                       #'pass': gdalMetadata[''] - I can't find this in the metadata...
+                       #'pass': gdalMetadata['']
+                       #         - I can't find this in the metadata...
 
                 self._create_band(src, dst)
 

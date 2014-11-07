@@ -1,5 +1,6 @@
 # Name:        mapper_ocean_prodcutivity
-# Purpose:     Mapping for MODIS and SeaWiFS Level-3 from Ocean Productivity website (Oregon State University)
+# Purpose:     Mapping for MODIS and SeaWiFS Level-3
+#              from Ocean Productivity website (Oregon State University)
 # Authors:      Dmitry Petrenko, Anton Korosov
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -93,7 +94,8 @@ class Mapper(VRT):
         mask[a < -9990] = 1
         self.subVRTs = {'maskVRT': VRT(array=mask)}
 
-        metaDict.append({'src': {'SourceFilename': self.subVRTs['maskVRT'].fileName,
+        metaDict.append({'src': {'SourceFilename': (self.subVRTs['maskVRT'].
+                                                    fileName),
                                  'SourceBand': 1},
                          'dst': {'name': 'mask'}})
 

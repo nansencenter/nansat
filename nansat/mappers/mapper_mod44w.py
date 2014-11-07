@@ -10,7 +10,6 @@ from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 
 
-
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MOD44W produc (MODIS watermask at 250 m)'''
 
