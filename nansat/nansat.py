@@ -29,6 +29,7 @@ import scipy
 from scipy.io.netcdf import netcdf_file
 import numpy as np
 from matplotlib import cm
+import matplotlib.pyplot as plt
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -1339,21 +1340,21 @@ class Nansat(Domain):
         # == finally SAVE to a image file or SHOW ==
         if fileName is not None:
             if type(fileName) == bool and fileName:
-                import matplotlib.pyplot as plt
-                from numpy import array
                 try:
                     if plt.get_backend() == 'agg':
                         plt.switch_backend('QT4Agg')
+                except:
+                    fig.pilImg.show()
+                else:
                     sz = fig.pilImg.size
-                    imgArray = array(fig.pilImg.im)
+                    imgArray = np.array(fig.pilImg.im)
                     if fig.pilImg.getbands() == ('P',):
                         imgArray.resize(sz[1], sz[0])
                     elif fig.pilImg.getbands() == ('R', 'G', 'B'):
                         imgArray.resize(sz[1], sz[0], 3)
                     plt.imshow(imgArray)
                     plt.show()
-                except:
-                    fig.pilImg.show()
+
             elif type(fileName) in [str, unicode]:
                 fig.save(fileName, **kwargs)
                 # If tiff image, convert to GeoTiff
