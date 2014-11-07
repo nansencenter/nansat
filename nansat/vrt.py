@@ -110,7 +110,7 @@ class GeolocationArray():
         return lonGrid, latGrid
 
 
-class VRT():
+class VRT(object):
     '''Wrapper around GDAL VRT-file
 
     The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
