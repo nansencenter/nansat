@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 from nansat.tools import ProjectionError, osr
 
+
 class NSR(osr.SpatialReference, object):
     '''Nansat Spatial Reference
 

@@ -98,9 +98,12 @@ meteosat7_VW_radiances = array([0.021, 0.023, 0.024, 0.026, 0.028, 0.030,
                                 22.080, 22.463, 22.851, 23.244, 23.642, 24.044,
                                 24.450, 24.862])
 meteosat7_temperatures = arange(170, 370)
-meteosat7_IR_calibration = array(0.104)  # NB this calibration constant is in reality time dependent
-meteosat7_VW_calibration = array(0.011)  # NB this calibration constant is in reality time dependent
-meteosat7_offset = array(5)  # varies between 5 and 6
+# NB this calibration constant is in reality time dependent
+meteosat7_IR_calibration = array(0.104)
+# NB this calibration constant is in reality time dependent
+meteosat7_VW_calibration = array(0.011)
+# varies between 5 and 6
+meteosat7_offset = array(5)
 meteosat7_lut_IR = arrays2LUTString((meteosat7_IR_radiances /
                                      meteosat7_IR_calibration -
                                      meteosat7_offset),
@@ -205,7 +208,8 @@ class Mapper(VRT):
             try:
                 gdal.Open(bandSource)
             except:
-                print "Warning: band missing for wavelength " + str(wavelength) + "nm"
+                print ('Warning: band missing for wavelength ' +
+                       str(wavelength) + 'nm')
                 continue
             src = {'SourceFilename': bandSource, 'SourceBand': 1,
                    'LUT': LUT[i], 'NODATA': NODATA[i]}
@@ -224,9 +228,11 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # For Meteosat7 ch1 has higher resolution than ch2 and ch3
-        # and for MSG, channel 12 (HRV) has higher resolution than the other channels
+        # and for MSG, channel 12 (HRV) has
+        # higher resolution than the other channels
         # If the high resolution channel is opened, the low res channels are
-        # blown up to this size. If a low res channel is opened, the high res channels
+        # blown up to this size. If a low res channel is opened,
+        # the high res channels
         # are reduced to this size.
         if satellite == 'MET7' or satellite[0:3] == 'MSG':
             node0 = Node.create(self.read_xml())
@@ -251,7 +257,8 @@ class Mapper(VRT):
                     bands = [bands[11]]  # Only ch12 needs to be modified
 
             for band in bands:
-                node1 = band.nodeList("ComplexSource")[0].nodeList("SrcRect")[0]
+                node1 = (band.nodeList("ComplexSource")[0].
+                         nodeList("SrcRect")[0])
                 node1.setAttribute("xSize", newSrcXSize)
                 node1.setAttribute("ySize", newSrcYSize)
             self.write_xml(node0.rawxml())

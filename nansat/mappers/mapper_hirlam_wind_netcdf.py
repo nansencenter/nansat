@@ -61,32 +61,31 @@ class Mapper(VRT):
         VRT.__init__(self, lat=lat, lon=lon)
 
         # Add bands with wind components
-        metaDict = [{'src': {
-                'SourceFilename': 'NETCDF:"' + fileName + '":x_wind_10m',
-                'NODATA': -32767},
-            'dst': {'name': 'U',
-                    'wkv': 'eastward_wind'}},
-             {'src': {
-                'SourceFilename': 'NETCDF:"' + fileName + '":y_wind_10m',
-                'NODATA': -32767},
-            'dst': {'name': 'V',
-                    'wkv': 'northward_wind'}}]
+        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                                                '":x_wind_10m'),
+                             'NODATA': -32767},
+                     'dst': {'name': 'U',
+                             'wkv': 'eastward_wind'}},
+                    {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                                                '":y_wind_10m'),
+                             'NODATA': -32767},
+                     'dst': {'name': 'V',
+                             'wkv': 'northward_wind'}}]
 
         # Add pixel function with wind speed
-        metaDict.append({'src': [{'SourceFilename':
-                    'NETCDF:"' + fileName + '":x_wind_10m',
-                    'SourceBand': 1,
-                    'DataType': 6},
-                    {'SourceFilename':
-                    'NETCDF:"' + fileName + '":y_wind_10m',
-                    'SourceBand': 1,
-                    'DataType': 6 }],
-                  'dst': {'wkv': 'wind_speed',
-                    'name': 'windspeed',
-                    'height': '10 m',
-                    'PixelFunctionType': 'UVToMagnitude',
-                    'NODATA': 9999}
-                  })
+        metaDict.append({'src': [{'SourceFilename': ('NETCDF:"' + fileName +
+                                                     '":x_wind_10m'),
+                                  'SourceBand': 1,
+                                  'DataType': 6},
+                                 {'SourceFilename': ('NETCDF:"' + fileName +
+                                                     '":y_wind_10m'),
+                                  'SourceBand': 1,
+                                  'DataType': 6}],
+                         'dst': {'wkv': 'wind_speed',
+                                 'name': 'windspeed',
+                                 'height': '10 m',
+                                 'PixelFunctionType': 'UVToMagnitude',
+                                 'NODATA': 9999}})
 
         # add bands with metadata and corresponding values
         # to the empty VRT

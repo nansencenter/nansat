@@ -58,8 +58,8 @@ class Mapper(VRT, Globcolour):
         simFiles = glob.glob(simFilesMask)
         simFiles.sort()
 
-        metaDict= []
-        self.subVRTs= {'mask': [], 'lonlat': []}
+        metaDict = []
+        self.subVRTs = {'mask': [], 'lonlat': []}
         mask = None
         for simFile in simFiles:
             print 'sim: ', simFile
@@ -73,7 +73,8 @@ class Mapper(VRT, Globcolour):
             colBinned = None
             rowBinned = None
 
-            # get iRawPro, index for converting from GLOBCOLOR-grid to latlonGrid
+            # get iRawPro, index for converting
+            # from GLOBCOLOR-grid to latlonGrid
             yRawPro = np.rint(1 + (GLOBCOLOR_ROWS - 1) *
                               (latlonGrid[0] + 90) / 180)
             lon_step_Mat = 1 / np.cos(np.pi * latlonGrid[0] / 180.) / 24.
@@ -119,7 +120,8 @@ class Mapper(VRT, Globcolour):
 
                 # add metadata to the dictionary
                 metaDict.append({
-                    'src': {'SourceFilename': self.subVRTs['mask'][-1].fileName,
+                    'src': {'SourceFilename': (self.subVRTs['mask'][-1].
+                                               fileName),
                             'SourceBand':  1},
                     'dst': {'name': 'mask'}})
 

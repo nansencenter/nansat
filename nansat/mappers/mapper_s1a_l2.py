@@ -22,13 +22,14 @@ from nansat.vrt import VRT
 from nansat.tools import gdal, WrongMapperError
 from nansat.nsr import NSR
 
+
 class Mapper(VRT):
     '''
         Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, product_type='RVL',
-            GCP_COUNT=10, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 product_type='RVL', GCP_COUNT=10, **kwargs):
         '''
         Parameters
         ----------
@@ -42,10 +43,10 @@ class Mapper(VRT):
         fPathName, fExt = os.path.splitext(fileName)
 
         # List of Sentinel-1 level-2 components
-        unwanted_product_components = ['osw','owi','rvl']
+        unwanted_product_components = ['osw', 'owi', 'rvl']
         # Remove requested 'product_type' from list of unwanted
-        unwanted_product_components.pop( unwanted_product_components.index(
-            product_type.lower() ) )
+        unwanted_product_components.pop(unwanted_product_components.index(
+                                        product_type.lower()))
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
         if not gdalMetadata or not 'NC_GLOBAL' in gdalMetadata.keys():
@@ -68,7 +69,7 @@ class Mapper(VRT):
         rm_bands = []
         # Find all data that is not relevant for the selected product type
         # and get bands of longitude, latitude and zero doppler time
-        for i,f in enumerate(fileNames):
+        for i, f in enumerate(fileNames):
             if f.split(':')[-1][:3] in unwanted_product_components:
                 rm_bands.append(i)
             if 'Lon' in f.split(':')[-1]:
@@ -82,7 +83,7 @@ class Mapper(VRT):
                 rm_bands.append(i)
         # Remove bands in rm_bands from the list of bands to add to the Nansat
         # object
-        fileNames = [f for i,f in enumerate(fileNames) if not i in rm_bands]
+        fileNames = [f for i, f in enumerate(fileNames) if not i in rm_bands]
            #     (
            # 'Lon' in f.split(':')[-1] or
            # 'Lat' in f.split(':')[-1] or
@@ -90,8 +91,6 @@ class Mapper(VRT):
 
         # create empty VRT dataset
         VRT.__init__(self, gdal.Open(subDatasets[0][0]), srcMetadata=metadata)
-
-
 
         # The zero Doppler time grid is 3-dimensional - the last dimension is a
         # char array with the time as year, month, day, etc.
@@ -128,7 +127,8 @@ class Mapper(VRT):
                 lon = float(longitude[i0, i1])
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
-                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep + dx, i0 * lineStep + dy)
+                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep + dx,
+                                   i0 * lineStep + dy)
                     self.logger.debug('%d %d %d %f %f',
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)
@@ -151,24 +151,22 @@ class Mapper(VRT):
             if (band.RasterXSize != XSize or
                     band.RasterYSize != YSize):
                 raise IndexError(('Size of sub-dataset is different from size '
-                        'of longitude and latitude grids'))
+                                  'of longitude and latitude grids'))
 
             bandMetadata = band.GetMetadata()
             # generate src metadata
-            src = {
-                    'SourceFilename': fileName,
-                    'SourceBand': 1
-                }
+            src = {'SourceFilename': fileName,
+                   'SourceBand': 1
+                   }
 
             # Generate dst metadata
             short_name = fileName.split(':')[-1]
-            dst = {
-                    'name': short_name,
-                    'short_name': short_name,
-                    'long_name': bandMetadata[short_name+'#long_name'],
-                    'units': bandMetadata[short_name+'#units'],
-                    #'wkv': ,
-                }
+            dst = {'name': short_name,
+                   'short_name': short_name,
+                   'long_name': bandMetadata[short_name+'#long_name'],
+                   'units': bandMetadata[short_name+'#units'],
+                   #'wkv': ,
+                   }
 
             # append band with src and dst dictionaries
             metaDict.append({'src': src, 'dst': dst})
@@ -180,15 +178,16 @@ class Mapper(VRT):
         for i in range(self.dataset.RasterCount):
             if 'Nrcs' in self.dataset.GetRasterBand(i+1).GetMetadata()['name']:
                 metaDict.append({
-                    'src': {
-                        'SourceFilename': self.dataset.GetRasterBand(i+1).GetMetadata()['SourceFilename'],
-                        'SourceBand': 1,
-                        },
+                    'src': {'SourceFilename': (self.dataset.GetRasterBand(i+1).
+                                GetMetadata()['SourceFilename']),
+                            'SourceBand': 1
+                            },
                     'dst': {
                         'short_name': 'sigma0',
                         'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
                         'PixelFunctionType':  'dB2pow',
-                        'polarization': self.dataset.GetMetadata()['POLARISATION'],
+                        'polarization': (self.dataset.
+                                         GetMetadata()['POLARISATION']),
                         'suffix': self.dataset.GetMetadata()['POLARISATION'],
                         'dataType': 6,
                     }
@@ -198,4 +197,5 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # set time
-        self._set_time(parse(self.dataset.GetMetadata()['SOURCE_ACQUISITION_UTC_TIME']))
+        self._set_time(parse(self.dataset.
+                             GetMetadata()['SOURCE_ACQUISITION_UTC_TIME']))

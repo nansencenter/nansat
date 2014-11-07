@@ -14,12 +14,14 @@ from nansat.vrt import VRT, GeolocationArray
 from nansat.node import Node
 from nansat.tools import gdal, ogr, WrongMapperError
 
+
 class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
                  rmMetadatas=['NETCDF_VARNAME', '_Unsigned',
                               'ScaleRatio', 'ScaleOffset', 'dods_variable'],
                  **kwargs):
-        # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_' from keys in gdalDataset
+        # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_'
+        # from keys in gdalDataset
         tmpGdalMetadata = {}
         geoMetadata = {}
         origin_is_nansat = False
@@ -113,7 +115,8 @@ class Mapper(VRT):
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('NETCDF_VARNAME', '')
                             if len(bandName) == 0:
-                                bandName = bandMetadata.get('dods_variable', '')
+                                bandName = bandMetadata.get('dods_variable',
+                                                            '')
                             if len(bandName) > 0:
                                 if origin_is_nansat and fileExt == '.nc':
                                     # remove digits added by gdal in

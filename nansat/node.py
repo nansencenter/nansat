@@ -19,6 +19,7 @@ import os
 import re
 import xml.dom.minidom as xdm
 
+
 class Node(object):
     '''
     Rapidly assemble XML using minimal coding.
@@ -115,7 +116,6 @@ class Node(object):
                 ielm += 1
         return False
 
-
     def replaceNode(self, tag, elemNum=0, newNode=None):
         ''' Find the first subnode with this tag and replace with given node.
 
@@ -182,7 +182,6 @@ class Node(object):
             if child.hasChildNodes():
                 print 'has childs'
                 theChild = self.find_dom_child(child, tagName, n)
-
 
         return theChild
 

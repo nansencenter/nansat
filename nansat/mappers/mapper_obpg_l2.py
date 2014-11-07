@@ -11,6 +11,7 @@ from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
 
+
 class Mapper(VRT):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
 
@@ -40,7 +41,8 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-        # get subdataset and parse to VRT.__init__() for retrieving geo-metadata
+        # get subdataset and parse to VRT.__init__()
+        # for retrieving geo-metadata
         # but NOT from longitude or latitude because it can be smaller!
         subDatasets = gdalDataset.GetSubDatasets()
         for subDataset in subDatasets:
@@ -84,7 +86,7 @@ class Mapper(VRT):
                         'sst': {'src': {},
                                 'dst': {'wkv': 'sea_surface_temperature'}},
                         'sst4': {'src': {},
-                                'dst': {'wkv': 'sea_surface_temperature'}},
+                                 'dst': {'wkv': 'sea_surface_temperature'}},
                         'l2_flags': {'src': {'SourceType': 'SimpleSource',
                                              'DataType': 4},
                                      'dst': {'wkv': 'quality_flags',
@@ -95,10 +97,10 @@ class Mapper(VRT):
                                              'name': 'qual_sst',
                                              'dataType': 4}},
                         'qual_sst4': {'src': {'SourceType': 'SimpleSource',
-                                             'DataType': 4},
-                                     'dst': {'wkv': 'quality_flags',
-                                             'name': 'qual_sst',
-                                             'dataType': 4}},
+                                              'DataType': 4},
+                                      'dst': {'wkv': 'quality_flags',
+                                              'name': 'qual_sst',
+                                              'dataType': 4}},
                         'latitude': {'src': {},
                                      'dst': {'wkv': 'latitude'}},
                         'longitude': {'src': {},
@@ -245,7 +247,8 @@ class Mapper(VRT):
                 lon = float(longitude[i0, i1])
                 lat = float(latitude[i0, i1])
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
-                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep + dx, i0 * lineStep + dy)
+                    gcp = gdal.GCP(lon, lat, 0, i1 * pixelStep + dx,
+                                   i0 * lineStep + dy)
                     self.logger.debug('%d %d %d %f %f',
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)

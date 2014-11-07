@@ -12,6 +12,7 @@ from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
 
+
 class Mapper(VRT):
     ''' Mapper for ASTER L1A VNIR data'''
 
@@ -50,18 +51,15 @@ class Mapper(VRT):
         metaDict = []
         bandDatasetMask = 'HDF4_EOS:EOS_SWATH:"%s":%s:ImageData'
         for bandName, bandWave in zip(bandNames, bandWaves):
-            metaEntry = {
-                'src': {
-                    'SourceFilename': bandDatasetMask % (fileName, bandName),
-                    'SourceBand': 1,
-                    'DataType': 6,
-                    },
-                'dst':  {
-                    'wkv': 'toa_outgoing_spectral_radiance',
-                    'wavelength': str(bandWave),
-                    'suffix': str(bandWave),
-                    },
-            }
+            metaEntry = {'src': {'SourceFilename': (bandDatasetMask
+                                                    % (fileName, bandName)),
+                                 'SourceBand': 1,
+                                 'DataType': 6,
+                                 },
+                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
+                                 'wavelength': str(bandWave),
+                                 'suffix': str(bandWave),
+                                 }}
             metaDict.append(metaEntry)
 
         # create empty VRT dataset with geolocation only
