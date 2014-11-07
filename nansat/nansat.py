@@ -16,7 +16,8 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import os, sys
+import os
+import sys
 import tempfile
 import datetime
 import dateutil.parser
@@ -111,6 +112,26 @@ class Nansat(Domain):
         self.name : string
             name of object (for writing KML)
 
+        Examples
+        --------
+        n = Nansat(filename)
+        # opens file for reading. Opening is lazy - no data is read at this
+        # point, only metadata that describes the dataset and bands
+
+        n = Nansat(domain=d)
+        # create an empty Nansat object. <d> is the Domain object which
+        # describes the grid (projection, resolution and extent)
+
+        n = Nansat(domain=d, array=a, parameters=p)
+        # create a Nansat object in memory with one band from input array <a>.
+        # <p> is a dictionary with metadata for the band
+
+        a = n[1]
+        # fetch data from Nansat object from the first band
+
+        a = n['band_name']
+        # fetch data from the band which has name 'band_name'
+
         '''
         # check the arguments
         if fileName == '' and domain is None:
@@ -143,9 +164,6 @@ class Nansat(Domain):
 
         self.logger.debug('Object created from %s ' % self.fileName)
 
-        # default mapper
-        self.mapper = ''
-
     def __getitem__(self, bandID):
         ''' Returns the band as a NumPy array, by overloading []
 
@@ -177,7 +195,8 @@ class Nansat(Domain):
             try:
                 bandData[bandData == fillValue] = np.nan
             except:
-                self.logger.info('Cannot replace _FillValue values with np.NAN in %s!' % bandID)
+                self.logger.info('Cannot replace _FillValue values '
+                                 'with np.NAN in %s!' % bandID)
         try:
             bandData[np.isinf(bandData)] = np.nan
         except:
@@ -217,6 +236,15 @@ class Nansat(Domain):
         Creates VRT object with VRT-file and RAW-file
         Adds band to the self.vrt
 
+        Examples
+        --------
+        n.add_band(a, p)
+        # add new band from numpy array <a> with metadata <p> in memory
+        # Shape of a should be equal to the shape of <n>
+
+        n.add_band(a, p, nomem=True)
+        # add new band from an array <a> with metadata <p> but keep it
+        # temporarli on disk intead of memory
         '''
         self.add_bands([array], [parameters], nomem)
 
@@ -239,29 +267,33 @@ class Nansat(Domain):
         Creates VRT object with VRT-file and RAW-file
         Adds band to the self.vrt
 
+        Examples
+        --------
+        n.add_bands([a1, a2], [p1, p2])
+        # add two new bands from numpy arrays <a1> and <a2> with metadata in
+        # <p1> and <p2>
+
         '''
         # create VRTs from arrays
         bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
 
-        # create subVRTs as dict
-        if self.vrt.subVRTs is None:
-            self.vrt.subVRTs = {}
-
         # add the array band into self.vrt and get bandName
         for bi, bandVRT in enumerate(bandVRTs):
             params = parameters[bi]
             if params is None:
                 params = {}
-            bandName = self.vrt._create_band({'SourceFilename': bandVRT.fileName,
-                                              'SourceBand': 1}, params)
+            bandName = self.vrt._create_band(
+                {'SourceFilename': bandVRT.fileName,
+                 'SourceBand': 1},
+                params)
             self.vrt.subVRTs[bandName] = bandVRT
 
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
-        ''' Make a dictionary with all bands metadata
+        ''' Make a dictionary with all metadata from all bands
 
         Returns
         --------
@@ -294,7 +326,7 @@ class Nansat(Domain):
 
         return bandExists
 
-    def export(self, fileName, rmMetadata=[], addGeolocArray=True,
+    def export(self, fileName, bands=None, rmMetadata=[], addGeolocArray=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -302,13 +334,16 @@ class Nansat(Domain):
         -----------
         fileName : str
             output file name
+        bands: list (default=None)
+            Specify band numbers to export.
+            If None, all bands are exported.
         rmMetadata : list
             metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
         addGeolocArray : bool
             add geolocation array datasets to exported file?
         addGCPs : bool
-            add GCPs?  to exported file?
+            add GCPs to exported file?
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
@@ -338,11 +373,27 @@ class Nansat(Domain):
         CreateCopy fails in case the band name has special characters,
         e.g. the slash in 'HH/VV'.
 
+        Examples
+        --------
+        n.export(netcdfile)
+        # export all the bands into a netDCF 3 file
+
+        n.export(driver='GTiff')
+        # export all bands into a GeoTiff
+
         '''
         # temporary VRT for exporting
         exportVRT = self.vrt.copy()
         exportVRT.real = []
         exportVRT.imag = []
+
+        # delete unnecessary bands
+        if bands is not None:
+            srcBands = np.arange(self.vrt.dataset.RasterCount) + 1
+            dstBands = np.array(bands)
+            mask = np.in1d(srcBands, dstBands)
+            rmBands = srcBands[mask==False]
+            exportVRT.delete_bands(rmBands.tolist())
 
         # Find complex data band
         complexBands = []
@@ -486,28 +537,41 @@ class Nansat(Domain):
         fileName : str
             output file name
         bands : dict
-            {'band_name': {'type'     :  '>i1',
+            {'band_name': {'type'     : '>i1',
                            'scale'    : 0.1,
                            'offset'   : 1000,
                            'metaKey1' : 'meta value 1',
                            'metaKey2' : 'meta value 2'}}
-        maskName: string
+            dictionary sets parameters for band creation
+            'type' - string representation of data type in the output band
+            'scale' - sets scale_factor and applies scaling
+            'offset' - sets 'scale_offset and applies offsetting
+            other entries (e.g. 'units': 'K') set other metadata
+        metadata : dict
+            Glbal metadata to add
+        maskName: string;
             if data include a mask band: give the mask name.
             Non-masked value is 64.
             if None: no mask is added
-        rmGlobMetadata, rmMetadata : list
-            unsanted metadata names
-        duplicateMetadata : dictionary
-            if copy globalmetadata with another name,
-            keys are new names and values are key names of underlying data
+        rmMetadata : list
+            unwanted metadata names which will be removed
         time : list with datetime objects
-            produced time of original data
+            aqcuisition time of original data. That value will be in time dim
+        createdTime : datetime
+            date of creation. Will be in metadata 'created'
 
         !! NB
         ------
         Nansat object (self) has to be projected (with valid GeoTransform and
         valid Spatial reference information) but not wth GCPs
 
+        Examples
+        --------
+        n.export2thredds(filename)
+        # create THREDDS formatted netcdf file with all bands and time variable
+
+        n.export2thredds(filename, [1], {'description': 'example'})
+        # export only the first band and add global metadata
         '''
         # Create temporary empty Nansat object with self domain
         data = Nansat(domain=self)
@@ -534,7 +598,7 @@ class Nansat(Domain):
             if 'type' in bands[iband]:
                 dstBands[iband]['type'] = bands[iband]['type']
             else:
-                dstBands[iband]['type'] = array.dtype.str.replace('u','i')
+                dstBands[iband]['type'] = array.dtype.str.replace('u', 'i')
             if 'scale' in bands[iband]:
                 dstBands[iband]['scale'] = float(bands[iband]['scale'])
             else:
@@ -544,7 +608,8 @@ class Nansat(Domain):
             else:
                 dstBands[iband]['offset'] = 0.0
             if '_FillValue' in bands[iband]:
-                dstBands[iband]['_FillValue'] = float(bands[iband]['_FillValue'])
+                dstBands[iband]['_FillValue'] = float(
+                    bands[iband]['_FillValue'])
 
             # mask values with np.nan
             if maskName is not None and iband != maskName:
@@ -558,26 +623,25 @@ class Nansat(Domain):
                 if rmMeta in bandMetadata.keys():
                     bandMetadata.pop(rmMeta)
 
-            data.add_band(array=array, parameters = bandMetadata)
-        self.logger.debug('Bands for export: %s'  % str(dstBands))
+            data.add_band(array=array, parameters=bandMetadata)
+        self.logger.debug('Bands for export: %s' % str(dstBands))
 
         # get corners of reprojected data
-        lonCrn,latCrn = data.get_corners()
+        lonCrn, latCrn = data.get_corners()
 
         # common global attributes:
         if createdTime is None:
-            createdTime = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+            createdTime = (datetime.datetime.utcnow().
+                           strftime('%Y-%m-%d %H:%M:%S UTC'))
 
-        globMetadata = {
-            'institution': 'NERSC',
-            'source': 'satellite remote sensing',
-            'creation_date': createdTime,
-            'northernmost_latitude': np.float(max(latCrn)),
-            'southernmost_latitude': np.float(min(latCrn)),
-            'westernmost_longitude': np.float(min(lonCrn)),
-            'easternmost_longitude': np.float(max(lonCrn)),
-            'history': ' ',
-            }
+        globMetadata = {'institution': 'NERSC',
+                        'source': 'satellite remote sensing',
+                        'creation_date': createdTime,
+                        'northernmost_latitude': np.float(max(latCrn)),
+                        'southernmost_latitude': np.float(min(latCrn)),
+                        'westernmost_longitude': np.float(min(lonCrn)),
+                        'easternmost_longitude': np.float(max(lonCrn)),
+                        'history': ' '}
 
         #join or replace default by custom global metadata
 
@@ -668,7 +732,8 @@ class Nansat(Domain):
             # copy rounded data from x/y
             if ncIVarName in ['x', 'y']:
                 ncOVar[:] = np.floor(data).astype('>f4')
-                ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName] #add axis=X or axis=Y
+                #add axis=X or axis=Y
+                ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName]
                 for attrib in ncIVar._attributes:
                     if len(ncIVar._attributes[attrib]) > 0:
                         ncOVar._attributes[attrib] = ncIVar._attributes[attrib]
@@ -684,11 +749,11 @@ class Nansat(Domain):
 
             # copy data from variables in the list
             if (len(ncIVar.dimensions) > 0 and
-                'name' in ncIVar._attributes and ncIVar.name in dstBands):
+                    'name' in ncIVar._attributes and ncIVar.name in dstBands):
                 # add offset and scale attributes
                 scale = dstBands[ncIVar.name]['scale']
                 offset = dstBands[ncIVar.name]['offset']
-                if not (offset==0.0 and scale==1.0):
+                if not (offset == 0.0 and scale == 1.0):
                     ncOVar._attributes['add_offset'] = offset
                     ncOVar._attributes['scale_factor'] = scale
                     data = (data - offset) / scale
@@ -704,13 +769,15 @@ class Nansat(Domain):
                     if inAttrName not in ['dataType', 'SourceFilename',
                                           'SourceBand', '_Unsigned',
                                           'FillValue', 'time']:
-                        ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
+                        ncOVar._attributes[inAttrName] = (
+                            ncIVar._attributes[inAttrName])
 
                 # add custom attributes
                 if ncIVar.name in bands:
                     for newAttr in bands[ncIVar.name]:
                         if newAttr not in ['type', 'scale', 'offset']:
-                            ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
+                            ncOVar._attributes[newAttr] = (
+                                bands[ncIVar.name][newAttr])
                     # add grid_mapping info
                     if gridMappingName is not None:
                         ncOVar._attributes['grid_mapping'] = gridMappingName
@@ -736,7 +803,8 @@ class Nansat(Domain):
 
         return 0
 
-    def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
+    def resize(self, factor=1, width=None, height=None,
+               pixelsize=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor)
@@ -771,6 +839,16 @@ class Nansat(Domain):
         self.vrt.dataset : VRT dataset of VRT object
             raster size are modified to downscaled size.
             If GCPs are given in the dataset, they are also overwritten.
+
+        Examples
+        --------
+        n.resize(0.1)
+        # resize the Nansat object to e 10 times smaller
+        # resampling method is 'average'
+
+        n.resize(width=100, eResampleAlg=0)
+        # resize the object proportionally to make width equal 100 pix
+        # resamling method is 'nearest neighbour'
 
         '''
         # get current shape
@@ -990,22 +1068,22 @@ class Nansat(Domain):
         # when using TPS (if requested)
         src_skip_gcps = self.vrt.dataset.GetMetadataItem('skip_gcps')
         dst_skip_gcps = dstDomain.vrt.dataset.GetMetadataItem('skip_gcps')
-        if not 'skip_gcps' in kwargs.keys(): # If not given explicitly...
-            kwargs['skip_gcps'] = 1 # default (use all GCPs)
-            if dst_skip_gcps is not None: # ...or use setting from dst
+        if not 'skip_gcps' in kwargs.keys():  # If not given explicitly...
+            kwargs['skip_gcps'] = 1  # default (use all GCPs)
+            if dst_skip_gcps is not None:  # ...or use setting from dst
                 kwargs['skip_gcps'] = int(dst_skip_gcps)
-            if src_skip_gcps is not None: # ...or use setting from src
+            if src_skip_gcps is not None:  # ...or use setting from src
                 kwargs['skip_gcps'] = int(src_skip_gcps)
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
-                                            dstGCPs=dstGCPs,
-                                            eResampleAlg=eResampleAlg,
-                                            xSize=xSize, ySize=ySize,
-                                            blockSize=blockSize,
-                                            geoTransform=geoTransform,
-                                            WorkingDataType=WorkingDataType,
-                                            **kwargs)
+                                           dstGCPs=dstGCPs,
+                                           eResampleAlg=eResampleAlg,
+                                           xSize=xSize, ySize=ySize,
+                                           blockSize=blockSize,
+                                           geoTransform=geoTransform,
+                                           WorkingDataType=WorkingDataType,
+                                           **kwargs)
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
@@ -1277,12 +1355,14 @@ class Nansat(Domain):
                         fig.pilImg.show()
                 except:
                     fig.pilImg.show()
-            elif type(fileName) == str:
+            elif type(fileName) in [str, unicode]:
                 fig.save(fileName, **kwargs)
                 # If tiff image, convert to GeoTiff
                 if fileName[-3:] == 'tif':
                     self.vrt.copyproj(fileName)
-
+            else:
+                raise OptionError('%s is of wrong type %s' %
+                                  (str(fileName), str(type(fileName))))
         return fig
 
     def write_geotiffimage(self, fileName, bandID=1):
@@ -1480,7 +1560,7 @@ class Nansat(Domain):
                 gdalDataset = gdal.Open(self.fileName)
             except RuntimeError:
                 self.logger.error('GDAL could not open ' + self.fileName +
-                       ', trying to read with Nansat mappers...')
+                                  ', trying to read with Nansat mappers...')
         if gdalDataset is not None:
             # get metadata from the GDAL dataset
             metadata = gdalDataset.GetMetadata()
@@ -1511,7 +1591,7 @@ class Nansat(Domain):
                                                gdalDataset,
                                                metadata,
                                                **kwargs)
-            self.mapper = mapperName
+            self.mapper = mapperName.replace('mapper_', '')
         else:
             # We test all mappers, import one by one
             for iMapper in nansatMappers:
@@ -1525,7 +1605,8 @@ class Nansat(Domain):
 
                 # show all ImportError warnings before trying generic_mapper
                 if iMapper == 'mapper_generic' and len(importErrors) > 0:
-                    self.logger.error('\nWarning! The following mappers failed:')
+                    self.logger.error('\nWarning! '
+                                      'The following mappers failed:')
                     for ie in importErrors:
                         self.logger.error(importErrors)
 
@@ -1536,7 +1617,7 @@ class Nansat(Domain):
                                                     metadata,
                                                     **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
-                    self.mapper = iMapper
+                    self.mapper = iMapper.replace('mapper_', '')
                     break
                 except WrongMapperError:
                     pass
@@ -1554,7 +1635,7 @@ class Nansat(Domain):
         if tmpVRT is None and gdalDataset is None:
             # check if given data file exists
             if not os.path.isfile(self.fileName):
-                raise IOError('%s: File does not exist' %(self.fileName))
+                raise IOError('%s: File does not exist' % (self.fileName))
             raise GDALError('NANSAT can not open the file ' + self.fileName)
 
         return tmpVRT
@@ -1617,39 +1698,10 @@ class Nansat(Domain):
     def process(self, opts=None):
         '''Default L2 processing of Nansat object. Overloaded in childs.'''
 
-    def export_band(self, fileName, bandID=1, driver='netCDF'):
-        '''Export only one band of the Nansat object
-        Get array from the required band
-        Create temporary Nansat from the array
-        Export temporary Nansat to file
-
-        Parameters
-        ----------
-        fileName : str
-            name of the output file
-        bandID : int or str, [1]
-            number of name of the band
-        driver : str, ['netCDF']
-            name of the GDAL Driver (format) to use
-
-        '''
-        # get array from self
-        bandArray = self[bandID]
-        # get root, band metadata
-        rootMetadata = self.get_metadata()
-        bandMetadata = self.get_metadata(bandID=bandID)
-        # create temporary nansat
-        tmpNansat = Nansat(domain=self, array=bandArray)
-        # set metadata
-        tmpNansat.set_metadata(rootMetadata)
-        tmpNansat.set_metadata(bandMetadata, bandID=1)
-        # export
-        tmpNansat.export(fileName, driver=driver)
-
     def get_transect(self, points=None, bandList=[1], latlon=True,
-                           transect=True, returnOGR=False, layerNum=0,
-                           smoothRadius=0, smoothAlg=0, onlypixline=False,
-                           **kwargs):
+                     transect=True, returnOGR=False, layerNum=0,
+                     smoothRadius=0, smoothAlg=0, onlypixline=False,
+                     **kwargs):
 
         '''Get transect from two poins and retun the values by numpy array
 
@@ -1695,7 +1747,6 @@ class Nansat(Domain):
         if smoothAlg == 1:
             smooth_function = scipy.stats.nanmean
 
-
         data = None
         # if shapefile is given, get corner points from it
         if type(points) == str:
@@ -1735,8 +1786,8 @@ class Nansat(Domain):
             # if points in degree, convert them into pix/lin
             if latlon:
                 pix, lin = self.transform_points([point0[0], point1[0]],
-                                                  [point0[1], point1[1]],
-                                                  DstToSrc=1)
+                                                 [point0[1], point1[1]],
+                                                 DstToSrc=1)
                 point0 = (pix[0], lin[0])
                 point1 = (pix[1], lin[1])
             # compute Euclidean distance between point0 and point1
@@ -1755,15 +1806,24 @@ class Nansat(Domain):
             pixlinCoord = np.append(pixlinCoord,
                                     [pixVector, linVector],
                                     axis=1)
+
+        # truncate out-of-image points
+        gpi = ((pixlinCoord[0] >= 0) *
+               (pixlinCoord[1] >= 0) *
+               (pixlinCoord[0] < self.vrt.dataset.RasterXSize) *
+               (pixlinCoord[1] < self.vrt.dataset.RasterYSize))
+
         if onlypixline:
-            return pixlinCoord
+            return pixlinCoord[:, gpi]
 
         if smoothRadius:
             # get start/end coordinates of subwindows
             pixlinCoord0 = pixlinCoord - smoothRadius
             pixlinCoord1 = pixlinCoord + smoothRadius
+
             # truncate out-of-image points
-            gpi = ((pixlinCoord0[0] >= 0) *
+            gpi = (gpi *
+                   (pixlinCoord0[0] >= 0) *
                    (pixlinCoord0[1] >= 0) *
                    (pixlinCoord1[0] >= 0) *
                    (pixlinCoord1[1] >= 0) *
@@ -1773,17 +1833,21 @@ class Nansat(Domain):
                    (pixlinCoord1[1] < self.vrt.dataset.RasterYSize))
             pixlinCoord0 = pixlinCoord0[:, gpi]
             pixlinCoord1 = pixlinCoord1[:, gpi]
-            pixlinCoord = pixlinCoord[:, gpi]
+
+        pixlinCoord = pixlinCoord[:, gpi]
 
         # convert pix/lin into lon/lat
         lonVector, latVector = self.transform_points(pixlinCoord[0],
-                                                      pixlinCoord[1],
-                                                      DstToSrc=0)
+                                                     pixlinCoord[1],
+                                                     DstToSrc=0)
 
-        # if smoothRadius, create a mask to extract circular area from a box area
+        # if smoothRadius, create a mask to extract circular area
+        # from a box area
         if smoothRadius:
-            xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
-            distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
+            xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1,
+                                    0:smoothRadius * 2 + 1]
+            distance = ((xgrid - smoothRadius) ** 2 +
+                        (ygrid - smoothRadius) ** 2) ** 0.5
             mask = distance <= smoothRadius
 
         transect = []
@@ -1798,9 +1862,10 @@ class Nansat(Domain):
             if smoothRadius:
                 transect0 = []
                 for xmin, xmax, ymin, ymax in zip(
-                    pixlinCoord0[1], pixlinCoord1[1],
-                    pixlinCoord0[0], pixlinCoord1[0]):
-                    subdata = data[int(xmin):int(xmax + 1), int(ymin):int(ymax + 1)]
+                        pixlinCoord0[1], pixlinCoord1[1],
+                        pixlinCoord0[0], pixlinCoord1[0]):
+                    subdata = data[int(xmin):int(xmax + 1),
+                                   int(ymin):int(ymax + 1)]
                     transect0.append(smooth_function(subdata[mask]))
                 transect.append(transect0)
             else:
@@ -1827,7 +1892,8 @@ class Nansat(Domain):
             # Create Nansatshape object
             NansatOGR = Nansatshape(srs=NSR(self.vrt.get_projection()))
             # Set features and geometries into the Nansatshape
-            NansatOGR.add_features(coordinates=np.array([lonVector, latVector]),
+            NansatOGR.add_features(coordinates=np.array([lonVector,
+                                                         latVector]),
                                    values=fieldValues)
             # Return Nansatshape object
             return NansatOGR
@@ -1853,6 +1919,10 @@ class Nansat(Domain):
             width in pixels of subimage
         ySize : int
             height in pizels of subimage
+        lonlim : [float, float]
+            longitdal limits
+        latlim : [float, float]
+            latitudal limits
 
         Modifies
         --------
@@ -1864,11 +1934,28 @@ class Nansat(Domain):
                 0 - everyhting is OK, image is cropped
                 1 - if crop is totally outside, image is NOT cropped
                 2 - crop area is too large and crop is not needed
+            extent : (xOff, yOff, xSize, ySize)
+                xOff  - X offset in the original dataset
+                yOff  - Y offset in the original dataset
+                xSize - width of the new dataset
+                ySize - height of the new dataset
+
+        Examples
+        --------
+            # crop a subimage of size 100x200 pix from X/Y offset 10, 20 pix
+            status, extent = n.crop(10, 20, 100, 200)
+
+            # crop a subimage within the lon/lat limits
+            status, extent = n.crop(lonlim=[-20, 20], latlim=[50, 60])
+
+            # crop a subimage interactively
+            status, extent = n.crop()
+
         '''
         # use interactive PointBrowser for selecting extent
-        if      (xOff==0 and yOff==0 and
-                 xSize is None and ySize is None and
-                 lonlim is None and latlim is None):
+        if (xOff == 0 and yOff == 0 and
+                xSize is None and ySize is None and
+                lonlim is None and latlim is None):
             factor = self.resize(width=1000)
             data = self[1]
             browser = PointBrowser(data)
@@ -1876,20 +1963,22 @@ class Nansat(Domain):
             points = np.array(browser.coordinates)
             xOff = round(points.min(axis=0)[0] / factor)
             yOff = round(points.min(axis=0)[1] / factor)
-            xSize = round((points.max(axis=0)[0] - points.min(axis=0)[0]) / factor)
-            ySize = round((points.max(axis=0)[1] - points.min(axis=0)[1]) / factor)
+            xSize = round((points.max(axis=0)[0] - points.min(axis=0)[0]) /
+                          factor)
+            ySize = round((points.max(axis=0)[1] - points.min(axis=0)[1]) /
+                          factor)
             self.undo()
 
         # get xOff, yOff, xSize and ySize from lonlim and latlim
-        if       (xOff==0 and yOff==0 and
-                 xSize is None and ySize is None and
-                 type(lonlim) in [list, tuple] and
-                 type(latlim) in [list, tuple]):
+        if (xOff == 0 and yOff == 0 and
+                xSize is None and ySize is None and
+                type(lonlim) in [list, tuple] and
+                type(latlim) in [list, tuple]):
             crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0],
                                                     lonlim[1], lonlim[1]],
                                                    [latlim[0], latlim[1],
                                                     latlim[0], latlim[1]],
-                                                    1)
+                                                   1)
 
             xOff = round(min(crnPix))
             yOff = round(min(crnLin))
@@ -1905,17 +1994,13 @@ class Nansat(Domain):
         if ySize is None:
             ySize = RasterYSize - yOff
 
-        extent   = [xOff,yOff,xSize,ySize]
         # test if crop is totally outside
-        if    (xOff > RasterXSize or (xOff + xSize) < 0 or
-               yOff > RasterYSize or (yOff + ySize) < 0):
+        if (xOff > RasterXSize or (xOff + xSize) < 0 or
+                yOff > RasterYSize or (yOff + ySize) < 0):
             self.logger.error('WARNING! Cropping region is outside the image!')
             self.logger.error('xOff: %d, yOff: %d, xSize: %d, ySize: %d' %
-                                                                       (xOff,
-                                                                        yOff,
-                                                                        xSize,
-                                                                        ySize))
-            return 1, extent
+                              (xOff,  yOff, xSize, ySize))
+            return 1
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
@@ -1931,16 +2016,15 @@ class Nansat(Domain):
         if (ySize + yOff) > RasterYSize:
             ySize = RasterYSize - yOff
 
-        extent   = [xOff,yOff,xSize,ySize]
-        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % (xOff,
-                                                                        yOff,
-                                                                        xSize,
-                                                                        ySize))
+        extent = (int(xOff), int(yOff), int(xSize), int(ySize))
+        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % extent)
+
         # test if crop is too large
-        if    (xOff == 0 and xSize == RasterXSize and
-               yOff == 0 and ySize == RasterYSize):
-            self.logger.error('WARNING! Cropping region is larger or equal to image!')
-            return 2, extent
+        if (xOff == 0 and xSize == RasterXSize and
+                yOff == 0 and ySize == RasterYSize):
+            self.logger.error(('WARNING! Cropping region is'
+                               'larger or equal to image!'))
+            return 2
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
@@ -1951,7 +2035,8 @@ class Nansat(Domain):
         node0.node('VRTDataset').replaceAttribute('rasterXSize', str(xSize))
         node0.node('VRTDataset').replaceAttribute('rasterYSize', str(ySize))
 
-        # replace x/y-Off and x/y-Size in <SrcRect> and <DstRect> of each source
+        # replace x/y-Off and x/y-Size
+        #   in <SrcRect> and <DstRect> of each source
         for iNode1 in node0.nodeList('VRTRasterBand'):
             iNode2 = iNode1.node('ComplexSource')
 
@@ -1973,12 +2058,13 @@ class Nansat(Domain):
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
             dstGCPs = []
-            i=0
+            i = 0
             # keep current GCPs
             for igcp in gcps:
                 if (0 < igcp.GCPPixel - xOff and
-                    igcp.GCPPixel - xOff < xSize and
-                    0 < igcp.GCPLine - yOff and igcp.GCPLine - yOff < ySize):
+                        igcp.GCPPixel - xOff < xSize and
+                        0 < igcp.GCPLine - yOff and
+                        igcp.GCPLine - yOff < ySize):
                     i += 1
                     dstGCPs.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
                                             igcp.GCPPixel - xOff,
@@ -1994,7 +2080,8 @@ class Nansat(Domain):
                         pixArray.append(newPix + xOff)
                         linArray.append(newLin + yOff)
 
-                lonArray, latArray = self.vrt.transform_points(pixArray, linArray)
+                lonArray, latArray = self.vrt.transform_points(pixArray,
+                                                               linArray)
 
                 for i in range(len(lonArray)):
                     dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
@@ -2024,6 +2111,7 @@ class Nansat(Domain):
 
         return 0, extent
 
+
 def _import_mappers(logLevel=None):
     ''' Import available mappers into a dictionary
 
@@ -2045,7 +2133,8 @@ def _import_mappers(logLevel=None):
     except:
         pass
     else:
-        logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
+        logger.info('User defined mappers found in %s'
+                    % nansat_mappers.__path__)
         mappersPackages = [nansat_mappers, nansat.mappers]
 
     # create ordered dict for mappers
@@ -2054,7 +2143,8 @@ def _import_mappers(logLevel=None):
     for mappersPackage in mappersPackages:
         logger.debug('From package: %s' % mappersPackage.__path__)
         # scan through modules and load all modules that contain class Mapper
-        for finder, name, ispkg in pkgutil.iter_modules(mappersPackage.__path__):
+        for finder, name, ispkg in (pkgutil.
+                                    iter_modules(mappersPackage.__path__)):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
             # try to import mapper module
@@ -2063,7 +2153,8 @@ def _import_mappers(logLevel=None):
             except ImportError:
                 # keep ImportError instance instead of the mapper
                 exc_info = sys.exc_info()
-                logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
+                logger.error('Mapper %s could not be imported'
+                             % name, exc_info=exc_info)
                 nansatMappers[name] = exc_info
             else:
                 # add the imported mapper to nansatMappers

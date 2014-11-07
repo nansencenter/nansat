@@ -24,17 +24,20 @@ try:
 except ImportError:
     raise ImportError('''
          Cannot import Dataset from netCDF4.
-         Please install netCDF4 to access the OpenDAP\n''')
+         You cannot access data thought opendap but
+         Nansat will work.
+         ''')
 
 #fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
 #fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'
 #fileName = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-glo-osisaf/conc/2014/06/ice_conc_sh_polstere-100_multi_201406051200.nc'
 #fileName = 'http://thredds.nersc.no/thredds/dodsC/normap/arctic12km_seaice/arctic12km_seaice_20110301_20110331.nc'
 
+
 class Mapper(VRT):
     def get_proj4_from_ncvar(self, var):
         projDict = {
-            'albers_conical_equal_area' : {
+            'albers_conical_equal_area': {
                 0: '+proj=aea',
                 'standard_parallel': '+lat_1',
                 'longitude_of_central_meridian': '+lon_0',
@@ -42,7 +45,7 @@ class Mapper(VRT):
                 'false_easting': '+x_0',
                 'false_northing': '+y_0',
             },
-            'polar_stereographic' : {
+            'polar_stereographic': {
                 0: '+proj=stere ',
                 'straight_vertical_longitude_from_pole': '+lon_0',
                 'latitude_of_projection_origin': '+lat_0',
@@ -50,7 +53,7 @@ class Mapper(VRT):
                 'false_easting': '+x_0',
                 'false_northing': '+y_0',
             },
-            'stereographic' : {
+            'stereographic': {
                 0: '+proj=stere ',
                 'longitude_of_projection_origin': '+lon_0',
                 'latitude_of_projection_origin': '+lat_0',
@@ -58,7 +61,7 @@ class Mapper(VRT):
                 'false_easting': '+x_0',
                 'false_northing': '+y_0',
             },
-            'latitude_longitude' : {
+            'latitude_longitude': {
                 0: '+longlat ',
             }
         }
@@ -71,7 +74,8 @@ class Mapper(VRT):
             proj4 = projSubDict[0]
             for projKey in projSubDict:
                 if projKey in attrs:
-                    proj4 += projSubDict[projKey] + '=' + str(var.getncattr(projKey)) + ' '
+                    proj4 += (projSubDict[projKey] + '='
+                              + str(var.getncattr(projKey)) + ' ')
         return proj4
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -159,7 +163,6 @@ class Mapper(VRT):
                 # cancel usage of this mapper a input file seem unappropriate
                 raise
 
-
         # get X/Y size
         var0 = f.variables[validVars[0]]
         xDimI = var0.dimensions.index(xDim)
@@ -176,7 +179,7 @@ class Mapper(VRT):
         dx = xdata[1] - xdata[0]
         y0 = ydata[0]
         dy = ydata[1] - ydata[0]
-        srcGeoTransform = ( x0, dx, 0, y0, 0, dy )
+        srcGeoTransform = (x0, dx, 0, y0, 0, dy)
         print srcGeoTransform
 
         # make list of metadata dictionary entries
@@ -215,7 +218,8 @@ class Mapper(VRT):
                 #assert varName != 'v'
                 # vector of nonX/Y indeces
                 iVec = np.unravel_index(nonxyi, nonXYShape)
-                # dim metadata keeps name of dimension and index in this dimension (value)
+                # dim metadata keeps name of dimension and index
+                # in this dimension (value)
                 dimMetadata = {}
                 # add either [x], or [y], or respective index in each dimension
                 for dim in dims:
@@ -259,8 +263,8 @@ class Mapper(VRT):
 
         # create VRT with bands
         VRT.__init__(self, srcGeoTransform=srcGeoTransform,
-                            srcProjection=srcProjection,
-                            srcRasterXSize=srcRasterXSize,
-                            srcRasterYSize=srcRasterYSize,
-                            srcMetadata=srcMetadata)
+                     srcProjection=srcProjection,
+                     srcRasterXSize=srcRasterXSize,
+                     srcRasterYSize=srcRasterYSize,
+                     srcMetadata=srcMetadata)
         self._create_bands(metaDict)

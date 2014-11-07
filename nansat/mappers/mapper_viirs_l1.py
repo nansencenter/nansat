@@ -15,6 +15,7 @@ from nansat.nsr import NSR
 from nansat.vrt import GeolocationArray, VRT
 from nansat.tools import gdal, ogr, WrongMapperError
 
+
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
@@ -33,7 +34,8 @@ class Mapper(VRT):
                             1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]
 
         # create empty VRT dataset with geolocation only
-        xDatasetSource = 'HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude' % fileName
+        xDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude'
+                          % fileName)
         xDatasetBand = 1
         xDataset = gdal.Open(xDatasetSource)
         VRT.__init__(self, xDataset)
@@ -46,7 +48,8 @@ class Mapper(VRT):
             print bNumber
             bWavelength = viirsWavelengths[bNumber]
             print bWavelength
-            SourceFilename = 'HDF5:"%s"://All_Data/VIIRS-M%d-SDR_All/Radiance' % (ifile, bNumber)
+            SourceFilename = ('HDF5:"%s"://All_Data/VIIRS-M%d-SDR_All/Radiance'
+                              % (ifile, bNumber))
             print SourceFilename
             metaEntry = {'src': {'SourceFilename': SourceFilename,
                          'SourceBand': 1},
@@ -63,14 +66,16 @@ class Mapper(VRT):
         xVRTArray = gaussian_filter(xVRTArray, 5).astype('float32')
         xVRT = VRT(array=xVRTArray)
 
-        yDatasetSource = 'HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Latitude' % fileName
+        yDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Latitude'
+                          % fileName)
         yDatasetBand = 1
         yDataset = gdal.Open(yDatasetSource)
         yVRTArray = yDataset.ReadAsArray()
         yVRTArray = gaussian_filter(yVRTArray, 5).astype('float32')
         yVRT = VRT(array=yVRTArray)
 
-        #self.add_geolocationArray(GeolocationArray(xDatasetSource, yDatasetSource))
+        #self.add_geolocationArray(GeolocationArray(xDatasetSource,
+        #                                           yDatasetSource))
         #"""
         # estimate pixel/line step
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))

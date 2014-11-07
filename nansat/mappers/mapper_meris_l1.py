@@ -4,6 +4,7 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from pytz import UTC
 from dateutil.parser import parse
 
 from nansat.vrt import VRT
@@ -43,7 +44,8 @@ class Mapper(VRT, Envisat):
         # init ADS parameters
         Envisat.__init__(self, fileName, gdalMetadata)
 
-        if self.product[0:9] != "MER_FRS_1" and self.product[0:9] != "MER_RR__1":
+        if (self.product[0:9] != "MER_FRS_1" and
+                self.product[0:9] != "MER_RR__1"):
             raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
@@ -99,7 +101,8 @@ class Mapper(VRT, Envisat):
         # add DataType into 'src' and suffix into 'dst'
         for bandDict in metaDict:
             if 'DataType' not in bandDict['src']:
-                bandDict['src']['DataType'] = 2  # default for meris L1 DataType UInt16
+                # default for meris L1 DataType UInt16
+                bandDict['src']['DataType'] = 2
             if 'wavelength' in bandDict['dst']:
                 bandDict['dst']['suffix'] = bandDict['dst']['wavelength']
 
@@ -110,13 +113,13 @@ class Mapper(VRT, Envisat):
             bandDict['src']['ScaleRatio'] = str(scales[i])
 
         # get list with resized VRTs from ADS
-        self.subVRTs = {'adsVRTs' : self.get_ads_vrts(gdalDataset,
-                                         ['sun zenith angles',
-                                          'sun azimuth angles',
-                                          'zonal winds',
-                                          'meridional winds'],
-                                         zoomSize=zoomSize,
-                                         step=step)}
+        self.subVRTs = {'adsVRTs': self.get_ads_vrts(gdalDataset,
+                                                     ['sun zenith angles',
+                                                      'sun azimuth angles',
+                                                      'zonal winds',
+                                                      'meridional winds'],
+                                                     zoomSize=zoomSize,
+                                                     step=step)}
         # add bands from the ADS VRTs
         for adsVRT in self.subVRTs['adsVRTs']:
             metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
@@ -137,8 +140,16 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date', parse(gdalMetadata['SPH_FIRST_LINE_TIME']).isoformat())
-        self.dataset.SetMetadataItem('stop_date', parse(gdalMetadata['SPH_LAST_LINE_TIME']).isoformat())
+        self.dataset.SetMetadataItem('start_date',
+                                     (parse(
+                                      gdalMetadata['SPH_FIRST_LINE_TIME']).
+                                      isoformat()
+                                      + '+00:00'))
+        self.dataset.SetMetadataItem('stop_date',
+                                     (parse(
+                                      gdalMetadata['SPH_LAST_LINE_TIME']).
+                                      isoformat()
+                                      + '+00:00'))
         self.dataset.SetMetadataItem('sensor', 'MERIS')
         self.dataset.SetMetadataItem('satellite', 'ENVISAT')
         self.dataset.SetMetadataItem('mapper', 'meris_l1')

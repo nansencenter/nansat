@@ -1,5 +1,6 @@
 # Name:         mapper_ncep_wind
-# Purpose:      Nansat mapping for NCEP GFS model data subset as downloaded by mapper_ncep_wind_online
+# Purpose:      Nansat mapping for NCEP GFS model data subset as downloaded
+#               by mapper_ncep_wind_online
 # Author:       Knut-Frode Dagestad
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -22,7 +23,7 @@ class Mapper(VRT):
             raise WrongMapperError
 
         geotransform = gdalDataset.GetGeoTransform()
-        if ( geotransform != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
+        if (geotransform != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
                 gdalDataset.RasterCount != 2):  # Not water proof
             raise WrongMapperError
 

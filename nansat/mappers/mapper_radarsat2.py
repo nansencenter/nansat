@@ -37,7 +37,8 @@ class Mapper(VRT):
             gdalMetadata = gdalDataset.GetMetadata()
 
         #if it is not RADARSAT-2, return
-        if not gdalMetadata or not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys():
+        if (not gdalMetadata or
+                not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys()):
             raise WrongMapperError
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
             raise WrongMapperError
@@ -75,14 +76,15 @@ class Mapper(VRT):
                     iBand = s0dataset.GetRasterBand(i)
                     polString = iBand.GetMetadata()['POLARIMETRIC_INTERP']
                     suffix = polString
-                    # The nansat data will be complex if the SAR data is of type 10
+                    # The nansat data will be complex
+                    # if the SAR data is of type 10
                     dtype = iBand.DataType
                     if dtype == 10:
                         # add intensity band
                         metaDict.append(
-                            {'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
-                                                        + fileName
-                                                        + '/product.xml'),
+                            {'src': {'SourceFilename':
+                                     ('RADARSAT_2_CALIB:SIGMA0:'
+                                      + fileName + '/product.xml'),
                                      'SourceBand': i,
                                      'DataType': dtype},
                              'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
@@ -131,11 +133,11 @@ class Mapper(VRT):
 
         '''
         if str(passDirection).upper() == 'DESCENDING':
-            sat_heading = initial_bearing(lon[:,:-1], lat[:,:-1],
-                    lon[:,1:], lat[:,1:]) + 90
+            sat_heading = initial_bearing(lon[:, :-1], lat[:, :-1],
+                                          lon[:, 1:], lat[:, 1:]) + 90
         elif str(passDirection).upper() == 'ASCENDING':
-            sat_heading = initial_bearing(lon[:,1:], lat[:,1:],
-                    lon[:,:-1], lat[:,:-1]) + 90
+            sat_heading = initial_bearing(lon[:, 1:], lat[:, 1:],
+                                          lon[:, :-1], lat[:, :-1]) + 90
         else:
             print 'Can not decode pass direction: ' + str(passDirection)
 
@@ -144,7 +146,7 @@ class Mapper(VRT):
         # Interpolate to regain lost row
         SAR_look_direction = np.mod(SAR_look_direction, 360)
         SAR_look_direction = scipy.ndimage.interpolation.zoom(
-                                SAR_look_direction, (1, 11./10.))
+            SAR_look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
         SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
         SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
@@ -155,26 +157,24 @@ class Mapper(VRT):
         #       same VRT, access time is about twice as large
         lookVRT = VRT(lat=lat, lon=lon)
         lookVRT._create_band(
-                [{'SourceFilename': look_u_VRT.fileName, 'SourceBand': 1},
-                 {'SourceFilename': look_v_VRT.fileName, 'SourceBand': 1}],
-                 {'PixelFunctionType': 'UVToDirectionTo'})
+            [{'SourceFilename': look_u_VRT.fileName, 'SourceBand': 1},
+             {'SourceFilename': look_v_VRT.fileName, 'SourceBand': 1}],
+            {'PixelFunctionType': 'UVToDirectionTo'})
 
         # Blow up to full size
-        lookVRT = lookVRT.get_resized_vrt(
-                    gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize,
+                                          gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
-        self.subVRTs = {'look_u_VRT': look_u_VRT,
-                        'look_v_VRT': look_v_VRT,
-                        'lookVRT': lookVRT}
+        self.subVRTs['look_u_VRT'] = look_u_VRT
+        self.subVRTs['look_v_VRT'] = look_v_VRT
+        self.subVRTs['lookVRT'] = lookVRT
 
         # Add band to full sized VRT
         lookFileName = self.subVRTs['lookVRT'].fileName
-        metaDict.append({'src':
-                            {'SourceFilename': lookFileName,
-                             'SourceBand': 1},
-                         'dst':
-                            {'wkv': 'sensor_azimuth_angle',
-                             'name': 'SAR_look_direction'}})
+        metaDict.append({'src': {'SourceFilename': lookFileName,
+                                 'SourceBand': 1},
+                         'dst': {'wkv': 'sensor_azimuth_angle',
+                                 'name': 'SAR_look_direction'}})
 
         ###############################
         # Create bands
@@ -230,9 +230,21 @@ class Mapper(VRT):
             self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')
         if antennaPointing == -90:
             self.dataset.SetMetadataItem('ANTENNA_POINTING', 'LEFT')
-        self.dataset.SetMetadataItem('ORBIT_DIRECTION', str(passDirection).upper())
+        self.dataset.SetMetadataItem('ORBIT_DIRECTION',
+                                     str(passDirection).upper())
 
         # Set time
         validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
         self.logger.info('Valid time: %s', str(validTime))
         self._set_time(parse(validTime))
+
+        # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('start_date',
+                                     (parse(gdalMetadata['FIRST_LINE_TIME']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('stop_date',
+                                     (parse(gdalMetadata['LAST_LINE_TIME']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('sensor', 'SAR')
+        self.dataset.SetMetadataItem('satellite', 'Radarsat2')
+        self.dataset.SetMetadataItem('mapper', 'radarsat2')

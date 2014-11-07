@@ -12,6 +12,7 @@ from scipy.io import loadmat
 from nansat.vrt import VRT
 from nansat.tools import gdal, ogr, WrongMapperError
 
+
 class Mapper(VRT):
     ''' MApper for Matlab files with SMOS data '''
 
@@ -28,7 +29,8 @@ class Mapper(VRT):
 
         # get geolocation
         geolocArray = matFile['geolocation'][0]
-        srcProj4 = '+proj=stere +lon_0=%f +lat_0=%f +datum=WGS84 +ellps=WGS84 +units=km +no_defs' % (geolocArray[0], geolocArray[1])
+        srcProj4 = ('+proj=stere +lon_0=%f +lat_0=%f +datum=WGS84 +ellps=WGS84 +units=km +no_defs'
+                    % (geolocArray[0], geolocArray[1]))
         srcProjection = osr.SpatialReference()
         srcProjection.ImportFromProj4(srcProj4)
         srcProjection = srcProjection.ExportToWkt()
@@ -52,7 +54,6 @@ class Mapper(VRT):
                     'Control_Flags_3', 'Control_Flags_4',
                     'Science_Flags_1', 'Science_Flags_2',
                     'Science_Flags_3', 'Science_Flags_4']
-        self.subVRTs = {}
         metaDict = []
         for varName in varNames:
             var = matFile[varName]

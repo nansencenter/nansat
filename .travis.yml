@@ -1,7 +1,6 @@
 language: python
 python:
   - 2.7
-  - 3.4
 
 # Setup anaconda
 before_install:
@@ -12,7 +11,10 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose netcdf4
+  - conda install --yes -c jjhelmus gdal-data
+  - conda install --yes -c rsignell proj4
   - python setup.py install
-  
-script: nosetests
+  - export GDAL_DATA=/home/travis/miniconda/share/gdal
+
+script: "cd ..; nosetests nansat.tests"

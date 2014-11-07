@@ -28,7 +28,8 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-        #get 1st subdataset and parse to VRT.__init__() for retrieving geo-metadata
+        # get 1st subdataset and parse to VRT.__init__()
+        # for retrieving geo-metadata
         try:
             gdalSubDataset = gdal.Open(gdalDataset.GetSubDatasets()[0][0])
         except (AttributeError, IndexError):
