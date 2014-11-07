@@ -105,6 +105,13 @@ class NansatTest(unittest.TestCase):
 
     def test_export(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
+        n.export(tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_export_gtiff(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.tif')
         n.export(tmpfilename, driver='GTiff')
 
