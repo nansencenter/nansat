@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Name:         test_nansat.py
 # Purpose:      Test the nansat module
 #
@@ -9,14 +9,18 @@
 # Last modified:27.08.2014 10:58
 # Copyright:    (c) NERSC
 # License:
-#-------------------------------------------------------------------------------
-import unittest, warnings
-import os, sys, glob
+#------------------------------------------------------------------------------
+import unittest
+import warnings
+import os
+import sys
+import glob
 from types import ModuleType, FloatType
 import numpy as np
 
 from nansat import NSR
 from nansat.tools import osr, ProjectionError
+
 
 class NSRTest(unittest.TestCase):
     def test_init_empty(self):
@@ -68,4 +72,3 @@ class NSRTest(unittest.TestCase):
     def test_dont_init_from_invalid(self):
         self.assertRaises(ProjectionError, NSR, -10)
         self.assertRaises(ProjectionError, NSR, 'some crap')
-

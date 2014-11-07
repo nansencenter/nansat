@@ -18,6 +18,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
 
+
 class PointBrowser():
     '''
     Click on raster images shown by plt.imshow and get the X-Y coordinates.
@@ -70,7 +71,8 @@ class PointBrowser():
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.fig.axes[0].set_xlim([0, self.data.shape[1]])
         self.fig.axes[0].set_ylim([0, self.data.shape[0]])
-        text = "1. Please click on the figure and mark a point or draw a line.\n2. Then close the figure."
+        text = ('1. Please click on the figure and mark a point or '
+                'draw a line.\n2. Then close the figure.')
         plt.text(0, int(self.data.shape[0]*1.05), text, fontsize=13,
                  verticalalignment='top', horizontalalignment='left')
         plt.gca().invert_yaxis()

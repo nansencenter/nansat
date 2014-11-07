@@ -16,7 +16,6 @@ from nansat.nsr import NSR
 from nansat.tools import gdal, ogr, WrongMapperError
 
 
-
 class Mapper(VRT):
     ''' Mapper for Level-3 AMSR2 data from https://gcom-w1.jaxa.jp'''
 
@@ -32,7 +31,6 @@ class Mapper(VRT):
             assert gdalMetadata['ProductName'] == 'AMSR2-L3'
         except:
             raise WrongMapperError
-
 
         # get list of similar (same date, A/D orbit) files in the directory
         iDir, iFile = os.path.split(fileName)
@@ -62,14 +60,16 @@ class Mapper(VRT):
                 #print 'simSubDataset', simSubDataset
                 if 'Brightness_Temperature' in simSubDataset[0]:
                     # get SourceFilename from subdataset
-                    metaEntry = {'src': {'SourceFilename': simSubDataset[0],
-                                         'SourceBand'  : 1,
-                                         'ScaleRatio'  : 0.0099999998,
-                                         'ScaleOffset' : 0},
-                                 'dst': {'wkv'          : 'brightness_temperature',
-                                         'frequency'    : '%02d' % freq,
-                                         'polarisation' : simSubDataset[0][-2:-1],
-                                         'suffix'       : '%02d%s' % (freq, simSubDataset[0][-2:-1])}}
+                    metaEntry = {
+                        'src': {'SourceFilename': simSubDataset[0],
+                                'SourceBand': 1,
+                                'ScaleRatio': 0.0099999998,
+                                'ScaleOffset': 0},
+                        'dst': {'wkv': 'brightness_temperature',
+                                'frequency': '%02d' % freq,
+                                'polarisation': simSubDataset[0][-2:-1],
+                                'suffix': ('%02d%s' %
+                                           (freq, simSubDataset[0][-2:-1]))}}
                     metaDict.append(metaEntry)
 
         # initiate VRT for the NSIDC 10 km grid
