@@ -840,16 +840,6 @@ class Nansat(Domain):
             raster size are modified to downscaled size.
             If GCPs are given in the dataset, they are also overwritten.
 
-        Examples
-        --------
-        n.resize(0.1)
-        # resize the Nansat object to e 10 times smaller
-        # resampling method is 'average'
-
-        n.resize(width=100, eResampleAlg=0)
-        # resize the object proportionally to make width equal 100 pix
-        # resamling method is 'nearest neighbour'
-
         '''
         # get current shape
         rasterYSize = float(self.shape()[0])
@@ -1013,6 +1003,12 @@ class Nansat(Domain):
         Modifies
         ---------
         self.vrt : VRT object with dataset replaced to warpedVRT dataset
+
+        !! NB !!
+        ---------
+        - Integer data is returnd by integer. Round off to decimal place.
+          If you do not want to round off, convert the data types
+          to GDT_Float32, GDT_Float64, or GDT_CFloat32.
 
         See Also
         ---------
@@ -2167,3 +2163,4 @@ def _import_mappers(logLevel=None):
             nansatMappers['mapper_generic'] = gm
 
     return nansatMappers
+
