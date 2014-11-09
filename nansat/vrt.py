@@ -110,7 +110,7 @@ class GeolocationArray():
         return lonGrid, latGrid
 
 
-class VRT(object):
+class VRT():
     '''Wrapper around GDAL VRT-file
 
     The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
@@ -1595,8 +1595,8 @@ class VRT(object):
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize,
-                           factor, eResampleAlg):
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, factor,
+                           eResampleAlg):
         '''Create VRT and replace step in the source'''
 
         subsamVRT = self.get_super_vrt()
