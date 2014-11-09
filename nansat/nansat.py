@@ -24,11 +24,14 @@ import dateutil.parser
 import warnings
 import collections
 import pkgutil
+import warnings
 
 import scipy
 from scipy.io.netcdf import netcdf_file
 import numpy as np
+import matplotlib
 from matplotlib import cm
+import matplotlib.pyplot as plt
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -1336,21 +1339,20 @@ class Nansat(Domain):
         if fileName is not None:
             if type(fileName) == bool and fileName:
                 try:
-                    if __IPYTHON__:
-                        from matplotlib.pyplot import imshow, show
-                        from numpy import array
-                        sz = fig.pilImg.size
-                        image = array(fig.pilImg.im)
-                        if fig.pilImg.getbands() == ('P',):
-                            image.resize(sz[0], sz[1])
-                        elif fig.pilImg.getbands() == ('R', 'G', 'B'):
-                            image.resize(sz[0], sz[1], 3)
-                        imshow(image)
-                        show()
-                    else:
-                        fig.pilImg.show()
+                    if plt.get_backend() == 'agg':
+                        plt.switch_backend('QT4Agg')
                 except:
                     fig.pilImg.show()
+                else:
+                    sz = fig.pilImg.size
+                    imgArray = np.array(fig.pilImg.im)
+                    if fig.pilImg.getbands() == ('P',):
+                        imgArray.resize(sz[1], sz[0])
+                    elif fig.pilImg.getbands() == ('R', 'G', 'B'):
+                        imgArray.resize(sz[1], sz[0], 3)
+                    plt.imshow(imgArray)
+                    plt.show()
+
             elif type(fileName) in [str, unicode]:
                 fig.save(fileName, **kwargs)
                 # If tiff image, convert to GeoTiff
@@ -1739,6 +1741,12 @@ class Nansat(Domain):
             pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
+        if matplotlib.is_interactive() and points is None:
+            warnings.warn('''
+        Python is started with -pylab option, transect will not work.
+        Please restart python without -pylab.''')
+            return
+
         smooth_function = scipy.stats.nanmedian
         if smoothAlg == 1:
             smooth_function = scipy.stats.nanmean

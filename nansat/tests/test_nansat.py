@@ -417,6 +417,15 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(xy[0]), np.ndarray)
         self.assertEqual(type(pl), np.ndarray)
 
+    def test_get_no_transect_interactive(self):
+        import matplotlib.pyplot as plt
+        plt.ion()
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        noneResult = n1.get_transect()
+
+        self.assertEqual(noneResult, None)
+        plt.ioff()
+
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         st, ext = n1.crop(10, 20, 50, 60)
