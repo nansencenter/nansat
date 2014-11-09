@@ -24,10 +24,12 @@ import dateutil.parser
 import warnings
 import collections
 import pkgutil
+import warnings
 
 import scipy
 from scipy.io.netcdf import netcdf_file
 import numpy as np
+import matplotlib
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
@@ -1743,6 +1745,12 @@ class Nansat(Domain):
             pixlinCoord : numpy array with pixels and lines coordinates
 
         '''
+        if matplotlib.is_interactive() and points is None:
+            warnings.warn('''
+        Python is started with -pylab option, transect will not work.
+        Please restart python without -pylab.''')
+            return
+
         smooth_function = scipy.stats.nanmedian
         if smoothAlg == 1:
             smooth_function = scipy.stats.nanmean
