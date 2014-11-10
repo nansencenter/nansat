@@ -380,42 +380,45 @@ class NansatTest(unittest.TestCase):
 
     def test_get_transect(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
-                                     (28.93691525, 70.69646524)))
+        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
+                                      (28.93691525, 70.69646524)]])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
-        plt.plot(v[0], xy[0])
+        plt.plot(v['1:L_645']['shape0'], xy['shape0']['latitude'])
         plt.savefig(tmpfilename)
         plt.close('all')
 
-        self.assertTrue(len(v[0]) > 50)
-        self.assertEqual(len(v[0]), len(xy[0]))
-        self.assertEqual(len(v[0]), len(pl[0]))
-        self.assertEqual(type(xy[0]), np.ndarray)
-        self.assertEqual(type(pl), np.ndarray)
+        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(xy['shape0']['latitude']))
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(pl['shape0'][0]))
+        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
+        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_transect_outside(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
-                                     (0., 0.)))
+        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
+                                      (0.0, 0.0)]])
 
-        self.assertTrue(len(v[0]) > 50)
-        self.assertEqual(len(v[0]), len(xy[0]))
-        self.assertEqual(len(v[0]), len(pl[0]))
-        self.assertEqual(type(xy[0]), np.ndarray)
-        self.assertEqual(type(pl), np.ndarray)
+        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(xy['shape0']['latitude']))
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(pl['shape0'][0]))
+        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
+        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_transect_false(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
-                                     (28.93691525, 70.69646524)),
-                                    transect=False)
+        v, xy, pl = n1.get_transect([(28.31299128, 70.93709219),
+                                     (28.93691525, 70.69646524)])
 
-        self.assertEqual(len(v[0]), 2)
-        self.assertEqual(len(v[0]), len(xy[0]))
-        self.assertEqual(len(v[0]), len(pl[0]))
-        self.assertEqual(type(xy[0]), np.ndarray)
-        self.assertEqual(type(pl), np.ndarray)
+        self.assertEqual(len(v['1:L_645']), 2)
+        self.assertEqual(len(v['1:L_645']), len(xy))
+        self.assertEqual(len(v['1:L_645']), len(pl))
+        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
+        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_no_transect_interactive(self):
         import matplotlib.pyplot as plt
@@ -445,3 +448,5 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n1[1]), np.ndarray)
 
 
+if __name__ == "__main__":
+    unittest.main()
