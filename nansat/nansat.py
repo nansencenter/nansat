@@ -24,11 +24,14 @@ import dateutil.parser
 import warnings
 import collections
 import pkgutil
+import warnings
 
 import scipy
 from scipy.io.netcdf import netcdf_file
 import numpy as np
+import matplotlib
 from matplotlib import cm
+import matplotlib.pyplot as plt
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -326,7 +329,7 @@ class Nansat(Domain):
 
         return bandExists
 
-    def export(self, fileName, rmMetadata=[], addGeolocArray=True,
+    def export(self, fileName, bands=None, rmMetadata=[], addGeolocArray=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -334,6 +337,9 @@ class Nansat(Domain):
         -----------
         fileName : str
             output file name
+        bands: list (default=None)
+            Specify band numbers to export.
+            If None, all bands are exported.
         rmMetadata : list
             metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
@@ -383,6 +389,14 @@ class Nansat(Domain):
         exportVRT = self.vrt.copy()
         exportVRT.real = []
         exportVRT.imag = []
+
+        # delete unnecessary bands
+        if bands is not None:
+            srcBands = np.arange(self.vrt.dataset.RasterCount) + 1
+            dstBands = np.array(bands)
+            mask = np.in1d(srcBands, dstBands)
+            rmBands = srcBands[mask==False]
+            exportVRT.delete_bands(rmBands.tolist())
 
         # Find complex data band
         complexBands = []
@@ -829,16 +843,6 @@ class Nansat(Domain):
             raster size are modified to downscaled size.
             If GCPs are given in the dataset, they are also overwritten.
 
-        Examples
-        --------
-        n.resize(0.1)
-        # resize the Nansat object to e 10 times smaller
-        # resampling method is 'average'
-
-        n.resize(width=100, eResampleAlg=0)
-        # resize the object proportionally to make width equal 100 pix
-        # resamling method is 'nearest neighbour'
-
         '''
         # get current shape
         rasterYSize = float(self.shape()[0])
@@ -1002,6 +1006,12 @@ class Nansat(Domain):
         Modifies
         ---------
         self.vrt : VRT object with dataset replaced to warpedVRT dataset
+
+        !! NB !!
+        ---------
+        - Integer data is returnd by integer. Round off to decimal place.
+          If you do not want to round off, convert the data types
+          to GDT_Float32, GDT_Float64, or GDT_CFloat32.
 
         See Also
         ---------
@@ -1329,21 +1339,20 @@ class Nansat(Domain):
         if fileName is not None:
             if type(fileName) == bool and fileName:
                 try:
-                    if __IPYTHON__:
-                        from matplotlib.pyplot import imshow, show
-                        from numpy import array
-                        sz = fig.pilImg.size
-                        image = array(fig.pilImg.im)
-                        if fig.pilImg.getbands() == ('P',):
-                            image.resize(sz[0], sz[1])
-                        elif fig.pilImg.getbands() == ('R', 'G', 'B'):
-                            image.resize(sz[0], sz[1], 3)
-                        imshow(image)
-                        show()
-                    else:
-                        fig.pilImg.show()
+                    if plt.get_backend() == 'agg':
+                        plt.switch_backend('QT4Agg')
                 except:
                     fig.pilImg.show()
+                else:
+                    sz = fig.pilImg.size
+                    imgArray = np.array(fig.pilImg.im)
+                    if fig.pilImg.getbands() == ('P',):
+                        imgArray.resize(sz[1], sz[0])
+                    elif fig.pilImg.getbands() == ('R', 'G', 'B'):
+                        imgArray.resize(sz[1], sz[0], 3)
+                    plt.imshow(imgArray)
+                    plt.show()
+
             elif type(fileName) in [str, unicode]:
                 fig.save(fileName, **kwargs)
                 # If tiff image, convert to GeoTiff
@@ -1684,39 +1693,6 @@ class Nansat(Domain):
 
         return bandNumber
 
-    def process(self, opts=None):
-        '''Default L2 processing of Nansat object. Overloaded in childs.'''
-
-    def export_band(self, fileName, bandID=1, driver='netCDF'):
-        '''Export only one band of the Nansat object
-        Get array from the required band
-        Create temporary Nansat from the array
-        Export temporary Nansat to file
-
-        Parameters
-        ----------
-        fileName : str
-            name of the output file
-        bandID : int or str, [1]
-            number of name of the band
-        driver : str, ['netCDF']
-            name of the GDAL Driver (format) to use
-
-        '''
-        # get array from self
-        bandArray = self[bandID]
-        # get root, band metadata
-        rootMetadata = self.get_metadata()
-        bandMetadata = self.get_metadata(bandID=bandID)
-        # create temporary nansat
-        tmpNansat = Nansat(domain=self, array=bandArray)
-        # set metadata
-        tmpNansat.set_metadata(rootMetadata)
-        tmpNansat.set_metadata(bandMetadata, bandID=1)
-        # export
-        tmpNansat.export(fileName, driver=driver)
-
-
     def get_transect(self, points=None, bandList=[1], latlon=True,
                            returnOGR=False, layerNum=0,
                            smoothRadius=0, smoothAlg=0, transect=True,
@@ -1783,6 +1759,12 @@ class Nansat(Domain):
         it is possible to select multiple shapes by pressing any key
 
         '''
+        if matplotlib.is_interactive() and points is None:
+            warnings.warn('''
+        Python is started with -pylab option, transect will not work.
+        Please restart python without -pylab.''')
+            return
+
         smooth_function = scipy.stats.nanmedian
         if smoothAlg == 1:
             smooth_function = scipy.stats.nanmean
@@ -2256,3 +2238,4 @@ def _import_mappers(logLevel=None):
             nansatMappers['mapper_generic'] = gm
 
     return nansatMappers
+

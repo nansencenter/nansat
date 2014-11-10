@@ -14,7 +14,7 @@ from nansat.vrt import VRT, GeolocationArray
 from nansat.tools import gdal, ogr, WrongMapperError
 
 
-class Envisat():
+class Envisat(object):
     '''Methods/data shared between Envisat mappers
 
     This class is needed to read awkward N1 format of ENVISAT
@@ -199,7 +199,7 @@ class Envisat():
     lonlatNames = {'ASA_': ['first_line_longs', 'first_line_lats'],
                    'MER_': ['longitude', 'latitude']}
 
-    def __init__(self, fileName, gdalMetadata):
+    def setup_ads_parameters(self, fileName, gdalMetadata):
         '''Select set of params and read offset of ADS'''
         if not gdalMetadata or not ('MPH_PRODUCT' in gdalMetadata.keys()):
             raise WrongMapperError
@@ -208,8 +208,8 @@ class Envisat():
         self.iFileName = fileName
         self.prodType = gdalMetadata["MPH_PRODUCT"][0:4]
         self.allADSParams = self.allADSParams[self.prodType]
-        self.dsOffsetDict = self.read_offset_from_header(self.
-                                                         allADSParams['name'])
+        self.dsOffsetDict = self.read_offset_from_header(
+                                                    self.allADSParams['name'])
         self.lonlatNames = self.lonlatNames[self.prodType]
 
     def _set_envisat_time(self, gdalMetadata):
@@ -447,7 +447,6 @@ class Envisat():
             adsVRTs[-1] = adsVRTs[-1].get_resized_vrt(XSize/step,
                                                       YSize/step,
                                                       **kwargs)
-
         return adsVRTs
 
     def add_geolocation_from_ads(self, gdalDataset, zoomSize=500, step=1):

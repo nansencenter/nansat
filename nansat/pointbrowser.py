@@ -15,6 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+import matplotlib
 import matplotlib.pyplot as plt
 
 
@@ -45,6 +46,8 @@ class PointBrowser():
         self.line       : plot with points
 
         '''
+        if plt.get_backend() == 'agg':
+            plt.switch_backend('QT4Agg')
         self.fig = plt.figure()
         self.data = data
         self.ax = self.fig.add_subplot(111)

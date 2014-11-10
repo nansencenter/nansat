@@ -34,7 +34,7 @@ class Mapper(VRT, Envisat):
             generated at that step
         '''
 
-        Envisat.__init__(self, fileName, gdalMetadata)
+        self.setup_ads_parameters(fileName, gdalMetadata)
 
         if self.product[0:9] != "MER_FRS_2" and self.product[0:9] != "MER_RR__2":
             raise WrongMapperError(fileName)
