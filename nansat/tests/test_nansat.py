@@ -34,6 +34,7 @@ class NansatTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
+        self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
@@ -178,6 +179,48 @@ class NansatTest(unittest.TestCase):
         n.write_figure(tmpfilename, 2, clim='hist')
 
         self.assertEqual(type(n[1]), np.ndarray)
+
+    def test_resize_complex_algAverage(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            n.resize(0.5, eResampleAlg=-1)
+
+            self.assertTrue(len(w)==1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue("Imaginary parts of the complex number are lost"
+                            in str(w[-1].message))
+
+    def test_resize_complex_alg0(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=0)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg1(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=1)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg2(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=2)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg3(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=3)
+
+        self.assertTrue(np.any(n[1].imag!=0))
+
+    def test_resize_complex_alg4(self):
+        n = Nansat(self.test_file_complex, logLevel=40)
+        n.resize(0.5, eResampleAlg=4)
+
+        self.assertTrue(np.any(n[1].imag!=0))
 
     def test_get_GDALRasterBand(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -337,42 +380,54 @@ class NansatTest(unittest.TestCase):
 
     def test_get_transect(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
-                                     (28.93691525, 70.69646524)))
+        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
+                                      (28.93691525, 70.69646524)]])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
-        plt.plot(v[0], xy[0])
+        plt.plot(v['1:L_645']['shape0'], xy['shape0']['latitude'])
         plt.savefig(tmpfilename)
         plt.close('all')
 
-        self.assertTrue(len(v[0]) > 50)
-        self.assertEqual(len(v[0]), len(xy[0]))
-        self.assertEqual(len(v[0]), len(pl[0]))
-        self.assertEqual(type(xy[0]), np.ndarray)
-        self.assertEqual(type(pl), np.ndarray)
+        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(xy['shape0']['latitude']))
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(pl['shape0'][0]))
+        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
+        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_transect_outside(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
-                                     (0., 0.)))
+        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
+                                      (0.0, 0.0)]])
 
-        self.assertTrue(len(v[0]) > 50)
-        self.assertEqual(len(v[0]), len(xy[0]))
-        self.assertEqual(len(v[0]), len(pl[0]))
-        self.assertEqual(type(xy[0]), np.ndarray)
-        self.assertEqual(type(pl), np.ndarray)
+        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(xy['shape0']['latitude']))
+        self.assertEqual(len(v['1:L_645']['shape0']),
+                         len(pl['shape0'][0]))
+        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
+        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_transect_false(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect(((28.31299128, 70.93709219),
-                                     (28.93691525, 70.69646524)),
-                                    transect=False)
+        v, xy, pl = n1.get_transect([(28.31299128, 70.93709219),
+                                     (28.93691525, 70.69646524)])
 
-        self.assertEqual(len(v[0]), 2)
-        self.assertEqual(len(v[0]), len(xy[0]))
-        self.assertEqual(len(v[0]), len(pl[0]))
-        self.assertEqual(type(xy[0]), np.ndarray)
-        self.assertEqual(type(pl), np.ndarray)
+        self.assertEqual(len(v['1:L_645']), 2)
+        self.assertEqual(len(v['1:L_645']), len(xy))
+        self.assertEqual(len(v['1:L_645']), len(pl))
+        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
+        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+
+    def test_get_no_transect_interactive(self):
+        import matplotlib.pyplot as plt
+        plt.ion()
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        noneResult = n1.get_transect()
+
+        self.assertEqual(noneResult, None)
+        plt.ioff()
 
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
@@ -391,3 +446,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n1.shape(), (111, 110))
         self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)
+
+
+if __name__ == "__main__":
+    unittest.main()

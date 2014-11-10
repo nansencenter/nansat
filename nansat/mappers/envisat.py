@@ -447,7 +447,6 @@ class Envisat(object):
             adsVRTs[-1] = adsVRTs[-1].get_resized_vrt(XSize/step,
                                                       YSize/step,
                                                       **kwargs)
-
         return adsVRTs
 
     def add_geolocation_from_ads(self, gdalDataset, zoomSize=500, step=1):

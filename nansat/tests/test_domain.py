@@ -136,15 +136,9 @@ class DomainTest(unittest.TestCase):
         self.assertTrue(all(np.round(x) == [0, 50, 100]))
         self.assertTrue(all(np.round(y) == [500, 250, 0]))
 
-    def test_upwards_azimuth_direction(self):
+    def test_azimuth_y(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        uad = d.upwards_azimuth_direction()
-
-        self.assertEqual(np.round(uad), 180)
-
-    def test_azimuth_up(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        au = d.azimuth_up()
+        au = d.azimuth_y()
 
         self.assertEqual(np.round(au[0, 0]), 0)
         self.assertEqual(np.round(au[10, 10]), 0)

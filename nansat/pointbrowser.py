@@ -15,6 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+import matplotlib
 import matplotlib.pyplot as plt
 
 
@@ -23,13 +24,16 @@ class PointBrowser():
     Click on raster images shown by plt.imshow and get the X-Y coordinates.
 
     '''
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, draw_line=True, **kwargs):
         ''' Open figure with imshow and colorbar
 
         Parameters
         -----------
         data : ndarray
             image to imshow
+        draw_line : bool
+            if True, get transects / points
+            if False, get only points
         **kwargs : dict
             optional parameters for imshow
 
@@ -42,26 +46,64 @@ class PointBrowser():
         self.line       : plot with points
 
         '''
+        if plt.get_backend() == 'agg':
+            plt.switch_backend('QT4Agg')
         self.fig = plt.figure()
         self.data = data
         self.ax = self.fig.add_subplot(111)
         img = self.ax.imshow(self.data, extent=(0, self.data.shape[1],
                                                 0, self.data.shape[0]),
                              origin='lower', **kwargs)
+
         self.fig.colorbar(img)
         self.points, = self.ax.plot([], [], '+', ms=12, color='b')
-        self.line, = self.ax.plot([], [])
+        self.lines = []
         self.coordinates = []
+        self.connect = []
+        self.drawLine = draw_line
 
     def onclick(self, event):
         ''' Append onclick event '''
         if event.xdata is not None and event.ydata is not None:
-            self.coordinates.append((event.xdata, event.ydata))
-            tCoordinates = map(tuple, zip(*self.coordinates))
-            self.points.set_data(tCoordinates)
-            self.points.figure.canvas.draw()
-            self.line.set_data(tCoordinates)
-            self.line.figure.canvas.draw()
+            if str(event.key)=='alt+z' or str(event.key)=='z':
+                pass
+            else:
+                # ignore clicked point if "z" key is held down
+                # - holding down any other key (NOT cmd (mac),shift,alt,ctrl)
+                #   means a new line is started at the clicked point
+                # - holding down no key means current line is extended to include the clicked point
+                self.coordinates.append((event.xdata, event.ydata))
+                # press (any) key (NOT 'cmd','ctrl','alt','shift', or 'z' - see above) means to start new line.
+                # if pressed, then set 0 to self.connect. otherwise set 1.
+                if event.key is None:
+                   self.connect.append(1)
+                else:
+                   self.connect.append(0)
+
+                # get coordinate of clicked point
+                tCoordinates = map(tuple, zip(*self.coordinates))
+                self.points.set_data(tCoordinates)
+                self.points.figure.canvas.draw()
+
+                # separate points by each line
+                linesCoords = []
+                for i, iLine in enumerate(self.coordinates):
+                   if i == 0:
+                       oneLine = [self.coordinates[0]]
+                   elif self.connect[i] == 0:
+                       linesCoords.append(oneLine)
+                       oneLine = [self.coordinates[i]]
+                   else:
+                       oneLine.append(self.coordinates[i])
+                linesCoords.append(oneLine)
+
+                # draw lines
+                if self.drawLine:
+                    line, = self.ax.plot([], [])
+                    for iLinePoints in linesCoords:
+                       tCoordinates = map(tuple, zip(*iLinePoints))
+                       self.lines.append(line.set_data(tCoordinates))
+                       line.figure.canvas.draw()
 
     def get_points(self):
         ''' Process click event '''

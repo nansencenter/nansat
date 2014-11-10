@@ -20,6 +20,7 @@ import tempfile
 from string import Template, ascii_uppercase, digits
 from random import choice
 import datetime
+import warnings
 
 import numpy as np
 
@@ -1596,7 +1597,7 @@ class VRT(object):
         return superVRT
 
     def get_subsampled_vrt(self, newRasterXSize, newRasterYSize,
-                           factor, eResampleAlg):
+                            factor, eResampleAlg):
         '''Create VRT and replace step in the source'''
 
         subsamVRT = self.get_super_vrt()
@@ -1625,6 +1626,11 @@ class VRT(object):
             if eResampleAlg == -1:
                 iNode1.replaceTag('ComplexSource', 'AveragedSource')
                 iNode1.replaceTag('SimpleSource', 'AveragedSource')
+                # if the values are complex number, give a warning
+                if iNode1.getAttribute('dataType').startswith('C'):
+                    warnings.warn(
+        'Band %s :Imaginary parts of the complex number are lost' % (
+                                        iNode1.getAttribute('band')))
 
         # Write the modified elemements into VRT
         subsamVRT.write_xml(node0.rawxml())
