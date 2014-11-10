@@ -35,7 +35,11 @@ class DataForTestingMappers(object):
     def download_all_test_data(self):
         ''' Download test data for each mapper '''
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_WSM_1PNPDE20120327_205532_000002143113_00100_52700_6903.N1',
+                'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_IMS_1PNIPA20100411_101715_000000162088_00280_42418_0338.N1',
+                'asar')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_WSM_1PNPDK20110108_205958_000000923098_00187_46322_6032.N1',
                 'asar')
 
         self.download_test_file(
@@ -43,8 +47,8 @@ class DataForTestingMappers(object):
                 'aster_l1a')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/cosmoskymed/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5',
-                'cosmoskymed')
+                'ftp://ftp.nersc.no/pub/python_test_data/csks/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5',
+                'csks')
 
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/hirlam/DNMI-NEurope.grb',
@@ -71,7 +75,19 @@ class DataForTestingMappers(object):
                 'ncep')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20140716_061819_0076_SCWA_HHHV_SGF_336560_2501_9900957.zip',
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
+                'radarsat2')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK545457_DK477422_SCWA_20141025_135245_HH_SGF',
+                'radarsat2')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
+                'radarsat2')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC',
                 'radarsat2')
 
         self.download_test_file(
@@ -119,7 +135,7 @@ class DataForTestingMappers(object):
             os.system('curl -so ' + mapperFName + ' ' + inputURL )
             print time.time() - t0
 
-        if not os.path.isfile(mapperFName):
+        if not os.path.exists(mapperFName):
             warnings.warn( """
                     Could not access %s on ftp-site with test data - contact
                     morten.stette@nersc.no to get the ftp-server at NERSC restarted"""
@@ -131,4 +147,3 @@ class DataForTestingMappers(object):
                 self.mapperData[mapperName].append(mapperFName)
             else:
                 self.mapperData[mapperName] = [mapperFName]
-
