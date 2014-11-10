@@ -64,7 +64,7 @@ class DataForTestingMappers(object):
                 'landsat_highresolution')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/meris/MER_FRS_1PNUPA20100916_105248_000001012093_00037_44680_8756.N1',
+                'ftp://ftp.nersc.no/pub/python_test_data/meris_l1/MER_FRS_1PNPDK20110503_105638_000001833102_00109_47968_7898.N1',
                 'meris_l1')
 
         self.download_test_file(
@@ -76,19 +76,19 @@ class DataForTestingMappers(object):
                 'ncep')
 
         self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
+                'radarsat2')
+
+        self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK545457_DK477422_SCWA_20141025_135245_HH_SGF',
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
                 'radarsat2')
 
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
-                'radarsat2')
-
-        self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC',
                 'radarsat2')
 
         self.download_test_file(
