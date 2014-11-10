@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #------------------------------------------------------------------------------
 # Name:         test_nansat.py
 # Purpose:      Test the Nansat class
