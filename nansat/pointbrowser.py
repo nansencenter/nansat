@@ -111,7 +111,9 @@ class PointBrowser():
         self.fig.axes[0].set_xlim([0, self.data.shape[1]])
         self.fig.axes[0].set_ylim([0, self.data.shape[0]])
         text = ('1. Please click on the figure and mark a point or '
-                'draw a line.\n2. Then close the figure.')
+                'draw a line.\n If holding down any key except for "z" '
+                'and click on the figure, \n a new line starts.'
+                '\n2. Then close the figure.')
         plt.text(0, int(self.data.shape[0]*1.05), text, fontsize=13,
                  verticalalignment='top', horizontalalignment='left')
         plt.gca().invert_yaxis()
