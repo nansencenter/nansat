@@ -7,15 +7,12 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	06.11.2014
-# Last modified:06.11.2014 13:00
+# Last modified:11.11.2014 11:23
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
 import sys, os
 home = os.path.expanduser("~")
-
-import ipdb
-ipdb.set_trace()
 
 import numpy as np
 import matplotlib.pyplot as plt
