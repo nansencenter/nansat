@@ -9,7 +9,7 @@
 # Created:	11.11.2014
 # Last modified:11.11.2014 10:27
 # Copyright:    (c) NERSC
-# License:      
+# License:
 #-------------------------------------------------------------------------------
 import sys, os
 home = os.path.expanduser("~")
@@ -23,7 +23,7 @@ from nansat.nansat import Nansat, Domain
 iFileName = os.path.join(home,
                 'python/nansat/nansat/tests/data/gcps.tif')
 
-# Open an input satellite image with Nansat 
+# Open an input satellite image with Nansat
 n = Nansat(iFileName)
 
 # List bands and georeference of the object
@@ -51,5 +51,6 @@ n.export('gcps_projected.nc')
 # 1. draw transect interactively
 # 2. plot the values
 values, lonlat, pixlinCoord =n.get_transect()
-plt.plot(lonlat[0], values[0], '.-');plt.show()
+plt.plot(lonlat['shape0']['longitude'], values['1:L_645']['shape0'], '.-');plt.show()
+
 
