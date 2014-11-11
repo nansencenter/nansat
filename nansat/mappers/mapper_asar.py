@@ -38,7 +38,7 @@ class Mapper(VRT, Envisat):
 
         '''
 
-        Envisat.__init__(self, fileName, gdalMetadata)
+        self.setup_ads_parameters(fileName, gdalMetadata)
 
         if self.product[0:4] != "ASA_":
             raise WrongMapperError

@@ -839,56 +839,7 @@ class Domain(object):
         '''
         return self.vrt.transform_points(colVector, rowVector, DstToSrc)
 
-    def upwards_azimuth_direction(self, orbit_direction=None):
-        '''Caluculate and return upwards azimuth direction of domain.
-
-        The upward azimuth direction will be the satellite flight
-        direction (bearing) for unprojected satellite images.
-
-        Returns
-        --------
-        bearing_center : float
-            The upwards azimuth direction (bearing) in the center of
-            the domain.
-            NOTE: for longer domains especially at high latitudes
-            the azimuth direction may vary a lot over the domain,
-            and using the center angle will be a coarse approximation.
-            This function should be updated to return a matrix
-            of bearings interpolated to each pixel of the domain.
-            This method should probably also get a better name.
-
-        '''
-        mid_x = self.vrt.dataset.RasterXSize / 2
-        mid_y1 = self.vrt.dataset.RasterYSize / 2 * 0.4
-        mid_y2 = self.vrt.dataset.RasterYSize / 2 * 0.6
-        startlon, startlat = self.transform_points([mid_x], [mid_y1])
-        endlon, endlat = self.transform_points([mid_x], [mid_y2])
-        if orbit_direction:
-            # check that startlat is actually less/greater than endlat for
-            # ascending/descending orbit direction
-            if str.lower(orbit_direction) == 'ascending':
-                # should have startlat<endlat
-                if startlat > endlat:
-                    tmplat = startlat
-                    tmplon = startlon
-                    startlat = endlat
-                    startlon = endlon
-                    endlat = tmplat
-                    endlon = tmplon
-            if str.lower(orbit_direction) == 'descending':
-                # should have startlat>endlat
-                if startlat < endlat:
-                    tmplat = startlat
-                    tmplon = startlon
-                    startlat = endlat
-                    startlon = endlon
-                    endlat = tmplat
-                    endlon = tmplon
-        bearing_center = initial_bearing(startlon[0], startlat[0],
-                                         endlon[0], endlat[0])
-        return bearing_center
-
-    def azimuth_up(self, reductionFactor=1):
+    def azimuth_y(self, reductionFactor=1):
         '''Calculate the azimuth of 'upward' direction in each pixel
 
         Generaly speaking, azimuth is angle from the reference vector
