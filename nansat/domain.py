@@ -888,7 +888,8 @@ class Domain(object):
                   continetsColor='coral', meridians=10, parallels=10,
                   pColor='r', pLine='k', pAlpha=0.5, padding=0.,
                   merLabels=[False, False, False, False],
-                  parLabels=[False, False, False, False]):
+                  parLabels=[False, False, False, False],
+                  pltshow=False):
         ''' Create an image with a map of the domain
 
         Uses Basemap to create a World Map
@@ -994,7 +995,10 @@ class Domain(object):
         # save figure and close
         plt.savefig(outputFileName, bbox_inches='tight',
                     dpi=dpi, pad_inches=padding)
-        plt.close('all')
+        if pltshow:
+            plt.show()
+        else:
+            plt.close('all')
 
     def reproject_GCPs(self, srsString):
         '''Reproject all GCPs to a new spatial reference system
