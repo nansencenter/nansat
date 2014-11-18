@@ -1629,8 +1629,10 @@ class VRT(object):
                 # if the values are complex number, give a warning
                 if iNode1.getAttribute('dataType').startswith('C'):
                     warnings.warn(
-        'Band %s :Imaginary parts of the complex number are lost' % (
-                                        iNode1.getAttribute('band')))
+                        'Band %s : The imaginary parts of complex numbers ' \
+                        'are lost when resampling by averaging ' \
+                        '(eResampleAlg=-1)' %iNode1.getAttribute('band')
+                    )
 
         # Write the modified elemements into VRT
         subsamVRT.write_xml(node0.rawxml())

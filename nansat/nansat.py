@@ -21,7 +21,6 @@ import sys
 import tempfile
 import datetime
 import dateutil.parser
-import warnings
 import collections
 import pkgutil
 import warnings
@@ -830,7 +829,7 @@ class Nansat(Domain):
             A factor is calculated from ratio of the
             current pixelsize to the desired pixelsize.
         eResampleAlg : int (GDALResampleAlg), optional
-               -1 : Average,
+               -1 : Average (default),
                 0 : NearestNeighbour
                 1 : Bilinear,
                 2 : Cubic,
