@@ -64,7 +64,7 @@ MAJOR               = 0
 MINOR               = 6
 MICRO               = 0
 ISRELEASED          = False
-VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
                     ]
