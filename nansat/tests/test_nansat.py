@@ -3,10 +3,10 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:29.09.2014
+# Last modified:18.11.2014 11:48
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -189,7 +189,9 @@ class NansatTest(unittest.TestCase):
 
             self.assertTrue(len(w)==1)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
-            self.assertTrue("Imaginary parts of the complex number are lost"
+            self.assertTrue(
+                        'The imaginary parts of complex numbers ' \
+                        'are lost when resampling by averaging '
                             in str(w[-1].message))
 
     def test_resize_complex_alg0(self):
