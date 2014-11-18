@@ -888,7 +888,8 @@ class Domain(object):
                   continetsColor='coral', meridians=10, parallels=10,
                   pColor='r', pLine='k', pAlpha=0.5, padding=0.,
                   merLabels=[False, False, False, False],
-                  parLabels=[False, False, False, False]):
+                  parLabels=[False, False, False, False],
+                  pltshow=False):
         ''' Create an image with a map of the domain
 
         Uses Basemap to create a World Map
@@ -970,8 +971,8 @@ class Domain(object):
         # add content: coastline, continents, meridians, parallels
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
-        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians), labels=merLabels)
-        bmap.drawparallels(np.linspace(minLat, maxLat, parallels), labels=parLabels)
+        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
+        bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
 
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given
@@ -994,7 +995,10 @@ class Domain(object):
         # save figure and close
         plt.savefig(outputFileName, bbox_inches='tight',
                     dpi=dpi, pad_inches=padding)
-        plt.close('all')
+        if pltshow:
+            plt.show()
+        else:
+            plt.close('all')
 
     def reproject_GCPs(self, srsString):
         '''Reproject all GCPs to a new spatial reference system

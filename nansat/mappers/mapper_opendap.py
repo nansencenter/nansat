@@ -62,7 +62,7 @@ class Mapper(VRT):
                 'false_northing': '+y_0',
             },
             'latitude_longitude': {
-                0: '+longlat ',
+                0: '+proj=longlat ',
             }
         }
 
