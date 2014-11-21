@@ -711,7 +711,7 @@ class Domain(object):
 
         '''
 
-        return self.get_border_geometry().Overlaps(
+        return self.get_border_geometry().Intersects(
                 anotherDomain.get_border_geometry())
 
     def contains(self, anotherDomain):
