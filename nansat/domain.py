@@ -701,6 +701,32 @@ class Domain(object):
 
         return ogr.CreateGeometryFromWkt(self.get_border_wkt())
 
+    def overlaps(self, anotherDomain):
+        ''' Checks if this Domain overlaps another Domain
+
+        Returns
+        -------
+        overlaps : bool
+            True if Domains overlaps, False otherwise
+
+        '''
+
+        return self.get_border_geometry().Overlaps(
+                anotherDomain.get_border_geometry())
+
+    def contains(self, anotherDomain):
+        ''' Checks if this Domain fully covers another Domain
+
+        Returns
+        -------
+        contains : bool
+            True if this Domain fully covers another Domain, False otherwise
+
+        '''
+
+        return self.get_border_geometry().Contains(
+                anotherDomain.get_border_geometry())
+
     def get_border_postgis(self):
         ''' Get PostGIS formatted string of the border Polygon
 
