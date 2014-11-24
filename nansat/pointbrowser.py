@@ -50,7 +50,8 @@ class PointBrowser():
             plt.switch_backend('QT4Agg')
         self.fig = plt.figure()
         self.data = data
-        self.ax = self.fig.add_subplot(111)
+        self.text_ax = plt.axes([0.0, 0.85, 1.0, 0.15])
+        self.ax = plt.axes([0.0, 0.0, 1.0, 0.85])
         img = self.ax.imshow(self.data, extent=(0, self.data.shape[1],
                                                 0, self.data.shape[0]),
                              origin='lower', **kwargs)
@@ -108,13 +109,21 @@ class PointBrowser():
     def get_points(self):
         ''' Process click event '''
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
-        self.fig.axes[0].set_xlim([0, self.data.shape[1]])
-        self.fig.axes[0].set_ylim([0, self.data.shape[0]])
-        text = ('1. Please click on the figure and mark a point or '
-                'draw a line.\n If holding down any key except for "z" '
-                'and click on the figure, \n a new line starts.'
-                '\n2. Then close the figure.')
-        plt.text(0, int(self.data.shape[0]*1.05), text, fontsize=13,
+        self.ax.set_xlim([0, self.data.shape[1]])
+        self.ax.set_ylim([0, self.data.shape[0]])
+        self.ax.invert_yaxis()
+        self.ax.tick_params(direction='in', pad=-20, labelsize=10)
+
+        self.text_ax.set_xlim([0, 1])
+        self.text_ax.set_ylim([0, 1])
+        self.text_ax.set_xticks([])
+        self.text_ax.set_yticks([])
+
+        text = ('To draw a transect line: click in several locations\n'
+                'To start drawing a new line: press "space", click in the next\n'
+                '        location, release "space" and continue clicking\n'
+                'To zoom: press "z" and use pan/zoom tools, then release "z"')
+        self.text_ax.text(0.01, 0.9, text, fontsize=13,
                  verticalalignment='top', horizontalalignment='left')
-        plt.gca().invert_yaxis()
+
         plt.show()
