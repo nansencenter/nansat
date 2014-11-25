@@ -51,15 +51,16 @@ class Mapper(VRT):
         # Read relevant arrays into memory
         g = gdal.Open('NETCDF:"' + nc_file + '":' + 'windspeed_10m')
         ws_10m = np.flipud(g.GetRasterBand(1).ReadAsArray())
-        g = gdal.Open(nc_file_winddir)
+        g = gdal.Open('NETCDF:"' + nc_file_winddir + '":' + 
+                        'wind_direction_10m')
         wd_10m = np.flipud(g.GetRasterBand(1).ReadAsArray())
         g = gdal.Open('NETCDF:"' + nc_file + '":' + 'latitude')
         lat = np.flipud(g.GetRasterBand(1).ReadAsArray())
         g = gdal.Open('NETCDF:"' + nc_file + '":' + 'longitude')
         lon = np.flipud(g.GetRasterBand(1).ReadAsArray())
 
-        u10 = ws_10m*np.cos(np.deg2rad(wd_10m))
-        v10 = ws_10m*np.sin(np.deg2rad(wd_10m))
+        u10 = -ws_10m*np.sin(np.deg2rad(wd_10m))
+        v10 = -ws_10m*np.cos(np.deg2rad(wd_10m))
         VRT_u10 = VRT(array=u10, lat=lat, lon=lon)
         VRT_v10 = VRT(array=v10, lat=lat, lon=lon)
 
@@ -98,10 +99,10 @@ class Mapper(VRT):
                     {'SourceFilename': self.subVRTs['v_VRT'].fileName,
                      'SourceBand': 1,
                      'DataType': 6}],
-            'dst': {'wkv': 'wind_to_direction',
+            'dst': {'wkv': 'wind_from_direction',
                     'name': 'winddir',
                     'height': '10 m',
-                    'PixelFunctionType': 'UVToDirectionTo'}})
+                    'PixelFunctionType': 'UVToDirectionFrom'}})
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, lat=lat, lon=lon)
