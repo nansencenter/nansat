@@ -193,7 +193,7 @@ class Mapper(VRT, Envisat):
         # ASAR is always right-looking
         self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
-                                     gdalMetadata['SPH_PASS'].upper())
+                        gdalMetadata['SPH_PASS'].upper().strip())
 
         ###################################################################
         # Add sigma0_VV
