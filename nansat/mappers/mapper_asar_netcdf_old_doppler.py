@@ -7,7 +7,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	09.10.2014
-# Last modified:13.10.2014 17:09
+# Last modified:25.11.2014 20:49
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -52,12 +52,14 @@ class Mapper(VRT):
         subDatasets = gdalDataset.GetSubDatasets()
         filenames = [f[0] for f in subDatasets]
 
-        lon = [(gdal.Open(filenames.pop(ii)).ReadAsArray()
-                for ii, fn in enumerate(filenames)
-                if 'lon' in fn)][0]
-        lat = [(gdal.Open(filenames.pop(ii)).ReadAsArray()
-                for ii, fn in enumerate(filenames)
-                if 'lat' in fn)][0]
+        for ii, fn in enumerate(filenames):
+            if 'lon' in fn:
+                break
+        lon = gdal.Open(filenames.pop(ii)).ReadAsArray()
+        for ii, fn in enumerate(filenames):
+            if 'lat' in fn:
+                break
+        lat = gdal.Open(filenames.pop(ii)).ReadAsArray()
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self, lon=lon, lat=lat)
@@ -100,6 +102,8 @@ class Mapper(VRT):
             bandMetadata = subBand.GetMetadata_Dict()
             bandNo[bandMetadata.get('NETCDF_VARNAME')] = i + 1
             # generate dst metadata
+            if not bandMetadata.get('NETCDF_VARNAME') in name2wkv_dict.keys():
+                continue
             dst = {'wkv': name2wkv_dict[bandMetadata.get('NETCDF_VARNAME')],
                    'name': bandMetadata.get('NETCDF_VARNAME'),
                    }
