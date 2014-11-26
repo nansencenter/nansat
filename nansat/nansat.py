@@ -1161,19 +1161,18 @@ class Nansat(Domain):
         self.logger.debug('MODPATH: %s' % mod44path)
 
         if not mod44DataExist:
-            # MOD44W data does not exist generate empty matrix
-            watermaskArray = np.zeros([self.vrt.dataset.RasterXSize,
-                                      self.vrt.dataset.RasterYSize])
-            watermask = Nansat(domain=self, array=watermaskArray)
+            raise IOError('250 meters resolution watermask from MODIS ' \
+                    '44W Product does not exist - see Nansat ' \
+                    'documentation to get it (the path is %s)' %mod44path)
+
+        # MOD44W data does exist: open the VRT file in Nansat
+        watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W',
+                            logLevel=self.logger.level)
+        # reproject on self or given Domain
+        if dstDomain is None:
+            watermask.reproject(self, **kwargs)
         else:
-            # MOD44W data does exist: open the VRT file in Nansat
-            watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W',
-                               logLevel=self.logger.level)
-            # reproject on self or given Domain
-            if dstDomain is None:
-                watermask.reproject(self, **kwargs)
-            else:
-                watermask.reproject(dstDomain, **kwargs)
+            watermask.reproject(dstDomain, **kwargs)
 
         return watermask
 
