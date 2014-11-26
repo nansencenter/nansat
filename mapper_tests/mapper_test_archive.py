@@ -3,10 +3,10 @@
 # Purpose:      To test nansat
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:06.10.2014
+# Last modified:21.11.2014 10:33
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -71,7 +71,7 @@ class DataForTestingMappers(object):
                 'modis_l1')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs.t00z.master.grbf00',
+                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs20120328.t00z.master.grbf00',
                 'ncep')
 
         self.download_test_file(
@@ -147,3 +147,4 @@ class DataForTestingMappers(object):
                 self.mapperData[mapperName].append(mapperFName)
             else:
                 self.mapperData[mapperName] = [mapperFName]
+
