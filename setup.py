@@ -193,10 +193,10 @@ def run_setup(skip_compile):
             ])
 
 
-    # remove nansat_tests from installed packages
+    # remove mapper_tests from installed packages
     packages = find_packages()
-    if 'mapper_tests' in packages:
-        packages.remove('mapper_tests')
+    #if 'mapper_tests' in packages:
+    #    packages.remove('mapper_tests')
 
     setup(
         name=NAME,
@@ -213,7 +213,8 @@ def run_setup(skip_compile):
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
         packages=packages,
-        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl', 'tests/data/*']},
+        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl',
+            'tests/data/*.*']},
         scripts=[os.path.join('utilities', name) for name in
                     ['nansatinfo',
                      'nansat_add_coastline',
