@@ -34,6 +34,7 @@ class DataForTestingMappers(object):
 
     def download_all_test_data(self):
         ''' Download test data for each mapper '''
+
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_IMS_1PNIPA20100411_101715_000000162088_00280_42418_0338.N1',
                 'asar')

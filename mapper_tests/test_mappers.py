@@ -55,6 +55,7 @@ class TestDataForTestingMappers(unittest.TestCase):
 
 
 class TestAllMappers(object):
+
     def test_automatic_mapper(self):
         ''' Should open all downloaded files with automatically selected mapper '''
         testData = DataForTestingMappers()
@@ -84,6 +85,30 @@ class TestAllMappers(object):
         ''' Perform call to Nansat with each file as a separate test '''
         n = Nansat(mapperFile, mapperName=mapperName)
         assert type(n) == Nansat
+
+    def test_complex_data(self):
+        ''' Should open all downloaded files with automatically selected mapper '''
+        testData = DataForTestingMappers()
+        testData.download_all_test_data()
+        for mapperName in testData.mapperData:
+            mapperFiles = testData.mapperData[mapperName]
+            for mapperFile in mapperFiles:
+                if mapperName  == 'radarsat2' or mapperName == 'asar':
+                    yield self.exist_intensity_band, mapperFile, mapperName
+
+    def exist_intensity_band(self, mapperFile, mapperName):
+        ''' test if intensity bands exist for complex data '''
+        n = Nansat(mapperFile, mapperName=mapperName)
+        allBandNames = []
+        complexBandNames = []
+        for iBand in range(n.vrt.dataset.RasterCount):
+            iBandName = n.get_metadata(bandID=iBand + 1)['name']
+            allBandNames.append(iBandName)
+            if '_complex' in iBandName:
+                complexBandNames.append(iBandName)
+
+        for iComplexName in complexBandNames:
+            assert iComplexName.replace('_complex', '') in allBandNames
 
 
 if __name__=='__main__':
