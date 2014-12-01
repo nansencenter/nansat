@@ -3,7 +3,7 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
 # Last modified:18.11.2014 11:48
@@ -449,6 +449,23 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)
 
+    def test_watermask(self):
+        ''' if watermask data exists: should fetch array with watermask
+            else:                     should raise an error'''
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        mod44path = os.getenv('MOD44WPATH')
+        if mod44path is not None and os.path.exists(mod44path+ '/MOD44W.vrt'):
+            wm = n1.watermask()[1]
+            self.assertEqual(type(wm), np.ndarray)
+            self.assertEqual(wm.shape[0], n1.shape()[0])
+            self.assertEqual(wm.shape[1], n1.shape()[1])
+
+    def test_watermask_fail(self):
+        ''' Nansat.watermask should raise an IOError'''
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        os.environ.setdefault('MOD44WPATH', '/fakepath')
+
+        self.assertRaises(IOError, n1.watermask)
 
 if __name__ == "__main__":
     unittest.main()
