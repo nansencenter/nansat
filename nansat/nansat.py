@@ -529,7 +529,7 @@ class Nansat(Domain):
                                                           options=options)
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, fileName, bands=None, metadata=None,
+    def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
                        time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
@@ -578,37 +578,31 @@ class Nansat(Domain):
         # Create temporary empty Nansat object with self domain
         data = Nansat(domain=self)
 
-        # check some input data
-        if bands is None:
-            bands = {}
-
         # get mask (if exist)
         if maskName is not None:
             mask = self[maskName]
 
         # add required bands to data
         dstBands = {}
+        srcBands = [self.bands()[b]['name'] for b in self.bands()]
         for iband in bands:
-            try:
-                array = self[iband]
-            except:
-                self.logger.error('%s is not found' % str(iBand))
+            # skip non exiting bands
+            if iband not in srcBands:
+                self.logger.error('%s is not found' % str(iband))
                 continue
+
+            array = self[iband]
+
+            # catch None band error
+            if array is None:
+                raise GDALError('%s is None' % str(iband))
 
             # set type, scale and offset from input data or by default
             dstBands[iband] = {}
-            if 'type' in bands[iband]:
-                dstBands[iband]['type'] = bands[iband]['type']
-            else:
-                dstBands[iband]['type'] = array.dtype.str.replace('u', 'i')
-            if 'scale' in bands[iband]:
-                dstBands[iband]['scale'] = float(bands[iband]['scale'])
-            else:
-                dstBands[iband]['scale'] = 1.0
-            if 'offset' in bands[iband]:
-                dstBands[iband]['offset'] = float(bands[iband]['offset'])
-            else:
-                dstBands[iband]['offset'] = 0.0
+            dstBands[iband]['type'] = bands[iband].get('type',
+                                             array.dtype.str.replace('u', 'i'))
+            dstBands[iband]['scale'] = float(bands[iband].get('scale', 1.0))
+            dstBands[iband]['offset'] = float(bands[iband].get('offset', 0.0))
             if '_FillValue' in bands[iband]:
                 dstBands[iband]['_FillValue'] = float(
                     bands[iband]['_FillValue'])

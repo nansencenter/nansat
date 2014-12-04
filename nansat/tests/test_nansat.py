@@ -3,7 +3,7 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
 # Last modified:18.11.2014 11:48
@@ -135,7 +135,12 @@ class NansatTest(unittest.TestCase):
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        n.export(tmpfilename)
+        bands = {
+            'L_645' : {'type': '>i1'},
+            'L_555' : {'type': '>i1'},
+            'L_469' : {'type': '>i1'},
+        }
+        n.export2thredds(tmpfilename, bands)
 
         self.assertTrue(os.path.exists(tmpfilename))
 
@@ -143,8 +148,12 @@ class NansatTest(unittest.TestCase):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-
-        self.assertRaises(RuntimeError, n.export2thredds, tmpfilename)
+        bands = {
+            'L_645' : {'type': '>i1'},
+            'L_555' : {'type': '>i1'},
+            'L_469' : {'type': '>i1'},
+        }
+        self.assertRaises(RuntimeError, n.export2thredds, tmpfilename, bands)
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
