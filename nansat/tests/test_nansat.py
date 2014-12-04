@@ -2,7 +2,7 @@
 # Name:         test_nansat.py
 # Purpose:      Test the Nansat class
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
+# Author:       Morten Wergeland Hansen, Anton Korosov, Asuka Yamakawa
 # Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
