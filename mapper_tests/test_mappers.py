@@ -46,7 +46,7 @@ class TestDataForTestingMappers(unittest.TestCase):
         ''' Should download the selected file and put into mapperData'''
         t = DataForTestingMappers()
         t.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs.t00z.master.grbf00',
+                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs20120328.t00z.master.grbf00',
                 'ncep')
         self.assertTrue('ncep' in t.mapperData)
         self.assertEqual(type(t.mapperData['ncep']), list)

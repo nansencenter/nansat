@@ -463,8 +463,7 @@ class NansatTest(unittest.TestCase):
     def test_watermask_fail(self):
         ''' Nansat.watermask should raise an IOError'''
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        os.environ.setdefault('MOD44WPATH', '/fakepath')
-
+        os.environ['MOD44WPATH'] = '/fakepath'
         self.assertRaises(IOError, n1.watermask)
 
 if __name__ == "__main__":
