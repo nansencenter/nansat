@@ -48,8 +48,6 @@ class MosaicTest(unittest.TestCase):
         mo.average([self.test_file_gcps, self.test_file_stere],
                     bands=['L_645', 'L_555', 'L_469'])
 
-        import ipdb; ipdb.set_trace()
-
         mask = mo['mask']
         L_645 = mo['L_645']
         L_555 = mo['L_555']
