@@ -21,9 +21,12 @@ import sys
 import tempfile
 import datetime
 import dateutil.parser
-import collections
 import pkgutil
 import warnings
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -2208,7 +2211,7 @@ def _import_mappers(logLevel=None):
         mappersPackages = [nansat_mappers, nansat.mappers]
 
     # create ordered dict for mappers
-    nansatMappers = collections.OrderedDict()
+    nansatMappers = OrderedDict()
 
     for mappersPackage in mappersPackages:
         logger.debug('From package: %s' % mappersPackage.__path__)
