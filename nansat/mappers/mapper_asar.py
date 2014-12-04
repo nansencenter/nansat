@@ -8,7 +8,7 @@
 
 import numpy as np
 import scipy.ndimage
-import gdal
+from osgeo import gdal
 from dateutil.parser import parse
 
 
