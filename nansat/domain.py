@@ -633,7 +633,7 @@ class Domain(object):
 
         return self.transform_points(colVector, rowVector)
 
-    def _get_border_kml(self):
+    def _get_border_kml(self, *args, **kwargs):
         '''Generate Placemark entry for KML
 
         Returns
@@ -642,7 +642,7 @@ class Domain(object):
             String with the Placemark entry
 
         '''
-        domainLon, domainLat = self.get_border()
+        domainLon, domainLat = self.get_border(*args, **kwargs)
 
         # convert Border coordinates into KML-like string
         coordinates = ''
@@ -667,7 +667,7 @@ class Domain(object):
 
         return kmlEntry
 
-    def get_border_wkt(self):
+    def get_border_wkt(self, *args, **kwargs):
         '''Creates string with WKT representation of the border polygon
 
         Returns
@@ -676,7 +676,7 @@ class Domain(object):
             string with WKT representation of the border polygon
 
         '''
-        lonList, latList = self.get_border()
+        lonList, latList = self.get_border(*args, **kwargs)
 
         # apply > 180 deg correction to longitudes
         for ilon, lon in enumerate(lonList):
@@ -690,7 +690,7 @@ class Domain(object):
         wkt = 'POLYGON((%s))' % polyCont
         return wkt
 
-    def get_border_geometry(self):
+    def get_border_geometry(self, *args, **kwargs):
         ''' Get OGR Geometry of the border Polygon
 
         Returns
@@ -699,7 +699,7 @@ class Domain(object):
 
         '''
 
-        return ogr.CreateGeometryFromWkt(self.get_border_wkt())
+        return ogr.CreateGeometryFromWkt(self.get_border_wkt(*args, **kwargs))
 
     def overlaps(self, anotherDomain):
         ''' Checks if this Domain overlaps another Domain

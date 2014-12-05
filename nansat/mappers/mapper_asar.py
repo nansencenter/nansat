@@ -8,7 +8,7 @@
 
 import numpy as np
 import scipy.ndimage
-import gdal
+from osgeo import gdal
 from dateutil.parser import parse
 
 
@@ -234,7 +234,7 @@ class Mapper(VRT, Envisat):
                         gdalMetadata['SPH_PASS'].upper().strip())
 
         ###################################################################
-        # Add sigma0_VV
+        # Estimate sigma0_VV from sigma0_HH
         ###################################################################
         polarizations = []
         for pp in polarization:
