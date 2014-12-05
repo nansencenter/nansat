@@ -57,9 +57,9 @@ class Mapper(VRT):
         metaDict = []
         for varName in varNames:
             var = matFile[varName]
-            self.subVRTs[varName] = VRT(array=var)
+            self.bandVRTs[varName] = VRT(array=var)
             metaDict.append({'src': {'SourceFilename':
-                                     self.subVRTs[varName].fileName,
+                                     self.bandVRTs[varName].fileName,
                                      'sourceBand': 1},
                             'dst': {'name': varName}})
 
@@ -78,9 +78,9 @@ class Mapper(VRT):
                                         np.power(2, cloudBit))
                 mask[bitMap > 0] = 1
 
-        self.subVRTs['mask'] = VRT(array=mask)
+        self.bandVRTs['mask'] = VRT(array=mask)
         metaDict.append({'src': {'SourceFilename':
-                                 self.subVRTs['mask'].fileName,
+                                 self.bandVRTs['mask'].fileName,
                                  'sourceBand': 1},
                         'dst': {'name': 'mask'}})
 

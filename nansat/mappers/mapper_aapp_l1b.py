@@ -169,7 +169,7 @@ class Mapper(VRT):
 
         # Making VRT with raw (unscaled) lon and lat
         # (smaller bands than full dataset)
-        self.subVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
+        self.bandVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
                                             srcRasterYSize=srcRasterYSize)}
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
@@ -185,15 +185,15 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.subVRTs['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
+        self.bandVRTs['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
-        self.subVRTs['GeolocVRT'] = VRT(srcRasterXSize=51,
+        self.bandVRTs['GeolocVRT'] = VRT(srcRasterXSize=51,
                                         srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': (self.subVRTs['RawGeolocVRT'].
+                {'src': {'SourceFilename': (self.bandVRTs['RawGeolocVRT'].
                                             fileName),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
@@ -201,10 +201,10 @@ class Mapper(VRT):
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.subVRTs['GeolocVRT']._create_bands(GeolocMetaDict)
+        self.bandVRTs['GeolocVRT']._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.subVRTs['GeolocVRT'],
-                                        yVRT=self.subVRTs['GeolocVRT'],
+        GeolocObject = GeolocationArray(xVRT=self.bandVRTs['GeolocVRT'],
+                                        yVRT=self.bandVRTs['GeolocVRT'],
                                         xBand=2, yBand=1,  # x = lon, y = lat
                                         lineOffset=0, pixelOffset=25,
                                         lineStep=1, pixelStep=40)
