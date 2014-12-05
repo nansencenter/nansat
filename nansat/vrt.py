@@ -186,7 +186,7 @@ class VRT(object):
     # main sub VRT
     vrt = None
     # other sub VRTs
-    subVRTs = None
+    bandVRTs = None
     # use Thin Spline Transformation of the VRT has GCPs?
     tps = False
 
@@ -236,7 +236,7 @@ class VRT(object):
             grid with longitudes
         lat : Numpy array
             grid with latitudes
-        subVRTs : dict
+        bandVRTs : dict
             dictionary with VRTs that are used inside VRT
 
         Modifies
@@ -250,6 +250,8 @@ class VRT(object):
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename(nomem=nomem)
         self.vrtDriver = gdal.GetDriverByName('VRT')
+        if self.bandVRTs is None:
+            self.bandVRTs = {}
 
         # open and parse wkv.xml
         fileNameWKV = os.path.join(os.path.dirname(
@@ -817,9 +819,9 @@ class VRT(object):
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
 
-        # add subVRTs: dictionary with several VRTs generated in mappers
+        # add bandVRTs: dictionary with several VRTs generated in mappers
         # or with added bands
-        vrt.subVRTs = self.subVRTs
+        vrt.bandVRTs = self.bandVRTs
 
         # set TPS flag
         vrt.tps = bool(self.tps)

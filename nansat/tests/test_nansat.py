@@ -75,6 +75,21 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n[1].shape, (500, 500))
 
+    def test_add_band_twice(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+        n = Nansat(domain=d, logLevel=40)
+        n.add_band(arr, {'name': 'band1'})
+        n.add_band(arr, {'name': 'band2'})
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(type(n[2]), np.ndarray)
+        self.assertEqual(n.get_metadata('name', 1), 'band1')
+        self.assertEqual(n.get_metadata('name', 2), 'band2')
+        self.assertEqual(n[1].shape, (500, 500))
+        self.assertEqual(n[2].shape, (500, 500))
+
     def test_add_bands(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
@@ -97,8 +112,9 @@ class NansatTest(unittest.TestCase):
         n2 = Nansat(domain=d, logLevel=40)
         n1.add_band(arr, {'name': 'band1'})
 
-        self.assertEqual(type(n1.vrt.subVRTs), dict)
-        self.assertEqual(n2.vrt.subVRTs, None)
+        self.assertEqual(type(n1.vrt.bandVRTs), dict)
+        self.assertTrue(len(n1.vrt.bandVRTs) > 0)
+        self.assertEqual(n2.vrt.bandVRTs, {})
 
     def test_bands(self):
         n = Nansat(self.test_file_gcps, logLevel=40)

@@ -1,12 +1,12 @@
 #------------------------------------------------------------------------------
-# Name:		mapper_asar_netcdf_old_doppler.py
+# Name:     mapper_asar_netcdf_old_doppler.py
 # Purpose:      To read previously processed ASAR WS Doppler data saved as
 #               netcdf files
 #
 # Author:       Morten Wergeland Hansen
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
-# Created:	09.10.2014
+# Created:  09.10.2014
 # Last modified:25.11.2014 20:49
 # Copyright:    (c) NERSC
 # License:
@@ -130,9 +130,9 @@ class Mapper(VRT):
         mask[azibias > 10000] = 0.
         maskVRT = VRT(array=mask, lat=lat, lon=lon)
 
-        self.subVRTs['fdgVRT'] = fdgVRT
+        self.bandVRTs['fdgVRT'] = fdgVRT
         metaDict.append({'src': {'SourceFilename': (
-                                 self.subVRTs['fdgVRT'].fileName),
+                                 self.bandVRTs['fdgVRT'].fileName),
                                  'SourceBand': 1
                                  },
                          'dst': {'name': 'fdg',
@@ -141,9 +141,9 @@ class Mapper(VRT):
                                  'units': 'Hz',
                                  }
                          })
-        self.subVRTs['maskVRT'] = maskVRT
+        self.bandVRTs['maskVRT'] = maskVRT
         metaDict.append({'src': {'SourceFilename': (
-                                 self.subVRTs['maskVRT'].fileName),
+                                 self.bandVRTs['maskVRT'].fileName),
                                  'SourceBand': 1
                                  },
                         'dst': {'name': 'mask',
