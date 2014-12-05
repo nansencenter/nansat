@@ -187,6 +187,9 @@ class Nansat(Domain):
         expression = band.GetMetadata().get('expression', '')
         # get data
         bandData = band.ReadAsArray()
+        if bandData is None:
+            raise GDALError('Cannot read array from band %s' % str(bandID))
+
         # execute expression if any
         if expression != '':
             bandData = eval(expression)
@@ -196,12 +199,12 @@ class Nansat(Domain):
             fillValue = float(band.GetMetadata()['_FillValue'])
             try:
                 bandData[bandData == fillValue] = np.nan
-            except:
+            except ValueError:
                 self.logger.info('Cannot replace _FillValue values '
                                  'with np.NAN in %s!' % bandID)
         try:
             bandData[np.isinf(bandData)] = np.nan
-        except:
+        except ValueError:
             self.logger.info('Cannot replace inf values with np.NAN!')
 
         return bandData
@@ -290,6 +293,8 @@ class Nansat(Domain):
                 {'SourceFilename': bandVRT.fileName,
                  'SourceBand': 1},
                 params)
+            if self.vrt.subVRTs is None:
+                self.vrt.subVRTs = {}
             self.vrt.subVRTs[bandName] = bandVRT
 
         self.vrt.dataset.FlushCache()  # required after adding bands
