@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from nansat import Nansat, Domain
-from nansat.tools import gdal
+from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
 
@@ -128,13 +128,25 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
-    def test_export2thredds_stere(self):
+    def test_export2thredds_stere_one_band(self):
         # skip the test if anaconda is used
         if IS_CONDA:
             return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds.nc')
+                                   'nansat_export2thredds_1b.nc')
+        n.export2thredds(tmpfilename, ['L_469'])
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+
+    def test_export2thredds_stere_many_bands(self):
+        # skip the test if anaconda is used
+        if IS_CONDA:
+            return
+        n = Nansat(self.test_file_stere, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export2thredds_3b.nc')
         bands = {
             'L_645' : {'type': '>i1'},
             'L_555' : {'type': '>i1'},
@@ -148,12 +160,7 @@ class NansatTest(unittest.TestCase):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        bands = {
-            'L_645' : {'type': '>i1'},
-            'L_555' : {'type': '>i1'},
-            'L_469' : {'type': '>i1'},
-        }
-        self.assertRaises(RuntimeError, n.export2thredds, tmpfilename, bands)
+        self.assertRaises(OptionError, n.export2thredds, tmpfilename, ['L_645'])
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, logLevel=40)

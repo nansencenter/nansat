@@ -569,12 +569,26 @@ class Nansat(Domain):
 
         Examples
         --------
-        n.export2thredds(filename)
         # create THREDDS formatted netcdf file with all bands and time variable
+        n.export2thredds(filename)
 
-        n.export2thredds(filename, [1], {'description': 'example'})
         # export only the first band and add global metadata
+        n.export2thredds(filename, ['L_469'], {'description': 'example'})
+
+        # export several bands and modify type, scale and offset
+        bands = {'L_645' : {'type': '>i2', 'scale': 0.1, 'offset': 0},
+                 'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
+        n.export2thredds(filename, bands)
+
         '''
+        # raise error if self is not projected (has GCPs)
+        if len(self.vrt.dataset.GetGCPs()) > 0:
+            raise OptionError('Cannot export dataset with GCPS for THREDDS!')
+
+        # replace bands as list with bands as dict
+        if type(bands) is list:
+            bands = dict.fromkeys(bands, {})
+
         # Create temporary empty Nansat object with self domain
         data = Nansat(domain=self)
 
