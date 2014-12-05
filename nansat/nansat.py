@@ -290,6 +290,8 @@ class Nansat(Domain):
                 {'SourceFilename': bandVRT.fileName,
                  'SourceBand': 1},
                 params)
+            if self.vrt.subVRTs is None:
+                self.vrt.subVRTs = {}
             self.vrt.subVRTs[bandName] = bandVRT
 
         self.vrt.dataset.FlushCache()  # required after adding bands
