@@ -89,6 +89,17 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n.get_metadata('name', 2), 'band2')
 
+    def test_add_subvrts_only_to_one_nansat(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+
+        n1 = Nansat(domain=d, logLevel=40)
+        n2 = Nansat(domain=d, logLevel=40)
+        n1.add_band(arr, {'name': 'band1'})
+
+        self.assertEqual(type(n1.vrt.subVRTs), dict)
+        self.assertEqual(n2.vrt.subVRTs, None)
+
     def test_bands(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
         bands = n.bands()
