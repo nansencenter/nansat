@@ -121,14 +121,14 @@ class Mapper(VRT, Envisat):
         lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize,
                                           gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
-        self.subVRTs = {'incVRT': incVRT,
+        self.bandVRTs = {'incVRT': incVRT,
                         'look_u_VRT': look_u_VRT,
                         'look_v_VRT': look_v_VRT,
                         'lookVRT': lookVRT}
 
         # Add band to full sized VRT
-        incFileName = self.subVRTs['incVRT'].fileName
-        lookFileName = self.subVRTs['lookVRT'].fileName
+        incFileName = self.bandVRTs['incVRT'].fileName
+        lookFileName = self.bandVRTs['lookVRT'].fileName
         metaDict.append({'src': {'SourceFilename': incFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'angle_of_incidence',

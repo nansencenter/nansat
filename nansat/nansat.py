@@ -160,6 +160,7 @@ class Nansat(Domain):
             # Set current VRT object
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             self.domain = domain
+            self.mapper = ''
             if array is not None:
                 # add a band from array
                 self.add_band(array=array, parameters=parameters)
@@ -223,7 +224,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.vrt.subVRTs
+        to self.vrt.bandVRTs
 
         Parameters
         -----------
@@ -254,7 +255,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.vrt.subVRTs
+        to self.vrt.bandVRTs
 
         Parameters
         -----------
@@ -290,7 +291,7 @@ class Nansat(Domain):
                 {'SourceFilename': bandVRT.fileName,
                  'SourceBand': 1},
                 params)
-            self.vrt.subVRTs[bandName] = bandVRT
+            self.vrt.bandVRTs[bandName] = bandVRT
 
         self.vrt.dataset.FlushCache()  # required after adding bands
 
