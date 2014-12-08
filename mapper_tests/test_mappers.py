@@ -3,10 +3,10 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:06.10.2014
+# Last modified:08.12.2014 14:49
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -85,6 +85,8 @@ class TestAllMappers(object):
         ''' Perform call to Nansat with each file as a separate test '''
         n = Nansat(mapperFile, mapperName=mapperName)
         assert type(n) == Nansat
+
+    # Test that methods for returning required metadata are working
 
     def test_complex_data(self):
         ''' Should open all downloaded files with automatically selected mapper '''
