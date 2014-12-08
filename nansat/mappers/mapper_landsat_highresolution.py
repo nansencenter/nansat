@@ -39,6 +39,9 @@ class Mapper(VRT):
                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                             'suffix': bandNo}})
 
+        if not metaDictAll:
+            raise WrongMapperError
+
         # copy metadataDict which has the highest resolution.
         for iFile in range(len(metaDictAll)):
             tmpName = metaDictAll[iFile]['src']['SourceFilename']
