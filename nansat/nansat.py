@@ -730,7 +730,7 @@ class Nansat(Domain):
                                             ncIVar.dimensions)
             elif ncIVarName == gridMappingVarName:
                 # create projection var
-                ncOVar = ncO.createVariable(ncIVarName, ncIVar.typecode(),
+                ncOVar = ncO.createVariable(gridMappingName, ncIVar.typecode(),
                                             ncIVar.dimensions)
             elif 'name' in ncIVar._attributes and ncIVar.name in dstBands:
                 # dont add time-axis to lon/lat grids
