@@ -38,7 +38,7 @@ from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
 from nansat.tools import add_logger, gdal
-from nansat.tools import OptionError, WrongMapperError, Error, GDALError
+from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -1534,7 +1534,9 @@ class Nansat(Domain):
 
         Raises
         --------
-        Error : occurs if given mapper cannot open the input file
+        IOError : occurs if the input file does not exist
+        OptionError : occurs if given mapper cannot open the input file
+        NansatReadError : occurs if no mapper fits the input file
 
         '''
         # lazy import of nansat mappers
@@ -1568,7 +1570,7 @@ class Nansat(Domain):
                                                                     '').lower()
             # check if the mapper is available
             if mapperName not in nansatMappers:
-                raise Error('Mapper ' + mapperName + ' not found')
+                raise OptionError('Mapper ' + mapperName + ' not found')
 
             # check if mapper is importbale or raise an ImportError error
             if isinstance(nansatMappers[mapperName], tuple):
@@ -1626,7 +1628,8 @@ class Nansat(Domain):
             # check if given data file exists
             if not os.path.isfile(self.fileName):
                 raise IOError('%s: File does not exist' % (self.fileName))
-            raise GDALError('NANSAT can not open the file ' + self.fileName)
+            raise NansatReadError('%s: File cannot be read with NANSAT - ' \
+                    'consider writing a mapper' %self.fileName)
 
         return tmpVRT
 
