@@ -125,10 +125,10 @@ class Mapper(VRT):
         a = simGdalDataset.ReadAsArray()
         mask = np.zeros(a.shape, 'uint8') + 64
         mask[a < -32000] = 1
-        self.subVRTs = {'mask': VRT(array=mask)}
+        self.bandVRTs = {'mask': VRT(array=mask)}
 
         metaDict.append(
-            {'src': {'SourceFilename': self.subVRTs['mask'].fileName,
+            {'src': {'SourceFilename': self.bandVRTs['mask'].fileName,
                      'SourceBand':  1},
              'dst': {'name': 'mask'}})
 

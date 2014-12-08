@@ -63,7 +63,7 @@ PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
 MINOR               = 7
 MICRO               = 0
-ISRELEASED          = False
+ISRELEASED          = True
 VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",

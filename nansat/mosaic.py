@@ -342,13 +342,14 @@ class Mosaic(Nansat):
         # if old 'valid' mask was applied in files, replace with new mask
         maskMat[maskMat == 128] = 64
 
+        firstN = self._get_layer_image(fName)
+
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
         self.add_band(array=maskMat, parameters={'name': maskName,
                                                  'long_name': 'L2-mask',
                                                  'standard_name': 'mask'})
-        firstN = self._get_layer_image(fName)
 
         # add averaged bands with metadata
         for bi, b in enumerate(bands):

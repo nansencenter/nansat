@@ -21,9 +21,12 @@ import sys
 import tempfile
 import datetime
 import dateutil.parser
-import collections
 import pkgutil
 import warnings
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 import scipy
 from scipy.io.netcdf import netcdf_file
@@ -160,6 +163,7 @@ class Nansat(Domain):
             # Set current VRT object
             self.vrt = VRT(gdalDataset=domain.vrt.dataset)
             self.domain = domain
+            self.mapper = ''
             if array is not None:
                 # add a band from array
                 self.add_band(array=array, parameters=parameters)
@@ -187,6 +191,9 @@ class Nansat(Domain):
         expression = band.GetMetadata().get('expression', '')
         # get data
         bandData = band.ReadAsArray()
+        if bandData is None:
+            raise GDALError('Cannot read array from band %s' % str(bandID))
+
         # execute expression if any
         if expression != '':
             bandData = eval(expression)
@@ -196,12 +203,12 @@ class Nansat(Domain):
             fillValue = float(band.GetMetadata()['_FillValue'])
             try:
                 bandData[bandData == fillValue] = np.nan
-            except:
+            except ValueError:
                 self.logger.info('Cannot replace _FillValue values '
                                  'with np.NAN in %s!' % bandID)
         try:
             bandData[np.isinf(bandData)] = np.nan
-        except:
+        except ValueError:
             self.logger.info('Cannot replace inf values with np.NAN!')
 
         return bandData
@@ -223,7 +230,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.vrt.subVRTs
+        to self.vrt.bandVRTs
 
         Parameters
         -----------
@@ -254,7 +261,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.vrt.subVRTs
+        to self.vrt.bandVRTs
 
         Parameters
         -----------
@@ -290,7 +297,7 @@ class Nansat(Domain):
                 {'SourceFilename': bandVRT.fileName,
                  'SourceBand': 1},
                 params)
-            self.vrt.subVRTs[bandName] = bandVRT
+            self.vrt.bandVRTs[bandName] = bandVRT
 
         self.vrt.dataset.FlushCache()  # required after adding bands
 
@@ -569,12 +576,26 @@ class Nansat(Domain):
 
         Examples
         --------
-        n.export2thredds(filename)
         # create THREDDS formatted netcdf file with all bands and time variable
+        n.export2thredds(filename)
 
-        n.export2thredds(filename, [1], {'description': 'example'})
         # export only the first band and add global metadata
+        n.export2thredds(filename, ['L_469'], {'description': 'example'})
+
+        # export several bands and modify type, scale and offset
+        bands = {'L_645' : {'type': '>i2', 'scale': 0.1, 'offset': 0},
+                 'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
+        n.export2thredds(filename, bands)
+
         '''
+        # raise error if self is not projected (has GCPs)
+        if len(self.vrt.dataset.GetGCPs()) > 0:
+            raise OptionError('Cannot export dataset with GCPS for THREDDS!')
+
+        # replace bands as list with bands as dict
+        if type(bands) is list:
+            bands = dict.fromkeys(bands, {})
+
         # Create temporary empty Nansat object with self domain
         data = Nansat(domain=self)
 
@@ -2204,7 +2225,7 @@ def _import_mappers(logLevel=None):
         mappersPackages = [nansat_mappers, nansat.mappers]
 
     # create ordered dict for mappers
-    nansatMappers = collections.OrderedDict()
+    nansatMappers = OrderedDict()
 
     for mappersPackage in mappersPackages:
         logger.debug('From package: %s' % mappersPackage.__path__)
