@@ -54,7 +54,7 @@ class Mapper(VRT, Globcolour):
         VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
 
         # get list of similar (same date) files in the directory
-        simFilesMask = os.path.join(iDir, iFileName[0:30] + '*' + mask)
+        simFilesMask = os.path.join(iDir, iFileName[0:30] + '*' + mask + '.nc')
         simFiles = glob.glob(simFilesMask)
         simFiles.sort()
 
