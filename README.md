@@ -14,7 +14,7 @@ We appreciate acknowledments of Nansat. Please add "The image analysis was perfo
 the open-source NanSat (https://github.com/nansencenter/nansat) python package" (or equivalent)
 if you use Nansat in scientific publications.
 
-Downlodad
+Download
 =========
 https://github.com/nansencenter/nansat/wiki/Download
 

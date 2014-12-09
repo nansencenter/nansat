@@ -38,6 +38,10 @@ class Mapper(VRT):
                             'SourceBand':  1},
                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                             'suffix': bandNo}})
+
+        if not metaDict:
+            raise WrongMapperError
+
         #print metaDict
         sizeDiffBands = []
         for iFile in range(len(metaDict)):
