@@ -53,7 +53,7 @@ class TestDataForTestingMappers(unittest.TestCase):
         for ifile in t.mapperData['ncep']:
             self.assertTrue(os.path.exists(ifile))
 
-
+# https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 class TestAllMappers(object):
 
     def test_automatic_mapper(self):
