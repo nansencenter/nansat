@@ -1556,6 +1556,12 @@ class Nansat(Domain):
         Error : occurs if given mapper cannot open the input file
 
         '''
+        # Make sure file exists and can be opened for reading before proceeding
+        try:
+            f = open(self.fileName,'r')
+        except IOError:
+            raise
+        f.close()
         # lazy import of nansat mappers
         # if nansat mappers were not imported yet
         global nansatMappers
