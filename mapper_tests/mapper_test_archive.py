@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:21.11.2014 10:33
+# Last modified:10.12.2014 12:27
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -137,10 +137,15 @@ class DataForTestingMappers(object):
             print time.time() - t0
 
         if not os.path.exists(mapperFName):
-            warnings.warn( """
-                    Could not access %s on ftp-site with test data - contact
+            must_have = 'ASA_WSM_1PNPDK20110108_205958_000000923098_00187_46322_6032.N1'
+            if os.path.basename(mapperFName) == must_have:
+                warnings.warn( """
+                    Could not access ftp-site with test data - contact
                     morten.stette@nersc.no to get the ftp-server at NERSC restarted"""
-                    % mapperFName)
+                )
+            else:
+                warnings.warn('%s: file is not available for download'
+                        %mapperFName)
         else:
             if self.mapperData is None:
                 self.mapperData = {}
