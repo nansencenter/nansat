@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:08.12.2014 14:49
+# Last modified:10.12.2014 11:39
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -56,14 +56,16 @@ class TestDataForTestingMappers(unittest.TestCase):
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 class TestAllMappers(object):
 
+    #def setupAll(self):
+
     def test_automatic_mapper(self):
-        ''' Should open all downloaded files with automatically selected mapper '''
         testData = DataForTestingMappers()
         testData.download_all_test_data()
         for mapper in testData.mapperData:
             mapperFiles = testData.mapperData[mapper]
             for mapperFile in mapperFiles:
-                print mapperFile
+                print mapper, '->', mapperFile
+                ''' Should open all downloaded files with automatically selected mapper '''
                 yield self.open_with_automatic_mapper, mapperFile
 
     def open_with_automatic_mapper(self, mapperFile):
@@ -87,6 +89,8 @@ class TestAllMappers(object):
         assert type(n) == Nansat
 
     # Test that methods for returning required metadata are working
+    #def test_get_reqmetadata_methods(self):
+
 
     def test_complex_data(self):
         ''' Should open all downloaded files with automatically selected mapper '''
@@ -113,9 +117,23 @@ class TestAllMappers(object):
             assert iComplexName.replace('_complex', '') in allBandNames
 
 
-if __name__=='__main__':
-    unittest.main()
 
+
+## Test Generator with unittests:
+## http://stackoverflow.com/questions/32899/how-to-generate-dynamic-parametrized-unit-tests-in-python
+#class TestMapper(unittest.TestCase):
+#    def setUp(self):
+#        self.testData = DataForTestingMappers()
+#        self.testData.download_all_test_data()
+#
+#def test_generator():
+#    def test_import(self):
+#
+
+if __name__=='__main__':
+    #for mapper in nansatMappers:
+    #    test_name = 'test_%s'%mapper
+    unittest.main()
 
 
 
