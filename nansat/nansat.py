@@ -17,15 +17,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 import os
+import glob
 import sys
 import tempfile
 import datetime
 import dateutil.parser
 import pkgutil
 import warnings
-try:
+import collections
+if hasattr(collections, 'OrderedDict'):
     from collections import OrderedDict
-except ImportError:
+else:
     from ordereddict import OrderedDict
 
 import scipy
@@ -48,6 +50,12 @@ from nansat.pointbrowser import PointBrowser
 # container for all mappers
 nansatMappers = None
 
+def test_openable(fname):
+    try:
+        f = open(fname,'r')
+    except IOError:
+        raise
+    f.close()
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -1560,6 +1568,13 @@ class Nansat(Domain):
         NansatReadError : occurs if no mapper fits the input file
 
         '''
+        if os.path.isfile(self.fileName):
+            # Make sure file exists and can be opened for reading before proceeding
+            test_openable(self.fileName)
+        else:
+            ff = glob.glob(os.path.join(self.fileName,'*.*'))
+            for f in ff:
+                test_openable(f)
         # lazy import of nansat mappers
         # if nansat mappers were not imported yet
         global nansatMappers
