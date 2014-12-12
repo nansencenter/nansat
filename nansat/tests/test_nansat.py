@@ -19,8 +19,10 @@ import sys
 import glob
 from types import ModuleType, FloatType
 import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.io.netcdf import netcdf_file
 
 from nansat import Nansat, Domain
 from nansat.tools import gdal, OptionError
@@ -188,6 +190,19 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
         self.assertRaises(OptionError, n.export2thredds, tmpfilename, ['L_645'])
+
+    def test_export2thredds_longlat(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   "-te 27 70 31 72 -ts 200 200")
+        n.reproject(d)
+
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export2thredds_longlat.nc')
+        n.export2thredds(tmpfilename, ['L_469'])
+        ncI = netcdf_file(tmpfilename, 'r')
+        ncIVar = ncI.variables['L_469']
+        self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
