@@ -24,9 +24,10 @@ import datetime
 import dateutil.parser
 import pkgutil
 import warnings
-try:
+import collections
+if hasattr(collections, 'OrderedDict'):
     from collections import OrderedDict
-except ImportError:
+else:
     from ordereddict import OrderedDict
 
 import scipy
