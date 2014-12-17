@@ -3,10 +3,10 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:06.10.2014
+# Last modified:17.12.2014 15:17
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -56,45 +56,37 @@ class TestDataForTestingMappers(unittest.TestCase):
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 class TestAllMappers(object):
 
-    def test_automatic_mapper(self):
-        ''' Should open all downloaded files with automatically selected mapper '''
-        testData = DataForTestingMappers()
-        testData.download_all_test_data()
-        for mapper in testData.mapperData:
-            mapperFiles = testData.mapperData[mapper]
-            for mapperFile in mapperFiles:
-                print mapperFile
-                yield self.open_with_automatic_mapper, mapperFile
+    @classmethod
+    def setup_class(cls):
+        cls.testData = DataForTestingMappers()
+        cls.testData.download_all_test_data()
 
-    def open_with_automatic_mapper(self, mapperFile):
-        ''' Perform call to Nansat with each file as a separate test '''
-        n = Nansat(mapperFile)
+    def test_mappers(self):
+        for mapper in self.testData.mapperData:
+            mfiles = self.testData.mapperData[mapper]
+            for f in mfiles:
+                print mapper, '->', f
+                # Test call to Nansat, mapper not specified
+                yield self.open_with_nansat, f
+                # Test call to Nansat, mapper specified
+                yield self.open_with_nansat, f, mapper
+                # Test nansat.mapper()
+                # Test nansat.start_time()
+                # Test nansat.end_time()
+                # Test nansat.source() (returns, e.g., Envisat/ASAR)
+                # Test that SAR objects have sigma0 intensity bands in addition
+                # to complex bands
+                if mapper == 'radarsat2' or mapper == 'asar':
+                    yield self.exist_intensity_band, f, mapper
+
+
+    def open_with_nansat(self, file, mapper=None):
+        ''' Perform call to Nansat and check that it returns a Nansat object '''
+        if mapper:
+            n = Nansat(file, mapperName=mapper)
+        else:
+            n = Nansat(file)
         assert type(n) == Nansat
-
-    def test_specific_mapper(self):
-        ''' Should open all downloaded files with automatically selected mapper '''
-        testData = DataForTestingMappers()
-        testData.download_all_test_data()
-        for mapperName in testData.mapperData:
-            mapperFiles = testData.mapperData[mapperName]
-            for mapperFile in mapperFiles:
-                print mapperName, '->', mapperFile
-                yield self.open_with_specific_mapper, mapperFile, mapperName
-
-    def open_with_specific_mapper(self, mapperFile, mapperName):
-        ''' Perform call to Nansat with each file as a separate test '''
-        n = Nansat(mapperFile, mapperName=mapperName)
-        assert type(n) == Nansat
-
-    def test_complex_data(self):
-        ''' Should open all downloaded files with automatically selected mapper '''
-        testData = DataForTestingMappers()
-        testData.download_all_test_data()
-        for mapperName in testData.mapperData:
-            mapperFiles = testData.mapperData[mapperName]
-            for mapperFile in mapperFiles:
-                if mapperName  == 'radarsat2' or mapperName == 'asar':
-                    yield self.exist_intensity_band, mapperFile, mapperName
 
     def exist_intensity_band(self, mapperFile, mapperName):
         ''' test if intensity bands exist for complex data '''
@@ -111,9 +103,23 @@ class TestAllMappers(object):
             assert iComplexName.replace('_complex', '') in allBandNames
 
 
-if __name__=='__main__':
-    unittest.main()
 
+
+## Test Generator with unittests:
+## http://stackoverflow.com/questions/32899/how-to-generate-dynamic-parametrized-unit-tests-in-python
+#class TestMapper(unittest.TestCase):
+#    def setUp(self):
+#        self.testData = DataForTestingMappers()
+#        self.testData.download_all_test_data()
+#
+#def test_generator():
+#    def test_import(self):
+#
+
+if __name__=='__main__':
+    #for mapper in nansatMappers:
+    #    test_name = 'test_%s'%mapper
+    unittest.main()
 
 
 
