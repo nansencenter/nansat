@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:18.12.2014 14:21
+# Last modified:18.12.2014 15:39
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -56,6 +56,9 @@ class TestDataForTestingMappers(unittest.TestCase):
             self.assertTrue(os.path.exists(ifile))
 
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
+# The x-flag results in the test stopping at first failure or error - use it
+# for easier debugging:
+# nosetests -v -x mapper_tests.test_mappers:TestAllMappers.test_mappers
 class TestAllMappers(object):
 
     @classmethod
@@ -63,9 +66,14 @@ class TestAllMappers(object):
         cls.testData = DataForTestingMappers()
         cls.testData.download_all_test_data()
 
-    def test_mappers(self):
-        for mapper in self.testData.mapperData:
-            mfiles = self.testData.mapperData[mapper]
+    def test_mappers(self, mapper=''):
+        if mapper:
+            mm={}
+            mm[mapper] = self.testData.mapperData[mapper]
+        else:
+            mm = self.testData.mapperData
+        for mapper in mm:
+            mfiles = mm[mapper]
             for f in mfiles:
                 err.write('\nMapper '+mapper+' -> '+f+'\n')
                 # Test call to Nansat, mapper not specified
@@ -87,11 +95,11 @@ class TestAllMappers(object):
                     yield self.exist_intensity_band, n
 
     def has_time(self, n):
-        assert type(n.start_time)==datetime.datetime
-        assert type(n.end_time)==datetime.datetime
+        assert type(n.start_time())==datetime.datetime
+        assert type(n.stop_time())==datetime.datetime
 
     def has_source(self, n):
-        assert type(n.source)==str
+        assert type(n.source())==str
 
     def is_correct_mapper(self, n, mapper):
         assert n.mapper==mapper
@@ -135,7 +143,3 @@ if __name__=='__main__':
     #for mapper in nansatMappers:
     #    test_name = 'test_%s'%mapper
     unittest.main()
-
-
-
-
