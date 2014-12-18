@@ -36,7 +36,8 @@ class Mapper(VRT, Globcolour):
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
-        if iFileName[0:4] != 'L3b_' or iFileExt != '.nc':
+        if (iFileName[0:4] != 'L3b_' or iFileExt != '.nc' or
+            gdalDataset is not None or gdalMetadata is not None):
             raise WrongMapperError
 
         # define shape of GLOBCOLOUR grid
