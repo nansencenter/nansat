@@ -1481,8 +1481,8 @@ class Nansat(Domain):
     def start_time(self):
         return dateutil.parser.parse(self.get_metadata('start_time'))
 
-    def end_time(self):
-        return dateutil.parser.parse(self.get_metadata('end_time'))
+    def stop_time(self):
+        return dateutil.parser.parse(self.get_metadata('stop_time'))
 
     def source(self):
         se = self.sensor()
