@@ -328,7 +328,7 @@ class Nansat(Domain):
         Parameters
         ----------
             band : str
-                name of the band to check
+                name or standard_name of the band to check 
 
         Returns
         -------
@@ -337,7 +337,9 @@ class Nansat(Domain):
         '''
         bandExists = False
         for b in self.bands():
-            if self.bands()[b]['name'] == band:
+            if self.bands()[b]['name'] == band or \
+                    ( self.bands()[b].has_key('standard_name') and
+                            self.bands()[b]['standard_name'] == band):
                 bandExists = True
 
         return bandExists
@@ -1475,6 +1477,27 @@ class Nansat(Domain):
             return time[bandNumber - 1]
         else:
             return time
+
+    def start_time(self):
+        return dateutil.parser.parse(self.get_metadata('start_time'))
+
+    def end_time(self):
+        return dateutil.parser.parse(self.get_metadata('end_time'))
+
+    def source(self):
+        se = self.sensor()
+        sa = self.satellite()
+        if not se or not sa:
+            ss = self.get_metadata('source')
+        else:
+            ss = se+'/'+sa
+        return ss
+        
+    def sensor(self):
+        return self.get_metadata('sensor')
+
+    def satellite(self):
+        return self.get_metadata('satellite')
 
     def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset
