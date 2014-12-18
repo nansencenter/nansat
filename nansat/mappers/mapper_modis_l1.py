@@ -331,6 +331,22 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
-        productTime = gdalMetadata["RANGEENDINGTIME"]
+        productTime = gdalMetadata["RANGEBEGINNINGTIME"]
         self._set_time(parse(productDate+' '+productTime))
         self.remove_geolocationArray()
+
+        # set required metadata
+        self.dataset.SetMetadataItem('start_time',
+                                     (parse(gdalMetadata["RANGEBEGINNINGDATE"]+
+                                         ' '+gdalMetadata["RANGEBEGINNINGTIME"]
+                                         ).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('stop_time',
+                                     (parse(gdalMetadata["RANGEENDINGDATE"]+
+                                         ' '+gdalMetadata["RANGEENDINGTIME"]
+                                         ).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('sensor',
+                gdalMetadata['ASSOCIATEDSENSORSHORTNAME'])
+        self.dataset.SetMetadataItem('satellite',
+                gdalMetadata['ASSOCIATEDPLATFORMSHORTNAME'])
