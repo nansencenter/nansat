@@ -239,12 +239,11 @@ class Mapper(VRT):
         self._set_time(parse(validTime))
 
         # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date',
+        self.dataset.SetMetadataItem('start_time',
                                      (parse(gdalMetadata['FIRST_LINE_TIME']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_date',
+        self.dataset.SetMetadataItem('stop_time',
                                      (parse(gdalMetadata['LAST_LINE_TIME']).
                                       isoformat()))
         self.dataset.SetMetadataItem('sensor', 'SAR')
         self.dataset.SetMetadataItem('satellite', 'Radarsat2')
-        self.dataset.SetMetadataItem('mapper', 'radarsat2')
