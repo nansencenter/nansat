@@ -276,4 +276,3 @@ class Mapper(VRT, Envisat):
                                       isoformat()))
         self.dataset.SetMetadataItem('sensor', 'ASAR')
         self.dataset.SetMetadataItem('satellite', 'Envisat')
-        self.dataset.SetMetadataItem('mapper', 'asar')
