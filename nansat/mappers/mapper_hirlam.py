@@ -81,7 +81,6 @@ class Mapper(VRT):
 
         # set source, start_date, stop_date
         self.dataset.SetMetadataItem('source', 'HIRLAM')
-        import ipdb; ipdb.set_trace()
 
         start_date = gdalDataset.GetRasterBand(1).GetMetadata()['GRIB_VALID_TIME']
         self.dataset.SetMetadataItem('start_time', datetime.datetime.utcfromtimestamp(int(start_date.strip().split(' ')[0])).isoformat() + '+00:00')
