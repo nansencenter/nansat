@@ -2,11 +2,11 @@
 # Name:         test_nansat_archive.py
 # Purpose:      To test nansat
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
+# Modified:     Anton Korosov
 #
-# Created:  18.06.2014
-# Last modified:10.12.2014 12:27
+# Created:      18.06.2014
+# Last modified:07.01.2015 11:03
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -98,6 +98,10 @@ class DataForTestingMappers(object):
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/obpg_l2/A2014275111000.L2_LAC.NorthNorwegianSeas.hdf',
                 'obpg_l2')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/amsr2_l1r/GW1AM2_201407010010_183D_L1SGRTBR_1110110.h5',
+                'amsr2_l1r')
 
     def download_test_file(self, inputURL, mapperName):
         ''' Download one file for one mapper
