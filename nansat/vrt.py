@@ -160,8 +160,8 @@ class VRT(object):
                 <ScaleOffset>$ScaleOffset</ScaleOffset>
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
-                <SrcRect xOff="0" yOff="0" xSize="$srcXSize" ySize="$srcYSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$dstXSize" ySize="$dstYSize"/>
+                <SrcRect xOff="$xOff" yOff="$yOff" xSize="$xSize" ySize="$ySize"/>
+                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -484,14 +484,6 @@ class VRT(object):
                 self.logger.debug('SRC[DataType]: %d' % src['DataType'])
 
             srcDs = gdal.Open(src['SourceFilename'])
-            if 'xSize' in src:
-                RasterXSize = src['xSize']
-            else:
-                RasterXSize = srcDs.RasterXSize
-            if 'ySize' in src:
-                RasterYSize = src['ySize']
-            else:
-                RasterYSize = srcDs.RasterYSize
 
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
@@ -502,10 +494,10 @@ class VRT(object):
                 ScaleOffset=src['ScaleOffset'],
                 ScaleRatio=src['ScaleRatio'],
                 LUT=src['LUT'],
-                srcXSize=RasterXSize,
-                srcYSize=RasterYSize,
-                dstXSize=RasterXSize,
-                dstYSize=RasterYSize)
+                xSize=src.get('xSize', srcDs.RasterXSize),
+                ySize=src.get('ySize', srcDs.RasterYSize),
+                xOff=src.get('xOff', 0),
+                yOff=src.get('yOff', 0),)
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:

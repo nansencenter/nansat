@@ -150,6 +150,7 @@ class Mapper(VRT):
         gcps = []
         k = 0
         maxY = 0
+        minY = latGrid.shape[0]
         for i0 in range(0, latGrid.shape[0], GCP_STEP):
             for i1 in range(0, latGrid.shape[1], GCP_STEP):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
@@ -163,6 +164,13 @@ class Mapper(VRT):
                     gcps.append(gcp)
                     k += 1
                     maxY = max(maxY, i0)
+                    minY = min(minY, i0)
+        yOff = minY
+        ySize = maxY - minY
+
+        # remove Y-offset from gcps
+        for gcp in gcps:
+            gcp.GCPLine -= yOff
 
         metaDict = []
 
@@ -178,20 +186,20 @@ class Mapper(VRT):
                 for meta in metadata:
                     if name + '_SCALE' in meta:
                         scale = float(metadata[meta])
-                print name, scale
                 # create meta entry
                 metaEntry = {'src': {'SourceFilename': subDataset[0],
                                      'sourceBand':  1,
                                      'ScaleRatio': scale,
                                      'ScaleOffset': 0,
-                                     'ySize': maxY},
+                                     'yOff': yOff,
+                                     'ySize': ySize,},
                              'dst': {'name': name}
                              }
                 metaDict.append(metaEntry)
 
         # create VRT from one of the subdatasets
         gdalSubDataset = gdal.Open(metaEntry['src']['SourceFilename'])
-        VRT.__init__(self, srcRasterXSize=subDatasetWidth, srcRasterYSize=maxY)
+        VRT.__init__(self, srcRasterXSize=subDatasetWidth, srcRasterYSize=ySize)
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
