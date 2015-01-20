@@ -3,10 +3,10 @@
 # Purpose:
 #
 # Author:       Morten Wergeland Hansen
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  12.09.2014
-# Last modified:14.10.2014 16:13
+# Last modified:20.01.2015 18:58
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -295,7 +295,7 @@ class Mapper(VRT):
                 }
             })
 
-        name = 'SAR_look_direction'
+        name = 'look_direction'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
         metaDict.append({

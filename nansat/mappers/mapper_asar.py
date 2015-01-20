@@ -132,16 +132,16 @@ class Mapper(VRT, Envisat):
         inc = self.get_array_from_ADS('first_line_incidence_angle')
 
         # Calculate SAR look direction (ASAR is always right-looking)
-        SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
+        look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
                                              lon[:, 1:], lat[:, 1:])
         # Interpolate to regain lost row
-        SAR_look_direction = scipy.ndimage.interpolation.zoom(
-            SAR_look_direction, (1, 11./10.))
+        look_direction = scipy.ndimage.interpolation.zoom(
+            look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
-        SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
-        SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
-        look_u_VRT = VRT(array=SAR_look_direction_u, lat=lat, lon=lon)
-        look_v_VRT = VRT(array=SAR_look_direction_v, lat=lat, lon=lon)
+        look_direction_u = np.sin(np.deg2rad(look_direction))
+        look_direction_v = np.cos(np.deg2rad(look_direction))
+        look_u_VRT = VRT(array=look_direction_u, lat=lat, lon=lon)
+        look_v_VRT = VRT(array=look_direction_v, lat=lat, lon=lon)
 
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
@@ -174,7 +174,7 @@ class Mapper(VRT, Envisat):
         metaDict.append({'src': {'SourceFilename': lookFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'sensor_azimuth_angle',
-                                 'name': 'SAR_look_direction'}})
+                                 'name': 'look_direction'}})
 
         ####################
         # Add Sigma0-bands
