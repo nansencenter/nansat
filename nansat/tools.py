@@ -129,6 +129,11 @@ class GDALError(Error):
     pass
 
 
+class NansatReadError(Exception):
+    '''Exception if a file cannot be read with Nansat'''
+    pass
+
+
 class WrongMapperError(Exception):
     '''Error for handling data that does not fit a given mapper'''
     pass
