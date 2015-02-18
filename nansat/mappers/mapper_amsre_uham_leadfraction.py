@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.02.2015
-# Last modified:18.02.2015 16:58
+# Last modified:18.02.2015 17:28
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -14,6 +14,8 @@ import datetime
 from osgeo import gdal, osr
 from nansat.nsr import NSR
 from nansat.vrt import VRT
+
+from nansat.tools import WrongMapperError
 
 class Mapper(VRT):
 
