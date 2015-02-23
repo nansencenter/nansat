@@ -138,12 +138,14 @@ class Mapper(VRT):
                 lon = []
                 lat = []
                 inc = []
+                ele = []
                 for gridPoint in geolocationGridPointList.children:
                     X.append(int(gridPoint['pixel']))
                     Y.append(int(gridPoint['line']))
                     lon.append(float(gridPoint['longitude']))
                     lat.append(float(gridPoint['latitude']))
                     inc.append(float(gridPoint['incidenceAngle']))
+                    ele.append(float(gridPoint['elevationAngle']))
 
                 X = np.unique(X)
                 Y = np.unique(Y)
@@ -151,12 +153,18 @@ class Mapper(VRT):
                 lon = np.array(lon).reshape(len(Y), len(X))
                 lat = np.array(lat).reshape(len(Y), len(X))
                 inc = np.array(inc).reshape(len(Y), len(X))
+                ele = np.array(ele).reshape(len(Y), len(X))
 
                 incVRT = VRT(array=inc, lat=lat, lon=lon)
+                eleVRT = VRT(array=ele, lat=lat, lon=lon)
                 incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
                                                 self.dataset.RasterYSize,
-                                                eResampleAlg=1)
+                                                eResampleAlg=2)
+                eleVRT = eleVRT.get_resized_vrt(self.dataset.RasterXSize,
+                                                self.dataset.RasterYSize,
+                                                eResampleAlg=2)
                 self.bandVRTs['incVRT'] = incVRT
+                self.bandVRTs['eleVRT'] = eleVRT
         for key in calDict.keys():
             xml = self.read_xml(calDict[key])
             calibration_LUT_VRTs, longitude, latitude = (
@@ -371,6 +379,17 @@ class Mapper(VRT):
         self._create_band(src, dst)
         self.dataset.FlushCache()
 
+        # Add elevation angle as band
+        name = 'elevation_angle'
+        bandNumberDict[name] = bnmax+1
+        bnmax = bandNumberDict[name]
+        src = {'SourceFilename': self.bandVRTs['eleVRT'].fileName,
+               'SourceBand': 1}
+        dst = {'wkv': 'angle_of_elevation',
+               'name': name}
+        self._create_band(src, dst)
+        self.dataset.FlushCache()
+
         # Add sigma0_VV
         pp = [pol[key] for key in pol]
         if 'VV' not in pp and 'HH' in pp:
@@ -452,5 +471,7 @@ class Mapper(VRT):
         LUT_VRTs = {}
         for LUT in LUT_list:
             LUT_VRTs[LUT] = VRT(array=LUTs[LUT], lat=latitude, lon=longitude)
+
+        #import ipdb; ipdb.set_trace()
 
         return LUT_VRTs, longitude, latitude
