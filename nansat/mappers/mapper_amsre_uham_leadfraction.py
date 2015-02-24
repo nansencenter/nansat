@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	18.02.2015
-# Last modified:18.02.2015 17:28
+# Last modified:24.02.2015 09:26
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -22,6 +22,8 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         
         title_correct = False
+        if not gdalMetadata:
+            raise WrongMapperError
         for key, val in gdalMetadata.iteritems():
             if 'title' in key:
                 if not val == \
