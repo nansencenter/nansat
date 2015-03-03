@@ -3,10 +3,10 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:06.10.2014
+# Last modified:03.03.2015 15:10
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -85,6 +85,45 @@ class TestAllMappers(object):
         n = Nansat(mapperFile, mapperName=mapperName)
         assert type(n) == Nansat
 
+class TestRadarsat(object):
+
+    def test_all_rs2_files(self):
+        testData = DataForTestingMappers()
+        testData.download_all_test_data()
+        for rsfile in testData.mapperData['radarsat2']:
+            yield self.test_incidence_angle, rsfile
+            #yield self.test_export2thredds, rsfile
+            yield self.test_export, rsfile
+
+    def test_export2thredds(self, rsfile):
+        ncfile = 'test.nc'
+        orig = Nansat(rsfile)
+        orig.export2thredds(ncfile, bands = {'incidence_angle': {}})
+        copy = Nansat(ncfile)
+        inc0 = orig['incidence_angle']
+        inc1 = copy['incidence_angle']
+        np.testing.assert_allclose(inc0, inc1)
+        os.unlink(ncfile)
+
+    def test_export(self, rsfile):
+        ncfile = 'test.nc'
+        orig = Nansat(rsfile)
+        orig.export(ncfile)
+        copy = Nansat(ncfile)
+        inc0 = orig['incidence_angle']
+        inc1 = copy['incidence_angle']
+        np.testing.assert_allclose(inc0, inc1)
+        os.unlink(ncfile)
+        
+    def test_incidence_angle(self, rsfile):
+        n = Nansat(rsfile)
+        inc_min = float(n.get_metadata()['NEAR_RANGE_INCIDENCE_ANGLE'])
+        inc_max = float(n.get_metadata()['FAR_RANGE_INCIDENCE_ANGLE'])
+        inc = n['incidence_angle']
+        assert np.all(np.greater_equal(inc[np.isnan(inc)==False], inc_min))
+        assert np.all(np.less_equal(inc[np.isnan(inc)==False], inc_max))
+
+    #def test_export_netcdf(self):
 
 if __name__=='__main__':
     unittest.main()
