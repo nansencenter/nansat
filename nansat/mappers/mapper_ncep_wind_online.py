@@ -80,7 +80,7 @@ class Mapper(VRT, object):
                'gfs.' + nearestModelRun.strftime('%Y%m%d') +
                '%.2d' % modelRunHour +
                '/gfs.t' + '%.2d' % modelRunHour + 'z.master.grbf' +
-               '%.2d' % forecastHour + '.10m.uv.grib2')
+               '%.3d' % forecastHour + '.10m.uv.grib2')
         outFileName = os.path.join(outFolder,
                                    ('ncep_gfs_' +
                                     nearestModelRun.strftime('%Y%m%d_%HH_') +
