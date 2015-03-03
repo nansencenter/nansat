@@ -20,7 +20,7 @@ import sys
 import urllib2
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr, osr, WrongMapperError
 from nansat.vrt import VRT
 
 
@@ -37,7 +37,7 @@ class Mapper(VRT):
         foundDataset = False
         if fileName[0:len(keywordBase)] == keywordBase:
             keywordTime = fileName[len(keywordBase)+1:]
-            requestedTime = datetime.datetime.strptime(keywordTime, '%Y%m%d')
+            requestedTime = datetime.strptime(keywordTime, '%Y%m%d')
             # Search for nearest available file, within the closest 3 days
             for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
                 validTime = (requestedTime + timedelta(days=deltaDay) +
@@ -63,7 +63,7 @@ class Mapper(VRT):
             AttributeError("Not Met.no Svalbard-ice Thredds URL")
         else:
             timestr = fileName[-15:-3]
-            validTime = datetime.datetime.strptime(timestr, '%Y%m%d%H%M')
+            validTime = datetime.strptime(timestr, '%Y%m%d%H%M')
 
         fileName = fileName + '?ice_concentration[0][y][x]'
         srcProjection = osr.SpatialReference()

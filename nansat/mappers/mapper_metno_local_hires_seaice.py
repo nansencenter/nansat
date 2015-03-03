@@ -42,7 +42,7 @@ class Mapper(mg.Mapper):
             raise WrongMapperError
 
         keywordTime = fileName[len(keywordBase)+1:]
-        requestedTime = datetime.datetime.strptime(keywordTime, '%Y%m%d')
+        requestedTime = datetime.strptime(keywordTime, '%Y%m%d')
         # Search for nearest available file, within the closest 3 days
         foundDataset = False
         for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
