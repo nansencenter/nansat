@@ -206,15 +206,15 @@ class Nansat(Domain):
         # Set invalid and missing data to np.nan
         if '_FillValue' in band.GetMetadata():
             fillValue = float(band.GetMetadata()['_FillValue'])
-            try:
-                bandData[bandData == fillValue] = np.nan
-            except:
-                self.logger.info('Cannot replace _FillValue values '
-                                 'with np.NAN in %s!' % bandID)
-        try:
+            bandData[bandData == fillValue] = np.nan
+            # quick hack to avoid problem with wrong _FillValue - see issue
+            # #123
+            if fillValue == 9.96921e+36:
+                altFillValue = -10000.
+                bandData[bandData == altFillValue] = np.nan
+
+        if np.size(np.where(np.isinf(bandData)))>0:
             bandData[np.isinf(bandData)] = np.nan
-        except:
-            self.logger.info('Cannot replace inf values with np.NAN!')
 
         return bandData
 
