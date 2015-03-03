@@ -3,10 +3,10 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Anton Korosov, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:18.11.2014 11:48
+# Last modified:03.03.2015 09:36
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -76,6 +76,26 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n[1].shape, (500, 500))
+
+    def test_export_netcdf(self):
+        ''' Test export and following import of data with bands containing
+        np.nan values
+        '''
+        n = Nansat(self.test_file_gcps)
+        arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
+        n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
+        arrWithNaN = arrNoNaN.copy()
+        arrWithNaN[n.shape()[0]/2-10:n.shape()[0]/2+10,
+            n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
+        n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
+        n.export('test.nc')
+        exported = Nansat('test.nc')
+        earrNoNaN = exported['testBandNoNaN']
+        # Use allclose to allow some roundoff errors
+        self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
+        earrWithNaN = exported['testBandWithNaN']
+        np.testing.assert_allclose(arrWithNaN, earrWithNaN)
+        os.unlink('test.nc')
 
     def test_add_band_twice(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -481,6 +501,8 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_no_transect_interactive(self):
+        ''' Check that get_transect does returns None if interactive mode is
+        '''
         import matplotlib.pyplot as plt
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
