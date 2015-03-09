@@ -3,10 +3,10 @@
 # Purpose:      To test nansat
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
-# Created:      18.06.2014
-# Last modified:07.01.2015 11:03
+# Created:  18.06.2014
+# Last modified:03.03.2015 16:34
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -89,6 +89,10 @@ class DataForTestingMappers(object):
 
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
+                'radarsat2')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
                 'radarsat2')
 
         self.download_test_file(
