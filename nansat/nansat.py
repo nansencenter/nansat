@@ -405,12 +405,16 @@ class Nansat(Domain):
         exportVRT.imag = []
 
         # delete unnecessary bands
+        rmBands = []
+        selfBands = self.bands()
         if bands is not None:
-            srcBands = np.arange(self.vrt.dataset.RasterCount) + 1
-            dstBands = np.array(bands)
-            mask = np.in1d(srcBands, dstBands)
-            rmBands = srcBands[mask==False]
-            exportVRT.delete_bands(rmBands.tolist())
+            for selfBand in selfBands:
+                # if band number or band name is not listed: mark for removal
+                if (selfBand not in bands and
+                    selfBands[selfBand]['name'] not in bands):
+                    rmBands.append(selfBand)
+            # delete bands from VRT
+            exportVRT.delete_bands(rmBands)
 
         # Find complex data band
         complexBands = []
