@@ -414,6 +414,7 @@ class Nansat(Domain):
                     selfBands[selfBand]['name'] not in bands):
                     rmBands.append(selfBand)
             # delete bands from VRT
+            #import ipdb; ipdb.set_trace()
             exportVRT.delete_bands(rmBands)
 
         # Find complex data band
