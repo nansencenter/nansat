@@ -3,7 +3,7 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Anton Korosov, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
 # Last modified:03.03.2015 09:36
@@ -174,6 +174,18 @@ class NansatTest(unittest.TestCase):
         n.export(tmpfilename, bands= [1], driver='GTiff')
         n = Nansat(tmpfilename, mapperName='generic')
 
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertEqual(n.vrt.dataset.RasterCount, 1)
+
+    def test_reproject_and_export_band(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        n2 = Nansat(self.test_file_stere, logLevel=40)
+        n1.reproject(n2)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_export_band.nc')
+        n1.export(tmpfilename, bands=[1])
+
+        n = Nansat(tmpfilename, mapperName='generic')
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
