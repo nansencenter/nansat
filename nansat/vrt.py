@@ -160,8 +160,8 @@ class VRT(object):
                 <ScaleOffset>$ScaleOffset</ScaleOffset>
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
-                <SrcRect xOff="0" yOff="0" xSize="$srcXSize" ySize="$srcYSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$dstXSize" ySize="$dstYSize"/>
+                <SrcRect xOff="$xOff" yOff="$yOff" xSize="$xSize" ySize="$ySize"/>
+                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -484,6 +484,7 @@ class VRT(object):
                 self.logger.debug('SRC[DataType]: %d' % src['DataType'])
 
             srcDs = gdal.Open(src['SourceFilename'])
+
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
                 Dataset=src['SourceFilename'],
@@ -493,10 +494,10 @@ class VRT(object):
                 ScaleOffset=src['ScaleOffset'],
                 ScaleRatio=src['ScaleRatio'],
                 LUT=src['LUT'],
-                srcXSize=srcDs.RasterXSize,
-                srcYSize=srcDs.RasterYSize,
-                dstXSize=srcDs.RasterXSize,
-                dstYSize=srcDs.RasterYSize)
+                xSize=src.get('xSize', srcDs.RasterXSize),
+                ySize=src.get('ySize', srcDs.RasterYSize),
+                xOff=src.get('xOff', 0),
+                yOff=src.get('yOff', 0),)
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
@@ -1374,6 +1375,7 @@ class VRT(object):
         '''
         node0 = Node.create(self.read_xml())
         node0.delNode('VRTRasterBand', options={'band': bandNum})
+        node0.delNode('BandMapping', options={'src': bandNum})
         self.write_xml(node0.rawxml())
 
     def delete_bands(self, bandNums):
@@ -1385,8 +1387,7 @@ class VRT(object):
             elements are int
 
         '''
-        bandNums.sort()
-        bandNums.reverse()
+        bandNums.sort(reverse=True)
         for iBand in bandNums:
             self.delete_band(iBand)
 

@@ -37,7 +37,7 @@ class Mapper(VRT, Globcolour):
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
         if (iFileName[0:4] != 'L3b_' or iFileExt != '.nc' or
-            gdalDataset is not None or gdalMetadata is not None):
+           not os.path.exists(fileName) or gdalDataset is not None):
             raise WrongMapperError
 
         # define shape of GLOBCOLOUR grid
@@ -77,12 +77,10 @@ class Mapper(VRT, Globcolour):
             # get iRawPro, index for converting
             # from GLOBCOLOR-grid to latlonGrid
             yRawPro = np.rint(1 + (GLOBCOLOR_ROWS - 1) *
-                              (latlonGrid[0] + 90) / 180)
-            lon_step_Mat = 1 / np.cos(np.pi * latlonGrid[0] / 180.) / 24.
-            xRawPro = np.rint(1 + (latlonGrid[1] + 180) / lon_step_Mat)
-            iRawPro = xRawPro + (yRawPro - 1) * GLOBCOLOR_COLS
-            iRawPro[iRawPro < 0] = 0
-            iRawPro = np.rint(iRawPro).astype('uint32')
+                              (latlonGrid[0] + 90) / 180.)
+            lon_step_Mat = 24. * np.cos(np.pi * latlonGrid[0] / 180.)
+            xRawPro = np.rint(1 + (latlonGrid[1] + 180) * lon_step_Mat)
+            iRawPro = xRawPro.astype('uint32') + (yRawPro.astype('uint32') - 1) * GLOBCOLOR_COLS
             yRawPro = None
             xRawPro = None
 

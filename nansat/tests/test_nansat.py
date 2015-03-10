@@ -6,7 +6,7 @@
 # Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:18.11.2014 11:48
+# Last modified:03.03.2015 09:36
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -19,8 +19,10 @@ import sys
 import glob
 from types import ModuleType, FloatType
 import datetime
+
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.io.netcdf import netcdf_file
 
 from nansat import Nansat, Domain
 from nansat.tools import gdal, OptionError
@@ -74,6 +76,26 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n[1].shape, (500, 500))
+
+    def test_export_netcdf(self):
+        ''' Test export and following import of data with bands containing
+        np.nan values
+        '''
+        n = Nansat(self.test_file_gcps)
+        arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
+        n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
+        arrWithNaN = arrNoNaN.copy()
+        arrWithNaN[n.shape()[0]/2-10:n.shape()[0]/2+10,
+            n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
+        n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
+        n.export('test.nc')
+        exported = Nansat('test.nc')
+        earrNoNaN = exported['testBandNoNaN']
+        # Use allclose to allow some roundoff errors
+        self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
+        earrWithNaN = exported['testBandWithNaN']
+        np.testing.assert_allclose(arrWithNaN, earrWithNaN)
+        os.unlink('test.nc')
 
     def test_add_band_twice(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -155,6 +177,28 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
+    def test_export_band_by_name(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export_band.tif')
+        n.export(tmpfilename, bands=['L_645'], driver='GTiff')
+        n = Nansat(tmpfilename, mapperName='generic')
+
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertEqual(n.vrt.dataset.RasterCount, 1)
+
+    def test_reproject_and_export_band(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        n2 = Nansat(self.test_file_stere, logLevel=40)
+        n1.reproject(n2)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_export_band.nc')
+        n1.export(tmpfilename, bands=[1])
+
+        n = Nansat(tmpfilename, mapperName='generic')
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertEqual(n.vrt.dataset.RasterCount, 1)
+
     def test_export2thredds_stere_one_band(self):
         # skip the test if anaconda is used
         if IS_CONDA:
@@ -188,6 +232,19 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
         self.assertRaises(OptionError, n.export2thredds, tmpfilename, ['L_645'])
+
+    def test_export2thredds_longlat(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   "-te 27 70 31 72 -ts 200 200")
+        n.reproject(d)
+
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export2thredds_longlat.nc')
+        n.export2thredds(tmpfilename, ['L_469'])
+        ncI = netcdf_file(tmpfilename, 'r')
+        ncIVar = ncI.variables['L_469']
+        self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -466,6 +523,8 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(pl['shape0'][0]), np.ndarray)
 
     def test_get_no_transect_interactive(self):
+        ''' Check that get_transect does returns None if interactive mode is
+        '''
         import matplotlib.pyplot as plt
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)

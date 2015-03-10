@@ -190,6 +190,11 @@ class Mapper(VRT):
             # no projection was found in dataset or metadata:
             # generate WGS84 by default
             projection = NSR().wkt
+        # fix problem with MET.NO files where a, b given in m and XC/YC in km
+        if ('UNIT["kilometre"' in projection and
+            ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]' in projection):
+            projection = projection.replace(',SPHEROID["Spheroid",6378273,7.331926543631893e-12]',
+                                            '')
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
 
