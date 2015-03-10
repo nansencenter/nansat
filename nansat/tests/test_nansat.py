@@ -177,6 +177,16 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
+    def test_export_band_by_name(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export_band.tif')
+        n.export(tmpfilename, bands=['L_645'], driver='GTiff')
+        n = Nansat(tmpfilename, mapperName='generic')
+
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertEqual(n.vrt.dataset.RasterCount, 1)
+
     def test_reproject_and_export_band(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         n2 = Nansat(self.test_file_stere, logLevel=40)
