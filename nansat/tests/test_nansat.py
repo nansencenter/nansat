@@ -3,10 +3,10 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:18.11.2014 11:48
+# Last modified:16.03.2015 13:19
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -154,6 +154,25 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
+
+    def test_export_selected_bands(self):
+        n = Nansat(self.test_file_gcps)
+        resfile = 'tmp.nc'
+        new_band = np.random.randn(n.shape()[0], n.shape()[1])
+        n.add_band(new_band, {'name': 'newBand'})
+        # Test with band numbers
+        n.export(resfile, bands=[4, 2])
+        self.assertTrue(os.path.exists(resfile))
+        nn = Nansat(resfile)
+        self.assertTrue(nn.has_band('newBand'))
+        self.assertTrue(nn.has_band('L_555'))
+        os.unlink(resfile)
+        # Test with band names - not yet implemented
+        #n.export(resfile, bands=['newBand', 'L_555'])
+        #nn = Nansat(resfile)
+        #self.assertTrue(nn.has_band('newBand'))
+        #self.assertTrue(nn.has_band('L_555'))
+        #os.unlink(resfile)
 
     def test_export2thredds_stere_one_band(self):
         # skip the test if anaconda is used
