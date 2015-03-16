@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg)](https://coveralls.io/r/nansencenter/nansat)
+
 ![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
 nansat
 ======
