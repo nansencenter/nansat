@@ -220,7 +220,12 @@ class Mapper(VRT):
                 self.dataset.SetGeoTransform(geoTransform)
 
         if 'start_date' in gdalMetadata:
-            self._set_time(parse(gdalMetadata['start_date']))
+            try:
+                startDate = parse(gdalMetadata['start_date'])
+            except ValueError:
+                self.logger.error('Time format is wrong in input file!')
+            else:
+                self._set_time(startDate)
 
         self.logger.warning('Use generic mapper - OK!')
 
