@@ -1599,8 +1599,7 @@ class VRT(object):
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize,
-                            factor, eResampleAlg):
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, eResampleAlg):
         '''Create VRT and replace step in the source'''
 
         subsamVRT = self.get_super_vrt()

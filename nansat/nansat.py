@@ -898,7 +898,6 @@ class Nansat(Domain):
         if eResampleAlg <= 0:
             self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize,
                                                    newRasterYSize,
-                                                   factor,
                                                    eResampleAlg)
         else:
             # update size and GeoTranform in XML of the warped VRT object
