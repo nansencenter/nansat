@@ -3,10 +3,10 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:	Morten Wergeland Hansen
+# Modified:     Anton Korosov
 #
 # Created:      18.06.2014
-# Last modified:17.12.2014 15:17
+# Last modified:13.04.2015 15:17
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -50,7 +50,7 @@ class TestDataForTestingMappers(unittest.TestCase):
                 'ncep')
         self.assertTrue('ncep' in t.mapperData)
         self.assertEqual(type(t.mapperData['ncep']), list)
-        for ifile in t.mapperData['ncep']:
+        for ifile, kwa in t.mapperData['ncep']:
             self.assertTrue(os.path.exists(ifile))
 
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
@@ -63,13 +63,13 @@ class TestAllMappers(object):
 
     def test_mappers(self):
         for mapper in self.testData.mapperData:
-            mfiles = self.testData.mapperData[mapper]
-            for f in mfiles:
+            mFiles_kwargs = self.testData.mapperData[mapper]
+            for f, kwa in mFiles_kwargs:
                 print mapper, '->', f
                 # Test call to Nansat, mapper not specified
-                yield self.open_with_nansat, f
+                yield self.open_with_nansat, f, None, kwa
                 # Test call to Nansat, mapper specified
-                yield self.open_with_nansat, f, mapper
+                yield self.open_with_nansat, f, mapper, kwa
                 # Test nansat.mapper()
                 # Test nansat.start_time()
                 # Test nansat.end_time()
@@ -77,20 +77,24 @@ class TestAllMappers(object):
                 # Test that SAR objects have sigma0 intensity bands in addition
                 # to complex bands
                 if mapper == 'radarsat2' or mapper == 'asar':
-                    yield self.exist_intensity_band, f, mapper
+                    yield self.exist_intensity_band, f, mapper, kwa
 
 
-    def open_with_nansat(self, file, mapper=None):
+    def open_with_nansat(self, file, mapper=None, kwargs=None):
         ''' Perform call to Nansat and check that it returns a Nansat object '''
+        if not kwargs:
+            kwargs = {}
         if mapper:
-            n = Nansat(file, mapperName=mapper)
+            n = Nansat(file, mapperName=mapper, **kwargs)
         else:
-            n = Nansat(file)
+            n = Nansat(file, **kwargs)
         assert type(n) == Nansat
 
-    def exist_intensity_band(self, mapperFile, mapperName):
+    def exist_intensity_band(self, mapperFile, mapperName, kwargs=None):
         ''' test if intensity bands exist for complex data '''
-        n = Nansat(mapperFile, mapperName=mapperName)
+        if not kwargs:
+            kwargs = {}
+        n = Nansat(mapperFile, mapperName=mapperName, **kwargs)
         allBandNames = []
         complexBandNames = []
         for iBand in range(n.vrt.dataset.RasterCount):
