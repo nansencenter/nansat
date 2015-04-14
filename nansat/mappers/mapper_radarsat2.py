@@ -248,3 +248,5 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('sensor', 'SAR')
         self.dataset.SetMetadataItem('satellite', 'Radarsat2')
         self.dataset.SetMetadataItem('mapper', 'radarsat2')
+
+        self._add_swath_mask_band()

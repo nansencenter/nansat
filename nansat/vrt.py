@@ -601,6 +601,25 @@ class VRT(object):
         # return name of the created band
         return dst['name']
 
+    def _add_swath_mask_band(self):
+        ''' Create a new band where all values = 1
+
+        Modifies
+        ---------
+        Single band 'swathmask' with ones is added to the self.dataset
+
+        '''
+        self._create_band(
+            src=[{
+                'SourceFilename': self.fileName,
+                'SourceBand':  1,
+                'DataType': gdal.GDT_Byte}],
+            dst={
+                'dataType' : gdal.GDT_Byte,
+                'wkv' : 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            })
+
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands
 

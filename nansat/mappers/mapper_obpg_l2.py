@@ -188,18 +188,6 @@ class Mapper(VRT):
                     metaDict.append(metaEntryRrsw)
                     bandNo += 1
 
-        print rrsSubDataset
-        metaDict.append({
-            'src': [{
-                'SourceFilename': rrsSubDataset,
-                'SourceBand':  1,
-                'DataType': 6}],
-            'dst': {
-                'dataType' : gdal.GDT_Byte,
-                'name' : 'one_mask',
-                'PixelFunctionType': 'OnesPixelFunc',
-            }})
-
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
@@ -273,3 +261,5 @@ class Mapper(VRT):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
+
+        self._add_swath_mask_band()
