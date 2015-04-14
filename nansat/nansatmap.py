@@ -337,6 +337,31 @@ class Nansatmap(Basemap):
         self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl) - 1
 
+    def imshow(self, data, **kwargs):
+        ''' Make RGB plot over the map
+
+        data : numpy array
+            RGB or RGBA input data
+        **kwargs:
+            Parameters for Basemap.imshow
+
+        Modifies
+        ---------
+        self.mpl : list
+            append AxesImage object with imshow
+
+        '''
+        # Create X/Y axes
+        self._create_xy_grids()
+
+        # Plot data using imshow
+        self.mpl.append(Basemap.imshow(self, data,
+                                  extent=[self.x.min(), self.x.max(),
+                                          self.y.min(), self.y.max()],
+                                  origin='upper',
+                                  **kwargs))
+        self.colorbar = len(self.mpl) - 1
+
     def pcolormesh(self, data, **kwargs):
         '''Make a pseudo-color plot over the map
 
