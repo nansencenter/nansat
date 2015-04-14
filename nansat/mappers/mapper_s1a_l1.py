@@ -474,6 +474,4 @@ class Mapper(VRT):
         for LUT in LUT_list:
             LUT_VRTs[LUT] = VRT(array=LUTs[LUT], lat=latitude, lon=longitude)
 
-        #import ipdb; ipdb.set_trace()
-
         return LUT_VRTs, longitude, latitude

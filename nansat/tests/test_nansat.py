@@ -368,6 +368,15 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n.shape(), (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
 
+    def test_reproject_with_swathmask(self):
+        n1 = Nansat(self.test_file_complex, logLevel=40, swathmask=True)
+        d = Domain(4326, '-te -92.08 26.85 -92.00 26.91 -ts 200 200')
+        n1.reproject(d)
+        b1 = n1[1]
+
+        self.assertTrue(np.isnan(b1[0,0]))
+        self.assertTrue(np.isfinite(b1[100, 100]))
+
     def test_reproject_stere(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         n2 = Nansat(self.test_file_stere, logLevel=40)
