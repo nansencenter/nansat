@@ -216,8 +216,14 @@ class Nansat(Domain):
                 altFillValue = -10000.
                 bandData[bandData == altFillValue] = np.nan
 
-        if np.size(np.where(np.isinf(bandData)))>0:
+        # replace infs with np.NAN
+        if np.size(np.where(np.isinf(bandData))) > 0:
             bandData[np.isinf(bandData)] = np.nan
+
+        # erase out-of-swath pixels with np.Nan (if self is repojected)
+        if self.has_band('swathmask') and self.vrt.vrt is not None:
+            swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
+            bandData[swathmask == 0] = np.nan
 
         return bandData
 
