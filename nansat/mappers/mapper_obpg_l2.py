@@ -195,8 +195,9 @@ class Mapper(VRT):
                 'SourceBand':  1,
                 'DataType': 6}],
             'dst': {
+                'dataType' : gdal.GDT_Byte,
                 'name' : 'one_mask',
-                'PixelFunctionType': 'SimplyOne',
+                'PixelFunctionType': 'OnesPixelFunc',
             }})
 
         # add bands with metadata and corresponding values to the empty VRT

@@ -1093,6 +1093,27 @@ CPLErr IntensityInt(void **papoSources, int nSources, void *pData,
 } /* IntensityInt */
 
 
+CPLErr OnesPixelFunc(void **papoSources, int nSources, void *pData,
+                    int nXSize, int nYSize,
+                    GDALDataType eSrcType, GDALDataType eBufType,
+                    int nPixelSpace, int nLineSpace)
+{
+    char one=1;
+    int iLine, iCol;
+
+    /* ---- Set all pixels to 1 ---- */
+    for( iLine = 0; iLine < nYSize; iLine++ ){
+        for( iCol = 0; iCol < nXSize; iCol++ ){
+
+        GDALCopyWords(&one, GDT_Byte, 0,
+                ((GByte *)pData) + nLineSpace * iLine + iCol * nPixelSpace,
+                eBufType, nPixelSpace, 1);
+        }
+    }
+    /* ---- Return success ---- */
+    return CE_None;
+}
+
 
 
 /************************************************************************/
@@ -1101,10 +1122,6 @@ CPLErr IntensityInt(void **papoSources, int nSources, void *pData,
 /* scientifc function */
 double NormReflectanceToRemSensReflectanceFunction(double *b){
     return b[0] / (0.52 + 1.7 * b[0]);
-}
-
-double SimplyOneFunction(double *b){
-    return 1.;
 }
 
 double RawcountsIncidenceToSigma0Function(double *b){
@@ -1222,19 +1239,6 @@ CPLErr NormReflectanceToRemSensReflectance(void **papoSources, int nSources, voi
         int nPixelSpace, int nLineSpace){
 
     GenericPixelFunction(NormReflectanceToRemSensReflectanceFunction,
-        papoSources, nSources,  pData,
-        nXSize, nYSize, eSrcType, eBufType,
-        nPixelSpace, nLineSpace);
-
-    return CE_None;
-}
-
-CPLErr SimplyOne(void **papoSources, int nSources, void *pData,
-        int nXSize, int nYSize,
-        GDALDataType eSrcType, GDALDataType eBufType,
-        int nPixelSpace, int nLineSpace){
-
-    GenericPixelFunction(SimplyOneFunction,
         papoSources, nSources,  pData,
         nXSize, nYSize, eSrcType, eBufType,
         nPixelSpace, nLineSpace);
@@ -1540,8 +1544,7 @@ CPLErr CPL_STDCALL GDALRegisterDefaultPixelFunc()
     GDALAddDerivedBandPixelFunc("Sentinel1Calibration", Sentinel1Calibration);
     GDALAddDerivedBandPixelFunc("Sentinel1Sigma0HHToSigma0VV", Sentinel1Sigma0HHToSigma0VV);
     GDALAddDerivedBandPixelFunc("IntensityInt", IntensityInt);
-    GDALAddDerivedBandPixelFunc("SimplyOne", SimplyOne);
-
+    GDALAddDerivedBandPixelFunc("OnesPixelFunc", OnesPixelFunc);
     return CE_None;
 }
 
