@@ -167,6 +167,7 @@ class Mapper(VRT):
                 bandNo += 1
 
                 if subBandName == 'Rrs':
+                    rrsSubDataset = subDataset[0]
                     metaEntryRrsw = {
                         'src': [{
                             'SourceFilename': subDataset[0],
@@ -186,6 +187,17 @@ class Mapper(VRT):
                                       (bandNo, str(metaEntryRrsw)))
                     metaDict.append(metaEntryRrsw)
                     bandNo += 1
+
+        print rrsSubDataset
+        metaDict.append({
+            'src': [{
+                'SourceFilename': rrsSubDataset,
+                'SourceBand':  1,
+                'DataType': 6}],
+            'dst': {
+                'name' : 'one_mask',
+                'PixelFunctionType': 'SimplyOne',
+            }})
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
