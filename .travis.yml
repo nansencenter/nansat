@@ -13,6 +13,7 @@ install:
   - conda update --yes conda
   - conda install --yes -c https://conda.binstar.org/osgeo gdal
   - conda install --yes scipy pillow matplotlib basemap nose
+  - python -c 'import gdal; print gdal.__file__'
   - python setup.py install
 
 script: "cd ..; nosetests nansat.tests"
