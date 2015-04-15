@@ -10,12 +10,12 @@ before_install:
   - export PATH=/home/travis/miniconda/bin:$PATH
 
 install:
-  - conda update --yes conda
-  - conda install --yes numpy scipy matplotlib nose
-  - conda install --yes -c https://conda.binstar.org/osgeo gdal
+  - conda update -q --yes conda
+  - conda install -q --yes numpy scipy matplotlib nose
+  - conda install -q --yes -c https://conda.binstar.org/osgeo gdal
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
-  - pip install basemap --allow-external basemap --allow-unverified basemap
+  - pip install -q basemap --allow-external basemap --allow-unverified basemap
   - python -c 'import gdal; print gdal.__file__'
   - python -c 'from mpl_toolkits.basemap import Basemap'
   - python setup.py install
