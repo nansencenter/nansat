@@ -261,5 +261,3 @@ class Mapper(VRT):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
-
-        self._add_swath_mask_band()

@@ -445,8 +445,6 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('satellite', 'Sentinel-1')
         self.dataset.SetMetadataItem('mapper', 's1a_l1')
 
-        self._add_swath_mask_band()
-
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)
         vecList = n.node(vectorListName)

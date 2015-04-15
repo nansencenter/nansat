@@ -220,8 +220,9 @@ class Nansat(Domain):
         if np.size(np.where(np.isinf(bandData))) > 0:
             bandData[np.isinf(bandData)] = np.nan
 
-        # erase out-of-swath pixels with np.Nan (if self is repojected)
-        if self.has_band('swathmask') and self.vrt.vrt is not None:
+        # erase out-of-swath pixels with np.Nan (if not integer)
+        if  (self.has_band('swathmask') and
+             bandData.dtype.char in np.typecodes['AllFloat']):
             swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
             bandData[swathmask == 0] = np.nan
 
@@ -997,7 +998,8 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, tps=None, **kwargs):
+                  WorkingDataType=None, tps=None, skip_gcps=1, addmask=True,
+                  **kwargs):
         ''' Change projection of the object based on the given Domain
 
         Create superVRT from self.vrt with AutoCreateWarpedVRT() using
@@ -1034,6 +1036,9 @@ class Nansat(Domain):
             If not given explicitly, 'skip_gcps' is fetched from the
             metadata of self, or from dstDomain (as set by mapper or user).
             [defaults to 1 if not specified, i.e. using all GCPs]
+        addmask : bool
+            If True, add band 'swathmask'. 1 - valid data, 0 no-data.
+            This band is used to replace no-data values with np.nan
 
         Modifies
         ---------
@@ -1099,12 +1104,16 @@ class Nansat(Domain):
         # when using TPS (if requested)
         src_skip_gcps = self.vrt.dataset.GetMetadataItem('skip_gcps')
         dst_skip_gcps = dstDomain.vrt.dataset.GetMetadataItem('skip_gcps')
-        if not 'skip_gcps' in kwargs.keys():  # If not given explicitly...
-            kwargs['skip_gcps'] = 1  # default (use all GCPs)
-            if dst_skip_gcps is not None:  # ...or use setting from dst
-                kwargs['skip_gcps'] = int(dst_skip_gcps)
-            if src_skip_gcps is not None:  # ...or use setting from src
-                kwargs['skip_gcps'] = int(src_skip_gcps)
+        kwargs['skip_gcps'] = skip_gcps  # default (use all GCPs)
+        if dst_skip_gcps is not None:  # ...or use setting from dst
+            kwargs['skip_gcps'] = int(dst_skip_gcps)
+        if src_skip_gcps is not None:  # ...or use setting from src
+            kwargs['skip_gcps'] = int(src_skip_gcps)
+
+        # add band that masks valid values with 1 and nodata with 0
+        # after reproject
+        if addmask:
+            self.vrt._add_swath_mask_band()
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,

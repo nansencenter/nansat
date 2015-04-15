@@ -19,7 +19,6 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
                  rmMetadatas=['NETCDF_VARNAME', '_Unsigned',
                               'ScaleRatio', 'ScaleOffset', 'dods_variable'],
-                 swathmask=False,
                  **kwargs):
         # Remove 'NC_GLOBAL#' and 'GDAL_' and 'NANSAT_'
         # from keys in gdalDataset
@@ -229,10 +228,6 @@ class Mapper(VRT):
                 self._set_time(startDate)
 
         self.logger.info('Use generic mapper - OK!')
-
-        # add swath mask if needed
-        if swathmask:
-            self._add_swath_mask_band()
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
