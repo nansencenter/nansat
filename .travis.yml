@@ -8,13 +8,16 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda/bin:$PATH
-  - conda update --yes conda
 
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION setuptools numpy scipy gdal pillow basemap nose netcdf4
-  - conda install --yes -c jjhelmus gdal-data
-  - conda install --yes -c rsignell proj4
+  - conda update -q --yes conda
+  - conda install -q --yes numpy scipy matplotlib nose
+  - conda install -q --yes -c https://conda.binstar.org/osgeo gdal
+  - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
+  - export GEOS_DIR=/home/vagrant/miniconda/
+  - pip install -q basemap --allow-external basemap --allow-unverified basemap
+  - python -c 'import gdal; print gdal.__file__'
+  - python -c 'from mpl_toolkits.basemap import Basemap'
   - python setup.py install
-  - export GDAL_DATA=/home/travis/miniconda/share/gdal
 
 script: "cd ..; nosetests nansat.tests"
