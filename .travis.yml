@@ -24,4 +24,4 @@ install:
 script: #"cd ..; nosetests --with-coverage --cover-package=nansat nansat.tests"
   coverage run --source=nansat setup.py test
 after_success:
-  coverage
+  coveralls
