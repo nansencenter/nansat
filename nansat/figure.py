@@ -32,7 +32,7 @@ except:
 from nansat.tools import add_logger
 
 
-class Figure():
+class Figure(object):
     '''Perform opeartions with graphical files: create, append legend, save.
 
     Figure instance is created in the Nansat.write_figure method
