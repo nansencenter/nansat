@@ -12,6 +12,7 @@
 #-------------------------------------------------------------------------------
 import datetime
 from osgeo import gdal, osr
+from nansat.tools import WrongMapperError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
