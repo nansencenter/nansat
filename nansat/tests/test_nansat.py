@@ -3,7 +3,7 @@
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
 # Last modified:16.04.2015 10:48
@@ -21,6 +21,7 @@ from types import ModuleType, FloatType
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.io.netcdf import netcdf_file
 
 from nansat import Nansat, Domain
 from nansat.tools import gdal, OptionError
@@ -71,7 +72,7 @@ class NansatTest(unittest.TestCase):
         copy = Nansat(testFile)
         lon0, lat0 = orig.get_geolocation_grids()
         lon1, lat1 = copy.get_geolocation_grids()
-        np.testing.assert_allclose(lon0, lon1) 
+        np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
         os.unlink(ncfile)
 
@@ -144,11 +145,17 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(hb)
 
     def test_export(self):
+        ''' Should export file with GCPs '''
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
         n.export(tmpfilename)
 
+        ncf = netcdf_file(tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
+        self.assertTrue('GCPX' in ncf.variables)
+        self.assertTrue('GCPY' in ncf.variables)
+        self.assertTrue('GCPPixel' in ncf.variables)
+        self.assertTrue('GCPLine' in ncf.variables)
 
     def test_export_gtiff(self):
         n = Nansat(self.test_file_gcps, logLevel=40)

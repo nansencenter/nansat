@@ -544,13 +544,42 @@ class Nansat(Domain):
 
     def _add_gcps(self, fileName, gcps, bottomup):
         ''' Add 4 variables with gcps to the generated netCDF file '''
-        gcpVariables = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
+        gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
 
         # check if file exists
         if not os.path.exists(fileName):
             self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % fileName)
             return 1
 
+        # open output file for adding GCPs
+        try:
+            ncFile = netcdf_file(fileName, 'a')
+        except TypeError as e:
+            self.logger.warning(e.strerror)
+            return 1
+
+        # get GCP values into single array from GCPs
+        gcpValues = np.zeros((5, len(gcps)))
+        for i, gcp in enumerate(gcps):
+            gcpValues[0, i] = gcp.GCPX
+            gcpValues[1, i] = gcp.GCPY
+            gcpValues[2, i] = gcp.GCPZ
+            gcpValues[3, i] = gcp.GCPPixel
+            gcpValues[4, i] = gcp.GCPLine
+
+        # make gcps dimentions
+        ncFile.createDimension('gcps', len(gcps))
+        # make gcps variables and add data
+        for i, var in enumerate(gcpVariables):
+            var = ncFile.createVariable(var, 'f', ('gcps',))
+            var[:] = gcpValues[i]
+
+        # add GCP Projection
+        srs = self.vrt.dataset.GetGCPProjection()
+        ncFile.GDAL_NANSAT_GCPProjection = srs.replace(',',  '|').replace('"', '&')
+
+        # write data, close file
+        ncFile.close()
 
     def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
