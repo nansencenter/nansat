@@ -246,6 +246,14 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
+        <standard_name>swath_binary_mask</standard_name>
+        <long_name>Swath mask</long_name>
+        <short_name>swathmask</short_name>
+        <units></units>
+        <minmax>0 1</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
         <standard_name>latitude</standard_name>
         <long_name>Latitude</long_name>
         <short_name>latitude</short_name>

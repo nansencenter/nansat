@@ -227,7 +227,7 @@ class Mapper(VRT):
             else:
                 self._set_time(startDate)
 
-        self.logger.warning('Use generic mapper - OK!')
+        self.logger.info('Use generic mapper - OK!')
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''

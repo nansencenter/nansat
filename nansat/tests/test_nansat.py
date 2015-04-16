@@ -367,6 +367,29 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(n.shape(), (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+
+    def test_reproject_of_complex(self):
+        ''' Should return np.nan in areas out of swath '''
+        n = Nansat(self.test_file_complex, logLevel=40)
+        d = Domain(4326, '-te -92.08 26.85 -92.00 26.91 -ts 200 200')
+        n.reproject(d)
+        b = n[1]
+
+        self.assertTrue(n.has_band('swathmask'))
+        self.assertTrue(np.isnan(b[0,0]))
+        self.assertTrue(np.isfinite(b[100, 100]))
+
+    def test_reproject_no_addmask(self):
+        ''' Should not add swath mask and return 0 in areas out of swath '''
+        n = Nansat(self.test_file_complex, logLevel=40)
+        d = Domain(4326, '-te -92.08 26.85 -92.00 26.91 -ts 200 200')
+        n.reproject(d, addmask=False)
+        b = n[1]
+
+        self.assertTrue(not n.has_band('swathmask'))
+        self.assertTrue(np.isfinite(b[0,0]))
+        self.assertTrue(np.isfinite(b[100, 100]))
 
     def test_reproject_stere(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)

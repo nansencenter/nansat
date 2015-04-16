@@ -167,6 +167,7 @@ class Mapper(VRT):
                 bandNo += 1
 
                 if subBandName == 'Rrs':
+                    rrsSubDataset = subDataset[0]
                     metaEntryRrsw = {
                         'src': [{
                             'SourceFilename': subDataset[0],
