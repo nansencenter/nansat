@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/nansencenter/nansat.svg?branch=master)](https://travis-ci.org/nansencenter/nansat)
-[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg)](https://coveralls.io/r/nansencenter/nansat)
+[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master)](https://coveralls.io/r/nansencenter/nansat?branch=master)
 
 ![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
 nansat
