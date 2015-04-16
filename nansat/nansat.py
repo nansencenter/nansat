@@ -460,12 +460,6 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
-        gcps = exportVRT.dataset.GetGCPs()
-        if addGCPs and len(gcps) > 0:
-            # add GCPs in VRT metadata and remove geotransform
-            exportVRT._add_gcp_metadata(bottomup)
-            exportVRT._remove_geotransform()
-
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
         exportVRT.dataset.SetMetadataItem('NANSAT_Projection',
@@ -539,7 +533,24 @@ class Nansat(Domain):
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
                                                           options=options)
+
+        gcps = exportVRT.dataset.GetGCPs()
+        if driver=='netCDF' and addGCPs and len(gcps) > 0:
+            # add GCPs into netCDF file as separate float varables
+            self._add_gcps(fileName, gcps, bottomup)
+            exportVRT._remove_geotransform()
+
         self.logger.debug('Export - OK!')
+
+    def _add_gcps(self, fileName, gcps, bottomup):
+        ''' Add 4 variables with gcps to the generated netCDF file '''
+        gcpVariables = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
+
+        # check if file exists
+        if not os.path.exists(fileName):
+            self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % fileName)
+            return 1
+
 
     def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
