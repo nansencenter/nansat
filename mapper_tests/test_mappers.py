@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:16.04.2015 15:23
+# Last modified:16.04.2015 21:37
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -135,12 +135,11 @@ class TestRadarsat(object):
         lon1, lat1 = copy.get_geolocation_grids()
         sigma0_0 = orig['sigma0_HH']
         sigma0_1 = copy['sigma0_HH']
+        np.testing.assert_allclose(lon0, lon1) 
+        np.testing.assert_allclose(lat0, lat1)
+        # If the next tests fail, it could indicate that the data is flipped
+        # check by pyplot.imshow orig vs copy...
         np.testing.assert_allclose(inc0, inc1, rtol=1e-3)
-        # Make sure data is not flipped
-        # OBS: tolerance is reduced to test flipping - see other tests
-        # regarding geolocation of exported vs original
-        np.testing.assert_allclose(lon0, lon1, rtol=1e-2) 
-        np.testing.assert_allclose(lat0, lat1, rtol=1e-2)
         np.testing.assert_allclose(sigma0_0, sigma0_1)
         os.unlink(ncfile)
         

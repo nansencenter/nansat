@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:15.04.2015 12:13
+# Last modified:16.04.2015 21:48
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -95,7 +95,7 @@ class DataForTestingMappers(object):
                 'radarsat2')
 
         self.download_test_file(
-                '/Users/mortenh/projects/seaU-EU/SAR_data/radarsat-2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
+                '/Data/sat/test_data_nansat_mappers/radarsat-2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
                 'radarsat2')
 
         self.download_test_file(
