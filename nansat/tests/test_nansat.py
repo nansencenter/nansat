@@ -66,16 +66,16 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n[1].shape, (500, 500))
 
     def test_geolocation_of_exportedNC_vs_original(self):
+        ''' Lon/lat in original and exported file should coincide '''
         orig = Nansat(self.test_file_gcps)
-        testFile = 'test.nc'
-        orig.export(testFile)
-        copy = Nansat(testFile)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
+        orig.export(tmpfilename)
+
+        copy = Nansat(tmpfilename)
         lon0, lat0 = orig.get_geolocation_grids()
         lon1, lat1 = copy.get_geolocation_grids()
         np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
-        os.unlink(ncfile)
-
 
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")

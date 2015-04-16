@@ -555,7 +555,7 @@ class Nansat(Domain):
         try:
             ncFile = netcdf_file(fileName, 'a')
         except TypeError as e:
-            self.logger.warning(e.strerror)
+            self.logger.warning('%s' % e)
             return 1
 
         # get GCP values into single array from GCPs
