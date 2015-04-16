@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:03.03.2015 15:10
+# Last modified:16.04.2015 10:47
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -64,11 +64,8 @@ class TestAllMappers(object):
             for mapperFile in mapperFiles:
                 print mapperFile
                 yield self.open_with_automatic_mapper, mapperFile
-
-    def open_with_automatic_mapper(self, mapperFile):
-        ''' Perform call to Nansat with each file as a separate test '''
-        n = Nansat(mapperFile)
-        assert type(n) == Nansat
+                yield self.test_geolocation_of_exportedNC_vs_original, \
+                        mapperFile
 
     def test_specific_mapper(self):
         ''' Should open all downloaded files with automatically selected mapper '''
@@ -79,6 +76,22 @@ class TestAllMappers(object):
             for mapperFile in mapperFiles:
                 print mapperName, '->', mapperFile
                 yield self.open_with_specific_mapper, mapperFile, mapperName
+
+    def test_geolocation_of_exportedNC_vs_original(self, file):
+        orig = Nansat(file)
+        testFile = 'test.nc'
+        orig.export(testFile)
+        copy = Nansat(testFile)
+        lon0, lat0 = orig.get_geolocation_grids()
+        lon1, lat1 = copy.get_geolocation_grids()
+        np.testing.assert_allclose(lon0, lon1) 
+        np.testing.assert_allclose(lat0, lat1)
+        os.unlink(ncfile)
+
+    def open_with_automatic_mapper(self, mapperFile):
+        ''' Perform call to Nansat with each file as a separate test '''
+        n = Nansat(mapperFile)
+        assert type(n) == Nansat
 
     def open_with_specific_mapper(self, mapperFile, mapperName):
         ''' Perform call to Nansat with each file as a separate test '''
@@ -91,7 +104,7 @@ class TestRadarsat(object):
         testData = DataForTestingMappers()
         testData.download_all_test_data()
         for rsfile in testData.mapperData['radarsat2']:
-            yield self.test_incidence_angle, rsfile
+            #yield self.test_incidence_angle, rsfile
             #yield self.test_export2thredds, rsfile
             yield self.test_export, rsfile
 
@@ -112,7 +125,17 @@ class TestRadarsat(object):
         copy = Nansat(ncfile)
         inc0 = orig['incidence_angle']
         inc1 = copy['incidence_angle']
-        np.testing.assert_allclose(inc0, inc1)
+        lon0, lat0 = orig.get_geolocation_grids()
+        lon1, lat1 = copy.get_geolocation_grids()
+        sigma0_0 = orig['sigma0_HH']
+        sigma0_1 = copy['sigma0_HH']
+        np.testing.assert_allclose(inc0, inc1, rtol=1e-3)
+        # Make sure data is not flipped
+        # OBS: tolerance is reduced to test flipping - see other tests
+        # regarding geolocation of exported vs original
+        np.testing.assert_allclose(lon0, lon1, rtol=1e-2) 
+        np.testing.assert_allclose(lat0, lat1, rtol=1e-2)
+        np.testing.assert_allclose(sigma0_0, sigma0_1)
         os.unlink(ncfile)
         
     def test_incidence_angle(self, rsfile):

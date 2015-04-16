@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:16.03.2015 13:19
+# Last modified:16.04.2015 10:48
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -63,6 +63,18 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n[1].shape, (500, 500))
+
+    def test_geolocation_of_exportedNC_vs_original(self):
+        orig = Nansat(self.test_file_gcps)
+        testFile = 'test.nc'
+        orig.export(testFile)
+        copy = Nansat(testFile)
+        lon0, lat0 = orig.get_geolocation_grids()
+        lon1, lat1 = copy.get_geolocation_grids()
+        np.testing.assert_allclose(lon0, lon1) 
+        np.testing.assert_allclose(lat0, lat1)
+        os.unlink(ncfile)
+
 
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
