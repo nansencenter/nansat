@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:16.04.2015 10:47
+# Last modified:16.04.2015 15:23
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -63,8 +63,10 @@ class TestAllMappers(object):
             mapperFiles = testData.mapperData[mapper]
             for mapperFile in mapperFiles:
                 print mapperFile
+                # OBS: do not yield functions that have the word 'test' in
+                # their names - these are run automatically by nose...
                 yield self.open_with_automatic_mapper, mapperFile
-                yield self.test_geolocation_of_exportedNC_vs_original, \
+                yield self.geolocation_of_exportedNC_vs_original, \
                         mapperFile
 
     def test_specific_mapper(self):
@@ -75,9 +77,11 @@ class TestAllMappers(object):
             mapperFiles = testData.mapperData[mapperName]
             for mapperFile in mapperFiles:
                 print mapperName, '->', mapperFile
+                # OBS: do not yield functions that have the word 'test' in
+                # their names - these are run automatically by nose...
                 yield self.open_with_specific_mapper, mapperFile, mapperName
 
-    def test_geolocation_of_exportedNC_vs_original(self, file):
+    def geolocation_of_exportedNC_vs_original(self, file):
         orig = Nansat(file)
         testFile = 'test.nc'
         orig.export(testFile)
@@ -104,11 +108,13 @@ class TestRadarsat(object):
         testData = DataForTestingMappers()
         testData.download_all_test_data()
         for rsfile in testData.mapperData['radarsat2']:
-            #yield self.test_incidence_angle, rsfile
-            #yield self.test_export2thredds, rsfile
-            yield self.test_export, rsfile
+            # OBS: do not yield functions that have the word 'test' in
+            # their names - these are run automatically by nose...
+            yield self.incidence_angle, rsfile
+            #yield self.export2thredds, rsfile
+            yield self.export, rsfile
 
-    def test_export2thredds(self, rsfile):
+    def export2thredds(self, rsfile):
         ncfile = 'test.nc'
         orig = Nansat(rsfile)
         orig.export2thredds(ncfile, bands = {'incidence_angle': {}})
@@ -118,7 +124,7 @@ class TestRadarsat(object):
         np.testing.assert_allclose(inc0, inc1)
         os.unlink(ncfile)
 
-    def test_export(self, rsfile):
+    def export(self, rsfile):
         ncfile = 'test.nc'
         orig = Nansat(rsfile)
         orig.export(ncfile)
@@ -138,10 +144,10 @@ class TestRadarsat(object):
         np.testing.assert_allclose(sigma0_0, sigma0_1)
         os.unlink(ncfile)
         
-    def test_incidence_angle(self, rsfile):
+    def incidence_angle(self, rsfile):
         n = Nansat(rsfile)
-        inc_min = float(n.get_metadata()['NEAR_RANGE_INCIDENCE_ANGLE'])
-        inc_max = float(n.get_metadata()['FAR_RANGE_INCIDENCE_ANGLE'])
+        inc_min = float(n.get_metadata()['NEAR_RANGE_INCIDENCE_ANGLE'])-0.5
+        inc_max = float(n.get_metadata()['FAR_RANGE_INCIDENCE_ANGLE'])+0.5
         inc = n['incidence_angle']
         assert np.all(np.greater_equal(inc[np.isnan(inc)==False], inc_min))
         assert np.all(np.less_equal(inc[np.isnan(inc)==False], inc_max))
