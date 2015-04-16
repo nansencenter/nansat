@@ -23,10 +23,6 @@ class Mapper(VRT):
         if not 'Oceansat OCM2 Level-2C' in gdalMetadata['Title']:
             raise WrongMapperError
 
-        #import ipdb
-        #ipdb.set_trace()
-
-
         subDatasets = gdalDataset.GetSubDatasets()
         for subDataset in subDatasets:
             if 'clo' in subDataset[1]:
@@ -86,7 +82,6 @@ class Mapper(VRT):
         year2 = int(gdalMetadata['End Time'][:4])
         doy2 = int(gdalMetadata['End Time'][4:7])
         date2 = datetime.datetime(year1, 1,1) + datetime.timedelta(doy1 + 0.5)
-
 
         self.dataset.SetMetadataItem('start_date', date1.isoformat())
         self.dataset.SetMetadataItem('stop_date', date2.isoformat())
