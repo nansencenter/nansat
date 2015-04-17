@@ -3,10 +3,10 @@
 # Purpose:      To test nansat
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:     Anton Korosov
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:17.04.2015 12:47
+# Last modified:17.04.2015 13:32
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
