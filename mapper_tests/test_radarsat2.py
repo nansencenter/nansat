@@ -3,10 +3,10 @@
 # Purpose:      End to end testing of Nansat for Radarsat-2
 #
 # Author:       Morten Wergeland Hansen
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  17.04.2015
-# Last modified:17.04.2015 10:24
+# Last modified:17.04.2015 13:21
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ class TestRadarsat(object):
         np.testing.assert_allclose(lat0, lat1)
         # If the next tests fail, it could indicate that the data is flipped
         # check by pyplot.imshow orig vs copy...
-        np.testing.assert_allclose(inc0, inc1, rtol=1e-3)
+        np.testing.assert_allclose(inc0, inc1)
         np.testing.assert_allclose(sigma0_0, sigma0_1)
         os.unlink(ncfile)
 
