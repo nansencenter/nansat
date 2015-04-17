@@ -6,7 +6,7 @@
 # Modified:     Anton Korosov
 #
 # Created:      18.06.2014
-# Last modified:17.04.2015 15:23
+# Last modified:17.04.2015 12:23
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -85,70 +85,6 @@ class TestAllMappers(object):
         n.logger.error('Mapper %s for %s ' % (mapperName, mapperFile))
         assert type(n) == Nansat
 
-
-class TestRadarsat(object):
-
-    def test_all_rs2_files(self):
-        ''' Run tests for all Radarsat2 data '''
-        testData = DataForTestingMappers()
-        testData.download_all_test_data()
-        for rsfile in testData.mapperData['radarsat2']:
-            # OBS: do not yield functions that have the word 'test' in
-            # their names - these are run automatically by nose...
-            yield self.incidence_angle, rsfile
-            #yield self.export2thredds, rsfile
-            yield self.export, rsfile
-
-    def export2thredds(self, rsfile):
-        ncfile = 'test.nc'
-        orig = Nansat(rsfile)
-        orig.resize(0.05)
-        orig.export2thredds(ncfile, bands = {'incidence_angle': {}})
-        copy = Nansat(ncfile)
-        inc0 = orig['incidence_angle']
-        inc1 = copy['incidence_angle']
-        np.testing.assert_allclose(inc0, inc1)
-        os.unlink(ncfile)
-
-    def export(self, rsfile):
-        ncfile = 'test.nc'
-        orig = Nansat(rsfile)
-        orig.resize(0.05)
-        orig.export(ncfile)
-        copy = Nansat(ncfile)
-        inc0 = orig['incidence_angle']
-        inc1 = copy['incidence_angle']
-        lon0, lat0 = orig.get_geolocation_grids()
-        lon1, lat1 = copy.get_geolocation_grids()
-        sigma0_0 = orig['sigma0_HH']
-        sigma0_1 = copy['sigma0_HH']
-        np.testing.assert_allclose(inc0, inc1, rtol=1e-3)
-        # Make sure data is not flipped
-        # OBS: tolerance is reduced to test flipping - see other tests
-        # regarding geolocation of exported vs original
-        np.testing.assert_allclose(lon0, lon1, rtol=1e-2)
-        np.testing.assert_allclose(lat0, lat1, rtol=1e-2)
-        np.testing.assert_allclose(sigma0_0, sigma0_1)
-        os.unlink(ncfile)
-
-    def incidence_angle(self, rsfile):
-        n = Nansat(rsfile)
-        inc_min = float(n.get_metadata()['NEAR_RANGE_INCIDENCE_ANGLE'])-0.5
-        inc_max = float(n.get_metadata()['FAR_RANGE_INCIDENCE_ANGLE'])+0.5
-        inc = n['incidence_angle']
-        assert np.all(np.greater_equal(inc[np.isnan(inc)==False], inc_min))
-        assert np.all(np.less_equal(inc[np.isnan(inc)==False], inc_max))
-
-## Test Generator with unittests:
-## http://stackoverflow.com/questions/32899/how-to-generate-dynamic-parametrized-unit-tests-in-python
-#class TestMapper(unittest.TestCase):
-#    def setUp(self):
-#        self.testData = DataForTestingMappers()
-#        self.testData.download_all_test_data()
-#
-#def test_generator():
-#    def test_import(self):
-#
 
 if __name__=='__main__':
     #for mapper in nansatMappers:

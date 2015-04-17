@@ -165,11 +165,11 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(hb)
 
-    def test_export(self):
-        ''' Should export file with GCPs '''
-        n = Nansat(self.test_file_gcps, logLevel=40)
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export.nc')
-        n.export(tmpfilename)
+    def test_export_gcps_to_netcdf(self):
+        ''' Should export file with GCPs and write correct bands'''
+        n0 = Nansat(self.test_file_gcps, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
+        n0.export(tmpfilename)
 
         ncf = netcdf_file(tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
@@ -177,6 +177,44 @@ class NansatTest(unittest.TestCase):
         self.assertTrue('GCPY' in ncf.variables)
         self.assertTrue('GCPPixel' in ncf.variables)
         self.assertTrue('GCPLine' in ncf.variables)
+
+        n1 = Nansat(tmpfilename)
+        b0 = n0['L_469']
+        b1 = n1['L_469']
+        np.testing.assert_allclose(b0, b1)
+
+        lon0, lat0 = n0.get_geolocation_grids()
+        lon1, lat1 = n1.get_geolocation_grids()
+        np.testing.assert_allclose(lon0, lon1)
+        np.testing.assert_allclose(lat0, lat1)
+
+    def test_export_gcps_complex_to_netcdf(self):
+        ''' Should export file with GCPs and write correct complex bands'''
+        n0 = Nansat(self.test_file_gcps, logLevel=40)
+        b0 = n0['L_469']
+
+        n1 = Nansat(domain=n0)
+        n1.add_band(b0.astype('complex64'),
+                    parameters={'name': 'L_469'})
+
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps_complex.nc')
+        n1.export(tmpfilename)
+
+        ncf = netcdf_file(tmpfilename)
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertTrue('GCPX' in ncf.variables)
+        self.assertTrue('GCPY' in ncf.variables)
+        self.assertTrue('GCPPixel' in ncf.variables)
+        self.assertTrue('GCPLine' in ncf.variables)
+
+        n2 = Nansat(tmpfilename)
+        b2 = n2['L_469']
+        np.testing.assert_allclose(b0, b2)
+
+        lon0, lat0 = n0.get_geolocation_grids()
+        lon2, lat2 = n1.get_geolocation_grids()
+        np.testing.assert_allclose(lon0, lon2)
+        np.testing.assert_allclose(lat0, lat2)
 
     def test_export_gtiff(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
