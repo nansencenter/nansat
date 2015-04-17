@@ -369,7 +369,7 @@ class Figure(object):
         Compute step of the grid
         Make matrices with binarized lat/lon
         Find edge (make line)
-        Convert to maks
+        Convert to mask
         Add mask to PIL
 
         Parameters
@@ -422,7 +422,18 @@ class Figure(object):
         self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
 
     def _get_auto_ticks(self, ticks, grid):
-        ''' Automatically create a list of lon or lat ticks
+        ''' Automatically create a list of lon or lat ticks from number of list
+
+        Parameters
+        ----------
+            ticks : int or list
+                number or location of ticks
+            grid : ndarray
+                grid with lon or lat
+        Returns
+        -------
+            ticks : list
+                location of ticks
 
         '''
         gridMin = grid.min()
@@ -441,20 +452,26 @@ class Figure(object):
 
         return ticks
 
-
     def add_latlon_labels(self, **kwargs):
         '''Add lat/lon labels along upper and left side
 
         Compute step of lables
         Get lat/lon for these labels from latGrid, lonGrid
-        Print lables to PIL
+        Print lables to PIL in white
 
         Parameters
         ----------
-        Figure__init__() parameters:
+        Any of Figure__init__() parameters:
         latGrid : numpy array
+            array with values of latitudes
         lonGrid : numpy array
-        latlonLabels : int
+            array with values of longitudes
+        lonTicks : int or list
+            number of lines to draw
+            or locations of gridlines
+        latTicks : int or list
+            number of lines to draw
+            or locations of gridlines
 
         Modifies
         ---------
@@ -463,27 +480,65 @@ class Figure(object):
         '''
         # modify default values
         self._set_defaults(kwargs)
+
         # test availability of grids
-        if (self.latGrid is None or self.lonGrid is None or
-                self.latlonLabels == 0):
+        if (self.latGrid is None or self.lonGrid is None):
             return
 
         draw = ImageDraw.Draw(self.pilImg)
         font = ImageFont.truetype(self.fontFileName, self.fontSize)
 
-        # get number of labels; step of lables
-        llLabels = self.latlonLabels
-        llShape = self.latGrid.shape
-        latI = range(0, llShape[0], (llShape[0] / llLabels) - 1)
-        lonI = range(0, llShape[1], (llShape[1] / llLabels) - 1)
-        # get lons/lats from first row/column
-        #lats = self.latGrid[latI, 0]
-        #lons = self.lonGrid[0, lonI]
-        for i in range(len(latI)):
-            lat = self.latGrid[latI[i], 0]
-            lon = self.lonGrid[0, lonI[i]]
-            draw.text((0, 10 + latI[i]), '%4.2f' % lat, fill=255, font=font)
-            draw.text((50 + lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
+        # get vectors with ticks based on input
+        latTicks = self._get_auto_ticks(self.latTicks, self.latGrid)
+        lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
+
+        # get corresponding lons from upper edge and lats from left edge
+        lonTicksIdx =self._get_tick_index_from_grid(lonTicks, self.lonGrid,
+                                       1, self.lonGrid.shape[1])
+        latTicksIdx =self._get_tick_index_from_grid(latTicks, self.latGrid,
+                                       self.lonGrid.shape[0], 1)
+
+        # draw lons
+        lonsOffset = self.lonGrid.shape[1] / len(lonTicksIdx) / 8.
+        for lonTickIdx in lonTicksIdx:
+            lon = self.lonGrid[0, lonTickIdx]
+            draw.text((lonTickIdx+lonsOffset, 0), '%4.2f' % lon,
+                                                    fill=255, font=font)
+
+        # draw lats
+        latsOffset = self.latGrid.shape[0] / len(latTicksIdx) / 8.
+        for latTickIdx in latTicksIdx:
+            lat = self.latGrid[latTickIdx, 0]
+            draw.text((0, latTickIdx+latsOffset), '%4.2f' % lat,
+                                                    fill=255, font=font)
+
+    def _get_tick_index_from_grid(self, ticks, grid, rows, cols):
+        ''' Get index of pixels from lon/lat grids closest given ticks
+
+        Parameters
+        ----------
+            ticks : int or list
+                number or location of ticks
+            grid : ndarray
+                grid with lon or lat
+            rows : int
+                from which rows to return pixels
+            cols : int
+                from which cols to return pixels
+
+        Returns
+        -------
+            ticks : list
+                index of ticks
+        '''
+
+        newTicksIdx = []
+        for tick in ticks:
+            diff = np.abs(grid[:rows, :cols] - tick).flatten()
+            minDiffIdx = np.nonzero(diff == diff.min())[0][0]
+            if minDiffIdx > 0 :
+                newTicksIdx.append(minDiffIdx)
+        return newTicksIdx
 
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
@@ -811,7 +866,7 @@ class Figure(object):
         self.create_pilImage(**kwargs)
 
         # add labels with lats/lons
-        #self.add_latlon_labels()
+        self.add_latlon_labels()
 
         # add logo
         if self.logoFileName is not None:
@@ -980,3 +1035,4 @@ class Figure(object):
                     setattr(self, key, [idict[key]])
                 else:
                     setattr(self, key, idict[key])
+
