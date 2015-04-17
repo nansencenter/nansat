@@ -8,6 +8,7 @@ import os
 from dateutil.parser import parse
 
 import numpy as np
+from scipy.io.netcdf import netcdf_file
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray
@@ -16,7 +17,7 @@ from nansat.tools import gdal, ogr, WrongMapperError
 
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
+    def __init__(self, inputFileName, gdalDataset, gdalMetadata, logLevel=30,
                  rmMetadatas=['NETCDF_VARNAME', '_Unsigned',
                               'ScaleRatio', 'ScaleOffset', 'dods_variable'],
                  **kwargs):
@@ -35,12 +36,12 @@ class Mapper(VRT):
             else:
                 tmpGdalMetadata[newKey] = gdalMetadata[key]
         gdalMetadata = tmpGdalMetadata
-        fileExt = os.path.splitext(fileName)[1]
+        fileExt = os.path.splitext(inputFileName)[1]
 
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
         if len(subDatasets) == 0:
-            fileNames = [fileName]
+            fileNames = [inputFileName]
         else:
             fileNames = [f[0] for f in subDatasets]
 
@@ -199,17 +200,28 @@ class Mapper(VRT):
         self.dataset.SetProjection(self.repare_projection(projection))
 
         # check if GCPs were added from input dataset
-        gcpCount = firstSubDataset.GetGCPCount()
-        if gcpCount == 0:
-            # if no GCPs in input dataset: try to add GCPs from metadata
-            gcpCount = self.add_gcps_from_metadata(geoMetadata)
+        gcps = firstSubDataset.GetGCPs()
+        # if no GCPs in input dataset: try to add GCPs from metadata
+        if not gcps:
+            gcps = self.add_gcps_from_metadata(geoMetadata)
+        # if yet no GCPs: try to add GCPs from variables
+        if not gcps:
+            gcps = self.add_gcps_from_variables(inputFileName)
+
+        if gcps:
+            # get GCP projection and repare
+            projection = self.repare_projection(geoMetadata.
+                                                get('GCPProjection', ''))
+            # add GCPs to dataset
+            self.dataset.SetGCPs(gcps, projection)
+            self._remove_geotransform()
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
             self.add_geolocationArray(GeolocationArray(xDatasetSource,
                                                        yDatasetSource))
 
-        elif gcpCount == 0:
+        elif not gcps:
             # if no GCPs found and not GEOLOCATION ARRAY set:
             #   Set Nansat Geotransform if it is not set automatically
             geoTransform = self.dataset.GetGeoTransform()
@@ -266,12 +278,34 @@ class Mapper(VRT):
             gcps.append(gdal.GCP(gcpAllValues[2][i], gcpAllValues[3][i], 0,
                                  gcpAllValues[0][i], gcpAllValues[1][i]))
 
-        if len(gcps) > 0:
-            # get GCP projection and repare
-            projection = self.repare_projection(geoMetadata.
-                                                get('GCPProjection', ''))
-            # add GCPs to dataset
-            self.dataset.SetGCPs(gcps, projection)
-            self._remove_geotransform()
+        return gcps
 
-        return len(gcps)
+    def add_gcps_from_variables(self, fileName):
+        ''' Get GCPs from GCPPixel, GCPLine, GCPX, GCPY, GCPZ variables '''
+        gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
+        # open input netCDF file for reading GCPs
+        try:
+            ncFile = netcdf_file(fileName, 'r')
+        except TypeError as e:
+            self.logger.warning('%s' % e)
+            return None
+
+        # check if all GCP variables exist in the file
+        if not all([var in ncFile.variables for var in gcpVariables]):
+            return None
+
+        # get data from GCP variables into array
+        varData = [ncFile.variables[var][:] for var in gcpVariables]
+        varData = np.array(varData)
+
+        # close input file
+        ncFile.close()
+
+        # create list of GDAL.GCPs
+        gcps = [gdal.GCP(float(x),
+                         float(y),
+                         float(z),
+                         float(pixel),
+                         float(line)) for x, y, z, pixel, line in varData.T]
+
+        return gcps

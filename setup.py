@@ -224,6 +224,7 @@ def run_setup(skip_compile):
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
+        test_suite="nansat.tests",
         **kw
         )
 

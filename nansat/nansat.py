@@ -475,12 +475,6 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
-        gcps = exportVRT.dataset.GetGCPs()
-        if addGCPs and len(gcps) > 0:
-            # add GCPs in VRT metadata and remove geotransform
-            exportVRT._add_gcp_metadata(bottomup)
-            exportVRT._remove_geotransform()
-
         # add projection metadata
         srs = self.vrt.dataset.GetProjection()
         exportVRT.dataset.SetMetadataItem('NANSAT_Projection',
@@ -554,7 +548,53 @@ class Nansat(Domain):
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
                                                           options=options)
+
+        gcps = exportVRT.dataset.GetGCPs()
+        if driver=='netCDF' and addGCPs and len(gcps) > 0:
+            # add GCPs into netCDF file as separate float varables
+            self._add_gcps(fileName, gcps, bottomup)
+            exportVRT._remove_geotransform()
+
         self.logger.debug('Export - OK!')
+
+    def _add_gcps(self, fileName, gcps, bottomup):
+        ''' Add 4 variables with gcps to the generated netCDF file '''
+        gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
+
+        # check if file exists
+        if not os.path.exists(fileName):
+            self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % fileName)
+            return 1
+
+        # open output file for adding GCPs
+        try:
+            ncFile = netcdf_file(fileName, 'a')
+        except TypeError as e:
+            self.logger.warning('%s' % e)
+            return 1
+
+        # get GCP values into single array from GCPs
+        gcpValues = np.zeros((5, len(gcps)))
+        for i, gcp in enumerate(gcps):
+            gcpValues[0, i] = gcp.GCPX
+            gcpValues[1, i] = gcp.GCPY
+            gcpValues[2, i] = gcp.GCPZ
+            gcpValues[3, i] = gcp.GCPPixel
+            gcpValues[4, i] = gcp.GCPLine
+
+        # make gcps dimentions
+        ncFile.createDimension('gcps', len(gcps))
+        # make gcps variables and add data
+        for i, var in enumerate(gcpVariables):
+            var = ncFile.createVariable(var, 'f', ('gcps',))
+            var[:] = gcpValues[i]
+
+        # add GCP Projection
+        srs = self.vrt.dataset.GetGCPProjection()
+        ncFile.GDAL_NANSAT_GCPProjection = srs.replace(',',  '|').replace('"', '&')
+
+        # write data, close file
+        ncFile.close()
 
     def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
