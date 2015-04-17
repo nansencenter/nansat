@@ -1,15 +1,16 @@
 #-------------------------------------------------------------------------------
-# Name:		test_radarsat2.py
+# Name:     test_radarsat2.py
 # Purpose:      End to end testing of Nansat for Radarsat-2
 #
 # Author:       Morten Wergeland Hansen
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
-# Created:	17.04.2015
+# Created:  17.04.2015
 # Last modified:17.04.2015 10:24
 # Copyright:    (c) NERSC
-# License:      
+# License:
 #-------------------------------------------------------------------------------
+import os
 import unittest
 import numpy as np
 
@@ -49,14 +50,14 @@ class TestRadarsat(object):
         lon1, lat1 = copy.get_geolocation_grids()
         sigma0_0 = orig['sigma0_HH']
         sigma0_1 = copy['sigma0_HH']
-        np.testing.assert_allclose(lon0, lon1) 
+        np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
         # If the next tests fail, it could indicate that the data is flipped
         # check by pyplot.imshow orig vs copy...
         np.testing.assert_allclose(inc0, inc1, rtol=1e-3)
         np.testing.assert_allclose(sigma0_0, sigma0_1)
         os.unlink(ncfile)
-        
+
     def incidence_angle(self, rsfile):
         n = Nansat(rsfile)
         inc_min = float(n.get_metadata()['NEAR_RANGE_INCIDENCE_ANGLE'])-0.5
