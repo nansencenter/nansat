@@ -206,8 +206,9 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
-        # Set invalid and missing data to np.nan
-        if '_FillValue' in band.GetMetadata():
+        # Set invalid and missing data to np.nan (for floats only)
+        if ('_FillValue' in band.GetMetadata() and
+             bandData.dtype.char in np.typecodes['AllFloat']):
             fillValue = float(band.GetMetadata()['_FillValue'])
             bandData[bandData == fillValue] = np.nan
             # quick hack to avoid problem with wrong _FillValue - see issue
@@ -438,10 +439,8 @@ class Nansat(Domain):
             for i in complexBands:
                 bandMetadataR = self.get_metadata(bandID=i)
                 bandMetadataR.pop('dataType')
-                try:
+                if 'PixelFunctionType' in bandMetadataR:
                     bandMetadataR.pop('PixelFunctionType')
-                except:
-                    pass
                 # Copy metadata and modify 'name' for real and imag bands
                 bandMetadataI = bandMetadataR.copy()
                 bandMetadataR['name'] = bandMetadataR.pop('name') + '_real'
@@ -474,24 +473,6 @@ class Nansat(Domain):
                  'SourceBand': int(self.vrt.geolocationArray.d['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
-
-        gcps = exportVRT.dataset.GetGCPs()
-        if addGCPs and len(gcps) > 0:
-            # add GCPs in VRT metadata and remove geotransform
-            exportVRT._add_gcp_metadata(bottomup)
-            exportVRT._remove_geotransform()
-
-        # add projection metadata
-        srs = self.vrt.dataset.GetProjection()
-        exportVRT.dataset.SetMetadataItem('NANSAT_Projection',
-                                          srs.replace(',',
-                                                      '|').replace('"', '&'))
-
-        # add GeoTransform metadata
-        geoTransformStr = str(self.vrt.dataset.GetGeoTransform()).replace(',',
-                                                                          '|')
-        exportVRT.dataset.SetMetadataItem('NANSAT_GeoTransform',
-                                          geoTransformStr)
 
         # manage metadata for each band
         for iBand in range(exportVRT.dataset.RasterCount):
@@ -547,14 +528,75 @@ class Nansat(Domain):
         else:
             options += ['WRITE_BOTTOMUP=YES']
 
+        # if GCPs should be added
+        gcps = exportVRT.dataset.GetGCPs()
+        srs = exportVRT.get_projection()
+        addGCPs = addGCPs and driver=='netCDF' and len(gcps) > 0
+        if addGCPs:
+            #  remove GeoTransform
+            exportVRT._remove_geotransform()
+            exportVRT.dataset.SetMetadataItem(
+                'NANSAT_GCPProjection', srs.replace(',', '|').replace('"', '&'))
+        else:
+            # add projection metadata
+            exportVRT.dataset.SetMetadataItem(
+                'NANSAT_Projection', srs.replace(',','|').replace('"', '&'))
+
+            # add GeoTransform metadata
+            geoTransformStr = str(
+                    self.vrt.dataset.GetGeoTransform()).replace(',', '|')
+            exportVRT.dataset.SetMetadataItem(
+                    'NANSAT_GeoTransform', geoTransformStr)
+
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s and %s...' % (fileName,
                                                                   driver,
                                                                   options))
+
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
                                                           options=options)
+
+        # add GCPs into netCDF file as separate float variables
+        if addGCPs:
+            self._add_gcps(fileName, gcps, bottomup)
+
         self.logger.debug('Export - OK!')
+
+    def _add_gcps(self, fileName, gcps, bottomup):
+        ''' Add 4 variables with gcps to the generated netCDF file '''
+        gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
+
+        # check if file exists
+        if not os.path.exists(fileName):
+            self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % fileName)
+            return 1
+
+        # open output file for adding GCPs
+        try:
+            ncFile = netcdf_file(fileName, 'a')
+        except TypeError as e:
+            self.logger.warning('%s' % e)
+            return 1
+
+        # get GCP values into single array from GCPs
+        gcpValues = np.zeros((5, len(gcps)))
+        for i, gcp in enumerate(gcps):
+            gcpValues[0, i] = gcp.GCPX
+            gcpValues[1, i] = gcp.GCPY
+            gcpValues[2, i] = gcp.GCPZ
+            gcpValues[3, i] = gcp.GCPPixel
+            gcpValues[4, i] = gcp.GCPLine
+
+        # make gcps dimentions
+        ncFile.createDimension('gcps', len(gcps))
+        # make gcps variables and add data
+        for i, var in enumerate(gcpVariables):
+            var = ncFile.createVariable(var, 'f', ('gcps',))
+            var[:] = gcpValues[i]
+
+        # write data, close file
+        ncFile.close()
 
     def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],

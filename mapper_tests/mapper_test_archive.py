@@ -3,10 +3,10 @@
 # Purpose:      To test nansat
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
-# Created:      18.06.2014
-# Last modified:13.04.2015 15:17
+# Created:  18.06.2014
+# Last modified:17.04.2015 13:32
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -97,23 +97,27 @@ class DataForTestingMappers(object):
                 'ncep')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
+                'radarsat2')
+
+        self.download_test_file(
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
                 'radarsat2')
 
         self.download_test_file(
@@ -159,8 +163,12 @@ class DataForTestingMappers(object):
         mapperDataDir = os.path.join(self.testDataDir, mapperDir)
         mapperFileName = os.path.join(mapperDataDir, fileName)
 
-        if not os.path.exists(mapperDataDir):
-            os.makedirs(mapperDataDir)
+        # "inputURL" can also be a filename on the system
+        if os.path.exists(inputURL):
+            mapperFName = inputURL
+        else:
+            if not os.path.exists(mapperDataDir):
+                os.makedirs(mapperDataDir)
 
         if not os.path.exists(mapperFileName):
             print "Downloading %s " % mapperFileName
