@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:15.04.2015 12:13
+# Last modified:17.04.2015 10:47
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -74,28 +74,28 @@ class DataForTestingMappers(object):
                 'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs20120328.t00z.master.grbf00',
                 'ncep')
 
-        self.download_test_file(
-                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
-                'radarsat2')
+        #self.download_test_file(
+        #        '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
+        #        'radarsat2')
+
+        #self.download_test_file(
+        #        '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
+        #        'radarsat2')
+
+        #self.download_test_file(
+        #        '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
+        #        'radarsat2')
+
+        #self.download_test_file(
+        #        '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
+        #        'radarsat2')
+
+        #self.download_test_file(
+        #        '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
+        #        'radarsat2')
 
         self.download_test_file(
-                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
-                'radarsat2')
-
-        self.download_test_file(
-                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
-                'radarsat2')
-
-        self.download_test_file(
-                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
-                'radarsat2')
-
-        self.download_test_file(
-                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
-                'radarsat2')
-
-        self.download_test_file(
-                '/Users/mortenh/projects/seaU-EU/SAR_data/radarsat-2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
                 'radarsat2')
 
         self.download_test_file(

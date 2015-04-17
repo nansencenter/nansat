@@ -203,8 +203,9 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
-        # Set invalid and missing data to np.nan
-        if '_FillValue' in band.GetMetadata():
+        # Set invalid and missing data to np.nan (for floats only)
+        if ('_FillValue' in band.GetMetadata() and
+             bandData.dtype.char in np.typecodes['AllFloat']):
             fillValue = float(band.GetMetadata()['_FillValue'])
             bandData[bandData == fillValue] = np.nan
             # quick hack to avoid problem with wrong _FillValue - see issue
@@ -423,10 +424,8 @@ class Nansat(Domain):
             for i in complexBands:
                 bandMetadataR = self.get_metadata(bandID=i)
                 bandMetadataR.pop('dataType')
-                try:
+                if 'PixelFunctionType' in bandMetadataR:
                     bandMetadataR.pop('PixelFunctionType')
-                except:
-                    pass
                 # Copy metadata and modify 'name' for real and imag bands
                 bandMetadataI = bandMetadataR.copy()
                 bandMetadataR['name'] = bandMetadataR.pop('name') + '_real'
@@ -459,18 +458,6 @@ class Nansat(Domain):
                  'SourceBand': int(self.vrt.geolocationArray.d['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
-
-        # add projection metadata
-        srs = self.vrt.dataset.GetProjection()
-        exportVRT.dataset.SetMetadataItem('NANSAT_Projection',
-                                          srs.replace(',',
-                                                      '|').replace('"', '&'))
-
-        # add GeoTransform metadata
-        geoTransformStr = str(self.vrt.dataset.GetGeoTransform()).replace(',',
-                                                                          '|')
-        exportVRT.dataset.SetMetadataItem('NANSAT_GeoTransform',
-                                          geoTransformStr)
 
         # manage metadata for each band
         for iBand in range(exportVRT.dataset.RasterCount):
@@ -526,19 +513,38 @@ class Nansat(Domain):
         else:
             options += ['WRITE_BOTTOMUP=YES']
 
+        # if GCPs should be added
+        gcps = exportVRT.dataset.GetGCPs()
+        srs = exportVRT.get_projection()
+        addGCPs = addGCPs and driver=='netCDF' and len(gcps) > 0
+        if addGCPs:
+            #  remove GeoTransform
+            exportVRT._remove_geotransform()
+            exportVRT.dataset.SetMetadataItem(
+                'NANSAT_GCPProjection', srs.replace(',', '|').replace('"', '&'))
+        else:
+            # add projection metadata
+            exportVRT.dataset.SetMetadataItem(
+                'NANSAT_Projection', srs.replace(',','|').replace('"', '&'))
+
+            # add GeoTransform metadata
+            geoTransformStr = str(
+                    self.vrt.dataset.GetGeoTransform()).replace(',', '|')
+            exportVRT.dataset.SetMetadataItem(
+                    'NANSAT_GeoTransform', geoTransformStr)
+
         # Create an output file using GDAL
         self.logger.debug('Exporting to %s using %s and %s...' % (fileName,
                                                                   driver,
                                                                   options))
+
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
                                                           options=options)
 
-        gcps = exportVRT.dataset.GetGCPs()
-        if driver=='netCDF' and addGCPs and len(gcps) > 0:
-            # add GCPs into netCDF file as separate float varables
+        # add GCPs into netCDF file as separate float variables
+        if addGCPs:
             self._add_gcps(fileName, gcps, bottomup)
-            exportVRT._remove_geotransform()
 
         self.logger.debug('Export - OK!')
 
@@ -573,10 +579,6 @@ class Nansat(Domain):
         for i, var in enumerate(gcpVariables):
             var = ncFile.createVariable(var, 'f', ('gcps',))
             var[:] = gcpValues[i]
-
-        # add GCP Projection
-        srs = self.vrt.dataset.GetGCPProjection()
-        ncFile.GDAL_NANSAT_GCPProjection = srs.replace(',',  '|').replace('"', '&')
 
         # write data, close file
         ncFile.close()
