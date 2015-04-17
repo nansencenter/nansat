@@ -41,17 +41,79 @@ class FigureTest(unittest.TestCase):
             raise ValueError('No test data available')
 
     def test_init_array(self):
-        f = Figure(np.zeros((10,10)), logLevel=40)
+        f = Figure(np.zeros((10,10)))
 
         self.assertEqual(type(f), Figure)
 
-    def test_add_latlon_grids(self):
+
+    def test_get_auto_ticks_number(self):
+        n = Nansat(self.test_file_gcps)
+        lon, lat = n.get_geolocation_grids()
+        f = Figure(lon)
+        lonTicks = f._get_auto_ticks(5, lon)
+        latTicks = f._get_auto_ticks(5, lat)
+
+        self.assertEqual(len(lonTicks), 5)
+        n.logger.error(str(lonTicks))
+        n.logger.error(str(latTicks))
+
+    def test_get_auto_ticks_vector(self):
+        n = Nansat(self.test_file_gcps)
+        lon, lat = n.get_geolocation_grids()
+        f = Figure(lon)
+        lonTicks = f._get_auto_ticks([28, 29, 30, 100], lon)
+
+        self.assertEqual(len(lonTicks), 3)
+
+    def test_add_latlon_grids_auto(self):
+        ''' Should create figure with lon/lat gridlines spaced automatically '''
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'figure_latlon_grids_auto.png')
         n = Nansat(self.test_file_gcps)
         b = n[1]
         lon, lat = n.get_geolocation_grids()
-        f = Figure(np.zeros((10,10)), logLevel=40)
+
+        f = Figure(b)
+        f.process(clim='hist', lonGrid=lon, latGrid=lat)
+        f.save(tmpfilename)
 
         self.assertEqual(type(f), Figure)
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_add_latlon_grids_number(self):
+        ''' Should create figure with lon/lat gridlines given manually '''
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'figure_latlon_grids_number.png')
+        n = Nansat(self.test_file_gcps)
+        b = n[1]
+        lon, lat = n.get_geolocation_grids()
+
+        f = Figure(b)
+        f.process(clim='hist', lonGrid=lon,
+                               latGrid=lat,
+                               lonTicks=10,
+                               latTicks=10)
+        f.save(tmpfilename)
+
+        self.assertEqual(type(f), Figure)
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_add_latlon_grids_list(self):
+        ''' Should create figure with lon/lat gridlines given manually '''
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'figure_latlon_grids_list.png')
+        n = Nansat(self.test_file_gcps)
+        b = n[1]
+        lon, lat = n.get_geolocation_grids()
+
+        f = Figure(b)
+        f.process(clim='hist', lonGrid=lon,
+                               latGrid=lat,
+                               lonTicks=[28, 29, 30],
+                               latTicks=[70.5, 71, 71.5, 73])
+        f.save(tmpfilename)
+
+        self.assertEqual(type(f), Figure)
+        self.assertTrue(os.path.exists(tmpfilename))
 
 if __name__ == "__main__":
     unittest.main()

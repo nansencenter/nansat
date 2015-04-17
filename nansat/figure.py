@@ -65,8 +65,8 @@ class Figure(object):
 
     latGrid = None
     lonGrid = None
-    nGridLines = 10
-    latlonLabels = 0
+    lonTicks = 5
+    latTicks = 5
 
     transparency = None
 
@@ -379,8 +379,12 @@ class Figure(object):
             array with values of latitudes
         lonGrid : numpy array
             array with values of longitudes
-        nGridLines : int
+        lonTicks : int or list
             number of lines to draw
+            or locations of gridlines
+        latTicks : int or list
+            number of lines to draw
+            or locations of gridlines
 
         Modifies
         ---------
@@ -389,31 +393,54 @@ class Figure(object):
         '''
         # modify default values
         self._set_defaults(kwargs)
+
         # test availability of grids
-        if (self.latGrid is None or self.lonGrid is None or
-                self.nGridLines is None or self.nGridLines == 0):
+        if (self.latGrid is None or self.lonGrid is None):
             return
-        # get number of grid lines
-        llSpacing = self.nGridLines
-        # get vectors for grid lines
-        latVec = np.linspace(self.latGrid.min(),
-                             self.latGrid.max(), llSpacing)
-        lonVec = np.linspace(self.lonGrid.min(),
-                             self.lonGrid.max(), llSpacing)
+
+        # get vectors with ticks based on input
+        latTicks = self._get_auto_ticks(self.latTicks, self.latGrid)
+        lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
+
+        # convert lat/lon grids to indeces
         latI = np.zeros(self.latGrid.shape, 'int8')
         lonI = np.zeros(self.latGrid.shape, 'int8')
-        # convert lat/lon to indeces
-        for i in range(len(latVec)):
-            latI[self.latGrid > latVec[i]] = i
-            lonI[self.lonGrid > lonVec[i]] = i
-        # find pixels on the rgid lines (binarize)
-        latI = np.diff(latI)
-        lonI = np.diff(lonI)
+        for latTick in latTicks:
+            latI[self.latGrid > latTick] += 1
+        for lonTick in lonTicks:
+            lonI[self.lonGrid > lonTick] += 1
+
+        # find pixels on the grid lines (binarize)
+        latI = np.diff(latI, axis=0)[:,:-1] + np.diff(latI, axis=1)[:-1,:]
+        lonI = np.diff(lonI, axis=0)[:,:-1] + np.diff(lonI, axis=1)[:-1,:]
+
         # make grid from both lat and lon
         latI += lonI
         latI[latI != 0] = 1
+
         # add mask to the image
         self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
+
+    def _get_auto_ticks(self, ticks, grid):
+        ''' Automatically create a list of lon or lat ticks
+
+        '''
+        gridMin = grid.min()
+        gridMax = grid.max()
+
+        if type(ticks) is int:
+            ticks = np.linspace(gridMin, gridMax, ticks)
+        elif type(ticks) in [list, tuple]:
+            newTicks = []
+            for tick in ticks:
+                if tick >= gridMin and tick <= gridMax:
+                    newTicks.append(tick)
+            ticks = newTicks
+        else:
+            raise OptionError('Incorrect type of ticks')
+
+        return ticks
+
 
     def add_latlon_labels(self, **kwargs):
         '''Add lat/lon labels along upper and left side
@@ -774,8 +801,7 @@ class Figure(object):
             self.apply_mask()
 
         # add lat/lon grids lines if latGrid and lonGrid are given
-        if self.latGrid is not None and self.lonGrid is not None:
-            self.add_latlon_grids()
+        self.add_latlon_grids()
 
         # append legend
         if self.legend:
@@ -785,9 +811,7 @@ class Figure(object):
         self.create_pilImage(**kwargs)
 
         # add labels with lats/lons
-        if (self.latGrid is not None and self.lonGrid is not None and
-                self.latlonLabels > 0):
-            self.add_latlon_labels()
+        #self.add_latlon_labels()
 
         # add logo
         if self.logoFileName is not None:
