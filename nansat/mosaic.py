@@ -31,7 +31,7 @@ sharedArray = None
 domain = None
 
 def mparray2ndarray(sharedArray, shape, dtype='float32'):
-    ''' convert mp.Array to np.array '''
+    ''' convert shared multiprocessing Array to numpy ndarray '''
     # get access to shared array and convert to numpy ndarray
     sharedNDArray = np.frombuffer(sharedArray.get_obj(), dtype=dtype)
     # change shape to match bands
@@ -40,23 +40,30 @@ def mparray2ndarray(sharedArray, shape, dtype='float32'):
     return sharedNDArray
 
 def sumup(layer):
-    ''' Sum up bands from input image Layers into matrices '''
+    ''' Sum up bands from input images in multiple threads'''
     global sharedArray
     global domain
 
-    # get mask and band data from the input Layer
+    # get nansat from the input Layer
     layer.make_nansat_object(domain)
+    # if not in the period, quit
+    if not layer.within_period():
+        return 1
+    # get mask
     mask = layer.get_mask_array()
+    # get arrays with data
     bandArrays = [layer.n[band] for band in layer.bands]
     bandArrays = np.array(bandArrays)
     finiteMask = np.isfinite(bandArrays.sum(axis=0))
+    # get metadata
+    bandMetadata = [layer.n.get_metadata(bandID=band) for band in layer.bands]
 
     with sharedArray.get_lock(): # synchronize access
         sharedNDArray = mparray2ndarray(sharedArray,
-                                     (2+len(layer.bands)*2,
-                                      mask.shape[0],
-                                      mask.shape[1]),
-                                     'float32')
+                                        (2+len(layer.bands)*2,
+                                         mask.shape[0],
+                                         mask.shape[1]),
+                                        'float32')
         gpi = finiteMask * (mask == 64)
 
         # update counter
@@ -75,7 +82,7 @@ def sumup(layer):
 
     # release layer
     layer = None
-    return 0
+    return bandMetadata
 
 class Layer:
     ''' Small class to get mask and arrays from many bands '''
@@ -83,13 +90,13 @@ class Layer:
                         opener=Nansat, maskName='mask',
                         doReproject=True, period=(None,None)):
         ''' Set parameters of processing '''
-        self.fileName    = fileName
-        self.bands       = bands
-        self.opener      = opener
-        self.maskName    = maskName
-        self.doReproject = doReproject
-        self.period      = period
-        self.n           = None
+        self.fileName     = fileName
+        self.bands        = bands
+        self.opener       = opener
+        self.maskName     = maskName
+        self.doReproject  = doReproject
+        self.period       = period
+        self.n            = None
 
     def make_nansat_object(self, domain=None):
         ''' Open self.fileName with self.opener '''
@@ -97,11 +104,24 @@ class Layer:
         if self.doReproject:
             self.n.reproject(domain)
 
+    def within_period(self):
+        ''' Test if given file is within period of time '''
+        withinPeriod = True
+        ntime = self.n.get_time()
+        if (ntime[0] is None and any(self.period)):
+            withinPeriod = False
+
+        if (self.period[0] is not None and ntime[0] < self.period[0]):
+            withinPeriod = False
+
+        if (self.period[1] is not None and ntime[0] > self.period[1]):
+            withinPeriod = False
+
+        return withinPeriod
+
     def get_mask_array(self):
         ''' Get array with mask values '''
-        if self.n is None:
-            mask = None
-        elif self.n.has_band(self.maskName):
+        if self.n.has_band(self.maskName):
             mask = self.n[self.maskName]
         elif self.doReproject:
             mask = self.n['swathmask'] * 64
@@ -110,16 +130,7 @@ class Layer:
 
         return mask
 
-    def get_band_array(self, bandID):
-        ''' Get array with data from band '''
-        if self.n is None:
-            array = None
-        elif not self.n.has_band(bandID):
-            array = None
-        else:
-            array = self.n[bandID]
 
-        return array
 
 """
 
@@ -139,21 +150,6 @@ class Layer:
         # check if image is out of period
         self.logger.info('Try to get time from %s' % f)
         if n is not None:
-            ntime = n.get_time()
-
-            if (ntime[0] is None and any(self.period)):
-                self.logger.error('%s has no time' % f)
-                return None
-
-            if (self.period[0] is not None and
-                    ntime[0] < self.period[0]):
-                self.logger.info('%s is taken before the period' % f)
-                return None
-
-            if (self.period[1] is not None and
-                    ntime[0] > self.period[1]):
-                self.logger.info('%s is taken after the period' % f)
-                return None
 
         return n
 """
@@ -265,7 +261,12 @@ class Mosaic(Nansat):
         pool = mp.Pool(threads)
 
         # run reprojection and summing up
-        status = pool.map(sumup, layers)
+        metadata = pool.map(sumup, layers)
+
+        # get band metadata from the first valid file
+        for bandsMeta in metadata:
+            if type(bandsMeta) is list:
+                break
 
         # average products
         sharedNDArray = mparray2ndarray(sharedArray,
@@ -302,9 +303,9 @@ class Mosaic(Nansat):
         for bi, b in enumerate(bands):
             self.logger.debug('    %s' % b)
             # add band and std with metadata
-            self.add_band(array=avgMat[bi])#, parameters=parameters)
-            #parameters['name'] = parameters['name'] + '_std'
-            self.add_band(array=stdMat[bi])#, parameters=parameters)
+            self.add_band(array=avgMat[bi], parameters=bandsMeta[bi])
+            bandsMeta[bi]['name'] = bandsMeta[bi]['name'] + '_std'
+            self.add_band(array=stdMat[bi], parameters=bandsMeta[bi])
 
 
     def _get_cube(self, files, band):

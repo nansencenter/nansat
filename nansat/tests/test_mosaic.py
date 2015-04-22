@@ -79,7 +79,6 @@ class LayerTest(unittest.TestCase):
         self.assertEqual(type(l.n), Nansat)
         self.assertEqual(l.n.shape(), (200, 200))
 
-
     def test_get_mask(self):
         '''Mosaic.Layer should get mask from reprojected file '''
         n = Nansat(self.test_file_gcps)
@@ -103,35 +102,6 @@ class LayerTest(unittest.TestCase):
         self.assertEqual(type(mask), np.ndarray)
         np.testing.assert_allclose(mask, np.ones((200,200))*64)
 
-    def test_get_mask_no_nansat(self):
-        '''Mosaic.Layer should get mask from reprojected file '''
-        l = Layer(self.test_file_gcps, doReproject=False)
-        mask = l.get_mask_array()
-
-        self.assertEqual(mask, None)
-
-    def test_get_band(self):
-        '''Mosaic.Layer should get mask from reprojected file '''
-        l = Layer(self.test_file_gcps)
-        l.make_nansat_object(self.domain)
-        array = l.get_band_array('L_645')
-
-        self.assertEqual(type(array), np.ndarray)
-        self.assertEqual(array.shape, (650, 700))
-
-    def test_get_band_no_nansat(self):
-        '''Mosaic.Layer should get mask from reprojected file '''
-        l = Layer(self.test_file_gcps)
-        array = l.get_band_array('L_645')
-
-        self.assertEqual(array, None)
-
-    def test_get_band_no_band(self):
-        '''Mosaic.Layer should get mask from reprojected file '''
-        l = Layer(self.test_file_gcps)
-        array = l.get_band_array('some_band')
-
-        self.assertEqual(array, None)
 
 if __name__ == "__main__":
     unittest.main()
