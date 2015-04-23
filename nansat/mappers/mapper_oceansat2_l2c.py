@@ -3,10 +3,10 @@
 # Purpose:
 #
 # Author:       Morten Wergeland Hansen
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  13.02.2015
-# Last modified:13.02.2015 11:38
+# Last modified:23.04.2015 11:53
 # Copyright:    (c) NERSC
 # License:
 #-------------------------------------------------------------------------------
@@ -19,6 +19,8 @@ from nansat.vrt import VRT
 class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+        if not gdalMetadata:
+            raise WrongMapperError
         if 'Title' not in gdalMetadata.keys():
             raise WrongMapperError
         if not 'Oceansat OCM2 Level-2C' in gdalMetadata['Title']:
