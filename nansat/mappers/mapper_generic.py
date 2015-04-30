@@ -115,17 +115,23 @@ class Mapper(VRT):
                         # if it doesn't exist get name from NETCDF_VARNAME
                         if len(bandName) == 0:
                             bandName = bandMetadata.get('NETCDF_VARNAME', '')
-                            if len(bandName) == 0:
-                                bandName = bandMetadata.get('dods_variable',
-                                                            '')
-                            if len(bandName) > 0:
-                                if origin_is_nansat and fileExt == '.nc':
-                                    # remove digits added by gdal in
-                                    # exporting to netcdf...
-                                    if bandName[-1:].isdigit():
-                                        bandName = bandName[:-1]
-                                    if bandName[-1:].isdigit():
-                                        bandName = bandName[:-1]
+                        if len(bandName) == 0:
+                            bandName = bandMetadata.get('dods_variable', '')
+
+                        # remove digits added by gdal in
+                        # exporting to netcdf...
+                        if (len(bandName) > 0 and
+                            origin_is_nansat and
+                            fileExt == '.nc'):
+                            if bandName[-1:].isdigit():
+                                bandName = bandName[:-1]
+                            if bandName[-1:].isdigit():
+                                bandName = bandName[:-1]
+
+                        # if still no bandname, create one
+                        if len(bandName) == 0:
+                            bandName = 'band_%03d' % iBand
+
                         dst['name'] = bandName
 
                         # remove non-necessary metadata from dst
@@ -287,7 +293,7 @@ class Mapper(VRT):
         try:
             ncFile = netcdf_file(fileName, 'r')
         except TypeError as e:
-            self.logger.warning('%s' % e)
+            self.logger.info('%s' % e)
             return None
 
         # check if all GCP variables exist in the file
