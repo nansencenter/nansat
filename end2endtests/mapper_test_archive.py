@@ -3,7 +3,7 @@
 # Purpose:      To test nansat
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:  18.06.2014
 # Last modified:17.04.2015 13:32
@@ -131,6 +131,20 @@ class DataForTestingMappers(object):
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/amsr2_l1r/GW1AM2_201407010010_183D_L1SGRTBR_1110110.h5',
                 'amsr2_l1r')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1',
+                emrange='SWIR')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1',
+                emrange='TIR')
 
     def download_test_file(self, inputURL, mapperName, **kwargs):
         ''' Download one file for one mapper
