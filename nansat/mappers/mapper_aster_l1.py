@@ -30,7 +30,6 @@ class Mapper(VRT):
         if SHORTNAME != 'ASTL1B':
             raise WrongMapperError
 
-
         # set up metadict for data with various resolution
         subDSString = 'HDF4_EOS:EOS_SWATH:"%s":%s:%s'
         metaDictVNIR = [
@@ -56,7 +55,6 @@ class Mapper(VRT):
         {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData13')}, 'dst': {'wavelength': '10600'}},
         {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData14')}, 'dst': {'wavelength': '11300'}},
         ]
-
 
         # select appropriate metaDict based on <emrange> parameter
         metaDict = {'VNIR': metaDictVNIR,
@@ -91,14 +89,10 @@ class Mapper(VRT):
             bandNo = metaEntry['src']['SourceFilename'].strip().split(':')[-1].replace('ImageData', '')
             metaEntry['src']['ScaleRatio'] = float(gdalMetadata['INCL' + bandNo])
             metaEntry['src']['ScaleOffset'] = float(gdalMetadata['OFFSET' + bandNo])
-            print metaEntry
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        """
-        productDate = gdalMetadata["RANGEBEGINNINGDATE"]
-        productTime = gdalMetadata["RANGEENDINGTIME"]
-        self._set_time(parse(productDate+' '+productTime))
-        """
+        # set time
+        self._set_time(parse(gdalMetadata["SETTINGTIMEOFPOINTING"]+'+00'))
         self.remove_geolocationArray()
