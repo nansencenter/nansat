@@ -111,22 +111,23 @@ class Mapper(VRT):
                         # set wkv and bandname
                         dst['wkv'] = bandMetadata.get('standard_name', '')
                         # first, try the name metadata
-                        bandName = bandMetadata.get('name', '')
-                        # if it doesn't exist get name from NETCDF_VARNAME
-                        if len(bandName) == 0:
-                            bandName = bandMetadata.get('NETCDF_VARNAME', '')
-                        if len(bandName) == 0:
-                            bandName = bandMetadata.get('dods_variable', '')
+                        if 'name' in bandMetadata:
+                            bandName = bandMetadata['name']
+                        else:
+                            # if it doesn't exist get name from NETCDF_VARNAME
+                            if len(bandName) == 0:
+                                bandName = bandMetadata.get('NETCDF_VARNAME', '')
+                            if len(bandName) == 0:
+                                bandName = bandMetadata.get('dods_variable', '')
 
-                        # remove digits added by gdal in
-                        # exporting to netcdf...
-                        if (len(bandName) > 0 and
-                            origin_is_nansat and
-                            fileExt == '.nc'):
-                            if bandName[-1:].isdigit():
-                                bandName = bandName[:-1]
-                            if bandName[-1:].isdigit():
-                                bandName = bandName[:-1]
+                            # remove digits added by gdal in
+                            # exporting to netcdf...
+                            if (len(bandName) > 0 and origin_is_nansat and
+                                fileExt == '.nc'):
+                                if bandName[-1:].isdigit():
+                                    bandName = bandName[:-1]
+                                if bandName[-1:].isdigit():
+                                    bandName = bandName[:-1]
 
                         # if still no bandname, create one
                         if len(bandName) == 0:
