@@ -530,7 +530,9 @@ class Nansatmap(Basemap):
         # draw continets
         self.fillcontinents(**kwargs)
 
-    def save(self, fileName, landmask=True, **kwargs):
+    def save(self, fileName, landmask=True, dpi=75,
+                                            pad_inches=0,
+                                            bbox_inches='tight', **kwargs):
         '''Draw continents and save
 
         Parameters
@@ -548,7 +550,9 @@ class Nansatmap(Basemap):
         # set default extension
         if not((fileName.split('.')[-1] in self.extensionList)):
             fileName = fileName + self.DEFAULT_EXTENSION
-        self.fig.savefig(fileName)
+        self.fig.savefig(fileName, dpi=dpi,
+                            pad_inches=pad_inches,
+                            bbox_inches=bbox_inches)
 
     def _set_defaults(self, idict):
         '''Check input params and set defaut values
