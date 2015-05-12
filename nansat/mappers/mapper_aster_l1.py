@@ -17,9 +17,17 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata, emrange='VNIR', **kwargs):
         ''' Create MODIS_L1 VRT '''
         # check mapper
-        if gdalMetadata.get('INSTRUMENTSHORTNAME', '') != 'ASTER':
+        try:
+            INSTRUMENTSHORTNAME = gdalMetadata['INSTRUMENTSHORTNAME']
+        except:
             raise WrongMapperError
-        if gdalMetadata.get('SHORTNAME', '') != 'ASTL1B':
+        if INSTRUMENTSHORTNAME != 'ASTER':
+            raise WrongMapperError
+        try:
+            SHORTNAME = gdalMetadata['SHORTNAME']
+        except:
+            raise WrongMapperError
+        if SHORTNAME != 'ASTL1B':
             raise WrongMapperError
 
 
@@ -78,33 +86,12 @@ class Mapper(VRT):
             if 'ImageData3B' in metaEntry['src']['SourceFilename']:
                 metaEntry['dst']['suffix'] += 'B'
 
-        """
-        # read all scales/offsets
-        rScales = {}
-        rOffsets = {}
-        for sf in metaDictSF:
-            dsName = subDsString % (fileName, sf)
-            ds = gdal.Open(dsName)
-            rScales[dsName] = map(float,
-                                  ds.GetMetadataItem('radiance_scales').
-                                  split(','))
-            rOffsets[dsName] = map(float,
-                                   ds.GetMetadataItem('radiance_offsets').
-                                   split(','))
-            self.logger.debug('radiance_scales: %s' % str(rScales))
-
-        # add 'band_name' to 'parameters'
-        for bandDict in metaDict:
-            SourceFilename = bandDict['src']['SourceFilename']
-            SourceBand = bandDict['src']['SourceBand']
-            bandDict['dst']['suffix'] = bandDict['dst']['wavelength']
-            scale = rScales[SourceFilename][SourceBand-1]
-            offset = rOffsets[SourceFilename][SourceBand-1]
-            self.logger.debug('band, scale, offset: %s_%d %s %s' %
-                              (SourceFilename, SourceBand, scale, offset))
-            bandDict['src']['ScaleRatio'] = scale
-            bandDict['src']['ScaleOffset'] = offset
-        """
+        # add scale and offset
+        for metaEntry in metaDict:
+            bandNo = metaEntry['src']['SourceFilename'].strip().split(':')[-1].replace('ImageData', '')
+            metaEntry['src']['ScaleRatio'] = float(gdalMetadata['INCL' + bandNo])
+            metaEntry['src']['ScaleOffset'] = float(gdalMetadata['OFFSET' + bandNo])
+            print metaEntry
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
