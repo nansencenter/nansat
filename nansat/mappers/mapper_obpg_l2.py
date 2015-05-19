@@ -31,6 +31,7 @@ class Mapper(VRT):
 
         titles = ['HMODISA Level-2 Data',
                   'MODISA Level-2 Data',
+                  'HMODIST Level-2 Data',
                   'MERIS Level-2 Data',
                   'GOCI Level-2 Data',
                   'VIIRSN Level-2 Data']
@@ -107,7 +108,11 @@ class Mapper(VRT):
                         'latitude': {'src': {},
                                      'dst': {'wkv': 'latitude'}},
                         'longitude': {'src': {},
-                                      'dst': {'wkv': 'longitude'}}
+                                      'dst': {'wkv': 'longitude'}},
+                        'par': {'src': {},
+                                      'dst': {'wkv': 'downwelling_photosynthetic_photon_radiance_in_sea_water'}},
+                        'ipar': {'src': {},
+                                      'dst': {'wkv': 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water'}},
                         }
 
         # loop through available bands and generate metaDict (non fixed)

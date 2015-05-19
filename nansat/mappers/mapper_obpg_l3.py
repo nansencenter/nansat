@@ -28,7 +28,8 @@ class Mapper(VRT):
                  'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
                  'Particle backscatter at 443 nm': 'volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles',
                  'Chlorophyll a concentration, Garver-Siegel-Maritorena Model': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                 'Photosynthetically Available Radiation': 'photosynthetically_available_radiation',
+                 'Photosynthetically Available Radiation': 'downwelling_photosynthetic_photon_radiance_in_sea_water',
+                 'Instantaneous Photosynthetically Available Radiation': 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water',
                  }
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
