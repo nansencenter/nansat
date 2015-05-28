@@ -365,4 +365,12 @@
         <minmax>0 80</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>depth</standard_name>
+        <long_name>Depth</long_name>
+        <short_name>depth</short_name>
+        <units>m</units>
+        <minmax>0 13000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>
