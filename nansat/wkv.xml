@@ -373,4 +373,12 @@
         <minmax>0 13000</minmax>
         <colormap>jet</colormap>
     </wkv>
+    <wkv>
+        <standard_name>concentration_of_coccoliths_in_sea_water</standard_name>
+        <long_name>Coccoliths</long_name>
+        <short_name>ccl</short_name>
+        <units>10e12 plates m-3</units>
+        <minmax>0.001 15.000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
 </all_wkvs>
