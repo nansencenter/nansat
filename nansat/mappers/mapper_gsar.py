@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	02.06.2015
-# Last modified:03.06.2015 11:14
+# Last modified:03.06.2015 13:23
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -23,7 +23,10 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     def __init__(self, fileName, *args, **kwargs):
 
-        rvl = gsar(fileName)
+        try:
+            rvl = gsar(fileName)
+        except ValueError:
+            raise WrongMapperError
 
         channels_info = [rvl.getinfo(channel = 0)]
         try:
@@ -143,6 +146,25 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Add pixelfunction for getting the Doppler anomaly
+        for i, channel in enumerate(channels_data):
+            pol = channels_info[i].polarization
+            src = [{
+                    'SourceFilename': self.bandVRTs['dc_'+pol+'_VRT'].fileName,
+                    'SourceBand': 1
+                },{
+                    'SourceFilename': self.bandVRTs['dcpVRT'].fileName,
+                    'SourceBand': 1
+                }]
+            dst = {
+                    'wkv': 'surface_backwards_doppler_frequency_shift_of_radar_wave_due_to_surface_velocity',
+                    'PixelFunctionType': 'diff',
+                    'suffix': pol,
+                    'polarization': pol,
+                }
+
+            self._create_band(src, dst)
+            self.dataset.FlushCache()
+
 
         self.dataset.SetMetadataItem('mapper', 'gsar')
 
