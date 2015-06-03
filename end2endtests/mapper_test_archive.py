@@ -3,10 +3,10 @@
 # Purpose:      To test nansat
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:17.04.2015 13:32
+# Last modified:03.06.2015 13:36
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -95,6 +95,10 @@ class DataForTestingMappers(object):
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs20120328.t00z.master.grbf00',
                 'ncep')
+
+        self.download_test_file(
+                '/Data/sat/test_data_nansat_mappers/gsar/RVL_ASA_APC_20040528100001226.gsar',
+                'gsar')
 
         self.download_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
