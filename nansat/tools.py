@@ -22,6 +22,8 @@ import warnings
 import logging
 
 from matplotlib import cm
+from matplotlib.colors import hex2color
+
 import numpy as np
 from scipy import mod
 
@@ -226,3 +228,42 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger
+
+
+def get_random_color(c0=None, minDist=100):
+    ''' Create random color which is far enough from the input color
+
+    Parameters
+    ----------
+        c0 : str
+            hexademical representation of the color (e.g. '#ff0000' for red)
+        minDist : int
+            minimal distance to input color
+
+    Returns
+    -------
+        c0 : str
+            hexademical representation of the new random color
+    '''
+    # check inputs
+    if c0 is None:
+        c0 = '#000000'
+    # convert input color to tuple of R,G,B
+    c0rgb = np.array(hex2color(c0))
+
+    # create new random color
+    c1rgb = np.array([np.random.randint(255),
+                      np.random.randint(255),
+                      np.random.randint(255)])
+
+    # calculate distance
+    d = np.sum((c0rgb - c1rgb)**2)**0.5
+
+    # if distance is small, create new random color
+    if d < minDist:
+        c1 = get_random_color(c0, minDist)
+    else:
+        # convert to HEX code
+        c1 = '#%02x%02x%02x' % tuple(c1rgb)
+
+    return c1

@@ -18,13 +18,14 @@ from __future__ import absolute_import
 import re
 
 from mpl_toolkits.basemap import Basemap
+import matplotlib as mpl
 from matplotlib import cm
 import matplotlib.pyplot as plt
 from scipy import ndimage
 import numpy as np
 
 from nansat.nsr import NSR
-
+from nansat.tools import get_random_color
 
 class Nansatmap(Basemap):
     '''Perform opeartions with graphical files: create,
@@ -354,6 +355,13 @@ class Nansatmap(Basemap):
         # Create X/Y axes
         self._create_xy_grids()
 
+        # add random colormap
+        if 'cmap' in kwargs and kwargs['cmap'] == 'random':
+            values = np.unique(data[np.isfinite(data)])
+            cmap, norm = self._create_random_colormap(values)
+            kwargs['cmap'] = cmap
+            kwargs['norm'] = norm
+
         # Plot data using imshow
         self.mpl.append(Basemap.imshow(self, data,
                                   extent=[self.x.min(), self.x.max(),
@@ -474,9 +482,23 @@ class Nansatmap(Basemap):
         if not ('pad' in kwargs.keys()):
             kwargs['pad'] = 0.01
 
+
+
         # add colorbar and set font size
         if self.colorbar is not None:
-            cbar = self.fig.colorbar(self.mpl[self.colorbar], **kwargs)
+            origin = self.mpl[self.colorbar]
+
+            # if colormap is ListedColormap
+            # add integer ticks
+            ticks = None
+            if (hasattr(origin, 'cmap') and
+                type(origin.cmap) == mpl.colors.ListedColormap):
+                ticks = origin.norm.boundaries[:-1] + np.diff(origin.norm.boundaries) / 2.
+                listedColormap = True
+
+            cbar = self.fig.colorbar(origin, ticks=ticks, **kwargs)
+            if listedColormap:
+                cbar.ax.set_xticklabels(origin.norm.boundaries[:-1])
             imaxes = plt.gca()
             plt.axes(cbar.ax)
             plt.xticks(fontsize=fontsize)
@@ -596,3 +618,29 @@ class Nansatmap(Basemap):
         self._create_lonlat_grids()
         if self.x is None or self.y is None:
             self.x, self.y = self(self.lon, self.lat)
+
+    def _create_random_colormap(self, values):
+        ''' Generate colormap and colorbar with random discrete colors
+
+        Parameters
+        ----------
+            values : list or 1D array
+                values for which the random colors are to be generated
+        Returns
+        -------
+            cmap : matplotlib.color.Colormap
+            norm : matplotlib.color.BoundaryNorm
+        '''
+        # create first random color
+        randomColors = [get_random_color()]
+        # add more random colors
+        for v in values[1:]:
+            randomColors.append(get_random_color(randomColors[-1]))
+
+        # create colormap and norm
+        cmap = mpl.colors.ListedColormap(randomColors)
+        bounds = sorted(list(values))
+        bounds += [max(bounds) + 1] # bounds should be longer than values by 1
+        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+        return cmap, norm
