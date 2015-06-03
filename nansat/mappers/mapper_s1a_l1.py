@@ -3,10 +3,10 @@
 # Purpose:
 #
 # Author:       Morten Wergeland Hansen
-# Modified: Morten Wergeland Hansen
+# Modified:	Morten Wergeland Hansen
 #
 # Created:  12.09.2014
-# Last modified:14.10.2014 16:13
+# Last modified:03.06.2015 10:19
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -359,7 +359,7 @@ class Mapper(VRT):
                           'SourceBand': 1
                           }
                          ],
-                 'dst': {'wkv': 'radar_brightness_coefficient',
+                 'dst': {'wkv': 'surface_backwards_brightness_coefficient_of_radar_wave',
                          'PixelFunctionType': 'Sentinel1Calibration',
                          'polarization': pol[key],
                          'suffix': pol[key],
