@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	02.06.2015
-# Last modified:03.06.2015 13:23
+# Last modified:03.06.2015 15:43
 # Copyright:    (c) NERSC
 # License:      
 #-------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ class Mapper(VRT):
         # Read data into numpy record array (in memory, violates lazy
         # operations approach...)
         channels_data = [rvl.getdata(channel = 0)]
-        if len(channels_info)==2:
+        if len(channels_info)==2 and channels_info[0].product[0:2]=='AP':
             channels_data.append(rvl.getdata(channel = 1))
             np.testing.assert_array_equal(channels_data[0]['LONGITUDE'],
                     channels_data[1]['LONGITUDE'])
