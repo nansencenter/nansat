@@ -491,6 +491,7 @@ class Nansatmap(Basemap):
             # if colormap is ListedColormap
             # add integer ticks
             ticks = None
+            listedColormap = False
             if (hasattr(origin, 'cmap') and
                 type(origin.cmap) == mpl.colors.ListedColormap):
                 ticks = origin.norm.boundaries[:-1] + np.diff(origin.norm.boundaries) / 2.
