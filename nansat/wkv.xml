@@ -270,6 +270,14 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
+        <standard_name>height_above_reference_ellipsoid</standard_name>
+        <long_name>Digital elevation model height above mean sea level</long_name>
+        <short_name>topo</short_name>
+        <units>m</units>
+        <minmax>0 4000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
         <standard_name>land_binary_mask</standard_name>
         <long_name>Land mask</long_name>
         <short_name>landmask</short_name>
