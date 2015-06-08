@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:	04.06.2015
-# Last modified:04.06.2015 14:03
+# Last modified:08.06.2015 09:51
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -34,7 +34,9 @@ class Mapper(VRT):
         '''
 
         bn = os.path.basename(fileName)
-        if not bn=='gtopo30.vrt' or not os.path.splitext(bn)[1]=='.DEM':
+        import ipdb
+        ipdb.set_trace()
+        if not bn=='gtopo30.vrt' and not os.path.splitext(bn)[1]=='.DEM':
             raise WrongMapperError
 
         metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1},
