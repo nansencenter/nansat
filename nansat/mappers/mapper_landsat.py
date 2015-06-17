@@ -22,6 +22,7 @@ class Mapper(VRT):
         bandFileNames = []
         bandSizes = []
         bandDatasets = []
+        fname = os.path.split(fileName)[1]
 
         if   (fileName.endswith('.tar') or
               fileName.endswith('.tar.gz') or
@@ -46,17 +47,16 @@ class Mapper(VRT):
                     bandFileNames.append(sourceFilename)
                     bandSizes.append(gdalDatasetTmp.RasterXSize)
                     bandDatasets.append(gdalDatasetTmp)
-        elif ((fileName.startswith('L') or fileName.startswith('M')) and
-              (fileName.endswith('.tif') or
-               fileName.endswith('.TIF') or
-               fileName.endswith('._MTL.txt'))):
+        elif ((fname.startswith('L') or fname.startswith('M')) and
+              (fname.endswith('.tif') or
+               fname.endswith('.TIF') or
+               fname.endswith('._MTL.txt'))):
 
             # try to find TIF/tif files with the same name as input file
             path, coreName = os.path.split(fileName)
             coreName = os.path.splitext(coreName)[0].split('_')[0]
             coreNameMask = coreName+'*[tT][iI][fF]'
             tifNames = sorted(glob.glob(os.path.join(path, coreNameMask)))
-            print path, coreName, coreNameMask, tifNames
             for tifName in tifNames:
                 sourceFilename = tifName
                 gdalDatasetTmp = gdal.Open(sourceFilename)
@@ -92,7 +92,8 @@ class Mapper(VRT):
 
                 metaDict.append({
                     'src': {'SourceFilename': bandFileName,
-                            'SourceBand':  1},
+                            'SourceBand':  1,
+                            'ScaleRatio': 0.1},
                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                             'suffix': bandSuffix}})
                 gdalDataset4Use = bandDataset

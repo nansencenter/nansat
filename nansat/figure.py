@@ -29,7 +29,7 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from nansat.tools import add_logger
+from nansat.tools import add_logger, OptionError
 
 
 class Figure(object):
@@ -570,36 +570,31 @@ class Figure(object):
                 masked = masked + (self.mask_array == lutVal)
 
         # create a ratio list for each band
-        if isinstance(ratio, float) or isinstance(ratio, int):
-            ratioList = np.ones(self.array.shape[0]) * float(ratio)
-        else:
-            ratioList = []
-            for iRatio in range(self.array.shape[0]):
-                try:
-                    ratioList.append(ratio[iRatio])
-                except:
-                    ratioList.append(ratio[0])
+        if not (isinstance(ratio, float) or isinstance(ratio, int)):
+            raise OptionError('Incorrect input ratio %s' % str(ratio))
+
+        # create a ratio list for each band
+        if ratio <= 0 or ratio > 1:
+            raise OptionError('Incorrect input ratio %s' % str(ratio))
 
         # create a 2D array and set min and max values
         clim = [[0] * self.array.shape[0], [0] * self.array.shape[0]]
         for iBand in range(self.array.shape[0]):
-            clim[0][iBand] = np.nanmin(self.array[iBand, :, :])
-            clim[1][iBand] = np.nanmax(self.array[iBand, :, :])
+            bandArray = self.array[iBand, :, :]
+            # remove masked data
             if masked is not None:
-                self.array[iBand, :, :][masked] = clim[0][iBand]
-            # if 0<ratio<1 try to compute histogram
-            if (ratioList[iBand] > 0 and ratioList[iBand] < 1):
-                try:
-                    hist, bins = self._get_histogram(iBand)
-                except:
-                    self.logger.warning('Unable to compute histogram')
-                else:
-                    cumhist = hist.cumsum()
-                    cumhist /= cumhist[-1]
-                    clim[0][iBand] = bins[len(cumhist[cumhist <
-                                              (1 - ratioList[iBand]) / 2])]
-                    clim[1][iBand] = bins[len(cumhist[cumhist <
-                                          1 - ((1 - ratioList[iBand]) / 2)])]
+                bandArray = bandArray[masked == 0]
+            # remove nan, inf
+            bandArray = bandArray[np.isfinite(bandArray)]
+            # get percentile
+            percentileMin = 100 * (1 - ratio) / 2.
+            percentileMax = 100 * (1 - (1 - ratio) / 2.)
+            if bandArray.size > 0:
+                clim[0][iBand] = np.percentile(bandArray, percentileMin)
+                clim[1][iBand] = np.percentile(bandArray, percentileMax)
+            else:
+                clim[0][iBand], clim[1][iBand] = 0, 1
+
         self.color_limits = clim
         return clim
 

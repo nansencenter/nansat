@@ -1260,9 +1260,11 @@ class Nansat(Domain):
                             logLevel=self.logger.level)
         # reproject on self or given Domain
         if dstDomain is None:
-            watermask.reproject(self, **kwargs)
-        else:
-            watermask.reproject(dstDomain, **kwargs)
+            dstDomain = self
+        lon, lat = dstDomain.get_corners()
+        watermask.crop(lonlim=[lon.min(), lon.max()],
+                       latlim=[lat.min(), lat.max()])
+        watermask.reproject(dstDomain, addmask=False, **kwargs)
 
         return watermask
 
