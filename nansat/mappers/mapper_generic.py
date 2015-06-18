@@ -115,8 +115,7 @@ class Mapper(VRT):
                             bandName = bandMetadata['name']
                         else:
                             # if it doesn't exist get name from NETCDF_VARNAME
-                            if len(bandName) == 0:
-                                bandName = bandMetadata.get('NETCDF_VARNAME', '')
+                            bandName = bandMetadata.get('NETCDF_VARNAME', '')
                             if len(bandName) == 0:
                                 bandName = bandMetadata.get('dods_variable', '')
 
@@ -293,7 +292,7 @@ class Mapper(VRT):
         # open input netCDF file for reading GCPs
         try:
             ncFile = netcdf_file(fileName, 'r')
-        except TypeError as e:
+        except (TypeError, IOError) as e:
             self.logger.info('%s' % e)
             return None
 

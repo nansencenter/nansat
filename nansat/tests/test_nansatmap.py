@@ -52,8 +52,20 @@ class NansatmapTest(unittest.TestCase):
         n = Nansat(self.test_file_stere, logLevel=40)
         b1 = n[1]
         nmap = Nansatmap(n)
-        nmap.imshow(b1)
+        nmap.imshow(b1, cmap='ak01')
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansatmap_imshow.png')
+        nmap.save(tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_imshow_random(self):
+        ''' Should use Nansatmap.imshow '''
+        n = Nansat(self.test_file_stere, logLevel=40)
+        b1 = n[1]
+        nmap = Nansatmap(n)
+        nmap.imshow(b1/5, cmap='random')
+        nmap.add_colorbar()
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansatmap_imshow_random.png')
         nmap.save(tmpfilename)
 
         self.assertTrue(os.path.exists(tmpfilename))

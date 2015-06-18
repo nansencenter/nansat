@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:17.04.2015 13:32
+# Last modified:03.06.2015 13:36
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -97,6 +97,10 @@ class DataForTestingMappers(object):
                 'ncep')
 
         self.download_test_file(
+                '/Data/sat/test_data_nansat_mappers/gsar/RVL_ASA_APC_20040528100001226.gsar',
+                'gsar')
+
+        self.download_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
                 'radarsat2')
 
@@ -131,6 +135,20 @@ class DataForTestingMappers(object):
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/amsr2_l1r/GW1AM2_201407010010_183D_L1SGRTBR_1110110.h5',
                 'amsr2_l1r')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1',
+                emrange='SWIR')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1',
+                emrange='TIR')
 
     def download_test_file(self, inputURL, mapperName, **kwargs):
         ''' Download one file for one mapper

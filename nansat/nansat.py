@@ -598,7 +598,7 @@ class Nansat(Domain):
         # write data, close file
         ncFile.close()
 
-    def export2thredds(self, fileName, bands, metadata=None,
+    def export2thredds(self, fileName, bands=None, metadata=None,
                        maskName=None, rmMetadata=[],
                        time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
@@ -653,6 +653,12 @@ class Nansat(Domain):
         # raise error if self is not projected (has GCPs)
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
+
+        if bands is None:
+            bands = {}
+            selfbands = self.bands()
+            for band in selfbands:
+                bands[selfbands[band]['name']] = selfbands[band]
 
         # replace bands as list with bands as dict
         if type(bands) is list:
@@ -1254,9 +1260,11 @@ class Nansat(Domain):
                             logLevel=self.logger.level)
         # reproject on self or given Domain
         if dstDomain is None:
-            watermask.reproject(self, **kwargs)
-        else:
-            watermask.reproject(dstDomain, **kwargs)
+            dstDomain = self
+        lon, lat = dstDomain.get_corners()
+        watermask.crop(lonlim=[lon.min(), lon.max()],
+                       latlim=[lat.min(), lat.max()])
+        watermask.reproject(dstDomain, addmask=False, **kwargs)
 
         return watermask
 
