@@ -50,8 +50,28 @@ class MosaicTest(unittest.TestCase):
         L_469 = mo['L_469']
 
         tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'mosaic_export.nc')
+                                   'mosaic_average_export.nc')
         bands = {
+            'L_645' : {'type': '>i1'},
+            'L_555' : {'type': '>i1'},
+            'L_469' : {'type': '>i1'},
+        }
+        mo.export2thredds(tmpfilename, bands)
+
+    def test_median(self):
+        mo = Mosaic(domain=self.domain)
+        mo.median([self.test_file_gcps, self.test_file_stere],
+                    bands=['L_645', 'L_555', 'L_469'])
+
+        mask = mo['mask']
+        L_645 = mo['L_645']
+        L_555 = mo['L_555']
+        L_469 = mo['L_469']
+
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'mosaic_median_export.nc')
+        bands = {
+            'mask'  : {'type': '>i1'},
             'L_645' : {'type': '>i1'},
             'L_555' : {'type': '>i1'},
             'L_469' : {'type': '>i1'},
