@@ -1727,6 +1727,7 @@ class Nansat(Domain):
                 tmpVRT._create_band({'SourceFilename': self.fileName,
                                      'SourceBand': iBand + 1})
                 tmpVRT.dataset.FlushCache()
+            self.mapper = 'gdal_bands'
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
