@@ -369,7 +369,7 @@
         <standard_name>instantaneous_photosynthetically_available_radiation</standard_name>
         <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
         <short_name>PAR</short_name>
-        <units>enstain m-2 s-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 0.0024</minmax>
         <colormap>jet</colormap>
     </wkv>
@@ -393,7 +393,7 @@
         <standard_name>downwelling_photosynthetic_photon_radiance_in_sea_water</standard_name>
         <long_name>Photosynthetically Available Radiation</long_name>
         <short_name>PAR</short_name>
-        <units>Ein m-2 day-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 80</minmax>
         <colormap>jet</colormap>
     </wkv>
@@ -401,7 +401,7 @@
         <standard_name>instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water</standard_name>
         <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
         <short_name>IPAR</short_name>
-        <units>Ein m^-2 s^-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 80</minmax>
         <colormap>jet</colormap>
     </wkv>

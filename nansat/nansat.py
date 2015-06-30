@@ -598,7 +598,7 @@ class Nansat(Domain):
         # write data, close file
         ncFile.close()
 
-    def export2thredds(self, fileName, bands=None, metadata=None,
+    def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
                        time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
@@ -654,12 +654,6 @@ class Nansat(Domain):
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
 
-        if bands is None:
-            bands = {}
-            selfbands = self.bands()
-            for band in selfbands:
-                bands[selfbands[band]['name']] = selfbands[band]
-
         # replace bands as list with bands as dict
         if type(bands) is list:
             bands = dict.fromkeys(bands, {})
@@ -693,8 +687,9 @@ class Nansat(Domain):
             dstBands[iband]['scale'] = float(bands[iband].get('scale', 1.0))
             dstBands[iband]['offset'] = float(bands[iband].get('offset', 0.0))
             if '_FillValue' in bands[iband]:
-                dstBands[iband]['_FillValue'] = float(
-                    bands[iband]['_FillValue'])
+                dstBands[iband]['_FillValue'] = np.array(
+                                            [bands[iband]['_FillValue']],
+                                            dtype=dstBands[iband]['type'])[0]
 
             # mask values with np.nan
             if maskName is not None and iband != maskName:
@@ -702,12 +697,6 @@ class Nansat(Domain):
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(bandID=iband)
-
-            # remove unwanted metadata from bands
-            for rmMeta in rmMetadata:
-                if rmMeta in bandMetadata.keys():
-                    bandMetadata.pop(rmMeta)
-
             data.add_band(array=array, parameters=bandMetadata)
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
@@ -733,11 +722,6 @@ class Nansat(Domain):
         if metadata is not None:
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
-
-        # remove unwanted metadata from global metadata
-        for rmMeta in rmMetadata:
-            if rmMeta in globMetadata.keys():
-                globMetadata.pop(rmMeta)
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmpName = tempfile.mkstemp(suffix='.nc')
@@ -778,8 +762,11 @@ class Nansat(Domain):
         ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
         ncOVar.axis = 'T'
 
+        # get time from Nansat object or from input datetime
         if time is None:
             time = filter(None, self.get_time())
+        elif type(time) == datetime.datetime:
+            time = [time]
 
         # create value of time variable
         if len(time) > 0:
@@ -845,24 +832,24 @@ class Nansat(Domain):
                 # replace non-value by '_FillValue'
                 if (ncIVar.name in dstBands):
                     if '_FillValue' in dstBands[ncIVar.name].keys():
-                        data[np.isnan(data)] = bands[ncIVar.name]['_FillValue']
+                        data[np.isnan(data)] = dstBands[ncIVar.name]['_FillValue']
+                        ncOVar._attributes['_FillValue'] = dstBands[ncIVar.name]['_FillValue']
 
                 ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
-
                 # copy (some) attributes
                 for inAttrName in ncIVar._attributes:
-                    if inAttrName not in ['dataType', 'SourceFilename',
-                                          'SourceBand', '_Unsigned',
-                                          'FillValue', 'time']:
-                        ncOVar._attributes[inAttrName] = (
-                            ncIVar._attributes[inAttrName])
+                    if str(inAttrName) not in rmMetadata + ['dataType',
+                                    'SourceFilename', 'SourceBand', '_Unsigned',
+                                    'FillValue', 'time', '_FillValue']:
+                        ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
 
-                # add custom attributes
+                # add custom attributes from input parameter bands
                 if ncIVar.name in bands:
                     for newAttr in bands[ncIVar.name]:
-                        if newAttr not in ['type', 'scale', 'offset']:
-                            ncOVar._attributes[newAttr] = (
-                                bands[ncIVar.name][newAttr])
+                        if newAttr not in rmMetadata + ['type', 'scale',
+                                                        'offset',
+                                                        '_FillValue']:
+                            ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
                     # add grid_mapping info
                     if gridMappingName is not None:
                         ncOVar._attributes['grid_mapping'] = gridMappingName
