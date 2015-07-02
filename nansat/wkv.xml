@@ -1,6 +1,38 @@
 <all_wkvs multiple="true">
     <wkv>
-        <standard_name>radar_brightness_coefficient</standard_name>
+        <standard_name>surface_backwards_doppler_frequency_shift_of_radar_wave_due_to_surface_velocity</standard_name>
+        <long_name>Radar Doppler frequency shift due to surface velocity</long_name>
+        <short_name>dca</short_name>
+        <units>Hz</units>
+        <minmax>-60 60</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>predicted_surface_backwards_doppler_centroid_frequency_shift_of_radar_wave</standard_name>
+        <long_name>Geometric predicted Radar Doppler centroid frequency shift</long_name>
+        <short_name>dcp</short_name>
+        <units>Hz</units>
+        <minmax>0 2000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>standard_deviation_of_surface_backwards_doppler_centroid_frequency_shift_of_radar_wave</standard_name>
+        <long_name>Standard deviation of Radar Doppler centroid frequency shift estimate</long_name>
+        <short_name>dc_std</short_name>
+        <units>Hz</units>
+        <minmax>0 5</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_backwards_doppler_centroid_frequency_shift_of_radar_wave</standard_name>
+        <long_name>Radar Doppler centroid frequency shift</long_name>
+        <short_name>dc</short_name>
+        <units>Hz</units>
+        <minmax>0 2000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>surface_backwards_brightness_coefficient_of_radar_wave</standard_name>
         <long_name>Reflectivity per unit area in slant range</long_name>
         <short_name>beta0</short_name>
         <units>m/m</units>
@@ -168,7 +200,7 @@
     <wkv>
         <standard_name>sensor_zenith_angle</standard_name>
         <long_name>Sensor Zenith Angle</long_name>
-        <short_name>sat_zenith</short_name>
+        <short_name>sensor_zenith</short_name>
         <units>degrees</units>
         <minmax>0 90</minmax>
         <colormap>jet</colormap>
@@ -184,7 +216,7 @@
     <wkv>
         <standard_name>sensor_azimuth_angle</standard_name>
         <long_name>Sensor Azimuth Angle</long_name>
-        <short_name>sat_azimuth</short_name>
+        <short_name>sensor_azimuth</short_name>
         <units>degrees</units>
         <minmax>0 360</minmax>
         <colormap>jet</colormap>
@@ -238,9 +270,25 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
+        <standard_name>height_above_reference_ellipsoid</standard_name>
+        <long_name>Digital elevation model height above mean sea level</long_name>
+        <short_name>topo</short_name>
+        <units>m</units>
+        <minmax>0 4000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
         <standard_name>land_binary_mask</standard_name>
         <long_name>Land mask</long_name>
         <short_name>landmask</short_name>
+        <units></units>
+        <minmax>0 1</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>swath_binary_mask</standard_name>
+        <long_name>Swath mask</long_name>
+        <short_name>swathmask</short_name>
         <units></units>
         <minmax>0 1</minmax>
         <colormap>jet</colormap>
@@ -321,7 +369,7 @@
         <standard_name>instantaneous_photosynthetically_available_radiation</standard_name>
         <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
         <short_name>PAR</short_name>
-        <units>enstain m-2 s-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 0.0024</minmax>
         <colormap>jet</colormap>
     </wkv>
@@ -342,11 +390,35 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
-        <standard_name>photosynthetically_available_radiation</standard_name>
+        <standard_name>downwelling_photosynthetic_photon_radiance_in_sea_water</standard_name>
         <long_name>Photosynthetically Available Radiation</long_name>
         <short_name>PAR</short_name>
-        <units>enstain m-2 day-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 80</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water</standard_name>
+        <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
+        <short_name>IPAR</short_name>
+        <units>mol m-2 s-1 sr-1</units>
+        <minmax>0 80</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>depth</standard_name>
+        <long_name>Depth</long_name>
+        <short_name>depth</short_name>
+        <units>m</units>
+        <minmax>0 13000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
+        <standard_name>concentration_of_coccoliths_in_sea_water</standard_name>
+        <long_name>Coccoliths</long_name>
+        <short_name>ccl</short_name>
+        <units>10e12 plates m-3</units>
+        <minmax>0.001 15.000</minmax>
         <colormap>jet</colormap>
     </wkv>
 </all_wkvs>

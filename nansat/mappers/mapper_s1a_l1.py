@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  12.09.2014
-# Last modified:20.01.2015 18:58
+# Last modified:02.07.2015 15:43
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -359,7 +359,7 @@ class Mapper(VRT):
                           'SourceBand': 1
                           }
                          ],
-                 'dst': {'wkv': 'radar_brightness_coefficient',
+                 'dst': {'wkv': 'surface_backwards_brightness_coefficient_of_radar_wave',
                          'PixelFunctionType': 'Sentinel1Calibration',
                          'polarization': pol[key],
                          'suffix': pol[key],
@@ -471,7 +471,5 @@ class Mapper(VRT):
         LUT_VRTs = {}
         for LUT in LUT_list:
             LUT_VRTs[LUT] = VRT(array=LUTs[LUT], lat=latitude, lon=longitude)
-
-        #import ipdb; ipdb.set_trace()
 
         return LUT_VRTs, longitude, latitude

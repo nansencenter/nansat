@@ -601,6 +601,25 @@ class VRT(object):
         # return name of the created band
         return dst['name']
 
+    def _add_swath_mask_band(self):
+        ''' Create a new band where all values = 1
+
+        Modifies
+        ---------
+        Single band 'swathmask' with ones is added to the self.dataset
+
+        '''
+        self._create_band(
+            src=[{
+                'SourceFilename': self.fileName,
+                'SourceBand':  1,
+                'DataType': gdal.GDT_Byte}],
+            dst={
+                'dataType' : gdal.GDT_Byte,
+                'wkv' : 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            })
+
     def _set_time(self, time):
         ''' Set time of dataset and/or its bands
 
@@ -887,83 +906,6 @@ class VRT(object):
         node1 = node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
-
-    def _add_gcp_metadata(self, bottomup=True):
-        '''Add GCPs to metadata (required e.g. by Nansat.export())
-
-        Creates string representation of GCPs line/pixel/X/Y
-        Adds these string to metadata
-
-        Modifies
-        ---------
-        Add self.vrd.dataset.Metadata
-
-        '''
-        gcpNames = ['GCPPixel', 'GCPLine', 'GCPX', 'GCPY']
-        gcps = self.dataset.GetGCPs()
-        srs = self.dataset.GetGCPProjection()
-        chunkLength = 5000
-
-        # exit if no GCPs
-        if len(gcps) == 0:
-            return
-
-        # add GCP Projection
-        self.dataset.SetMetadataItem('NANSAT_GCPProjection',
-                                     srs.replace(',',  '|').replace('"', '&'))
-
-        # make empty strings
-        gspStrings = ['', '', '', '']
-
-        column = 0
-        for gcp in gcps:
-            if gcps[0].GCPLine == gcp.GCPLine:
-                column += 1
-            else:
-                break
-
-        # change the shape of gcps. (from 1D to 2D)
-        row = len(gcps) / column
-        gcps = list(gcps)
-        gcps = zip(*[iter(gcps)]*column)
-
-        # fill string with values
-        for iRow in range(row):
-            for jColumn in range(column):
-                gspStrings[0] = ('%s%05d| ' %
-                                 (gspStrings[0],
-                                  int(gcps[iRow][jColumn].GCPPixel)))
-                gspStrings[1] = ('%s%05d| ' %
-                                 (gspStrings[1],
-                                  int(gcps[iRow][jColumn].GCPLine)))
-                # if bottomup is True (=image is filpped), gcps are flipped
-                if bottomup:
-                    gspStrings[2] = ('%s%012.8f| ' %
-                                     (gspStrings[2],
-                                      gcps[row-iRow-1][jColumn].GCPX))
-                    gspStrings[3] = ('%s%012.8f| ' %
-                                     (gspStrings[3],
-                                      gcps[row-iRow-1][jColumn].GCPY))
-                else:
-                    gspStrings[2] = ('%s%012.8f| ' %
-                                     (gspStrings[2],
-                                      gcps[iRow][jColumn].GCPX))
-                    gspStrings[3] = ('%s%012.8f| ' %
-                                     (gspStrings[3],
-                                      gcps[iRow][jColumn].GCPY))
-
-        for i, gspString in enumerate(gspStrings):
-            #split string into chunks
-            numberOfChunks = int(float(len(gspString)) / chunkLength)
-            chunki = 0
-            for chunki in range(0, numberOfChunks + 1):
-                chunk = gspString[(chunki * chunkLength):
-                                  min(((chunki + 1) * chunkLength),
-                                      len(gspString))]
-                # add chunk to metadata
-                self.dataset.SetMetadataItem('NANSAT_%s_%03d'
-                                             % (gcpNames[i], chunki),
-                                             chunk)
 
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                        xSize=0, ySize=0, blockSize=None,
@@ -1599,8 +1541,7 @@ class VRT(object):
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize,
-                            factor, eResampleAlg):
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, eResampleAlg):
         '''Create VRT and replace step in the source'''
 
         subsamVRT = self.get_super_vrt()

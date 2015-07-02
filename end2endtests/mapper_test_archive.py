@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  18.06.2014
-# Last modified:03.03.2015 16:34
+# Last modified:03.06.2015 13:36
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -18,6 +18,9 @@ import os, warnings, time
 class DataForTestingMappers(object):
     ''' Download test data and keep info about each file '''
     mapperData = None
+    mustHaveFiles = [
+        'ASA_WSM_1PNPDK20110108_205958_000000923098_00187_46322_6032.N1',
+        ]
 
     def __init__(self):
         ''' Set directory to store test data
@@ -56,12 +59,30 @@ class DataForTestingMappers(object):
                 'hirlam')
 
         self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LT52280012006208KIS00.tar.gz',
+                'landsat')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LM52200021984220AAA04.tar.gz',
+                'landsat')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LE72210032011229EDC00.tar.gz',
+                'landsat')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LE72210032011229EDC00.tar.gz',
+                'landsat',
+                resolution='high')
+
+        self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz',
                 'landsat')
 
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz',
-                'landsat_highresolution')
+                'landsat',
+                resolution='high')
 
         self.download_test_file(
                 'ftp://ftp.nersc.no/pub/python_test_data/meris_l1/MER_FRS_1PNPDK20110503_105638_000001833102_00109_47968_7898.N1',
@@ -76,23 +97,31 @@ class DataForTestingMappers(object):
                 'ncep')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
+                '/Data/sat/test_data_nansat_mappers/gsar/RVL_ASA_APC_20040528100001226.gsar',
+                'gsar')
+
+        self.download_test_file(
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
+                'radarsat2')
+
+        self.download_test_file(
+                '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
                 'radarsat2')
 
         self.download_test_file(
@@ -107,7 +136,21 @@ class DataForTestingMappers(object):
                 'ftp://ftp.nersc.no/pub/python_test_data/amsr2_l1r/GW1AM2_201407010010_183D_L1SGRTBR_1110110.h5',
                 'amsr2_l1r')
 
-    def download_test_file(self, inputURL, mapperName):
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1',
+                emrange='SWIR')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'aster_l1',
+                emrange='TIR')
+
+    def download_test_file(self, inputURL, mapperName, **kwargs):
         ''' Download one file for one mapper
 
         For the given URL and mapper name
@@ -122,43 +165,49 @@ class DataForTestingMappers(object):
                 valid URL with the test file to download
             mapperName : str
                 name of the mapper for which the data is downloaded
+            other keyword arguments are passed to mapper
+
 
         ModifIes:
         ---------
             self.mapper_data : dict
-                adds new <mapper_name> : [<testFileName>]
-                or appends <testFileName> to the existing key
+                adds new item or appends to existing item
+                the key equal name of the mapper
+                and value equal to tuple (name of test file, kwargs for mapper)
 
         '''
-        fName = os.path.basename(inputURL)
+        fileName = os.path.basename(inputURL)
         mapperDir = os.path.split(os.path.split(inputURL)[0])[1]
         mapperDataDir = os.path.join(self.testDataDir, mapperDir)
-        mapperFName = os.path.join(mapperDataDir, fName)
+        mapperFileName = os.path.join(mapperDataDir, fileName)
 
-        if not os.path.exists(mapperDataDir):
-            os.makedirs(mapperDataDir)
+        # "inputURL" can also be a filename on the system
+        if os.path.exists(inputURL):
+            mapperFName = inputURL
+        else:
+            if not os.path.exists(mapperDataDir):
+                os.makedirs(mapperDataDir)
 
-        if not os.path.exists(mapperFName):
-            print "Downloading %s " % mapperFName
+        if not os.path.exists(mapperFileName):
+            print "Downloading %s " % mapperFileName
             t0 = time.time()
-            os.system('curl -so ' + mapperFName + ' ' + inputURL )
+            os.system('curl -so ' + mapperFileName + ' ' + inputURL )
             print time.time() - t0
 
-        if not os.path.exists(mapperFName):
-            must_have = 'ASA_WSM_1PNPDK20110108_205958_000000923098_00187_46322_6032.N1'
-            if os.path.basename(mapperFName) == must_have:
+        if not os.path.exists(mapperFileName):
+            if os.path.basename(mapperFileName) in self.mustHaveFiles:
                 warnings.warn( """
                     Could not access ftp-site with test data - contact
-                    morten.stette@nersc.no to get the ftp-server at NERSC restarted"""
-                )
+                    morten.stette@nersc.no to get the ftp-server at NERSC restarted""")
             else:
-                warnings.warn('%s: file is not available for download'
-                        %mapperFName)
+                warnings.warn('%s: file is not available for download' % mapperFileName)
         else:
+            # create entry for that mapper
             if self.mapperData is None:
                 self.mapperData = {}
+            # add file and kwargs for that mapper
             if mapperName in self.mapperData:
-                self.mapperData[mapperName].append(mapperFName)
+                self.mapperData[mapperName].append((mapperFileName, kwargs))
             else:
-                self.mapperData[mapperName] = [mapperFName]
+                self.mapperData[mapperName] = [(mapperFileName, kwargs)]
 

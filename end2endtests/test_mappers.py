@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:03.03.2015 16:34
+# Last modified:02.07.2015 15:14
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -20,8 +20,6 @@ import numpy as np
 from nansat import Nansat, Domain
 from nansat.nansat import _import_mappers
 from mapper_test_archive import DataForTestingMappers
-
-err = sys.stderr
 
 nansatMappers = _import_mappers()
 
@@ -63,23 +61,22 @@ class TestAllMappers(object):
 
     @classmethod
     def setup_class(cls):
+        ''' Download testing data '''
         cls.testData = DataForTestingMappers()
         cls.testData.download_all_test_data()
 
-    def test_mappers(self, mapper=''):
-        if mapper:
-            mm={}
-            mm[mapper] = self.testData.mapperData[mapper]
-        else:
-            mm = self.testData.mapperData
-        for mapper in mm:
-            mfiles = mm[mapper]
-            for f in mfiles:
-                err.write('\nMapper '+mapper+' -> '+f+'\n')
+    def test_mappers(self):
+        ''' Run similar tests for all mappers '''
+        for mapperName in self.testData.mapperData:
+            mapperParams = self.testData.mapperData[mapperName]
+            for fileName, kwargs in mapperParams:
+                sys.stderr.write('\nMapper '+mapperName+' -> '+f+'\n')
                 # Test call to Nansat, mapper not specified
-                yield self.open_with_nansat, f
+                #yield self.open_with_automatic_mapper, fileName, kwargs
+                yield self.open_with_nansat, fileName, kwargs
                 # Test call to Nansat, mapper specified
-                yield self.open_with_nansat, f, mapper
+                #yield self.open_with_specific_mapper, fileName, mapperName, kwargs
+                yield self.open_with_nansat, fileName, mapperName, kwargs
                 n = Nansat(f, mapperName=mapper)
                 # Test nansat.mapper
                 yield self.is_correct_mapper, n, mapper
@@ -104,12 +101,26 @@ class TestAllMappers(object):
     def is_correct_mapper(self, n, mapper):
         assert n.mapper==mapper
 
-    def open_with_nansat(self, file, mapper=None):
+    #def open_with_automatic_mapper(self, mapperFile, kwargs):
+    #    ''' Perform call to Nansat with each file as a separate test '''
+    #    n = Nansat(mapperFile, **kwargs)
+    #    n.logger.error('Generic mapper for %s ' % mapperFile)
+    #    assert type(n) == Nansat
+
+    #def open_with_specific_mapper(self, mapperFile, mapperName, kwargs):
+    #    ''' Perform call to Nansat with each file as a separate test '''
+    #    n = Nansat(mapperFile, mapperName=mapperName, **kwargs)
+    #    n.logger.error('Mapper %s for %s ' % (mapperName, mapperFile))
+    #    assert type(n) == Nansat
+
+    def open_with_nansat(self, file, mapper=None, kwargs):
         ''' Perform call to Nansat and check that it returns a Nansat object '''
         if mapper:
-            n = Nansat(file, mapperName=mapper)
+            n = Nansat(file, mapperName=mapper, **kwargs)
         else:
-            n = Nansat(file)
+            n = Nansat(file, **kwargs)
+        # Why this?:
+        n.logger.error('Mapper %s for %s ' % (mapperName, mapperFile))
         assert type(n) == Nansat
 
     def exist_intensity_band(self, n):
@@ -125,60 +136,11 @@ class TestAllMappers(object):
         for iComplexName in complexBandNames:
             assert iComplexName.replace('_complex', '') in allBandNames
 
-
-class TestRadarsat(object):
-
-    def test_all_rs2_files(self):
-        testData = DataForTestingMappers()
-        testData.download_all_test_data()
-        for rsfile in testData.mapperData['radarsat2']:
-            yield self.test_incidence_angle, rsfile
-            #yield self.test_export2thredds, rsfile
-            yield self.test_export, rsfile
-
-    def test_export2thredds(self, rsfile):
-        ncfile = 'test.nc'
-        orig = Nansat(rsfile)
-        orig.export2thredds(ncfile, bands = {'incidence_angle': {}})
-        copy = Nansat(ncfile)
-        inc0 = orig['incidence_angle']
-        inc1 = copy['incidence_angle']
-        np.testing.assert_allclose(inc0, inc1)
-        os.unlink(ncfile)
-
-    def test_export(self, rsfile):
-        ncfile = 'test.nc'
-        orig = Nansat(rsfile)
-        orig.export(ncfile)
-        copy = Nansat(ncfile)
-        inc0 = orig['incidence_angle']
-        inc1 = copy['incidence_angle']
-        np.testing.assert_allclose(inc0, inc1)
-        os.unlink(ncfile)
-
-    def test_incidence_angle(self, rsfile):
-        n = Nansat(rsfile)
-        inc_min = float(n.get_metadata()['NEAR_RANGE_INCIDENCE_ANGLE'])
-        inc_max = float(n.get_metadata()['FAR_RANGE_INCIDENCE_ANGLE'])
-        inc = n['incidence_angle']
-        assert np.all(np.greater_equal(inc[np.isnan(inc)==False], inc_min))
-        assert np.all(np.less_equal(inc[np.isnan(inc)==False], inc_max))
-
-    #def test_export_netcdf(self):
-
-
-## Test Generator with unittests:
-## http://stackoverflow.com/questions/32899/how-to-generate-dynamic-parametrized-unit-tests-in-python
-#class TestMapper(unittest.TestCase):
-#    def setUp(self):
-#        self.testData = DataForTestingMappers()
-#        self.testData.download_all_test_data()
-#
-#def test_generator():
-#    def test_import(self):
-#
-
 if __name__=='__main__':
     #for mapper in nansatMappers:
     #    test_name = 'test_%s'%mapper
     unittest.main()
+
+
+
+
