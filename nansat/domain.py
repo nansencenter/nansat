@@ -997,8 +997,10 @@ class Domain(object):
         # add content: coastline, continents, meridians, parallels
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
-        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
-        bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
+        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians),
+                            labels=merLabels)
+        bmap.drawparallels(np.linspace(minLat, maxLat, parallels),
+                            labels=parLabels)
 
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given
