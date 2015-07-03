@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:      18.06.2014
-# Last modified:02.07.2015 15:14
+# Last modified:02.07.2015 16:05
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -56,7 +56,7 @@ class TestDataForTestingMappers(unittest.TestCase):
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 # The x-flag results in the test stopping at first failure or error - use it
 # for easier debugging:
-# nosetests -v -x mapper_tests.test_mappers:TestAllMappers.test_mappers
+# nosetests -v -x end2endtests.test_mappers:TestAllMappers.test_mappers
 class TestAllMappers(object):
 
     @classmethod
@@ -70,16 +70,16 @@ class TestAllMappers(object):
         for mapperName in self.testData.mapperData:
             mapperParams = self.testData.mapperData[mapperName]
             for fileName, kwargs in mapperParams:
-                sys.stderr.write('\nMapper '+mapperName+' -> '+f+'\n')
+                sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
                 # Test call to Nansat, mapper not specified
                 #yield self.open_with_automatic_mapper, fileName, kwargs
                 yield self.open_with_nansat, fileName, kwargs
                 # Test call to Nansat, mapper specified
                 #yield self.open_with_specific_mapper, fileName, mapperName, kwargs
                 yield self.open_with_nansat, fileName, mapperName, kwargs
-                n = Nansat(f, mapperName=mapper)
+                n = Nansat(fileName, mapperName=mapperName)
                 # Test nansat.mapper
-                yield self.is_correct_mapper, n, mapper
+                yield self.is_correct_mapper, n, mapperName
                 # Test nansat.start_time() and nansat.end_time()
                 yield self.has_time, n
                 # Test nansat.source() (returns, e.g., Envisat/ASAR)
@@ -113,14 +113,14 @@ class TestAllMappers(object):
     #    n.logger.error('Mapper %s for %s ' % (mapperName, mapperFile))
     #    assert type(n) == Nansat
 
-    def open_with_nansat(self, file, mapper=None, kwargs):
+    def open_with_nansat(self, file, mapper=None, kwargs={}):
         ''' Perform call to Nansat and check that it returns a Nansat object '''
         if mapper:
             n = Nansat(file, mapperName=mapper, **kwargs)
         else:
             n = Nansat(file, **kwargs)
         # Why this?:
-        n.logger.error('Mapper %s for %s ' % (mapperName, mapperFile))
+        n.logger.error('Mapper %s for %s ' % (n.mapper, file))
         assert type(n) == Nansat
 
     def exist_intensity_band(self, n):
