@@ -237,15 +237,26 @@ class Mapper(VRT):
                 geoTransform = eval(geoTransformStr.replace('|', ','))
                 self.dataset.SetGeoTransform(geoTransform)
 
-        if 'start_date' in gdalMetadata:
-            try:
-                startDate = parse(gdalMetadata['start_date'])
-            except ValueError:
-                self.logger.error('Time format is wrong in input file!')
-            else:
-                self._set_time(startDate)
+        if 'start_time' in gdalMetadata:
+            self._set_time(parse(gdalMetadata['start_time']))
+        elif 'start_date' in gdalMetadata:
+            self._set_time(parse(gdalMetadata['start_date']))
+        else:
+            # Just use some clearly wrong time
+            self.dataset.SetMetadataItem('start_time',
+                    (parse('2200-01-01 00:00').isoformat()))
+        if not 'stop_time' in gdalMetadata:
+            # Just use some clearly wrong time
+            self.dataset.SetMetadataItem('stop_time',
+                    (parse('2200-01-01 00:00').isoformat()))
+        if not 'sensor' in gdalMetadata:
+            self.dataset.SetMetadataItem('sensor', 'unknown')
+        if not 'satellite' in gdalMetadata:
+            self.dataset.SetMetadataItem('satellite', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
+
+
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''

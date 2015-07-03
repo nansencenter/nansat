@@ -142,16 +142,16 @@ class Mapper(VRT):
             print 'Can not decode pass direction: ' + str(passDirection)
 
         # Calculate SAR look direction
-        SAR_look_direction = sat_heading + antennaPointing
+        look_direction = sat_heading + antennaPointing
         # Interpolate to regain lost row
-        SAR_look_direction = np.mod(SAR_look_direction, 360)
-        SAR_look_direction = scipy.ndimage.interpolation.zoom(
-            SAR_look_direction, (1, 11./10.))
+        look_direction = np.mod(look_direction, 360)
+        look_direction = scipy.ndimage.interpolation.zoom(
+            look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
-        SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
-        SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
-        look_u_VRT = VRT(array=SAR_look_direction_u, lat=lat, lon=lon)
-        look_v_VRT = VRT(array=SAR_look_direction_v, lat=lat, lon=lon)
+        look_direction_u = np.sin(np.deg2rad(look_direction))
+        look_direction_v = np.cos(np.deg2rad(look_direction))
+        look_u_VRT = VRT(array=look_direction_u, lat=lat, lon=lon)
+        look_v_VRT = VRT(array=look_direction_v, lat=lat, lon=lon)
 
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
@@ -174,7 +174,7 @@ class Mapper(VRT):
         metaDict.append({'src': {'SourceFilename': lookFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'sensor_azimuth_angle',
-                                 'name': 'SAR_look_direction'}})
+                                 'name': 'look_direction'}})
 
         ###############################
         # Create bands
@@ -239,14 +239,13 @@ class Mapper(VRT):
         self._set_time(parse(validTime))
 
         # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date',
+        self.dataset.SetMetadataItem('start_time',
                                      (parse(gdalMetadata['FIRST_LINE_TIME']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_date',
+        self.dataset.SetMetadataItem('stop_time',
                                      (parse(gdalMetadata['LAST_LINE_TIME']).
                                       isoformat()))
         self.dataset.SetMetadataItem('sensor', 'SAR')
         self.dataset.SetMetadataItem('satellite', 'Radarsat2')
-        self.dataset.SetMetadataItem('mapper', 'radarsat2')
 
         self._add_swath_mask_band()

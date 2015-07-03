@@ -103,3 +103,21 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+
+        #import ipdb
+        #ipdb.set_trace()
+        #t = tarfile.open(fileName)
+        #for m in t.getmembers():
+        #    if m.name[-4:] == '.TXT' or m.name[-4:] == '.txt':
+        #        f = t.extractfile(m)
+        #        for line in f:
+
+        
+        #self.dataset.SetMetadataItem('start_time',
+        #                             (parse(gdalMetadata['MPH_SENSING_START']).
+        #                              isoformat()))
+        #self.dataset.SetMetadataItem('stop_time',
+        #                             (parse(gdalMetadata['MPH_SENSING_STOP']).
+        #                              isoformat()))
+        #self.dataset.SetMetadataItem('sensor', 'ASAR')
+        #self.dataset.SetMetadataItem('satellite', 'Envisat')

@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  12.09.2014
-# Last modified:03.06.2015 10:19
+# Last modified:02.07.2015 15:43
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -303,7 +303,7 @@ class Mapper(VRT):
                 }
             })
 
-        name = 'SAR_look_direction'
+        name = 'look_direction'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
         metaDict.append({

@@ -122,3 +122,13 @@ class Mapper(VRT):
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
         self._set_time(parse(gdalMetadata['FIRSTPACKETTIME']))
+
+        # set required metadata
+        self.dataset.SetMetadataItem('start_date',
+                                     (parse(gdalMetadata['FIRSTPACKETTIME']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('stop_date',
+                                     (parse(gdalMetadata['LASTPACKETTIME']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('sensor', 'VNIR')
+        self.dataset.SetMetadataItem('satellite', 'Aster')
