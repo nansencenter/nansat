@@ -3,7 +3,7 @@
 # Purpose:      To test nansat
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:  18.06.2014
 # Last modified:03.06.2015 13:36
@@ -149,6 +149,10 @@ class DataForTestingMappers(object):
                 'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
                 'aster_l1',
                 emrange='TIR')
+
+        self.download_test_file(
+                'ftp://ftp.nersc.no/pub/python_test_data/obpg_l2_nc/A2015223043500.L2_LAC.NorthNorwegianSeas.nc',
+                'obpg_l2_nc')
 
     def download_test_file(self, inputURL, mapperName, **kwargs):
         ''' Download one file for one mapper

@@ -241,6 +241,8 @@ class Mapper(VRT):
             self._set_time(parse(gdalMetadata['start_time']))
         elif 'start_date' in gdalMetadata:
             self._set_time(parse(gdalMetadata['start_date']))
+        elif 'time_coverage_start' in gdalMetadata:
+            self._set_time(parse(gdalMetadata['time_coverage_start']))
         else:
             # Just use some clearly wrong time
             self.dataset.SetMetadataItem('start_time',
@@ -255,8 +257,6 @@ class Mapper(VRT):
             self.dataset.SetMetadataItem('satellite', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
-
-
 
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
