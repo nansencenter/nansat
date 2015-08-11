@@ -4,6 +4,8 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from dateutil.parser import parse
+
 import numpy as np
 
 try:
@@ -106,15 +108,26 @@ class Mapper(OBPGL2BaseClass):
                     gcps.append(gcp)
                     k += 1
 
+        time_coverage_start = ds.time_coverage_start
+        time_coverage_end = ds.time_coverage_end
         # clean up netCDF4.Dataset
         gdGroup = None
         ds = None
         var = None
 
+        # create VRT
         VRT.__init__(self, srcProjection=NSR().wkt,
                      srcGCPs=gcps,
                      srcGCPProjection=NSR().wkt,
                      srcRasterXSize=rasterXSize,
                      srcRasterYSize=rasterYSize)
-
+        # add bands
         self._create_bands(metaDict)
+        # set time
+        self._set_time(parse(time_coverage_start))
+
+        # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('start_time', str(time_coverage_start))
+        self.dataset.SetMetadataItem('stop_time', str(time_coverage_end))
+        self.dataset.SetMetadataItem('sensor', 'MODIS')
+        self.dataset.SetMetadataItem('satellite', 'Aqua')
