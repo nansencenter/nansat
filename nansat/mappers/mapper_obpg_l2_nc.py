@@ -39,7 +39,7 @@ class Mapper(OBPGL2BaseClass):
         else:
             dsMetadata = ds.GetMetadata()
 
-        # title value should be prelisted
+        # title value must be known
         if dsMetadata.get('title', '') not in self.titles:
             raise WrongMapperError
 
@@ -47,7 +47,8 @@ class Mapper(OBPGL2BaseClass):
         subDatasets = gdal.Open(fileName).GetSubDatasets()
         metaDict = []
         for subDataset in subDatasets:
-            if '/geophysical_data/' not in subDataset[1]:
+            groupName = subDataset[0].split('/')[-2]
+            if groupName not in ['geophysical_data', 'navigation_data']:
                 continue
             varName = subDataset[0].split('/')[-1]
             subds = gdal.Open(subDataset[0])
@@ -60,23 +61,23 @@ class Mapper(OBPGL2BaseClass):
                                  'DataType': b.DataType},
                          'dst': {'name': varName}}
             # set scale if exist
-            metaKey = 'geophysical_data_%s_scale_factor' % varName
+            metaKey = '%s_%s_scale_factor' % (groupName, varName)
             if metaKey in bMetadata:
                 metaEntry['src']['ScaleRatio'] = bMetadata[metaKey]
 
             # set offset if exist
-            metaKey = 'geophysical_data_%s_add_offset' % varName
+            metaKey = '%s_%s_add_offset' % (groupName, varName)
             if metaKey in bMetadata:
                 metaEntry['src']['ScaleOffset'] = bMetadata[metaKey]
 
             # set standard_name if exists
-            metaKey = 'geophysical_data_%s_standard_name' % varName
+            metaKey = '%s_%s_standard_name' % (groupName, varName)
             if metaKey in bMetadata:
                 metaEntry['dst']['wkv'] = bMetadata[metaKey]
 
             # set other metadata
             for metaKey in bMetadata:
-                newMetaKey = metaKey.replace('geophysical_data_%s_' % varName, '')
+                newMetaKey = metaKey.replace('%s_%s_' %  (groupName, varName), '')
                 if newMetaKey not in ['scale_factor', 'add_offset', 'DIMENSION_LIST', '_FillValue']:
                     metaEntry['dst'][newMetaKey] = bMetadata[metaKey]
             metaDict.append(metaEntry)
