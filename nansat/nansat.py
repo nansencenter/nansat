@@ -337,7 +337,7 @@ class Nansat(Domain):
         Parameters
         ----------
             band : str
-                name or standard_name of the band to check 
+                name or standard_name of the band to check
 
         Returns
         -------
@@ -1150,7 +1150,18 @@ class Nansat(Domain):
         # add band that masks valid values with 1 and nodata with 0
         # after reproject
         if addmask:
-            self.vrt._add_swath_mask_band()
+            self.vrt = self.vrt.get_super_vrt()
+            bandName = self.vrt._create_band(
+                src=[{
+                    'SourceFilename': self.fileName,
+                    'SourceBand':  1,
+                    'DataType': gdal.GDT_Byte}],
+                dst={
+                    'dataType' : gdal.GDT_Byte,
+                    'wkv' : 'swath_binary_mask',
+                    'PixelFunctionType': 'OnesPixelFunc',
+                })
+            self.vrt.dataset.FlushCache()
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
@@ -1549,7 +1560,7 @@ class Nansat(Domain):
         else:
             ss = se+'/'+sa
         return ss
-        
+
     def sensor(self):
         return self.get_metadata('sensor')
 
