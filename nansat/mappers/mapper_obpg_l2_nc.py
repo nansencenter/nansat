@@ -64,6 +64,7 @@ class Mapper(OBPGL2BaseClass):
             # replace datatype for l2_flags
             if varName == 'l2_flags':
                 metaEntry['src']['DataType'] = 4
+                metaEntry['src']['SourceType'] = 'SimpleSource'
 
             # set scale if exist
             metaKey = '%s_%s_scale_factor' % (groupName, varName)
