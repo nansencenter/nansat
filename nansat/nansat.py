@@ -1153,7 +1153,7 @@ class Nansat(Domain):
             self.vrt = self.vrt.get_super_vrt()
             bandName = self.vrt._create_band(
                 src=[{
-                    'SourceFilename': self.fileName,
+                    'SourceFilename': self.vrt.vrt.fileName,
                     'SourceBand':  1,
                     'DataType': gdal.GDT_Byte}],
                 dst={

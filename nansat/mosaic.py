@@ -213,6 +213,7 @@ class Mosaic(Nansat):
 
         # run reprojection and summing up
         metadata = pool.map(sumup, layers)
+        #metadata = map(sumup, layers)
 
         # get band metadata from the first valid file
         for bandsMeta in metadata:
