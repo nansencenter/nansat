@@ -299,6 +299,10 @@ class Nansat(Domain):
         # <p1> and <p2>
 
         '''
+        # replace empty parameters with list of None
+        if parameters is None:
+            parameters = [None] * len(arrays)
+
         # create VRTs from arrays
         bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
 
