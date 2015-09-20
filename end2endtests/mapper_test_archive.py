@@ -195,7 +195,7 @@ class DataForTestingMappers(object):
         if not os.path.exists(mapperFileName):
             print "Downloading %s " % mapperFileName
             t0 = time.time()
-            os.system('curl -so ' + mapperFileName + ' ' + inputURL )
+            os.system('wget -O ' + mapperFileName + ' ' + inputURL )
             print time.time() - t0
 
         if not os.path.exists(mapperFileName):
