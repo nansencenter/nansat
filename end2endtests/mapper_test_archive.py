@@ -39,61 +39,61 @@ class DataForTestingMappers(object):
         ''' Download test data for each mapper '''
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_IMS_1PNIPA20100411_101715_000000162088_00280_42418_0338.N1',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/asar/ASA_IMS_1PNIPA20100411_101715_000000162088_00280_42418_0338.N1',
                 'asar')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/asar/ASA_WSM_1PNPDK20110108_205958_000000923098_00187_46322_6032.N1',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/asar/ASA_WSM_1PNPDK20110108_205958_000000923098_00187_46322_6032.N1',
                 'asar')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1a/AST_L1A_00306192003124632_20120731044546_8073.hdf',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/aster_l1a/AST_L1A_00306192003124632_20120731044546_8073.hdf',
                 'aster_l1a')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/csks/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/csks/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5',
                 'csks')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/hirlam/DNMI-NEurope.grb',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/hirlam/DNMI-NEurope.grb',
                 'hirlam')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LT52280012006208KIS00.tar.gz',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/landsat/LT52280012006208KIS00.tar.gz',
                 'landsat')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LM52200021984220AAA04.tar.gz',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/landsat/LM52200021984220AAA04.tar.gz',
                 'landsat')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LE72210032011229EDC00.tar.gz',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/landsat/LE72210032011229EDC00.tar.gz',
                 'landsat')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LE72210032011229EDC00.tar.gz',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/landsat/LE72210032011229EDC00.tar.gz',
                 'landsat',
                 resolution='high')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/landsat/LC81750072013176LGN00.tar.gz',
                 'landsat')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/landsat/LC81750072013176LGN00.tar.gz',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/landsat/LC81750072013176LGN00.tar.gz',
                 'landsat',
                 resolution='high')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/meris_l1/MER_FRS_1PNPDK20110503_105638_000001833102_00109_47968_7898.N1',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/meris_l1/MER_FRS_1PNPDK20110503_105638_000001833102_00109_47968_7898.N1',
                 'meris_l1')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/modis_l1/MOD021KM.A2010105.2120.005.2010106075131.hdf',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/modis_l1/MOD021KM.A2010105.2120.005.2010106075131.hdf',
                 'modis_l1')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs20120328.t00z.master.grbf00',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/ncep/gfs20120328.t00z.master.grbf00',
                 'ncep')
 
         self.download_test_file(
@@ -125,33 +125,33 @@ class DataForTestingMappers(object):
                 'radarsat2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/generic/mapperTest_generic.tif',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/generic/mapperTest_generic.tif',
                 'generic')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/obpg_l2/A2014275111000.L2_LAC.NorthNorwegianSeas.hdf',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/obpg_l2/A2014275111000.L2_LAC.NorthNorwegianSeas.hdf',
                 'obpg_l2')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/amsr2_l1r/GW1AM2_201407010010_183D_L1SGRTBR_1110110.h5',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/amsr2_l1r/GW1AM2_201407010010_183D_L1SGRTBR_1110110.h5',
                 'amsr2_l1r')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
                 'aster_l1')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
                 'aster_l1',
                 emrange='SWIR')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/aster_l1b/AST_L1B_00308152008163958_20100924185158_23033.hdf',
                 'aster_l1',
                 emrange='TIR')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/obpg_l2_nc/A2015223043500.L2_LAC.NorthNorwegianSeas.nc',
+                'ftp://ftp.nersc.no/pub/nansat/test_data/obpg_l2_nc/A2015223043500.L2_LAC.NorthNorwegianSeas.nc',
                 'obpg_l2_nc')
 
     def download_test_file(self, inputURL, mapperName, **kwargs):
