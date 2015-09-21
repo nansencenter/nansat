@@ -1597,7 +1597,11 @@ class Nansat(Domain):
 
         # get all metadata or from a key
         if key is not None:
-            metadata = metadata.get(key, None)
+            try:
+                metadata = metadata[key]
+            except KeyError:
+                raise OptionError('%s does not have metadata %s' % (
+                                   self.fileName, key))
 
         return metadata
 

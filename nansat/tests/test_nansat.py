@@ -568,9 +568,9 @@ class NansatTest(unittest.TestCase):
 
     def test_get_metadata_wrong_key(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
-        m = n1.get_metadata('some_crap')
 
-        self.assertTrue(m is None)
+        with self.assertRaises(OptionError):
+            n1.get_metadata('some_crap')
 
     def test_get_metadata_bandid(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
