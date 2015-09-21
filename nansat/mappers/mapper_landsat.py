@@ -19,6 +19,7 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata,
                        resolution='low', **kwargs):
         ''' Create LANDSAT VRT from multiple tif files or single tar.gz file'''
+        mtlFileName = ''
         bandFileNames = []
         bandSizes = []
         bandDatasets = []
@@ -37,6 +38,7 @@ class Mapper(VRT):
             # into bandsInfo dict and bandSizes list
             tarNames = sorted(tarFile.getnames())
             for tarName in tarNames:
+                print tarName
                 # check if TIF files inside TAR qualify
                 if   (tarName[0] in ['L', 'M'] and
                       os.path.splitext(tarName)[1] in ['.TIF', '.tif']):
@@ -47,6 +49,11 @@ class Mapper(VRT):
                     bandFileNames.append(sourceFilename)
                     bandSizes.append(gdalDatasetTmp.RasterXSize)
                     bandDatasets.append(gdalDatasetTmp)
+                elif (tarName.endswith('MTL.txt') or
+                      tarName.endswith('MTL.TXT')):
+                    # get mtl file
+                    mtlFileName = tarName
+
         elif ((fname.startswith('L') or fname.startswith('M')) and
               (fname.endswith('.tif') or
                fname.endswith('.TIF') or
@@ -65,6 +72,10 @@ class Mapper(VRT):
                 bandSizes.append(gdalDatasetTmp.RasterXSize)
                 bandDatasets.append(gdalDatasetTmp)
 
+            # get mtl file
+            mtlFiles = glob.glob(coreName+'*[mM][tT][lL].[tT][xX][tT]')
+            if len(mtlFiles) > 0:
+                mtlFileName = mtlFiles[0]
         else:
             raise WrongMapperError
 
@@ -103,3 +114,21 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+
+        #import ipdb
+        #ipdb.set_trace()
+        #t = tarfile.open(fileName)
+        #for m in t.getmembers():
+        #    if m.name[-4:] == '.TXT' or m.name[-4:] == '.txt':
+        #        f = t.extractfile(m)
+        #        for line in f:
+
+
+        #self.dataset.SetMetadataItem('start_time',
+        #                             (parse(gdalMetadata['MPH_SENSING_START']).
+        #                              isoformat()))
+        #self.dataset.SetMetadataItem('stop_time',
+        #                             (parse(gdalMetadata['MPH_SENSING_STOP']).
+        #                              isoformat()))
+        #self.dataset.SetMetadataItem('sensor', 'ASAR')
+        #self.dataset.SetMetadataItem('satellite', 'Envisat')
