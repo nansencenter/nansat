@@ -47,10 +47,6 @@ class DataForTestingMappers(object):
                 'asar')
 
         self.download_test_file(
-                'ftp://ftp.nersc.no/pub/nansat/test_data/aster_l1a/AST_L1A_00306192003124632_20120731044546_8073.hdf',
-                'aster_l1a')
-
-        self.download_test_file(
                 'ftp://ftp.nersc.no/pub/nansat/test_data/csks/CSKS4_SCS_B_PP_11_CO_LA_FF_20111215040251_20111215040257.h5',
                 'csks')
 
@@ -96,31 +92,31 @@ class DataForTestingMappers(object):
                 'ftp://ftp.nersc.no/pub/nansat/test_data/ncep/gfs20120328.t00z.master.grbf00',
                 'ncep')
 
-        self.download_test_file(
-                '/Data/sat/test_data_nansat_mappers/gsar/RVL_ASA_APC_20040528100001226.gsar',
-                'gsar')
+        #self.add_test_file(
+        #        '/Data/sat/test_data_nansat_mappers/gsar/RVL_ASA_APC_20040528100001226.gsar',
+        #        'gsar')
 
-        self.download_test_file(
+        self.add_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20090227_063055_0080_SCWA_HHHV_SCW_30853_0000_1897838',
                 'radarsat2')
 
-        self.download_test_file(
+        self.add_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20111109_060616_0045_SCNA_HHHV_SGF_164373_9871_6913894',
                 'radarsat2')
 
-        self.download_test_file(
+        self.add_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20140723_161314_0003_U20_VV_SLC_337855_2455_9614320',
                 'radarsat2')
 
-        self.download_test_file(
+        self.add_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK57403_PK539140_DK477416_SCWA_20141022_152035_HH_SGF.ZIP',
                 'radarsat2')
 
-        self.download_test_file(
+        self.add_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_20110608_172753_0005_FQ15_HHVVHVVH_SLC_137348_1953_5671561.zip',
                 'radarsat2')
 
-        self.download_test_file(
+        self.add_test_file(
                 '/Data/sat/test_data_nansat_mappers/radarsat2/RS2_OK29747_PK294181_DK265214_FQ23_20100508_120125_HH_VV_HV_VH_SLC.zip',
                 'radarsat2')
 
@@ -154,6 +150,27 @@ class DataForTestingMappers(object):
                 'ftp://ftp.nersc.no/pub/nansat/test_data/obpg_l2_nc/A2015223043500.L2_LAC.NorthNorwegianSeas.nc',
                 'obpg_l2_nc')
 
+    def add_test_file(self, mapperFileName, mapperName, **kwargs):
+        ''' Add test file dir and mapper to self.mapperData '''
+
+        # quit with warning if file cannot be read
+        if not self.readable(mapperFileName):
+            warnings.warn('\n\n\n Cannot add %s to tests!' % mapperFileName)
+            return
+
+        # create self.mapperData
+        if self.mapperData is None:
+            self.mapperData = {}
+
+        if mapperName not in self.mapperData:
+            # create new entry
+            self.mapperData[mapperName] = [(mapperFileName, kwargs)]
+        else:
+            # update existing entry if it doesn't exist yet
+            if (mapperFileName, kwargs) not in self.mapperData[mapperName]:
+                self.mapperData[mapperName].append((mapperFileName, kwargs))
+
+
     def download_test_file(self, inputURL, mapperName, **kwargs):
         ''' Download one file for one mapper
 
@@ -165,7 +182,7 @@ class DataForTestingMappers(object):
 
         Parameters:
         -----------
-            inputUrl : str
+            inputURL : str
                 valid URL with the test file to download
             mapperName : str
                 name of the mapper for which the data is downloaded
@@ -180,38 +197,46 @@ class DataForTestingMappers(object):
                 and value equal to tuple (name of test file, kwargs for mapper)
 
         '''
+        # quit if inputURL is not url
+        if not (inputURL.startswith('ftp') or inputURL.startswith('http')):
+            warnings.warn('Incorrect URL %s' % mapperFileName)
+            return
+
+        # directory for mapper
         fileName = os.path.basename(inputURL)
         mapperDir = os.path.split(os.path.split(inputURL)[0])[1]
         mapperDataDir = os.path.join(self.testDataDir, mapperDir)
         mapperFileName = os.path.join(mapperDataDir, fileName)
+        if not os.path.exists(mapperDataDir):
+            os.makedirs(mapperDataDir)
 
-        # "inputURL" can also be a filename on the system
-        if os.path.exists(inputURL):
-            mapperFName = inputURL
-        else:
-            if not os.path.exists(mapperDataDir):
-                os.makedirs(mapperDataDir)
-
+        # if file is not yet available, download it
         if not os.path.exists(mapperFileName):
             print "Downloading %s " % mapperFileName
             t0 = time.time()
             os.system('wget -O ' + mapperFileName + ' ' + inputURL )
             print time.time() - t0
 
-        if not os.path.exists(mapperFileName):
+        # check access to file before adding
+        if not self.readable(mapperFileName):
+            warnings.warn('\n\n Cannot download %s for testing!' % mapperFileName)
             if os.path.basename(mapperFileName) in self.mustHaveFiles:
                 warnings.warn( """
                     Could not access ftp-site with test data - contact
                     morten.stette@nersc.no to get the ftp-server at NERSC restarted""")
-            else:
-                warnings.warn('%s: file is not available for download' % mapperFileName)
-        else:
-            # create entry for that mapper
-            if self.mapperData is None:
-                self.mapperData = {}
-            # add file and kwargs for that mapper
-            if mapperName in self.mapperData:
-                self.mapperData[mapperName].append((mapperFileName, kwargs))
-            else:
-                self.mapperData[mapperName] = [(mapperFileName, kwargs)]
+            return
 
+        # add good file to the testing suite
+        self.add_test_file(mapperFileName, mapperName, **kwargs)
+
+
+    def readable(self, mapperFileName):
+        ''' Test of file is readable at os level '''
+        if not os.path.exists(mapperFileName):
+            return False
+        if not os.access(mapperFileName, os.R_OK):
+            return False
+        if os.stat(mapperFileName).st_size == 0:
+            return False
+
+        return True
