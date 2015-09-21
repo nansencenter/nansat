@@ -3,7 +3,7 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
 # Last modified:02.07.2015 16:05
@@ -81,9 +81,9 @@ class TestAllMappers(object):
                 # Test nansat.mapper
                 yield self.is_correct_mapper, n, mapperName
                 # Test nansat.start_time() and nansat.end_time()
-                yield self.has_time, n
+                #yield self.has_time, n
                 # Test nansat.source() (returns, e.g., Envisat/ASAR)
-                yield self.has_source, n
+                #yield self.has_source, n
                 # Test that SAR objects have sigma0 intensity bands in addition
                 # to complex bands
                 if n.has_band(
