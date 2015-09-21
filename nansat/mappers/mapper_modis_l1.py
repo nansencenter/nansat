@@ -346,7 +346,32 @@ class Mapper(VRT):
                                          ' '+gdalMetadata["RANGEENDINGTIME"]
                                          ).
                                       isoformat()))
-        self.dataset.SetMetadataItem('sensor',
-                gdalMetadata['ASSOCIATEDSENSORSHORTNAME'])
-        self.dataset.SetMetadataItem('satellite',
-                gdalMetadata['ASSOCIATEDPLATFORMSHORTNAME'])
+
+        sensorName = self.find_metadata(gdalMetadata,
+                                        'ASSOCIATEDSENSORSHORTNAME',
+                                        'MODIS')
+        satName = self.find_metadata(gdalMetadata,
+                                     'ASSOCIATEDSENSORSHORTNAME',
+                                     'Aqua')
+
+        self.dataset.SetMetadataItem('sensor', sensorName)
+        self.dataset.SetMetadataItem('satellite', satName)
+
+    def find_metadata(self, iMetadata, iKey, default=''):
+        ''' Find metadata which has similar key
+        Parameters:
+            iMetadata : dict
+                input metadata, usually gdalMetadata
+            iKey : str
+                key to search for
+            default : str
+                default value
+
+        '''
+        value = default
+        for key in iMetadata:
+            if iKey in key:
+                value = iMetadata[key]
+                break
+
+        return value
