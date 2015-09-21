@@ -3,7 +3,7 @@
 # Purpose:      Test the nansat module
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:      18.06.2014
 # Last modified:02.07.2015 16:05
