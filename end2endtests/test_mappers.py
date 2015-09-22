@@ -28,80 +28,44 @@ class TestDataForTestingMappers(unittest.TestCase):
         ''' should create TestData instance '''
         t = DataForTestingMappers()
         self.assertTrue(hasattr(t, 'mapperData'))
-        self.assertTrue(hasattr(t, 'testDataDir'))
-
-    def test_testDataDir_from_env(self):
-        ''' should create TestData instance '''
-        # keep real dir
-        realDir = str(os.getenv('MAPPER_TEST_DATA_DIR'))
-
-        # perform test
-        fakeDir = '/fake/dir/to/test/data'
-        os.environ['MAPPER_TEST_DATA_DIR'] = fakeDir
-        t = DataForTestingMappers()
-        self.assertEqual(t.testDataDir, fakeDir)
-
-        # restore real dir
-        os.environ['MAPPER_TEST_DATA_DIR'] = realDir
-
-    def test_testDataDir_exists(self):
-        ''' should create TestData instance '''
-        t = DataForTestingMappers()
-        self.assertTrue(os.path.exists(t.testDataDir))
-
-    def test_download_file(self):
-        ''' Should download the selected file and put into mapperData'''
-        t = DataForTestingMappers()
-        t.download_test_file(
-                'ftp://ftp.nersc.no/pub/python_test_data/ncep/gfs20120328.t00z.master.grbf00',
-                'ncep')
-        self.assertTrue('ncep' in t.mapperData)
-        self.assertEqual(type(t.mapperData['ncep']), list)
-        for ifile in t.mapperData['ncep']:
-            self.assertTrue(os.path.exists(ifile[0]))
 
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 # The x-flag results in the test stopping at first failure or error - use it
 # for easier debugging:
-# nosetests -v -x end2endtests.test_mappers:TestAllMappers.test_mappers
+# nosetests -v -x end2endtests.test_mappers:TestAllMappers.test_mappers_basic
 class TestAllMappers(object):
 
     @classmethod
     def setup_class(cls):
         ''' Download testing data '''
         cls.testData = DataForTestingMappers()
-        cls.testData.download_all_test_data()
 
     def test_mappers_basic(self):
-        ''' Run similar tests for all mappers '''
-        for mapperName in self.testData.mapperData:
-            mapperParams = self.testData.mapperData[mapperName]
-            for fileName, kwargs in mapperParams:
-                sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
-                # Test call to Nansat, mapper not specified
-                yield self.open_with_nansat, fileName
-                # Test call to Nansat, mapper specified
-                yield self.open_with_nansat, fileName, mapperName, kwargs
+        ''' Run similar basic tests for all mappers '''
+        for fileName, mapperName in self.testData.mapperData:
+            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
+            # Test call to Nansat, mapper not specified
+            yield self.open_with_nansat, fileName
+            # Test call to Nansat, mapper specified
+            yield self.open_with_nansat, fileName, mapperName
 
     def test_mappers_advanced(self):
-        ''' Run similar tests for all mappers '''
-        for mapperName in self.testData.mapperData:
-            mapperParams = self.testData.mapperData[mapperName]
-            for fileName, kwargs in mapperParams:
-                sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
-                n = Nansat(fileName, mapperName=mapperName)
-                # Test nansat.mapper
-                yield self.is_correct_mapper, n, mapperName
-                # Test nansat.start_time() and nansat.end_time()
-                yield self.has_time, n
-                # Test nansat.source() (returns, e.g., Envisat/ASAR)
-                yield self.has_source, n
-                # Test that SAR objects have sigma0 intensity bands in addition
-                # to complex bands
-                if n.has_band(
-                    'surface_backwards_scattering_coefficient_of_radar_wave'
-                        ):
-                    yield self.exist_intensity_band, n
+        ''' Run similar NansenCloud reated tests for all mappers '''
+        for fileName, mapperName in self.testData.mapperData:
+            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
+            n = Nansat(fileName, mapperName=mapperName)
+            # Test nansat.mapper
+            yield self.is_correct_mapper, n, mapperName
+            # Test nansat.start_time() and nansat.end_time()
+            yield self.has_time, n
+            # Test nansat.source() (returns, e.g., Envisat/ASAR)
+            yield self.has_source, n
+            # Test that SAR objects have sigma0 intensity bands in addition
+            # to complex bands
+            if n.has_band(
+                'surface_backwards_scattering_coefficient_of_radar_wave'
+                    ):
+                yield self.exist_intensity_band, n
 
     def has_time(self, n):
         assert type(n.start_time())==datetime.datetime
