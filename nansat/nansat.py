@@ -1265,7 +1265,8 @@ class Nansat(Domain):
         # reproject on self or given Domain
         if dstDomain is None:
             dstDomain = self
-        lon, lat = dstDomain.get_corners()
+        #lon, lat = dstDomain.get_corners()
+        lon, lat = dstDomain.get_border()
         watermask.crop(lonlim=[lon.min(), lon.max()],
                        latlim=[lat.min(), lat.max()])
         watermask.reproject(dstDomain, addmask=False, **kwargs)
