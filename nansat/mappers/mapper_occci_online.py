@@ -18,6 +18,7 @@
 import os
 import datetime
 from dateutil.parser import parse
+from time import sleep as time_sleep
 
 import numpy as np
 
@@ -119,7 +120,7 @@ class Mapper(VRT, object):
 
     def get_sourcefilename(self, cache, dsURL, timeStep, prodName, lons, lats):
         ''' Get SourceFilename either from memory array or from cached file '''
-
+        print 'Get ', timeStep, prodName
         # try to find cached layer
         if cache:
             layerFilename = os.path.join(cache,
@@ -129,8 +130,10 @@ class Mapper(VRT, object):
                                                         min(lons), max(lons),
                                                         min(lats), max(lats)))
             if os.path.exists(layerFilename):
+                print 'from ', layerFilename
                 return layerFilename
 
+        print 'from THREDDS'
         ### Continue without pre-cached file
         # get product array from remote dataset
         ds = Dataset(dsURL)
@@ -165,13 +168,20 @@ class Mapper(VRT, object):
     def get_lon_lat_time(self, cache, dsURL):
         ### Get TIME, LAT, LON
         # first try from cache
+        print 'Get lon, lat, time'
         lon, lat, time  = None, None, None
         if cache:
             gridFile = os.path.join(cache, os.path.split(dsURL)[1]+'_grid.npz')
             if os.path.exists(gridFile):
-                lon = np.load(gridFile)['lon']
-                lat = np.load(gridFile)['lat']
-                time = np.load(gridFile)['time']
+                try:
+                    lon = np.load(gridFile)['lon']
+                    lat = np.load(gridFile)['lat']
+                    time = np.load(gridFile)['time']
+                except:
+                    time_sleep(0.5)
+                    lon = np.load(gridFile)['lon']
+                    lat = np.load(gridFile)['lat']
+                    time = np.load(gridFile)['time']
 
         # if cache does not exist try to fetch from remote dataset
         if lon is None:
