@@ -9,9 +9,10 @@ import warnings
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
+from hdf4_mapper import HDF4Mapper
 
 
-class Mapper(VRT):
+class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, emrange='VNIR', **kwargs):
@@ -94,5 +95,6 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # set time
-        self._set_time(parse(gdalMetadata["SETTINGTIMEOFPOINTING"]+'+00'))
+        datetimeString = self.find_metadata(gdalMetadata, "SETTINGTIMEOFPOINTING")
+        self._set_time(parse(datetimeString+'+00'))
         self.remove_geolocationArray()

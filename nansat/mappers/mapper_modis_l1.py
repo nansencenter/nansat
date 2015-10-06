@@ -9,9 +9,10 @@ import warnings
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
+from hdf4_mapper import HDF4Mapper
 
 
-class Mapper(VRT):
+class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -356,22 +357,3 @@ class Mapper(VRT):
 
         self.dataset.SetMetadataItem('sensor', sensorName)
         self.dataset.SetMetadataItem('satellite', satName)
-
-    def find_metadata(self, iMetadata, iKey, default=''):
-        ''' Find metadata which has similar key
-        Parameters:
-            iMetadata : dict
-                input metadata, usually gdalMetadata
-            iKey : str
-                key to search for
-            default : str
-                default value
-
-        '''
-        value = default
-        for key in iMetadata:
-            if iKey in key:
-                value = iMetadata[key]
-                break
-
-        return value
