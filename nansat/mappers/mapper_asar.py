@@ -268,6 +268,12 @@ class Mapper(VRT, Envisat):
         self.dataset.SetMetadataItem('skip_gcps', '3')
 
         # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('start_time',
+                                     (parse(gdalMetadata['MPH_SENSING_START']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('stop_time',
+                                     (parse(gdalMetadata['MPH_SENSING_STOP']).
+                                      isoformat()))
         self.dataset.SetMetadataItem('start_date',
                                      (parse(gdalMetadata['MPH_SENSING_START']).
                                       isoformat()))
