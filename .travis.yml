@@ -13,7 +13,7 @@ install:
   - conda update -q --yes conda
   - conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
 #  - conda install -q --yes -c https://conda.binstar.org/osgeo gdal
-  - conda install -q --yes -c https://conda.anaconda.org/alevin nansat-gdal
+  - conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
 #  - pip install -q basemap --allow-external basemap --allow-unverified basemap
