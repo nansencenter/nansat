@@ -2,7 +2,7 @@ language: python
 python:
   - 2.7
 
-# Setup anaconda
+# Setup miniconda
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
@@ -26,3 +26,7 @@ script: #"cd ..; nosetests --with-coverage --cover-package=nansat nansat.tests"
   coverage run --source=nansat setup.py test
 after_success:
   coveralls
+  
+cache:
+  directories:
+  - /home/travis/miniconda
