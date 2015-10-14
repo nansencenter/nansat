@@ -36,8 +36,13 @@ script: #"cd ..; nosetests --with-coverage --cover-package=nansat nansat.tests"
   - export PATH=$OLD_PATH
   - which curl
 after_success:
-  coveralls
-  
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - coveralls
+
+before_cache:
+  - ls -l $HOME/.cache/pip/log/debug.log
+
 cache:
-  directories:
-  - /home/travis/miniconda
+  - pip
+  - directories:
+    - /home/travis/miniconda
