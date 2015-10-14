@@ -34,10 +34,10 @@ after_success:
   - export PATH=$HOME/miniconda/bin:$PATH
   - coveralls
 
-before_cache:
-  - rm -f $HOME/.cache/pip/log/debug.log
+# before_cache:
+#   - rm -f $HOME/.cache/pip/log/debug.log
 
 cache:
   directories:
-    - $HOME/.cache/pip
+#     - $HOME/.cache/pip
     - $HOME/miniconda
