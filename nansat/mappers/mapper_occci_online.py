@@ -1,19 +1,12 @@
 # Name:         mapper_ncep_wind_online.py
 # Purpose:      Nansat mapping for NCEP GFS model data, stored online
-# Author:       Knut-Frode Dagestad, Morten W. Hansen
+# Author:       Anton Korosov
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #
-# Mapper searches two online archives for NCEP GFS grib files
-# covering the requested time, and downloads using curl, if found:
-#    1. ftp://ftp.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/ (~last month)
-#    2. http://nomads.ncdc.noaa.gov/data/gfs4/ (back to June 2012, with holes)
-#
 # Usage:
-#    w = Nansat('ncep_wind_online:YYYYMMDDHHMM')
-# Example:
-#    w = Nansat('ncep_wind_online:201405011000')
+#    w = Nansat('occci_online:1D:chlor_a:2010-01-01')
 
 import os
 import datetime
@@ -129,6 +122,7 @@ class Mapper(VRT, object):
                                                         timeStep, prodName, self.date.strftime('%Y%m%d'),
                                                         min(lons), max(lons),
                                                         min(lats), max(lats)))
+            print 'from ', layerFilename, '...'
             if os.path.exists(layerFilename):
                 print 'from ', layerFilename
                 return layerFilename
