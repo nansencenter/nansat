@@ -11,6 +11,9 @@ before_install:
         ./miniconda.sh -b;
     fi
   - export PATH=/home/travis/miniconda/bin:$PATH
+  - echo $PATH
+  - ls /home/travis/miniconda
+  - ls /home/travis/miniconda/bin
 
 install:
   - conda update -q --yes conda
