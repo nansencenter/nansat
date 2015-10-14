@@ -5,17 +5,13 @@ sudo: false
 
 # Setup miniconda
 before_install:
-  - if [[ ! -e /home/travis/miniconda/bin ]]; then
+  - if [[ ! -e $HOME/miniconda/bin ]]; then
         wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
         chmod +x miniconda.sh;
         ./miniconda.sh -b -f;
     fi
   - export OLD_PATH=$PATH
-  - export PATH=/home/travis/miniconda/bin:$PATH
-  - echo $PATH
-  - ls /home/travis/miniconda
-  - ls /home/travis/miniconda/bin
-  - which curl
+  - export PATH=$HOME/miniconda/bin:$PATH
 
 install:
   - conda update -q --yes conda
@@ -34,15 +30,14 @@ script: #"cd ..; nosetests --with-coverage --cover-package=nansat nansat.tests"
   - coverage run --source=nansat setup.py test
   # Resetting path so uploading of cache with curl succeeds.
   - export PATH=$OLD_PATH
-  - which curl
 after_success:
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - export PATH=$HOME/miniconda/bin:$PATH
   - coveralls
 
 before_cache:
-  - ls -l $HOME/.cache/pip/log/debug.log
+  - rm -f $HOME/.cache/pip/log/debug.log
 
 cache:
-  - pip
-  - directories:
-    - /home/travis/miniconda
+  directories:
+    - $HOME/.cache/pip
+    - $HOME/miniconda
