@@ -5,18 +5,16 @@ sudo: false
 
 # Setup miniconda
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -f
-#   - if [[ ! -e /home/travis/miniconda ]]; then
-#         wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-#         chmod +x miniconda.sh;
-#         ./miniconda.sh -b;
-#     fi
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - if [[ ! -e /home/travis/miniconda/bin ]]; then
+        wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+        chmod +x miniconda.sh;
+        ./miniconda.sh -b -f;
+    fi
+  - export PATH=$PATH:/home/travis/miniconda/bin
   - echo $PATH
   - ls /home/travis/miniconda
   - ls /home/travis/miniconda/bin
+  - which curl
 
 install:
   - conda update -q --yes conda
