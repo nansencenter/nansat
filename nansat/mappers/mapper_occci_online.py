@@ -1,5 +1,5 @@
 # Name:         mapper_ncep_wind_online.py
-# Purpose:      Nansat mapping for NCEP GFS model data, stored online
+# Purpose:      Nansat mapping for OC CCI data, stored online in THREDDS
 # Author:       Anton Korosov
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
