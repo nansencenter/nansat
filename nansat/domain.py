@@ -2,9 +2,9 @@
 # Purpose: Container of Domain class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
+#               Dmitry Petrenko, Evgeny Morozov, Aleksander Vines
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2011 - 2015
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import OptionError
+from nansat.tools import OptionError, ProjectionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
