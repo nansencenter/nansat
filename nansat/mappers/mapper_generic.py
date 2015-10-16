@@ -242,18 +242,25 @@ class Mapper(VRT):
         elif 'start_date' in gdalMetadata:
             self._set_time(parse(gdalMetadata['start_date']))
         elif 'time_coverage_start' in gdalMetadata:
-            self._set_time(parse(gdalMetadata['time_coverage_start']))
+            time_coverage_start = gdalMetadata['time_coverage_start'].strip()
+            # To account for datasets on the format YYYY-MM-DDZ which is
+            # invalid since it has no time, but a timezone.
+            if len(time_coverage_start) == 11:
+                time_coverage_start = time_coverage_start.replace('Z', '')
+            self._set_time(parse(time_coverage_start))
         else:
             # Just use some clearly wrong time
-            self.dataset.SetMetadataItem('start_time',
+            self.dataset.SetMetadataItem(
+                    'start_time',
                     (parse('2200-01-01 00:00').isoformat()))
-        if not 'stop_time' in gdalMetadata:
+        if 'stop_time' not in gdalMetadata:
             # Just use some clearly wrong time
-            self.dataset.SetMetadataItem('stop_time',
+            self.dataset.SetMetadataItem(
+                    'stop_time',
                     (parse('2200-01-01 00:00').isoformat()))
-        if not 'sensor' in gdalMetadata:
+        if 'sensor' not in gdalMetadata:
             self.dataset.SetMetadataItem('sensor', 'unknown')
-        if not 'satellite' in gdalMetadata:
+        if 'satellite' not in gdalMetadata:
             self.dataset.SetMetadataItem('satellite', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
