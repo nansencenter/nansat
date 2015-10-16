@@ -327,6 +327,7 @@ class Domain(object):
                           kmlFigureName=figureName) # 6.
 
         '''
+        # TODO: revice these - makes no sense since domains is never used
         # test input options
         if kmlFileName is not None:
             # if only output KML-file is given
@@ -433,14 +434,14 @@ class Domain(object):
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
-        x1, y1, z1 = coorTrans.TransformPoint(extentDic['lle'][0],
-                                              extentDic['lle'][3])
-        x2, y2, z2 = coorTrans.TransformPoint(extentDic['lle'][2],
-                                              extentDic['lle'][3])
-        x3, y3, z3 = coorTrans.TransformPoint(extentDic['lle'][2],
-                                              extentDic['lle'][1])
-        x4, y4, z4 = coorTrans.TransformPoint(extentDic['lle'][0],
-                                              extentDic['lle'][1])
+        x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0],
+                                             extentDic['lle'][3])
+        x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2],
+                                             extentDic['lle'][3])
+        x3, y3, _ = coorTrans.TransformPoint(extentDic['lle'][2],
+                                             extentDic['lle'][1])
+        x4, y4, _ = coorTrans.TransformPoint(extentDic['lle'][0],
+                                             extentDic['lle'][1])
 
         minX = min([x1, x2, x3, x4])
         maxX = max([x1, x2, x3, x4])
