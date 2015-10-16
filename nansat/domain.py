@@ -213,8 +213,8 @@ class Domain(object):
             self.logger.error('Cannot read projection from source!')
         else:
             outStr += 'Projection:\n'
-            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1)
-                       + '\n')
+            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) +
+                       '\n')
             outStr += '-' * 40 + '\n'
             outStr += 'Corners (lon, lat):\n'
             outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
@@ -686,7 +686,7 @@ class Domain(object):
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
         # outer quotes have to be double and inner - single!
-        #wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
+        # wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
         wkt = 'POLYGON((%s))' % polyCont
         return wkt
 
@@ -998,9 +998,9 @@ class Domain(object):
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
         bmap.drawmeridians(np.linspace(minLon, maxLon, meridians),
-                            labels=merLabels)
+                           labels=merLabels)
         bmap.drawparallels(np.linspace(minLat, maxLat, parallels),
-                            labels=parLabels)
+                           labels=parLabels)
 
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given
