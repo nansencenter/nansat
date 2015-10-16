@@ -327,14 +327,8 @@ class Domain(object):
                           kmlFigureName=figureName) # 6.
 
         '''
-        # TODO: revice these - makes no sense since domains is never used
         # test input options
-        if kmlFileName is not None:
-            # if only output KML-file is given
-            # then convert the current domain to KML
-            domains = [self]
-        else:
-            # otherwise it is potentially error
+        if kmlFileName is None:
             raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
 
         if kmlFigureName is None:
