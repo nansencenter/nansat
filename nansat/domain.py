@@ -749,6 +749,36 @@ class Domain(object):
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
 
+    def get_min_max_lat_lon(self):
+        '''Get minimum and maximum lat and long values in the geolocation grid
+
+        Returns
+        --------
+        minLat, maxLat, minLon, maxLon : float
+            min/max lon/lat values for the Domain
+
+        '''
+        allLongitudes, allLatitudes = self.get_geolocation_grids()
+        maxLat = -90
+        minLat = 90
+        for latitudes in allLatitudes:
+            for lat in latitudes:
+                if lat > maxLat:
+                    maxLat = lat
+                if lat < minLat:
+                    minLat = lat
+
+        maxLon = -180
+        minLon = 180
+        for longitudes in allLongitudes:
+            for lon in longitudes:
+                if lon > maxLon:
+                    maxLon = lon
+                if lon < minLon:
+                    minLon = lon
+
+        return minLat, maxLat, minLon, maxLon
+
     def get_pixelsize_meters(self):
         '''Returns the pixelsize (deltaX, deltaY) of the domain
 
