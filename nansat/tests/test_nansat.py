@@ -16,7 +16,6 @@ import unittest
 import warnings
 import os
 import datetime
-import gdal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +25,6 @@ from nansat import Nansat, Domain
 from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
-from wheel.signatures import assertTrue
 
 
 class NansatTest(unittest.TestCase):
@@ -308,18 +306,28 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
         metadata = g.GetMetadata_Dict()
-        
+
         # Test that the long/lat values are set aproximately correct
         ncg = 'NC_GLOBAL#'
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
-        self.assertTrue(float(easternmost_longitude) > 179)
+        self.assertTrue(float(easternmost_longitude) > 179,
+                        'easternmost_longitude is wrong:' +
+                        easternmost_longitude)
         westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
-        self.assertTrue(float(westernmost_longitude) < -179)
+        self.assertTrue(float(westernmost_longitude) < -179,
+                        'westernmost_longitude is wrong:' +
+                        westernmost_longitude)
         northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
-        self.assertTrue(float(northernmost_latitude) > 89.999)
+        self.assertTrue(float(northernmost_latitude) > 89.999,
+                        'northernmost_latitude is wrong:' +
+                        northernmost_latitude)
         southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
-        self.assertTrue(float(southernmost_latitude) < 54)
-        self.assertTrue(float(southernmost_latitude) > 53)
+        self.assertTrue(float(southernmost_latitude) < 54,
+                        'southernmost_latitude is wrong:' +
+                        southernmost_latitude)
+        self.assertTrue(float(southernmost_latitude) > 53,
+                        'southernmost_latitude is wrong:' +
+                        southernmost_latitude)
 
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
