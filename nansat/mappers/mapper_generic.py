@@ -1,6 +1,8 @@
 # Name:         mapper_generic.py
 # Purpose:      Generic Mapper for L3/L4 satellite or modeling data
-# Authors:      Asuka Yamakava, Anton Korosov, Morten Wergeland Hansen
+# Authors:      Asuka Yamakava, Anton Korosov, Morten Wergeland Hansen,
+#               Aleksander Vines
+# Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
@@ -12,8 +14,7 @@ from scipy.io.netcdf import netcdf_file
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray
-from nansat.node import Node
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, WrongMapperError
 
 
 class Mapper(VRT):
@@ -47,12 +48,11 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
-        geoFileDict = {}
         xDatasetSource = ''
         yDatasetSource = ''
         firstXSize = 0
         firstYSize = 0
-        for i, fileName in enumerate(fileNames):
+        for _, fileName in enumerate(fileNames):
             subDataset = gdal.Open(fileName)
             # choose the first dataset whith grid
             if (firstXSize == 0 and firstYSize == 0 and
@@ -81,7 +81,7 @@ class Mapper(VRT):
                         if 'PixelFunctionType' in bandMetadata:
                             bandMetadata.pop('PixelFunctionType')
                         sourceBands = iBand + 1
-                        #sourceBands = i*subDataset.RasterCount + iBand + 1
+                        # sourceBands = i*subDataset.RasterCount + iBand + 1
 
                         # generate src metadata
                         src = {'SourceFilename': fileName,
@@ -117,12 +117,14 @@ class Mapper(VRT):
                             # if it doesn't exist get name from NETCDF_VARNAME
                             bandName = bandMetadata.get('NETCDF_VARNAME', '')
                             if len(bandName) == 0:
-                                bandName = bandMetadata.get('dods_variable', '')
+                                bandName = bandMetadata.get(
+                                            'dods_variable', ''
+                                            )
 
                             # remove digits added by gdal in
                             # exporting to netcdf...
                             if (len(bandName) > 0 and origin_is_nansat and
-                                fileExt == '.nc'):
+                                    fileExt == '.nc'):
                                 if bandName[-1:].isdigit():
                                     bandName = bandName[:-1]
                                 if bandName[-1:].isdigit():
@@ -199,9 +201,11 @@ class Mapper(VRT):
             projection = NSR().wkt
         # fix problem with MET.NO files where a, b given in m and XC/YC in km
         if ('UNIT["kilometre"' in projection and
-            ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]' in projection):
-            projection = projection.replace(',SPHEROID["Spheroid",6378273,7.331926543631893e-12]',
-                                            '')
+            ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]' in
+                projection):
+            projection = projection.replace(
+                ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]',
+                '')
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
 
@@ -244,11 +248,18 @@ class Mapper(VRT):
         elif 'time_coverage_start' in gdalMetadata:
             time_coverage_start = gdalMetadata['time_coverage_start'].strip()
             # To account for datasets on the format YYYY-MM-DDZ which is
-            # invalid since it has no time, but a timezone.
-            if len(time_coverage_start) == 11:
-                time_coverage_start = time_coverage_start.replace('Z', '')
-            self._set_time(parse(time_coverage_start))
+            # invalid since it has no time, but a timezone
+            try:
+                start_datetime = parse(time_coverage_start)
+            except ValueError:
+                if (len(time_coverage_start) == 11 and
+                        time_coverage_start.endswith('Z')):
+                    time_coverage_start = time_coverage_start[:10]
+                    start_datetime = parse(time_coverage_start)
+            self._set_time(start_datetime)
         else:
+            # TODO: I(alevin) disagree with this, we should not use a value,
+            # but handle this specific case when we use the value.
             # Just use some clearly wrong time
             self.dataset.SetMetadataItem(
                     'start_time',
@@ -293,7 +304,7 @@ class Mapper(VRT):
             for x in gcpString.split('|'):
                 if len(x) > 0:
                     gcpValues.append(float(x))
-            #gcpValues = [float(x) for x in gcpString.strip().split('|')]
+            # gcpValues = [float(x) for x in gcpString.strip().split('|')]
             gcpAllValues.append(gcpValues)
 
         # create list of GDAL GCPs
