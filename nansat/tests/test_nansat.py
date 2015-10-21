@@ -16,6 +16,7 @@ import unittest
 import warnings
 import os
 import datetime
+import gdal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,6 +26,7 @@ from nansat import Nansat, Domain
 from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
+from wheel.signatures import assertTrue
 
 
 class NansatTest(unittest.TestCase):
@@ -32,6 +34,7 @@ class NansatTest(unittest.TestCase):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
+        self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
         plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
@@ -290,6 +293,33 @@ class NansatTest(unittest.TestCase):
         n.export2thredds(tmpfilename, bands)
 
         self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_export2thredds_arctic_long_lat(self):
+        n = Nansat(self.test_file_arctic, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export2thredds_arctic.nc')
+        bands = {
+            'Bristol': {'type': '>i2'},
+            'Bootstrap': {'type': '>i2'},
+            'UMass_AES': {'type': '>i2'},
+        }
+        n.export2thredds(tmpfilename, bands)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+        g = gdal.Open(tmpfilename)
+        metadata = g.GetMetadata_Dict()
+        
+        # Test that the long/lat values are set aproximately correct
+        ncg = 'NC_GLOBAL#'
+        easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
+        self.assertTrue(float(easternmost_longitude) > 179)
+        westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
+        self.assertTrue(float(westernmost_longitude) < -179)
+        northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
+        self.assertTrue(float(northernmost_latitude) > 89.999)
+        southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
+        self.assertTrue(float(southernmost_latitude) < 54)
+        self.assertTrue(float(southernmost_latitude) > 53)
 
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
