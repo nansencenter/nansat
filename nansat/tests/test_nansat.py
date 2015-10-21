@@ -26,8 +26,6 @@ from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
 
-IS_CONDA = 'conda' in os.environ['PATH']
-
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
@@ -273,9 +271,6 @@ class NansatTest(unittest.TestCase):
 #         os.unlink(resfile)
 
     def test_export2thredds_stere_one_band(self):
-        # skip the test if anaconda is used
-        if IS_CONDA:
-            return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_1b.nc')
@@ -284,9 +279,6 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
 
     def test_export2thredds_stere_many_bands(self):
-        # skip the test if anaconda is used
-        if IS_CONDA:
-            return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_3b.nc')
