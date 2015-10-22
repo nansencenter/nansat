@@ -2,9 +2,10 @@
 # Purpose: contains PointBrowser class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
+#               Dmitry Petrenko, Evgeny Morozov,
+#               Aleksander Vines
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2011 - 2015
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -15,7 +16,6 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-import matplotlib
 import matplotlib.pyplot as plt
 
 
@@ -45,6 +45,10 @@ class PointBrowser():
         self.points     : plot with points
         self.line       : plot with points
 
+        Why are these two not mentioned? These two are the only ones that are
+        used externally...
+        self.coordinates = []
+        self.connect = []
         '''
         self.fig = plt.figure()
         self.data = data
@@ -64,48 +68,53 @@ class PointBrowser():
     def onclick(self, event):
         ''' Append onclick event '''
         if event.xdata is not None and event.ydata is not None:
-            if str(event.key)=='alt+z' or str(event.key)=='z':
+            if str(event.key) == 'alt+z' or str(event.key) == 'z':
                 pass
             else:
                 # ignore clicked point if "z" key is held down
                 # - holding down any other key (NOT cmd (mac),shift,alt,ctrl)
                 #   means a new line is started at the clicked point
-                # - holding down no key means current line is extended to include the clicked point
+                # - holding down no key means current line is extended to
+                # include the clicked point
                 self.coordinates.append((event.xdata, event.ydata))
-                # press (any) key (NOT 'cmd','ctrl','alt','shift', or 'z' - see above) means to start new line.
+                # press (any) key (NOT 'cmd','ctrl','alt','shift', or 'z'
+                # - see above) means to start new line.
                 # if pressed, then set 0 to self.connect. otherwise set 1.
                 if event.key is None and self.drawLine:
-                   self.connect.append(1)
+                    self.connect.append(1)
                 else:
-                   self.connect.append(0)
+                    self.connect.append(0)
+
+                # The below is just for drawing the picture correctly - be
+                # careful when editing because unit tests does not test the GUI
 
                 # get coordinate of clicked point
                 tCoordinates = map(tuple, zip(*self.coordinates))
                 self.points.set_data(tCoordinates)
                 self.points.figure.canvas.draw()
 
-                # separate points by each line
-                linesCoords = []
-                for i, iLine in enumerate(self.coordinates):
-                   if i == 0:
-                       oneLine = [self.coordinates[0]]
-                   elif self.connect[i] == 0:
-                       linesCoords.append(oneLine)
-                       oneLine = [self.coordinates[i]]
-                   else:
-                       oneLine.append(self.coordinates[i])
-                linesCoords.append(oneLine)
-
                 # draw lines
                 if self.drawLine:
+                    # separate points by each line
+                    linesCoords = []
+                    for i, _ in enumerate(self.coordinates):
+                        if i == 0:
+                            oneLine = [self.coordinates[0]]
+                        elif self.connect[i] == 0:
+                            linesCoords.append(oneLine)
+                            oneLine = [self.coordinates[i]]
+                        else:
+                            oneLine.append(self.coordinates[i])
+                    linesCoords.append(oneLine)
+
                     line, = self.ax.plot([], [])
                     for iLinePoints in linesCoords:
-                       tCoordinates = map(tuple, zip(*iLinePoints))
-                       self.lines.append(line.set_data(tCoordinates))
-                       line.figure.canvas.draw()
+                        tCoordinates = map(tuple, zip(*iLinePoints))
+                        self.lines.append(line.set_data(tCoordinates))
+                        line.figure.canvas.draw()
 
     def get_points(self):
-        ''' Process click event '''
+        ''' Enables the onclick events '''
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.ax.set_xlim([0, self.data.shape[1]])
         self.ax.set_ylim([0, self.data.shape[0]])
@@ -118,10 +127,12 @@ class PointBrowser():
         self.text_ax.set_yticks([])
 
         text = ('To draw a transect line: click in several locations\n'
-                'To start drawing a new line: press "space", click in the next\n'
+                'To start drawing a new line: press "space",'
+                ' click in the next\n'
                 '        location, release "space" and continue clicking\n'
                 'To zoom: press "z" and use pan/zoom tools, then release "z"')
-        self.text_ax.text(0.01, 0.9, text, fontsize=13,
-                 verticalalignment='top', horizontalalignment='left')
+        self.text_ax.text(
+                0.01, 0.9, text, fontsize=13,
+                verticalalignment='top', horizontalalignment='left')
 
         plt.show()
