@@ -707,7 +707,7 @@ class Nansat(Domain):
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
         # get corners of reprojected data
-        lonCrn, latCrn = data.get_corners()
+        minLat, maxLat, minLon, maxLon = data.get_min_max_lat_lon()
 
         # common global attributes:
         if createdTime is None:
@@ -717,10 +717,10 @@ class Nansat(Domain):
         globMetadata = {'institution': 'NERSC',
                         'source': 'satellite remote sensing',
                         'creation_date': createdTime,
-                        'northernmost_latitude': np.float(max(latCrn)),
-                        'southernmost_latitude': np.float(min(latCrn)),
-                        'westernmost_longitude': np.float(min(lonCrn)),
-                        'easternmost_longitude': np.float(max(lonCrn)),
+                        'northernmost_latitude': np.float(maxLat),
+                        'southernmost_latitude': np.float(minLat),
+                        'westernmost_longitude': np.float(minLon),
+                        'easternmost_longitude': np.float(maxLon),
                         'history': ' '}
 
         #join or replace default by custom global metadata
