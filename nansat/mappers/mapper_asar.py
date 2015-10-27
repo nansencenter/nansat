@@ -280,5 +280,12 @@ class Mapper(VRT, Envisat):
         self.dataset.SetMetadataItem('stop_date',
                                      (parse(gdalMetadata['MPH_SENSING_STOP']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('sensor', 'ASAR')
-        self.dataset.SetMetadataItem('satellite', 'Envisat')
+        self.dataset.SetMetadataItem('instrument', 'ASAR')
+        self.dataset.SetMetadataItem('platform', 'Envisat')
+        self.dataset.SetMetadataItem('source_type', 'Satellite')
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     (parse(gdalMetadata['MPH_SENSING_START']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     (parse(gdalMetadata['MPH_SENSING_STOP']).
+                                      isoformat()))
