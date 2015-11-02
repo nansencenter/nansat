@@ -6,6 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from datetime import datetime, timedelta
 from math import ceil
+from dateutil.parser import parse
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
@@ -259,3 +260,18 @@ class Mapper(OBPGL2BaseClass):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
+
+
+        # add NansenCloud metadata
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     (parse(
+                                      gdalMetadata['time_coverage_start']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     (parse(
+                                      gdalMetadata['time_coverage_stop']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('instrument', 'MODIS')
+        self.dataset.SetMetadataItem('platform', 'AQUA')
+        self.dataset.SetMetadataItem('source_type', 'Satellite')
+        self.dataset.SetMetadataItem('mapper', 'obpg_l2')
