@@ -275,6 +275,7 @@ class Mapper(VRT):
                  'time#calendar' in subMetadata):
 
             ncFile = netcdf_file(inputFileName, 'r')
+            timeLength = ncFile.variables['time'].shape[0]
             timeValueStart = ncFile.variables['time'][0]
             timeValueEnd = ncFile.variables['time'][-1]
             ncFile.close()
@@ -282,10 +283,13 @@ class Mapper(VRT):
                                   Units(subMetadata['time#units'],
                                         calendar=subMetadata['time#calendar']),
                                   Units('days since 1950-01-01'))
-            timeDeltaEnd = Units.conform(timeValueStart,
-                                  Units(subMetadata['time#units'],
-                                        calendar=subMetadata['time#calendar']),
-                                  Units('days since 1950-01-01'))
+            if timeLength > 1:
+                timeDeltaEnd = Units.conform(timeValueStart,
+                                      Units(subMetadata['time#units'],
+                                            calendar=subMetadata['time#calendar']),
+                                      Units('days since 1950-01-01'))
+            else:
+                timeDeltaEnd = timeDeltaStart + 1
             time_coverage_start = (datetime.datetime(1950,1,1) +
                                    datetime.timedelta(float(timeDeltaStart)))
             time_coverage_end = (datetime.datetime(1950,1,1) +
