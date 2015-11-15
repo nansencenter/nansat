@@ -429,21 +429,22 @@ class Mapper(VRT):
                                )
                 # set SADCAT specific metadata
                 self.dataset.SetMetadataItem(
-                    'start_date',
+                    'time_coverage_start',
                     parse((nn.node('metadataWrap').
                            node('xmlData').
                            node('safe:acquisitionPeriod')['safe:startTime'])
                           ).isoformat())
                 self.dataset.SetMetadataItem(
-                    'stop_date',
+                    'time_coverage_end',
                     parse((nn.node('metadataWrap').
                            node('xmlData').
                            node('safe:acquisitionPeriod')['safe:stopTime'])
                           ).isoformat())
 
-        self.dataset.SetMetadataItem('sensor', 'SAR')
-        self.dataset.SetMetadataItem('satellite', 'Sentinel-1')
-        self.dataset.SetMetadataItem('mapper', 's1a_l1')
+        self.dataset.SetMetadataItem('mapper', 'sentinel1a_l1')
+        self.dataset.SetMetadataItem('instrument', 'SAR')
+        self.dataset.SetMetadataItem('platform', 'Envisat')
+        self.dataset.SetMetadataItem('source_type', 'Satellite')
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)
