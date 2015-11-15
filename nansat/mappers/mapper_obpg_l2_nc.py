@@ -99,6 +99,8 @@ class Mapper(OBPGL2BaseClass):
 
         gcps = []
         k = 0
+        center_lon = 0
+        center_lat = 0
         for i0 in range(0, latitude.shape[0], step0):
             for i1 in range(0, latitude.shape[1], step1):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
@@ -108,6 +110,8 @@ class Mapper(OBPGL2BaseClass):
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
                     gcp = gdal.GCP(lon, lat, 0, i1+0.5, i0+0.5)
                     gcps.append(gcp)
+                    center_lon += lon
+                    center_lat += lat
                     k += 1
 
         time_coverage_start = dsMetadata['time_coverage_start']
@@ -124,8 +128,30 @@ class Mapper(OBPGL2BaseClass):
         # set time
         self._set_time(parse(time_coverage_start))
 
+        # reproject GCPs
+        center_lon /= k
+        center_lat /= k
+        srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lon_0=%f +lat_0=%f +no_defs' % (center_lon, center_lat)
+        self.reproject_GCPs(srs)
+
+        ### BAD, BAd, bad ...
+        self.dataset.SetProjection(self.dataset.GetGCPProjection())
+
         # set SADCAT specific metadata
         self.dataset.SetMetadataItem('start_time', str(time_coverage_start))
         self.dataset.SetMetadataItem('stop_time', str(time_coverage_end))
         self.dataset.SetMetadataItem('sensor', 'MODIS')
         self.dataset.SetMetadataItem('satellite', 'Aqua')
+
+        # use TPS for reprojection
+        self.tps = True
+
+        # add NansenCloud metadata
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     str(time_coverage_start))
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     str(time_coverage_end))
+        self.dataset.SetMetadataItem('instrument', 'MODIS')
+        self.dataset.SetMetadataItem('platform', 'AQUA')
+        self.dataset.SetMetadataItem('source_type', 'Satellite')
+        self.dataset.SetMetadataItem('mapper', 'obpg_l2_nc')

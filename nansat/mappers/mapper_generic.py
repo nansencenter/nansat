@@ -8,9 +8,17 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 from dateutil.parser import parse
+import datetime
 
 import numpy as np
 from scipy.io.netcdf import netcdf_file
+
+try:
+    from cfunits import Units
+except:
+    cfunitsInstalled = False
+else:
+    cfunitsInstalled = True
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray
@@ -241,6 +249,8 @@ class Mapper(VRT):
                 geoTransform = eval(geoTransformStr.replace('|', ','))
                 self.dataset.SetGeoTransform(geoTransform)
 
+        subMetadata = firstSubDataset.GetMetadata()
+
         if 'start_time' in gdalMetadata:
             self._set_time(parse(gdalMetadata['start_time']))
         elif 'start_date' in gdalMetadata:
@@ -257,6 +267,39 @@ class Mapper(VRT):
                     time_coverage_start = time_coverage_start[:10]
                     start_datetime = parse(time_coverage_start)
             self._set_time(start_datetime)
+        # try to read from time variable
+        elif (cfunitsInstalled and
+                 'time#standard_name' in subMetadata and
+                 subMetadata['time#standard_name'] == 'time' and
+                 'time#units' in subMetadata and
+                 'time#calendar' in subMetadata):
+
+            ncFile = netcdf_file(inputFileName, 'r')
+            timeLength = ncFile.variables['time'].shape[0]
+            timeValueStart = ncFile.variables['time'][0]
+            timeValueEnd = ncFile.variables['time'][-1]
+            ncFile.close()
+            timeDeltaStart = Units.conform(timeValueStart,
+                                  Units(subMetadata['time#units'],
+                                        calendar=subMetadata['time#calendar']),
+                                  Units('days since 1950-01-01'))
+            if timeLength > 1:
+                timeDeltaEnd = Units.conform(timeValueStart,
+                                      Units(subMetadata['time#units'],
+                                            calendar=subMetadata['time#calendar']),
+                                      Units('days since 1950-01-01'))
+            else:
+                timeDeltaEnd = timeDeltaStart + 1
+            time_coverage_start = (datetime.datetime(1950,1,1) +
+                                   datetime.timedelta(float(timeDeltaStart)))
+            time_coverage_end = (datetime.datetime(1950,1,1) +
+                                 datetime.timedelta(float(timeDeltaEnd)))
+
+            self._set_time(time_coverage_start)
+            self.dataset.SetMetadataItem('time_coverage_start',
+                                          time_coverage_start.isoformat())
+            self.dataset.SetMetadataItem('time_coverage_end',
+                                          time_coverage_end.isoformat())
         else:
             # TODO: I(alevin) disagree with this, we should not use a value,
             # but handle this specific case when we use the value.
@@ -273,6 +316,12 @@ class Mapper(VRT):
             self.dataset.SetMetadataItem('sensor', 'unknown')
         if 'satellite' not in gdalMetadata:
             self.dataset.SetMetadataItem('satellite', 'unknown')
+        if 'source_type' not in gdalMetadata:
+            self.dataset.SetMetadataItem('source_type', 'unknown')
+        if 'platform' not in gdalMetadata:
+            self.dataset.SetMetadataItem('platform', 'unknown')
+        if 'instrument' not in gdalMetadata:
+            self.dataset.SetMetadataItem('instrument', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
 

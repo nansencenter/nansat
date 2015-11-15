@@ -244,6 +244,8 @@ class Mapper(OBPGL2BaseClass):
         dy = .5
         gcps = []
         k = 0
+        center_lon = 0
+        center_lat = 0
         for i0 in range(0, latitude.shape[0], step0):
             for i1 in range(0, latitude.shape[1], step1):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
@@ -256,10 +258,23 @@ class Mapper(OBPGL2BaseClass):
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)
                     gcps.append(gcp)
+                    center_lon += gcp.GCPX
+                    center_lat += gcp.GCPY
                     k += 1
+
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
+        self.remove_geolocationArray()
+
+        # reproject GCPs
+        center_lon /= k
+        center_lat /= k
+        srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lon_0=%f +lat_0=%f +no_defs' % (center_lon, center_lat)
+        self.reproject_GCPs(srs)
+
+        # use TPS for reprojection
+        self.tps = True
 
 
         # add NansenCloud metadata
