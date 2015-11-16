@@ -443,7 +443,7 @@ class Mapper(VRT):
 
         self.dataset.SetMetadataItem('mapper', 'sentinel1a_l1')
         self.dataset.SetMetadataItem('instrument', 'SAR')
-        self.dataset.SetMetadataItem('platform', 'Envisat')
+        self.dataset.SetMetadataItem('platform', 'Sentinel-1A')
         self.dataset.SetMetadataItem('source_type', 'Satellite')
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
