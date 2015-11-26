@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from math import ceil
 from dateutil.parser import parse
 
+import json
+from nerscmetadata import gcmd_keywords
+
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
@@ -286,7 +289,14 @@ class Mapper(OBPGL2BaseClass):
                                      (parse(
                                       gdalMetadata['time_coverage_stop']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('instrument', 'MODIS')
-        self.dataset.SetMetadataItem('platform', 'AQUA')
-        self.dataset.SetMetadataItem('source_type', 'Satellite')
-        self.dataset.SetMetadataItem('mapper', 'obpg_l2')
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('modis')
+        ee = gcmd_keywords.get_platform('aqua')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

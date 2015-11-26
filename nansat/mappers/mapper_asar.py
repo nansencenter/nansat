@@ -11,6 +11,8 @@ import scipy.ndimage
 from osgeo import gdal
 from dateutil.parser import parse
 
+import json
+from nerscmetadata import gcmd_keywords
 
 from nansat.vrt import VRT
 from envisat import Envisat
@@ -267,25 +269,20 @@ class Mapper(VRT, Envisat):
         # to improve performance (tradeoff vs accuracy)
         self.dataset.SetMetadataItem('skip_gcps', '3')
 
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_time',
-                                     (parse(gdalMetadata['MPH_SENSING_START']).
-                                      isoformat()))
-        self.dataset.SetMetadataItem('stop_time',
-                                     (parse(gdalMetadata['MPH_SENSING_STOP']).
-                                      isoformat()))
-        self.dataset.SetMetadataItem('start_date',
-                                     (parse(gdalMetadata['MPH_SENSING_START']).
-                                      isoformat()))
-        self.dataset.SetMetadataItem('stop_date',
-                                     (parse(gdalMetadata['MPH_SENSING_STOP']).
-                                      isoformat()))
-        self.dataset.SetMetadataItem('instrument', 'ASAR')
-        self.dataset.SetMetadataItem('platform', 'Envisat')
-        self.dataset.SetMetadataItem('source_type', 'Satellite')
         self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata['MPH_SENSING_START']).
                                       isoformat()))
         self.dataset.SetMetadataItem('time_coverage_end',
                                      (parse(gdalMetadata['MPH_SENSING_STOP']).
                                       isoformat()))
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('asar')
+        ee = gcmd_keywords.get_platform('envisat')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

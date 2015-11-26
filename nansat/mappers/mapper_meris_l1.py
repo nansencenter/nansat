@@ -6,11 +6,13 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from pytz import UTC
 from dateutil.parser import parse
+import json
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 from envisat import Envisat
 
+from nerscmetadata import gcmd_keywords
 
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
@@ -149,10 +151,17 @@ class Mapper(VRT, Envisat):
                                       gdalMetadata['SPH_LAST_LINE_TIME']).
                                       isoformat()
                                       + '+00:00'))
-        self.dataset.SetMetadataItem('instrument', 'MERIS')
-        self.dataset.SetMetadataItem('platform', 'ENVISAT')
-        self.dataset.SetMetadataItem('source_type', 'Satellite')
-        self.dataset.SetMetadataItem('mapper', 'meris_l1')
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('meris')
+        ee = gcmd_keywords.get_platform('envisat')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
         # add geolocation arrays
         if geolocation:
