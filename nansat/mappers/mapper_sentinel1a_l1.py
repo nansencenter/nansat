@@ -19,6 +19,9 @@ import numpy as np
 import scipy
 from dateutil.parser import parse
 
+import json
+from nerscmetadata import gcmd_keywords
+
 from nansat.vrt import VRT
 from nansat.tools import gdal, WrongMapperError, initial_bearing
 from nansat.nsr import NSR
@@ -441,10 +444,16 @@ class Mapper(VRT):
                            node('safe:acquisitionPeriod')['safe:stopTime'])
                           ).isoformat())
 
-        self.dataset.SetMetadataItem('mapper', 'sentinel1a_l1')
-        self.dataset.SetMetadataItem('instrument', 'SAR')
-        self.dataset.SetMetadataItem('platform', 'Sentinel-1A')
-        self.dataset.SetMetadataItem('source_type', 'Satellite')
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('sar')
+        ee = gcmd_keywords.get_platform('sentinel-1a')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)
