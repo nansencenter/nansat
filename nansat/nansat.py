@@ -1274,7 +1274,7 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                     logscale=False, **kwargs):
+                     array_modfunc=None, **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -1313,9 +1313,9 @@ class Nansat(Domain):
         addDate : boolean
             False (default) : no date will be aded to the caption
             True : the first time of the object will be added to the caption
-        logscale : boolean
-            False (default) : figure created in linear scale
-            True : figure created in scale 10*log10
+        array_modfunc : None
+            None (default) : figure created using array in provided band
+            function : figure created using array modified by provided function
         **kwargs : parameters for Figure().
 
         Modifies
@@ -1364,8 +1364,8 @@ class Nansat(Domain):
         for band in bands:
             # get array from band and reshape to (1,height,width)
             iArray = self[band]
-            if logscale:
-                iArray = 10.*np.log10(iArray)
+            if array_modfunc:
+                iArray = array_modfunc(iArray)
             iArray = iArray.reshape(1, iArray.shape[0], iArray.shape[1])
             # create new 3D array or append band
             if array is None:
