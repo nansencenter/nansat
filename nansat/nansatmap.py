@@ -507,7 +507,7 @@ class Nansatmap(Basemap):
 
     def drawgrid(self, fontsize=10, lat_num=5, lon_num=5,
                  lat_labels=[True, False, False, False],
-                 lon_labels=[False, False, True, False]):
+                 lon_labels=[False, False, True, False], fmt='%3.1f'):
         '''Draw and label parallels (lat and lon lines) for values (in degrees)
 
         Parameters
@@ -528,11 +528,11 @@ class Nansatmap(Basemap):
         self.drawparallels(np.arange(self.latMin, self.latMax,
                            (self.latMax - self.latMin) / lat_num),
                            labels=lat_labels,
-                           fontsize=fontsize)
+                           fontsize=fontsize, fmt=fmt)
         self.drawmeridians(np.arange(self.lonMin, self.lonMax,
                            (self.lonMax - self.lonMin) / lon_num),
                            labels=lon_labels,
-                           fontsize=fontsize)
+                           fontsize=fontsize, fmt=fmt)
 
     def draw_continents(self, **kwargs):
         ''' Draw continents
