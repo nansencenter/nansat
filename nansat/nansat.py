@@ -428,7 +428,6 @@ class Nansat(Domain):
                     selfBands[selfBand]['name'] not in bands):
                     rmBands.append(selfBand)
             # delete bands from VRT
-            #import ipdb; ipdb.set_trace()
             exportVRT.delete_bands(rmBands)
 
         # Find complex data band
@@ -506,7 +505,14 @@ class Nansat(Domain):
                 globMetadata.pop(rmMeta)
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
-        exportVRT.dataset.SetMetadata(globMetadata)
+
+        # Apply escaping to metadata strings to preserve special characters (in
+        # XML/HTML format)
+        globMetadata_escaped = {}
+        for key, val in globMetadata.iteritems():
+            # Keys not escaped - this may be changed if needed...
+            globMetadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
+        exportVRT.dataset.SetMetadata(globMetadata_escaped)
 
         # if output filename is same as input one...
         if self.fileName == fileName:
