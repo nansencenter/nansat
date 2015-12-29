@@ -281,8 +281,8 @@ class Mapper(VRT, Envisat):
         mm = gcmd_keywords.get_instrument('asar')
         ee = gcmd_keywords.get_platform('envisat')
 
-        # TODO: Validate that the found instrument and platform are indeed what we
-        # want....
+        # TODO: Validate that the found instrument and platform are indeed what
+        # we want....
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

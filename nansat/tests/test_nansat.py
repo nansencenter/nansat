@@ -16,6 +16,8 @@ import unittest
 import warnings
 import os
 import datetime
+import json
+from xml.sax.saxutils import unescape
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,6 +35,7 @@ class NansatTest(unittest.TestCase):
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
+        self.tmpfilename = os.path.join(ntd.tmp_data_path, 'test.nc')
         plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
@@ -65,14 +68,25 @@ class NansatTest(unittest.TestCase):
     def test_geolocation_of_exportedNC_vs_original(self):
         ''' Lon/lat in original and exported file should coincide '''
         orig = Nansat(self.test_file_gcps)
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
-        orig.export(tmpfilename)
+        orig.export(self.tmpfilename)
 
-        copy = Nansat(tmpfilename)
+        copy = Nansat(self.tmpfilename)
         lon0, lat0 = orig.get_geolocation_grids()
         lon1, lat1 = copy.get_geolocation_grids()
         np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
+        os.unlink(self.tmpfilename)
+
+    def test_special_characters_in_exported_metadata(self):
+        orig = Nansat(self.test_file_gcps)
+        orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
+            'hei', 'meta2': 'derr'}))
+        orig.export(self.tmpfilename)
+        copy = Nansat(self.tmpfilename)
+        dd = json.loads( unescape( copy.get_metadata('jsonstring'), {'&quot;':
+            '"'}))
+        self.assertIsInstance(dd, dict)
+        os.unlink(self.tmpfilename)
 
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -96,14 +110,14 @@ class NansatTest(unittest.TestCase):
         arrWithNaN[n.shape()[0]/2-10:n.shape()[0]/2+10,
                    n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
-        n.export('test.nc')
-        exported = Nansat('test.nc')
+        n.export(self.tmpfilename)
+        exported = Nansat(self.tmpfilename)
         earrNoNaN = exported['testBandNoNaN']
         # Use allclose to allow some roundoff errors
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
         earrWithNaN = exported['testBandWithNaN']
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
-        os.unlink('test.nc')
+        os.unlink(self.tmpfilename)
 
     def test_add_band_twice(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")

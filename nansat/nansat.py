@@ -404,6 +404,9 @@ class Nansat(Domain):
         CreateCopy fails in case the band name has special characters,
         e.g. the slash in 'HH/VV'.
 
+        Metadata strings with special characters are escaped with XML/HTML
+        encoding.
+
         Examples
         --------
         n.export(netcdfile)
