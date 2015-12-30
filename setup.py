@@ -67,6 +67,7 @@ ISRELEASED          = True
 VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
+                        "nerscmetadata==0.1"
                     ]
 
 #----------------------------------------------------------------------------#
@@ -224,6 +225,9 @@ def run_setup(skip_compile):
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
+        dependency_links = [
+            "https://github.com/nansencenter/nersc-metadata@0.1#egg=nerscmetadata-0.1"
+        ],
         test_suite="nansat.tests",
         **kw
         )
