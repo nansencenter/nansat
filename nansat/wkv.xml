@@ -8,8 +8,8 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
-        <standard_name>predicted_surface_backwards_doppler_centroid_frequency_shift_of_radar_wave</standard_name>
-        <long_name>Geometric predicted Radar Doppler centroid frequency shift</long_name>
+        <standard_name>predicted_surface_backwards_doppler_frequency_shift_of_radar_wave</standard_name>
+        <long_name>Geometric predicted Radar Doppler frequency shift</long_name>
         <short_name>dcp</short_name>
         <units>Hz</units>
         <minmax>0 2000</minmax>
