@@ -9,9 +9,10 @@ import warnings
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
+from hdf4_mapper import HDF4Mapper
 
 
-class Mapper(VRT):
+class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -331,6 +332,28 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
-        productTime = gdalMetadata["RANGEENDINGTIME"]
+        productTime = gdalMetadata["RANGEBEGINNINGTIME"]
         self._set_time(parse(productDate+' '+productTime))
         self.remove_geolocationArray()
+
+        # set required metadata
+        self.dataset.SetMetadataItem('start_time',
+                                     (parse(gdalMetadata["RANGEBEGINNINGDATE"]+
+                                         ' '+gdalMetadata["RANGEBEGINNINGTIME"]
+                                         ).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('stop_time',
+                                     (parse(gdalMetadata["RANGEENDINGDATE"]+
+                                         ' '+gdalMetadata["RANGEENDINGTIME"]
+                                         ).
+                                      isoformat()))
+
+        sensorName = self.find_metadata(gdalMetadata,
+                                        'ASSOCIATEDSENSORSHORTNAME',
+                                        'MODIS')
+        satName = self.find_metadata(gdalMetadata,
+                                     'ASSOCIATEDSENSORSHORTNAME',
+                                     'Aqua')
+
+        self.dataset.SetMetadataItem('sensor', sensorName)
+        self.dataset.SetMetadataItem('satellite', satName)

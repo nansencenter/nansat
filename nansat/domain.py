@@ -2,9 +2,9 @@
 # Purpose: Container of Domain class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
+#               Dmitry Petrenko, Evgeny Morozov, Aleksander Vines
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2011 - 2015
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Polygon
 
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import OptionError
+from nansat.tools import OptionError, ProjectionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
@@ -213,8 +213,8 @@ class Domain(object):
             self.logger.error('Cannot read projection from source!')
         else:
             outStr += 'Projection:\n'
-            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1)
-                       + '\n')
+            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) +
+                       '\n')
             outStr += '-' * 40 + '\n'
             outStr += 'Corners (lon, lat):\n'
             outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
@@ -328,12 +328,7 @@ class Domain(object):
 
         '''
         # test input options
-        if kmlFileName is not None:
-            # if only output KML-file is given
-            # then convert the current domain to KML
-            domains = [self]
-        else:
-            # otherwise it is potentially error
+        if kmlFileName is None:
             raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
 
         if kmlFigureName is None:
@@ -433,14 +428,14 @@ class Domain(object):
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
-        x1, y1, z1 = coorTrans.TransformPoint(extentDic['lle'][0],
-                                              extentDic['lle'][3])
-        x2, y2, z2 = coorTrans.TransformPoint(extentDic['lle'][2],
-                                              extentDic['lle'][3])
-        x3, y3, z3 = coorTrans.TransformPoint(extentDic['lle'][2],
-                                              extentDic['lle'][1])
-        x4, y4, z4 = coorTrans.TransformPoint(extentDic['lle'][0],
-                                              extentDic['lle'][1])
+        x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0],
+                                             extentDic['lle'][3])
+        x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2],
+                                             extentDic['lle'][3])
+        x3, y3, _ = coorTrans.TransformPoint(extentDic['lle'][2],
+                                             extentDic['lle'][1])
+        x4, y4, _ = coorTrans.TransformPoint(extentDic['lle'][0],
+                                             extentDic['lle'][1])
 
         minX = min([x1, x2, x3, x4])
         maxX = max([x1, x2, x3, x4])
@@ -686,7 +681,7 @@ class Domain(object):
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
         # outer quotes have to be double and inner - single!
-        #wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
+        # wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
         wkt = 'POLYGON((%s))' % polyCont
         return wkt
 
@@ -753,6 +748,36 @@ class Domain(object):
         rowVector = [0, self.vrt.dataset.RasterYSize, 0,
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
+
+    def get_min_max_lat_lon(self):
+        '''Get minimum and maximum lat and long values in the geolocation grid
+
+        Returns
+        --------
+        minLat, maxLat, minLon, maxLon : float
+            min/max lon/lat values for the Domain
+
+        '''
+        allLongitudes, allLatitudes = self.get_geolocation_grids()
+        maxLat = -90
+        minLat = 90
+        for latitudes in allLatitudes:
+            for lat in latitudes:
+                if lat > maxLat:
+                    maxLat = lat
+                if lat < minLat:
+                    minLat = lat
+
+        maxLon = -180
+        minLon = 180
+        for longitudes in allLongitudes:
+            for lon in longitudes:
+                if lon > maxLon:
+                    maxLon = lon
+                if lon < minLon:
+                    minLon = lon
+
+        return minLat, maxLat, minLon, maxLon
 
     def get_pixelsize_meters(self):
         '''Returns the pixelsize (deltaX, deltaY) of the domain
@@ -997,8 +1022,10 @@ class Domain(object):
         # add content: coastline, continents, meridians, parallels
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
-        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians))
-        bmap.drawparallels(np.linspace(minLat, maxLat, parallels))
+        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians),
+                           labels=merLabels)
+        bmap.drawparallels(np.linspace(minLat, maxLat, parallels),
+                           labels=parLabels)
 
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given

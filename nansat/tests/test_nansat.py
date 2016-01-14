@@ -1,24 +1,23 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:         test_nansat.py
 # Purpose:      Test the Nansat class
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
+# Modified:     Morten Wergeland Hansen, Aleksander Vines
 #
 # Created:      18.06.2014
-# Last modified:16.04.2015 10:48
+# Last modified:30.09.2015 14:00
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 import unittest
 import warnings
 import os
-import sys
-import glob
-from types import ModuleType, FloatType
 import datetime
+import json
+from xml.sax.saxutils import unescape
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,14 +28,14 @@ from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
 
-IS_CONDA = 'conda' in os.environ['PATH']
-
 
 class NansatTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
+        self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
+        self.tmpfilename = os.path.join(ntd.tmp_data_path, 'test.nc')
         plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
@@ -69,14 +68,25 @@ class NansatTest(unittest.TestCase):
     def test_geolocation_of_exportedNC_vs_original(self):
         ''' Lon/lat in original and exported file should coincide '''
         orig = Nansat(self.test_file_gcps)
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
-        orig.export(tmpfilename)
+        orig.export(self.tmpfilename)
 
-        copy = Nansat(tmpfilename)
+        copy = Nansat(self.tmpfilename)
         lon0, lat0 = orig.get_geolocation_grids()
         lon1, lat1 = copy.get_geolocation_grids()
         np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
+        os.unlink(self.tmpfilename)
+
+    def test_special_characters_in_exported_metadata(self):
+        orig = Nansat(self.test_file_gcps)
+        orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
+            'hei', 'meta2': 'derr'}))
+        orig.export(self.tmpfilename)
+        copy = Nansat(self.tmpfilename)
+        dd = json.loads( unescape( copy.get_metadata('jsonstring'), {'&quot;':
+            '"'}))
+        self.assertIsInstance(dd, dict)
+        os.unlink(self.tmpfilename)
 
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -98,16 +108,16 @@ class NansatTest(unittest.TestCase):
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
         arrWithNaN[n.shape()[0]/2-10:n.shape()[0]/2+10,
-            n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
+                   n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
-        n.export('test.nc')
-        exported = Nansat('test.nc')
+        n.export(self.tmpfilename)
+        exported = Nansat(self.tmpfilename)
         earrNoNaN = exported['testBandNoNaN']
         # Use allclose to allow some roundoff errors
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
         earrWithNaN = exported['testBandWithNaN']
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
-        os.unlink('test.nc')
+        os.unlink(self.tmpfilename)
 
     def test_add_band_twice(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -197,7 +207,8 @@ class NansatTest(unittest.TestCase):
         n1.add_band(b0.astype('complex64'),
                     parameters={'name': 'L_469'})
 
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps_complex.nc')
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export_gcps_complex.nc')
         n1.export(tmpfilename)
 
         ncf = netcdf_file(tmpfilename)
@@ -227,7 +238,7 @@ class NansatTest(unittest.TestCase):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export_band.tif')
-        n.export(tmpfilename, bands= [1], driver='GTiff')
+        n.export(tmpfilename, bands=[1], driver='GTiff')
         n = Nansat(tmpfilename, mapperName='generic')
 
         self.assertTrue(os.path.exists(tmpfilename))
@@ -268,16 +279,13 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(nn.has_band('L_555'))
         os.unlink(resfile)
         # Test with band names - not yet implemented
-        #n.export(resfile, bands=['newBand', 'L_555'])
-        #nn = Nansat(resfile)
-        #self.assertTrue(nn.has_band('newBand'))
-        #self.assertTrue(nn.has_band('L_555'))
-        #os.unlink(resfile)
+#         n.export(resfile, bands=['newBand', 'L_555'])
+#         nn = Nansat(resfile)
+#         self.assertTrue(nn.has_band('newBand'))
+#         self.assertTrue(nn.has_band('L_555'))
+#         os.unlink(resfile)
 
     def test_export2thredds_stere_one_band(self):
-        # skip the test if anaconda is used
-        if IS_CONDA:
-            return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_1b.nc')
@@ -285,28 +293,62 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
-
     def test_export2thredds_stere_many_bands(self):
-        # skip the test if anaconda is used
-        if IS_CONDA:
-            return
         n = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_3b.nc')
         bands = {
-            'L_645' : {'type': '>i1'},
-            'L_555' : {'type': '>i1'},
-            'L_469' : {'type': '>i1'},
+            'L_645': {'type': '>i1'},
+            'L_555': {'type': '>i1'},
+            'L_469': {'type': '>i1'},
         }
         n.export2thredds(tmpfilename, bands)
 
         self.assertTrue(os.path.exists(tmpfilename))
 
+    def test_export2thredds_arctic_long_lat(self):
+        n = Nansat(self.test_file_arctic, logLevel=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export2thredds_arctic.nc')
+        bands = {
+            'Bristol': {'type': '>i2'},
+            'Bootstrap': {'type': '>i2'},
+            'UMass_AES': {'type': '>i2'},
+        }
+        n.export2thredds(tmpfilename, bands)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+        g = gdal.Open(tmpfilename)
+        metadata = g.GetMetadata_Dict()
+
+        # Test that the long/lat values are set aproximately correct
+        ncg = 'NC_GLOBAL#'
+        easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
+        self.assertTrue(float(easternmost_longitude) > 179,
+                        'easternmost_longitude is wrong:' +
+                        easternmost_longitude)
+        westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
+        self.assertTrue(float(westernmost_longitude) < -179,
+                        'westernmost_longitude is wrong:' +
+                        westernmost_longitude)
+        northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
+        self.assertTrue(float(northernmost_latitude) > 89.999,
+                        'northernmost_latitude is wrong:' +
+                        northernmost_latitude)
+        southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
+        self.assertTrue(float(southernmost_latitude) < 54,
+                        'southernmost_latitude is wrong:' +
+                        southernmost_latitude)
+        self.assertTrue(float(southernmost_latitude) > 53,
+                        'southernmost_latitude is wrong:' +
+                        southernmost_latitude)
+
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        self.assertRaises(OptionError, n.export2thredds, tmpfilename, ['L_645'])
+        self.assertRaises(OptionError, n.export2thredds, tmpfilename,
+                          ['L_645'])
 
     def test_export2thredds_longlat(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -362,42 +404,43 @@ class NansatTest(unittest.TestCase):
             warnings.simplefilter("always")
             n.resize(0.5, eResampleAlg=-1)
 
-            self.assertTrue(len(w)==1)
+            self.assertTrue(len(w) == 1)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
             self.assertTrue(
-                        'The imaginary parts of complex numbers ' \
+                        'The imaginary parts of complex numbers '
                         'are lost when resampling by averaging '
-                            in str(w[-1].message))
+                        in str(w[-1].message)
+                        )
 
     def test_resize_complex_alg0(self):
         n = Nansat(self.test_file_complex, logLevel=40)
         n.resize(0.5, eResampleAlg=0)
 
-        self.assertTrue(np.any(n[1].imag!=0))
+        self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg1(self):
         n = Nansat(self.test_file_complex, logLevel=40)
         n.resize(0.5, eResampleAlg=1)
 
-        self.assertTrue(np.any(n[1].imag!=0))
+        self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg2(self):
         n = Nansat(self.test_file_complex, logLevel=40)
         n.resize(0.5, eResampleAlg=2)
 
-        self.assertTrue(np.any(n[1].imag!=0))
+        self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg3(self):
         n = Nansat(self.test_file_complex, logLevel=40)
         n.resize(0.5, eResampleAlg=3)
 
-        self.assertTrue(np.any(n[1].imag!=0))
+        self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg4(self):
         n = Nansat(self.test_file_complex, logLevel=40)
         n.resize(0.5, eResampleAlg=4)
 
-        self.assertTrue(np.any(n[1].imag!=0))
+        self.assertTrue(np.any(n[1].imag != 0))
 
     def test_get_GDALRasterBand(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -433,8 +476,24 @@ class NansatTest(unittest.TestCase):
         b = n[1]
 
         self.assertTrue(n.has_band('swathmask'))
-        self.assertTrue(np.isnan(b[0,0]))
+        self.assertTrue(np.isnan(b[0, 0]))
         self.assertTrue(np.isfinite(b[100, 100]))
+
+    def test_add_band_and_reproject(self):
+        ''' Should add band and swath mask
+        and return 0 in areas out of swath '''
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.add_band(np.ones(n.shape()))
+        n.reproject(d)
+        b1 = n[1]
+        b4 = n[4]
+
+        self.assertTrue(n.has_band('swathmask'))
+        self.assertTrue(b1[0, 0] == 0)
+        self.assertTrue(b1[300, 300] > 0)
+        self.assertTrue(np.isnan(b4[0, 0]))
+        self.assertTrue(b4[300, 300] == 1.)
 
     def test_reproject_no_addmask(self):
         ''' Should not add swath mask and return 0 in areas out of swath '''
@@ -444,7 +503,7 @@ class NansatTest(unittest.TestCase):
         b = n[1]
 
         self.assertTrue(not n.has_band('swathmask'))
-        self.assertTrue(np.isfinite(b[0,0]))
+        self.assertTrue(np.isfinite(b[0, 0]))
         self.assertTrue(np.isfinite(b[100, 100]))
 
     def test_reproject_stere(self):
@@ -515,7 +574,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
-    def test_write_figure_clim(self):
+    def test_write_figure_legend(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_write_figure_legend.png')
@@ -553,9 +612,9 @@ class NansatTest(unittest.TestCase):
 
     def test_get_metadata_wrong_key(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
-        m = n1.get_metadata('some_crap')
 
-        self.assertTrue(m is None)
+        with self.assertRaises(OptionError):
+            n1.get_metadata('some_crap')
 
     def test_get_metadata_bandid(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
@@ -623,7 +682,7 @@ class NansatTest(unittest.TestCase):
     def test_get_no_transect_interactive(self):
         ''' Check that get_transect does returns None if interactive mode is
         '''
-        import matplotlib.pyplot as plt
+#         import matplotlib.pyplot as plt
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         noneResult = n1.get_transect()
@@ -654,7 +713,7 @@ class NansatTest(unittest.TestCase):
             else:                     should raise an error'''
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         mod44path = os.getenv('MOD44WPATH')
-        if mod44path is not None and os.path.exists(mod44path+ '/MOD44W.vrt'):
+        if mod44path is not None and os.path.exists(mod44path + '/MOD44W.vrt'):
             wm = n1.watermask()[1]
             self.assertEqual(type(wm), np.ndarray)
             self.assertEqual(wm.shape[0], n1.shape()[0])

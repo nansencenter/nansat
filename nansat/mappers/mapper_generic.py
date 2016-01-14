@@ -1,19 +1,28 @@
 # Name:         mapper_generic.py
 # Purpose:      Generic Mapper for L3/L4 satellite or modeling data
-# Authors:      Asuka Yamakava, Anton Korosov, Morten Wergeland Hansen
+# Authors:      Asuka Yamakava, Anton Korosov, Morten Wergeland Hansen,
+#               Aleksander Vines
+# Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 from dateutil.parser import parse
+import datetime
 
 import numpy as np
 from scipy.io.netcdf import netcdf_file
 
+try:
+    from cfunits import Units
+except:
+    cfunitsInstalled = False
+else:
+    cfunitsInstalled = True
+
 from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray
-from nansat.node import Node
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, WrongMapperError
 
 
 class Mapper(VRT):
@@ -47,12 +56,11 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
-        geoFileDict = {}
         xDatasetSource = ''
         yDatasetSource = ''
         firstXSize = 0
         firstYSize = 0
-        for i, fileName in enumerate(fileNames):
+        for _, fileName in enumerate(fileNames):
             subDataset = gdal.Open(fileName)
             # choose the first dataset whith grid
             if (firstXSize == 0 and firstYSize == 0 and
@@ -81,7 +89,7 @@ class Mapper(VRT):
                         if 'PixelFunctionType' in bandMetadata:
                             bandMetadata.pop('PixelFunctionType')
                         sourceBands = iBand + 1
-                        #sourceBands = i*subDataset.RasterCount + iBand + 1
+                        # sourceBands = i*subDataset.RasterCount + iBand + 1
 
                         # generate src metadata
                         src = {'SourceFilename': fileName,
@@ -117,12 +125,14 @@ class Mapper(VRT):
                             # if it doesn't exist get name from NETCDF_VARNAME
                             bandName = bandMetadata.get('NETCDF_VARNAME', '')
                             if len(bandName) == 0:
-                                bandName = bandMetadata.get('dods_variable', '')
+                                bandName = bandMetadata.get(
+                                            'dods_variable', ''
+                                            )
 
                             # remove digits added by gdal in
                             # exporting to netcdf...
                             if (len(bandName) > 0 and origin_is_nansat and
-                                fileExt == '.nc'):
+                                    fileExt == '.nc'):
                                 if bandName[-1:].isdigit():
                                     bandName = bandName[:-1]
                                 if bandName[-1:].isdigit():
@@ -199,9 +209,11 @@ class Mapper(VRT):
             projection = NSR().wkt
         # fix problem with MET.NO files where a, b given in m and XC/YC in km
         if ('UNIT["kilometre"' in projection and
-            ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]' in projection):
-            projection = projection.replace(',SPHEROID["Spheroid",6378273,7.331926543631893e-12]',
-                                            '')
+            ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]' in
+                projection):
+            projection = projection.replace(
+                ',SPHEROID["Spheroid",6378273,7.331926543631893e-12]',
+                '')
         # set projection
         self.dataset.SetProjection(self.repare_projection(projection))
 
@@ -237,13 +249,79 @@ class Mapper(VRT):
                 geoTransform = eval(geoTransformStr.replace('|', ','))
                 self.dataset.SetGeoTransform(geoTransform)
 
-        if 'start_date' in gdalMetadata:
+        subMetadata = firstSubDataset.GetMetadata()
+
+        if 'start_time' in gdalMetadata:
+            self._set_time(parse(gdalMetadata['start_time']))
+        elif 'start_date' in gdalMetadata:
+            self._set_time(parse(gdalMetadata['start_date']))
+        elif 'time_coverage_start' in gdalMetadata:
+            time_coverage_start = gdalMetadata['time_coverage_start'].strip()
+            # To account for datasets on the format YYYY-MM-DDZ which is
+            # invalid since it has no time, but a timezone
             try:
-                startDate = parse(gdalMetadata['start_date'])
+                start_datetime = parse(time_coverage_start)
             except ValueError:
-                self.logger.error('Time format is wrong in input file!')
+                if (len(time_coverage_start) == 11 and
+                        time_coverage_start.endswith('Z')):
+                    time_coverage_start = time_coverage_start[:10]
+                    start_datetime = parse(time_coverage_start)
+            self._set_time(start_datetime)
+        # try to read from time variable
+        elif (cfunitsInstalled and
+                 'time#standard_name' in subMetadata and
+                 subMetadata['time#standard_name'] == 'time' and
+                 'time#units' in subMetadata and
+                 'time#calendar' in subMetadata):
+
+            ncFile = netcdf_file(inputFileName, 'r')
+            timeLength = ncFile.variables['time'].shape[0]
+            timeValueStart = ncFile.variables['time'][0]
+            timeValueEnd = ncFile.variables['time'][-1]
+            ncFile.close()
+            timeDeltaStart = Units.conform(timeValueStart,
+                                  Units(subMetadata['time#units'],
+                                        calendar=subMetadata['time#calendar']),
+                                  Units('days since 1950-01-01'))
+            if timeLength > 1:
+                timeDeltaEnd = Units.conform(timeValueStart,
+                                      Units(subMetadata['time#units'],
+                                            calendar=subMetadata['time#calendar']),
+                                      Units('days since 1950-01-01'))
             else:
-                self._set_time(startDate)
+                timeDeltaEnd = timeDeltaStart + 1
+            time_coverage_start = (datetime.datetime(1950,1,1) +
+                                   datetime.timedelta(float(timeDeltaStart)))
+            time_coverage_end = (datetime.datetime(1950,1,1) +
+                                 datetime.timedelta(float(timeDeltaEnd)))
+
+            self._set_time(time_coverage_start)
+            self.dataset.SetMetadataItem('time_coverage_start',
+                                          time_coverage_start.isoformat())
+            self.dataset.SetMetadataItem('time_coverage_end',
+                                          time_coverage_end.isoformat())
+        else:
+            # TODO: I(alevin) disagree with this, we should not use a value,
+            # but handle this specific case when we use the value.
+            # Just use some clearly wrong time
+            self.dataset.SetMetadataItem(
+                    'start_time',
+                    (parse('2200-01-01 00:00').isoformat()))
+        if 'stop_time' not in gdalMetadata:
+            # Just use some clearly wrong time
+            self.dataset.SetMetadataItem(
+                    'stop_time',
+                    (parse('2200-01-01 00:00').isoformat()))
+        if 'sensor' not in gdalMetadata:
+            self.dataset.SetMetadataItem('sensor', 'unknown')
+        if 'satellite' not in gdalMetadata:
+            self.dataset.SetMetadataItem('satellite', 'unknown')
+        if 'source_type' not in gdalMetadata:
+            self.dataset.SetMetadataItem('source_type', 'unknown')
+        if 'platform' not in gdalMetadata:
+            self.dataset.SetMetadataItem('platform', 'unknown')
+        if 'instrument' not in gdalMetadata:
+            self.dataset.SetMetadataItem('instrument', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
 
@@ -275,7 +353,7 @@ class Mapper(VRT):
             for x in gcpString.split('|'):
                 if len(x) > 0:
                     gcpValues.append(float(x))
-            #gcpValues = [float(x) for x in gcpString.strip().split('|')]
+            # gcpValues = [float(x) for x in gcpString.strip().split('|')]
             gcpAllValues.append(gcpValues)
 
         # create list of GDAL GCPs

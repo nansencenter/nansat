@@ -8,8 +8,8 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
-        <standard_name>predicted_surface_backwards_doppler_centroid_frequency_shift_of_radar_wave</standard_name>
-        <long_name>Geometric predicted Radar Doppler centroid frequency shift</long_name>
+        <standard_name>predicted_surface_backwards_doppler_frequency_shift_of_radar_wave</standard_name>
+        <long_name>Geometric predicted Radar Doppler frequency shift</long_name>
         <short_name>dcp</short_name>
         <units>Hz</units>
         <minmax>0 2000</minmax>
@@ -270,6 +270,14 @@
         <colormap>jet</colormap>
     </wkv>
     <wkv>
+        <standard_name>height_above_reference_ellipsoid</standard_name>
+        <long_name>Digital elevation model height above mean sea level</long_name>
+        <short_name>topo</short_name>
+        <units>m</units>
+        <minmax>0 4000</minmax>
+        <colormap>jet</colormap>
+    </wkv>
+    <wkv>
         <standard_name>land_binary_mask</standard_name>
         <long_name>Land mask</long_name>
         <short_name>landmask</short_name>
@@ -361,7 +369,7 @@
         <standard_name>instantaneous_photosynthetically_available_radiation</standard_name>
         <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
         <short_name>PAR</short_name>
-        <units>enstain m-2 s-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 0.0024</minmax>
         <colormap>jet</colormap>
     </wkv>
@@ -385,7 +393,7 @@
         <standard_name>downwelling_photosynthetic_photon_radiance_in_sea_water</standard_name>
         <long_name>Photosynthetically Available Radiation</long_name>
         <short_name>PAR</short_name>
-        <units>Ein m-2 day-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 80</minmax>
         <colormap>jet</colormap>
     </wkv>
@@ -393,7 +401,7 @@
         <standard_name>instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water</standard_name>
         <long_name>Instantaneous Photosynthetically Available Radiation</long_name>
         <short_name>IPAR</short_name>
-        <units>Ein m^-2 s^-1</units>
+        <units>mol m-2 s-1 sr-1</units>
         <minmax>0 80</minmax>
         <colormap>jet</colormap>
     </wkv>

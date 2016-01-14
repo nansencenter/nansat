@@ -6,7 +6,7 @@
 # Modified:	Morten Wergeland Hansen
 #
 # Created:  12.09.2014
-# Last modified:03.06.2015 10:19
+# Last modified:02.07.2015 15:43
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -18,6 +18,9 @@ import zipfile
 import numpy as np
 import scipy
 from dateutil.parser import parse
+
+import json
+from nerscmetadata import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.tools import gdal, WrongMapperError, initial_bearing
@@ -303,7 +306,7 @@ class Mapper(VRT):
                 }
             })
 
-        name = 'SAR_look_direction'
+        name = 'look_direction'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
         metaDict.append({
@@ -429,21 +432,28 @@ class Mapper(VRT):
                                )
                 # set SADCAT specific metadata
                 self.dataset.SetMetadataItem(
-                    'start_date',
+                    'time_coverage_start',
                     parse((nn.node('metadataWrap').
                            node('xmlData').
                            node('safe:acquisitionPeriod')['safe:startTime'])
                           ).isoformat())
                 self.dataset.SetMetadataItem(
-                    'stop_date',
+                    'time_coverage_end',
                     parse((nn.node('metadataWrap').
                            node('xmlData').
                            node('safe:acquisitionPeriod')['safe:stopTime'])
                           ).isoformat())
 
-        self.dataset.SetMetadataItem('sensor', 'SAR')
-        self.dataset.SetMetadataItem('satellite', 'Sentinel-1')
-        self.dataset.SetMetadataItem('mapper', 's1a_l1')
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('sar')
+        ee = gcmd_keywords.get_platform('sentinel-1a')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)

@@ -299,6 +299,10 @@ class Nansat(Domain):
         # <p1> and <p2>
 
         '''
+        # replace empty parameters with list of None
+        if parameters is None:
+            parameters = [None] * len(arrays)
+
         # create VRTs from arrays
         bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
 
@@ -337,7 +341,7 @@ class Nansat(Domain):
         Parameters
         ----------
             band : str
-                name of the band to check
+                name or standard_name of the band to check
 
         Returns
         -------
@@ -346,7 +350,9 @@ class Nansat(Domain):
         '''
         bandExists = False
         for b in self.bands():
-            if self.bands()[b]['name'] == band:
+            if self.bands()[b]['name'] == band or \
+                    ( self.bands()[b].has_key('standard_name') and
+                            self.bands()[b]['standard_name'] == band):
                 bandExists = True
 
         return bandExists
@@ -398,6 +404,9 @@ class Nansat(Domain):
         CreateCopy fails in case the band name has special characters,
         e.g. the slash in 'HH/VV'.
 
+        Metadata strings with special characters are escaped with XML/HTML
+        encoding.
+
         Examples
         --------
         n.export(netcdfile)
@@ -422,7 +431,6 @@ class Nansat(Domain):
                     selfBands[selfBand]['name'] not in bands):
                     rmBands.append(selfBand)
             # delete bands from VRT
-            #import ipdb; ipdb.set_trace()
             exportVRT.delete_bands(rmBands)
 
         # Find complex data band
@@ -500,7 +508,14 @@ class Nansat(Domain):
                 globMetadata.pop(rmMeta)
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
-        exportVRT.dataset.SetMetadata(globMetadata)
+
+        # Apply escaping to metadata strings to preserve special characters (in
+        # XML/HTML format)
+        globMetadata_escaped = {}
+        for key, val in globMetadata.iteritems():
+            # Keys not escaped - this may be changed if needed...
+            globMetadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
+        exportVRT.dataset.SetMetadata(globMetadata_escaped)
 
         # if output filename is same as input one...
         if self.fileName == fileName:
@@ -598,7 +613,7 @@ class Nansat(Domain):
         # write data, close file
         ncFile.close()
 
-    def export2thredds(self, fileName, bands=None, metadata=None,
+    def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
                        time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
@@ -654,12 +669,6 @@ class Nansat(Domain):
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
 
-        if bands is None:
-            bands = {}
-            selfbands = self.bands()
-            for band in selfbands:
-                bands[selfbands[band]['name']] = selfbands[band]
-
         # replace bands as list with bands as dict
         if type(bands) is list:
             bands = dict.fromkeys(bands, {})
@@ -693,8 +702,9 @@ class Nansat(Domain):
             dstBands[iband]['scale'] = float(bands[iband].get('scale', 1.0))
             dstBands[iband]['offset'] = float(bands[iband].get('offset', 0.0))
             if '_FillValue' in bands[iband]:
-                dstBands[iband]['_FillValue'] = float(
-                    bands[iband]['_FillValue'])
+                dstBands[iband]['_FillValue'] = np.array(
+                                            [bands[iband]['_FillValue']],
+                                            dtype=dstBands[iband]['type'])[0]
 
             # mask values with np.nan
             if maskName is not None and iband != maskName:
@@ -702,17 +712,11 @@ class Nansat(Domain):
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(bandID=iband)
-
-            # remove unwanted metadata from bands
-            for rmMeta in rmMetadata:
-                if rmMeta in bandMetadata.keys():
-                    bandMetadata.pop(rmMeta)
-
             data.add_band(array=array, parameters=bandMetadata)
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
         # get corners of reprojected data
-        lonCrn, latCrn = data.get_corners()
+        minLat, maxLat, minLon, maxLon = data.get_min_max_lat_lon()
 
         # common global attributes:
         if createdTime is None:
@@ -722,10 +726,10 @@ class Nansat(Domain):
         globMetadata = {'institution': 'NERSC',
                         'source': 'satellite remote sensing',
                         'creation_date': createdTime,
-                        'northernmost_latitude': np.float(max(latCrn)),
-                        'southernmost_latitude': np.float(min(latCrn)),
-                        'westernmost_longitude': np.float(min(lonCrn)),
-                        'easternmost_longitude': np.float(max(lonCrn)),
+                        'northernmost_latitude': np.float(maxLat),
+                        'southernmost_latitude': np.float(minLat),
+                        'westernmost_longitude': np.float(minLon),
+                        'easternmost_longitude': np.float(maxLon),
                         'history': ' '}
 
         #join or replace default by custom global metadata
@@ -733,11 +737,6 @@ class Nansat(Domain):
         if metadata is not None:
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
-
-        # remove unwanted metadata from global metadata
-        for rmMeta in rmMetadata:
-            if rmMeta in globMetadata.keys():
-                globMetadata.pop(rmMeta)
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmpName = tempfile.mkstemp(suffix='.nc')
@@ -778,8 +777,11 @@ class Nansat(Domain):
         ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
         ncOVar.axis = 'T'
 
+        # get time from Nansat object or from input datetime
         if time is None:
             time = filter(None, self.get_time())
+        elif type(time) == datetime.datetime:
+            time = [time]
 
         # create value of time variable
         if len(time) > 0:
@@ -845,24 +847,24 @@ class Nansat(Domain):
                 # replace non-value by '_FillValue'
                 if (ncIVar.name in dstBands):
                     if '_FillValue' in dstBands[ncIVar.name].keys():
-                        data[np.isnan(data)] = bands[ncIVar.name]['_FillValue']
+                        data[np.isnan(data)] = dstBands[ncIVar.name]['_FillValue']
+                        ncOVar._attributes['_FillValue'] = dstBands[ncIVar.name]['_FillValue']
 
                 ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
-
                 # copy (some) attributes
                 for inAttrName in ncIVar._attributes:
-                    if inAttrName not in ['dataType', 'SourceFilename',
-                                          'SourceBand', '_Unsigned',
-                                          'FillValue', 'time']:
-                        ncOVar._attributes[inAttrName] = (
-                            ncIVar._attributes[inAttrName])
+                    if str(inAttrName) not in rmMetadata + ['dataType',
+                                    'SourceFilename', 'SourceBand', '_Unsigned',
+                                    'FillValue', 'time', '_FillValue']:
+                        ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
 
-                # add custom attributes
+                # add custom attributes from input parameter bands
                 if ncIVar.name in bands:
                     for newAttr in bands[ncIVar.name]:
-                        if newAttr not in ['type', 'scale', 'offset']:
-                            ncOVar._attributes[newAttr] = (
-                                bands[ncIVar.name][newAttr])
+                        if newAttr not in rmMetadata + ['type', 'scale',
+                                                        'offset',
+                                                        '_FillValue']:
+                            ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
                     # add grid_mapping info
                     if gridMappingName is not None:
                         ncOVar._attributes['grid_mapping'] = gridMappingName
@@ -1161,7 +1163,18 @@ class Nansat(Domain):
         # add band that masks valid values with 1 and nodata with 0
         # after reproject
         if addmask:
-            self.vrt._add_swath_mask_band()
+            self.vrt = self.vrt.get_super_vrt()
+            bandName = self.vrt._create_band(
+                src=[{
+                    'SourceFilename': self.vrt.vrt.fileName,
+                    'SourceBand':  1,
+                    'DataType': gdal.GDT_Byte}],
+                dst={
+                    'dataType' : gdal.GDT_Byte,
+                    'wkv' : 'swath_binary_mask',
+                    'PixelFunctionType': 'OnesPixelFunc',
+                })
+            self.vrt.dataset.FlushCache()
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
@@ -1260,14 +1273,17 @@ class Nansat(Domain):
                             logLevel=self.logger.level)
         # reproject on self or given Domain
         if dstDomain is None:
-            watermask.reproject(self, **kwargs)
-        else:
-            watermask.reproject(dstDomain, **kwargs)
+            dstDomain = self
+        #lon, lat = dstDomain.get_corners()
+        lon, lat = dstDomain.get_border()
+        watermask.crop(lonlim=[lon.min(), lon.max()],
+                       latlim=[lat.min(), lat.max()])
+        watermask.reproject(dstDomain, addmask=False, **kwargs)
 
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                     **kwargs):
+                     array_modfunc=None, **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -1306,6 +1322,9 @@ class Nansat(Domain):
         addDate : boolean
             False (default) : no date will be aded to the caption
             True : the first time of the object will be added to the caption
+        array_modfunc : None
+            None (default) : figure created using array in provided band
+            function : figure created using array modified by provided function
         **kwargs : parameters for Figure().
 
         Modifies
@@ -1354,6 +1373,8 @@ class Nansat(Domain):
         for band in bands:
             # get array from band and reshape to (1,height,width)
             iArray = self[band]
+            if array_modfunc:
+                iArray = array_modfunc(iArray)
             iArray = iArray.reshape(1, iArray.shape[0], iArray.shape[1])
             # create new 3D array or append band
             if array is None:
@@ -1544,6 +1565,27 @@ class Nansat(Domain):
         else:
             return time
 
+    def start_time(self):
+        return dateutil.parser.parse(self.get_metadata('start_time'))
+
+    def stop_time(self):
+        return dateutil.parser.parse(self.get_metadata('stop_time'))
+
+    def source(self):
+        se = self.sensor()
+        sa = self.satellite()
+        if not se or not sa:
+            ss = self.get_metadata('source')
+        else:
+            ss = se+'/'+sa
+        return ss
+
+    def sensor(self):
+        return self.get_metadata('sensor')
+
+    def satellite(self):
+        return self.get_metadata('satellite')
+
     def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset
 
@@ -1570,7 +1612,11 @@ class Nansat(Domain):
 
         # get all metadata or from a key
         if key is not None:
-            metadata = metadata.get(key, None)
+            try:
+                metadata = metadata[key]
+            except KeyError:
+                raise OptionError('%s does not have metadata %s' % (
+                                   self.fileName, key))
 
         return metadata
 
@@ -1725,6 +1771,7 @@ class Nansat(Domain):
                 tmpVRT._create_band({'SourceFilename': self.fileName,
                                      'SourceBand': iBand + 1})
                 tmpVRT.dataset.FlushCache()
+            self.mapper = 'gdal_bands'
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:

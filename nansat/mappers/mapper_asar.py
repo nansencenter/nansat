@@ -11,6 +11,8 @@ import scipy.ndimage
 from osgeo import gdal
 from dateutil.parser import parse
 
+import json
+from nerscmetadata import gcmd_keywords
 
 from nansat.vrt import VRT
 from envisat import Envisat
@@ -132,16 +134,16 @@ class Mapper(VRT, Envisat):
         inc = self.get_array_from_ADS('first_line_incidence_angle')
 
         # Calculate SAR look direction (ASAR is always right-looking)
-        SAR_look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
+        look_direction = initial_bearing(lon[:, :-1], lat[:, :-1],
                                              lon[:, 1:], lat[:, 1:])
         # Interpolate to regain lost row
-        SAR_look_direction = scipy.ndimage.interpolation.zoom(
-            SAR_look_direction, (1, 11./10.))
+        look_direction = scipy.ndimage.interpolation.zoom(
+            look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
-        SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
-        SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
-        look_u_VRT = VRT(array=SAR_look_direction_u, lat=lat, lon=lon)
-        look_v_VRT = VRT(array=SAR_look_direction_v, lat=lat, lon=lon)
+        look_direction_u = np.sin(np.deg2rad(look_direction))
+        look_direction_v = np.cos(np.deg2rad(look_direction))
+        look_u_VRT = VRT(array=look_direction_u, lat=lat, lon=lon)
+        look_v_VRT = VRT(array=look_direction_v, lat=lat, lon=lon)
 
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
@@ -174,7 +176,7 @@ class Mapper(VRT, Envisat):
         metaDict.append({'src': {'SourceFilename': lookFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'sensor_azimuth_angle',
-                                 'name': 'SAR_look_direction'}})
+                                 'name': 'look_direction'}})
 
         ####################
         # Add Sigma0-bands
@@ -267,13 +269,20 @@ class Mapper(VRT, Envisat):
         # to improve performance (tradeoff vs accuracy)
         self.dataset.SetMetadataItem('skip_gcps', '3')
 
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date',
+        self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata['MPH_SENSING_START']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_date',
+        self.dataset.SetMetadataItem('time_coverage_end',
                                      (parse(gdalMetadata['MPH_SENSING_STOP']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('sensor', 'ASAR')
-        self.dataset.SetMetadataItem('satellite', 'Envisat')
-        self.dataset.SetMetadataItem('mapper', 'asar')
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('asar')
+        ee = gcmd_keywords.get_platform('envisat')
+
+        # TODO: Validate that the found instrument and platform are indeed what
+        # we want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

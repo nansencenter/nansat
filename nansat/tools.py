@@ -256,6 +256,12 @@ def get_random_color(c0=None, minDist=100):
                       np.random.randint(255),
                       np.random.randint(255)])
 
+    #rndInt = np.random.randint(256 * 256 * 256)
+    #c1rgb = np.array([rndInt % 256,
+    #                 (rndInt / 256) % 256,
+    #                 (rndInt / 256 / 256) % 256])
+
+
     # calculate distance
     d = np.sum((c0rgb - c1rgb)**2)**0.5
 
