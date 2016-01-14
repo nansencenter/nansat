@@ -308,8 +308,12 @@ class VRT(object):
             self.dataset.SetProjection(srcProjection)
             self.dataset.SetGeoTransform(srcGeoTransform)
 
-            # set metadata
-            self.dataset.SetMetadata(srcMetadata)
+            # set source metadata corrected for potential Unicode
+            if type(srcMetadata) is dict:
+                for key in srcMetadata.keys():
+                    srcMetadata[key] = srcMetadata[key].encode('ascii',
+                                                               'ignore')
+                self.dataset.SetMetadata(srcMetadata)
 
         # add geolocation array from input or from source data
         if geolocationArray is None:
@@ -698,10 +702,14 @@ class VRT(object):
         for key in metadataDict:
             try:
                 metaValue = str(metadataDict[key])
+                metaKey = str(key)
             except UnicodeEncodeError:
                 self.logger.error('Cannot add %s to metadata' % key)
             else:
-                rasterBand.SetMetadataItem(key, metaValue)
+                try:
+                    rasterBand.SetMetadataItem(metaKey, metaValue)
+                except:
+                    import ipdb; ipdb.set_trace()
 
         return rasterBand
 
