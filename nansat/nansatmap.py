@@ -338,7 +338,7 @@ class Nansatmap(Basemap):
         self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl) - 1
 
-    def imshow(self, data, **kwargs):
+    def imshow(self, data, low=0, high=255, **kwargs):
         ''' Make RGB plot over the map
 
         data : numpy array
@@ -358,7 +358,7 @@ class Nansatmap(Basemap):
         # add random colormap
         if 'cmap' in kwargs and kwargs['cmap'] == 'random':
             values = np.unique(data[np.isfinite(data)])
-            cmap, norm = self._create_random_colormap(values)
+            cmap, norm = self._create_random_colormap(values, low=low, high=high)
             kwargs['cmap'] = cmap
             kwargs['norm'] = norm
 
@@ -499,15 +499,19 @@ class Nansatmap(Basemap):
 
             cbar = self.fig.colorbar(origin, ticks=ticks, **kwargs)
             if listedColormap:
-                cbar.ax.set_xticklabels(origin.norm.boundaries[:-1])
+                labels = origin.norm.boundaries[:-1]
+                if np.all(labels == np.floor(labels)):
+                    labels = labels.astype('int32')
+                cbar.ax.set_xticklabels(labels)
             imaxes = plt.gca()
             plt.axes(cbar.ax)
             plt.xticks(fontsize=fontsize)
             plt.axes(imaxes)
 
-    def drawgrid(self, fontsize=10, lat_num=5, lon_num=5,
+    def drawgrid(self, lat_num=5, lon_num=5,
                  lat_labels=[True, False, False, False],
-                 lon_labels=[False, False, True, False], fmt='%3.1f'):
+                 lon_labels=[False, False, True, False],
+                 **kwargs):
         '''Draw and label parallels (lat and lon lines) for values (in degrees)
 
         Parameters
@@ -527,12 +531,10 @@ class Nansatmap(Basemap):
         '''
         self.drawparallels(np.arange(self.latMin, self.latMax,
                            (self.latMax - self.latMin) / lat_num),
-                           labels=lat_labels,
-                           fontsize=fontsize, fmt=fmt)
+                           labels=lat_labels, **kwargs)
         self.drawmeridians(np.arange(self.lonMin, self.lonMax,
                            (self.lonMax - self.lonMin) / lon_num),
-                           labels=lon_labels,
-                           fontsize=fontsize, fmt=fmt)
+                           labels=lon_labels, **kwargs)
 
     def draw_continents(self, **kwargs):
         ''' Draw continents
@@ -620,7 +622,7 @@ class Nansatmap(Basemap):
         if self.x is None or self.y is None:
             self.x, self.y = self(self.lon, self.lat)
 
-    def _create_random_colormap(self, values):
+    def _create_random_colormap(self, values, low=0, high=255):
         ''' Generate colormap and colorbar with random discrete colors
 
         Parameters
@@ -633,10 +635,11 @@ class Nansatmap(Basemap):
             norm : matplotlib.color.BoundaryNorm
         '''
         # create first random color
-        randomColors = [get_random_color()]
+        randomColors = [get_random_color(low=low, high=high)]
         # add more random colors
         for v in values[1:]:
-            randomColors.append(get_random_color(randomColors[-1]))
+            randomColors.append(get_random_color(randomColors[-1],
+                                                  low=low, high=high))
 
         # create colormap and norm
         cmap = mpl.colors.ListedColormap(randomColors)
@@ -645,3 +648,21 @@ class Nansatmap(Basemap):
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
 
         return cmap, norm
+
+    def add_zone_labels(self, zones):
+        ''' Finds best place of labels for a zone map, adds labels to the map
+
+        Parameters
+        ----------
+            zones : numpy array with integer zones
+                the same array as usied in Nansatmap.imshow
+        '''
+        zoneIndices = np.unique(zones[np.isfinite(zones)])
+        for zi in zoneIndices:
+            zrows, zcols = np.nonzero(zones == zi)
+            zrc = np.median(zrows)
+            #zcols = np.nonzero(zones[zrc, :] == zi)[0]
+            zcc = np.median(zcols)
+            lon, lat = self.domain.transform_points([zcc], [zrc],0)
+            x, y = self(lon[0], lat[0])
+            plt.text(x, y, '%d' % zi, fontsize=5)
