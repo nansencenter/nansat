@@ -279,39 +279,33 @@ class Mapper(VRT):
             timeValueStart = ncFile.variables['time'][0]
             timeValueEnd = ncFile.variables['time'][-1]
             ncFile.close()
-            timeDeltaStart = Units.conform(timeValueStart,
+            try:
+                timeDeltaStart = Units.conform(timeValueStart,
                                   Units(subMetadata['time#units'],
                                         calendar=subMetadata['time#calendar']),
                                   Units('days since 1950-01-01'))
-            if timeLength > 1:
-                timeDeltaEnd = Units.conform(timeValueStart,
-                                      Units(subMetadata['time#units'],
-                                            calendar=subMetadata['time#calendar']),
-                                      Units('days since 1950-01-01'))
+            except ValueError:
+                self.logger.error('calendar units are wrong: %s' %
+                                  subMetadata['time#calendar'])
             else:
-                timeDeltaEnd = timeDeltaStart + 1
-            time_coverage_start = (datetime.datetime(1950,1,1) +
+                time_coverage_start = (datetime.datetime(1950,1,1) +
                                    datetime.timedelta(float(timeDeltaStart)))
-            time_coverage_end = (datetime.datetime(1950,1,1) +
-                                 datetime.timedelta(float(timeDeltaEnd)))
-
-            self._set_time(time_coverage_start)
-            self.dataset.SetMetadataItem('time_coverage_start',
+                self._set_time(time_coverage_start)
+                self.dataset.SetMetadataItem('time_coverage_start',
                                           time_coverage_start.isoformat())
-            self.dataset.SetMetadataItem('time_coverage_end',
+
+                if timeLength > 1:
+                    timeDeltaEnd = Units.conform(timeValueStart,
+                                          Units(subMetadata['time#units'],
+                                                calendar=subMetadata['time#calendar']),
+                                          Units('days since 1950-01-01'))
+                else:
+                    timeDeltaEnd = timeDeltaStart + 1
+                time_coverage_end = (datetime.datetime(1950,1,1) +
+                                     datetime.timedelta(float(timeDeltaEnd)))
+
+                self.dataset.SetMetadataItem('time_coverage_end',
                                           time_coverage_end.isoformat())
-        else:
-            # TODO: I(alevin) disagree with this, we should not use a value,
-            # but handle this specific case when we use the value.
-            # Just use some clearly wrong time
-            self.dataset.SetMetadataItem(
-                    'start_time',
-                    (parse('2200-01-01 00:00').isoformat()))
-        if 'stop_time' not in gdalMetadata:
-            # Just use some clearly wrong time
-            self.dataset.SetMetadataItem(
-                    'stop_time',
-                    (parse('2200-01-01 00:00').isoformat()))
         if 'sensor' not in gdalMetadata:
             self.dataset.SetMetadataItem('sensor', 'unknown')
         if 'satellite' not in gdalMetadata:
