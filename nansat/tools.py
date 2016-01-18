@@ -230,7 +230,7 @@ def add_logger(logName='', logLevel=None):
     return logger
 
 
-def get_random_color(c0=None, minDist=100):
+def get_random_color(c0=None, minDist=100, low=0, high=255):
     ''' Create random color which is far enough from the input color
 
     Parameters
@@ -252,9 +252,9 @@ def get_random_color(c0=None, minDist=100):
     c0rgb = np.array(hex2color(c0))
 
     # create new random color
-    c1rgb = np.array([np.random.randint(255),
-                      np.random.randint(255),
-                      np.random.randint(255)])
+    c1rgb = np.array([np.random.randint(low, high),
+                      np.random.randint(low, high),
+                      np.random.randint(low, high)])
 
     #rndInt = np.random.randint(256 * 256 * 256)
     #c1rgb = np.array([rndInt % 256,
