@@ -649,7 +649,7 @@ class Nansatmap(Basemap):
 
         return cmap, norm
 
-    def add_zone_labels(self, zones):
+    def add_zone_labels(self, zones, fontsize=5):
         ''' Finds best place of labels for a zone map, adds labels to the map
 
         Parameters
@@ -665,4 +665,4 @@ class Nansatmap(Basemap):
             zcc = np.median(zcols)
             lon, lat = self.domain.transform_points([zcc], [zrc],0)
             x, y = self(lon[0], lat[0])
-            plt.text(x, y, '%d' % zi, fontsize=5)
+            plt.text(x, y, '%d' % zi, fontsize=fontsize)
