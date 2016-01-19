@@ -141,16 +141,8 @@ class Mapper(VRT, Envisat):
         self._set_envisat_time(gdalMetadata)
 
         # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('time_coverage_start',
-                                     (parse(
-                                      gdalMetadata['SPH_FIRST_LINE_TIME']).
-                                      isoformat()
-                                      + '+00:00'))
-        self.dataset.SetMetadataItem('time_coverage_end',
-                                     (parse(
-                                      gdalMetadata['SPH_LAST_LINE_TIME']).
-                                      isoformat()
-                                      + '+00:00'))
+        # set time
+        self._set_envisat_time(gdalMetadata)
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords

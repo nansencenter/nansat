@@ -158,9 +158,8 @@ class Mapper(VRT, Envisat):
         if geolocation:
             self.add_geolocation_from_ads(gdalDataset,
                                           zoomSize=zoomSize, step=step)
+        # set time
+        self._set_envisat_time(gdalMetadata)
 
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date', parse(gdalMetadata['SPH_FIRST_LINE_TIME']).isoformat())
-        self.dataset.SetMetadataItem('stop_date', parse(gdalMetadata['SPH_LAST_LINE_TIME']).isoformat())
         self.dataset.SetMetadataItem('sensor', 'MERIS')
         self.dataset.SetMetadataItem('satellite', 'ENVISAT')

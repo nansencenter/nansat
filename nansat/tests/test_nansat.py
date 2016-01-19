@@ -590,13 +590,6 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
-    def test_get_time(self):
-        n1 = Nansat(self.test_file_gcps, logLevel=40)
-        t = n1.get_time()
-
-        self.assertEqual(len(t), len(n1.bands()))
-        self.assertEqual(type(t[0]), datetime.datetime)
-
     def test_get_metadata(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
         m = n1.get_metadata()

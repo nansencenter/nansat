@@ -160,4 +160,7 @@ class Mapper(VRT, Globcolour):
         startDate = datetime.datetime(int(iFileName[4:8]),
                                       int(iFileName[8:10]),
                                       int(iFileName[10:12]))
-        self._set_time(startDate)
+
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start', startDate.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', startDate.isoformat())

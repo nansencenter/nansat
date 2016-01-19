@@ -780,16 +780,13 @@ class Nansat(Domain):
 
         # get time from Nansat object or from input datetime
         if time is None:
-            time = filter(None, self.get_time())
-        elif type(time) == datetime.datetime:
-            time = [time]
+            time = self.time_coverage_start
 
         # create value of time variable
-        if len(time) > 0:
-            td = time[0] - datetime.datetime(1900, 1, 1)
-            days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
-            # add date
-            ncOVar[:] = days
+        td = time - datetime.datetime(1900, 1, 1)
+        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
+        # add date
+        ncOVar[:] = days
 
         # recreate file
         for ncIVarName in ncI.variables:
@@ -1438,7 +1435,7 @@ class Nansat(Domain):
 
         # add DATE to caption
         if addDate:
-            caption += self.get_time()[0].strftime(' %Y-%m-%d')
+            caption += self.time_coverage_start.strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
 

@@ -236,12 +236,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
                                      str(passDirection).upper())
 
-        # Set time
-        validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
-        self.logger.info('Valid time: %s', str(validTime))
-        self._set_time(parse(validTime))
-
-        # set SADCAT specific metadata
+        # set valid time
         self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata['FIRST_LINE_TIME']).
                                       isoformat()))

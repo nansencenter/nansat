@@ -98,7 +98,7 @@ class Mapper(VRT, object):
         self._create_bands(metaDict)
 
         # set time
-        self._set_time(iDate)
+        self.dataset.SetMetadataItem('time_coverage_start', iDate.isoformat())
 
     def get_sourcefilename(self, cache, dsURL, iDate, prodName, lons, lats):
         ''' Get SourceFilename either from memory array or from cached file '''
