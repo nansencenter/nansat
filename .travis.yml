@@ -16,9 +16,8 @@ before_install:
 install:
   - conda update -q --yes conda
   - conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
-  - git clone https://github.com/nansencenter/nersc-metadata.git
-  - cd nersc-metadata
-  - python setup.py install
+  - git clone https://github.com/nansencenter/nersc-metadata.git $HOME/nersc-metadata
+  - python $HOME/nersc-metadata/setup.py install
 #  - conda install -q --yes -c https://conda.binstar.org/osgeo gdal
   - conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
