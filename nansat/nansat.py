@@ -44,6 +44,7 @@ from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
+from nansat.tools import parse_time
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -1535,56 +1536,13 @@ class Nansat(Domain):
         outDataset = None
         self.vrt.copyproj(fileName)
 
-    def get_time(self, bandID=None):
-        ''' Get time for dataset and/or its bands
+    @property
+    def time_coverage_start(self):
+        return parse_time(self.get_metadata('time_coverage_start'))
 
-        Parameters
-        ----------
-        bandID : int or str (default = None)
-                band number or name
-
-        Returns
-        --------
-        time : list with datetime objects for each band.
-            If time is the same for all bands, the list contains 1 item
-
-        '''
-        time = []
-        for i in range(self.vrt.dataset.RasterCount):
-            band = self.get_GDALRasterBand(i + 1)
-            try:
-                time.append(dateutil.parser.parse(
-                            band.GetMetadataItem('time')))
-            except:
-                self.logger.debug('Band ' + str(i + 1) + ' has no time')
-                time.append(None)
-
-        if bandID is not None:
-            bandNumber = self._get_band_number(bandID)
-            return time[bandNumber - 1]
-        else:
-            return time
-
-    def start_time(self):
-        return dateutil.parser.parse(self.get_metadata('start_time'))
-
-    def stop_time(self):
-        return dateutil.parser.parse(self.get_metadata('stop_time'))
-
-    def source(self):
-        se = self.sensor()
-        sa = self.satellite()
-        if not se or not sa:
-            ss = self.get_metadata('source')
-        else:
-            ss = se+'/'+sa
-        return ss
-
-    def sensor(self):
-        return self.get_metadata('sensor')
-
-    def satellite(self):
-        return self.get_metadata('satellite')
+    @property
+    def time_coverage_end(self):
+        return parse_time(self.get_metadata('time_coverage_end'))
 
     def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset

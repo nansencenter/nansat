@@ -237,6 +237,7 @@ class Mapper(VRT):
         self.dataset.SetMetadata(globalMetadata)
 
         # Adding valid time to dataset
-        self._set_time(time)
+        self.dataset.SetMetadataItem('time_coverage_start', time.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', time.isoformat())
 
         return

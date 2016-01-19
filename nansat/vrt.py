@@ -624,38 +624,6 @@ class VRT(object):
                 'PixelFunctionType': 'OnesPixelFunc',
             })
 
-    def _set_time(self, time):
-        ''' Set time of dataset and/or its bands
-
-        Parameters
-        ----------
-        time : datetime
-
-        If a single datetime is given, this is stored in
-        all bands of the dataset as a metadata item 'time'.
-        If a list of datetime objects is given, different
-        time can be given to each band.
-
-        '''
-        # Make sure time is a list with one datetime element per band
-        numBands = self.dataset.RasterCount
-        if (isinstance(time, datetime.datetime) or
-                isinstance(time, datetime.date)):
-            time = [time]
-        if len(time) == 1:
-            time = time * numBands
-        if len(time) != numBands:
-            self.logger.error('Dataset has %s elements, '
-                              'but given time has %s elements.'
-                              % (str(numBands), str(len(time))))
-
-        # Store time as metadata key 'time' in each band
-        for i in range(numBands):
-            iBand = self.dataset.GetRasterBand(i + 1)
-            iBand.SetMetadataItem('time', str(time[i].isoformat()))
-
-        return
-
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
 
