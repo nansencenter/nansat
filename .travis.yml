@@ -5,6 +5,7 @@ sudo: false
 
 # Setup miniconda
 before_install:
+  - rm -rf $HOME/miniconda
   - if [[ ! -e $HOME/miniconda/bin ]]; then
         wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
         chmod +x miniconda.sh;
