@@ -5,7 +5,6 @@ sudo: false
 
 # Setup miniconda
 before_install:
-  - rm -rf $HOME/miniconda
   - if [[ ! -e $HOME/miniconda/bin ]]; then
         wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
         chmod +x miniconda.sh;
@@ -17,6 +16,9 @@ before_install:
 install:
   - conda update -q --yes conda
   - conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
+  - git clone https://github.com/nansencenter/nersc-metadata.git
+  - cd nersc-metadata
+  - python setup.py install
 #  - conda install -q --yes -c https://conda.binstar.org/osgeo gdal
   - conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
@@ -38,7 +40,7 @@ after_success:
 # before_cache:
 #   - rm -f $HOME/.cache/pip/log/debug.log
 
-#cache:
-#  directories:
+cache:
+  directories:
 #     - $HOME/.cache/pip
-#    - $HOME/miniconda
+    - $HOME/miniconda
