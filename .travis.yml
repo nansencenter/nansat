@@ -9,7 +9,7 @@ before_install:
   - if [[ ! -e $HOME/miniconda/bin ]]; then
         wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
         chmod +x miniconda.sh;
-        ./miniconda.sh -b -f;
+        ./miniconda.sh -b -f -p $HOME/miniconda;
     fi
   - export OLD_PATH=$PATH
   - export PATH=$HOME/miniconda/bin:$PATH
