@@ -46,11 +46,14 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(type(n), Nansat)
 
-    def test_open_arctic(self):
-        n = Nansat(self.test_file_arctic, logLevel=40)
+    def test_get_time_coverage_start_end(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        n.set_metadata('time_coverage_start', '2016-01-20')
+        n.set_metadata('time_coverage_end', '2016-01-21')
 
-        self.assertEqual(type(n), Nansat)
         self.assertEqual(type(n.time_coverage_start),
+                        datetime.datetime)
+        self.assertEqual(type(n.time_coverage_end),
                         datetime.datetime)
 
     def test_init_domain(self):
