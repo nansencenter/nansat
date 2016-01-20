@@ -41,10 +41,17 @@ class NansatTest(unittest.TestCase):
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
 
-    def test_init_filename(self):
+    def test_open_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
 
         self.assertEqual(type(n), Nansat)
+
+    def test_open_arctic(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n.time_coverage_start),
+                        datetime.datetime)
 
     def test_init_domain(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -294,7 +301,8 @@ class NansatTest(unittest.TestCase):
             'Bootstrap': {'type': '>i2'},
             'UMass_AES': {'type': '>i2'},
         }
-        n.export2thredds(tmpfilename, bands)
+        n.export2thredds(tmpfilename, bands,
+                        time=datetime.datetime(2016,1,20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
