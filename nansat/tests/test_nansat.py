@@ -47,7 +47,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n), Nansat)
 
     def test_open_arctic(self):
-        n = Nansat(self.test_file_gcps, logLevel=40)
+        n = Nansat(self.test_file_arctic, logLevel=40)
 
         self.assertEqual(type(n), Nansat)
         self.assertEqual(type(n.time_coverage_start),
