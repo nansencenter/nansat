@@ -31,9 +31,13 @@ install:
 
 script: #"cd ..; nosetests --with-coverage --cover-package=nansat nansat.tests"
   - coverage run --source=nansat setup.py test
+
 after_success:
   - coveralls
-after_script:
+  # Resetting path so uploading of cache with curl succeeds.
+  - export PATH=$OLD_PATH
+
+after_failure:
   # Resetting path so uploading of cache with curl succeeds.
   - export PATH=$OLD_PATH
 
