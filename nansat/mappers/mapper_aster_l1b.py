@@ -96,5 +96,10 @@ class Mapper(HDF4Mapper):
 
         # set time
         datetimeString = self.find_metadata(gdalMetadata, "SETTINGTIMEOFPOINTING")
-        self._set_time(parse(datetimeString+'+00'))
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     parse(datetimeString+'+00').isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     parse(datetimeString+'+00').isoformat())
+
         self.remove_geolocationArray()

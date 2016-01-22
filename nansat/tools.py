@@ -20,6 +20,7 @@ import os
 import sys
 import warnings
 import logging
+from dateutil.parser import parse
 
 from matplotlib import cm
 from matplotlib.colors import hex2color
@@ -273,3 +274,26 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
         c1 = '#%02x%02x%02x' % tuple(c1rgb)
 
     return c1
+
+def parse_time(time_string):
+    ''' Parse time string accounting for possible wrong formatting
+    Parameters
+    ----------
+    time_string : str
+        string with date and time
+    Returns
+    -------
+        time_value : datetime object
+
+    '''
+    time_string = time_string.strip()
+    # To account for datasets on the format YYYY-MM-DDZ which is
+    # invalid since it has no time, but a timezone
+    try:
+        time_value = parse(time_string)
+    except ValueError:
+        if (len(time_string) == 11 and
+                time_string.endswith('Z')):
+            time_value = parse(time_string[:10])
+
+    return time_value

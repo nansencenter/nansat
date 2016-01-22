@@ -56,6 +56,7 @@ class MosaicTest(unittest.TestCase):
             'L_555' : {'type': '>i1'},
             'L_469' : {'type': '>i1'},
         }
+        mo.set_metadata('time_coverage_start', '2016-01-19')
         mo.export2thredds(tmpfilename, bands)
 
     def test_median(self):
@@ -76,6 +77,7 @@ class MosaicTest(unittest.TestCase):
             'L_555' : {'type': '>i1'},
             'L_469' : {'type': '>i1'},
         }
+        mo.set_metadata('time_coverage_start', '2016-01-19')
         mo.export2thredds(tmpfilename, bands)
 
 class LayerTest(unittest.TestCase):

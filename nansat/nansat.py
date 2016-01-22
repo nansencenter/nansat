@@ -46,6 +46,7 @@ from nansat.vrt import VRT
 from nansat.nansatshape import Nansatshape
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
+from nansat.tools import parse_time
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -781,16 +782,13 @@ class Nansat(Domain):
 
         # get time from Nansat object or from input datetime
         if time is None:
-            time = filter(None, self.get_time())
-        elif type(time) == datetime.datetime:
-            time = [time]
+            time = self.time_coverage_start
 
         # create value of time variable
-        if len(time) > 0:
-            td = time[0] - datetime.datetime(1900, 1, 1)
-            days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
-            # add date
-            ncOVar[:] = days
+        td = time - datetime.datetime(1900, 1, 1)
+        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
+        # add date
+        ncOVar[:] = days
 
         # recreate file
         for ncIVarName in ncI.variables:
@@ -1439,7 +1437,7 @@ class Nansat(Domain):
 
         # add DATE to caption
         if addDate:
-            caption += self.get_time()[0].strftime(' %Y-%m-%d')
+            caption += self.time_coverage_start.strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
 
@@ -1537,56 +1535,13 @@ class Nansat(Domain):
         outDataset = None
         self.vrt.copyproj(fileName)
 
-    def get_time(self, bandID=None):
-        ''' Get time for dataset and/or its bands
+    @property
+    def time_coverage_start(self):
+        return parse_time(self.get_metadata('time_coverage_start'))
 
-        Parameters
-        ----------
-        bandID : int or str (default = None)
-                band number or name
-
-        Returns
-        --------
-        time : list with datetime objects for each band.
-            If time is the same for all bands, the list contains 1 item
-
-        '''
-        time = []
-        for i in range(self.vrt.dataset.RasterCount):
-            band = self.get_GDALRasterBand(i + 1)
-            try:
-                time.append(dateutil.parser.parse(
-                            band.GetMetadataItem('time')))
-            except:
-                self.logger.debug('Band ' + str(i + 1) + ' has no time')
-                time.append(None)
-
-        if bandID is not None:
-            bandNumber = self._get_band_number(bandID)
-            return time[bandNumber - 1]
-        else:
-            return time
-
-    def start_time(self):
-        return dateutil.parser.parse(self.get_metadata('start_time'))
-
-    def stop_time(self):
-        return dateutil.parser.parse(self.get_metadata('stop_time'))
-
-    def source(self):
-        se = self.sensor()
-        sa = self.satellite()
-        if not se or not sa:
-            ss = self.get_metadata('source')
-        else:
-            ss = se+'/'+sa
-        return ss
-
-    def sensor(self):
-        return self.get_metadata('sensor')
-
-    def satellite(self):
-        return self.get_metadata('satellite')
+    @property
+    def time_coverage_end(self):
+        return parse_time(self.get_metadata('time_coverage_end'))
 
     def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset

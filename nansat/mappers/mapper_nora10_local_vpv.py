@@ -51,7 +51,7 @@ class Mapper(VRT):
         # Read relevant arrays into memory
         g = gdal.Open('NETCDF:"' + nc_file + '":' + 'windspeed_10m')
         ws_10m = np.flipud(g.GetRasterBand(1).ReadAsArray())
-        g = gdal.Open('NETCDF:"' + nc_file_winddir + '":' + 
+        g = gdal.Open('NETCDF:"' + nc_file_winddir + '":' +
                         'wind_direction_10m')
         wd_10m = np.flipud(g.GetRasterBand(1).ReadAsArray())
         g = gdal.Open('NETCDF:"' + nc_file + '":' + 'latitude')
@@ -112,4 +112,4 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Add time
-        self._set_time(fileTime)
+        self.dataset.SetMetadataItem('time_coverage_start', fileTime.isoformat())

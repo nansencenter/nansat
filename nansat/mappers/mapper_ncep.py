@@ -91,13 +91,8 @@ class Mapper(VRT):
         # Adding valid time from the GRIB file to dataset
         band = gdalDataset.GetRasterBand(srcBandId['u-component'])
         validTime = band.GetMetadata()['GRIB_VALID_TIME']
-        self._set_time(datetime.datetime.
-                       utcfromtimestamp(int(validTime.strip().split(' ')[0])))
 
         self.dataset.SetMetadataItem('time_coverage_start',
-            (datetime.datetime.utcfromtimestamp(
-                int(validTime.strip().split(' ')[0])).isoformat()))
-        self.dataset.SetMetadataItem('time_coverage_end',
             (datetime.datetime.utcfromtimestamp(
                 int(validTime.strip().split(' ')[0])).isoformat()))
 

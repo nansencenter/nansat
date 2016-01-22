@@ -199,8 +199,6 @@ class Mapper(OBPGL2BaseClass):
         startMillisec = int(gdalMetadata['Start Millisec'])
         startDate = datetime(startYear, 1, 1) + timedelta(startDay-1, 0, 0,
                                                           startMillisec)
-        self._set_time(startDate)
-
         # skip adding georeference for GOCI
         if title is 'GOCI Level-2 Data':
             return
@@ -278,7 +276,6 @@ class Mapper(OBPGL2BaseClass):
 
         # use TPS for reprojection
         self.tps = True
-
 
         # add NansenCloud metadata
         self.dataset.SetMetadataItem('time_coverage_start',

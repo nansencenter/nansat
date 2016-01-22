@@ -106,7 +106,7 @@ class Mapper(VRT, object):
         self._create_bands(metaDict)
 
         # set time
-        self._set_time(gcDate)
+        self.dataset.SetMetadataItem('time_coverage_start', gcDate.isoformat())
 
     def get_var_name(self, keyword):
         ''' Get names of variable based on keyword '''

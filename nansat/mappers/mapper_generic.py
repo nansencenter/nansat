@@ -22,7 +22,7 @@ else:
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray
-from nansat.tools import gdal, WrongMapperError
+from nansat.tools import gdal, WrongMapperError, parse_time
 
 
 class Mapper(VRT):
@@ -251,29 +251,41 @@ class Mapper(VRT):
 
         subMetadata = firstSubDataset.GetMetadata()
 
+
+        ### GET START TIME from METADATA
+        time_coverage_start = None
         if 'start_time' in gdalMetadata:
-            self._set_time(parse(gdalMetadata['start_time']))
+            time_coverage_start = parse_time(gdalMetadata['start_time'])
         elif 'start_date' in gdalMetadata:
-            self._set_time(parse(gdalMetadata['start_date']))
+            time_coverage_start = parse_time(gdalMetadata['start_date'])
         elif 'time_coverage_start' in gdalMetadata:
-            time_coverage_start = gdalMetadata['time_coverage_start'].strip()
-            # To account for datasets on the format YYYY-MM-DDZ which is
-            # invalid since it has no time, but a timezone
-            try:
-                start_datetime = parse(time_coverage_start)
-            except ValueError:
-                if (len(time_coverage_start) == 11 and
-                        time_coverage_start.endswith('Z')):
-                    time_coverage_start = time_coverage_start[:10]
-                    start_datetime = parse(time_coverage_start)
-            self._set_time(start_datetime)
-        # try to read from time variable
-        elif (cfunitsInstalled and
+            time_coverage_start = parse_time(
+                                        gdalMetadata['time_coverage_start'])
+
+        ### GET END TIME from METADATA
+        time_coverage_end = None
+        if 'stop_time' in gdalMetadata:
+            time_coverage_start = parse_time(gdalMetadata['stop_time'])
+        elif 'stop_date' in gdalMetadata:
+            time_coverage_start = parse_time(gdalMetadata['stop_date'])
+        elif 'time_coverage_stop' in gdalMetadata:
+            time_coverage_start = parse_time(
+                                        gdalMetadata['time_coverage_stop'])
+        elif 'end_time' in gdalMetadata:
+            time_coverage_start = parse_time(gdalMetadata['end_time'])
+        elif 'end_date' in gdalMetadata:
+            time_coverage_start = parse_time(gdalMetadata['end_date'])
+        elif 'time_coverage_end' in gdalMetadata:
+            time_coverage_start = parse_time(
+                                        gdalMetadata['time_coverage_end'])
+
+        ### GET start time from time variable
+        if (time_coverage_start is None and cfunitsInstalled and
                  'time#standard_name' in subMetadata and
                  subMetadata['time#standard_name'] == 'time' and
                  'time#units' in subMetadata and
                  'time#calendar' in subMetadata):
-
+            # get data from netcdf data
             ncFile = netcdf_file(inputFileName, 'r')
             timeLength = ncFile.variables['time'].shape[0]
             timeValueStart = ncFile.variables['time'][0]
@@ -290,9 +302,6 @@ class Mapper(VRT):
             else:
                 time_coverage_start = (datetime.datetime(1950,1,1) +
                                    datetime.timedelta(float(timeDeltaStart)))
-                self._set_time(time_coverage_start)
-                self.dataset.SetMetadataItem('time_coverage_start',
-                                          time_coverage_start.isoformat())
 
                 if timeLength > 1:
                     timeDeltaEnd = Units.conform(timeValueStart,
@@ -304,8 +313,14 @@ class Mapper(VRT):
                 time_coverage_end = (datetime.datetime(1950,1,1) +
                                      datetime.timedelta(float(timeDeltaEnd)))
 
-                self.dataset.SetMetadataItem('time_coverage_end',
-                                          time_coverage_end.isoformat())
+        ## finally set values of time_coverage start and end if available
+        if time_coverage_start is not None:
+            self.dataset.SetMetadataItem('time_coverage_start',
+                                    time_coverage_start.isoformat())
+        if time_coverage_end is not None:
+            self.dataset.SetMetadataItem('time_coverage_end',
+                                    time_coverage_end.isoformat())
+
         if 'sensor' not in gdalMetadata:
             self.dataset.SetMetadataItem('sensor', 'unknown')
         if 'satellite' not in gdalMetadata:
