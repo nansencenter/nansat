@@ -49,6 +49,14 @@ class TestAllMappers(object):
             # Test call to Nansat, mapper specified
             yield self.open_with_nansat, fileName, mapperName
 
+    def test_mappers_start_time(self):
+        ''' Run similar NansenCloud reated tests for all mappers '''
+        for fileName, mapperName in self.testData.mapperData:
+            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
+            n = Nansat(fileName, mapperName=mapperName)
+            # Test nansat.start_time() and nansat.end_time()
+            yield self.has_start_time, n
+
     def test_mappers_advanced(self):
         ''' Run similar NansenCloud reated tests for all mappers '''
         for fileName, mapperName in self.testData.mapperData:
@@ -67,9 +75,11 @@ class TestAllMappers(object):
                     ):
                 yield self.exist_intensity_band, n
 
-    def has_time(self, n):
-        assert type(n.start_time())==datetime.datetime
-        assert type(n.stop_time())==datetime.datetime
+    def has_start_time(self, n):
+        assert type(n.time_coverage_start)==datetime.datetime
+
+    def has_end_time(self, n):
+        assert type(n.time_coverage_end)==datetime.datetime
 
     def has_source(self, n):
         assert type(n.source())==str
