@@ -639,55 +639,87 @@ class NansatTest(unittest.TestCase):
 
     def test_get_transect(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
-                                      (28.93691525, 70.69646524)]])
+        t = n1.get_transect([[28.31299128, 28.93691525],
+                             [70.93709219, 70.69646524]],
+                             ['L_645'])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
-        plt.plot(v['1:L_645']['shape0'], xy['shape0']['latitude'])
+        plt.plot(t['lat'], t['L_645'], '.-')
         plt.savefig(tmpfilename)
         plt.close('all')
 
-        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(xy['shape0']['latitude']))
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(pl['shape0'][0]))
-        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
-        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+        self.assertTrue('L_645' in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
 
     def test_get_transect_outside(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
-                                      (0.0, 0.0)]])
+        t = n1.get_transect([[0, 28.31299128], [0, 70.93709219]], [1])
 
-        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(xy['shape0']['latitude']))
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(pl['shape0'][0]))
-        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
-        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+        self.assertTrue('L_645' in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
 
-    def test_get_transect_false(self):
+    def test_get_transect_wrong_points(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect([(28.31299128, 70.93709219),
-                                     (28.93691525, 70.69646524)])
+        self.assertRaises(OptionError, n1.get_transect, [1, 1], [1])
 
-        self.assertEqual(len(v['1:L_645']), 2)
-        self.assertEqual(len(v['1:L_645']), len(xy))
-        self.assertEqual(len(v['1:L_645']), len(pl))
-        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
-        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+    def test_get_transect_wrong_band(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        t = n1.get_transect([[0, 28.31299128], [0, 70.93709219]], [10])
 
-    def test_get_no_transect_interactive(self):
-        ''' Check that get_transect does returns None if interactive mode is
-        '''
-#         import matplotlib.pyplot as plt
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
+
+    def test_get_transect_pixlin(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        t = n1.get_transect([[10, 20],
+                             [10, 10]],
+                             ['L_645'],
+                             lonlat=False)
+
+        self.assertTrue('L_645' in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
+        self.assertEqual(len(t['lon']), 11)
+
+    def test_get_transect_data(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        b1 = n1[1]
+        t = n1.get_transect([[28.3],[70.9]], [], b1)
+
+        self.assertTrue('input' in t.dtype.fields)
+        self.assertTrue('L_645' not in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
+
+    def test_digitize_points(self):
+        ''' shall return empty array in non interactive mode '''
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        noneResult = n1.get_transect()
+        points = n1.digitize_points(1)
 
-        self.assertEqual(noneResult, None)
+        self.assertEqual(len(points), 0)
         plt.ioff()
 
     def test_crop(self):
