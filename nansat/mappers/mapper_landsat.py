@@ -8,6 +8,8 @@ import os
 import glob
 import tarfile
 import warnings
+import datetime
+from dateutil.parser import parse
 
 from nansat.tools import WrongMapperError
 from nansat.tools import gdal, np
@@ -38,7 +40,6 @@ class Mapper(VRT):
             # into bandsInfo dict and bandSizes list
             tarNames = sorted(tarFile.getnames())
             for tarName in tarNames:
-                print tarName
                 # check if TIF files inside TAR qualify
                 if   (tarName[0] in ['L', 'M'] and
                       os.path.splitext(tarName)[1] in ['.TIF', '.tif']):
@@ -115,20 +116,14 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        #import ipdb
-        #ipdb.set_trace()
-        #t = tarfile.open(fileName)
-        #for m in t.getmembers():
-        #    if m.name[-4:] == '.TXT' or m.name[-4:] == '.txt':
-        #        f = t.extractfile(m)
-        #        for line in f:
+        if len(mtlFileName) > 0:
+            mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0], mtlFileName)
+            mtlFileLines = [line.strip() for line in self.read_xml(mtlFileName).split('\n')]
+            dateString = [line.split('=')[1].strip() for line in mtlFileLines if 'DATE_ACQUIRED' in line][0]
+            timeStr = [line.split('=')[1].strip() for line in mtlFileLines if 'SCENE_CENTER_TIME' in line][0]
+            time_start = parse(dateString + 'T' + timeStr).isoformat()
+            time_end = (parse(dateString + 'T' + timeStr) +
+                        datetime.timedelta(microseconds=60000000)).isoformat()
 
-
-        #self.dataset.SetMetadataItem('start_time',
-        #                             (parse(gdalMetadata['MPH_SENSING_START']).
-        #                              isoformat()))
-        #self.dataset.SetMetadataItem('stop_time',
-        #                             (parse(gdalMetadata['MPH_SENSING_STOP']).
-        #                              isoformat()))
-        #self.dataset.SetMetadataItem('sensor', 'ASAR')
-        #self.dataset.SetMetadataItem('satellite', 'Envisat')
+        self.dataset.SetMetadataItem('time_coverage_start', time_start)
+        self.dataset.SetMetadataItem('time_coverage_end', time_end)
