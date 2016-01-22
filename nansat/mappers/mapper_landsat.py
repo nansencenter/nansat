@@ -116,10 +116,18 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         if len(mtlFileName) > 0:
-            mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0], mtlFileName)
-            mtlFileLines = [line.strip() for line in self.read_xml(mtlFileName).split('\n')]
-            dateString = [line.split('=')[1].strip() for line in mtlFileLines if 'DATE_ACQUIRED' in line][0]
-            timeStr = [line.split('=')[1].strip() for line in mtlFileLines if 'SCENE_CENTER_TIME' in line][0]
+            mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0],
+                                        mtlFileName)
+            mtlFileLines = [line.strip() for line in
+                            self.read_xml(mtlFileName).split('\n')]
+            dateString = [line.split('=')[1].strip()
+                          for line in mtlFileLines
+                            if ('DATE_ACQUIRED' in line or
+                              'ACQUISITION_DATE' in line)][0]
+            timeStr = [line.split('=')[1].strip()
+                        for line in mtlFileLines
+                            if ('SCENE_CENTER_TIME' in line or
+                                'SCENE_CENTER_SCAN_TIME' in line)][0]
             time_start = parse_time(dateString + 'T' + timeStr).isoformat()
             time_end = (parse_time(dateString + 'T' + timeStr) +
                         datetime.timedelta(microseconds=60000000)).isoformat()
