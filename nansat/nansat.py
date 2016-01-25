@@ -1796,10 +1796,10 @@ class Nansat(Domain):
         return bandNumber
 
     def get_transect(self, points, bands,
-                        data=None,
                         lonlat=True,
                         smoothRadius=0,
-                        smooth_function=nanmedian):
+                        smooth_function=nanmedian,
+                        data=None):
         '''Get values from transect from given vector of poins
 
         Parameters
@@ -1808,16 +1808,17 @@ class Nansat(Domain):
             coordinates [[x1, x2, y2], [y1, y2, y3]]
         bands : list of int or string
             elements of the list are band number or band Name
-        data : ndarray
-            array with data to take values from
-        latlon : bool
+        lonlat : bool
             If the points in lat/lon, then True.
             If the points in pixel/line, then False.
         smoothRadius: int
             If smootRadius is greater than 0, smooth every transect
             pixel as the median or mean value in a circule with radius
             equal to the given number.
-        smoothAlg: 0 or 1 for median or mean
+        smooth_function: func
+            function for averaging values collected within smooth radius
+        data : ndarray
+            alternative array with data to take values from
 
         Returns
         --------
