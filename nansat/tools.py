@@ -17,7 +17,6 @@
 from __future__ import absolute_import
 
 import os
-import sys
 import warnings
 import logging
 from dateutil.parser import parse
@@ -29,9 +28,7 @@ import numpy as np
 from scipy import mod
 
 try:
-    import gdal
-    import ogr
-    import osr
+    import gdal, ogr, osr
 except:
     from osgeo import gdal, ogr, osr
 
@@ -126,9 +123,6 @@ class GDALError(Exception):
     '''Error from GDAL '''
     pass
 
-class NansatReadError(Exception):
-    '''Exception if a file cannot be read with Nansat'''
-    pass
 
 class NansatReadError(Exception):
     '''Exception if a file cannot be read with Nansat'''
@@ -164,7 +158,6 @@ def initial_bearing(lon1, lat1, lon2, lat2):
         rlat1 = np.radians(lat1)
         rlon2 = np.radians(lon2)
         rlat2 = np.radians(lat2)
-        deltalon = rlon2 - rlon1
         bearing = np.arctan2(np.sin(rlon2 - rlon1) * np.cos(rlat2),
                              np.cos(rlat1) * np.sin(rlat2) -
                              np.sin(rlat1) * np.cos(rlat2) *
@@ -257,12 +250,6 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
                       np.random.randint(low, high),
                       np.random.randint(low, high)])
 
-    #rndInt = np.random.randint(256 * 256 * 256)
-    #c1rgb = np.array([rndInt % 256,
-    #                 (rndInt / 256) % 256,
-    #                 (rndInt / 256 / 256) % 256])
-
-
     # calculate distance
     d = np.sum((c0rgb - c1rgb)**2)**0.5
 
@@ -274,6 +261,7 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
         c1 = '#%02x%02x%02x' % tuple(c1rgb)
 
     return c1
+
 
 def parse_time(time_string):
     ''' Parse time string accounting for possible wrong formatting
@@ -297,3 +285,11 @@ def parse_time(time_string):
             time_value = parse(time_string[:10])
 
     return time_value
+
+
+def test_openable(fname):
+    try:
+        f = open(fname, 'r')
+    except IOError:
+        raise
+    f.close()

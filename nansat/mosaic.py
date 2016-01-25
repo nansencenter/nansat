@@ -16,19 +16,18 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import warnings
 import multiprocessing as mp
 import ctypes
-import datetime
 
 import numpy as np
 import scipy.stats as st
 
 from nansat.nansat import Nansat
 
-## shared arrays for mean, squared mean and count
+# shared arrays for mean, squared mean and count
 sharedArray = None
 domain = None
+
 
 def mparray2ndarray(sharedArray, shape, dtype='float32'):
     ''' convert shared multiprocessing Array to numpy ndarray '''
@@ -38,6 +37,7 @@ def mparray2ndarray(sharedArray, shape, dtype='float32'):
     sharedNDArray.shape = shape
 
     return sharedNDArray
+
 
 def sumup(layer):
     ''' Sum up bands from input images in multiple threads'''
@@ -58,7 +58,7 @@ def sumup(layer):
     # get metadata
     bandMetadata = [layer.n.get_metadata(bandID=band) for band in layer.bands]
 
-    with sharedArray.get_lock(): # synchronize access
+    with sharedArray.get_lock(): #  synchronize access
         sharedNDArray = mparray2ndarray(sharedArray,
                                         (2+len(layer.bands)*2,
                                          mask.shape[0],
@@ -84,12 +84,13 @@ def sumup(layer):
     layer = None
     return bandMetadata
 
+
 class Layer:
     ''' Small class to get mask and arrays from many bands '''
     def __init__(self, fileName, bands=[1],
                         opener=Nansat, maskName='mask',
                         doReproject=True, eResampleAlg=0,
-                        period=(None,None),
+                        period=(None, None),
                         logLevel=30):
         # Set parameters of processing
         self.fileName     = fileName
@@ -142,7 +143,7 @@ class Mosaic(Nansat):
     '''
 
     def average(self, files=[], bands=[1], doReproject=True, maskName='mask',
-                opener=Nansat, threads=1, eResampleAlg=0, period=(None,None)):
+                opener=Nansat, threads=1, eResampleAlg=0, period=(None, None)):
         '''Memory-friendly, multithreaded mosaicing(averaging) of input files
 
         Convert all input files into Nansat objects, reproject onto the
@@ -197,7 +198,10 @@ class Mosaic(Nansat):
         # get desired shape
         dstShape = self.shape()
         # preallocate shared mem array
-        sharedArray = mp.Array(ctypes.c_float, [0]*(2+len(bands)+len(bands)) * dstShape[0] * dstShape[1])
+        sharedArray = mp.Array(ctypes.c_float,
+                               [0]*(2 +
+                                    len(bands) +
+                                    len(bands)) * dstShape[0] * dstShape[1])
 
         # create list of layers
         domain = Nansat(domain=self)
@@ -206,14 +210,13 @@ class Mosaic(Nansat):
                         for ifile in files]
 
         # test in debug
-        #sumup(layers[0])
+        # sumup(layers[0])
 
         # prepare pool of processors
         pool = mp.Pool(threads)
 
         # run reprojection and summing up
         metadata = pool.map(sumup, layers)
-        #metadata = map(sumup, layers)
 
         # get band metadata from the first valid file
         for bandsMeta in metadata:
@@ -222,8 +225,10 @@ class Mosaic(Nansat):
 
         # average products
         sharedNDArray = mparray2ndarray(sharedArray,
-                                     (2+len(bands)*2, dstShape[0], dstShape[1]),
-                                     'float32')
+                                        (2+len(bands)*2,
+                                        dstShape[0],
+                                        dstShape[1]),
+                                        'float32')
 
         # cleanup
         pool.terminate()
@@ -265,7 +270,6 @@ class Mosaic(Nansat):
             self.add_band(array=avgMat[bi], parameters=bandsMeta[bi])
             bandsMeta[bi]['name'] = bandsMeta[bi]['name'] + '_std'
             self.add_band(array=stdMat[bi], parameters=bandsMeta[bi])
-
 
     def _get_cube(self, files, band, doReproject, maskName, opener,
                                                     eResampleAlg,
@@ -337,7 +341,7 @@ class Mosaic(Nansat):
         return dataCube, maskMat.max(0), bandMetadata
 
     def median(self, files=[], bands=[1], doReproject=True, maskName='mask',
-                opener=Nansat, eResampleAlg=0, period=(None,None),
+                opener=Nansat, eResampleAlg=0, period=(None, None),
                 vmin=-np.inf, vmax=np.inf):
         '''Calculate median of input bands
 
@@ -366,7 +370,6 @@ class Mosaic(Nansat):
         if len(files) == 0:
             self.logger.error('No input files given!')
             return
-
 
         # add medians of all bands
         for band in bands:
