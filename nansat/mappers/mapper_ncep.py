@@ -96,13 +96,14 @@ class Mapper(VRT):
             (datetime.datetime.utcfromtimestamp(
                 int(validTime.strip().split(' ')[0])).isoformat()))
 
+        self.dataset.SetMetadataItem('time_coverage_end',
+            ((datetime.datetime.utcfromtimestamp(
+                int(validTime.strip().split(' ')[0]))
+             + datetime.timedelta(hours=3)).isoformat()))
+
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
         mm = gcmd_keywords.get_instrument('computer')
         ee = gcmd_keywords.get_platform('ncep-gfs')
-
-        # TODO: Validate that the found instrument and platform are indeed what we
-        # want....
-
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

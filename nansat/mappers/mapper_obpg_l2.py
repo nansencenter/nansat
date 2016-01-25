@@ -286,14 +286,9 @@ class Mapper(OBPGL2BaseClass):
                                      (parse(
                                       gdalMetadata['time_coverage_stop']).
                                       isoformat()))
-
-        # Get dictionary describing the instrument and platform according to
-        # the GCMD keywords
-        mm = gcmd_keywords.get_instrument('modis')
-        ee = gcmd_keywords.get_platform('aqua')
-
-        # TODO: Validate that the found instrument and platform are indeed what we
-        # want....
-
+        instrument = gdalMetadata['Sensor Name'][1:-1]
+        platform = {'A': 'AQUA', 'T': 'TERRA'}[gdalMetadata['Sensor Name'][-1]]
+        mm = gcmd_keywords.get_instrument(instrument)
+        ee = gcmd_keywords.get_platform(platform)
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

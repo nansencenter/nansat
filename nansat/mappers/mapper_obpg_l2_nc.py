@@ -6,8 +6,11 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 from dateutil.parser import parse
+import json
 
 import numpy as np
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
@@ -143,7 +146,10 @@ class Mapper(OBPGL2BaseClass):
                                      str(time_coverage_start))
         self.dataset.SetMetadataItem('time_coverage_end',
                                      str(time_coverage_end))
-        self.dataset.SetMetadataItem('instrument', 'MODIS')
-        self.dataset.SetMetadataItem('platform', 'AQUA')
         self.dataset.SetMetadataItem('source_type', 'Satellite')
         self.dataset.SetMetadataItem('mapper', 'obpg_l2_nc')
+
+        mm = gcmd_keywords.get_instrument(dsMetadata.get('instrument'))
+        ee = gcmd_keywords.get_platform(dsMetadata.get('platform'))
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

@@ -7,12 +7,15 @@
 import glob
 import os.path
 import datetime
+import json
 
 from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
 
 from netCDF4 import Dataset
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
@@ -152,6 +155,19 @@ class Mapper(VRT, Globcolour):
             metaEntry2 = self.make_rrsw_meta_entry(metaEntry)
             if metaEntry2 is not None:
                 metaDict.append(metaEntry2)
+
+
+        instrument = f.title.strip().split(' ')[-2].split('/')[0]
+        mm = gcmd_keywords.get_instrument(instrument)
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+
+        platform = {
+            'MODIS' : 'AQUA',
+            'MERIS' : 'ENVISAT',
+            'SEAWIFS': 'QUICKBIRD',
+            'VIIRS' : 'SUOMI-NPP'}[instrument.upper()]
+        pp = gcmd_keywords.get_platform(platform)
+        self.dataset.SetMetadataItem('platform', json.dumps(pp))
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
