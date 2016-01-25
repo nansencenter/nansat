@@ -67,6 +67,8 @@ ISRELEASED          = True
 VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
+                        "requests",
+                        "nerscmetadata"
                     ]
 
 #----------------------------------------------------------------------------#
@@ -224,9 +226,15 @@ def run_setup(skip_compile):
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
+        dependency_links = [
+            "https://github.com/nansencenter/nersc-metadata/tarball/master#egg=nerscmetadata-0.1.4"
+        ],
         test_suite="nansat.tests",
         **kw
-        )
+    )
+    ## write json file with gcmd keywords
+    #from nerscmetadata.gcmd_keywords import write_json
+    #write_json()
 
 try:
     run_setup(skip_compile)
