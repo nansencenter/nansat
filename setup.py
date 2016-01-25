@@ -227,7 +227,7 @@ def run_setup(skip_compile):
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
         dependency_links = [
-            "https://github.com/nansencenter/nersc-metadata/archive/0.1.3.zip#egg=nerscmetadata-0.1.3"
+            "https://github.com/nansencenter/nersc-metadata/tarball/master#egg=nerscmetadata-0.1.4"
         ],
         test_suite="nansat.tests",
         **kw
