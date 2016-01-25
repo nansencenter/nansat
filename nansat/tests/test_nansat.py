@@ -705,7 +705,7 @@ class NansatTest(unittest.TestCase):
     def test_get_transect_data(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         b1 = n1[1]
-        t = n1.get_transect([[28.3],[70.9]], [], b1)
+        t = n1.get_transect([[28.3],[70.9]], [], data=b1)
 
         self.assertTrue('input' in t.dtype.fields)
         self.assertTrue('L_645' not in t.dtype.fields)
