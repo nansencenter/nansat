@@ -6,6 +6,9 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 import warnings
+import json
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
@@ -347,12 +350,13 @@ class Mapper(HDF4Mapper):
                                          ).
                                       isoformat()))
 
-        sensorName = self.find_metadata(gdalMetadata,
-                                        'ASSOCIATEDSENSORSHORTNAME',
+        instrumentName = self.find_metadata(gdalMetadata,
+                                        'ASSOCIATEDINSTRUMENTSHORTNAME',
                                         'MODIS')
-        satName = self.find_metadata(gdalMetadata,
-                                     'ASSOCIATEDSENSORSHORTNAME',
-                                     'Aqua')
-
-        self.dataset.SetMetadataItem('sensor', sensorName)
-        self.dataset.SetMetadataItem('satellite', satName)
+        platformName = self.find_metadata(gdalMetadata,
+                                     'ASSOCIATEDPLATFORMSHORTNAME',
+                                     'AQUA')
+        mm = gcmd_keywords.get_instrument(instrumentName)
+        ee = gcmd_keywords.get_platform(platformName)
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

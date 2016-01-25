@@ -127,5 +127,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('time_coverage_end',
                                      parse(gdalMetadata['LASTPACKETTIME']).isoformat())
 
-        self.dataset.SetMetadataItem('sensor', 'VNIR')
-        self.dataset.SetMetadataItem('satellite', 'Aster')
+        mm = gcmd_keywords.get_instrument('ASTER')
+        ee = gcmd_keywords.get_platform('TERRA')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

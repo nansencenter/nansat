@@ -9,6 +9,9 @@ import glob
 import tarfile
 import warnings
 import datetime
+import json
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import WrongMapperError, parse_time
 from nansat.tools import gdal, np
@@ -134,3 +137,24 @@ class Mapper(VRT):
 
         self.dataset.SetMetadataItem('time_coverage_start', time_start)
         self.dataset.SetMetadataItem('time_coverage_end', time_end)
+
+        # set platform
+        platform = 'LANDSAT'
+        if fname[2].isdigit():
+            platform += '-'+fname[2]
+        ee = gcmd_keywords.get_platform(platform)
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        # set instrument
+        instrument = {
+        'LANDSAT' : 'MSS',
+        'LANDSAT-1' : 'MSS',
+        'LANDSAT-2' : 'MSS',
+        'LANDSAT-3' : 'MSS',
+        'LANDSAT-4' : 'TM',
+        'LANDSAT-5' : 'TM',
+        'LANDSAT-7' : 'ETM+',
+        'LANDSAT-8' : 'OLI'}[platform]
+        ee = gcmd_keywords.get_instrument(instrument)
+        self.dataset.SetMetadataItem('instrument', json.dumps(ee))
+

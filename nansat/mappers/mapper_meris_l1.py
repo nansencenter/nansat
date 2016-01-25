@@ -140,10 +140,6 @@ class Mapper(VRT, Envisat):
         # set time
         self._set_envisat_time(gdalMetadata)
 
-        # set SADCAT specific metadata
-        # set time
-        self._set_envisat_time(gdalMetadata)
-
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
         mm = gcmd_keywords.get_instrument('meris')

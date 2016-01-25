@@ -87,4 +87,6 @@ class Mapper(VRT):
                 datetime.datetime.utcfromtimestamp(
                 int(stop_date.strip().split(' ')[0])).isoformat() + '+00:00')
 
-        return
+        mm = gcmd_keywords.get_instrument('computer')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', 'HIgh Resolution Limited Area Model')

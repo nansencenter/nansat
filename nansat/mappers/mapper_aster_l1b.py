@@ -6,6 +6,9 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 import warnings
+import json
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
@@ -101,5 +104,10 @@ class Mapper(HDF4Mapper):
                                      parse(datetimeString+'+00').isoformat())
         self.dataset.SetMetadataItem('time_coverage_end',
                                      parse(datetimeString+'+00').isoformat())
+
+        mm = gcmd_keywords.get_instrument('ASTER')
+        ee = gcmd_keywords.get_platform('TERRA')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
         self.remove_geolocationArray()
