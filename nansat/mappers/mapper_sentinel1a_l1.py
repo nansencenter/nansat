@@ -3,7 +3,7 @@
 # Purpose:
 #
 # Author:       Morten Wergeland Hansen
-# Modified:	Morten Wergeland Hansen
+# Modified: Morten Wergeland Hansen
 #
 # Created:  12.09.2014
 # Last modified:02.07.2015 15:43
@@ -425,12 +425,7 @@ class Mapper(VRT):
         meta = n.node('metadataSection')
         for nn in meta.children:
             if nn.getAttribute('ID') == u'acquisitionPeriod':
-                self._set_time(parse((nn.node('metadataWrap').
-                                      node('xmlData').
-                                      node('safe:acquisitionPeriod')
-                                      ['safe:startTime']))
-                               )
-                # set SADCAT specific metadata
+                # set valid time
                 self.dataset.SetMetadataItem(
                     'time_coverage_start',
                     parse((nn.node('metadataWrap').

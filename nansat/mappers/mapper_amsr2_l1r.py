@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 from math import ceil
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr, WrongMapperError, parse_time
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 
@@ -112,7 +112,10 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-
+        self.dataset.SetMetadataItem('time_coverage_start',
+                    parse_time(gdalMetadata['ObservationStartDateTime']).isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end',
+                    parse_time(gdalMetadata['ObservationEndDateTime']).isoformat())
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
         self.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=90 +lon_0=0 +no_defs')

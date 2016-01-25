@@ -244,7 +244,13 @@ class Mapper(VRT):
 
                 # put band metadata
                 for attr in attrs:
-                    metaEntry['dst'][str(attr)] = str(var.getncattr(attr))
+                    attrKey = attr.encode('ascii', 'ignore')
+                    attrVal = var.getncattr(attr)
+                    if type(attrVal) in [str, unicode]:
+                        attrVal = attrVal.encode('ascii', 'ignore')
+                    else:
+                        attrVal = str(attrVal)
+                    metaEntry['dst'][attrKey] = attrVal
 
                 # add wkv
                 if 'standard_name' in attrs:

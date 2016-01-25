@@ -119,7 +119,10 @@ class Mapper(VRT, Globcolour):
         self._create_bands(metaDict)
 
         # Add valid time
-        #startYear = int(gdalMetadata['Start Year'])
-        #startDay = int(gdalMetadata['Start Day'])
-        #self._set_time(datetime.datetime(startYear, 1, 1) + datetime.timedelta(startDay))
-        #"""
+        startYear = int(gdalMetadata['Start Year'])
+        startDay = int(gdalMetadata['Start Day'])
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start',
+            (datetime.datetime(startYear, 1, 1) + datetime.timedelta(startDay)).isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end',
+            (datetime.datetime(startYear, 1, 1) + datetime.timedelta(startDay)).isoformat())

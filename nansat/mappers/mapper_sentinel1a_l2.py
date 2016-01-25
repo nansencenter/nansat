@@ -197,5 +197,5 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # set time
-        self._set_time(parse(self.dataset.
-                             GetMetadata()['SOURCE_ACQUISITION_UTC_TIME']))
+        self.dataset.SetMetadataItem('time_coverage_start',
+            parse(self.dataset.GetMetadata()['SOURCE_ACQUISITION_UTC_TIME']).isoformat())

@@ -74,8 +74,8 @@ class Mapper(VRT):
         year = int(struct.unpack('<H', fp.read(2))[0])
         dayofyear = int(struct.unpack('<H', fp.read(2))[0])
         millisecondsOfDay = int(struct.unpack('<l', fp.read(4))[0])
-        time = datetime.datetime(year, 1, 1) + \
-            datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay)
+        time = (datetime.datetime(year, 1, 1) +
+            datetime.timedelta(dayofyear-1, milliseconds=millisecondsOfDay))
 
         ##################################
         # Read calibration information
@@ -266,6 +266,7 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         # Adding valid time to dataset
-        self._set_time(time)
+        self.dataset.SetMetadataItem('time_coverage_start', time.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', time.isoformat())
 
         return

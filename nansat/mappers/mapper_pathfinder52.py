@@ -96,4 +96,4 @@ class Mapper(vrt.VRT):
             startTimeKey = 'start_time'
         else:
             startTimeKey = 'NC_GLOBAL#start_time'
-        self._set_time(vrt.parse(subGDALDataset.GetMetadataItem(startTimeKey)))
+        self.dataset.SetMetadataItem('time_coverage_start', subGDALDataset.GetMetadataItem(startTimeKey))

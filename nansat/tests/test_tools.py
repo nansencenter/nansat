@@ -13,8 +13,10 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
 import unittest
+import datetime
+
 from matplotlib.colors import hex2color
-from nansat.tools import get_random_color
+from nansat.tools import get_random_color, parse_time
 
 class ToolsTest(unittest.TestCase):
     def test_get_random_color(self):
@@ -26,3 +28,13 @@ class ToolsTest(unittest.TestCase):
         self.assertEqual(type(hex2color(c0)), tuple)
         self.assertEqual(type(hex2color(c1)), tuple)
         self.assertEqual(type(hex2color(c2)), tuple)
+
+    def test_parse_time(self):
+        dt = parse_time('2016-01-19')
+
+        self.assertEqual(type(dt), datetime.datetime)
+
+    def test_parse_time_incorrect(self):
+        dt = parse_time('2016-01-19Z')
+
+        self.assertEqual(type(dt), datetime.datetime)

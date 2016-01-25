@@ -102,13 +102,11 @@ class Mapper(VRT):
                                       int(iFileName[15:17]),
                                       int(iFileName[17:19]),
                                       int(iFileName[19:21]))
-        self._set_time(startTime)
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start', startTime.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', startTime.isoformat())
 
         # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date',
-                                     startTime.isoformat())
-        self.dataset.SetMetadataItem('stop_date',
-                                     startTime.isoformat())
         self.dataset.SetMetadataItem('sensor', 'ASCAT')
         self.dataset.SetMetadataItem('satellite', 'Metop-A')
         warnings.warn("Setting satellite to Metop-A - update mapper if it is" \

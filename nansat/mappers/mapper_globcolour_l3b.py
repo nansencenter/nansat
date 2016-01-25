@@ -12,6 +12,8 @@ from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
 
+from netCDF4 import Dataset
+
 from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
 from globcolour import Globcolour
@@ -64,7 +66,7 @@ class Mapper(VRT, Globcolour):
         mask = None
         for simFile in simFiles:
             print 'sim: ', simFile
-            f = netcdf_file(simFile)
+            f = Dataset(simFile)
 
             # get iBinned, index for converting from binned into GLOBCOLOR-grid
             colBinned = f.variables['col'][:]
@@ -141,8 +143,8 @@ class Mapper(VRT, Globcolour):
                 metaEntry['dst']['wavelength'] = simWavelength
 
             # add all metadata from NC-file
-            for attr in var._attributes:
-                metaEntry['dst'][attr] = var._attributes[attr]
+            for attr in var.ncattrs():
+                metaEntry['dst'][attr] = var.getncattr(attr)
 
             metaDict.append(metaEntry)
 
@@ -158,4 +160,7 @@ class Mapper(VRT, Globcolour):
         startDate = datetime.datetime(int(iFileName[4:8]),
                                       int(iFileName[8:10]),
                                       int(iFileName[10:12]))
-        self._set_time(startDate)
+
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start', startDate.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', startDate.isoformat())

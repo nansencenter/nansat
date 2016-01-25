@@ -333,16 +333,15 @@ class Mapper(HDF4Mapper):
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
         productTime = gdalMetadata["RANGEBEGINNINGTIME"]
-        self._set_time(parse(productDate+' '+productTime))
         self.remove_geolocationArray()
 
         # set required metadata
-        self.dataset.SetMetadataItem('start_time',
+        self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata["RANGEBEGINNINGDATE"]+
                                          ' '+gdalMetadata["RANGEBEGINNINGTIME"]
                                          ).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_time',
+        self.dataset.SetMetadataItem('time_coverage_end',
                                      (parse(gdalMetadata["RANGEENDINGDATE"]+
                                          ' '+gdalMetadata["RANGEENDINGTIME"]
                                          ).

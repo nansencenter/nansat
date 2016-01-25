@@ -55,9 +55,3 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
-
-        # add time
-        #productDate = gdalMetadata["RANGEBEGINNINGDATE"]
-        #productTime = gdalMetadata["RANGEENDINGTIME"]
-        #self._set_time(parse(productDate+' '+productTime))
-        #self.remove_geolocationArray()

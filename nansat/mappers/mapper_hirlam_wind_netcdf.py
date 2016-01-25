@@ -91,8 +91,8 @@ class Mapper(VRT):
         # to the empty VRT
         self._create_bands(metaDict)
 
-        # Add time
+        # Add valid time
         validTime = datetime.datetime.utcfromtimestamp(
             int(subDataset.GetRasterBand(1).
                 GetMetadata()['NETCDF_DIM_time']))
-        self._set_time(validTime)
+        self.dataset.SetMetadataItem('time_coverage_start', validTime.isoformat())

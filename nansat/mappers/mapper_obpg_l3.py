@@ -165,5 +165,6 @@ class Mapper(VRT):
         startDay = int(simGdalMetadata.get('Start Day',
                                            simGdalMetadata.
                                            get('Start)Day', 1)))
-        self._set_time(datetime.datetime(startYear, 1, 1) +
-                       datetime.timedelta(startDay))
+        self.dataset.SetMetadataItem('time_coverage_start',
+            (datetime.datetime(startYear, 1, 1) +
+                       datetime.timedelta(startDay)).isoformat())

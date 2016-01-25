@@ -125,8 +125,6 @@ class Mapper(OBPGL2BaseClass):
                      srcRasterYSize=rasterYSize)
         # add bands
         self._create_bands(metaDict)
-        # set time
-        self._set_time(parse(time_coverage_start))
 
         # reproject GCPs
         center_lon /= k
@@ -136,12 +134,6 @@ class Mapper(OBPGL2BaseClass):
 
         ### BAD, BAd, bad ...
         self.dataset.SetProjection(self.dataset.GetGCPProjection())
-
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_time', str(time_coverage_start))
-        self.dataset.SetMetadataItem('stop_time', str(time_coverage_end))
-        self.dataset.SetMetadataItem('sensor', 'MODIS')
-        self.dataset.SetMetadataItem('satellite', 'Aqua')
 
         # use TPS for reprojection
         self.tps = True

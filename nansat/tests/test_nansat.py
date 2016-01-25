@@ -41,10 +41,20 @@ class NansatTest(unittest.TestCase):
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
 
-    def test_init_filename(self):
+    def test_open_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
 
         self.assertEqual(type(n), Nansat)
+
+    def test_get_time_coverage_start_end(self):
+        n = Nansat(self.test_file_gcps, logLevel=40)
+        n.set_metadata('time_coverage_start', '2016-01-20')
+        n.set_metadata('time_coverage_end', '2016-01-21')
+
+        self.assertEqual(type(n.time_coverage_start),
+                        datetime.datetime)
+        self.assertEqual(type(n.time_coverage_end),
+                        datetime.datetime)
 
     def test_init_domain(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -285,27 +295,6 @@ class NansatTest(unittest.TestCase):
 #         self.assertTrue(nn.has_band('L_555'))
 #         os.unlink(resfile)
 
-    def test_export2thredds_stere_one_band(self):
-        n = Nansat(self.test_file_stere, logLevel=40)
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds_1b.nc')
-        n.export2thredds(tmpfilename, ['L_469'])
-
-        self.assertTrue(os.path.exists(tmpfilename))
-
-    def test_export2thredds_stere_many_bands(self):
-        n = Nansat(self.test_file_stere, logLevel=40)
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds_3b.nc')
-        bands = {
-            'L_645': {'type': '>i1'},
-            'L_555': {'type': '>i1'},
-            'L_469': {'type': '>i1'},
-        }
-        n.export2thredds(tmpfilename, bands)
-
-        self.assertTrue(os.path.exists(tmpfilename))
-
     def test_export2thredds_arctic_long_lat(self):
         n = Nansat(self.test_file_arctic, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -315,7 +304,8 @@ class NansatTest(unittest.TestCase):
             'Bootstrap': {'type': '>i2'},
             'UMass_AES': {'type': '>i2'},
         }
-        n.export2thredds(tmpfilename, bands)
+        n.export2thredds(tmpfilename, bands,
+                        time=datetime.datetime(2016,1,20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
@@ -345,16 +335,20 @@ class NansatTest(unittest.TestCase):
 
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
+        n2 = Nansat(domain=n)
+        n.add_band(np.ones(n2.shape(), np.float32))
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        self.assertRaises(OptionError, n.export2thredds, tmpfilename,
+        self.assertRaises(OptionError, n2.export2thredds, tmpfilename,
                           ['L_645'])
 
-    def test_export2thredds_longlat(self):
-        n = Nansat(self.test_file_gcps, logLevel=40)
+    def test_export2thredds_longlat_list(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-te 27 70 31 72 -ts 200 200")
-        n.reproject(d)
+        n = Nansat(domain=d)
+        n.add_band(np.ones(d.shape(), np.float32),
+                    parameters={'name': 'L_469'})
+        n.set_metadata('time_coverage_start', '2016-01-19')
 
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_longlat.nc')
@@ -362,6 +356,22 @@ class NansatTest(unittest.TestCase):
         ncI = netcdf_file(tmpfilename, 'r')
         ncIVar = ncI.variables['L_469']
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
+
+    def test_export2thredds_longlat_dict(self):
+        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   "-te 27 70 31 72 -ts 200 200")
+        n = Nansat(domain=d)
+        n.add_band(np.ones(d.shape(), np.float32),
+                    parameters={'name': 'L_469'})
+        n.set_metadata('time_coverage_start', '2016-01-19')
+
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export2thredds_longlat.nc')
+        n.export2thredds(tmpfilename, {'L_469': {'type': '>i1'}})
+        ncI = netcdf_file(tmpfilename, 'r')
+        ncIVar = ncI.variables['L_469']
+        self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
+        self.assertEqual(ncIVar[:].dtype, np.int8)
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -590,13 +600,6 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
-    def test_get_time(self):
-        n1 = Nansat(self.test_file_gcps, logLevel=40)
-        t = n1.get_time()
-
-        self.assertEqual(len(t), len(n1.bands()))
-        self.assertEqual(type(t[0]), datetime.datetime)
-
     def test_get_metadata(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
         m = n1.get_metadata()
@@ -639,55 +642,87 @@ class NansatTest(unittest.TestCase):
 
     def test_get_transect(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
-                                      (28.93691525, 70.69646524)]])
+        t = n1.get_transect([[28.31299128, 28.93691525],
+                             [70.93709219, 70.69646524]],
+                             ['L_645'])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
-        plt.plot(v['1:L_645']['shape0'], xy['shape0']['latitude'])
+        plt.plot(t['lat'], t['L_645'], '.-')
         plt.savefig(tmpfilename)
         plt.close('all')
 
-        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(xy['shape0']['latitude']))
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(pl['shape0'][0]))
-        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
-        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+        self.assertTrue('L_645' in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
 
     def test_get_transect_outside(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect([[(28.31299128, 70.93709219),
-                                      (0.0, 0.0)]])
+        t = n1.get_transect([[0, 28.31299128], [0, 70.93709219]], [1])
 
-        self.assertTrue(len(v['1:L_645']['shape0']) > 50)
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(xy['shape0']['latitude']))
-        self.assertEqual(len(v['1:L_645']['shape0']),
-                         len(pl['shape0'][0]))
-        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
-        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+        self.assertTrue('L_645' in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
 
-    def test_get_transect_false(self):
+    def test_get_transect_wrong_points(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        v, xy, pl = n1.get_transect([(28.31299128, 70.93709219),
-                                     (28.93691525, 70.69646524)])
+        self.assertRaises(OptionError, n1.get_transect, [1, 1], [1])
 
-        self.assertEqual(len(v['1:L_645']), 2)
-        self.assertEqual(len(v['1:L_645']), len(xy))
-        self.assertEqual(len(v['1:L_645']), len(pl))
-        self.assertEqual(type(xy['shape0']['latitude']), np.ndarray)
-        self.assertEqual(type(pl['shape0'][0]), np.ndarray)
+    def test_get_transect_wrong_band(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        t = n1.get_transect([[0, 28.31299128], [0, 70.93709219]], [10])
 
-    def test_get_no_transect_interactive(self):
-        ''' Check that get_transect does returns None if interactive mode is
-        '''
-#         import matplotlib.pyplot as plt
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
+
+    def test_get_transect_pixlin(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        t = n1.get_transect([[10, 20],
+                             [10, 10]],
+                             ['L_645'],
+                             lonlat=False)
+
+        self.assertTrue('L_645' in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
+        self.assertEqual(len(t['lon']), 11)
+
+    def test_get_transect_data(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        b1 = n1[1]
+        t = n1.get_transect([[28.3],[70.9]], [], data=b1)
+
+        self.assertTrue('input' in t.dtype.fields)
+        self.assertTrue('L_645' not in t.dtype.fields)
+        self.assertTrue('line' in t.dtype.fields)
+        self.assertTrue('pixel' in t.dtype.fields)
+        self.assertTrue('lat' in t.dtype.fields)
+        self.assertTrue('lon' in t.dtype.fields)
+        self.assertEqual(type(t['lat']), np.ndarray)
+        self.assertEqual(type(t['lon']), np.ndarray)
+
+    def test_digitize_points(self):
+        ''' shall return empty array in non interactive mode '''
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        noneResult = n1.get_transect()
+        points = n1.digitize_points(1)
 
-        self.assertEqual(noneResult, None)
+        self.assertEqual(len(points), 0)
         plt.ioff()
 
     def test_crop(self):
