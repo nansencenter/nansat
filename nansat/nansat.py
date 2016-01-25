@@ -1907,18 +1907,18 @@ class Nansat(Domain):
 
     def digitize_points(self, band=1, **kwargs):
 
-        '''Get values of interactively digitized points
+        '''Get coordinates of interactively digitized points
 
         Parameters
         ----------
         band : int or str
             ID of Nansat band
-        **kwargs : key word arguments for imshow
+        **kwargs : keyword arguments for imshow
 
         Returns
         --------
         points : list
-            list of points
+            list of 2xN arrays of points to be used in Nansat.get_transect()
 
         '''
         if matplotlib.is_interactive():
