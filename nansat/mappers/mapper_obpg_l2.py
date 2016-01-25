@@ -286,8 +286,9 @@ class Mapper(OBPGL2BaseClass):
                                      (parse(
                                       gdalMetadata['time_coverage_stop']).
                                       isoformat()))
-
-        mm = gcmd_keywords.get_instrument(dsMetadata.get('instrument'))
-        ee = gcmd_keywords.get_platform(dsMetadata.get('platform'))
+        instrument = gdalMetadata['Sensor Name'][1:-1]
+        platform = {'A': 'AQUA', 'T': 'TERRA'}[gdalMetadata['Sensor Name'][-1]]
+        mm = gcmd_keywords.get_instrument(instrument)
+        ee = gcmd_keywords.get_platform(platform)
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
