@@ -52,7 +52,8 @@ pip install https://github.com/nansencenter/nersc-metadata/archive/develop.tar.g
 # run tests
 nosetests nansat
 ```
-Fore more information see [Install-Nansat](https://github.com/nansencenter/nansat/wiki/Install-Nansat) section
+Fore more information see [Install-Nansat](https://github.com/nansencenter/nansat/wiki/Install-Nansat) section or
+use pre-configure virtual machines as explained on [Nansat-lectures](https://github.com/nansencenter/nansat-lectures)
 
 ## Easy to use
 ```Python
