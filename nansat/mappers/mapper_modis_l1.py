@@ -6,12 +6,16 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 import warnings
+import json
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
+from hdf4_mapper import HDF4Mapper
 
 
-class Mapper(VRT):
+class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
@@ -331,6 +335,28 @@ class Mapper(VRT):
         self._create_bands(metaDict)
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
-        productTime = gdalMetadata["RANGEENDINGTIME"]
-        self._set_time(parse(productDate+' '+productTime))
+        productTime = gdalMetadata["RANGEBEGINNINGTIME"]
         self.remove_geolocationArray()
+
+        # set required metadata
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     (parse(gdalMetadata["RANGEBEGINNINGDATE"]+
+                                         ' '+gdalMetadata["RANGEBEGINNINGTIME"]
+                                         ).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     (parse(gdalMetadata["RANGEENDINGDATE"]+
+                                         ' '+gdalMetadata["RANGEENDINGTIME"]
+                                         ).
+                                      isoformat()))
+
+        instrumentName = self.find_metadata(gdalMetadata,
+                                        'ASSOCIATEDINSTRUMENTSHORTNAME',
+                                        'MODIS')
+        platformName = self.find_metadata(gdalMetadata,
+                                     'ASSOCIATEDPLATFORMSHORTNAME',
+                                     'AQUA')
+        mm = gcmd_keywords.get_instrument(instrumentName)
+        ee = gcmd_keywords.get_platform(platformName)
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

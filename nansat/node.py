@@ -139,26 +139,33 @@ class Node(object):
 
     def delNode(self, tag, options=None):
         '''
-        Recursively find the all subnodes with this tag and remove
-        from self.children.
+        Recursively find nodes containing subnodes with this tag and remove
+        subnodes
 
         options : dictionary
-            if there are several same tags, specify a node by their attributes.
+            if there are several tags, specify a node by their attributes.
 
         '''
+        # indeces of children to be removed
+        ideleted = []
+
         for i, child in enumerate(self.children):
-            if child.node(tag) and options is None:
-                self.children.pop(i)
-            elif child.node(tag):
-                for j, jKey in enumerate(options.keys()):
-                    try:
-                        if (child.getAttribute(jKey) == str(options[jKey]) and
-                                len(options.keys()) == j+1):
-                            self.children.pop(i)
-                    except:
-                        break
+            if str(child.tag) != str(tag):
+                # if child has another tag : delete children
+                child.delNode(tag, options)
+            elif options is None:
+                # if child has this tag and no options : mark for deletion
+                ideleted.append(i)
             else:
-                child.delNode(tag)
+                # if child has this tag
+                # and options match attributes : mark for deletion
+                for key in options.keys():
+                    if str(child.attributes.get(key, '')) == str(options[key]):
+                        ideleted.append(i)
+
+        # delete marked children
+        for i in sorted(ideleted, reverse=True):
+            self.children.pop(i)
 
     def find_dom_child(self, dom, tagName, n=0):
         '''Recoursively find child of the dom'''

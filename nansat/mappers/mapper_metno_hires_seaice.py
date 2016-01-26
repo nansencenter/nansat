@@ -90,4 +90,5 @@ class Mapper(VRT):
 
         # Set time
         self.logger.info('Valid time: %s', str(validTime))
-        self._set_time(validTime)
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     validTime.isoformat())

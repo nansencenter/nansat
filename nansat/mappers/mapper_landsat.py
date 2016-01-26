@@ -1,75 +1,160 @@
-# Name:        mapper_landsat
-# Purpose:     Mapping for LANDSAT.tar.gz
+# Name:         mapper_landsat
+# Purpose:      Mapping for LANDSAT*.tar.gz
 # Authors:      Anton Korosov
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+import os
+import glob
 import tarfile
 import warnings
+import datetime
+import json
 
-from nansat.tools import WrongMapperError
-from nansat.tools import gdal, ogr
+from nerscmetadata import gcmd_keywords
+
+from nansat.tools import WrongMapperError, parse_time
+from nansat.tools import gdal, np
 from nansat.vrt import VRT
-from nansat.node import Node
-
 
 class Mapper(VRT):
-    ''' Mapper for LANDSAT3,4,5,6,7,8.tar.gz files'''
+    ''' Mapper for LANDSAT5,6,7,8 .tar.gz or tif files'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
-        ''' Create LANDSAT VRT '''
-        # try to open .tar or .tar.gz or .tgz file with tar
-        try:
-            tarFile = tarfile.open(fileName)
-        except:
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                       resolution='low', **kwargs):
+        ''' Create LANDSAT VRT from multiple tif files or single tar.gz file'''
+        mtlFileName = ''
+        bandFileNames = []
+        bandSizes = []
+        bandDatasets = []
+        fname = os.path.split(fileName)[1]
+
+        if   (fileName.endswith('.tar') or
+              fileName.endswith('.tar.gz') or
+              fileName.endswith('.tgz')):
+            # try to open .tar or .tar.gz or .tgz file with tar
+            try:
+                tarFile = tarfile.open(fileName)
+            except:
+                raise WrongMapperError
+
+            # collect names of bands and corresponding sizes
+            # into bandsInfo dict and bandSizes list
+            tarNames = sorted(tarFile.getnames())
+            for tarName in tarNames:
+                # check if TIF files inside TAR qualify
+                if   (tarName[0] in ['L', 'M'] and
+                      os.path.splitext(tarName)[1] in ['.TIF', '.tif']):
+                    # open TIF file from TAR using VSI
+                    sourceFilename = '/vsitar/%s/%s' % (fileName, tarName)
+                    gdalDatasetTmp = gdal.Open(sourceFilename)
+                    # keep name, GDALDataset and size
+                    bandFileNames.append(sourceFilename)
+                    bandSizes.append(gdalDatasetTmp.RasterXSize)
+                    bandDatasets.append(gdalDatasetTmp)
+                elif (tarName.endswith('MTL.txt') or
+                      tarName.endswith('MTL.TXT')):
+                    # get mtl file
+                    mtlFileName = tarName
+
+        elif ((fname.startswith('L') or fname.startswith('M')) and
+              (fname.endswith('.tif') or
+               fname.endswith('.TIF') or
+               fname.endswith('._MTL.txt'))):
+
+            # try to find TIF/tif files with the same name as input file
+            path, coreName = os.path.split(fileName)
+            coreName = os.path.splitext(coreName)[0].split('_')[0]
+            coreNameMask = coreName+'*[tT][iI][fF]'
+            tifNames = sorted(glob.glob(os.path.join(path, coreNameMask)))
+            for tifName in tifNames:
+                sourceFilename = tifName
+                gdalDatasetTmp = gdal.Open(sourceFilename)
+                # keep name, GDALDataset and size
+                bandFileNames.append(sourceFilename)
+                bandSizes.append(gdalDatasetTmp.RasterXSize)
+                bandDatasets.append(gdalDatasetTmp)
+
+            # get mtl file
+            mtlFiles = glob.glob(coreName+'*[mM][tT][lL].[tT][xX][tT]')
+            if len(mtlFiles) > 0:
+                mtlFileName = mtlFiles[0]
+        else:
             raise WrongMapperError
 
-        tarNames = tarFile.getnames()
-        #print tarNames
+        # if not TIF files found - not appropriate mapper
+        if not bandFileNames:
+            raise WrongMapperError
+
+        # get appropriate band size based on number of unique size and
+        # required resoltuion
+        if resolution == 'low':
+            bandXSise = min(bandSizes)
+        elif resolution in ['high', 'hi']:
+            bandXSise = max(bandSizes)
+        else:
+            raise OptionError('Wrong resolution %s for file %s' % (resolution, fileName))
+
+        # find bands with appropriate size and put to metaDict
         metaDict = []
-        for tarName in tarNames:
-            if ((tarName[0] == 'L' or tarName[0] == 'M') and
-               (tarName[-4:] == '.TIF' or tarName[-4:] == '.tif')):
-                #print tarName
-                bandNo = tarName[-6:-4]
+        for bandFileName, bandSize, bandDataset in zip(bandFileNames,
+                                                       bandSizes,
+                                                       bandDatasets):
+            if bandSize == bandXSise:
+                # let last part of file name be suffix
+                bandSuffix = os.path.splitext(bandFileName)[0].split('_')[-1]
+
                 metaDict.append({
-                    'src': {'SourceFilename': '/vsitar/%s/%s' % (fileName,
-                                                                 tarName),
-                            'SourceBand':  1},
+                    'src': {'SourceFilename': bandFileName,
+                            'SourceBand':  1,
+                            'ScaleRatio': 0.1},
                     'dst': {'wkv': 'toa_outgoing_spectral_radiance',
-                            'suffix': bandNo}})
-
-        if not metaDict:
-            raise WrongMapperError
-
-        #print metaDict
-        sizeDiffBands = []
-        for iFile in range(len(metaDict)):
-            tmpName = metaDict[iFile]['src']['SourceFilename']
-            gdalDatasetTmp = gdal.Open(tmpName)
-            if iFile == 0:
-                gdalDatasetTmp0 = gdalDatasetTmp
-                xSize = gdalDatasetTmp.RasterXSize
-                ySize = gdalDatasetTmp.RasterYSize
-            elif (xSize != gdalDatasetTmp.RasterXSize or
-                    ySize != gdalDatasetTmp.RasterYSize):
-                sizeDiffBands.append(iFile)
+                            'suffix': bandSuffix}})
+                gdalDataset4Use = bandDataset
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDatasetTmp0)
+        VRT.__init__(self, gdalDataset4Use)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # 8th band of LANDSAT8 is a double size band.
-        # Reduce the size to same as the 1st band.
-        if len(sizeDiffBands) != 0:
-            vrtXML = self.read_xml()
-            node0 = Node.create(vrtXML)
-            for iBand in sizeDiffBands:
-                iBandNode = node0.nodeList('VRTRasterBand')[iBand]
-                iNodeDstRect = iBandNode.node('DstRect')
-                iNodeDstRect.replaceAttribute('xSize', str(xSize))
-                iNodeDstRect.replaceAttribute('ySize', str(ySize))
+        if len(mtlFileName) > 0:
+            mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0],
+                                        mtlFileName)
+            mtlFileLines = [line.strip() for line in
+                            self.read_xml(mtlFileName).split('\n')]
+            dateString = [line.split('=')[1].strip()
+                          for line in mtlFileLines
+                            if ('DATE_ACQUIRED' in line or
+                              'ACQUISITION_DATE' in line)][0]
+            timeStr = [line.split('=')[1].strip()
+                        for line in mtlFileLines
+                            if ('SCENE_CENTER_TIME' in line or
+                                'SCENE_CENTER_SCAN_TIME' in line)][0]
+            time_start = parse_time(dateString + 'T' + timeStr).isoformat()
+            time_end = (parse_time(dateString + 'T' + timeStr) +
+                        datetime.timedelta(microseconds=60000000)).isoformat()
 
-            self.write_xml(node0.rawxml())
+        self.dataset.SetMetadataItem('time_coverage_start', time_start)
+        self.dataset.SetMetadataItem('time_coverage_end', time_end)
+
+        # set platform
+        platform = 'LANDSAT'
+        if fname[2].isdigit():
+            platform += '-'+fname[2]
+        ee = gcmd_keywords.get_platform(platform)
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        # set instrument
+        instrument = {
+        'LANDSAT' : 'MSS',
+        'LANDSAT-1' : 'MSS',
+        'LANDSAT-2' : 'MSS',
+        'LANDSAT-3' : 'MSS',
+        'LANDSAT-4' : 'TM',
+        'LANDSAT-5' : 'TM',
+        'LANDSAT-7' : 'ETM+',
+        'LANDSAT-8' : 'OLI'}[platform]
+        ee = gcmd_keywords.get_instrument(instrument)
+        self.dataset.SetMetadataItem('instrument', json.dumps(ee))
+

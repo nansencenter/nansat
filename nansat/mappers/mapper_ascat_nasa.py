@@ -1,6 +1,6 @@
 # Name:        mapper_ascat_nasa
 # Purpose:     Mapping for ASCAT scatterometer winds
-# Authors:     Knut-Frode Dagestad
+# Authors:     Knut-Frode Dagestad, Morten W. Hansen
 # Licence:     This file is part of NANSAT. You can redistribute it or modify
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
@@ -9,6 +9,7 @@
 # ftp://podaac-ftp.jpl.nasa.gov/allData/ascat/preview/L2/metop_a/12km/
 import os.path
 import datetime
+import warnings
 
 from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
@@ -101,4 +102,13 @@ class Mapper(VRT):
                                       int(iFileName[15:17]),
                                       int(iFileName[17:19]),
                                       int(iFileName[19:21]))
-        self._set_time(startTime)
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start', startTime.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', startTime.isoformat())
+
+        # set SADCAT specific metadata
+        self.dataset.SetMetadataItem('sensor', 'ASCAT')
+        self.dataset.SetMetadataItem('satellite', 'Metop-A')
+        warnings.warn("Setting satellite to Metop-A - update mapper if it is" \
+                " e.g. Metop-B")
+        self.dataset.SetMetadataItem('mapper', 'ascat_nasa')

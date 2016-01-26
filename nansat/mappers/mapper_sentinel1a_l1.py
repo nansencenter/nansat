@@ -6,7 +6,7 @@
 # Modified: Morten Wergeland Hansen
 #
 # Created:  12.09.2014
-# Last modified:14.10.2014 16:13
+# Last modified:02.07.2015 15:43
 # Copyright:    (c) NERSC
 # License:
 #------------------------------------------------------------------------------
@@ -18,6 +18,9 @@ import zipfile
 import numpy as np
 import scipy
 from dateutil.parser import parse
+
+import json
+from nerscmetadata import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.tools import gdal, WrongMapperError, initial_bearing
@@ -138,12 +141,14 @@ class Mapper(VRT):
                 lon = []
                 lat = []
                 inc = []
+                ele = []
                 for gridPoint in geolocationGridPointList.children:
                     X.append(int(gridPoint['pixel']))
                     Y.append(int(gridPoint['line']))
                     lon.append(float(gridPoint['longitude']))
                     lat.append(float(gridPoint['latitude']))
                     inc.append(float(gridPoint['incidenceAngle']))
+                    ele.append(float(gridPoint['elevationAngle']))
 
                 X = np.unique(X)
                 Y = np.unique(Y)
@@ -151,12 +156,18 @@ class Mapper(VRT):
                 lon = np.array(lon).reshape(len(Y), len(X))
                 lat = np.array(lat).reshape(len(Y), len(X))
                 inc = np.array(inc).reshape(len(Y), len(X))
+                ele = np.array(ele).reshape(len(Y), len(X))
 
                 incVRT = VRT(array=inc, lat=lat, lon=lon)
+                eleVRT = VRT(array=ele, lat=lat, lon=lon)
                 incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
                                                 self.dataset.RasterYSize,
-                                                eResampleAlg=1)
+                                                eResampleAlg=2)
+                eleVRT = eleVRT.get_resized_vrt(self.dataset.RasterXSize,
+                                                self.dataset.RasterYSize,
+                                                eResampleAlg=2)
                 self.bandVRTs['incVRT'] = incVRT
+                self.bandVRTs['eleVRT'] = eleVRT
         for key in calDict.keys():
             xml = self.read_xml(calDict[key])
             calibration_LUT_VRTs, longitude, latitude = (
@@ -295,7 +306,7 @@ class Mapper(VRT):
                 }
             })
 
-        name = 'SAR_look_direction'
+        name = 'look_direction'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
         metaDict.append({
@@ -351,7 +362,7 @@ class Mapper(VRT):
                           'SourceBand': 1
                           }
                          ],
-                 'dst': {'wkv': 'radar_brightness_coefficient',
+                 'dst': {'wkv': 'surface_backwards_brightness_coefficient_of_radar_wave',
                          'PixelFunctionType': 'Sentinel1Calibration',
                          'polarization': pol[key],
                          'suffix': pol[key],
@@ -367,6 +378,17 @@ class Mapper(VRT):
         src = {'SourceFilename': self.bandVRTs['incVRT'].fileName,
                'SourceBand': 1}
         dst = {'wkv': 'angle_of_incidence',
+               'name': name}
+        self._create_band(src, dst)
+        self.dataset.FlushCache()
+
+        # Add elevation angle as band
+        name = 'elevation_angle'
+        bandNumberDict[name] = bnmax+1
+        bnmax = bandNumberDict[name]
+        src = {'SourceFilename': self.bandVRTs['eleVRT'].fileName,
+               'SourceBand': 1}
+        dst = {'wkv': 'angle_of_elevation',
                'name': name}
         self._create_band(src, dst)
         self.dataset.FlushCache()
@@ -403,28 +425,30 @@ class Mapper(VRT):
         meta = n.node('metadataSection')
         for nn in meta.children:
             if nn.getAttribute('ID') == u'acquisitionPeriod':
-                self._set_time(parse((nn.node('metadataWrap').
-                                      node('xmlData').
-                                      node('safe:acquisitionPeriod')
-                                      ['safe:startTime']))
-                               )
-                # set SADCAT specific metadata
+                # set valid time
                 self.dataset.SetMetadataItem(
-                    'start_date',
+                    'time_coverage_start',
                     parse((nn.node('metadataWrap').
                            node('xmlData').
                            node('safe:acquisitionPeriod')['safe:startTime'])
                           ).isoformat())
                 self.dataset.SetMetadataItem(
-                    'stop_date',
+                    'time_coverage_end',
                     parse((nn.node('metadataWrap').
                            node('xmlData').
                            node('safe:acquisitionPeriod')['safe:stopTime'])
                           ).isoformat())
 
-        self.dataset.SetMetadataItem('sensor', 'SAR')
-        self.dataset.SetMetadataItem('satellite', 'Sentinel-1')
-        self.dataset.SetMetadataItem('mapper', 's1a_l1')
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('sar')
+        ee = gcmd_keywords.get_platform('sentinel-1a')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
     def get_LUT_VRTs(self, XML, vectorListName, LUT_list):
         n = Node.create(XML)

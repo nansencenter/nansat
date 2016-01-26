@@ -13,6 +13,9 @@ import numpy as np
 import scipy.ndimage
 from math import asin
 
+import json
+from nerscmetadata import gcmd_keywords
+
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
@@ -142,16 +145,16 @@ class Mapper(VRT):
             print 'Can not decode pass direction: ' + str(passDirection)
 
         # Calculate SAR look direction
-        SAR_look_direction = sat_heading + antennaPointing
+        look_direction = sat_heading + antennaPointing
         # Interpolate to regain lost row
-        SAR_look_direction = np.mod(SAR_look_direction, 360)
-        SAR_look_direction = scipy.ndimage.interpolation.zoom(
-            SAR_look_direction, (1, 11./10.))
+        look_direction = np.mod(look_direction, 360)
+        look_direction = scipy.ndimage.interpolation.zoom(
+            look_direction, (1, 11./10.))
         # Decompose, to avoid interpolation errors around 0 <-> 360
-        SAR_look_direction_u = np.sin(np.deg2rad(SAR_look_direction))
-        SAR_look_direction_v = np.cos(np.deg2rad(SAR_look_direction))
-        look_u_VRT = VRT(array=SAR_look_direction_u, lat=lat, lon=lon)
-        look_v_VRT = VRT(array=SAR_look_direction_v, lat=lat, lon=lon)
+        look_direction_u = np.sin(np.deg2rad(look_direction))
+        look_direction_v = np.cos(np.deg2rad(look_direction))
+        look_u_VRT = VRT(array=look_direction_u, lat=lat, lon=lon)
+        look_v_VRT = VRT(array=look_direction_v, lat=lat, lon=lon)
 
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
@@ -174,7 +177,7 @@ class Mapper(VRT):
         metaDict.append({'src': {'SourceFilename': lookFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'sensor_azimuth_angle',
-                                 'name': 'SAR_look_direction'}})
+                                 'name': 'look_direction'}})
 
         ###############################
         # Create bands
@@ -233,18 +236,23 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
                                      str(passDirection).upper())
 
-        # Set time
-        validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
-        self.logger.info('Valid time: %s', str(validTime))
-        self._set_time(parse(validTime))
-
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_date',
+        # set valid time
+        self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata['FIRST_LINE_TIME']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_date',
+        self.dataset.SetMetadataItem('time_coverage_end',
                                      (parse(gdalMetadata['LAST_LINE_TIME']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('sensor', 'SAR')
-        self.dataset.SetMetadataItem('satellite', 'Radarsat2')
-        self.dataset.SetMetadataItem('mapper', 'radarsat2')
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('sar')
+        ee = gcmd_keywords.get_platform('radarsat-2')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        self._add_swath_mask_band()

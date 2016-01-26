@@ -17,18 +17,18 @@
 from __future__ import absolute_import
 
 import os
-import sys
 import warnings
 import logging
+from dateutil.parser import parse
 
 from matplotlib import cm
+from matplotlib.colors import hex2color
+
 import numpy as np
 from scipy import mod
 
 try:
-    import gdal
-    import ogr
-    import osr
+    import gdal, ogr, osr
 except:
     from osgeo import gdal, ogr, osr
 
@@ -109,22 +109,17 @@ except:
     warnings.warn('Cannot generate and register the OBPG colormap!')
 
 
-class Error(Exception):
-    '''Base class for exceptions in this module.'''
-    pass
-
-
-class OptionError(Error):
+class OptionError(Exception):
     '''Error for improper options (arguments) '''
     pass
 
 
-class ProjectionError(Error):
+class ProjectionError(Exception):
     '''Cannot get the projection'''
     pass
 
 
-class GDALError(Error):
+class GDALError(Exception):
     '''Error from GDAL '''
     pass
 
@@ -163,7 +158,6 @@ def initial_bearing(lon1, lat1, lon2, lat2):
         rlat1 = np.radians(lat1)
         rlon2 = np.radians(lon2)
         rlat2 = np.radians(lat2)
-        deltalon = rlon2 - rlon1
         bearing = np.arctan2(np.sin(rlon2 - rlon1) * np.cos(rlat2),
                              np.cos(rlat1) * np.sin(rlat2) -
                              np.sin(rlat1) * np.cos(rlat2) *
@@ -228,3 +222,74 @@ def add_logger(logName='', logLevel=None):
     logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger
+
+
+def get_random_color(c0=None, minDist=100, low=0, high=255):
+    ''' Create random color which is far enough from the input color
+
+    Parameters
+    ----------
+        c0 : str
+            hexademical representation of the color (e.g. '#ff0000' for red)
+        minDist : int
+            minimal distance to input color
+
+    Returns
+    -------
+        c0 : str
+            hexademical representation of the new random color
+    '''
+    # check inputs
+    if c0 is None:
+        c0 = '#000000'
+    # convert input color to tuple of R,G,B
+    c0rgb = np.array(hex2color(c0))
+
+    # create new random color
+    c1rgb = np.array([np.random.randint(low, high),
+                      np.random.randint(low, high),
+                      np.random.randint(low, high)])
+
+    # calculate distance
+    d = np.sum((c0rgb - c1rgb)**2)**0.5
+
+    # if distance is small, create new random color
+    if d < minDist:
+        c1 = get_random_color(c0, minDist)
+    else:
+        # convert to HEX code
+        c1 = '#%02x%02x%02x' % tuple(c1rgb)
+
+    return c1
+
+
+def parse_time(time_string):
+    ''' Parse time string accounting for possible wrong formatting
+    Parameters
+    ----------
+    time_string : str
+        string with date and time
+    Returns
+    -------
+        time_value : datetime object
+
+    '''
+    time_string = time_string.strip()
+    # To account for datasets on the format YYYY-MM-DDZ which is
+    # invalid since it has no time, but a timezone
+    try:
+        time_value = parse(time_string)
+    except ValueError:
+        if (len(time_string) == 11 and
+                time_string.endswith('Z')):
+            time_value = parse(time_string[:10])
+
+    return time_value
+
+
+def test_openable(fname):
+    try:
+        f = open(fname, 'r')
+    except IOError:
+        raise
+    f.close()

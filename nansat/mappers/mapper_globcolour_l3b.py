@@ -7,10 +7,15 @@
 import glob
 import os.path
 import datetime
+import json
 
 from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
+
+from netCDF4 import Dataset
+
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
@@ -36,7 +41,8 @@ class Mapper(VRT, Globcolour):
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
-        if iFileName[0:4] != 'L3b_' or iFileExt != '.nc':
+        if (iFileName[0:4] != 'L3b_' or iFileExt != '.nc' or
+           not os.path.exists(fileName) or gdalDataset is not None):
             raise WrongMapperError
 
         # define shape of GLOBCOLOUR grid
@@ -63,7 +69,7 @@ class Mapper(VRT, Globcolour):
         mask = None
         for simFile in simFiles:
             print 'sim: ', simFile
-            f = netcdf_file(simFile)
+            f = Dataset(simFile)
 
             # get iBinned, index for converting from binned into GLOBCOLOR-grid
             colBinned = f.variables['col'][:]
@@ -76,12 +82,10 @@ class Mapper(VRT, Globcolour):
             # get iRawPro, index for converting
             # from GLOBCOLOR-grid to latlonGrid
             yRawPro = np.rint(1 + (GLOBCOLOR_ROWS - 1) *
-                              (latlonGrid[0] + 90) / 180)
-            lon_step_Mat = 1 / np.cos(np.pi * latlonGrid[0] / 180.) / 24.
-            xRawPro = np.rint(1 + (latlonGrid[1] + 180) / lon_step_Mat)
-            iRawPro = xRawPro + (yRawPro - 1) * GLOBCOLOR_COLS
-            iRawPro[iRawPro < 0] = 0
-            iRawPro = np.rint(iRawPro).astype('uint32')
+                              (latlonGrid[0] + 90) / 180.)
+            lon_step_Mat = 24. * np.cos(np.pi * latlonGrid[0] / 180.)
+            xRawPro = np.rint(1 + (latlonGrid[1] + 180) * lon_step_Mat)
+            iRawPro = xRawPro.astype('uint32') + (yRawPro.astype('uint32') - 1) * GLOBCOLOR_COLS
             yRawPro = None
             xRawPro = None
 
@@ -142,8 +146,8 @@ class Mapper(VRT, Globcolour):
                 metaEntry['dst']['wavelength'] = simWavelength
 
             # add all metadata from NC-file
-            for attr in var._attributes:
-                metaEntry['dst'][attr] = var._attributes[attr]
+            for attr in var.ncattrs():
+                metaEntry['dst'][attr] = var.getncattr(attr)
 
             metaDict.append(metaEntry)
 
@@ -152,6 +156,19 @@ class Mapper(VRT, Globcolour):
             if metaEntry2 is not None:
                 metaDict.append(metaEntry2)
 
+
+        instrument = f.title.strip().split(' ')[-2].split('/')[0]
+        mm = gcmd_keywords.get_instrument(instrument)
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+
+        platform = {
+            'MODIS' : 'AQUA',
+            'MERIS' : 'ENVISAT',
+            'SEAWIFS': 'QUICKBIRD',
+            'VIIRS' : 'SUOMI-NPP'}[instrument.upper()]
+        pp = gcmd_keywords.get_platform(platform)
+        self.dataset.SetMetadataItem('platform', json.dumps(pp))
+
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
@@ -159,4 +176,7 @@ class Mapper(VRT, Globcolour):
         startDate = datetime.datetime(int(iFileName[4:8]),
                                       int(iFileName[8:10]),
                                       int(iFileName[10:12]))
-        self._set_time(startDate)
+
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start', startDate.isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', startDate.isoformat())

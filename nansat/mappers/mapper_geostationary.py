@@ -267,6 +267,8 @@ class Mapper(VRT):
         self.dataset.SetMetadata({'satID': satellite})
 
         # Set time
-        self._set_time(datetime.datetime.strptime(datestamp, '%Y%m%d%H%M'))
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start',
+            datetime.datetime.strptime(datestamp, '%Y%m%d%H%M').isoformat())
 
         return

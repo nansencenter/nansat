@@ -9,6 +9,8 @@
 # NB: Band numbers is hardcoded for band subsets extracted at NERSC,
 # mapper will not work for other NCEP GFS files before made more generic
 import datetime
+import json
+from nerscmetadata import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
@@ -89,7 +91,19 @@ class Mapper(VRT):
         # Adding valid time from the GRIB file to dataset
         band = gdalDataset.GetRasterBand(srcBandId['u-component'])
         validTime = band.GetMetadata()['GRIB_VALID_TIME']
-        self._set_time(datetime.datetime.
-                       utcfromtimestamp(int(validTime.strip().split(' ')[0])))
 
-        return
+        self.dataset.SetMetadataItem('time_coverage_start',
+            (datetime.datetime.utcfromtimestamp(
+                int(validTime.strip().split(' ')[0])).isoformat()))
+
+        self.dataset.SetMetadataItem('time_coverage_end',
+            ((datetime.datetime.utcfromtimestamp(
+                int(validTime.strip().split(' ')[0]))
+             + datetime.timedelta(hours=3)).isoformat()))
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('computer')
+        ee = gcmd_keywords.get_platform('ncep-gfs')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

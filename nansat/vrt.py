@@ -19,7 +19,6 @@ import os
 import tempfile
 from string import Template, ascii_uppercase, digits
 from random import choice
-import datetime
 import warnings
 
 import numpy as np
@@ -160,8 +159,8 @@ class VRT(object):
                 <ScaleOffset>$ScaleOffset</ScaleOffset>
                 <ScaleRatio>$ScaleRatio</ScaleRatio>
                 <LUT>$LUT</LUT>
-                <SrcRect xOff="0" yOff="0" xSize="$srcXSize" ySize="$srcYSize"/>
-                <DstRect xOff="0" yOff="0" xSize="$dstXSize" ySize="$dstYSize"/>
+                <SrcRect xOff="$xOff" yOff="$yOff" xSize="$xSize" ySize="$ySize"/>
+                <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
             </$SourceType> ''')
 
     RawRasterBandSource = Template('''
@@ -308,8 +307,12 @@ class VRT(object):
             self.dataset.SetProjection(srcProjection)
             self.dataset.SetGeoTransform(srcGeoTransform)
 
-            # set metadata
-            self.dataset.SetMetadata(srcMetadata)
+            # set source metadata corrected for potential Unicode
+            if type(srcMetadata) is dict:
+                for key in srcMetadata.keys():
+                    srcMetadata[key] = srcMetadata[key].encode('ascii',
+                                                               'ignore')
+                self.dataset.SetMetadata(srcMetadata)
 
         # add geolocation array from input or from source data
         if geolocationArray is None:
@@ -326,7 +329,6 @@ class VRT(object):
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
         self.logger.debug('VRT description: %s'
                           % self.dataset.GetDescription())
-        #self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
@@ -484,6 +486,7 @@ class VRT(object):
                 self.logger.debug('SRC[DataType]: %d' % src['DataType'])
 
             srcDs = gdal.Open(src['SourceFilename'])
+
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
                 Dataset=src['SourceFilename'],
@@ -493,10 +496,10 @@ class VRT(object):
                 ScaleOffset=src['ScaleOffset'],
                 ScaleRatio=src['ScaleRatio'],
                 LUT=src['LUT'],
-                srcXSize=srcDs.RasterXSize,
-                srcYSize=srcDs.RasterYSize,
-                dstXSize=srcDs.RasterXSize,
-                dstYSize=srcDs.RasterYSize)
+                xSize=src.get('xSize', srcDs.RasterXSize),
+                ySize=src.get('ySize', srcDs.RasterYSize),
+                xOff=src.get('xOff', 0),
+                yOff=src.get('yOff', 0),)
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
@@ -530,7 +533,7 @@ class VRT(object):
                 dst['dataType'] = gdal.GDT_Float32
             else:
                 self.logger.debug('Set dst[dataType]: %d' % src['DataType'])
-                #otherwise take the DataType from source
+                # otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
 
         # Set destination name
@@ -600,37 +603,24 @@ class VRT(object):
         # return name of the created band
         return dst['name']
 
-    def _set_time(self, time):
-        ''' Set time of dataset and/or its bands
+    def _add_swath_mask_band(self):
+        ''' Create a new band where all values = 1
 
-        Parameters
-        ----------
-        time : datetime
-
-        If a single datetime is given, this is stored in
-        all bands of the dataset as a metadata item 'time'.
-        If a list of datetime objects is given, different
-        time can be given to each band.
+        Modifies
+        ---------
+        Single band 'swathmask' with ones is added to the self.dataset
 
         '''
-        # Make sure time is a list with one datetime element per band
-        numBands = self.dataset.RasterCount
-        if (isinstance(time, datetime.datetime) or
-                isinstance(time, datetime.date)):
-            time = [time]
-        if len(time) == 1:
-            time = time * numBands
-        if len(time) != numBands:
-            self.logger.error('Dataset has %s elements, '
-                              'but given time has %s elements.'
-                              % (str(numBands), str(len(time))))
-
-        # Store time as metadata key 'time' in each band
-        for i in range(numBands):
-            iBand = self.dataset.GetRasterBand(i + 1)
-            iBand.SetMetadataItem('time', str(time[i].isoformat()))
-
-        return
+        self._create_band(
+            src=[{
+                'SourceFilename': self.fileName,
+                'SourceBand':  1,
+                'DataType': gdal.GDT_Byte}],
+            dst={
+                'dataType': gdal.GDT_Byte,
+                'wkv': 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            })
 
     def _get_wkv(self, wkvName):
         ''' Get wkv from wkv.xml
@@ -678,10 +668,11 @@ class VRT(object):
         for key in metadataDict:
             try:
                 metaValue = str(metadataDict[key])
+                metaKey = str(key)
             except UnicodeEncodeError:
                 self.logger.error('Cannot add %s to metadata' % key)
             else:
-                rasterBand.SetMetadataItem(key, metaValue)
+                rasterBand.SetMetadataItem(metaKey, metaValue)
 
         return rasterBand
 
@@ -714,7 +705,7 @@ class VRT(object):
 
         self.logger.debug('arrayDType: %s', arrayDType)
 
-        #create conents of VRT-file pointing to the binary file
+        # create conents of VRT-file pointing to the binary file
         dataType = {'uint8': 'Byte',
                     'int8': 'Byte',
                     'uint16': 'UInt16',
@@ -747,7 +738,7 @@ class VRT(object):
             SrcFileName=binaryFile,
             PixelOffset=pixelOffset,
             LineOffset=lineOffset)
-        #write XML contents to
+        # write XML contents to
         self.write_xml(contents)
 
     def read_xml(self, inFileName=None):
@@ -768,7 +759,7 @@ class VRT(object):
             inFileName = str(self.fileName)
             self.dataset.FlushCache()
 
-        #read from the vsi-file
+        # read from the vsi-file
         # open
         vsiFile = gdal.VSIFOpenL(inFileName, 'r')
         # get file size
@@ -795,8 +786,6 @@ class VRT(object):
             If XML content was written, self.dataset is re-opened
 
         '''
-        #write to the vsi-file
-
         vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
         gdal.VSIFWriteL(vsiFileContent,
                         len(vsiFileContent), 1, vsiFile)
@@ -883,7 +872,7 @@ class VRT(object):
         tmpVRTXML = self.read_xml()
         # find and remove GeoTransform
         node0 = Node.create(tmpVRTXML)
-        node1 = node0.delNode('GeoTransform')
+        node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
 
@@ -1297,6 +1286,7 @@ class VRT(object):
         '''
         node0 = Node.create(self.read_xml())
         node0.delNode('VRTRasterBand', options={'band': bandNum})
+        node0.delNode('BandMapping', options={'src': bandNum})
         self.write_xml(node0.rawxml())
 
     def delete_bands(self, bandNums):
@@ -1308,8 +1298,7 @@ class VRT(object):
             elements are int
 
         '''
-        bandNums.sort()
-        bandNums.reverse()
+        bandNums.sort(reverse=True)
         for iBand in bandNums:
             self.delete_band(iBand)
 
@@ -1424,7 +1413,6 @@ class VRT(object):
         for i in range(len(node0.nodeList('VRTRasterBand'))):
             # create i-th 'VRTRasterBand' node
             node1 = node0.node('VRTRasterBand', i)
-            node1Band = node1.getAttribute('band')
             # modify the 1st band
             shiftStr = str(shiftPixel)
             sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
@@ -1438,7 +1426,6 @@ class VRT(object):
             # add the 2nd band
             xmlSource = node1.rawxml()
             cloneNode = Node.create(xmlSource).node('ComplexSource')
-            #cloneNode = node1.node('ComplexSource')
             cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
@@ -1521,8 +1508,7 @@ class VRT(object):
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize,
-                            factor, eResampleAlg):
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, eResampleAlg):
         '''Create VRT and replace step in the source'''
 
         subsamVRT = self.get_super_vrt()
@@ -1534,9 +1520,6 @@ class VRT(object):
         # replace rasterXSize in <VRTDataset>
         node0.replaceAttribute('rasterXSize', str(newRasterXSize))
         node0.replaceAttribute('rasterYSize', str(newRasterYSize))
-
-        rasterYSize = subsamVRT.vrt.dataset.RasterYSize
-        rasterXSize = subsamVRT.vrt.dataset.RasterXSize
 
         # replace xSize in <DstRect> of each source
         for iNode1 in node0.nodeList('VRTRasterBand'):
@@ -1554,10 +1537,9 @@ class VRT(object):
                 # if the values are complex number, give a warning
                 if iNode1.getAttribute('dataType').startswith('C'):
                     warnings.warn(
-                        'Band %s : The imaginary parts of complex numbers ' \
-                        'are lost when resampling by averaging ' \
-                        '(eResampleAlg=-1)' %iNode1.getAttribute('band')
-                    )
+                        'Band %s : The imaginary parts of complex numbers '
+                        'are lost when resampling by averaging '
+                        '(eResampleAlg=-1)' % iNode1.getAttribute('band'))
 
         # Write the modified elemements into VRT
         subsamVRT.write_xml(node0.rawxml())
@@ -1604,8 +1586,6 @@ class VRT(object):
         xy = np.array([colVector, rowVector]).transpose()
 
         # transfrom coordinates
-        #lonlat = transformer.TransformPoints(DstToSrc, xy)#[0]
-        #import pdb; pdb.set_trace()
         lonlat = transformer.TransformPoints(DstToSrc, xy)[0]
 
         # convert return to lon,lat vectors
@@ -1633,7 +1613,7 @@ class VRT(object):
         ProjectionError : occurrs when the projection is empty.
 
         '''
-        #get projection or GCPProjection
+        # get projection or GCPProjection
         projection = self.dataset.GetProjection()
         if projection == '':
             projection = self.dataset.GetGCPProjection()

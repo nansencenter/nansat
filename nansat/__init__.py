@@ -2,9 +2,9 @@
 # Purpose: Use the current folder as a package
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
+#               Dmitry Petrenko, Evgeny Morozov, Aleksander Vines
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2014
+# Copyright:    (c) NERSC 2011 - 2015
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -15,8 +15,13 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import os, sys
+import os
+import sys
 import warnings
+# import some libraries for convenience
+from nansat.tools import gdal, ogr
+import numpy as np
+import matplotlib.pyplot as plt
 
 # check if pixel functions were compiled using setup_tools
 try:
@@ -60,8 +65,4 @@ else:
 
 os.environ['LOG_LEVEL'] = '30'
 
-# import some libraries for convenience
-from nansat.tools import gdal, ogr
-import numpy as np
-import matplotlib.pyplot as plt
 __all__ += ['gdal', 'ogr', 'np', 'plt']

@@ -10,7 +10,7 @@ from struct import unpack
 import numpy as np
 import os
 
-from nansat.tools import gdal, ogr, osr, WrongMapperError
+from nansat.tools import gdal, ogr, osr, WrongMapperError, parse_time
 from nansat.vrt import VRT, GeolocationArray
 
 
@@ -173,4 +173,10 @@ class Mapper(VRT):
 
                 self._create_band(src, dst)
 
+
                 self.dataset.FlushCache()
+
+        self.dataset.SetMetadataItem('time_coverage_start',
+                    parse_time(gdalMetadata['Scene_Sensing_Start_UTC']).isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end',
+                    parse_time(gdalMetadata['Scene_Sensing_Stop_UTC']).isoformat())

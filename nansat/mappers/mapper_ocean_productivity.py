@@ -22,13 +22,14 @@ class Mapper(VRT):
     # detect wkv from metadata 'Parameter'
     param2wkv = {'chl': 'mass_concentration_of_chlorophyll_a_in_sea_water',
                  'sst': 'sea_surface_temperature',
-                 'par': 'instantaneous_photosynthetically_available_radiation',
+                 'par': 'downwelling_photosynthetic_photon_radiance_in_sea_water',
+                 'ipar': 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water',
                  'bbp': 'particle_backscatter_at_443_nm'
                  }
 
     bandNames = {'mass_concentration_of_chlorophyll_a_in_sea_water': 'algal_1',
                  'sea_surface_temperature': 'SST',
-                 'instantaneous_photosynthetically_available_radiation': 'par',
+                 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water': 'ipar',
                  'particle_backscatter_at_443_nm': 'bbp_443'
                  }
 
@@ -119,5 +120,6 @@ class Mapper(VRT):
         # Add valid time
         startYear = int(iFile[4:8])
         startDay = int(iFile[8:11])
-        self._set_time(datetime.datetime(startYear, 1, 1) +
-                       datetime.timedelta(startDay))
+        self.dataset.SetMetadataItem('time_coverage_start',
+            (datetime.datetime(startYear, 1, 1) +
+                       datetime.timedelta(startDay)).isoformat())

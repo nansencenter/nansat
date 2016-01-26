@@ -21,22 +21,22 @@ import_error_msg = "Nansat requires %s, which should be installed separately"
 try:
     import numpy
 except ImportError:
-    raise ImportError(import_error_msg %'numpy')
+    raise ImportError(import_error_msg % 'numpy')
 
 try:
     import scipy
 except ImportError:
-    raise ImportError(import_error_msg %'scipy')
+    raise ImportError(import_error_msg % 'scipy')
 
 try:
     import matplotlib
 except ImportError:
-    raise ImportError(import_error_msg %'matplotlib')
+    raise ImportError(import_error_msg % 'matplotlib')
 
 try:
     from mpl_toolkits.basemap import Basemap
 except ImportError as e:
-    raise ImportError(import_error_msg %'basemap')
+    raise ImportError(import_error_msg % 'basemap')
 
 try:
     from osgeo import gdal, osr, ogr
@@ -61,12 +61,14 @@ AUTHOR              = ("Asuka Yamakawa, Anton Korosov, Morten W. Hansen, Kunt-Fr
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
-MINOR               = 6
-MICRO               = 6
+MINOR               = 7
+MICRO               = 0
 ISRELEASED          = True
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
+                        "requests",
+                        "nerscmetadata"
                     ]
 
 #----------------------------------------------------------------------------#
@@ -92,6 +94,7 @@ else:
     extra_compile_args = ['-fPIC', '-Wall', '-Wno-long-long', '-pedantic', '-O3']
     extra_link_args = [] # not used currently
 
+
 def _ask_gdal_config(resultlist, option, result_prefix):
     p = Popen(['gdal-config', option], stdout=subprocess.PIPE)
     t = p.stdout.read().decode().strip()
@@ -103,10 +106,12 @@ def _ask_gdal_config(resultlist, option, result_prefix):
     res = [x[len(result_prefix):] for x in res]
     resultlist[:] = res
 
+
 def use_gdal_config():
     _ask_gdal_config(include_dirs, '--cflags', '-I')
     _ask_gdal_config(library_dirs, '--libs', '-L')
     _ask_gdal_config(libraries,    '--libs', '-l')
+
 
 try:
     use_gdal_config()
@@ -141,6 +146,8 @@ exit /b 1
 set py_exe=%line1:~2%
 call %py_exe% %pyscript% %*
 """
+
+
 class my_install_scripts(install_scripts):
     def run(self):
         install_scripts.run(self)
@@ -175,6 +182,7 @@ if sys.platform == 'win32' and sys.version_info > (2, 6):
                   IOError, ValueError)
 else:
     ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+
 
 def run_setup(skip_compile):
     if skip_compile:
@@ -224,9 +232,15 @@ def run_setup(skip_compile):
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
+        dependency_links = [
+            "https://github.com/nansencenter/nersc-metadata/tarball/master#egg=nerscmetadata"
+        ],
         test_suite="nansat.tests",
         **kw
-        )
+    )
+    ## write json file with gcmd keywords
+    #from nerscmetadata.gcmd_keywords import write_json
+    #write_json()
 
 try:
     run_setup(skip_compile)
@@ -245,4 +259,3 @@ except ext_errors:
     print(BUILD_EXT_WARNING)
     print("Plain-Python installation succeeded.")
     print('*' * 75)
-

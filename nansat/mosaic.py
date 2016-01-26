@@ -17,12 +17,123 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 import multiprocessing as mp
-import datetime
+import ctypes
 
 import numpy as np
 import scipy.stats as st
 
 from nansat.nansat import Nansat
+
+# shared arrays for mean, squared mean and count
+sharedArray = None
+domain = None
+
+
+def mparray2ndarray(sharedArray, shape, dtype='float32'):
+    ''' convert shared multiprocessing Array to numpy ndarray '''
+    # get access to shared array and convert to numpy ndarray
+    sharedNDArray = np.frombuffer(sharedArray.get_obj(), dtype=dtype)
+    # change shape to match bands
+    sharedNDArray.shape = shape
+
+    return sharedNDArray
+
+
+def sumup(layer):
+    ''' Sum up bands from input images in multiple threads'''
+    global sharedArray
+    global domain
+
+    # get nansat from the input Layer
+    layer.make_nansat_object(domain)
+    # if not in the period, quit
+    if not layer.within_period():
+        return 1
+    # get mask
+    mask = layer.get_mask_array()
+    # get arrays with data
+    bandArrays = [layer.n[band] for band in layer.bands]
+    bandArrays = np.array(bandArrays)
+    finiteMask = np.isfinite(bandArrays.sum(axis=0))
+    # get metadata
+    bandMetadata = [layer.n.get_metadata(bandID=band) for band in layer.bands]
+
+    with sharedArray.get_lock(): #  synchronize access
+        sharedNDArray = mparray2ndarray(sharedArray,
+                                        (2+len(layer.bands)*2,
+                                         mask.shape[0],
+                                         mask.shape[1]),
+                                        'float32')
+        gpi = finiteMask * (mask == 64)
+
+        # update counter
+        sharedNDArray[0][gpi] += 1
+
+        # update mask with max
+        sharedNDArray[1] = np.max([sharedNDArray[1], mask], axis=0)
+
+        # update sum for each band
+        for i, bandArray in enumerate(bandArrays):
+            sharedNDArray[2+i][gpi] += bandArray[gpi]
+
+        # update squared sum for each band
+        for i, bandArray in enumerate(bandArrays):
+            sharedNDArray[2+len(layer.bands)+i][gpi] += bandArray[gpi]
+
+    # release layer
+    layer = None
+    return bandMetadata
+
+
+class Layer:
+    ''' Small class to get mask and arrays from many bands '''
+    def __init__(self, fileName, bands=[1],
+                        opener=Nansat, maskName='mask',
+                        doReproject=True, eResampleAlg=0,
+                        period=(None, None),
+                        logLevel=30):
+        # Set parameters of processing
+        self.fileName     = fileName
+        self.bands        = bands
+        self.opener       = opener
+        self.maskName     = maskName
+        self.doReproject  = doReproject
+        self.period       = period
+        self.eResampleAlg = eResampleAlg
+        self.logLevel     = logLevel
+
+    def make_nansat_object(self, domain):
+        # Open self.fileName with self.opener
+        print 'Layer', self.fileName, self.logLevel
+        self.n = self.opener(self.fileName, logLevel=self.logLevel)
+        if self.doReproject:
+            self.n.reproject(domain, eResampleAlg=self.eResampleAlg)
+
+    def within_period(self):
+        ''' Test if given file is within period of time '''
+        withinPeriod = True
+        ntime = self.n.get_metadata().get('time_coverage_start', None)
+        if (ntime is None and any(self.period)):
+            withinPeriod = False
+
+        if (self.period[0] is not None and ntime < self.period[0]):
+            withinPeriod = False
+
+        if (self.period[1] is not None and ntime > self.period[1]):
+            withinPeriod = False
+
+        return withinPeriod
+
+    def get_mask_array(self):
+        ''' Get array with mask values '''
+        if self.n.has_band(self.maskName):
+            mask = self.n[self.maskName]
+        elif self.doReproject:
+            mask = self.n['swathmask'] * 64
+        else:
+            mask = np.ones(self.n.shape()) * 64
+
+        return mask
 
 
 class Mosaic(Nansat):
@@ -31,201 +142,8 @@ class Mosaic(Nansat):
     Mosaic inherits everything from Nansat
     '''
 
-    # default parameters
-    nClass = Nansat
-    eResampleAlg = 0
-    period = None, None
-    threads = 1
-    maskName = 'mask'
-    doReproject = True
-    bandIDs = [1]
-    mapper = 'mosaic'
-
-    def _set_defaults(self, idict):
-        '''Check input params and set defaut values
-
-        Look throught default parameters (in self) and given parameters (dict)
-        and paste value from input if the key matches
-
-        Parameters
-        ----------
-        idict : dictionary
-            parameter names and values
-
-        Modifies
-        ---------
-        self
-
-        '''
-        for key in idict:
-            if hasattr(self, key):
-                setattr(self, key, idict[key])
-
-    def _get_layer_image(self, f):
-        '''Get nansat object from the specifed file
-
-        Open file with Nansat
-        Return, if it is within a given period,
-
-        Parameters:
-        -----------
-        f : string
-            name of the file to be opened
-        Returns:
-        --------
-            Nansat object or None
-        '''
-        # open file using Nansat or its child class
-        # the line below is for debugging
-        #n = self.nClass(f, logLevel=self.logger.level)
-        self.logger.info('Try to open %s' % f)
-        #n = self.nClass(f, logLevel=self.logger.level)
-        try:
-            n = self.nClass(f, logLevel=self.logger.level)
-        except:
-            self.logger.error('Unable to open %s' % f)
-            return None
-
-        # check if image is out of period
-        self.logger.info('Try to get time from %s' % f)
-        if n is not None:
-            ntime = n.get_time()
-
-            if (ntime[0] is None and any(self.period)):
-                self.logger.error('%s has no time' % f)
-                return None
-
-            if (self.period[0] is not None and
-                    ntime[0] < self.period[0]):
-                self.logger.info('%s is taken before the period' % f)
-                return None
-
-            if (self.period[1] is not None and
-                    ntime[0] > self.period[1]):
-                self.logger.info('%s is taken after the period' % f)
-                return None
-
-        return n
-
-    def _get_layer_mask(self, n):
-        '''Get mask from input Nansat object
-
-        Open files, reproject, get mask and metadata
-
-        Parameters:
-        -----------
-        n : Nansat
-            input object
-        doReproject : boolean
-            Should we reproject input files?
-        maskName : string
-            Name of the mask in the input file
-
-        Returns:
-        --------
-        mask : Numpy array with L2-mask
-        '''
-        mask = 64 * np.ones(self.shape()).astype('int8')
-        # add mask band [0: nodata, 1: cloud, 2: land, 64: data]
-        self.logger.info('Try to get raw mask')
-        try:
-            mask = n[self.maskName]
-        except:
-            self.logger.error('Cannot get mask from %s' % n.fileName)
-            n.add_band(array=mask, parameters={'name': self.maskName})
-        self.logger.debug('Got raw mask - OK')
-
-        if self.doReproject:
-            # reproject image and get reprojected mask
-            self.logger.debug('Try to get reprojected mask')
-            n.reproject(self, eResampleAlg=self.eResampleAlg)
-            try:
-                mask = n[self.maskName]
-            except:
-                self.logger.error('Unable to get reprojected mask!')
-            self.logger.debug('Get reprojected mask - OK')
-
-        return mask
-
-    def _get_layer(self, f):
-        '''Get nansat object and mask from input file
-
-        Parameters:
-        -----------
-        f : string
-            input filename
-        doReproject : boolean
-            Should we reproject input files?
-        maskName : string
-            Name of the mask in the input file
-
-        Returns:
-        --------
-        n : Nansat object of input file
-        mask : Numpy array with array
-        '''
-        mask = None
-        n = self._get_layer_image(f)
-        if n is not None:
-            mask = self._get_layer_mask(n)
-
-        return n, mask
-
-    def _get_cube(self, files, band):
-        '''Make cube with data from one band of input files
-
-        Open files, reproject, get band, insert into cube
-
-        Parameter:
-        ----------
-        files : list of strings
-            input filenames
-        band : int or string
-            ID of the band
-        doReproject : boolean
-            Should we reproject input files?
-        maskName : string
-            Name of the mask in the input file
-
-        Returns:
-        --------
-        dataCube : Numpy 3D array with bands
-        mask : Numpy array with L2-mask
-        '''
-        # preallocate 3D cube and mask
-        self.logger.debug('Allocating 3D cube')
-        dataCube = np.zeros((len(files), self.shape()[0], self.shape()[1]))
-        maskMat = np.zeros((2, self.shape()[0], self.shape()[1]), 'int8')
-
-        # for all input files
-        for i, f in enumerate(files):
-            self.logger.info('Processing %s' % f)
-
-            # get image and mask
-            n, mask = self._get_layer(f)
-            if n is None:
-                continue
-            # get band from input image
-            a = None
-            try:
-                a = n[band].astype('float32')
-            except:
-                self.logger.error('%s is not in %s' % (band, n.fileName))
-            if a is not None:
-                # mask invalid data
-                a[mask <= 2] = np.nan
-
-            # add band to the cube
-            dataCube[i, :, :] = a
-
-            # add data to mask matrix (maximum of 0, 1, 2, 64)
-            maskMat[0, :, :] = mask
-            maskMat[1, :, :] = maskMat.max(0)
-
-        return dataCube, maskMat.max(0)
-
     def average(self, files=[], bands=[1], doReproject=True, maskName='mask',
-                threads=1, **kwargs):
+                opener=Nansat, threads=1, eResampleAlg=0, period=(None, None)):
         '''Memory-friendly, multithreaded mosaicing(averaging) of input files
 
         Convert all input files into Nansat objects, reproject onto the
@@ -258,7 +176,7 @@ class Mosaic(Nansat):
             reproject input files?
         maskName : str, ['mask']
             name of the mask in input files
-        nClass : child of Nansat, [Nansat]
+        opener : child of Nansat, [Nansat]
             This class is used to read input files
         threads : int
             number of parallel processes to use
@@ -268,61 +186,62 @@ class Mosaic(Nansat):
             Start and stop datetime objects from pyhon datetime.
 
         '''
+        # shared array for multiple threads
+        global sharedArray
+        global domain
+
         # check inputs
         if len(files) == 0:
             self.logger.error('No input files given!')
             return
 
-        # modify default values
-        self.bandIDs = bands
-        self.doReproject = doReproject
-        self.maskName = maskName
-        self.threads = threads
-        self._set_defaults(kwargs)
-
         # get desired shape
         dstShape = self.shape()
-        self.logger.debug('dstShape: %s' % str(dstShape))
+        # preallocate shared mem array
+        sharedArray = mp.Array(ctypes.c_float,
+                               [0]*(2 +
+                                    len(bands) +
+                                    len(bands)) * dstShape[0] * dstShape[1])
 
-        # preallocate 2D matrices:
-        # sum, sum of squares, count of products and mask
-        self.logger.debug('Allocating 2D matrices')
-        avgMat = np.zeros((len(bands), dstShape[0], dstShape[1]))
-        stdMat = np.zeros((len(bands), dstShape[0], dstShape[1]))
-        cntMat = np.zeros((dstShape[0], dstShape[1]), 'float16')
-        maskMat = np.zeros((2, dstShape[0], dstShape[1]), 'int8')
+        # create list of layers
+        domain = Nansat(domain=self)
+        layers = [Layer(ifile, bands, opener, maskName, doReproject,
+                        eResampleAlg, period, self.logger.level)
+                        for ifile in files]
 
-        # put 2D matrices into result queue (variable shared by sub-processes)
-        matQueue = mp.Queue()
-        matQueue.put((cntMat, maskMat, avgMat, stdMat, files[0]))
+        # test in debug
+        # sumup(layers[0])
 
-        # create task queue with file names
-        fQueue = mp.JoinableQueue()
+        # prepare pool of processors
+        pool = mp.Pool(threads)
 
-        # generate sub-processes
-        procs = []
-        for i in range(threads):
-            procs.append(mp.Process(target=self._average_one_file,
-                                    args=(fQueue, matQueue)))
+        # run reprojection and summing up
+        metadata = pool.map(sumup, layers)
 
-        # start sub-processes
-        for i in range(threads):
-            procs[i].start()
-
-        # put file names into task queue
-        for f in files:
-            fQueue.put(f)
-        # add poison pill to task queue
-        for i in range(threads):
-            fQueue.put(None)
-
-        # wait until sub-processes get all tasks from the task queue
-        fQueue.join()
-
-        # get data from result queue
-        cntMat, maskMat, avgMat, stdMat, fName = matQueue.get()
+        # get band metadata from the first valid file
+        for bandsMeta in metadata:
+            if type(bandsMeta) is list:
+                break
 
         # average products
+        sharedNDArray = mparray2ndarray(sharedArray,
+                                        (2+len(bands)*2,
+                                        dstShape[0],
+                                        dstShape[1]),
+                                        'float32')
+
+        # cleanup
+        pool.terminate()
+        pool = None
+        layers = None
+        metadata = None
+        sharedArray = None
+
+        cntMat = sharedNDArray[0]
+        maskMat = sharedNDArray[1]
+        avgMat = sharedNDArray[2:2+len(bands)]
+        stdMat = sharedNDArray[2+len(bands):]
+
         cntMat[cntMat == 0] = np.nan
         for bi, b in enumerate(bands):
             self.logger.debug('    Averaging %s' % b)
@@ -337,134 +256,93 @@ class Mosaic(Nansat):
             # set mean
             avgMat[bi] = avg
 
-        # calculate mask (max of 0, 1, 2, 4, 64)
-        maskMat = maskMat.max(0)
-        # if old 'valid' mask was applied in files, replace with new mask
-        maskMat[maskMat == 128] = 64
-
         self.logger.debug('Adding bands')
         # add mask band
         self.logger.debug('    mask')
         self.add_band(array=maskMat, parameters={'name': maskName,
                                                  'long_name': 'L2-mask',
                                                  'standard_name': 'mask'})
-        firstN = self._get_layer_image(fName)
 
         # add averaged bands with metadata
         for bi, b in enumerate(bands):
             self.logger.debug('    %s' % b)
-            # get metadata of this band from the first image
-            parameters = firstN.get_metadata(bandID=b)
-            parameters.pop('dataType')
-            parameters.pop('SourceBand')
-            parameters.pop('SourceFilename')
             # add band and std with metadata
-            self.add_band(array=avgMat[bi], parameters=parameters)
-            parameters['name'] = parameters['name'] + '_std'
-            self.add_band(array=stdMat[bi], parameters=parameters)
+            self.add_band(array=avgMat[bi], parameters=bandsMeta[bi])
+            bandsMeta[bi]['name'] = bandsMeta[bi]['name'] + '_std'
+            self.add_band(array=stdMat[bi], parameters=bandsMeta[bi])
 
-    def _average_one_file(self, fQueue, matQueue):
-        ''' Parallel processing of one file
+    def _get_cube(self, files, band, doReproject, maskName, opener,
+                                                    eResampleAlg,
+                                                    period,
+                                                    vmin=-np.inf,
+                                                    vmax=np.inf):
+        '''Make cube with data from one band of input files
 
-        In infinite loop wait for tasks in the task queue
-        If the task is available, get it and proceed
-        If task is None (poison pill) quit the infinite loop
-        If task is filename:
-            open the file
-            reproject
-            get data from file,
-            get intermediate result from the result queue
-            add data from file into the result
-            put the intermedieate result back to the queue
+        Open files, reproject, get band, insert into cube
 
-        Parameters
+        Parameter:
         ----------
-            fQueue : multiprocessing.JoinableQueue
-                task queue with file names
-            matQueue : multiprocessing.Queue
-                result queue with cntMat, avgMat, stdMat and maskMat
+        files : list of strings
+            input filenames
+        band : int or string
+            ID of the band
+        doReproject : boolean
+            Should we reproject input files?
+        maskName : string
+            Name of the mask in the input file
+        opener : class
+            Nansat or any Nansat child to open input image
+        eResampleAlg : int
+            parameter for Nansat.reproject()
+        period : tuple
+            valid (start_date, end_date) or (None, None)
 
-        Modifies
+        Returns:
         --------
-            fQueue : get results from the task queue
-            matQueue : get and put results from into the result queue
+            dataCube : Numpy 3D array with bands
+            mask : Numpy array with L2-mask
+            metadata : dict with band metadata
         '''
-        # start infinite loop
-        while True:
-            # get task from the queue
-            f = fQueue.get()
+        # preallocate 3D cube and mask
+        self.logger.debug('Allocating 3D cube')
+        dataCube = np.zeros((len(files), self.shape()[0], self.shape()[1]))
+        maskMat = np.zeros((2, self.shape()[0], self.shape()[1]), 'int8')
 
-            if f is None:
-                # if poison pill received, quit infinite loop
-                fQueue.task_done()
-                break
-
-            # otherwise start processing of task
+        # for all input files
+        for i, f in enumerate(files):
             self.logger.info('Processing %s' % f)
+            layer = Layer(f, [band], opener, maskName, doReproject,
+                            eResampleAlg, period, logLevel=self.logger.level)
+            # get nansat from the input Layer
+            layer.make_nansat_object(domain)
 
-            dstShape = self.shape()
-
-            # get image and mask
-            self.logger.info('Open %s and get mask' % f)
-            n, mask = self._get_layer(f)
-
-            # skip processing of invalid image
-            if n is None:
-                self.logger.error('%s invalid file!' % f)
-                fQueue.task_done()
+            # if not in the period, quit
+            if not layer.within_period():
                 continue
+            # get mask
+            mask = layer.get_mask_array()
+            # get arrays with data
+            bandArray = layer.n[band].astype('float32')
+            # remove invalid data
+            bandArray[mask < 64] = np.nan
+            bandArray[bandArray < vmin] = np.nan
+            bandArray[bandArray > vmax] = np.nan
 
-            # create temporary matrices to store results
-            cntMatTmp = np.zeros((dstShape[0], dstShape[1]), 'float16')
-            cntMatTmp[mask == 64] = 1
-            avgMatTmp = np.zeros((len(self.bandIDs),
-                                  dstShape[0], dstShape[1]), 'float16')
-            stdMatTmp = np.zeros((len(self.bandIDs),
-                                  dstShape[0], dstShape[1]), 'float16')
+            # get metadata
+            bandMetadata = layer.n.get_metadata(bandID=band)
 
-            # add data to summation matrices
-            for bi, b in enumerate(self.bandIDs):
-                self.logger.info('    Adding %s to sum' % b)
-                # get projected data from Nansat object
-                a = None
-                try:
-                    a = n[b]
-                except:
-                    self.logger.error('%s is not in %s' % (b, n.fileName))
-                if a is not None:
-                    # mask invalid data
-                    a[mask < 64] = 0
-                    # sum of valid values and squares
-                    avgMatTmp[bi] += a
-                    stdMatTmp[bi] += np.square(a)
-            # destroy Nansat image
-            n = None
+            # add band to the cube
+            dataCube[i, :, :] = bandArray
 
-            # get intermediate results from queue
-            cntMat, maskMat, avgMat, stdMat, fName = matQueue.get()
-
-            # add data to the counting matrix
-            cntMat += cntMatTmp
-
-            # add data to the mask matrix (maximum of 0, 1, 2, 64)
+            # add data to mask matrix (maximum of 0, 1, 2, 64)
             maskMat[0, :, :] = mask
             maskMat[1, :, :] = maskMat.max(0)
 
-            # add data to sum and square_sum matrix
-            avgMat += avgMatTmp
-            stdMat += stdMatTmp
-
-            # remember file name
-            fName = f
-
-            # update intermediate results into queue
-            matQueue.put((cntMat, maskMat, avgMat, stdMat, fName))
-
-            # tell the queue that task is done
-            fQueue.task_done()
+        return dataCube, maskMat.max(0), bandMetadata
 
     def median(self, files=[], bands=[1], doReproject=True, maskName='mask',
-               **kwargs):
+                opener=Nansat, eResampleAlg=0, period=(None, None),
+                vmin=-np.inf, vmax=np.inf):
         '''Calculate median of input bands
 
         Memory and CPU greedy method. Generates 3D cube from bands of
@@ -493,152 +371,17 @@ class Mosaic(Nansat):
             self.logger.error('No input files given!')
             return
 
-        # modify default values
-        self.bandIDs = bands
-        self.doReproject = doReproject
-        self.maskName = maskName
-        self._set_defaults(kwargs)
-
-        lastN = self._get_layer_image(files[-1])
         # add medians of all bands
         for band in bands:
-            bandCube, mask = self._get_cube(files, band)
-            bandMedian = st.nanmedian(bandCube, axis=0)
+            cube, mask, metadata = self._get_cube(files, band,
+                                                    doReproject,
+                                                    maskName,
+                                                    opener,
+                                                    eResampleAlg,
+                                                    period, vmin, vmax)
+            median = st.nanmedian(cube, axis=0)
 
-            # get metadata of this band from the last image
-            parameters = lastN.get_metadata(bandID=band)
             # add band and std with metadata
-            self.add_band(array=bandMedian, parameters=parameters)
+            self.add_band(array=median, parameters=metadata)
 
         self.add_band(array=mask, parameters={'name': 'mask'})
-
-    def latest(self, files=[], bands=[1], doReproject=True, maskName='mask',
-               **kwargs):
-        '''Mosaic by adding the latest image on top without averaging
-
-        Uses Nansat.get_time() to estimate time of each input file;
-        Sorts images by aquisition time;
-        Creates date_index band - with mask of coverage of each frame;
-        Uses date_index to fill bands of self only with the latest data
-
-        Parameters
-        -----------
-        files : list
-            list of input files
-        bands : list
-            list of names/band_numbers to be processed
-        doReproject : boolean, [True]
-            reproject input files?
-        maskName : str, ['mask']
-            name of the mask in input files
-        nClass : child of Nansat, [Nansat]
-            This class is used to read input files
-        eResampleAlg : int, [0]
-            agorithm for reprojection, see Nansat.reproject()
-        period : [datetime0, datetime1]
-            Start and stop datetime objects from pyhon datetime.
-
-        '''
-        # check inputs
-        if len(files) == 0:
-            self.logger.error('No input files given!')
-            return
-
-        # modify default values
-        self.bandIDs = bands
-        self.doReproject = doReproject
-        self.maskName = maskName
-        self._set_defaults(kwargs)
-
-        # collect ordinals of times of each input file
-        itimes = np.zeros(len(files))
-        for i in range(len(files)):
-            n = self._get_layer_image(files[i])
-            nstime = n.get_time()[0]
-            if nstime is None:
-                nstime = 693596  # 1900-01-01
-            else:
-                nstime = nstime.toordinal()
-            itimes[i] = nstime
-
-        # sort times
-        ars = np.argsort(itimes)
-
-        # maxIndex keeps mask of coverae of each frame
-        maxIndex = np.zeros((2, self.shape()[0], self.shape()[1]))
-        for i in range(len(files)):
-            # open file and get mask
-            n, mask = self._get_layer(files[ars[i]])
-            # fill matrix with serial number of the file
-            maskIndex = (np.zeros(mask.shape) + i + 1).astype('uint16')
-            # erase non-valid values
-            maskIndex[mask != 64] = 0
-            # first layer of maxIndex keeps serial number of this file
-            maxIndex[0, :, :] = maskIndex
-            # second layer of maxIndex keeps maximum serial number
-            # or serial number of the latest image
-            maxIndex[1, :, :] = maxIndex.max(0)
-        maxIndex = maxIndex.max(0)
-
-        # preallocate 2D matrices for mosaiced data and mask
-        self.logger.debug('Allocating 2D matrices')
-        avgMat = {}
-        for b in bands:
-            avgMat[b] = np.zeros((maxIndex.shape[0], maxIndex.shape[1]))
-        maskMat = np.zeros((maxIndex.shape[0], maxIndex.shape[1]))
-
-        for i in range(len(files)):
-            f = files[ars[i]]
-            self.logger.info('Processing %s' % f)
-
-            # get image and mask
-            n, mask = self._get_layer(f)
-            if n is None:
-                continue
-            # insert mask into result only for pixels masked
-            # by the serial number of the input file
-            maskMat[maxIndex == (i + 1)] = mask[maxIndex == (i + 1)]
-
-            # insert data into mosaic matrix
-            for b in bands:
-                self.logger.debug('    Inserting %s to latest' % b)
-                # get projected data from Nansat object
-                a = None
-                try:
-                    a = n[b].astype('float32')
-                except:
-                    self.logger.error('%s is not in %s' % (b, n.fileName))
-                if a is not None:
-                    # insert data into result only for pixels masked
-                    # by the serial number of the input file
-                    avgMat[b][maxIndex == (i + 1)] = a[maxIndex == (i + 1)]
-
-            # destroy input nansat
-            n = None
-        # keep last image opened
-        lastN = self._get_layer_image(f)
-
-        self.logger.debug('Adding bands')
-        # add mask band
-        self.logger.debug('    mask')
-        self.add_band(array=maskMat, parameters={'name': maskName,
-                                                 'long_name': 'L2-mask',
-                                                 'standard_name': 'mask'})
-        # add mosaiced bands with metadata
-        for b in bands:
-            self.logger.debug('    %s' % b)
-
-            # get metadata of this band from the last image
-            parameters = lastN.get_metadata(bandID=b)
-            # add band with metadata
-            self.add_band(array=avgMat[b], parameters=parameters)
-
-        # compose list of dates of input images
-        timeString = ''
-        dt = datetime.datetime(1, 1, 1)
-        for i in range(len(itimes)):
-            timeString += (dt.fromordinal(int(itimes[ars[i]])).
-                           strftime('%Y-%m-%dZ%H:%M '))
-        # add band with mask of coverage of each frame
-        self.add_band(array=maxIndex, parameters={'name': 'date_index',
-                                                  'values': timeString})

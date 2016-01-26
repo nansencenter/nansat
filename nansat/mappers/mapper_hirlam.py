@@ -6,11 +6,14 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import datetime
+import json
 
 import numpy
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
+
+from nerscmetadata import gcmd_keywords
 
 
 class Mapper(VRT):
@@ -73,10 +76,20 @@ class Mapper(VRT):
         # Create bands
         self._create_bands(metaDict)
 
-        # Adding valid time from the GRIB file to dataset
-        band = gdalDataset.GetRasterBand(2)
-        validTime = band.GetMetadata()['GRIB_VALID_TIME']
-        self._set_time(datetime.datetime.
-                       utcfromtimestamp(int(validTime.strip().split(' ')[0])))
+        # set source, start_date, stop_date
+        self.dataset.SetMetadataItem('source', 'HIRLAM')
 
-        return
+        # Adding valid time from the GRIB file to dataset
+        start_date = gdalDataset.GetRasterBand(1).GetMetadata()['GRIB_VALID_TIME']
+        self.dataset.SetMetadataItem('time_coverage_start',
+                datetime.datetime.utcfromtimestamp(
+                int(start_date.strip().split(' ')[0])).isoformat() + '+00:00')
+
+        stop_date = gdalDataset.GetRasterBand(gdalDataset.RasterCount).GetMetadata()['GRIB_VALID_TIME']
+        self.dataset.SetMetadataItem('time_coverage_end',
+                datetime.datetime.utcfromtimestamp(
+                int(stop_date.strip().split(' ')[0])).isoformat() + '+00:00')
+
+        mm = gcmd_keywords.get_instrument('computer')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', 'HIgh Resolution Limited Area Model')

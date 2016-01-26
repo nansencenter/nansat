@@ -16,7 +16,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 import os
-from math import floor, log10, pow
+from math import floor, log10
 
 import numpy as np
 from matplotlib import cm
@@ -29,10 +29,10 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from nansat.tools import add_logger
+from nansat.tools import add_logger, OptionError
 
 
-class Figure():
+class Figure(object):
     '''Perform opeartions with graphical files: create, append legend, save.
 
     Figure instance is created in the Nansat.write_figure method
@@ -65,8 +65,8 @@ class Figure():
 
     latGrid = None
     lonGrid = None
-    nGridLines = 10
-    latlonLabels = 0
+    lonTicks = 5
+    latTicks = 5
 
     transparency = None
 
@@ -369,7 +369,7 @@ class Figure():
         Compute step of the grid
         Make matrices with binarized lat/lon
         Find edge (make line)
-        Convert to maks
+        Convert to mask
         Add mask to PIL
 
         Parameters
@@ -379,8 +379,12 @@ class Figure():
             array with values of latitudes
         lonGrid : numpy array
             array with values of longitudes
-        nGridLines : int
+        lonTicks : int or list
             number of lines to draw
+            or locations of gridlines
+        latTicks : int or list
+            number of lines to draw
+            or locations of gridlines
 
         Modifies
         ---------
@@ -389,45 +393,85 @@ class Figure():
         '''
         # modify default values
         self._set_defaults(kwargs)
+
         # test availability of grids
-        if (self.latGrid is None or self.lonGrid is None or
-                self.nGridLines is None or self.nGridLines == 0):
+        if (self.latGrid is None or self.lonGrid is None):
             return
-        # get number of grid lines
-        llSpacing = self.nGridLines
-        # get vectors for grid lines
-        latVec = np.linspace(self.latGrid.min(),
-                             self.latGrid.max(), llSpacing)
-        lonVec = np.linspace(self.lonGrid.min(),
-                             self.lonGrid.max(), llSpacing)
+
+        # get vectors with ticks based on input
+        latTicks = self._get_auto_ticks(self.latTicks, self.latGrid)
+        lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
+
+        # convert lat/lon grids to indeces
         latI = np.zeros(self.latGrid.shape, 'int8')
         lonI = np.zeros(self.latGrid.shape, 'int8')
-        # convert lat/lon to indeces
-        for i in range(len(latVec)):
-            latI[self.latGrid > latVec[i]] = i
-            lonI[self.lonGrid > lonVec[i]] = i
-        # find pixels on the rgid lines (binarize)
-        latI = np.diff(latI)
-        lonI = np.diff(lonI)
+        for latTick in latTicks:
+            latI[self.latGrid > latTick] += 1
+        for lonTick in lonTicks:
+            lonI[self.lonGrid > lonTick] += 1
+
+        # find pixels on the grid lines (binarize)
+        latI = np.diff(latI, axis=0)[:, :-1] + np.diff(latI, axis=1)[:-1, :]
+        lonI = np.diff(lonI, axis=0)[:, :-1] + np.diff(lonI, axis=1)[:-1, :]
+
         # make grid from both lat and lon
         latI += lonI
         latI[latI != 0] = 1
+
         # add mask to the image
         self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
+
+    def _get_auto_ticks(self, ticks, grid):
+        ''' Automatically create a list of lon or lat ticks from number of list
+
+        Parameters
+        ----------
+            ticks : int or list
+                number or location of ticks
+            grid : ndarray
+                grid with lon or lat
+        Returns
+        -------
+            ticks : list
+                location of ticks
+
+        '''
+        gridMin = grid.min()
+        gridMax = grid.max()
+
+        if type(ticks) is int:
+            ticks = np.linspace(gridMin, gridMax, ticks)
+        elif type(ticks) in [list, tuple]:
+            newTicks = []
+            for tick in ticks:
+                if tick >= gridMin and tick <= gridMax:
+                    newTicks.append(tick)
+            ticks = newTicks
+        else:
+            raise OptionError('Incorrect type of ticks')
+
+        return ticks
 
     def add_latlon_labels(self, **kwargs):
         '''Add lat/lon labels along upper and left side
 
         Compute step of lables
         Get lat/lon for these labels from latGrid, lonGrid
-        Print lables to PIL
+        Print lables to PIL in white
 
         Parameters
         ----------
-        Figure__init__() parameters:
+        Any of Figure__init__() parameters:
         latGrid : numpy array
+            array with values of latitudes
         lonGrid : numpy array
-        latlonLabels : int
+            array with values of longitudes
+        lonTicks : int or list
+            number of lines to draw
+            or locations of gridlines
+        latTicks : int or list
+            number of lines to draw
+            or locations of gridlines
 
         Modifies
         ---------
@@ -436,27 +480,65 @@ class Figure():
         '''
         # modify default values
         self._set_defaults(kwargs)
+
         # test availability of grids
-        if (self.latGrid is None or self.lonGrid is None or
-                self.latlonLabels == 0):
+        if (self.latGrid is None or self.lonGrid is None):
             return
 
         draw = ImageDraw.Draw(self.pilImg)
         font = ImageFont.truetype(self.fontFileName, self.fontSize)
 
-        # get number of labels; step of lables
-        llLabels = self.latlonLabels
-        llShape = self.latGrid.shape
-        latI = range(0, llShape[0], (llShape[0] / llLabels) - 1)
-        lonI = range(0, llShape[1], (llShape[1] / llLabels) - 1)
-        # get lons/lats from first row/column
-        #lats = self.latGrid[latI, 0]
-        #lons = self.lonGrid[0, lonI]
-        for i in range(len(latI)):
-            lat = self.latGrid[latI[i], 0]
-            lon = self.lonGrid[0, lonI[i]]
-            draw.text((0, 10 + latI[i]), '%4.2f' % lat, fill=255, font=font)
-            draw.text((50 + lonI[i], 0), '%4.2f' % lon, fill=255, font=font)
+        # get vectors with ticks based on input
+        latTicks = self._get_auto_ticks(self.latTicks, self.latGrid)
+        lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
+
+        # get corresponding lons from upper edge and lats from left edge
+        lonTicksIdx = self._get_tick_index_from_grid(lonTicks, self.lonGrid,
+                                       1, self.lonGrid.shape[1])
+        latTicksIdx = self._get_tick_index_from_grid(latTicks, self.latGrid,
+                                       self.lonGrid.shape[0], 1)
+
+        # draw lons
+        lonsOffset = self.lonGrid.shape[1] / len(lonTicksIdx) / 8.
+        for lonTickIdx in lonTicksIdx:
+            lon = self.lonGrid[0, lonTickIdx]
+            draw.text((lonTickIdx+lonsOffset, 0), '%4.2f' % lon,
+                                                    fill=255, font=font)
+
+        # draw lats
+        latsOffset = self.latGrid.shape[0] / len(latTicksIdx) / 8.
+        for latTickIdx in latTicksIdx:
+            lat = self.latGrid[latTickIdx, 0]
+            draw.text((0, latTickIdx+latsOffset), '%4.2f' % lat,
+                      fill=255, font=font)
+
+    def _get_tick_index_from_grid(self, ticks, grid, rows, cols):
+        ''' Get index of pixels from lon/lat grids closest given ticks
+
+        Parameters
+        ----------
+            ticks : int or list
+                number or location of ticks
+            grid : ndarray
+                grid with lon or lat
+            rows : int
+                from which rows to return pixels
+            cols : int
+                from which cols to return pixels
+
+        Returns
+        -------
+            ticks : list
+                index of ticks
+        '''
+
+        newTicksIdx = []
+        for tick in ticks:
+            diff = np.abs(grid[:rows, :cols] - tick).flatten()
+            minDiffIdx = np.nonzero(diff == diff.min())[0][0]
+            if minDiffIdx > 0:
+                newTicksIdx.append(minDiffIdx)
+        return newTicksIdx
 
     def clim_from_histogram(self, **kwargs):
         '''Estimate min and max pixel values from histogram
@@ -488,36 +570,31 @@ class Figure():
                 masked = masked + (self.mask_array == lutVal)
 
         # create a ratio list for each band
-        if isinstance(ratio, float) or isinstance(ratio, int):
-            ratioList = np.ones(self.array.shape[0]) * float(ratio)
-        else:
-            ratioList = []
-            for iRatio in range(self.array.shape[0]):
-                try:
-                    ratioList.append(ratio[iRatio])
-                except:
-                    ratioList.append(ratio[0])
+        if not (isinstance(ratio, float) or isinstance(ratio, int)):
+            raise OptionError('Incorrect input ratio %s' % str(ratio))
+
+        # create a ratio list for each band
+        if ratio <= 0 or ratio > 1:
+            raise OptionError('Incorrect input ratio %s' % str(ratio))
 
         # create a 2D array and set min and max values
         clim = [[0] * self.array.shape[0], [0] * self.array.shape[0]]
         for iBand in range(self.array.shape[0]):
-            clim[0][iBand] = np.nanmin(self.array[iBand, :, :])
-            clim[1][iBand] = np.nanmax(self.array[iBand, :, :])
+            bandArray = self.array[iBand, :, :]
+            # remove masked data
             if masked is not None:
-                self.array[iBand, :, :][masked] = clim[0][iBand]
-            # if 0<ratio<1 try to compute histogram
-            if (ratioList[iBand] > 0 and ratioList[iBand] < 1):
-                try:
-                    hist, bins = self._get_histogram(iBand)
-                except:
-                    self.logger.warning('Unable to compute histogram')
-                else:
-                    cumhist = hist.cumsum()
-                    cumhist /= cumhist[-1]
-                    clim[0][iBand] = bins[len(cumhist[cumhist <
-                                              (1 - ratioList[iBand]) / 2])]
-                    clim[1][iBand] = bins[len(cumhist[cumhist <
-                                          1 - ((1 - ratioList[iBand]) / 2)])]
+                bandArray = bandArray[masked == 0]
+            # remove nan, inf
+            bandArray = bandArray[np.isfinite(bandArray)]
+            # get percentile
+            percentileMin = 100 * (1 - ratio) / 2.
+            percentileMax = 100 * (1 - (1 - ratio) / 2.)
+            if bandArray.size > 0:
+                clim[0][iBand] = np.percentile(bandArray, percentileMin)
+                clim[1][iBand] = np.percentile(bandArray, percentileMax)
+            else:
+                clim[0][iBand], clim[1][iBand] = 0, 1
+
         self.color_limits = clim
         return clim
 
@@ -716,9 +793,6 @@ class Figure():
         if self.pilImgLegend is not None:
             self.pilImg.paste(self.pilImgLegend, (0, self.height))
 
-        # remove array from memory
-        #self.array = None
-
     def process(self, **kwargs):
         '''Do all common operations for preparation of a figure for saving
 
@@ -774,8 +848,7 @@ class Figure():
             self.apply_mask()
 
         # add lat/lon grids lines if latGrid and lonGrid are given
-        if self.latGrid is not None and self.lonGrid is not None:
-            self.add_latlon_grids()
+        self.add_latlon_grids()
 
         # append legend
         if self.legend:
@@ -785,9 +858,7 @@ class Figure():
         self.create_pilImage(**kwargs)
 
         # add labels with lats/lons
-        if (self.latGrid is not None and self.lonGrid is not None and
-                self.latlonLabels > 0):
-            self.add_latlon_labels()
+        self.add_latlon_labels()
 
         # add logo
         if self.logoFileName is not None:
@@ -929,7 +1000,6 @@ class Figure():
             if digit in frmts:
                 frmt = frmts[digit]
             else:
-                #frmt = '%4.2e'
                 frmt = '%.' + '%d' % abs(digit) + 'f'
 
         return str(frmt % val)

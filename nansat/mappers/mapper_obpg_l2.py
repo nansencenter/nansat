@@ -6,13 +6,17 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from datetime import datetime, timedelta
 from math import ceil
+from dateutil.parser import parse
+
+import json
+from nerscmetadata import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
 from nansat.nsr import NSR
+from nansat.mappers.obpg import OBPGL2BaseClass
 
-
-class Mapper(VRT):
+class Mapper(OBPGL2BaseClass):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG
 
     TODO:
@@ -29,19 +33,13 @@ class Mapper(VRT):
             number of GCPs along each dimention
         '''
 
-        titles = ['HMODISA Level-2 Data',
-                  'MODISA Level-2 Data',
-                  'MERIS Level-2 Data',
-                  'GOCI Level-2 Data',
-                  'VIIRSN Level-2 Data']
-
         # should raise error in case of not obpg_l2 file
         try:
             title = gdalMetadata["Title"]
         except:
             raise WrongMapperError
 
-        if title not in titles:
+        if title not in self.titles:
             raise WrongMapperError
 
         # get subdataset and parse to VRT.__init__()
@@ -107,7 +105,11 @@ class Mapper(VRT):
                         'latitude': {'src': {},
                                      'dst': {'wkv': 'latitude'}},
                         'longitude': {'src': {},
-                                      'dst': {'wkv': 'longitude'}}
+                                      'dst': {'wkv': 'longitude'}},
+                        'par': {'src': {},
+                                      'dst': {'wkv': 'downwelling_photosynthetic_photon_radiance_in_sea_water'}},
+                        'ipar': {'src': {},
+                                      'dst': {'wkv': 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water'}},
                         }
 
         # loop through available bands and generate metaDict (non fixed)
@@ -167,6 +169,7 @@ class Mapper(VRT):
                 bandNo += 1
 
                 if subBandName == 'Rrs':
+                    rrsSubDataset = subDataset[0]
                     metaEntryRrsw = {
                         'src': [{
                             'SourceFilename': subDataset[0],
@@ -196,8 +199,6 @@ class Mapper(VRT):
         startMillisec = int(gdalMetadata['Start Millisec'])
         startDate = datetime(startYear, 1, 1) + timedelta(startDay-1, 0, 0,
                                                           startMillisec)
-        self._set_time(startDate)
-
         # skip adding georeference for GOCI
         if title is 'GOCI Level-2 Data':
             return
@@ -244,6 +245,8 @@ class Mapper(VRT):
         dy = .5
         gcps = []
         k = 0
+        center_lon = 0
+        center_lat = 0
         for i0 in range(0, latitude.shape[0], step0):
             for i1 in range(0, latitude.shape[1], step1):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
@@ -256,7 +259,36 @@ class Mapper(VRT):
                                       k, gcp.GCPPixel, gcp.GCPLine,
                                       gcp.GCPX, gcp.GCPY)
                     gcps.append(gcp)
+                    center_lon += gcp.GCPX
+                    center_lat += gcp.GCPY
                     k += 1
+
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
+        self.remove_geolocationArray()
+
+        # reproject GCPs
+        center_lon /= k
+        center_lat /= k
+        srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lon_0=%f +lat_0=%f +no_defs' % (center_lon, center_lat)
+        self.reproject_GCPs(srs)
+
+        # use TPS for reprojection
+        self.tps = True
+
+        # add NansenCloud metadata
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     (parse(
+                                      gdalMetadata['time_coverage_start']).
+                                      isoformat()))
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     (parse(
+                                      gdalMetadata['time_coverage_stop']).
+                                      isoformat()))
+        instrument = gdalMetadata['Sensor Name'][1:-1]
+        platform = {'A': 'AQUA', 'T': 'TERRA'}[gdalMetadata['Sensor Name'][-1]]
+        mm = gcmd_keywords.get_instrument(instrument)
+        ee = gcmd_keywords.get_platform(platform)
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

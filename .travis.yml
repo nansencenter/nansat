@@ -1,27 +1,46 @@
 language: python
 python:
   - 2.7
+sudo: false
 
-# Setup anaconda
+# Setup miniconda
 before_install:
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda/bin:$PATH
+  - if [[ ! -e $HOME/miniconda/bin ]]; then
+        wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+        chmod +x miniconda.sh;
+        ./miniconda.sh -b -f -p $HOME/miniconda;
+    fi
+  - export OLD_PATH=$PATH
+  - export PATH=$HOME/miniconda/bin:$PATH
 
 install:
   - conda update -q --yes conda
-  - conda install -q --yes numpy scipy matplotlib nose
-  - conda install -q --yes -c https://conda.binstar.org/osgeo gdal
+  - conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
+  - conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
-  - pip install -q basemap --allow-external basemap --allow-unverified basemap
   - python -c 'import gdal; print gdal.__file__'
   - python -c 'from mpl_toolkits.basemap import Basemap'
   - pip install coveralls
-#- python setup.py install
+  - pip install cfunits
+  - python setup.py install
 
 script: #"cd ..; nosetests --with-coverage --cover-package=nansat nansat.tests"
-  coverage run --source=nansat setup.py test
+  - coverage run --source=nansat setup.py test
+
 after_success:
-  coveralls
+  - coveralls
+  # Resetting path so uploading of cache with curl succeeds.
+  - export PATH=$OLD_PATH
+
+after_failure:
+  # Resetting path so uploading of cache with curl succeeds.
+  - export PATH=$OLD_PATH
+
+# before_cache:
+#   - rm -f $HOME/.cache/pip/log/debug.log
+
+cache:
+  directories:
+#     - $HOME/.cache/pip
+    - $HOME/miniconda

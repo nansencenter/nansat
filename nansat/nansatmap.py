@@ -18,12 +18,14 @@ from __future__ import absolute_import
 import re
 
 from mpl_toolkits.basemap import Basemap
+import matplotlib as mpl
 from matplotlib import cm
 import matplotlib.pyplot as plt
 from scipy import ndimage
 import numpy as np
 
 from nansat.nsr import NSR
+from nansat.tools import get_random_color
 
 
 class Nansatmap(Basemap):
@@ -337,6 +339,38 @@ class Nansatmap(Basemap):
         self._do_contour(Basemap.contourf, data, v, smooth, mode, **kwargs)
         self.colorbar = len(self.mpl) - 1
 
+    def imshow(self, data, low=0, high=255, **kwargs):
+        ''' Make RGB plot over the map
+
+        data : numpy array
+            RGB or RGBA input data
+        **kwargs:
+            Parameters for Basemap.imshow
+
+        Modifies
+        ---------
+        self.mpl : list
+            append AxesImage object with imshow
+
+        '''
+        # Create X/Y axes
+        self._create_xy_grids()
+
+        # add random colormap
+        if 'cmap' in kwargs and kwargs['cmap'] == 'random':
+            values = np.unique(data[np.isfinite(data)])
+            cmap, norm = self._create_random_colormap(values,
+                                                      low=low, high=high)
+            kwargs['cmap'] = cmap
+            kwargs['norm'] = norm
+
+        # Plot data using imshow
+        self.mpl.append(Basemap.imshow(self, data,
+                                       extent=[self.x.min(), self.x.max(),
+                                               self.y.min(), self.y.max()],
+                                       origin='upper', **kwargs))
+        self.colorbar = len(self.mpl) - 1
+
     def pcolormesh(self, data, **kwargs):
         '''Make a pseudo-color plot over the map
 
@@ -451,15 +485,33 @@ class Nansatmap(Basemap):
 
         # add colorbar and set font size
         if self.colorbar is not None:
-            cbar = self.fig.colorbar(self.mpl[self.colorbar], **kwargs)
+            origin = self.mpl[self.colorbar]
+
+            # if colormap is ListedColormap
+            # add integer ticks
+            ticks = None
+            listedColormap = False
+            if (hasattr(origin, 'cmap') and (type(origin.cmap) ==
+                                             mpl.colors.ListedColormap)):
+                ticks = (origin.norm.boundaries[:-1] +
+                         np.diff(origin.norm.boundaries) / 2.)
+                listedColormap = True
+
+            cbar = self.fig.colorbar(origin, ticks=ticks, **kwargs)
+            if listedColormap:
+                labels = origin.norm.boundaries[:-1]
+                if np.all(labels == np.floor(labels)):
+                    labels = labels.astype('int32')
+                cbar.ax.set_xticklabels(labels)
             imaxes = plt.gca()
             plt.axes(cbar.ax)
             plt.xticks(fontsize=fontsize)
             plt.axes(imaxes)
 
-    def drawgrid(self, fontsize=10, lat_num=5, lon_num=5,
+    def drawgrid(self, lat_num=5, lon_num=5,
                  lat_labels=[True, False, False, False],
-                 lon_labels=[False, False, True, False]):
+                 lon_labels=[False, False, True, False],
+                 **kwargs):
         '''Draw and label parallels (lat and lon lines) for values (in degrees)
 
         Parameters
@@ -479,12 +531,10 @@ class Nansatmap(Basemap):
         '''
         self.drawparallels(np.arange(self.latMin, self.latMax,
                            (self.latMax - self.latMin) / lat_num),
-                           labels=lat_labels,
-                           fontsize=fontsize)
+                           labels=lat_labels, **kwargs)
         self.drawmeridians(np.arange(self.lonMin, self.lonMax,
                            (self.lonMax - self.lonMin) / lon_num),
-                           labels=lon_labels,
-                           fontsize=fontsize)
+                           labels=lon_labels, **kwargs)
 
     def draw_continents(self, **kwargs):
         ''' Draw continents
@@ -505,7 +555,8 @@ class Nansatmap(Basemap):
         # draw continets
         self.fillcontinents(**kwargs)
 
-    def save(self, fileName, landmask=True, **kwargs):
+    def save(self, fileName, landmask=True, dpi=75,
+             pad_inches=0, bbox_inches='tight', **kwargs):
         '''Draw continents and save
 
         Parameters
@@ -523,7 +574,9 @@ class Nansatmap(Basemap):
         # set default extension
         if not((fileName.split('.')[-1] in self.extensionList)):
             fileName = fileName + self.DEFAULT_EXTENSION
-        self.fig.savefig(fileName)
+        self.fig.savefig(fileName, dpi=dpi,
+                         pad_inches=pad_inches,
+                         bbox_inches=bbox_inches)
 
     def _set_defaults(self, idict):
         '''Check input params and set defaut values
@@ -567,3 +620,47 @@ class Nansatmap(Basemap):
         self._create_lonlat_grids()
         if self.x is None or self.y is None:
             self.x, self.y = self(self.lon, self.lat)
+
+    def _create_random_colormap(self, values, low=0, high=255):
+        ''' Generate colormap and colorbar with random discrete colors
+
+        Parameters
+        ----------
+            values : list or 1D array
+                values for which the random colors are to be generated
+        Returns
+        -------
+            cmap : matplotlib.color.Colormap
+            norm : matplotlib.color.BoundaryNorm
+        '''
+        # create first random color
+        randomColors = [get_random_color(low=low, high=high)]
+        # add more random colors
+        for v in values[1:]:
+            randomColors.append(get_random_color(randomColors[-1],
+                                                 low=low, high=high))
+
+        # create colormap and norm
+        cmap = mpl.colors.ListedColormap(randomColors)
+        bounds = sorted(list(values))
+        bounds += [max(bounds) + 1]  # bounds should be longer than values by 1
+        norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+        return cmap, norm
+
+    def add_zone_labels(self, zones, fontsize=5):
+        ''' Finds best place of labels for a zone map, adds labels to the map
+
+        Parameters
+        ----------
+            zones : numpy array with integer zones
+                the same array as usied in Nansatmap.imshow
+        '''
+        zoneIndices = np.unique(zones[np.isfinite(zones)])
+        for zi in zoneIndices:
+            zrows, zcols = np.nonzero(zones == zi)
+            zrc = np.median(zrows)
+            zcc = np.median(zcols)
+            lon, lat = self.domain.transform_points([zcc], [zrc], 0)
+            x, y = self(lon[0], lat[0])
+            plt.text(x, y, '%d' % zi, fontsize=fontsize)
