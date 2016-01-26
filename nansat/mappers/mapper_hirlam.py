@@ -6,11 +6,14 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import datetime
+import json
 
 import numpy
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
+
+from nerscmetadata import gcmd_keywords
 
 
 class Mapper(VRT):
