@@ -57,14 +57,14 @@ URL                 = "https://github.com/nansencenter/nansat"
 DOWNLOAD_URL        = "https://github.com/nansencenter/nansat"
 LICENSE             = "GNU General Public License"
 CLASSIFIERS         = '***'  # filter(None, CLASSIFIERS.split('\n'))
-AUTHOR              = ("Asuka Yamakawa, Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad")
+AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Aleksander Vines, Asuka Yamakawa")
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
-MINOR               = 7
-MICRO               = 0
+MINOR               = 6
+MICRO               = 7
 ISRELEASED          = True
-VERSION             = '%d.%d-dev.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
                         "requests",
