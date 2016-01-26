@@ -57,7 +57,6 @@ class Mapper(VRT, object):
                 minimum and maimum values of latitude
         '''
 
-
         keywordBase = 'occci_online'
         if not fileName.startswith(keywordBase):
             raise WrongMapperError

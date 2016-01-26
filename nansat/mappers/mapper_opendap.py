@@ -80,6 +80,7 @@ class Mapper(VRT):
 
     def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT from OpenDAP dataset'''
+        raise WrongMapperError
         # quit if file is not online
         if fileName[:7] not in  ['http://', 'https:/']:
             raise WrongMapperError
