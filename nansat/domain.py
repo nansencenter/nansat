@@ -990,13 +990,7 @@ class Domain(object):
         '''
         # if lat/lon vectors are not given as input
         if lonVec is None or latVec is None or len(lonVec) != len(latVec):
-            try:
-                # get lon/lat from Domain/Nansat object
-                lonVec, latVec = self.get_border()
-            except:
-                print('Domain/Nansat object is not given'
-                      'and lat/lon vectors=None')
-                return
+            lonVec, latVec = self.get_border()
 
         # convert vectors to numpy arrays
         lonVec = np.array(lonVec)

@@ -19,7 +19,6 @@ import os
 import tempfile
 from string import Template, ascii_uppercase, digits
 from random import choice
-import datetime
 import warnings
 
 import numpy as np
@@ -330,7 +329,6 @@ class VRT(object):
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
         self.logger.debug('VRT description: %s'
                           % self.dataset.GetDescription())
-        #self.logger.debug('VRT metadata: %s ' % self.dataset.GetMetadata())
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
@@ -535,7 +533,7 @@ class VRT(object):
                 dst['dataType'] = gdal.GDT_Float32
             else:
                 self.logger.debug('Set dst[dataType]: %d' % src['DataType'])
-                #otherwise take the DataType from source
+                # otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
 
         # Set destination name
@@ -619,8 +617,8 @@ class VRT(object):
                 'SourceBand':  1,
                 'DataType': gdal.GDT_Byte}],
             dst={
-                'dataType' : gdal.GDT_Byte,
-                'wkv' : 'swath_binary_mask',
+                'dataType': gdal.GDT_Byte,
+                'wkv': 'swath_binary_mask',
                 'PixelFunctionType': 'OnesPixelFunc',
             })
 
@@ -674,10 +672,7 @@ class VRT(object):
             except UnicodeEncodeError:
                 self.logger.error('Cannot add %s to metadata' % key)
             else:
-                try:
-                    rasterBand.SetMetadataItem(metaKey, metaValue)
-                except:
-                    import ipdb; ipdb.set_trace()
+                rasterBand.SetMetadataItem(metaKey, metaValue)
 
         return rasterBand
 
@@ -710,7 +705,7 @@ class VRT(object):
 
         self.logger.debug('arrayDType: %s', arrayDType)
 
-        #create conents of VRT-file pointing to the binary file
+        # create conents of VRT-file pointing to the binary file
         dataType = {'uint8': 'Byte',
                     'int8': 'Byte',
                     'uint16': 'UInt16',
@@ -743,7 +738,7 @@ class VRT(object):
             SrcFileName=binaryFile,
             PixelOffset=pixelOffset,
             LineOffset=lineOffset)
-        #write XML contents to
+        # write XML contents to
         self.write_xml(contents)
 
     def read_xml(self, inFileName=None):
@@ -764,7 +759,7 @@ class VRT(object):
             inFileName = str(self.fileName)
             self.dataset.FlushCache()
 
-        #read from the vsi-file
+        # read from the vsi-file
         # open
         vsiFile = gdal.VSIFOpenL(inFileName, 'r')
         # get file size
@@ -791,8 +786,6 @@ class VRT(object):
             If XML content was written, self.dataset is re-opened
 
         '''
-        #write to the vsi-file
-
         vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
         gdal.VSIFWriteL(vsiFileContent,
                         len(vsiFileContent), 1, vsiFile)
@@ -879,7 +872,7 @@ class VRT(object):
         tmpVRTXML = self.read_xml()
         # find and remove GeoTransform
         node0 = Node.create(tmpVRTXML)
-        node1 = node0.delNode('GeoTransform')
+        node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
 
@@ -1420,7 +1413,6 @@ class VRT(object):
         for i in range(len(node0.nodeList('VRTRasterBand'))):
             # create i-th 'VRTRasterBand' node
             node1 = node0.node('VRTRasterBand', i)
-            node1Band = node1.getAttribute('band')
             # modify the 1st band
             shiftStr = str(shiftPixel)
             sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
@@ -1434,7 +1426,6 @@ class VRT(object):
             # add the 2nd band
             xmlSource = node1.rawxml()
             cloneNode = Node.create(xmlSource).node('ComplexSource')
-            #cloneNode = node1.node('ComplexSource')
             cloneNode.node('SrcRect').replaceAttribute('xOff', sizeStr)
             cloneNode.node('DstRect').replaceAttribute('xOff', str(0))
             cloneNode.node('SrcRect').replaceAttribute('xSize', shiftStr)
@@ -1530,9 +1521,6 @@ class VRT(object):
         node0.replaceAttribute('rasterXSize', str(newRasterXSize))
         node0.replaceAttribute('rasterYSize', str(newRasterYSize))
 
-        rasterYSize = subsamVRT.vrt.dataset.RasterYSize
-        rasterXSize = subsamVRT.vrt.dataset.RasterXSize
-
         # replace xSize in <DstRect> of each source
         for iNode1 in node0.nodeList('VRTRasterBand'):
             for sourceName in ['ComplexSource', 'SimpleSource']:
@@ -1549,10 +1537,9 @@ class VRT(object):
                 # if the values are complex number, give a warning
                 if iNode1.getAttribute('dataType').startswith('C'):
                     warnings.warn(
-                        'Band %s : The imaginary parts of complex numbers ' \
-                        'are lost when resampling by averaging ' \
-                        '(eResampleAlg=-1)' %iNode1.getAttribute('band')
-                    )
+                        'Band %s : The imaginary parts of complex numbers '
+                        'are lost when resampling by averaging '
+                        '(eResampleAlg=-1)' % iNode1.getAttribute('band'))
 
         # Write the modified elemements into VRT
         subsamVRT.write_xml(node0.rawxml())
@@ -1599,8 +1586,6 @@ class VRT(object):
         xy = np.array([colVector, rowVector]).transpose()
 
         # transfrom coordinates
-        #lonlat = transformer.TransformPoints(DstToSrc, xy)#[0]
-        #import pdb; pdb.set_trace()
         lonlat = transformer.TransformPoints(DstToSrc, xy)[0]
 
         # convert return to lon,lat vectors
@@ -1628,7 +1613,7 @@ class VRT(object):
         ProjectionError : occurrs when the projection is empty.
 
         '''
-        #get projection or GCPProjection
+        # get projection or GCPProjection
         projection = self.dataset.GetProjection()
         if projection == '':
             projection = self.dataset.GetGCPProjection()

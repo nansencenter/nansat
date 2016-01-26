@@ -16,7 +16,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 import os
-from math import floor, log10, pow
+from math import floor, log10
 
 import numpy as np
 from matplotlib import cm
@@ -411,8 +411,8 @@ class Figure(object):
             lonI[self.lonGrid > lonTick] += 1
 
         # find pixels on the grid lines (binarize)
-        latI = np.diff(latI, axis=0)[:,:-1] + np.diff(latI, axis=1)[:-1,:]
-        lonI = np.diff(lonI, axis=0)[:,:-1] + np.diff(lonI, axis=1)[:-1,:]
+        latI = np.diff(latI, axis=0)[:, :-1] + np.diff(latI, axis=1)[:-1, :]
+        lonI = np.diff(lonI, axis=0)[:, :-1] + np.diff(lonI, axis=1)[:-1, :]
 
         # make grid from both lat and lon
         latI += lonI
@@ -493,9 +493,9 @@ class Figure(object):
         lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
 
         # get corresponding lons from upper edge and lats from left edge
-        lonTicksIdx =self._get_tick_index_from_grid(lonTicks, self.lonGrid,
+        lonTicksIdx = self._get_tick_index_from_grid(lonTicks, self.lonGrid,
                                        1, self.lonGrid.shape[1])
-        latTicksIdx =self._get_tick_index_from_grid(latTicks, self.latGrid,
+        latTicksIdx = self._get_tick_index_from_grid(latTicks, self.latGrid,
                                        self.lonGrid.shape[0], 1)
 
         # draw lons
@@ -510,7 +510,7 @@ class Figure(object):
         for latTickIdx in latTicksIdx:
             lat = self.latGrid[latTickIdx, 0]
             draw.text((0, latTickIdx+latsOffset), '%4.2f' % lat,
-                                                    fill=255, font=font)
+                      fill=255, font=font)
 
     def _get_tick_index_from_grid(self, ticks, grid, rows, cols):
         ''' Get index of pixels from lon/lat grids closest given ticks
@@ -536,7 +536,7 @@ class Figure(object):
         for tick in ticks:
             diff = np.abs(grid[:rows, :cols] - tick).flatten()
             minDiffIdx = np.nonzero(diff == diff.min())[0][0]
-            if minDiffIdx > 0 :
+            if minDiffIdx > 0:
                 newTicksIdx.append(minDiffIdx)
         return newTicksIdx
 
@@ -793,9 +793,6 @@ class Figure(object):
         if self.pilImgLegend is not None:
             self.pilImg.paste(self.pilImgLegend, (0, self.height))
 
-        # remove array from memory
-        #self.array = None
-
     def process(self, **kwargs):
         '''Do all common operations for preparation of a figure for saving
 
@@ -1003,7 +1000,6 @@ class Figure(object):
             if digit in frmts:
                 frmt = frmts[digit]
             else:
-                #frmt = '%4.2e'
                 frmt = '%.' + '%d' % abs(digit) + 'f'
 
         return str(frmt % val)
@@ -1030,4 +1026,3 @@ class Figure(object):
                     setattr(self, key, [idict[key]])
                 else:
                     setattr(self, key, idict[key])
-

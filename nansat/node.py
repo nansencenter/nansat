@@ -153,7 +153,7 @@ class Node(object):
             if str(child.tag) != str(tag):
                 # if child has another tag : delete children
                 child.delNode(tag, options)
-            elif options == None:
+            elif options is None:
                 # if child has this tag and no options : mark for deletion
                 ideleted.append(i)
             else:

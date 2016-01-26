@@ -16,7 +16,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 
 
@@ -69,7 +68,7 @@ class PointBrowser():
             return
 
         # ignore clicked point if "z" key is held down
-        if str(event.key)=='alt+z' or str(event.key)=='z':
+        if str(event.key) == 'alt+z' or str(event.key) == 'z':
             return
 
         if event.key is not None:
@@ -101,7 +100,7 @@ class PointBrowser():
                 '        location, release "space" and continue clicking\n'
                 'To zoom: press "z" and use pan/zoom tools, then release "z"')
         self.text_ax.text(0.01, 0.9, text, fontsize=13,
-                 verticalalignment='top', horizontalalignment='left')
+                          verticalalignment='top', horizontalalignment='left')
 
         # collect data
         plt.show()
