@@ -19,7 +19,7 @@ if you use Nansat in scientific publications.
 ## Easy to install
 The easiest way to install Nansat on a Linux machine is to use [anaconda](http://docs.continuum.io/anaconda/index)
 ```
-# download lates version of miniconda
+# download the latest version of miniconda
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
 # make it executable
@@ -27,6 +27,9 @@ chmod +x miniconda.sh
 
 # install miniconda virtual environment
 ./miniconda.sh -b -f -p $HOME/miniconda
+
+# deactivate existing packages
+export PYTHONPATH=
 
 # activate the environment 
 export PATH=$HOME/miniconda/bin/:$PATH
