@@ -48,7 +48,7 @@ export GEOS_DIR=$HOME/miniconda/
 pip install https://github.com/nansencenter/nersc-metadata/archive/master.tar.gz
 
 # finally install Nansat
-pip install https://github.com/nansencenter/nersc-metadata/archive/develop.tar.gz
+pip install https://github.com/nansencenter/nansat/archive/develop.tar.gz
 
 # run tests
 nosetests nansat
