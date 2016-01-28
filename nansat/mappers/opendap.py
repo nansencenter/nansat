@@ -112,8 +112,12 @@ class Opendap(VRT):
                             }
                     }
 
-        #for attr in self.ds.variables[varName].ncattrs():
-        #    metaItem['dst'][str(attr)] = str(self.ds.variables[varName].getncattr(attr))
+        for attr in self.ds.variables[varName].ncattrs():
+            attrKey = attr.encode('ascii', 'ignore')
+            attrVal = self.ds.variables[varName].getncattr(attr)
+            if type(attrVal) in [str, unicode]:
+                attrVal = attrVal.encode('ascii', 'ignore')
+            metaItem['dst'][attrKey] = str(attrVal)
 
         return metaItem
 
