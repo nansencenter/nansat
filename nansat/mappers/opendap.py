@@ -28,6 +28,16 @@ from nansat.tools import gdal, WrongMapperError, OptionError
 class Opendap(VRT):
     ''' Methods for all OpenDAP mappers '''
 
+    P2S = {
+        'H': 60*60,
+        'D': 86400,
+        'M': 30*24*60*60,
+        'Y': 31536000,
+        }
+
+    ### TODOs:
+    # add band metadata
+
     def get_dataset(self, ds):
         ''' Open Dataset '''
         if ds is None:
@@ -65,6 +75,7 @@ class Opendap(VRT):
         else:
             warnings.warn('Time consuming loading time from OpenDAP...')
             dsTime = self.ds.variables[self.timeVarName][:]
+            warnings.warn('Loading time - OK!')
 
         if os.path.exists(cachefile):
             np.savez(cachefile, **{self.timeVarName: dsTime})
@@ -74,16 +85,20 @@ class Opendap(VRT):
     def get_layer_datetime(self, date, datetimes):
         ''' Get datetime of the matching layer and layer number '''
 
-        datetimeResolution = np.abs(datetimes[0] - datetimes[1])
-        date = np.datetime64(date).astype('M8[s]')
-        matchingDateDiff = np.min(np.abs(datetimes - date))
-        if matchingDateDiff > datetimeResolution:
-            raise OptionError('Date %s is out of range' % date)
-        layerNumber = np.argmin(np.abs(datetimes - date))
-        layerStartDate = datetimes[layerNumber]
-        layerEndDate = layerStartDate + datetimeResolution
+        if len(datetimes) == 1:
+            layerNumber = 0
+        else:
+            # find closest layer
+            datetimeResolution = np.abs(datetimes[0] - datetimes[1])
+            date = np.datetime64(date).astype('M8[s]')
+            matchingDateDiff = np.min(np.abs(datetimes - date))
+            if matchingDateDiff > datetimeResolution:
+                raise OptionError('Date %s is out of range' % date)
+            layerNumber = np.argmin(np.abs(datetimes - date))
 
-        return layerNumber, layerStartDate, layerEndDate
+        layerDate = datetimes[layerNumber]
+
+        return layerNumber, layerDate
 
     def get_metaitem(self, url, varName, layerNo):
         ''' Set metadata for creating band VRT '''
@@ -107,6 +122,9 @@ class Opendap(VRT):
         if not fileName.startswith(self.baseURL):
             raise WrongMapperError
 
+        if date is None:
+            raise OptionError('Date is not specified! Please add date="YYYY-MM-DD"')
+
         self.fileName = fileName
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
@@ -115,9 +133,7 @@ class Opendap(VRT):
 
         dsDatetimes = self.convert_dstime_datetimes(dsTime)
 
-        (dsLayerNo,
-         dsLayerStartDate,
-         dsLayerEndDate) = self.get_layer_datetime(date, dsDatetimes)
+        dsLayerNo, dsLayerDate = self.get_layer_datetime(date, dsDatetimes)
 
         if bands is None:
             dsVarNames = self.get_geospatial_variable_names()
@@ -125,10 +141,12 @@ class Opendap(VRT):
             dsVarNames = bands
 
         # create VRT with correct lon/lat (geotransform)
+        srcRasterXSize, srcRasterYSize = self.get_shape()
+        srcGeoTransform = self.get_geotransform()
         VRT.__init__(self, srcProjection=self.srcDSProjection,
-                     srcRasterXSize=self.srcDSRasterXSize,
-                     srcRasterYSize=self.srcDSRasterYSize,
-                     srcGeoTransform=self.srcDSGeoTransform)
+                     srcRasterXSize=srcRasterXSize,
+                     srcRasterYSize=srcRasterYSize,
+                     srcGeoTransform=srcGeoTransform)
 
         metaDict = [self.get_metaitem(fileName, dsVarName, dsLayerNo)
                       for dsVarName in dsVarNames]
@@ -136,5 +154,31 @@ class Opendap(VRT):
         self._create_bands(metaDict)
 
         # set time
-        self.dataset.SetMetadataItem('time_coverage_start', str(dsLayerStartDate))
-        self.dataset.SetMetadataItem('time_coverage_end', str(dsLayerEndDate))
+        timeResSecs = self.get_time_coverage_resolution()
+        self.dataset.SetMetadataItem('time_coverage_start', str(dsLayerDate))
+        self.dataset.SetMetadataItem('time_coverage_end', str(dsLayerDate + timeResSecs))
+
+    def get_time_coverage_resolution(self):
+        ''' Try to fecth time_coverage_resolution and convert to seconds '''
+        timeResSecs = 0
+        if 'time_coverage_resolution' in self.ds.ncattrs():
+            time_res = self.ds.time_coverage_resolution
+            try:
+                timeResSecs = int(time_res[1]) * self.P2S[time_res[2].upper()]
+            except:
+                warnings.warn('Cannot get time_coverage_resolution')
+
+        return timeResSecs
+
+    def get_shape(self):
+        ''' Get srcRasterXSize and srcRasterYSize from OpenDAP '''
+        return (self.ds.variables[self.xName].size,
+                self.ds.variables[self.yName].size)
+
+
+    def get_geotransform(self):
+        ''' Get first two values of X,Y variables and create geoTranform '''
+
+        xx = self.ds.variables[self.xName][0:2]
+        yy = self.ds.variables[self.yName][0:2]
+        return (xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0])
