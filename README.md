@@ -80,3 +80,6 @@ n.write_map('stere.footpring.png')
 n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
 ```
 Fore more information see [Tutorial](https://github.com/nansencenter/nansat/wiki/Tutorial) or notebooks for [Nansat lectures](https://github.com/nansencenter/nansat-lectures/tree/master/notebooks)
+
+### Acknowledgements
+Development is supported by the Research Council of Norway as a part of [NORMAP](https://normap.nersc.no/) project (grant no. 195397/V30). 
