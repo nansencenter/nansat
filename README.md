@@ -48,7 +48,7 @@ export GDAL_DATA=$HOME/miniconda/share/gdal/
 export GEOS_DIR=$HOME/miniconda/
 
 # install nersc-metadata which is not in pip yet
-pip install https://github.com/nansencenter/nersc-metadata/archive/master.tar.gz
+pip install https://github.com/nansencenter/nersc-metadata/archive/v0.2.tar.gz
 
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
