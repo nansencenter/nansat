@@ -61,14 +61,13 @@ AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Al
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
-MINOR               = 6
-MICRO               = 7
+MINOR               = 7
+MICRO               = 0
 ISRELEASED          = True
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.dev%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
-                        "requests",
-                        "nerscmetadata"
+                        "pythesint"
                     ]
 
 #----------------------------------------------------------------------------#
@@ -233,14 +232,11 @@ def run_setup(skip_compile):
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
         dependency_links = [
-            "https://github.com/nansencenter/nersc-metadata/tarball/master#egg=nerscmetadata"
+            "https://github.com/nansencenter/py-thesaurus-interface/archive/v0.3.tar.gz#egg=pythesint"
         ],
         test_suite="nansat.tests",
         **kw
     )
-    ## write json file with gcmd keywords
-    #from nerscmetadata.gcmd_keywords import write_json
-    #write_json()
 
 try:
     run_setup(skip_compile)

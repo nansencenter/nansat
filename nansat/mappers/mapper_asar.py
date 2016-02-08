@@ -12,7 +12,7 @@ from osgeo import gdal
 from dateutil.parser import parse
 
 import json
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.vrt import VRT
 from envisat import Envisat

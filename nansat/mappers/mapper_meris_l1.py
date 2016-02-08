@@ -12,7 +12,7 @@ from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 from envisat import Envisat
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''

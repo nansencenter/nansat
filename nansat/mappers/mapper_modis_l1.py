@@ -8,7 +8,7 @@ from dateutil.parser import parse
 import warnings
 import json
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT

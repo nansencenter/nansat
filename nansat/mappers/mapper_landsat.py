@@ -11,7 +11,7 @@ import warnings
 import datetime
 import json
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.tools import WrongMapperError, parse_time
 from nansat.tools import gdal, np

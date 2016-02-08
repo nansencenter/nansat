@@ -13,7 +13,7 @@ import numpy
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 
 class Mapper(VRT):
