@@ -19,7 +19,7 @@ import json
 from types import ModuleType, FloatType
 import numpy as np
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat import Nansat, Domain
 from nansat.nansat import _import_mappers

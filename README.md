@@ -31,7 +31,7 @@ chmod +x miniconda.sh
 # deactivate existing packages
 export PYTHONPATH=
 
-# activate the environment 
+# activate the environment
 export PATH=$HOME/miniconda/bin/:$PATH
 
 # install some requirements from common repositories
@@ -48,7 +48,7 @@ export GDAL_DATA=$HOME/miniconda/share/gdal/
 export GEOS_DIR=$HOME/miniconda/
 
 # install nersc-metadata which is not in pip yet
-pip install https://github.com/nansencenter/nersc-metadata/archive/v0.2.tar.gz
+pip install https://github.com/nansencenter/py-thesaurus-interface/archive/v0.3.tar.gz
 
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
@@ -82,4 +82,4 @@ n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
 Fore more information see [Tutorial](https://github.com/nansencenter/nansat/wiki/Tutorial) or notebooks for [Nansat lectures](https://github.com/nansencenter/nansat-lectures/tree/master/notebooks)
 
 ### Acknowledgements
-Development is supported by the Research Council of Norway as a part of [NORMAP](https://normap.nersc.no/) project (grant no. 195397/V30). 
+Development is supported by the Research Council of Norway as a part of [NORMAP](https://normap.nersc.no/) project (grant no. 195397/V30).

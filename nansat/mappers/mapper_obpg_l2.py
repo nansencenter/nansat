@@ -9,7 +9,7 @@ from math import ceil
 from dateutil.parser import parse
 
 import json
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
