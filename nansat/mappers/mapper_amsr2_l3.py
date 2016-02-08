@@ -10,7 +10,7 @@ import os.path
 import glob
 import json
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 import numpy as np
 

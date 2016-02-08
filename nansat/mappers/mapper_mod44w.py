@@ -7,7 +7,7 @@
 import os.path
 import json
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError

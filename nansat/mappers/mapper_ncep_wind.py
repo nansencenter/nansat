@@ -9,7 +9,7 @@
 # Made for GRIB files downloaded from http://nomads.ncep.noaa.gov/data/gfs4/
 import datetime
 import json
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError

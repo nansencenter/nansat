@@ -14,7 +14,7 @@ import scipy.ndimage
 from math import asin
 
 import json
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.domain import Domain

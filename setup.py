@@ -237,9 +237,6 @@ def run_setup(skip_compile):
         test_suite="nansat.tests",
         **kw
     )
-    ## write json file with gcmd keywords
-    #from nerscmetadata.gcmd_keywords import write_json
-    #write_json()
 
 try:
     run_setup(skip_compile)

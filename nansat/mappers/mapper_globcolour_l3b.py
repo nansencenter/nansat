@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from netCDF4 import Dataset
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
