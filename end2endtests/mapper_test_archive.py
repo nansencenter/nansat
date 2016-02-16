@@ -56,5 +56,7 @@ class DataForTestingMappers(object):
             return False
         if os.stat(testFile).st_size == 0:
             return False
+        if os.path.isdir(testFile):
+            return False
 
         return True

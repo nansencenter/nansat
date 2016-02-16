@@ -6,6 +6,9 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 import warnings
+import json
+
+from pythesint import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
@@ -333,27 +336,27 @@ class Mapper(HDF4Mapper):
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
         productTime = gdalMetadata["RANGEBEGINNINGTIME"]
-        self._set_time(parse(productDate+' '+productTime))
         self.remove_geolocationArray()
 
         # set required metadata
-        self.dataset.SetMetadataItem('start_time',
+        self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata["RANGEBEGINNINGDATE"]+
                                          ' '+gdalMetadata["RANGEBEGINNINGTIME"]
                                          ).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_time',
+        self.dataset.SetMetadataItem('time_coverage_end',
                                      (parse(gdalMetadata["RANGEENDINGDATE"]+
                                          ' '+gdalMetadata["RANGEENDINGTIME"]
                                          ).
                                       isoformat()))
 
-        sensorName = self.find_metadata(gdalMetadata,
-                                        'ASSOCIATEDSENSORSHORTNAME',
+        instrumentName = self.find_metadata(gdalMetadata,
+                                        'ASSOCIATEDINSTRUMENTSHORTNAME',
                                         'MODIS')
-        satName = self.find_metadata(gdalMetadata,
-                                     'ASSOCIATEDSENSORSHORTNAME',
-                                     'Aqua')
-
-        self.dataset.SetMetadataItem('sensor', sensorName)
-        self.dataset.SetMetadataItem('satellite', satName)
+        platformName = self.find_metadata(gdalMetadata,
+                                     'ASSOCIATEDPLATFORMSHORTNAME',
+                                     'AQUA')
+        mm = gcmd_keywords.get_instrument(instrumentName)
+        ee = gcmd_keywords.get_platform(platformName)
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

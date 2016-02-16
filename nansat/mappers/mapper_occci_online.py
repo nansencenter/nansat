@@ -109,7 +109,7 @@ class Mapper(VRT, object):
         self._create_bands(metaDict)
 
         # set time
-        self._set_time(self.date)
+        self.dataset.SetMetadataItem('time_coverage_start', self.date.isoformat())
 
     def get_sourcefilename(self, cache, dsURL, timeStep, prodName, lons, lats):
         ''' Get SourceFilename either from memory array or from cached file '''
@@ -132,11 +132,14 @@ class Mapper(VRT, object):
         # get product array from remote dataset
         ds = Dataset(dsURL)
         prodArray = ds.variables[prodName][self.layer,
-                                           min(self.rows):max(self.rows),
-                                           min(self.cols):max(self.cols)]
-        prodArray.data[prodArray.mask] = np.nan
+                                           min(self.rows):max(self.rows)+1,
+                                           min(self.cols):max(self.cols)+1]
+        # if it is a masked array
+        if hasattr(prodArray, 'mask'):
+            prodArray.data[prodArray.mask] = np.nan
+            prodArray = prodArray.data
         # create VRT and add to self.bandVRTs
-        vrt = VRT(array=prodArray.data, srcProjection=NSR().wkt,
+        vrt = VRT(array=prodArray, srcProjection=NSR().wkt,
                     srcRasterXSize=self.dataset.RasterXSize,
                     srcRasterYSize=self.dataset.RasterYSize,
                     srcGeoTransform=self.dataset.GetGeoTransform())

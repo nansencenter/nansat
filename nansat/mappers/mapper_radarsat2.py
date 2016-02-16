@@ -13,6 +13,9 @@ import numpy as np
 import scipy.ndimage
 from math import asin
 
+import json
+from pythesint import gcmd_keywords
+
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
@@ -233,19 +236,23 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
                                      str(passDirection).upper())
 
-        # Set time
-        validTime = gdalDataset.GetMetadata()['ACQUISITION_START_TIME']
-        self.logger.info('Valid time: %s', str(validTime))
-        self._set_time(parse(validTime))
-
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_time',
+        # set valid time
+        self.dataset.SetMetadataItem('time_coverage_start',
                                      (parse(gdalMetadata['FIRST_LINE_TIME']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('stop_time',
+        self.dataset.SetMetadataItem('time_coverage_end',
                                      (parse(gdalMetadata['LAST_LINE_TIME']).
                                       isoformat()))
-        self.dataset.SetMetadataItem('sensor', 'SAR')
-        self.dataset.SetMetadataItem('satellite', 'Radarsat2')
+
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = gcmd_keywords.get_instrument('sar')
+        ee = gcmd_keywords.get_platform('radarsat-2')
+
+        # TODO: Validate that the found instrument and platform are indeed what we
+        # want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
         self._add_swath_mask_band()

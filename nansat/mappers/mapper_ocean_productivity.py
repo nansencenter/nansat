@@ -120,5 +120,6 @@ class Mapper(VRT):
         # Add valid time
         startYear = int(iFile[4:8])
         startDay = int(iFile[8:11])
-        self._set_time(datetime.datetime(startYear, 1, 1) +
-                       datetime.timedelta(startDay))
+        self.dataset.SetMetadataItem('time_coverage_start',
+            (datetime.datetime(startYear, 1, 1) +
+                       datetime.timedelta(startDay)).isoformat())

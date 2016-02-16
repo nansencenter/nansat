@@ -5,6 +5,9 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os.path
+import json
+
+from pythesint import gcmd_keywords
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
@@ -28,3 +31,8 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
+
+        mm = gcmd_keywords.get_instrument('MODIS')
+        ee = gcmd_keywords.get_platform('TERRA')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

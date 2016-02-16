@@ -121,14 +121,13 @@ class Mapper(VRT):
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
-        self._set_time(parse(gdalMetadata['FIRSTPACKETTIME']))
+        # Adding valid time to dataset
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     parse(gdalMetadata['FIRSTPACKETTIME']).isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     parse(gdalMetadata['LASTPACKETTIME']).isoformat())
 
-        # set required metadata
-        self.dataset.SetMetadataItem('start_date',
-                                     (parse(gdalMetadata['FIRSTPACKETTIME']).
-                                      isoformat()))
-        self.dataset.SetMetadataItem('stop_date',
-                                     (parse(gdalMetadata['LASTPACKETTIME']).
-                                      isoformat()))
-        self.dataset.SetMetadataItem('sensor', 'VNIR')
-        self.dataset.SetMetadataItem('satellite', 'Aster')
+        mm = gcmd_keywords.get_instrument('ASTER')
+        ee = gcmd_keywords.get_platform('TERRA')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))

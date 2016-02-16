@@ -8,8 +8,12 @@ import os
 import glob
 import tarfile
 import warnings
+import datetime
+import json
 
-from nansat.tools import WrongMapperError
+from pythesint import gcmd_keywords
+
+from nansat.tools import WrongMapperError, parse_time
 from nansat.tools import gdal, np
 from nansat.vrt import VRT
 
@@ -19,6 +23,7 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata,
                        resolution='low', **kwargs):
         ''' Create LANDSAT VRT from multiple tif files or single tar.gz file'''
+        mtlFileName = ''
         bandFileNames = []
         bandSizes = []
         bandDatasets = []
@@ -47,6 +52,11 @@ class Mapper(VRT):
                     bandFileNames.append(sourceFilename)
                     bandSizes.append(gdalDatasetTmp.RasterXSize)
                     bandDatasets.append(gdalDatasetTmp)
+                elif (tarName.endswith('MTL.txt') or
+                      tarName.endswith('MTL.TXT')):
+                    # get mtl file
+                    mtlFileName = tarName
+
         elif ((fname.startswith('L') or fname.startswith('M')) and
               (fname.endswith('.tif') or
                fname.endswith('.TIF') or
@@ -65,6 +75,10 @@ class Mapper(VRT):
                 bandSizes.append(gdalDatasetTmp.RasterXSize)
                 bandDatasets.append(gdalDatasetTmp)
 
+            # get mtl file
+            mtlFiles = glob.glob(coreName+'*[mM][tT][lL].[tT][xX][tT]')
+            if len(mtlFiles) > 0:
+                mtlFileName = mtlFiles[0]
         else:
             raise WrongMapperError
 
@@ -104,20 +118,43 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        #import ipdb
-        #ipdb.set_trace()
-        #t = tarfile.open(fileName)
-        #for m in t.getmembers():
-        #    if m.name[-4:] == '.TXT' or m.name[-4:] == '.txt':
-        #        f = t.extractfile(m)
-        #        for line in f:
+        if len(mtlFileName) > 0:
+            mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0],
+                                        mtlFileName)
+            mtlFileLines = [line.strip() for line in
+                            self.read_xml(mtlFileName).split('\n')]
+            dateString = [line.split('=')[1].strip()
+                          for line in mtlFileLines
+                            if ('DATE_ACQUIRED' in line or
+                              'ACQUISITION_DATE' in line)][0]
+            timeStr = [line.split('=')[1].strip()
+                        for line in mtlFileLines
+                            if ('SCENE_CENTER_TIME' in line or
+                                'SCENE_CENTER_SCAN_TIME' in line)][0]
+            time_start = parse_time(dateString + 'T' + timeStr).isoformat()
+            time_end = (parse_time(dateString + 'T' + timeStr) +
+                        datetime.timedelta(microseconds=60000000)).isoformat()
 
-        
-        #self.dataset.SetMetadataItem('start_time',
-        #                             (parse(gdalMetadata['MPH_SENSING_START']).
-        #                              isoformat()))
-        #self.dataset.SetMetadataItem('stop_time',
-        #                             (parse(gdalMetadata['MPH_SENSING_STOP']).
-        #                              isoformat()))
-        #self.dataset.SetMetadataItem('sensor', 'ASAR')
-        #self.dataset.SetMetadataItem('satellite', 'Envisat')
+        self.dataset.SetMetadataItem('time_coverage_start', time_start)
+        self.dataset.SetMetadataItem('time_coverage_end', time_end)
+
+        # set platform
+        platform = 'LANDSAT'
+        if fname[2].isdigit():
+            platform += '-'+fname[2]
+        ee = gcmd_keywords.get_platform(platform)
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        # set instrument
+        instrument = {
+        'LANDSAT' : 'MSS',
+        'LANDSAT-1' : 'MSS',
+        'LANDSAT-2' : 'MSS',
+        'LANDSAT-3' : 'MSS',
+        'LANDSAT-4' : 'TM',
+        'LANDSAT-5' : 'TM',
+        'LANDSAT-7' : 'ETM+',
+        'LANDSAT-8' : 'OLI'}[platform]
+        ee = gcmd_keywords.get_instrument(instrument)
+        self.dataset.SetMetadataItem('instrument', json.dumps(ee))
+

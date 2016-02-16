@@ -21,7 +21,6 @@ import glob
 import sys
 import tempfile
 import datetime
-import dateutil.parser
 import pkgutil
 import warnings
 import collections
@@ -30,9 +29,10 @@ if hasattr(collections, 'OrderedDict'):
 else:
     from ordereddict import OrderedDict
 
-import scipy
 from scipy.io.netcdf import netcdf_file
+from scipy.stats import nanmedian
 import numpy as np
+from numpy.lib.recfunctions import append_fields
 import matplotlib
 from matplotlib import cm
 import matplotlib.pyplot as plt
@@ -41,21 +41,15 @@ from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
-from nansat.nansatshape import Nansatshape
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
+from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
 # container for all mappers
 nansatMappers = None
 
-def test_openable(fname):
-    try:
-        f = open(fname,'r')
-    except IOError:
-        raise
-    f.close()
 
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
@@ -222,8 +216,8 @@ class Nansat(Domain):
             bandData[np.isinf(bandData)] = np.nan
 
         # erase out-of-swath pixels with np.Nan (if not integer)
-        if  (self.has_band('swathmask') and
-             bandData.dtype.char in np.typecodes['AllFloat']):
+        if (self.has_band('swathmask') and bandData.dtype.char in
+                                            np.typecodes['AllFloat']):
             swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
             bandData[swathmask == 0] = np.nan
 
@@ -350,9 +344,9 @@ class Nansat(Domain):
         '''
         bandExists = False
         for b in self.bands():
-            if self.bands()[b]['name'] == band or \
-                    ( self.bands()[b].has_key('standard_name') and
-                            self.bands()[b]['standard_name'] == band):
+            if (self.bands()[b]['name'] == band or
+                 ('standard_name' in self.bands()[b] and
+                  self.bands()[b]['standard_name'] == band)):
                 bandExists = True
 
         return bandExists
@@ -404,6 +398,9 @@ class Nansat(Domain):
         CreateCopy fails in case the band name has special characters,
         e.g. the slash in 'HH/VV'.
 
+        Metadata strings with special characters are escaped with XML/HTML
+        encoding.
+
         Examples
         --------
         n.export(netcdfile)
@@ -425,10 +422,9 @@ class Nansat(Domain):
             for selfBand in selfBands:
                 # if band number or band name is not listed: mark for removal
                 if (selfBand not in bands and
-                    selfBands[selfBand]['name'] not in bands):
+                      selfBands[selfBand]['name'] not in bands):
                     rmBands.append(selfBand)
             # delete bands from VRT
-            #import ipdb; ipdb.set_trace()
             exportVRT.delete_bands(rmBands)
 
         # Find complex data band
@@ -506,7 +502,14 @@ class Nansat(Domain):
                 globMetadata.pop(rmMeta)
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
-        exportVRT.dataset.SetMetadata(globMetadata)
+
+        # Apply escaping to metadata strings to preserve special characters (in
+        # XML/HTML format)
+        globMetadata_escaped = {}
+        for key, val in globMetadata.iteritems():
+            # Keys not escaped - this may be changed if needed...
+            globMetadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
+        exportVRT.dataset.SetMetadata(globMetadata_escaped)
 
         # if output filename is same as input one...
         if self.fileName == fileName:
@@ -537,7 +540,7 @@ class Nansat(Domain):
         # if GCPs should be added
         gcps = exportVRT.dataset.GetGCPs()
         srs = exportVRT.get_projection()
-        addGCPs = addGCPs and driver=='netCDF' and len(gcps) > 0
+        addGCPs = addGCPs and driver == 'netCDF' and len(gcps) > 0
         if addGCPs:
             #  remove GeoTransform
             exportVRT._remove_geotransform()
@@ -546,7 +549,7 @@ class Nansat(Domain):
         else:
             # add projection metadata
             exportVRT.dataset.SetMetadataItem(
-                'NANSAT_Projection', srs.replace(',','|').replace('"', '&'))
+                'NANSAT_Projection', srs.replace(',', '|').replace('"', '&'))
 
             # add GeoTransform metadata
             geoTransformStr = str(
@@ -723,8 +726,7 @@ class Nansat(Domain):
                         'easternmost_longitude': np.float(maxLon),
                         'history': ' '}
 
-        #join or replace default by custom global metadata
-
+        # join or replace default by custom global metadata
         if metadata is not None:
             for metaKey in metadata:
                 globMetadata[metaKey] = metadata[metaKey]
@@ -770,16 +772,13 @@ class Nansat(Domain):
 
         # get time from Nansat object or from input datetime
         if time is None:
-            time = filter(None, self.get_time())
-        elif type(time) == datetime.datetime:
-            time = [time]
+            time = self.time_coverage_start
 
         # create value of time variable
-        if len(time) > 0:
-            td = time[0] - datetime.datetime(1900, 1, 1)
-            days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
-            # add date
-            ncOVar[:] = days
+        td = time - datetime.datetime(1900, 1, 1)
+        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
+        # add date
+        ncOVar[:] = days
 
         # recreate file
         for ncIVarName in ncI.variables:
@@ -810,7 +809,7 @@ class Nansat(Domain):
             # copy rounded data from x/y
             if ncIVarName in ['x', 'y']:
                 ncOVar[:] = np.floor(data).astype('>f4')
-                #add axis=X or axis=Y
+                # add axis=X or axis=Y
                 ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName]
                 for attrib in ncIVar._attributes:
                     if len(ncIVar._attributes[attrib]) > 0:
@@ -838,8 +837,10 @@ class Nansat(Domain):
                 # replace non-value by '_FillValue'
                 if (ncIVar.name in dstBands):
                     if '_FillValue' in dstBands[ncIVar.name].keys():
-                        data[np.isnan(data)] = dstBands[ncIVar.name]['_FillValue']
-                        ncOVar._attributes['_FillValue'] = dstBands[ncIVar.name]['_FillValue']
+                        data[np.isnan(data)] = dstBands[
+                                                ncIVar.name]['_FillValue']
+                        ncOVar._attributes['_FillValue'] = dstBands[
+                                                ncIVar.name]['_FillValue']
 
                 ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
                 # copy (some) attributes
@@ -941,7 +942,7 @@ class Nansat(Domain):
         newRasterXSize = int(rasterXSize * factor)
 
         self.logger.info('New size/factor: (%f, %f)/%f' %
-                        (newRasterXSize, newRasterYSize, factor))
+                         (newRasterXSize, newRasterYSize, factor))
 
         if eResampleAlg <= 0:
             self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize,
@@ -1155,14 +1156,14 @@ class Nansat(Domain):
         # after reproject
         if addmask:
             self.vrt = self.vrt.get_super_vrt()
-            bandName = self.vrt._create_band(
+            self.vrt._create_band(
                 src=[{
                     'SourceFilename': self.vrt.vrt.fileName,
                     'SourceBand':  1,
                     'DataType': gdal.GDT_Byte}],
                 dst={
-                    'dataType' : gdal.GDT_Byte,
-                    'wkv' : 'swath_binary_mask',
+                    'dataType': gdal.GDT_Byte,
+                    'wkv': 'swath_binary_mask',
                     'PixelFunctionType': 'OnesPixelFunc',
                 })
             self.vrt.dataset.FlushCache()
@@ -1255,17 +1256,16 @@ class Nansat(Domain):
         self.logger.debug('MODPATH: %s' % mod44path)
 
         if not mod44DataExist:
-            raise IOError('250 meters resolution watermask from MODIS ' \
-                    '44W Product does not exist - see Nansat ' \
-                    'documentation to get it (the path is %s)' %mod44path)
+            raise IOError('250 meters resolution watermask from MODIS '
+                    '44W Product does not exist - see Nansat '
+                    'documentation to get it (the path is % s)' % mod44path)
 
         # MOD44W data does exist: open the VRT file in Nansat
         watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W',
-                            logLevel=self.logger.level)
+                           logLevel=self.logger.level)
         # reproject on self or given Domain
         if dstDomain is None:
             dstDomain = self
-        #lon, lat = dstDomain.get_corners()
         lon, lat = dstDomain.get_border()
         watermask.crop(lonlim=[lon.min(), lon.max()],
                        latlim=[lat.min(), lat.max()])
@@ -1274,7 +1274,7 @@ class Nansat(Domain):
         return watermask
 
     def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
-                     **kwargs):
+                     array_modfunc=None, **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -1313,6 +1313,9 @@ class Nansat(Domain):
         addDate : boolean
             False (default) : no date will be aded to the caption
             True : the first time of the object will be added to the caption
+        array_modfunc : None
+            None (default) : figure created using array in provided band
+            function : figure created using array modified by provided function
         **kwargs : parameters for Figure().
 
         Modifies
@@ -1361,6 +1364,8 @@ class Nansat(Domain):
         for band in bands:
             # get array from band and reshape to (1,height,width)
             iArray = self[band]
+            if array_modfunc:
+                iArray = array_modfunc(iArray)
             iArray = iArray.reshape(1, iArray.shape[0], iArray.shape[1])
             # create new 3D array or append band
             if array is None:
@@ -1423,7 +1428,7 @@ class Nansat(Domain):
 
         # add DATE to caption
         if addDate:
-            caption += self.get_time()[0].strftime(' %Y-%m-%d')
+            caption += self.time_coverage_start.strftime(' %Y-%m-%d')
 
         self.logger.info('caption: %s ' % caption)
 
@@ -1492,7 +1497,6 @@ class Nansat(Domain):
             colormap = band.GetMetadataItem('colormap')
         except:
             colormap = 'jet'
-        #try:
         cmap = cm.get_cmap(colormap, 256)
         cmap = cmap(np.arange(256)) * 255
         colorTable = gdal.ColorTable()
@@ -1500,8 +1504,6 @@ class Nansat(Domain):
             colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
                           int(cmap[i, 2]), int(cmap[i, 3]))
             colorTable.SetColorEntry(i, colorEntry)
-        #except:
-        #    print 'Could not add colormap; Matplotlib may not be available.'
         # Write Tiff image, with data scaled to values between 0 and 255
         outDataset = gdal.GetDriverByName('Gtiff').Create(fileName,
                                                           band.XSize,
@@ -1521,56 +1523,13 @@ class Nansat(Domain):
         outDataset = None
         self.vrt.copyproj(fileName)
 
-    def get_time(self, bandID=None):
-        ''' Get time for dataset and/or its bands
+    @property
+    def time_coverage_start(self):
+        return parse_time(self.get_metadata('time_coverage_start'))
 
-        Parameters
-        ----------
-        bandID : int or str (default = None)
-                band number or name
-
-        Returns
-        --------
-        time : list with datetime objects for each band.
-            If time is the same for all bands, the list contains 1 item
-
-        '''
-        time = []
-        for i in range(self.vrt.dataset.RasterCount):
-            band = self.get_GDALRasterBand(i + 1)
-            try:
-                time.append(dateutil.parser.parse(
-                            band.GetMetadataItem('time')))
-            except:
-                self.logger.debug('Band ' + str(i + 1) + ' has no time')
-                time.append(None)
-
-        if bandID is not None:
-            bandNumber = self._get_band_number(bandID)
-            return time[bandNumber - 1]
-        else:
-            return time
-
-    def start_time(self):
-        return dateutil.parser.parse(self.get_metadata('start_time'))
-
-    def stop_time(self):
-        return dateutil.parser.parse(self.get_metadata('stop_time'))
-
-    def source(self):
-        se = self.sensor()
-        sa = self.satellite()
-        if not se or not sa:
-            ss = self.get_metadata('source')
-        else:
-            ss = se+'/'+sa
-        return ss
-
-    def sensor(self):
-        return self.get_metadata('sensor')
-
-    def satellite(self):
-        return self.get_metadata('satellite')
+    @property
+    def time_coverage_end(self):
+        return parse_time(self.get_metadata('time_coverage_end'))
 
     def get_metadata(self, key=None, bandID=None):
         ''' Get metadata from self.vrt.dataset
@@ -1668,10 +1627,11 @@ class Nansat(Domain):
 
         '''
         if os.path.isfile(self.fileName):
-            # Make sure file exists and can be opened for reading before proceeding
+            # Make sure file exists and can be opened for reading
+            # before proceeding
             test_openable(self.fileName)
         else:
-            ff = glob.glob(os.path.join(self.fileName,'*.*'))
+            ff = glob.glob(os.path.join(self.fileName, '*.*'))
             for f in ff:
                 test_openable(f)
         # lazy import of nansat mappers
@@ -1710,7 +1670,7 @@ class Nansat(Domain):
             # check if mapper is importbale or raise an ImportError error
             if isinstance(nansatMappers[mapperName], tuple):
                 errType, err, traceback = nansatMappers[mapperName]
-                #self.logger.error(err, exc_info=(errType, err, traceback))
+                # self.logger.error(err, exc_info=(errType, err, traceback))
                 raise errType, err, traceback
 
             # create VRT using the selected mapper
@@ -1764,8 +1724,8 @@ class Nansat(Domain):
             # check if given data file exists
             if not os.path.isfile(self.fileName):
                 raise IOError('%s: File does not exist' % (self.fileName))
-            raise NansatReadError('%s: File cannot be read with NANSAT - ' \
-                    'consider writing a mapper' %self.fileName)
+            raise NansatReadError('%s: File cannot be read with NANSAT - '
+                    'consider writing a mapper' % self.fileName)
 
         return tmpVRT
 
@@ -1824,283 +1784,143 @@ class Nansat(Domain):
 
         return bandNumber
 
-    def get_transect(self, points=None, bandList=[1], latlon=True,
-                           returnOGR=False, layerNum=0,
-                           smoothRadius=0, smoothAlg=0, transect=True,
-                           onlypixline=False, **kwargs):
-
-        '''Get transect from two poins and retun the values by numpy array
+    def get_transect(self, points, bands,
+                        lonlat=True,
+                        smoothRadius=0,
+                        smooth_function=nanmedian,
+                        data=None):
+        '''Get values from transect from given vector of poins
 
         Parameters
         ----------
-        points : list with one or more points or shape file name
-            i.e. [
-                   # get all transect values
-                   [(lon_T1, lat_T1), (lon_T2, lat_T2), (lon_T3, lat_T3), ...]
-                   # get point values
-                   (lon_P1, lat_P1), (lon_P2, lat_P2), ...
-                 ]
-                 or
-                 [
-                   # get all transect values
-                   [(col_T1, row_T1), (col_T2, row_T2), (col_T3, row_T3), ...],
-                   # get point values
-                   (col_P1, row_P1), (col_P2, row_P2), ...
-                 ]
-        bandList : list of int or string
+        points : 2xN list or array, N (number of points) >= 1
+            coordinates [[x1, x2, y2], [y1, y2, y3]]
+        bands : list of int or string
             elements of the list are band number or band Name
-        latlon : bool
+        lonlat : bool
             If the points in lat/lon, then True.
             If the points in pixel/line, then False.
-        returnOGR: bool
-            If True, then return numpy array
-            If False, return OGR object
-        layerNum: int
-            If shapefile is given as points, it is the number of the layer
         smoothRadius: int
             If smootRadius is greater than 0, smooth every transect
             pixel as the median or mean value in a circule with radius
             equal to the given number.
-        smoothAlg: 0 or 1 for median or mean
-        transect : bool
-            used if a shape file name is given as the input.
-            If True, return the transect. If False, return the points.
-        vmin, vmax : int (optional)
-            minimum and maximum pixel values of an image shown
-            in case points is None.
+        smooth_function: func
+            function for averaging values collected within smooth radius
+        data : ndarray
+            alternative array with data to take values from
 
         Returns
         --------
-        if returnOGR:
-            transect : OGR object with points coordinates and values
-        else:
-            transectDict: dictionary
-                key is band name.
-                Value is a dictionary of the transect values of each shape.
-            vectorsDict: dictionary
-                keys are shape ID. values are dictionaries
-                with longitude and latitude lists of each shape.
-            pixlinCoordDic: dictionary
-                keys are shape ID. values are numpy array
-                with pixels and lines coordinates
-
-        NB
-        ----
-        If points are given from GUI,
-        it is possible to select multiple shapes by pressing any key
+        transect : numpy record array
 
         '''
-        if matplotlib.is_interactive() and points is None:
+        # check if points is 2D array with shape 2xN (N>=1)
+        if (len(np.shape(points)) != 2 or
+              np.shape(points)[0] != 2 or
+              np.shape(points)[1] < 1):
+            # points are not 2xN array
+            raise OptionError('Input points must be 2xN array with N>0')
+
+        # get names of bands
+        bandNames = []
+        for band in bands:
+            try:
+                bandN = self._get_band_number(band)
+            except OptionError:
+                self.logger.error('Wrong band name %s' % band)
+            else:
+                bandNames.append(self.bands()[bandN]['name'])
+
+        if data is not None:
+            bandNames.append('input')
+
+        # if points in degree, convert them into pix/lin
+        if lonlat:
+            pix, lin = self.transform_points(points[0], points[1], DstToSrc=1)
+        else:
+            pix, lin = points[0], points[1]
+
+        # full vectors of pixel coordinates based on coordinates of vertices
+        pixVector, linVector = [pix[0]], [lin[0]]
+        for pn in range(len(pix[1:])):
+            px0, px1 = pix[pn], pix[pn+1]
+            py0, py1 = lin[pn], lin[pn+1]
+            length = np.round(np.hypot(px1-px0, py0-py1))
+            pixVector += list(np.linspace(px0, px1, length+1)[1:])
+            linVector += list(np.linspace(py0, py1, length+1)[1:])
+
+        # remove out of region points
+        pixVector = np.floor(pixVector)
+        linVector = np.floor(linVector)
+        gpi = ((pixVector >= (0 + smoothRadius)) *
+               (linVector >= (0 + smoothRadius)) *
+               (pixVector < (self.shape()[1] - smoothRadius)) *
+               (linVector < (self.shape()[0] - smoothRadius)))
+        pixVector = pixVector[gpi]
+        linVector = linVector[gpi]
+
+        # create output transect
+        t = np.recarray((len(pixVector)), dtype=[('pixel', int),
+                                                ('line', int),
+                                                ('lon', float),
+                                                ('lat', float), ])
+
+        # add pixel, line, lon, lat values to output
+        t['pixel'] = pixVector
+        t['line'] = linVector
+        t['lon'], t['lat'] = self.transform_points(t['pixel'], t['line'],
+                                                   DstToSrc=0)
+
+        # mask for extraction within circular area
+        xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
+        distance = ((xgrid - smoothRadius) ** 2 +
+                    (ygrid - smoothRadius) ** 2) ** 0.5
+        mask = distance <= smoothRadius
+
+        # get values from bands or input data
+        if len(bandNames) > 0:
+            for bandName in bandNames:
+                if bandName == 'input':
+                    bandArray = data
+                else:
+                    bandArray = self[bandName]
+                # average values from pixel inside a circle
+                bandValues = []
+                for r, c in zip(t['line'], t['pixel']):
+                    subarray = bandArray[r-smoothRadius:r+smoothRadius+1,
+                                         c-smoothRadius:c+smoothRadius+1]
+                    bandValues.append(smooth_function(subarray[mask]))
+                t = append_fields(t, bandName, bandValues).data
+
+        return t
+
+    def digitize_points(self, band=1, **kwargs):
+
+        '''Get coordinates of interactively digitized points
+
+        Parameters
+        ----------
+        band : int or str
+            ID of Nansat band
+        **kwargs : keyword arguments for imshow
+
+        Returns
+        --------
+        points : list
+            list of 2xN arrays of points to be used in Nansat.get_transect()
+
+        '''
+        if matplotlib.is_interactive():
             warnings.warn('''
         Python is started with -pylab option, transect will not work.
         Please restart python without -pylab.''')
-            return
+            return []
 
-        smooth_function = scipy.stats.nanmedian
-        if smoothAlg == 1:
-            smooth_function = scipy.stats.nanmean
+        data = self[band]
+        browser = PointBrowser(data, **kwargs)
+        points = browser.get_points()
 
-        data = None
-        # if shapefile is given, get corner points from it
-        if type(points) == str:
-            nansatOGR = Nansatshape(fileName=points)
-            points, latlon = nansatOGR.get_points(latlon)
-            if transect:
-                points = [points]
-
-        bandNameDict ={}
-        bandsMeta = self.bands()
-        for iKey in bandsMeta.keys():
-            bandNameDict[iKey] = bandsMeta[iKey]['name']
-
-        # if points is not given, get points from GUI ...
-        if points is None:
-            latlon = False
-            data = self[bandList[0]]
-            browser = PointBrowser(data, transect, **kwargs)
-            browser.get_points()
-            points = []
-            oneLine = []
-
-            for i in range(len(browser.coordinates)):
-                transect = browser.connect[i]
-                if transect:
-                    oneLine.append(browser.coordinates[i])
-                else:
-                    if i == 0:
-                        oneLine = [browser.coordinates[i]]
-                    if len(oneLine) == 1:
-                        oneLine.append(oneLine[-1])
-                    points.append(oneLine)
-                    oneLine = [browser.coordinates[i]]
-                if i == len(browser.coordinates) - 1:
-                    if len(oneLine) == 1:
-                        oneLine.append(oneLine[-1])
-                    points.append(oneLine)
-        pixlinCoordDic = {}
-        gpiDic = {}
-        for i, iShape in enumerate (points):
-            pixlinCoord = np.array([[], []])
-            for j in range(len(iShape) - 1):
-                if type(iShape[0]) != tuple:
-                    point0 = iShape
-                    point1 = iShape
-                else:
-                    point0 = iShape[j]
-                    point1 = iShape[j + 1]
-
-                # if points in degree, convert them into pix/lin
-                if latlon:
-                    pix, lin = self.transform_points([point0[0], point1[0]],
-                                                     [point0[1], point1[1]],
-                                                      DstToSrc=1)
-                    point0 = (pix[0], lin[0])
-                    point1 = (pix[1], lin[1])
-
-                # compute Euclidean distance between point0 and point1
-                length = int(np.hypot(point0[0] - point1[0],
-                                      point0[1] - point1[1]))
-                # if a point is given
-                if length == 0:
-                    length = 1
-                # get sequential coordinates on pix/lin between two points
-                pixVector = list(np.linspace(point0[0],
-                                             point1[0],
-                                             length).astype(int))
-                linVector = list(np.linspace(point0[1],
-                                             point1[1],
-                                             length).astype(int))
-                pixlinCoord = np.append(pixlinCoord,
-                                        [pixVector, linVector],
-                                        axis=1)
-            pixlinCoordDic['shape%d' %i] = pixlinCoord
-
-            # truncate out-of-image points
-            gpiDic['shape%d' %i] = ((pixlinCoordDic['shape%d' %i][0] >= 0) *
-                                    (pixlinCoordDic['shape%d' %i][1] >= 0) *
-                                    (pixlinCoordDic['shape%d' %i][0] <
-                                     self.vrt.dataset.RasterXSize) *
-                                    (pixlinCoordDic['shape%d' %i][1] <
-                                     self.vrt.dataset.RasterYSize))
-
-        if onlypixline:
-            for iKey, iPixlinCoord in pixlinCoordDic.iteritems():
-                pixlinCoordDic[iKey] = iPixlinCoord[:, gpiDic[iKey]]
-            return pixlinCoordDic
-
-        if smoothRadius:
-            pixlinCoordSmoothDic = {}
-            for iShapeKey, iShapePoints in pixlinCoordDic.items():
-                # get start/end coordinates of subwindows
-                pixlinCoordSmoothDic[iShapeKey+'_0'] = iShapePoints - smoothRadius
-                pixlinCoordSmoothDic[iShapeKey+'_1'] = iShapePoints + smoothRadius
-                # truncate out-of-image points
-                gpi = ((pixlinCoordSmoothDic[iShapeKey+'_0'][0] >= 0) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_0'][1] >= 0) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_1'][0] >= 0) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_1'][1] >= 0) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_0'][0] < self.vrt.dataset.RasterXSize) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_0'][1] < self.vrt.dataset.RasterYSize) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_1'][0] < self.vrt.dataset.RasterXSize) *
-                       (pixlinCoordSmoothDic[iShapeKey+'_1'][1] < self.vrt.dataset.RasterYSize))
-                pixlinCoordSmoothDic[iShapeKey+'_0'] = pixlinCoordSmoothDic[iShapeKey+'_0'][:, gpi]
-                pixlinCoordSmoothDic[iShapeKey+'_1'] = pixlinCoordSmoothDic[iShapeKey+'_1'][:, gpi]
-
-        for iKey, iPixlinCoord in pixlinCoordDic.iteritems():
-            pixlinCoordDic[iKey] = iPixlinCoord[:, gpiDic[iKey]]
-
-        # convert pix/lin into lon/lat
-        vectorsDict = {}
-        for iShapeKey, iShapePoints in pixlinCoordDic.items():
-            lonVector, latVector = self.transform_points(iShapePoints[0],
-                                                         iShapePoints[1],
-                                                         DstToSrc=0)
-            vectorsDict[iShapeKey] = {'longitude': lonVector,
-                                      'latitude': latVector}
-
-        # if smoothRadius, create a mask to extract circular area
-        # from a box area
-        if smoothRadius:
-            xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1,
-                                    0:smoothRadius * 2 + 1]
-            distance = ((xgrid - smoothRadius) ** 2 +
-                        (ygrid - smoothRadius) ** 2) ** 0.5
-            mask = distance <= smoothRadius
-
-        transectDict = {}
-        # get data
-        for iBand in bandList:
-            tmpDic = {}
-            if type(iBand) == str:
-                iBand = self._get_band_number(iBand)
-            if data is None:
-                data = self[iBand]
-            # extract values
-            for iShapeKey, iShapePoints in pixlinCoordDic.items():
-                if smoothRadius:
-                    transect0 = []
-                    for xmin, xmax, ymin, ymax in zip(
-                        pixlinCoordSmoothDic[iShapeKey+'_0'][1],
-                        pixlinCoordSmoothDic[iShapeKey+'_1'][1],
-                        pixlinCoordSmoothDic[iShapeKey+'_0'][0],
-                        pixlinCoordSmoothDic[iShapeKey+'_1'][0]):
-                        subdata = data[int(xmin):int(xmax + 1),
-                                       int(ymin):int(ymax + 1)]
-                        transect0.append(smooth_function(subdata[mask]))
-                    tmpDic[iShapeKey] = transect0
-                else:
-                    tmpDic[iShapeKey] = data[list(iShapePoints[1]),
-                                             list(iShapePoints[0])].tolist()
-            #transectDict['band%d' %iBand]= tmpDic
-            transectDict[str(iBand)+':'+bandNameDict[iBand]] = tmpDic
-            data = None
-
-        if returnOGR:
-            # Lists for field names and datatype
-            names = ['X (pixel)', 'Y (line)']
-            formats = ['i4', 'i4']
-            for iBand in transectDict.keys():
-                names.append('transect_' + str(iBand))
-                formats.append('f8')
-            # Create zeros structured numpy array
-            pixel = np.array([])
-            line = np.array([])
-            longitude = np.array([])
-            latitude = np.array([])
-            transect = {}
-
-            for iShape, iCoords in pixlinCoordDic.items():
-                pixel = np.append(pixel, iCoords[0])
-                line =  np.append(line, iCoords[1])
-                longitude = np.append(longitude,
-                                      vectorsDict[iShape]['longitude'])
-                latitude =  np.append(latitude,
-                                      vectorsDict[iShape]['latitude'])
-                for iBand in transectDict.keys():
-                    if not (iBand in transect.keys()):
-                        transect[iBand] = np.array([])
-                    transect[iBand] = np.append(transect[iBand],
-                                                transectDict[iBand][iShape])
-
-            fieldValues = np.zeros(len(line), dtype={'names': names,
-                                                     'formats': formats})
-            # Set values into the structured numpy array
-            fieldValues['X (pixel)'] = pixel
-            fieldValues['Y (line)'] = line
-            for iBand in transect.keys():
-                fieldValues['transect_'+iBand] = transect[iBand]
-
-            # Create Nansatshape object
-            NansatOGR = Nansatshape(srs=NSR(self.vrt.get_projection()))
-            # Set features and geometries into the Nansatshape
-            NansatOGR.add_features(coordinates=np.array([lonVector,
-                                                         latVector]),
-                                   values=fieldValues)
-            # Return Nansatshape object
-            return NansatOGR
-        else:
-            return transectDict, vectorsDict, pixlinCoordDic
-
+        return points
 
     def crop(self, xOff=0, yOff=0, xSize=None, ySize=None,
              lonlim=None, latlim=None):
@@ -2369,4 +2189,3 @@ def _import_mappers(logLevel=None):
             nansatMappers['mapper_generic'] = gm
 
     return nansatMappers
-

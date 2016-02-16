@@ -214,9 +214,10 @@ class Envisat(object):
 
     def _set_envisat_time(self, gdalMetadata):
         ''' Get time from metadata, set time to VRT'''
-        # set time
-        productTime = gdalMetadata["SPH_FIRST_LINE_TIME"]
-        self._set_time(parse(productTime))
+        # set valid time
+        self.dataset.SetMetadataItem('time_coverage_start', parse(gdalMetadata["SPH_FIRST_LINE_TIME"]).isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', parse(gdalMetadata["SPH_LAST_LINE_TIME"]).isoformat())
+
 
     def read_offset_from_header(self, gadsDSName):
         ''' Read offset of ADS from text header.

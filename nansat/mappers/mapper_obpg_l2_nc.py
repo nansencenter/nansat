@@ -6,8 +6,11 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
 from dateutil.parser import parse
+import json
 
 import numpy as np
+
+from pythesint import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
@@ -99,6 +102,8 @@ class Mapper(OBPGL2BaseClass):
 
         gcps = []
         k = 0
+        center_lon = 0
+        center_lat = 0
         for i0 in range(0, latitude.shape[0], step0):
             for i1 in range(0, latitude.shape[1], step1):
                 # create GCP with X,Y,pixel,line from lat/lon matrices
@@ -108,6 +113,8 @@ class Mapper(OBPGL2BaseClass):
                 if (lon >= -180 and lon <= 180 and lat >= -90 and lat <= 90):
                     gcp = gdal.GCP(lon, lat, 0, i1+0.5, i0+0.5)
                     gcps.append(gcp)
+                    center_lon += lon
+                    center_lat += lat
                     k += 1
 
         time_coverage_start = dsMetadata['time_coverage_start']
@@ -121,11 +128,28 @@ class Mapper(OBPGL2BaseClass):
                      srcRasterYSize=rasterYSize)
         # add bands
         self._create_bands(metaDict)
-        # set time
-        self._set_time(parse(time_coverage_start))
 
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('start_time', str(time_coverage_start))
-        self.dataset.SetMetadataItem('stop_time', str(time_coverage_end))
-        self.dataset.SetMetadataItem('sensor', 'MODIS')
-        self.dataset.SetMetadataItem('satellite', 'Aqua')
+        # reproject GCPs
+        center_lon /= k
+        center_lat /= k
+        srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lon_0=%f +lat_0=%f +no_defs' % (center_lon, center_lat)
+        self.reproject_GCPs(srs)
+
+        ### BAD, BAd, bad ...
+        self.dataset.SetProjection(self.dataset.GetGCPProjection())
+
+        # use TPS for reprojection
+        self.tps = True
+
+        # add NansenCloud metadata
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     str(time_coverage_start))
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     str(time_coverage_end))
+        self.dataset.SetMetadataItem('source_type', 'Satellite')
+        self.dataset.SetMetadataItem('mapper', 'obpg_l2_nc')
+
+        mm = gcmd_keywords.get_instrument(dsMetadata.get('instrument'))
+        ee = gcmd_keywords.get_platform(dsMetadata.get('platform'))
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
