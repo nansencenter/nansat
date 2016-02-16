@@ -2,9 +2,10 @@
 # Purpose: contains PointBrowser class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
+#               Dmitry Petrenko, Evgeny Morozov,
+#               Aleksander Vines
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2011 - 2015
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -45,6 +46,10 @@ class PointBrowser():
         self.points     : plot with points
         self.line       : plot with points
 
+        Why are these two not mentioned? These two are the only ones that are
+        used externally...
+        self.coordinates = []
+        self.connect = []
         '''
         self.fig = plt.figure()
         self.data = data
@@ -59,7 +64,6 @@ class PointBrowser():
         self.points = []
         self.lines = [self.ax.plot([], [], self.fmt)[0]]
         self.coordinates = [[]]
-        self.connect = []
 
     def onclick(self, event):
         ''' Append onclick event '''
@@ -82,8 +86,29 @@ class PointBrowser():
         self.lines[-1].set_data(np.array(self.coordinates[-1]).T)
         self.ax.figure.canvas.draw()
 
+    def _convert_coordinates(self):
+        ''' Converts the coordinates array to points array for return in
+        get_points, so that the internal structure can be tested
+
+        The format of the returned array:
+        [array([[x1,...,xn],[y1,...,yn]]),array([[xn+1,...],[yn+1,...]]),...]
+        Each 'array' element is a numpy.ndarray and represents one transect,
+        where x1,y1 is the first point in the first transect,
+        and xn,yn the last point in the first transect.
+        The inner x/y-arrays are also numpy.ndarrays
+        '''
+        return [np.array(p).T for p in self.coordinates if len(p) > 0]
+
     def get_points(self):
-        ''' Process click event '''
+        ''' Enables the onclick events and returns the points.
+
+        The format of the returned array:
+        [array([[x1,...,xn],[y1,...,yn]]),array([[xn+1,...],[yn+1,...]]),...]
+        Each 'array' element is a numpy.ndarray and represents one transect,
+        where x1,y1 is the first point in the first transect,
+        and xn,yn the last point in the first transect.
+        The inner x/y-arrays are also numpy.ndarrays
+        '''
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.ax.set_xlim([0, self.data.shape[1]])
         self.ax.set_ylim([0, self.data.shape[0]])
@@ -96,7 +121,8 @@ class PointBrowser():
         self.text_ax.set_yticks([])
 
         text = ('To draw a transect line: click in several locations\n'
-                'To start drawing a new line: press "space", click in the next\n'
+                'To start drawing a new line: press "space",'
+                ' click in the next\n'
                 '        location, release "space" and continue clicking\n'
                 'To zoom: press "z" and use pan/zoom tools, then release "z"')
         self.text_ax.text(0.01, 0.9, text, fontsize=13,
@@ -106,6 +132,6 @@ class PointBrowser():
         plt.show()
 
         # convert list of lists of coordinates to list of arrays
-        points = [np.array(p).T for p in self.coordinates if len(p) > 0]
+        points = self._convert_coordinates()
 
         return points

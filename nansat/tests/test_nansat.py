@@ -24,7 +24,7 @@ import numpy as np
 from scipy.io.netcdf import netcdf_file
 
 from nansat import Nansat, Domain
-from nansat.tools import gdal, OptionError
+from nansat.tools import ogr, gdal, OptionError
 
 import nansat_test_data as ntd
 
