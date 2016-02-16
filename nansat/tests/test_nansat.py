@@ -766,7 +766,7 @@ class NansatTest(unittest.TestCase):
         self.assertRaises(OptionError, Nansat)
 
     def test_get_item_basic_expressions(self):
-        ''' No arguments should raise OptionError '''
+        ''' Testing get_item with some basic expressions '''
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         n = Nansat(domain=d, logLevel=40)
         arr = np.empty((500, 500))
@@ -786,6 +786,25 @@ class NansatTest(unittest.TestCase):
         n.add_band(arr, {'expression': 'np.array([0,1,2,3,np.inf,5,6,7])'})
         self.assertIsInstance(n[1], np.ndarray)
         self.assertTrue(np.isnan(n[1][4]))
+
+    def test_repr_basic(self):
+        ''' repr should include some basic elements '''
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+        arr = np.empty((500, 500))
+        exp = 'np.array([0,1,2,3,np.inf,5,6,7])'
+        n.add_band(arr, {'expression': exp})
+        n_repr = repr(n)
+        self.assertIn(exp, n_repr, 'The expressions should be in repr')
+        self.assertIn('SourceFilename', n_repr)
+        self.assertIn('/vsimem/', n_repr)
+        self.assertIn('500 x 500', n_repr)
+        self.assertIn('Projection:', n_repr)
+        self.assertIn('25', n_repr)
+        self.assertIn('72', n_repr)
+        self.assertIn('35', n_repr)
+        self.assertIn('70', n_repr)
+
 
 if __name__ == "__main__":
     unittest.main()
