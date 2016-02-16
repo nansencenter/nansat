@@ -1,0 +1,53 @@
+- mapper:
+    name: aapp_l1b
+    format: 
+    level: 1B
+    platform: 
+    instrument:
+    datacenter:
+    description: 
+
+- mapper:
+    name: aapp_l1c
+    format: 
+    level: 1C
+    platform: 
+    instrument:
+    datacenter:
+    description: 
+
+- mapper:
+    name: amsr2_l1r
+    format: hdf4
+    level: 1R
+    platform: GCOM-W
+    instrument: AMSR2
+    datacenter: JAXA
+    description: 
+
+- mapper:
+    name: amsr2_l3
+    format: hdf4
+    level: 3
+    platform: GCOM-W
+    instrument: AMSR2
+    datacenter: JAXA
+    description: 
+
+- mapper:
+    name: amsre_uham_leadfraction
+    format: 
+    level: 
+    platform: 
+    instrument: 
+    datacenter: 
+    description: 
+
+- mapper:
+    name: asar
+    format: N1
+    level: 1B
+    platform: ENVISAT
+    instrument: ASAR
+    datacenter: ESA
+    description: 
