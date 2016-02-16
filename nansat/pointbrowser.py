@@ -64,7 +64,6 @@ class PointBrowser():
         self.points = []
         self.lines = [self.ax.plot([], [], self.fmt)[0]]
         self.coordinates = [[]]
-        self.connect = []
 
     def onclick(self, event):
         ''' Append onclick event '''
@@ -87,8 +86,29 @@ class PointBrowser():
         self.lines[-1].set_data(np.array(self.coordinates[-1]).T)
         self.ax.figure.canvas.draw()
 
+    def _convert_coordinates(self):
+        ''' Converts the coordinates array to points array for return in
+        get_points, so that the internal structure can be tested
+
+        The format of the returned array:
+        [array([[x1,...,xn],[y1,...,yn]]),array([[xn+1,...],[yn+1,...]]),...]
+        Each 'array' element is a numpy.ndarray and represents one transect,
+        where x1,y1 is the first point in the first transect,
+        and xn,yn the last point in the first transect.
+        The inner x/y-arrays are also numpy.ndarrays
+        '''
+        return [np.array(p).T for p in self.coordinates if len(p) > 0]
+
     def get_points(self):
-        ''' Enables the onclick events '''
+        ''' Enables the onclick events and returns the points.
+
+        The format of the returned array:
+        [array([[x1,...,xn],[y1,...,yn]]),array([[xn+1,...],[yn+1,...]]),...]
+        Each 'array' element is a numpy.ndarray and represents one transect,
+        where x1,y1 is the first point in the first transect,
+        and xn,yn the last point in the first transect.
+        The inner x/y-arrays are also numpy.ndarrays
+        '''
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.ax.set_xlim([0, self.data.shape[1]])
         self.ax.set_ylim([0, self.data.shape[0]])
@@ -112,6 +132,6 @@ class PointBrowser():
         plt.show()
 
         # convert list of lists of coordinates to list of arrays
-        points = [np.array(p).T for p in self.coordinates if len(p) > 0]
+        points = self._convert_coordinates()
 
         return points
