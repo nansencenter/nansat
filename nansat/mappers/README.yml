@@ -1,0 +1,439 @@
+- mapper:
+    name: aapp_l1b
+    format:
+    level: 1B
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url: http://nwpsaf.eu/deliverables/aapp/index.html
+
+- mapper:
+    name: aapp_l1c
+    format:
+    level: 1C
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url: http://nwpsaf.eu/deliverables/aapp/index.html
+
+- mapper:
+    name: amsr2_l1r
+    format: hdf4
+    level: 1R
+    platform: GCOM-W
+    instrument: AMSR2
+    datacenter: JAXA
+    description:
+    url: http://nwpsaf.eu/deliverables/aapp/index.html
+
+- mapper:
+    name: amsr2_l3
+    format: hdf4
+    level: 3
+    platform: GCOM-W
+    instrument: AMSR2
+    datacenter: JAXA
+    description:
+    url: http://nwpsaf.eu/deliverables/aapp/index.html
+
+- mapper:
+    name: amsre_uham_leadfraction
+    format:
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url:
+
+- mapper:
+    name: asar
+    format: N1
+    level: 1B
+    platform: ENVISAT
+    instrument: ASAR
+    datacenter: ESA
+    description:
+    url: https://earth.esa.int/web/guest/missions/esa-operational-eo-missions/envisat/instruments/asar
+
+- mapper:
+    name: ascat_nasa
+    format: netCDF
+    level: 2
+    platform:
+    instrument: ASCAT
+    datacenter:
+    description:
+    url: ftp://podaac-ftp.jpl.nasa.gov/allData/ascat/preview/L2/metop_a/12km/
+
+- mapper:
+    name: aster_l1a
+    format: GeoTIFF
+    level: 1A
+    platform: Terra
+    instrument: ASTER
+    datacenter: USGS
+    description:
+    url: https://asterweb.jpl.nasa.gov/OnDemand.asp
+
+- mapper:
+    name: aster_l1b
+    format: GeoTIFF
+    level: 1B
+    platform: Terra
+    instrument: ASTER
+    datacenter: USGS
+    description:
+    url: https://asterweb.jpl.nasa.gov/OnDemand.asp
+
+- mapper:
+    name: case2reg
+    format: BEAM /DIMAP
+    level: 2
+    platform: Envisat
+    instrument: MERIS
+    datacenter: ESA
+    description: processed with BEAM/VISAT
+    url: http://www.brockmann-consult.de/cms/web/beam/plug-ins?p_p_id=pluginsPortlet_WAR_beampluginsportlet10&version=4.11
+
+- mapper:
+    name: csks
+    format: GeoTIFF
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url:
+
+- mapper:
+    name: emodnet
+    format: netCDF
+    level: 4
+    platform:
+    instrument:
+    datacenter:
+    description: bathymetry from EMDONET project
+    url: http://portal.emodnet-bathymetry.eu/
+
+- mapper:
+    name: generic
+    format: netCDF, GeoTIFF, HDF4, HDF5, GRIB
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description: Any file with metadata following CF-conventions
+    url:
+
+- mapper:
+    name: geostationary
+    format:
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url: http://www.eumetsat.int/website/home/Data/Products/Formats/index.html
+
+- mapper:
+    name: globcolour_l3b
+    format: netCDF
+    level: 4
+    platform: QuickBird, Terra, Aqua, Envisat, SuomiNPP
+    instrument: SeaWiFS, MODIS, MEIRS, VIIRS
+    datacenter: ACRI
+    description: binned products from GLOBCURRENTproject
+    url: http://www.globcolour.info/CDR_Docs/GlobCOLOUR_PUG.pdf
+
+- mapper:
+    name: globcolour_l3m
+    format: netCDF
+    level: 4
+    platform: QuickBird, Terra, Aqua, Envisat, SuomiNPP
+    instrument: SeaWiFS, MODIS, MEIRS, VIIRS
+    datacenter: ACRI
+    description: mapped products from GLOBCURRENTproject
+    url: http://www.globcolour.info/CDR_Docs/GlobCOLOUR_PUG.pdf
+
+- mapper:
+    name: globcurrent_online
+    format: OpenDAP
+    level: 4
+    platform:
+    instrument:
+    datacenter:
+    description: products from GLOBCURRENT project
+    url: http://globcurrent.ifremer.fr/products-data/data-catalogue
+
+- mapper:
+    name: goci_l1
+    format: netCDF
+    level: 1
+    platform: COMS1
+    instrument: GOCI
+    datacenter: KOSC
+    description:
+    url: http://globcurrent.ifremer.fr/products-data/data-catalogue
+
+- mapper:
+    name: gtopo30
+    format: GeoTIFF
+    level: 4
+    platform:
+    instrument:
+    datacenter: USGS
+    description: Global 30 Arc-Second Elevation
+    url: https://lta.cr.usgs.gov/GTOPO30
+
+- mapper:
+    name: hirlam
+    format:
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url: https://en.wikipedia.org/wiki/HIRLAM
+
+- mapper:
+    name: hirlam_wind_netcdf
+    format:
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url: https://en.wikipedia.org/wiki/HIRLAM
+
+- mapper:
+    name: landsat
+    format: GeoTIFF
+    level: 1B
+    platform: Landsat 4,5,7,8
+    instrument:
+    datacenter: USGS
+    description: from EarthExplorer
+    url: https://en.wikipedia.org/wiki/HIRLAM
+
+- mapper:
+    name: meris_l1
+    format: N1
+    level: 1B
+    platform: ENVISAT
+    instrument: MERIS
+    datacenter: ESA
+    description:
+    url: https://earth.esa.int/web/guest/missions/esa-operational-eo-missions/envisat/instruments/meris
+
+- mapper:
+    name: meris_l2
+    format: N1
+    level: 2
+    platform: ENVISAT
+    instrument: MERIS
+    datacenter: ESA
+    description:
+    url: https://earth.esa.int/web/guest/missions/esa-operational-eo-missions/envisat/instruments/meris
+
+- mapper:
+    name: metno_hires_seaice
+    format: netCDF
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url:
+
+- mapper:
+    name: metno_local_hires_seaice
+    format: netCDF
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url:
+
+- mapper:
+    name: mod44w
+    format: GeoTIFF
+    level: 3
+    platform: TERRA
+    instrument: MODIS
+    datacenter: USGS
+    description: global water mask converted to smaller geotiffs and supplemented with VRT
+    url: https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mod44w
+
+- mapper:
+    name: modis_l1
+    format: HDF$
+    level: 1
+    platform: Aqua, Terra
+    instrument: MODIS
+    datacenter: NASA
+    description:
+    url: https://ladsweb.nascom.nasa.gov/data/search.html
+
+- mapper:
+    name: ncep
+    format: GRIB
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description: weather forecast from NCEP
+    url: http://www.nco.ncep.noaa.gov/
+
+- mapper:
+    name: ncep_wind
+    format: GRIB
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description: wind forecast from NCEP
+    url: http://www.nco.ncep.noaa.gov/
+
+- mapper:
+    name: ncep_wind_online
+    format: GRIB
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description: wind forecast from NCEP
+    url: http://www.nco.ncep.noaa.gov/
+
+- mapper:
+    name: nora10_local_vpv
+    format:
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description:
+    url:
+
+- mapper:
+    name: obpg_l2
+    format: HDF4
+    level: 2
+    platform: QuickBird, Aqua, Terra, ENVISAT, Suomi-NPP
+    instrument: SeaWiFS, MODIS, VIIRS
+    datacenter: NASA OBPG
+    description:
+    url: http://oceancolor.gsfc.nasa.gov/cgi/browse.pl
+
+- mapper:
+    name: obpg_l2_nc
+    format: HDF5
+    level: 2
+    platform: QuickBird, Aqua, Terra, ENVISAT, Suomi-NPP
+    instrument: SeaWiFS, MODIS, VIIRS
+    datacenter: NASA OBPG
+    description:
+    url: http://oceancolor.gsfc.nasa.gov/cgi/browse.pl
+
+- mapper:
+    name: obpg_l3
+    format: netCDF
+    level: 3
+    platform: QuickBird, Aqua, Terra, ENVISAT, Suomi-NPP
+    instrument: SeaWiFS, MODIS, VIIRS
+    datacenter: NASA OBPG
+    description:
+    url: http://oceancolor.gsfc.nasa.gov/cgi/l3
+
+- mapper:
+    name: occci_online
+    format: OpenDAP
+    level: 4
+    platform: QuickBird, Aqua, Terra, ENVISAT, Suomi-NPP
+    instrument: SeaWiFS, MODIS, VIIRS
+    datacenter: PML
+    description: products from Ocean Color CCI project
+    url: https://www.oceancolour.org/
+
+- mapper:
+    name: ocean_productivity
+    format: HDF4
+    level: 4
+    platform: QuickBird, Aqua, Terra, ENVISAT, Suomi-NPP
+    instrument: SeaWiFS, MODIS, VIIRS
+    datacenter: Oregon university
+    description: primary production produtcs
+    url: http://www.science.oregonstate.edu/ocean.productivity/
+
+- mapper:
+    name: opendap
+    format: OpenDAP
+    level:
+    platform:
+    instrument:
+    datacenter:
+    description: Any file served via OpenDAP protocol with metadata following CF-conventions
+    url:
+
+- mapper:
+    name: pathfinder52
+    format: HDF5
+    level: 3
+    platform: NOAA
+    instrument: AVHRR
+    datacenter: NOAA
+    description: Pathfinder 5.2 products from NOAA
+    url: http://www.nodc.noaa.gov/SatelliteData/pathfinder4km/
+
+- mapper:
+    name: radarsat2
+    format: GeoTIFF
+    level: 1B
+    platform: Radarsat2
+    instrument: SAR
+    datacenter: CSA
+    description:
+    url: http://www.asc-csa.gc.ca/eng/satellites/radarsat2/
+
+- mapper:
+    name: sentinel1a_l1
+    format: GeoTIFF
+    level: 1B
+    platform: Sentinel1A
+    instrument: SAR
+    datacenter: ESA
+    description: data from Copernicus Data Hub
+    url: https://sentinel.esa.int/web/sentinel/user-guides/sentinel-1-sar
+
+- mapper:
+    name: sentinel1a_l2
+    format: GeoTIFF
+    level: 2
+    platform: Sentinel1A
+    instrument: SAR
+    datacenter: ESA
+    description: data from Copernicus Data Hub
+    url: https://sentinel.esa.int/web/sentinel/user-guides/sentinel-1-sar
+
+- mapper:
+    name: sstcci_online
+    format: OpenDAP
+    level: 4
+    platform:
+    instrument:
+    datacenter:
+    description: products from Sea surface temperature CCI project
+    url: http://www.esa-sst-cci.org/?q=products
+
+- mapper:
+    name: viirs_l1
+    format: HDF4
+    level: 1B
+    platform: Suomi-NPP
+    instrument: VIIRS
+    datacenter: NASA
+    description:
+    url: https://ladsweb.nascom.nasa.gov/data/search.html
