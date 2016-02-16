@@ -659,31 +659,6 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
-    def test_get_transect_ogr(self):
-        n1 = Nansat(self.test_file_gcps, logLevel=40)
-        lon1 = 28.31299128
-        lon2 = 28.93691525
-        lat1 = 70.93709219
-        lat2 = 70.69646524
-        transectOGR = n1.get_transect([[(lon1, lat1),
-                                      (lon2, lat2)]],
-                                      returnOGR=True)
-        print transectOGR.get_points()
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_get_transect_ogr.shp')
-        transectOGR.export(tmpfilename)
-        print tmpfilename
-        DriverName = "ESRI Shapefile"
-        # driver = ogr.GetDriverByName(DriverName)
-        test = ogr.Open(tmpfilename)
-        layer = test.GetLayerByIndex(0)
-        minLon, maxLon, minLat, maxLat = layer.GetExtent()
-        self.assertAlmostEqual(minLon, lon1, places=5)
-        self.assertAlmostEqual(maxLon, lon2, places=5)
-        self.assertAlmostEqual(minLat, lat2, places=5)
-        self.assertAlmostEqual(maxLat, lat1, places=5)
-        self.assertFalse(True)
-
     def test_get_transect_outside(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[0, 28.31299128], [0, 70.93709219]], [1])
