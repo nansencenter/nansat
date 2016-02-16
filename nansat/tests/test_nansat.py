@@ -27,6 +27,7 @@ from nansat import Nansat, Domain
 from nansat.tools import ogr, gdal, OptionError
 
 import nansat_test_data as ntd
+from __builtin__ import int
 
 
 class NansatTest(unittest.TestCase):
@@ -759,6 +760,32 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         os.environ['MOD44WPATH'] = '/fakepath'
         self.assertRaises(IOError, n1.watermask)
+
+    def test_init_no_arguments(self):
+        ''' No arguments should raise OptionError '''
+        self.assertRaises(OptionError, Nansat)
+
+    def test_get_item_basic_expressions(self):
+        ''' No arguments should raise OptionError '''
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+        arr = np.empty((500, 500))
+        n.add_band(arr, {'expression': '1+1'})
+        n.add_band(arr, {'expression': 'np.random.randn(500, 500)'})
+        self.assertIsInstance(n[1], int)
+        self.assertIsInstance(n[2], np.ndarray)
+        self.assertEqual(n[1], 2)
+        self.assertEqual(len(n[2]), 500)
+        self.assertEqual(len(n[2][0]), 500)
+
+    def test_get_item_inf_expressions(self):
+        ''' inf should be replaced with nan '''
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+        arr = np.empty((500, 500))
+        n.add_band(arr, {'expression': 'np.array([0,1,2,3,np.inf,5,6,7])'})
+        self.assertIsInstance(n[1], np.ndarray)
+        self.assertTrue(np.isnan(n[1][4]))
 
 if __name__ == "__main__":
     unittest.main()
