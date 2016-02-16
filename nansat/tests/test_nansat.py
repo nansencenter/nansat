@@ -159,6 +159,17 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n.get_metadata('name', 2), 'band2')
 
+    def test_add_bands_no_parameter(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+
+        n = Nansat(domain=d, logLevel=40)
+        n.add_bands([arr, arr])
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(type(n[2]), np.ndarray)
+
     def test_add_subvrts_only_to_one_nansat(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
