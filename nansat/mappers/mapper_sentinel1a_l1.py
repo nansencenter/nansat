@@ -458,11 +458,21 @@ class Mapper(VRT):
         LUTs = {}
         for LUT in LUT_list:
             LUTs[LUT] = []
+        xLen0 = 0
         for vec in vecList.children:
-            X.append(map(int, vec['pixel'].split()))
+            xVec = map(int, vec['pixel'].split())
+            # find number of elements in the first row
+            if xLen0 == 0:
+                xLen0 = len(xVec)
+            # truncate vector to the number of elements in the first row
+            xVec = xVec[:xLen0]
+            X.append(xVec)
             Y.append(int(vec['line']))
             for LUT in LUT_list:
-                LUTs[LUT].append(map(float, vec[LUT].split()))
+                lutVec = map(float, vec[LUT].split())
+                # truncate vector to the number of elements in the first row
+                lutVec = lutVec[:xLen0]
+                LUTs[LUT].append(lutVec)
 
         X = np.array(X)
         for LUT in LUT_list:
