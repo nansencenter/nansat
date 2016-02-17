@@ -288,21 +288,6 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
-    def test_reproject_with_no_parameters(self):
-        ''' Reprojection with no parameters should do nothing - why not cause
-        TypeError? '''
-        n1 = Nansat(self.test_file_gcps, logLevel=40)
-        n1.reproject()
-        n2 = Nansat(self.test_file_gcps, logLevel=40)
-        self.assertEqual(n1.vrt.dataset.GetGeoTransform(),
-                         n2.vrt.dataset.GetGeoTransform())
-        self.assertTrue((n1.get_corners()[0] == n2.get_corners()[0]).all())
-        self.assertTrue((n1.get_corners()[1] == n2.get_corners()[1]).all())
-        self.assertTrue((n1.get_geolocation_grids()[0] ==
-                         n2.get_geolocation_grids()[0]).all())
-        self.assertTrue((n1.get_geolocation_grids()[1] ==
-                         n2.get_geolocation_grids()[1]).all())
-
     def test_export_selected_bands(self):
         n = Nansat(self.test_file_gcps)
         resfile = 'tmp.nc'

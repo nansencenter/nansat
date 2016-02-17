@@ -1039,7 +1039,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
+    def reproject(self, dstDomain, eResampleAlg=0, blockSize=None,
                   WorkingDataType=None, tps=None, skip_gcps=1, addmask=True,
                   **kwargs):
         ''' Change projection of the object based on the given Domain
@@ -1096,10 +1096,6 @@ class Nansat(Domain):
         ---------
         http://www.gdal.org/gdalwarp.html
         '''
-        # if no domain: quit
-        if dstDomain is None:
-            return
-
         # if self spans from 0 to 360 and dstDomain is west of 0:
         #     shift self westwards by 180 degrees
         # check span
