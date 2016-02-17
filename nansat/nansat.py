@@ -1267,8 +1267,7 @@ class Nansat(Domain):
         if dstDomain is None:
             dstDomain = self
         lon, lat = dstDomain.get_border()
-        watermask.crop(lonlim=[lon.min(), lon.max()],
-                       latlim=[lat.min(), lat.max()])
+        watermask.crop_lonlat([lon.min(), lon.max()], [lat.min(), lat.max()])
         watermask.reproject(dstDomain, addmask=False, **kwargs)
 
         return watermask
@@ -1922,8 +1921,83 @@ class Nansat(Domain):
 
         return points
 
-    def crop(self, xOff=0, yOff=0, xSize=None, ySize=None,
-             lonlim=None, latlim=None):
+    def crop_interactive(self, band=1):
+        ''' Interactively select boundary and crop Nansat object
+
+        Parameters
+        ----------
+        band : int or str
+            id of the band to show for interactive selection of boundaries
+
+        Modifies
+        --------
+        self.vrt : VRT
+            superVRT is created with modified SrcRect and DstRect
+        Returns
+        -------
+        extent : (xOff, yOff, xSize, ySize)
+            xOff  - X offset in the original dataset
+            yOff  - Y offset in the original dataset
+            xSize - width of the new dataset
+            ySize - height of the new dataset
+
+        Examples
+        --------
+        # crop a subimage interactively
+        extent = n.crop()
+
+        '''
+        maxwidth = 1000
+        resized = False
+        if self.shape()[1] > maxwidth:
+            factor = self.resize(width=1000)
+            resized = True
+        else:
+            factor = 1
+        # use interactive PointBrowser for selecting extent
+        points = self.digitize_points(band=band)[0]
+        xOff = round(points.min(axis=1)[0] / factor)
+        yOff = round(points.min(axis=1)[1] / factor)
+        xSize = round((points.max(axis=1)[0] - xOff) / factor)
+        ySize = round((points.max(axis=1)[1] - yOff) / factor)
+        if resized:
+            self.undo()
+
+        return self.crop(xOff, yOff, xSize, ySize)
+
+    def crop_lonlat(self, lonlim, latlim):
+        ''' Crop Nansat object to fit into given longitude/latitude limit
+        Modifies
+        --------
+        self.vrt : VRT
+            superVRT is created with modified SrcRect and DstRect
+
+        Returns
+        -------
+        extent : (xOff, yOff, xSize, ySize)
+            xOff  - X offset in the original dataset
+            yOff  - Y offset in the original dataset
+            xSize - width of the new dataset
+            ySize - height of the new dataset
+
+        Examples
+        --------
+        # crop a subimage for given lon/lat limits
+        extent = n.crop(lonlim=[-10,10], latlim=[-20,20])
+
+        '''
+        crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0],
+                                                lonlim[1], lonlim[1]],
+                                               [latlim[0], latlim[1],
+                                                latlim[0], latlim[1]], 1)
+        xOff = round(min(crnPix))
+        yOff = round(min(crnLin))
+        xSize = round(max(crnPix) - min(crnPix))
+        ySize = round(max(crnLin) - min(crnLin))
+
+        return self.crop(xOff, yOff, xSize, ySize)
+
+    def crop(self, xOff, yOff, xSize, ySize):
         '''Crop Nansat object
 
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1941,72 +2015,25 @@ class Nansat(Domain):
             width in pixels of subimage
         ySize : int
             height in pizels of subimage
-        lonlim : [float, float]
-            longitdal limits
-        latlim : [float, float]
-            latitudal limits
 
         Modifies
         --------
-            self.vrt : VRT
-                superVRT is created with modified SrcRect and DstRect
+        self.vrt : VRT
+            superVRT is created with modified SrcRect and DstRect
         Returns
         -------
-            status : int
-                0 - everyhting is OK, image is cropped
-                1 - if crop is totally outside, image is NOT cropped
-                2 - crop area is too large and crop is not needed
-            extent : (xOff, yOff, xSize, ySize)
-                xOff  - X offset in the original dataset
-                yOff  - Y offset in the original dataset
-                xSize - width of the new dataset
-                ySize - height of the new dataset
+        extent : (xOff, yOff, xSize, ySize)
+            xOff  - X offset in the original dataset
+            yOff  - Y offset in the original dataset
+            xSize - width of the new dataset
+            ySize - height of the new dataset
 
         Examples
         --------
             # crop a subimage of size 100x200 pix from X/Y offset 10, 20 pix
-            status, extent = n.crop(10, 20, 100, 200)
-
-            # crop a subimage within the lon/lat limits
-            status, extent = n.crop(lonlim=[-20, 20], latlim=[50, 60])
-
-            # crop a subimage interactively
-            status, extent = n.crop()
+            extent = n.crop(10, 20, 100, 200)
 
         '''
-        # use interactive PointBrowser for selecting extent
-        if (xOff == 0 and yOff == 0 and
-                xSize is None and ySize is None and
-                lonlim is None and latlim is None):
-            factor = self.resize(width=1000)
-            data = self[1]
-            browser = PointBrowser(data)
-            browser.get_points()
-            points = np.array(browser.coordinates)
-            xOff = round(points.min(axis=0)[0] / factor)
-            yOff = round(points.min(axis=0)[1] / factor)
-            xSize = round((points.max(axis=0)[0] - points.min(axis=0)[0]) /
-                          factor)
-            ySize = round((points.max(axis=0)[1] - points.min(axis=0)[1]) /
-                          factor)
-            self.undo()
-
-        # get xOff, yOff, xSize and ySize from lonlim and latlim
-        if (xOff == 0 and yOff == 0 and
-                xSize is None and ySize is None and
-                type(lonlim) in [list, tuple] and
-                type(latlim) in [list, tuple]):
-            crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0],
-                                                    lonlim[1], lonlim[1]],
-                                                   [latlim[0], latlim[1],
-                                                    latlim[0], latlim[1]],
-                                                   1)
-
-            xOff = round(min(crnPix))
-            yOff = round(min(crnLin))
-            xSize = round(max(crnPix) - min(crnPix))
-            ySize = round(max(crnLin) - min(crnLin))
-
         RasterXSize = self.vrt.dataset.RasterXSize
         RasterYSize = self.vrt.dataset.RasterYSize
 
@@ -2019,10 +2046,9 @@ class Nansat(Domain):
         # test if crop is totally outside
         if (xOff > RasterXSize or (xOff + xSize) < 0 or
                 yOff > RasterYSize or (yOff + ySize) < 0):
-            self.logger.error('WARNING! Cropping region is outside the image!')
-            self.logger.error('xOff: %d, yOff: %d, xSize: %d, ySize: %d' %
+            raise OptionError('''Cropping region is outside the image!
+                               xOff: %d, yOff: %d, xSize: %d, ySize: %d''' %
                               (xOff,  yOff, xSize, ySize))
-            return 1
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
@@ -2046,7 +2072,7 @@ class Nansat(Domain):
                 yOff == 0 and ySize == RasterYSize):
             self.logger.error(('WARNING! Cropping region is'
                                'larger or equal to image!'))
-            return 2
+            return extent
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
@@ -2131,7 +2157,7 @@ class Nansat(Domain):
         subMetaData.pop('fileName')
         self.set_metadata(subMetaData)
 
-        return 0, extent
+        return extent
 
 
 def _import_mappers(logLevel=None):
