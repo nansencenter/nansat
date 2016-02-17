@@ -849,6 +849,25 @@ class NansatTest(unittest.TestCase):
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
 
+    def test_export_netcdf_complex(self):
+        ''' Test export of complex data with pixelfunctions
+        '''
+        n = Nansat(self.test_file_complex)
+        n.export(self.tmpfilename)
+        exported = Nansat(self.tmpfilename)
+        self.assertTrue((n[1] == exported[1]).any())
+        os.unlink(self.tmpfilename)
+
+    def test_export_netcdf_arctic(self):
+        ''' Test export of the arctic data without GCPS
+        '''
+        n = Nansat(self.test_file_arctic)
+        n.export(self.tmpfilename)
+        exported = Nansat(self.tmpfilename)
+        self.assertTrue((n[1] == exported[1]).any())
+        self.assertTrue((n[2] == exported[2]).any())
+        self.assertTrue((n[3] == exported[3]).any())
+        os.unlink(self.tmpfilename)
 
 if __name__ == "__main__":
     unittest.main()
