@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/nansencenter/nansat.svg?branch=develop)](https://travis-ci.org/nansencenter/nansat)
-[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=develop)](https://coveralls.io/r/nansencenter/nansat)
+[![Build Status](https://travis-ci.org/nansencenter/nansat.svg?tag=v0.6.9)](https://travis-ci.org/nansencenter/nansat)
+[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?tag=v0.6.9)](https://coveralls.io/r/nansencenter/nansat)
 [![DOI](https://zenodo.org/badge/20132/nansencenter/nansat.svg)](https://zenodo.org/badge/latestdoi/20132/nansencenter/nansat)
 
 ![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
@@ -19,7 +19,7 @@ if you use Nansat in scientific publications.
 ## Easy to install
 The easiest way to install Nansat on a Linux machine is to use [anaconda](http://docs.continuum.io/anaconda/index)
 ```
-# download lates version of miniconda
+# download the latest version of miniconda
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
 
 # make it executable
@@ -28,7 +28,10 @@ chmod +x miniconda.sh
 # install miniconda virtual environment
 ./miniconda.sh -b -f -p $HOME/miniconda
 
-# activate the environment 
+# deactivate existing packages
+export PYTHONPATH=
+
+# activate the environment
 export PATH=$HOME/miniconda/bin/:$PATH
 
 # install some requirements from common repositories
@@ -45,10 +48,10 @@ export GDAL_DATA=$HOME/miniconda/share/gdal/
 export GEOS_DIR=$HOME/miniconda/
 
 # install nersc-metadata which is not in pip yet
-pip install https://github.com/nansencenter/nersc-metadata/archive/master.tar.gz
+pip install https://github.com/nansencenter/py-thesaurus-interface/archive/v0.3.tar.gz
 
 # finally install Nansat
-pip install https://github.com/nansencenter/nersc-metadata/archive/develop.tar.gz
+pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
 
 # run tests
 nosetests nansat
@@ -77,3 +80,6 @@ n.write_map('stere.footpring.png')
 n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
 ```
 Fore more information see [Tutorial](https://github.com/nansencenter/nansat/wiki/Tutorial) or notebooks for [Nansat lectures](https://github.com/nansencenter/nansat-lectures/tree/master/notebooks)
+
+### Acknowledgements
+Development is supported by the Research Council of Norway as a part of [NORMAP](https://normap.nersc.no/) project (grant no. 195397/V30).

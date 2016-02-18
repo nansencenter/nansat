@@ -10,7 +10,7 @@ import json
 
 import numpy as np
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT

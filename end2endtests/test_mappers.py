@@ -1,37 +1,35 @@
-#-------------------------------------------------------------------------------
-# Name:         test_nansat.py
-# Purpose:      Test the nansat module
+# ------------------------------------------------------------------------------
+# Name:         test_mappers.py
+# Purpose:      Test all the mappers
 #
 # Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified: Morten Wergeland Hansen
+# Modified:     Morten Wergeland Hansen, Aleksander Vines
 #
-# Created:      18.06.2014
-# Last modified:02.07.2015 16:05
+# Created:      2014-06-18
+# Last modified:2015-12-28 16:00
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-#-------------------------------------------------------------------------------
-import unittest, warnings
-import os, sys, glob, datetime
+# ------------------------------------------------------------------------------
+import unittest
+import sys
+import datetime
 import json
 
-from types import ModuleType, FloatType
-import numpy as np
+from pythesint import gcmd_keywords
 
-from nerscmetadata import gcmd_keywords
-
-from nansat import Nansat, Domain
+from nansat import Nansat
 from nansat.nansat import _import_mappers
 from mapper_test_archive import DataForTestingMappers
 
-nansatMappers = _import_mappers()
 
 class TestDataForTestingMappers(unittest.TestCase):
     def test_create_test_data(self):
         ''' should create TestData instance '''
         t = DataForTestingMappers()
         self.assertTrue(hasattr(t, 'mapperData'))
+
 
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 # The x-flag results in the test stopping at first failure or error - use it
@@ -62,7 +60,7 @@ class TestAllMappers(object):
             yield self.has_start_time, n
 
     def test_mappers_advanced(self):
-        ''' Run similar NansenCloud reated tests for all mappers '''
+        ''' Run similar NansenCloud related tests for all mappers '''
         for fileName, mapperName in self.testData.mapperData:
             sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
             n = Nansat(fileName, mapperName=mapperName)
@@ -81,10 +79,10 @@ class TestAllMappers(object):
 
     def has_start_time(self, n):
         ''' Has start time '''
-        assert type(n.time_coverage_start)==datetime.datetime
+        assert type(n.time_coverage_start) == datetime.datetime
 
     def has_end_time(self, n):
-        assert type(n.time_coverage_end)==datetime.datetime
+        assert type(n.time_coverage_end) == datetime.datetime
 
     def has_correct_platform(self, n):
         meta1 = json.loads(n.get_metadata('platform'))
@@ -103,21 +101,21 @@ class TestAllMappers(object):
         assert meta1 == meta2
 
     def is_correct_mapper(self, n, mapper):
-        assert n.mapper==mapper
+        assert n.mapper == mapper
 
-    def open_with_nansat(self, file, mapper=None, kwargs=None):
-        ''' Perform call to Nansat and check that it returns a Nansat object '''
+    def open_with_nansat(self, filePath, mapper=None, kwargs=None):
+        ''' Ensures that you can open the filePath as a Nansat object '''
         if kwargs is None:
             kwargs = {}
 
         if mapper:
-            n = Nansat(file, mapperName=mapper, **kwargs)
+            n = Nansat(filePath, mapperName=mapper, **kwargs)
         else:
-            n = Nansat(file, **kwargs)
+            n = Nansat(filePath, **kwargs)
         assert type(n) == Nansat
 
     def exist_intensity_band(self, n):
-        ''' test if intensity bands exist for complex data '''
+        ''' Test if intensity bands exist for complex data '''
         allBandNames = []
         complexBandNames = []
         for iBand in range(n.vrt.dataset.RasterCount):
@@ -129,11 +127,8 @@ class TestAllMappers(object):
         for iComplexName in complexBandNames:
             assert iComplexName.replace('_complex', '') in allBandNames
 
-if __name__=='__main__':
-    #for mapper in nansatMappers:
-    #    test_name = 'test_%s'%mapper
+if __name__ == '__main__':
+    # nansatMappers = _import_mappers()
+    # for mapper in nansatMappers:
+    #     test_name = 'test_%s'%mapper
     unittest.main()
-
-
-
-

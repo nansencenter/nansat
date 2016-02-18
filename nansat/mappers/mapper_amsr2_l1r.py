@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from math import ceil
 import json
 
-from nerscmetadata import gcmd_keywords
+from pythesint import gcmd_keywords
 
 from nansat.tools import gdal, ogr, WrongMapperError, parse_time
 from nansat.vrt import VRT
