@@ -288,21 +288,6 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
-    def test_reproject_with_no_parameters(self):
-        ''' Reprojection with no parameters should do nothing - why not cause
-        TypeError? '''
-        n1 = Nansat(self.test_file_gcps, logLevel=40)
-        n1.reproject()
-        n2 = Nansat(self.test_file_gcps, logLevel=40)
-        self.assertEqual(n1.vrt.dataset.GetGeoTransform(),
-                         n2.vrt.dataset.GetGeoTransform())
-        self.assertTrue((n1.get_corners()[0] == n2.get_corners()[0]).all())
-        self.assertTrue((n1.get_corners()[1] == n2.get_corners()[1]).all())
-        self.assertTrue((n1.get_geolocation_grids()[0] ==
-                         n2.get_geolocation_grids()[0]).all())
-        self.assertTrue((n1.get_geolocation_grids()[1] ==
-                         n2.get_geolocation_grids()[1]).all())
-
     def test_export_selected_bands(self):
         n = Nansat(self.test_file_gcps)
         resfile = 'tmp.nc'
@@ -754,39 +739,39 @@ class NansatTest(unittest.TestCase):
 
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        st, ext = n1.crop(10, 20, 50, 60)
+        ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(st, 0)
         self.assertEqual(n1.shape(), (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_crop_complex(self):
         n1 = Nansat(self.test_file_complex, logLevel=40)
-        st, ext = n1.crop(10, 20, 50, 60)
+        ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(st, 0)
         self.assertEqual(n1.shape(), (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_crop_no_gcps_arctic(self):
         n1 = Nansat(self.test_file_arctic, logLevel=40)
-        st, ext = n1.crop(10, 20, 50, 60)
+        ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(st, 0)
         self.assertEqual(n1.shape(), (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
-    def test_crop_lonlat_lims(self):
+    def test_crop_lonlat(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        st, ext = n1.crop(lonlim=[28, 29], latlim=[70.5, 71])
+        ext = n1.crop_lonlat([28, 29], [70.5, 71])
 
-        self.assertEqual(st, 0)
         self.assertEqual(n1.shape(), (111, 110))
         self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)
+
+    def test_crop_outside(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        self.assertRaises(OptionError, n1.crop_lonlat, [-10, 10], [-10, 10])
 
     def test_watermask(self):
         ''' if watermask data exists: should fetch array with watermask
