@@ -109,6 +109,7 @@ class Opendap(VRT):
                             },
                     'dst': {
                         'name': varName,
+                        'dataType': 6,
                             }
                     }
 
