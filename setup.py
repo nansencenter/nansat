@@ -68,6 +68,7 @@ VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "d
 REQS                = [
                         "Pillow",
                         "pythesint",
+                        "cfunits",
                     ]
 
 #----------------------------------------------------------------------------#
