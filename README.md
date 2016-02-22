@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/nansencenter/nansat.svg?tag=v0.6.9)](https://travis-ci.org/nansencenter/nansat)
-[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?tag=v0.6.9)](https://coveralls.io/r/nansencenter/nansat)
+[![Build Status](https://travis-ci.org/nansencenter/nansat.svg?tag=v0.6.10)](https://travis-ci.org/nansencenter/nansat)
+[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?tag=v0.6.10)](https://coveralls.io/r/nansencenter/nansat)
 [![DOI](https://zenodo.org/badge/20132/nansencenter/nansat.svg)](https://zenodo.org/badge/latestdoi/20132/nansencenter/nansat)
 
 ![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
@@ -40,15 +40,9 @@ conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
 #install some requirements from NERSC repository
 conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
 
-# install some requiremets from pypi
-pip install cfunits
-
 # configure environment
 export GDAL_DATA=$HOME/miniconda/share/gdal/
 export GEOS_DIR=$HOME/miniconda/
-
-# install nersc-metadata which is not in pip yet
-pip install https://github.com/nansencenter/py-thesaurus-interface/archive/v0.3.tar.gz
 
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz

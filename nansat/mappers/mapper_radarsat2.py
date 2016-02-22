@@ -14,7 +14,7 @@ import scipy.ndimage
 from math import asin
 
 import json
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 from nansat.vrt import VRT
 from nansat.domain import Domain
@@ -246,8 +246,8 @@ class Mapper(VRT):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = gcmd_keywords.get_instrument('sar')
-        ee = gcmd_keywords.get_platform('radarsat-2')
+        mm = gcmd_thesaurus.get_instrument('sar')
+        ee = gcmd_thesaurus.get_platform('radarsat-2')
 
         # TODO: Validate that the found instrument and platform are indeed what we
         # want....

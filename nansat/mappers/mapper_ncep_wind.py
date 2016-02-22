@@ -9,7 +9,7 @@
 # Made for GRIB files downloaded from http://nomads.ncep.noaa.gov/data/gfs4/
 import datetime
 import json
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
@@ -82,8 +82,8 @@ class Mapper(VRT):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = gcmd_keywords.get_instrument('computer')
-        ee = gcmd_keywords.get_platform('ncep-gfs')
+        mm = gcmd_thesaurus.get_instrument('computer')
+        ee = gcmd_thesaurus.get_platform('ncep-gfs')
 
         # TODO: Validate that the found instrument and platform are indeed what we
         # want....

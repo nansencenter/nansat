@@ -7,7 +7,7 @@
 import os.path
 import json
 
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
@@ -32,7 +32,7 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        mm = gcmd_keywords.get_instrument('MODIS')
-        ee = gcmd_keywords.get_platform('TERRA')
+        mm = gcmd_thesaurus.get_instrument('MODIS')
+        ee = gcmd_thesaurus.get_platform('TERRA')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

@@ -13,7 +13,7 @@ import numpy
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 
 class Mapper(VRT):
@@ -90,6 +90,6 @@ class Mapper(VRT):
                 datetime.datetime.utcfromtimestamp(
                 int(stop_date.strip().split(' ')[0])).isoformat() + '+00:00')
 
-        mm = gcmd_keywords.get_instrument('computer')
+        mm = gcmd_thesaurus.get_instrument('computer')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', 'HIgh Resolution Limited Area Model')
