@@ -27,22 +27,27 @@ class WKVTest(unittest.TestCase):
     def test_exists_standard_name(self):
         for wkvNode in self.wkvList:
             self.assertTrue('standard_name' in wkvNode)
+            self.assertIsInstance(wkvNode['standard_name'], str)
 
     def test_exists_short_name(self):
         for wkvNode in self.wkvList:
             self.assertTrue('short_name' in wkvNode)
+            self.assertIsInstance(wkvNode['short_name'], str)
 
     def test_exists_long_name(self):
         for wkvNode in self.wkvList:
             self.assertTrue('long_name' in wkvNode)
+            self.assertIsInstance(wkvNode['long_name'], str)
 
     def test_exists_units(self):
         for wkvNode in self.wkvList:
             self.assertTrue('units' in wkvNode)
+            self.assertIsInstance(wkvNode['units'], str)
 
     def test_exists_colormap(self):
         for wkvNode in self.wkvList:
             self.assertTrue('colormap' in wkvNode)
+            self.assertIsInstance(wkvNode['colormap'], str)
 
 if __name__ == "__main__":
     unittest.main()

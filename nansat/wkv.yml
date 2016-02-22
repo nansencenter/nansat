@@ -241,7 +241,7 @@
 - standard_name: quality_flags
   long_name: Quality Flags
   short_name: flags
-  units: 1
+  units: na
   minmax: 0 1
   colormap: jet
 
@@ -273,7 +273,7 @@
 - standard_name: land_binary_mask
   long_name: Land mask
   short_name: landmask
-  units:
+  units: na
   minmax: 0 1
   colormap: jet
 
@@ -281,7 +281,7 @@
 - standard_name: swath_binary_mask
   long_name: Swath mask
   short_name: swathmask
-  units:
+  units: na
   minmax: 0 1
   colormap: jet
 
