@@ -46,7 +46,7 @@ except ImportError:
         import osr
         import ogr
     except ImportError:
-        raise ImportError(import_error_msg %'gdal')
+        raise ImportError(import_error_msg % 'gdal')
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -62,7 +62,7 @@ AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
 MINOR               = 6
-MICRO               = 9
+MICRO               = 10
 ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
