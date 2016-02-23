@@ -44,12 +44,14 @@ class TestAllMappers(object):
 
     def test_mappers_basic(self):
         ''' Run similar basic tests for all mappers '''
-        for fileName, mapperName in self.testData.mapperData:
+        for kwargs in self.testData.mapperData:
+            fileName = kwargs.pop('fileName')
+            mapperName = kwargs.pop('mapperName')
             sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
             # Test call to Nansat, mapper not specified
-            yield self.open_with_nansat, fileName
+            yield self.open_with_nansat, fileName, None, kwargs
             # Test call to Nansat, mapper specified
-            yield self.open_with_nansat, fileName, mapperName
+            yield self.open_with_nansat, fileName, mapperName, kwargs
 
     def test_mappers_start_time(self):
         ''' Run similar NansenCloud reated tests for all mappers '''
