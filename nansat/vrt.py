@@ -253,11 +253,6 @@ class VRT(object):
         if self.bandVRTs is None:
             self.bandVRTs = {}
 
-        # open and parse wkv.xml
-        fileNameWKV = os.path.join(os.path.dirname(
-                                   os.path.realpath(__file__)), 'wkv.xml')
-        self.wkvNode0 = Node.create(fileNameWKV)
-
         # default empty geolocation array of source
         srcGeolocationArray = GeolocationArray()
         if vrtDataset is not None:
