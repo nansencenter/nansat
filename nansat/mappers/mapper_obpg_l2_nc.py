@@ -10,7 +10,7 @@ import json
 
 import numpy as np
 
-from pythesint import gcmd_thesaurus
+import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
@@ -149,7 +149,7 @@ class Mapper(OBPGL2BaseClass):
         self.dataset.SetMetadataItem('source_type', 'Satellite')
         self.dataset.SetMetadataItem('mapper', 'obpg_l2_nc')
 
-        mm = gcmd_thesaurus.get_instrument(dsMetadata.get('instrument'))
-        ee = gcmd_thesaurus.get_platform(dsMetadata.get('platform'))
+        mm = pti.get_gcmd_instrument(dsMetadata.get('instrument'))
+        ee = pti.get_gcmd_platform(dsMetadata.get('platform'))
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

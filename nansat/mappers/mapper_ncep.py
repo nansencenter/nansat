@@ -10,7 +10,7 @@
 # mapper will not work for other NCEP GFS files before made more generic
 import datetime
 import json
-from pythesint import gcmd_thesaurus
+import pythesint as pti
 
 from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
@@ -103,7 +103,7 @@ class Mapper(VRT):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = gcmd_thesaurus.get_instrument('computer')
-        ee = gcmd_thesaurus.get_platform('ncep-gfs')
+        mm = pti.get_gcmd_instrument('computer')
+        ee = pti.get_gcmd_platform('ncep-gfs')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

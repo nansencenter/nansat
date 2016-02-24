@@ -12,7 +12,7 @@ from osgeo import gdal
 from dateutil.parser import parse
 
 import json
-from pythesint import gcmd_thesaurus
+import pythesint as pti
 
 from nansat.vrt import VRT
 from envisat import Envisat
@@ -278,8 +278,8 @@ class Mapper(VRT, Envisat):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = gcmd_thesaurus.get_instrument('asar')
-        ee = gcmd_thesaurus.get_platform('envisat')
+        mm = pti.get_gcmd_instrument('asar')
+        ee = pti.get_gcmd_platform('envisat')
 
         # TODO: Validate that the found instrument and platform are indeed what
         # we want....

@@ -9,7 +9,7 @@ from math import ceil
 from dateutil.parser import parse
 
 import json
-from pythesint import gcmd_thesaurus
+import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import GeolocationArray, VRT
@@ -288,7 +288,7 @@ class Mapper(OBPGL2BaseClass):
                                       isoformat()))
         instrument = gdalMetadata['Sensor Name'][1:-1]
         platform = {'A': 'AQUA', 'T': 'TERRA'}[gdalMetadata['Sensor Name'][-1]]
-        mm = gcmd_thesaurus.get_instrument(instrument)
-        ee = gcmd_thesaurus.get_platform(platform)
+        mm = pti.get_gcmd_instrument(instrument)
+        ee = pti.get_gcmd_platform(platform)
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
