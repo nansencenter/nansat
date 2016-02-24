@@ -17,7 +17,7 @@ import sys
 import datetime
 import json
 
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 from nansat import Nansat
 from nansat.nansat import _import_mappers
@@ -89,7 +89,7 @@ class TestAllMappers(object):
     def has_correct_platform(self, n):
         meta1 = json.loads(n.get_metadata('platform'))
         meta1ShortName = meta1['Short_Name']
-        meta2 = gcmd_keywords.get_platform(meta1ShortName)
+        meta2 = gcmd_thesaurus.get_platform(meta1ShortName)
 
         assert type(meta1) == dict
         assert meta1 == meta2
@@ -97,7 +97,7 @@ class TestAllMappers(object):
     def has_correct_instrument(self, n):
         meta1 = json.loads(n.get_metadata('instrument'))
         meta1ShortName = meta1['Short_Name']
-        meta2 = gcmd_keywords.get_instrument(meta1ShortName)
+        meta2 = gcmd_thesaurus.get_instrument(meta1ShortName)
 
         assert type(meta1) == dict
         assert meta1 == meta2

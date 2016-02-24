@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from netCDF4 import Dataset
 
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 from nansat.tools import WrongMapperError
 from nansat.vrt import VRT, GeolocationArray
@@ -158,7 +158,7 @@ class Mapper(VRT, Globcolour):
 
 
         instrument = f.title.strip().split(' ')[-2].split('/')[0]
-        mm = gcmd_keywords.get_instrument(instrument)
+        mm = gcmd_thesaurus.get_instrument(instrument)
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
 
         platform = {
@@ -166,7 +166,7 @@ class Mapper(VRT, Globcolour):
             'MERIS' : 'ENVISAT',
             'SEAWIFS': 'QUICKBIRD',
             'VIIRS' : 'SUOMI-NPP'}[instrument.upper()]
-        pp = gcmd_keywords.get_platform(platform)
+        pp = gcmd_thesaurus.get_platform(platform)
         self.dataset.SetMetadataItem('platform', json.dumps(pp))
 
         # add bands with metadata and corresponding values to the empty VRT

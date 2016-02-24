@@ -46,7 +46,7 @@ except ImportError:
         import osr
         import ogr
     except ImportError:
-        raise ImportError(import_error_msg %'gdal')
+        raise ImportError(import_error_msg % 'gdal')
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -67,7 +67,8 @@ ISRELEASED          = True
 VERSION             = '%d.%d.dev%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
-                        "pythesint"
+                        "pythesint",
+                        "cfunits",
                     ]
 
 #----------------------------------------------------------------------------#
@@ -231,9 +232,6 @@ def run_setup(skip_compile):
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
-        dependency_links = [
-            "https://github.com/nansencenter/py-thesaurus-interface/archive/v0.3.tar.gz#egg=pythesint"
-        ],
         test_suite="nansat.tests",
         **kw
     )

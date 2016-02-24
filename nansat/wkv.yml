@@ -1,0 +1,422 @@
+- standard_name: surface_backwards_doppler_frequency_shift_of_radar_wave_due_to_surface_velocity
+  long_name: Radar Doppler frequency shift due to surface velocity
+  short_name: fdg
+  units: Hz
+  minmax: -60 60
+  colormap: jet
+
+
+- standard_name: predicted_surface_backwards_doppler_frequency_shift_of_radar_wave
+  long_name: Geometrically predicted Doppler frequency shift of radar wave
+  short_name: fdp
+  units: Hz
+  minmax: 0 2000
+  colormap: jet
+
+
+- standard_name: standard_deviation_of_surface_backwards_doppler_centroid_frequency_shift_of_radar_wave
+  long_name: Standard deviation of Radar Doppler centroid frequency shift estimate
+  short_name: dc_std
+  units: Hz
+  minmax: 0 5
+  colormap: jet
+
+
+- standard_name: surface_backwards_doppler_centroid_frequency_shift_of_radar_wave
+  long_name: Radar Doppler centroid frequency shift
+  short_name: dc
+  units: Hz
+  minmax: 0 2000
+  colormap: jet
+
+
+- standard_name: surface_backwards_brightness_coefficient_of_radar_wave
+  long_name: Reflectivity per unit area in slant range
+  short_name: beta0
+  units: m/m
+  minmax: 0 0.1
+  colormap: gray
+
+
+- standard_name: surface_backwards_scattering_coefficient_of_radar_wave
+  long_name: Normalized Radar Cross Section
+  short_name: sigma0
+  units: m/m
+  minmax: 0 0.1
+  colormap: gray
+
+
+- standard_name: surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice
+  long_name: Normalized Radar Cross Section - normalized over ice
+  short_name: sigma0_ice
+  units: m/m
+  minmax: 0 0.1
+  colormap: gray
+
+
+- standard_name: surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water
+  long_name: Normalized Radar Cross Section - normalized over water
+  short_name: sigma0_water
+  units: m/m
+  minmax: 0 0.1
+  colormap: gray
+
+
+- standard_name: albedo
+  long_name: Albedo
+  short_name: albedo
+  units: percent
+  minmax: 0 100
+  colormap: gray
+
+
+- standard_name: eastward_wind
+  long_name: Eastward wind velocity
+  short_name: U
+  units: m s-1
+  minmax: -10 10
+  colormap: jet
+
+
+- standard_name: northward_wind
+  long_name: Northward wind velocity
+  short_name: V
+  units: m s-1
+  minmax: -10 10
+  colormap: jet
+
+
+- standard_name: wind_speed
+  long_name: Wind speed
+  short_name: W
+  units: m s-1
+  minmax: 0 18
+  colormap: jet
+
+
+- standard_name: wind_to_direction
+  long_name: Wind direction (towards)
+  short_name: D
+  units: degrees
+  minmax: 0 360
+  colormap: jet
+
+
+- standard_name: wind_from_direction
+  long_name: Wind direction (from)
+  short_name: D
+  units: degrees
+  minmax: 0 360
+  colormap: jet
+
+
+- standard_name: surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water
+  long_name: Upward spectral radiance
+  short_name: nLw
+  units: W m-2 m-1 sr-1
+  minmax: 0.000 500
+  colormap: jet
+
+
+- standard_name: surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air
+  long_name: Reflectance
+  short_name: Rrs
+  units: sr-1
+  minmax: 0.000 0.05
+  colormap: jet
+
+
+- standard_name: surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water
+  long_name: Reflectance
+  short_name: Rrsw
+  units: sr-1
+  minmax: 0.000 0.05
+  colormap: jet
+
+
+- standard_name: mass_concentration_of_chlorophyll_a_in_sea_water
+  long_name: Chlorophyll-a
+  short_name: chlor_a
+  units: kg m-3
+  minmax: 0.001 15.000
+  colormap: jet
+
+
+- standard_name: sea_surface_temperature
+  long_name: Sea Surface Temperature
+  short_name: SST
+  units: celsius
+  minmax: 10 25
+  colormap: jet
+
+
+- standard_name: sea_surface_salinity
+  long_name: Sea Surface Salinity
+  short_name: SSS
+  units: psu
+  minmax: 30 40
+  colormap: jet
+
+
+- standard_name: volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter
+  long_name: Yellow Substance Absorption
+  short_name: cdom_a
+  units: m-1
+  minmax: 0.000 2.000
+  colormap: jet
+
+
+- standard_name: mass_concentration_of_dissolved_organic_carbon_in_sea_water
+  long_name: Dissolved Organic Carbon
+  short_name: doc
+  units: kg m-3
+  minmax: 0.001 10.000
+  colormap: jet
+
+
+- standard_name: mass_concentration_of_suspended_matter_in_sea_water
+  long_name: Inorganic Suspended Matter
+  short_name: tsm
+  units: kg m-3
+  minmax: 0.001 5.000
+  colormap: jet
+
+
+- standard_name: volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water
+  long_name: Kd_490
+  short_name: Kd
+  units: m-1
+  minmax: 0.000 2.000
+  colormap: jet
+
+
+- standard_name: sensor_zenith_angle
+  long_name: Sensor Zenith Angle
+  short_name: sensor_zenith
+  units: degrees
+  minmax: 0 90
+  colormap: jet
+
+
+- standard_name: sensor_view_angle
+  long_name: Sensor View Angle
+  short_name: sensor_view
+  units: degrees
+  minmax: 0 90
+  colormap: jet
+
+
+- standard_name: sensor_azimuth_angle
+  long_name: Sensor Azimuth Angle
+  short_name: sensor_azimuth
+  units: degrees
+  minmax: 0 360
+  colormap: jet
+
+
+- standard_name: solar_zenith_angle
+  long_name: Solar Zenith Angle
+  short_name: sol_zenith
+  units: degrees
+  minmax: 0 90
+  colormap: jet
+
+
+- standard_name: solar_azimuth_angle
+  long_name: Solar Azimuth Angle
+  short_name: sol_azimuth
+  units: degrees
+  minmax: 0 360
+  colormap: jet
+
+
+- standard_name: angle_of_incidence
+  long_name: Incidence Angle
+  short_name: incidence_angle
+  units: degrees
+  minmax: 0 90
+  colormap: jet
+
+
+- standard_name: quality_flags
+  long_name: Quality Flags
+  short_name: flags
+  units: na
+  minmax: 0 1
+  colormap: jet
+
+
+- standard_name: air_temperature
+  long_name: Air Temperature
+  short_name: T
+  units: celsius
+  minmax: 10 30
+  colormap: jet
+
+
+- standard_name: brightness_temperature
+  long_name: Brightness Temperature
+  short_name: BT
+  units: kelvin
+  minmax: 230 330
+  colormap: jet
+
+
+- standard_name: height_above_reference_ellipsoid
+  long_name: Digital elevation model height above mean sea level
+  short_name: topo
+  units: m
+  minmax: 0 4000
+  colormap: jet
+
+
+- standard_name: land_binary_mask
+  long_name: Land mask
+  short_name: landmask
+  units: na
+  minmax: 0 1
+  colormap: jet
+
+
+- standard_name: swath_binary_mask
+  long_name: Swath mask
+  short_name: swathmask
+  units: na
+  minmax: 0 1
+  colormap: jet
+
+
+- standard_name: latitude
+  long_name: Latitude
+  short_name: latitude
+  units: deg N
+  minmax: -90 90
+  colormap: jet
+
+
+- standard_name: longitude
+  long_name: Longitude
+  short_name: longitude
+  units: deg E
+  minmax: -180 180
+  colormap: jet
+
+
+- standard_name: surface_geostrophic_eastward_sea_water_velocity
+  long_name: Eastward Geostrophic Current
+  short_name: U
+  units: cm s-1
+  minmax: -20 20
+  colormap: jet
+
+
+- standard_name: surface_geostrophic_northward_sea_water_velocity
+  long_name: Northward Geostrophic Current
+  short_name: V
+  units: cm s-1
+  minmax: -20 20
+  colormap: jet
+
+
+- standard_name: sea_surface_height_above_sea_level
+  long_name: Sea Surface Anomaly
+  short_name: SSA
+  units: m
+  minmax: -100 100
+  colormap: jet
+
+
+- standard_name: sea_surface_height_above_geoid
+  long_name: Sea Surface Height
+  short_name: SSH
+  units: cm
+  minmax: -100 100
+  colormap: jet
+
+
+- standard_name: sea_ice_area_fraction
+  long_name: Sea Ice Concentration
+  short_name: ice_conc
+  units: '%'
+  minmax: 0 100
+  colormap: jet
+
+
+- standard_name: net_primary_productivity_of_carbon
+  long_name: Net Primary Production
+  short_name: npp
+  units: kg m-2 s-1
+  minmax: 0 10000
+  colormap: jet
+
+
+- standard_name: toa_outgoing_spectral_radiance
+  long_name: top of atmosphere emitted toward outer space per unit wavenumber or as a function of wavenumber radiative flux in a particular direction, per unit of solid angle
+  short_name: L
+  units: mW m-2 sr-1 (cm-1)-1
+  minmax: 0.000 1000
+  colormap: jet
+
+
+- standard_name: instantaneous_photosynthetically_available_radiation
+  long_name: Instantaneous Photosynthetically Available Radiation
+  short_name: PAR
+  units: mol m-2 s-1 sr-1
+  minmax: 0 0.0024
+  colormap: jet
+
+
+- standard_name: volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles
+  long_name: Particle backscatter
+  short_name: bbp
+  units: m-1
+  minmax: 0 0.1
+  colormap: jet
+
+
+- standard_name: sea_surface_skin_temperature
+  long_name: Sea Surface Temperature
+  short_name: SST
+  units: kelvin
+  minmax: 280 300
+  colormap: jet
+
+
+- standard_name: downwelling_photosynthetic_photon_radiance_in_sea_water
+  long_name: Photosynthetically Available Radiation
+  short_name: PAR
+  units: mol m-2 s-1 sr-1
+  minmax: 0 80
+  colormap: jet
+
+
+- standard_name: instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water
+  long_name: Instantaneous Photosynthetically Available Radiation
+  short_name: IPAR
+  units: mol m-2 s-1 sr-1
+  minmax: 0 80
+  colormap: jet
+
+
+- standard_name: depth
+  long_name: Depth
+  short_name: depth
+  units: m
+  minmax: 0 13000
+  colormap: jet
+
+
+- standard_name: concentration_of_coccoliths_in_sea_water
+  long_name: Coccoliths
+  short_name: ccl
+  units: 10e12 plates m-3
+  minmax: 0.001 15.000
+  colormap: jet
+
+- standard_name: status_flag
+  long_name: Status flag
+  short_name: status_flag
+  units: na
+  minmax: 0 1
+  colormap: jet
+

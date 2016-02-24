@@ -10,7 +10,7 @@ import os.path
 import glob
 import json
 
-from pythesint import gcmd_keywords
+from pythesint import gcmd_thesaurus
 
 import numpy as np
 
@@ -90,8 +90,8 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('time_coverage_start', parse(gdalMetadata['ObservationStartDateTime']).isoformat())
         self.dataset.SetMetadataItem('time_coverage_end', parse(gdalMetadata['ObservationStartDateTime']).isoformat())
 
-        mm = gcmd_keywords.get_instrument('AMSR2')
-        ee = gcmd_keywords.get_platform('GCOM-W1')
+        mm = gcmd_thesaurus.get_instrument('AMSR2')
+        ee = gcmd_thesaurus.get_platform('GCOM-W1')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 

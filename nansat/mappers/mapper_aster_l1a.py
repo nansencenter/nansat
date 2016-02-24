@@ -127,7 +127,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('time_coverage_end',
                                      parse(gdalMetadata['LASTPACKETTIME']).isoformat())
 
-        mm = gcmd_keywords.get_instrument('ASTER')
-        ee = gcmd_keywords.get_platform('TERRA')
+        mm = gcmd_thesaurus.get_instrument('ASTER')
+        ee = gcmd_thesaurus.get_platform('TERRA')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
