@@ -11,7 +11,7 @@ import warnings
 import datetime
 import json
 
-from pythesint import gcmd_thesaurus
+import pythesint as pti
 
 from nansat.tools import WrongMapperError, parse_time
 from nansat.tools import gdal, np
@@ -142,7 +142,7 @@ class Mapper(VRT):
         platform = 'LANDSAT'
         if fname[2].isdigit():
             platform += '-'+fname[2]
-        ee = gcmd_thesaurus.get_platform(platform)
+        ee = pti.get_gcmd_platform(platform)
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
         # set instrument
@@ -155,6 +155,6 @@ class Mapper(VRT):
         'LANDSAT-5' : 'TM',
         'LANDSAT-7' : 'ETM+',
         'LANDSAT-8' : 'OLI'}[platform]
-        ee = gcmd_thesaurus.get_instrument(instrument)
+        ee = pti.get_gcmd_instrument(instrument)
         self.dataset.SetMetadataItem('instrument', json.dumps(ee))
 
