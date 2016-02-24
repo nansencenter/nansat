@@ -20,12 +20,13 @@ import tempfile
 from string import Template, ascii_uppercase, digits
 from random import choice
 import warnings
+import yaml
 
 import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
-from nansat.tools import add_logger, gdal, osr
+from nansat.tools import add_logger, gdal, osr, OptionError
 
 
 class GeolocationArray():
@@ -251,11 +252,6 @@ class VRT(object):
         self.vrtDriver = gdal.GetDriverByName('VRT')
         if self.bandVRTs is None:
             self.bandVRTs = {}
-
-        # open and parse wkv.xml
-        fileNameWKV = os.path.join(os.path.dirname(
-                                   os.path.realpath(__file__)), 'wkv.xml')
-        self.wkvNode0 = Node.create(fileNameWKV)
 
         # default empty geolocation array of source
         srcGeolocationArray = GeolocationArray()
@@ -623,7 +619,7 @@ class VRT(object):
             })
 
     def _get_wkv(self, wkvName):
-        ''' Get wkv from wkv.xml
+        ''' Get wkv from wkv.yml
 
         Parameters
         -----------
@@ -636,14 +632,16 @@ class VRT(object):
             WKV corresponds to the given wkv_name
 
         '''
-        wkvDict = {}
-        for iNode in self.wkvNode0.nodeList('wkv'):
-            tagsList = iNode.tagList()
-            if iNode.node('standard_name').value == wkvName:
-                wkvDict = {'standard_name': wkvName}
-                for iTag in tagsList:
-                    wkvDict[iTag] = str(iNode.node(iTag).value)
-        return wkvDict
+        # open and parse wkv.yml
+        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               'wkv.yml')) as f:
+            wkvList = yaml.load(f)
+            for wkvNode in wkvList:
+                if wkvNode['standard_name'] == wkvName:
+                    return wkvNode
+
+        warnings.warn('%s not found in Well Known Variables' % wkvName)
+        return {}
 
     def _put_metadata(self, rasterBand, metadataDict):
         ''' Put all metadata into a raster band
