@@ -62,7 +62,7 @@ AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
 MINOR               = 6
-MICRO               = 11
+MICRO               = 12
 ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
@@ -221,8 +221,7 @@ def run_setup(skip_compile):
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
         packages=packages,
-        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl',
-            'tests/data/*.*']},
+        package_data={NAME:["fonts/*.ttf", 'mappers/*.pl', 'tests/data/*.*']},
         scripts=[os.path.join('utilities', name) for name in
                     ['nansatinfo',
                      'nansat_add_coastline',

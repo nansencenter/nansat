@@ -12,8 +12,9 @@ from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.tools import WrongMapperError
 
-from nansat.mappers import mapper_generic as mg
+import pythesint as pti
 
+from nansat.mappers import mapper_generic as mg
 
 class Mapper(mg.Mapper):
     '''Mapping for the BEAM/Visat output of Case2Regional algorithm'''
@@ -30,7 +31,7 @@ class Mapper(mg.Mapper):
         mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
 
         #add metadata for Rrs bands
-        rrsDict = self._get_wkv('surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air')
+        rrsDict = pti.get_wkv_variable('surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air')
 
         for bi in range(1, 1+self.dataset.RasterCount):
             b = self.dataset.GetRasterBand(bi)
