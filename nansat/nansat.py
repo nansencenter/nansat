@@ -23,11 +23,6 @@ import tempfile
 import datetime
 import pkgutil
 import warnings
-import collections
-if hasattr(collections, 'OrderedDict'):
-    from collections import OrderedDict
-else:
-    from ordereddict import OrderedDict
 
 from scipy.io.netcdf import netcdf_file
 from scipy.stats import nanmedian
@@ -46,6 +41,11 @@ from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALErr
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
+import collections
+if hasattr(collections, 'OrderedDict'):
+    from collections import OrderedDict
+else:
+    from ordereddict import OrderedDict
 
 # container for all mappers
 nansatMappers = None
