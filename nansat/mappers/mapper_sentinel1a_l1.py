@@ -20,7 +20,7 @@ import scipy
 from dateutil.parser import parse
 
 import json
-from pythesint import gcmd_keywords
+import pythesint as pti
 
 from nansat.vrt import VRT
 from nansat.tools import gdal, WrongMapperError, initial_bearing
@@ -441,8 +441,8 @@ class Mapper(VRT):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = gcmd_keywords.get_instrument('sar')
-        ee = gcmd_keywords.get_platform('sentinel-1a')
+        mm = pti.get_gcmd_instrument('sar')
+        ee = pti.get_gcmd_platform('sentinel-1a')
 
         # TODO: Validate that the found instrument and platform are indeed what we
         # want....

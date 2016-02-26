@@ -8,7 +8,7 @@ from dateutil.parser import parse
 import warnings
 import json
 
-from pythesint import gcmd_keywords
+import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError
 from nansat.vrt import VRT
@@ -356,7 +356,7 @@ class Mapper(HDF4Mapper):
         platformName = self.find_metadata(gdalMetadata,
                                      'ASSOCIATEDPLATFORMSHORTNAME',
                                      'AQUA')
-        mm = gcmd_keywords.get_instrument(instrumentName)
-        ee = gcmd_keywords.get_platform(platformName)
+        mm = pti.get_gcmd_instrument(instrumentName)
+        ee = pti.get_gcmd_platform(platformName)
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

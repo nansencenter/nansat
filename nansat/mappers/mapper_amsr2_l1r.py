@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from math import ceil
 import json
 
-from pythesint import gcmd_keywords
+import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError, parse_time
 from nansat.vrt import VRT
@@ -124,7 +124,7 @@ class Mapper(VRT):
         self.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=90 +lon_0=0 +no_defs')
         self.tps = True
 
-        mm = gcmd_keywords.get_instrument('AMSR2')
-        ee = gcmd_keywords.get_platform('GCOM-W1')
+        mm = pti.get_gcmd_instrument('AMSR2')
+        ee = pti.get_gcmd_platform('GCOM-W1')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))

@@ -46,7 +46,7 @@ except ImportError:
         import osr
         import ogr
     except ImportError:
-        raise ImportError(import_error_msg %'gdal')
+        raise ImportError(import_error_msg % 'gdal')
 
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
@@ -67,7 +67,8 @@ ISRELEASED          = True
 VERSION             = '%d.%d.dev%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
-                        "pythesint"
+                        "pythesint",
+                        "cfunits",
                     ]
 
 #----------------------------------------------------------------------------#
@@ -220,8 +221,7 @@ def run_setup(skip_compile):
         author_email=AUTHOR_EMAIL,
         platforms=PLATFORMS,
         packages=packages,
-        package_data={NAME:['wkv.xml', "fonts/*.ttf", 'mappers/*.pl',
-            'tests/data/*.*']},
+        package_data={NAME:["fonts/*.ttf", 'mappers/*.pl', 'tests/data/*.*']},
         scripts=[os.path.join('utilities', name) for name in
                     ['nansatinfo',
                      'nansat_add_coastline',
@@ -231,9 +231,6 @@ def run_setup(skip_compile):
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
-        dependency_links = [
-            "https://github.com/nansencenter/py-thesaurus-interface/archive/v0.3.tar.gz#egg=pythesint"
-        ],
         test_suite="nansat.tests",
         **kw
     )

@@ -12,7 +12,7 @@ from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 from envisat import Envisat
 
-from pythesint import gcmd_keywords
+import pythesint as pti
 
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
@@ -142,8 +142,8 @@ class Mapper(VRT, Envisat):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = gcmd_keywords.get_instrument('meris')
-        ee = gcmd_keywords.get_platform('envisat')
+        mm = pti.get_gcmd_instrument('meris')
+        ee = pti.get_gcmd_platform('envisat')
 
         # TODO: Validate that the found instrument and platform are indeed what we
         # want....

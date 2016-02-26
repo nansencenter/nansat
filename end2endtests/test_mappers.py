@@ -17,11 +17,11 @@ import sys
 import datetime
 import json
 
-from pythesint import gcmd_keywords
+import pythesint as pti
 
 from nansat import Nansat
 from nansat.nansat import _import_mappers
-from mapper_test_archive import DataForTestingMappers
+from mapper_test_archive import DataForTestingMappers, DataForTestingOnlineMappers
 
 
 class TestDataForTestingMappers(unittest.TestCase):
@@ -89,7 +89,7 @@ class TestAllMappers(object):
     def has_correct_platform(self, n):
         meta1 = json.loads(n.get_metadata('platform'))
         meta1ShortName = meta1['Short_Name']
-        meta2 = gcmd_keywords.get_platform(meta1ShortName)
+        meta2 = pti.get_gcmd_platform(meta1ShortName)
 
         assert type(meta1) == dict
         assert meta1 == meta2
@@ -97,7 +97,7 @@ class TestAllMappers(object):
     def has_correct_instrument(self, n):
         meta1 = json.loads(n.get_metadata('instrument'))
         meta1ShortName = meta1['Short_Name']
-        meta2 = gcmd_keywords.get_instrument(meta1ShortName)
+        meta2 = pti.get_gcmd_instrument(meta1ShortName)
 
         assert type(meta1) == dict
         assert meta1 == meta2
@@ -129,8 +129,17 @@ class TestAllMappers(object):
         for iComplexName in complexBandNames:
             assert iComplexName.replace('_complex', '') in allBandNames
 
+
+class TestOnlineMappers(TestAllMappers):
+    @classmethod
+    def setup_class(cls):
+        ''' Download testing data '''
+        cls.testData = DataForTestingOnlineMappers()
+
+
 if __name__ == '__main__':
     # nansatMappers = _import_mappers()
     # for mapper in nansatMappers:
     #     test_name = 'test_%s'%mapper
     unittest.main()
+
