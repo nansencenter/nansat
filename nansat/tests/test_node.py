@@ -90,3 +90,17 @@ class NodeTest(unittest.TestCase):
         self.assertNotIn(firstLevel2, root.children)
         self.assertIn(firstLevel3, root.children)
         self.assertEqual(len(root.children), 2)
+
+    def test_search_node(self):
+        rootTag = 'Root'
+        root = Node(rootTag)
+        firstLevelTag = 'FirstLevel'
+        firstLevel = Node(firstLevelTag)
+        root += firstLevel
+        firstLevel2 = Node(firstLevelTag)
+        root += firstLevel2
+        firstLevel2ndTag = 'FirstLevel2ndTag'
+        firstLevel3 = Node(firstLevel2ndTag)
+        root += firstLevel3
+        self.assertEqual(root.node(firstLevelTag,0), firstLevel)
+        self.assertEqual(root.node(firstLevelTag,1), firstLevel2)
