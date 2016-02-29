@@ -25,6 +25,24 @@ class NodeTest(unittest.TestCase):
         self.assertDictEqual(node.attributes, {'anAttr': anAttr})
         self.assertEqual(node.value, value.strip())
 
+    def test_getAttributeList(self):
+        tag = 'Root'
+        value = '   Value   '
+        anAttr = 'elValue'
+        secondAttr = 'Some value'
+        finalAttribute = 'A last value'
+        node = Node(tag, value=value, anAttr=anAttr, secondAttr=secondAttr,
+                    finalAttribute=finalAttribute)
+        nameList, valList = node.getAttributeList()
+        self.assertIsInstance(nameList, list)
+        self.assertIsInstance(valList, list)
+        index = valList.index(anAttr)
+        self.assertEqual(nameList[index], 'anAttr')
+        index = valList.index(secondAttr)
+        self.assertEqual(nameList[index], 'secondAttr')
+        index = valList.index(finalAttribute)
+        self.assertEqual(nameList[index], 'finalAttribute')
+
     def test_delete_attribute(self):
         tag = 'Root'
         value = '   Value   '
