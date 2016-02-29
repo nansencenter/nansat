@@ -92,7 +92,7 @@ class NodeTest(unittest.TestCase):
         root += firstLevel2
         firstLevel2ndTag = 'FirstLevel2ndTag'
         firstLevel3 = Node(firstLevel2ndTag)
-        root += firstLevel3
+        root = root + firstLevel3
         self.assertIn(firstLevel, root.children)
         self.assertIn(firstLevel2, root.children)
         self.assertIn(firstLevel3, root.children)
