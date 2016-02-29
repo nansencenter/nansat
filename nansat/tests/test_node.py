@@ -60,7 +60,9 @@ class NodeTest(unittest.TestCase):
         fileElement = Node.create(test_file_element)
         with open(test_file_element, 'r') as myfile:
             contents = myfile.read().replace('\n', '')
-        rawElement = Node.create(contents)
+        root = Node('root')
+        root = root.insert(contents)
+        rawElement = root.children[0]
         self.assertEqual(fileElement.xml(), rawElement.xml())
 
     def test_delete_attribute(self):
