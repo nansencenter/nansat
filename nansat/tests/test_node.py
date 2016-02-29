@@ -12,6 +12,8 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
 import unittest
+import os
+import nansat_test_data as ntd
 from nansat.node import Node
 
 
@@ -51,6 +53,15 @@ class NodeTest(unittest.TestCase):
         element = root2.node('Element')
         rawElement = Node.create(contents)
         self.assertEqual(element.xml(), rawElement.xml())
+
+    def test_create(self):
+        test_file_element = os.path.join(ntd.test_data_path,
+                                         'some_xml_file.xml')
+        fileElement = Node.create(test_file_element)
+        with open(test_file_element, 'r') as myfile:
+            contents = myfile.read().replace('\n', '')
+        rawElement = Node.create(contents)
+        self.assertEqual(fileElement.xml(), rawElement.xml())
 
     def test_delete_attribute(self):
         tag = 'Root'
