@@ -43,6 +43,15 @@ class NodeTest(unittest.TestCase):
         index = valList.index(finalAttribute)
         self.assertEqual(nameList[index], 'finalAttribute')
 
+    def test_insert(self):
+        contents = ('<Element attr="attrValue"><Subnode>testValue</Subnode>'
+                    '</Element>')
+        root = Node('root')
+        root2 = root.insert(contents)
+        element = root2.node('Element')
+        rawElement = Node.create(contents)
+        self.assertEqual(element.xml(), rawElement.xml())
+
     def test_delete_attribute(self):
         tag = 'Root'
         value = '   Value   '
