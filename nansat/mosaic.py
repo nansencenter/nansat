@@ -261,7 +261,7 @@ class Mosaic(Nansat):
         self.logger.debug('    mask')
         self.add_band(array=maskMat, parameters={'name': maskName,
                                                  'long_name': 'L2-mask',
-                                                 'standard_name': 'mask'})
+                                                 'standard_name': 'status_flag'})
 
         # add averaged bands with metadata
         for bi, b in enumerate(bands):

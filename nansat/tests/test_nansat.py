@@ -834,12 +834,15 @@ class NansatTest(unittest.TestCase):
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
 
-    def test_export_netcdf_complex(self):
+    def test_export_netcdf_complex_remove_meta(self):
         ''' Test export of complex data with pixelfunctions
         '''
         n = Nansat(self.test_file_complex)
-        n.export(self.tmpfilename)
+        self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
+        n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
         exported = Nansat(self.tmpfilename)
+        with self.assertRaises(OptionError):
+            exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
         os.unlink(self.tmpfilename)
 

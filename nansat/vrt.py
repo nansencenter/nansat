@@ -20,12 +20,13 @@ import tempfile
 from string import Template, ascii_uppercase, digits
 from random import choice
 import warnings
+import pythesint as pti
 
 import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
-from nansat.tools import add_logger, gdal, osr
+from nansat.tools import add_logger, gdal, osr, OptionError
 
 
 class GeolocationArray():
@@ -251,11 +252,6 @@ class VRT(object):
         self.vrtDriver = gdal.GetDriverByName('VRT')
         if self.bandVRTs is None:
             self.bandVRTs = {}
-
-        # open and parse wkv.xml
-        fileNameWKV = os.path.join(os.path.dirname(
-                                   os.path.realpath(__file__)), 'wkv.xml')
-        self.wkvNode0 = Node.create(fileNameWKV)
 
         # default empty geolocation array of source
         srcGeolocationArray = GeolocationArray()
@@ -536,20 +532,23 @@ class VRT(object):
                 # otherwise take the DataType from source
                 dst['dataType'] = src['DataType']
 
-        # Set destination name
-        # get short_name from WKV.XML
-        dstWKV = dst.get('wkv', '')
-        wkvDict = self._get_wkv(dstWKV)
-        self.logger.debug('wkvDict:%s' % str(wkvDict))
-        wkvShortName = wkvDict.get('short_name', '')
-        self.logger.debug('WKV short_name:%s' % wkvShortName)
+        # get metadata from WKV using PyThesInt
+        wkv_exists = False
+        if 'wkv' in dst:
+            try:
+                wkv = pti.get_wkv_variable(dst['wkv'])
+            except IndexError:
+                pass
+            else:
+                wkv_exists = True
 
-        # merge wkv[short_name] and dst[suffix] if both given
-        if ('name' not in dst and len(wkvShortName) > 0):
-            dstSuffix = dst.get('suffix', '')
-            if len(dstSuffix) > 0:
-                dstSuffix = '_' + dstSuffix
-            dst['name'] = wkvShortName + dstSuffix
+        # join wkv[short_name] and dst[suffix] if both given
+        if ('name' not in dst and wkv_exists):
+            if 'suffix' in dst:
+                dstSuffix = dst['suffix'] + '_'
+            else:
+                dstSuffix = ''
+            dst['name'] = wkv['short_name'] + dstSuffix
 
         # create list of available bands (to prevent duplicate names)
         bandNames = []
@@ -592,7 +591,11 @@ class VRT(object):
             dstRasterBand.SetMetadata(metadataSRC, 'vrt_sources')
 
         # set metadata from WKV
-        dstRasterBand = self._put_metadata(dstRasterBand, wkvDict)
+        if wkv_exists:
+            try:
+                dstRasterBand = self._put_metadata(dstRasterBand, wkv)
+            except:
+                import ipdb; ipdb.set_trace()
 
         # set metadata from provided parameters
         # remove and add params
@@ -621,29 +624,6 @@ class VRT(object):
                 'wkv': 'swath_binary_mask',
                 'PixelFunctionType': 'OnesPixelFunc',
             })
-
-    def _get_wkv(self, wkvName):
-        ''' Get wkv from wkv.xml
-
-        Parameters
-        -----------
-        wkvName : string
-            value of 'wkv' key in metaDict
-
-        Returns
-        --------
-        wkvDict : dictionay
-            WKV corresponds to the given wkv_name
-
-        '''
-        wkvDict = {}
-        for iNode in self.wkvNode0.nodeList('wkv'):
-            tagsList = iNode.tagList()
-            if iNode.node('standard_name').value == wkvName:
-                wkvDict = {'standard_name': wkvName}
-                for iTag in tagsList:
-                    wkvDict[iTag] = str(iNode.node(iTag).value)
-        return wkvDict
 
     def _put_metadata(self, rasterBand, metadataDict):
         ''' Put all metadata into a raster band
