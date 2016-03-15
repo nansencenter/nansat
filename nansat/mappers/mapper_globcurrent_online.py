@@ -35,7 +35,7 @@ class Mapper(Opendap):
                 previously opened dataset
 
         '''
-        fname = os.path.split(fileName)
+        fname = os.path.split(fileName)[1]
         date = '%s-%s-%sT%s:00Z' % (fname[0:4], fname[4:6], fname[6:8], fname[8:10])
 
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
