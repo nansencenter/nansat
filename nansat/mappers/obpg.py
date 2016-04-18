@@ -16,4 +16,5 @@ class OBPGL2BaseClass(VRT):
               'HMODIST Level-2 Data',
               'MERIS Level-2 Data',
               'GOCI Level-2 Data',
-              'VIIRSN Level-2 Data']
+              'VIIRSN Level-2 Data',
+              'SeaWiFS Level-2 Data']
