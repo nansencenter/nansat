@@ -307,6 +307,22 @@ class NansatTest(unittest.TestCase):
 #         self.assertTrue(nn.has_band('L_555'))
 #         os.unlink(resfile)
 
+    def test_export_option(self):
+        n = Nansat(self.test_file_arctic)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export_option.nc')
+        # Test with band numbers
+        n.export(tmpfilename, options='WRITE_LONLAT=YES')
+        n.export(tmpfilename+'2', options=['WRITE_LONLAT=YES'])
+        nn = Nansat(tmpfilename)
+        nn2 = Nansat(tmpfilename+'2')
+        self.assertTrue(nn.has_band('lon'))
+        self.assertTrue(nn.has_band('lat'))
+        self.assertTrue(nn.has_band('Bristol'))
+        self.assertTrue(nn2.has_band('lon'))
+        self.assertTrue(nn2.has_band('lat'))
+        self.assertTrue(nn2.has_band('Bristol'))
+
     def test_export2thredds_arctic_long_lat(self):
         n = Nansat(self.test_file_arctic, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
