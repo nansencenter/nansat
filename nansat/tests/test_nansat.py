@@ -94,7 +94,7 @@ class NansatTest(unittest.TestCase):
             'hei', 'meta2': 'derr'}))
         orig.export(self.tmpfilename)
         copy = Nansat(self.tmpfilename)
-        dd = json.loads( unescape( copy.get_metadata('jsonstring'), {'&quot;':
+        dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
             '"'}))
         self.assertIsInstance(dd, dict)
         os.unlink(self.tmpfilename)
@@ -118,8 +118,8 @@ class NansatTest(unittest.TestCase):
         arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
-        arrWithNaN[n.shape()[0]/2-10:n.shape()[0]/2+10,
-                   n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
+        arrWithNaN[n.shape()[0] / 2 - 10:n.shape()[0] / 2 + 10,
+                   n.shape()[1] / 2 - 10:n.shape()[1] / 2 + 10] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
@@ -313,15 +313,34 @@ class NansatTest(unittest.TestCase):
                                    'nansat_export_option.nc')
         # Test with band numbers
         n.export(tmpfilename, options='WRITE_LONLAT=YES')
-        n.export(tmpfilename+'2', options=['WRITE_LONLAT=YES'])
+        n.export(tmpfilename + '2', options=['WRITE_LONLAT=YES'])
         nn = Nansat(tmpfilename)
-        nn2 = Nansat(tmpfilename+'2')
+        nn2 = Nansat(tmpfilename + '2')
         self.assertTrue(nn.has_band('lon'))
         self.assertTrue(nn.has_band('lat'))
         self.assertTrue(nn.has_band('Bristol'))
         self.assertTrue(nn2.has_band('lon'))
         self.assertTrue(nn2.has_band('lat'))
         self.assertTrue(nn2.has_band('Bristol'))
+
+    def test_write_fig_wrong_type_filename(self):
+        n = Nansat(self.test_file_arctic)
+        with self.assertRaises(OptionError):
+            n.write_figure(1.2)
+        with self.assertRaises(OptionError):
+            n.write_figure(['filename'])
+        with self.assertRaises(OptionError):
+            n.write_figure({'name':'filename'})
+
+    def test_write_fig_tif(self):
+        n = Nansat(self.test_file_arctic)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_write_fig_tif.tif')
+        n.write_figure(tmpfilename)
+        nn = Nansat(tmpfilename)
+        # Asserts that the basic georeference (corners in this case) is still
+        # present after opening the image
+        self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
 
     def test_export2thredds_arctic_long_lat(self):
         n = Nansat(self.test_file_arctic, logLevel=40)
@@ -333,7 +352,7 @@ class NansatTest(unittest.TestCase):
             'UMass_AES': {'type': '>i2'},
         }
         n.export2thredds(tmpfilename, bands,
-                        time=datetime.datetime(2016,1,20))
+                        time=datetime.datetime(2016, 1, 20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
@@ -343,22 +362,22 @@ class NansatTest(unittest.TestCase):
         ncg = 'NC_GLOBAL#'
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
         self.assertTrue(float(easternmost_longitude) > 179,
-                        'easternmost_longitude is wrong:' +
+                        'easternmost_longitude is wrong:' + 
                         easternmost_longitude)
         westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
         self.assertTrue(float(westernmost_longitude) < -179,
-                        'westernmost_longitude is wrong:' +
+                        'westernmost_longitude is wrong:' + 
                         westernmost_longitude)
         northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
         self.assertTrue(float(northernmost_latitude) > 89.999,
-                        'northernmost_latitude is wrong:' +
+                        'northernmost_latitude is wrong:' + 
                         northernmost_latitude)
         southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
         self.assertTrue(float(southernmost_latitude) < 54,
-                        'southernmost_latitude is wrong:' +
+                        'southernmost_latitude is wrong:' + 
                         southernmost_latitude)
         self.assertTrue(float(southernmost_latitude) > 53,
-                        'southernmost_latitude is wrong:' +
+                        'southernmost_latitude is wrong:' + 
                         southernmost_latitude)
 
     def test_dont_export2thredds_gcps(self):
@@ -575,8 +594,8 @@ class NansatTest(unittest.TestCase):
                                    'nansat_reproject_gcps_resize.png')
         n1.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n1.shape()[0], n2.shape()[0]*2)
-        self.assertEqual(n1.shape()[1], n2.shape()[1]*2)
+        self.assertEqual(n1.shape()[0], n2.shape()[0] * 2)
+        self.assertEqual(n1.shape()[1], n2.shape()[1] * 2)
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_undo(self):
@@ -733,7 +752,7 @@ class NansatTest(unittest.TestCase):
     def test_get_transect_data(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         b1 = n1[1]
-        t = n1.get_transect([[28.3],[70.9]], [], data=b1)
+        t = n1.get_transect([[28.3], [70.9]], [], data=b1)
 
         self.assertTrue('input' in t.dtype.fields)
         self.assertTrue('L_645' not in t.dtype.fields)
