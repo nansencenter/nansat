@@ -24,7 +24,7 @@ import numpy as np
 from scipy.io.netcdf import netcdf_file
 
 from nansat import Nansat, Domain
-from nansat.tools import ogr, gdal, OptionError
+from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
 from __builtin__ import int
@@ -53,9 +53,9 @@ class NansatTest(unittest.TestCase):
         n.set_metadata('time_coverage_end', '2016-01-21')
 
         self.assertEqual(type(n.time_coverage_start),
-                        datetime.datetime)
+                         datetime.datetime)
         self.assertEqual(type(n.time_coverage_end),
-                        datetime.datetime)
+                         datetime.datetime)
 
     def test_init_domain(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -91,11 +91,11 @@ class NansatTest(unittest.TestCase):
     def test_special_characters_in_exported_metadata(self):
         orig = Nansat(self.test_file_gcps)
         orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
-            'hei', 'meta2': 'derr'}))
+                                         'hei', 'meta2': 'derr'}))
         orig.export(self.tmpfilename)
         copy = Nansat(self.tmpfilename)
         dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
-            '"'}))
+                                                                   '"'}))
         self.assertIsInstance(dd, dict)
         os.unlink(self.tmpfilename)
 
@@ -330,7 +330,7 @@ class NansatTest(unittest.TestCase):
         with self.assertRaises(OptionError):
             n.write_figure(['filename'])
         with self.assertRaises(OptionError):
-            n.write_figure({'name':'filename'})
+            n.write_figure({'name': 'filename'})
 
     def test_write_fig_tif(self):
         n = Nansat(self.test_file_arctic)
@@ -352,7 +352,7 @@ class NansatTest(unittest.TestCase):
             'UMass_AES': {'type': '>i2'},
         }
         n.export2thredds(tmpfilename, bands,
-                        time=datetime.datetime(2016, 1, 20))
+                         time=datetime.datetime(2016, 1, 20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
@@ -362,22 +362,22 @@ class NansatTest(unittest.TestCase):
         ncg = 'NC_GLOBAL#'
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
         self.assertTrue(float(easternmost_longitude) > 179,
-                        'easternmost_longitude is wrong:' + 
+                        'easternmost_longitude is wrong:' +
                         easternmost_longitude)
         westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
         self.assertTrue(float(westernmost_longitude) < -179,
-                        'westernmost_longitude is wrong:' + 
+                        'westernmost_longitude is wrong:' +
                         westernmost_longitude)
         northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
         self.assertTrue(float(northernmost_latitude) > 89.999,
-                        'northernmost_latitude is wrong:' + 
+                        'northernmost_latitude is wrong:' +
                         northernmost_latitude)
         southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
         self.assertTrue(float(southernmost_latitude) < 54,
-                        'southernmost_latitude is wrong:' + 
+                        'southernmost_latitude is wrong:' +
                         southernmost_latitude)
         self.assertTrue(float(southernmost_latitude) > 53,
-                        'southernmost_latitude is wrong:' + 
+                        'southernmost_latitude is wrong:' +
                         southernmost_latitude)
 
     def test_dont_export2thredds_gcps(self):
@@ -394,7 +394,7 @@ class NansatTest(unittest.TestCase):
                    "-te 27 70 31 72 -ts 200 200")
         n = Nansat(domain=d)
         n.add_band(np.ones(d.shape(), np.float32),
-                    parameters={'name': 'L_469'})
+                   parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
 
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -409,7 +409,7 @@ class NansatTest(unittest.TestCase):
                    "-te 27 70 31 72 -ts 200 200")
         n = Nansat(domain=d)
         n.add_band(np.ones(d.shape(), np.float32),
-                    parameters={'name': 'L_469'})
+                   parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
 
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -691,7 +691,7 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[28.31299128, 28.93691525],
                              [70.93709219, 70.69646524]],
-                             ['L_645'])
+                            ['L_645'])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
         plt.plot(t['lat'], t['L_645'], '.-')
@@ -737,8 +737,8 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[10, 20],
                              [10, 10]],
-                             ['L_645'],
-                             lonlat=False)
+                            ['L_645'],
+                            lonlat=False)
 
         self.assertTrue('L_645' in t.dtype.fields)
         self.assertTrue('line' in t.dtype.fields)

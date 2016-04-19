@@ -372,8 +372,8 @@ class Nansat(Domain):
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
-            False: Write swath-projected data with rows and columns organized
-                   as in the original product.
+            False: Default. Write swath-projected data with rows and columns
+                   organized as in the original product.
             True:  Use the default behaviour of GDAL, which is to flip the rows
         options : str or list
             GDAL export options in format of: 'OPT=VAL', or
