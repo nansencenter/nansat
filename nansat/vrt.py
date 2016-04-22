@@ -545,7 +545,7 @@ class VRT(object):
         # join wkv[short_name] and dst[suffix] if both given
         if ('name' not in dst and wkv_exists):
             if 'suffix' in dst:
-                dstSuffix = dst['suffix'] + '_'
+                dstSuffix =  '_' + dst['suffix']
             else:
                 dstSuffix = ''
             dst['name'] = wkv['short_name'] + dstSuffix

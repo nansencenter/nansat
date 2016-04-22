@@ -62,13 +62,21 @@ class DataForTestingMappers(object):
 class DataForTestingOnlineMappers(object):
     mapperData = [
         {
-            'fileName' : 'http://dap.ceda.ac.uk/data/neodc/esacci/sst/data/lt/Analysis/L4/v01.1/2010/05/01/20100501120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.1.nc',
-            'mapperName': 'sstcci_online'
+        'fileName' : 'http://dap.ceda.ac.uk/data/neodc/esacci/sst/data/lt/Analysis/L4/v01.1/2010/05/01/20100501120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.1.nc',
+        'mapperName': 'sstcci_online',
+        'bands': ['analysed_sst'],
         },{
         'fileName' : 'https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-MONTHLY',
         'mapperName' : 'occci_online',
-        'date' : '2010-01-01'
+        'date' : '2010-01-01',
+        'bands': ['chlor_a'],
         },{
         'fileName' : 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/total_hs/2010/001/20100101000000-GLOBCURRENT-L4-CUReul_hs-ALT_SUM-v02.0-fv01.0.nc',
-        'mapperName' : 'globcurrent_online'}
+        'mapperName' : 'globcurrent_online',
+        'bands': ['eastward_eulerian_current_velocity'],
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc',
+        'mapperName' : 'mapper_osisafnh_online',
+        'bands': ['ice_conc_avg'],
+        }
         ]
