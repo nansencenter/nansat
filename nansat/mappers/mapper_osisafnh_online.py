@@ -4,6 +4,7 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+import datetime as dt
 import numpy as np
 import os
 
@@ -12,8 +13,9 @@ from nansat.mappers.opendap import Opendap
 
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
+            #  http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh-agg
             #  http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_200703010000.nc
-    baseURL = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere'
+    baseURL = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh'
     timeVarName = 'time'
     xName = 'xc'
     yName = 'yc'
@@ -32,20 +34,17 @@ class Mapper(Opendap):
                 previously opened dataset
 
         '''
-        fname = os.path.split(fileName)[1]
-        fdate = fname.split('.')[0].split('_')[-1]
-        date = '%s-%s-%s' % (fdate[0:4], fdate[4:6], fdate[6:8])
+        if fileName[-3:] == '.nc':
+            fname = os.path.split(fileName)[1]
+            fdate = fname.split('.')[0].split('_')[-1]
+            date = '%s-%s-%s' % (fdate[0:4], fdate[4:6], fdate[6:8])
 
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
 
     def convert_dstime_datetimes(self, dsTime):
         ''' Convert time variable to np.datetime64 '''
-        #dsDatetimes = np.array([np.datetime64(self.timeCalendarStart) + day
-        #                        for day in dsTime]).astype('M8[s]')
-        dsDatetimes = np.array([(np.datetime64(self.timeCalendarStart).astype('M8[s]') +
-                                 np.timedelta64(int(day), 'D').astype('m8[s]') +
-                                 np.timedelta64(int(24*(day - int(day))), 'h').astype('m8[s]'))
+        t0 = dt.datetime.strptime(self.timeCalendarStart, '%Y-%m-%d')
+        dsDatetimes = np.array([np.datetime64(t0 + dt.timedelta(seconds=day))
                                 for day in dsTime]).astype('M8[s]')
-
         return dsDatetimes

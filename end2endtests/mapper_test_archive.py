@@ -71,12 +71,17 @@ class DataForTestingOnlineMappers(object):
         'date' : '2010-01-01',
         'bands': ['chlor_a'],
         },{
-        'fileName' : 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/total_hs/2010/001/20100101000000-GLOBCURRENT-L4-CUReul_hs-ALT_SUM-v02.0-fv01.0.nc',
+        'fileName' : 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/total_hs/2010/002/20100102000000-GLOBCURRENT-L4-CUReul_hs-ALT_SUM-v02.0-fv01.0.nc',
         'mapperName' : 'globcurrent_online',
         'bands': ['eastward_eulerian_current_velocity'],
         },{
         'fileName' : 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc',
         'mapperName' : 'mapper_osisafnh_online',
         'bands': ['ice_conc_avg'],
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh-agg',
+        'mapperName' : 'mapper_osisafnh_online',
+        'bands': ['ice_conc_avg'],
+        'date': '1980-07-22',
         }
         ]
