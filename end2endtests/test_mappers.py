@@ -47,10 +47,11 @@ class TestAllMappers(object):
         for kwargs in self.testData.mapperData:
             fileName = kwargs.pop('fileName')
             mapperName = kwargs.pop('mapperName')
-            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
             # Test call to Nansat, mapper not specified
+            sys.stderr.write('\n -> '+fileName+'\n')
             yield self.open_with_nansat, fileName, None, kwargs
             # Test call to Nansat, mapper specified
+            sys.stderr.write('\n'+mapperName+' -> '+fileName+'\n')
             yield self.open_with_nansat, fileName, mapperName, kwargs
 
     def open_with_nansat(self, filePath, mapper=None, kwargs=None):
