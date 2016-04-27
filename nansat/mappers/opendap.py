@@ -38,6 +38,17 @@ class Opendap(VRT):
     ### TODOs:
     # add band metadata
 
+    def test_mapper(self, fileName):
+        ''' Tests if fileName fits mapper. May raise WrongMapperError '''
+        baseURLmatch = False
+        for baseURL in self.baseURLs:
+            if fileName.startswith(baseURL):
+                baseURLmatch = True
+                break
+        if not baseURLmatch:
+            raise WrongMapperError
+
+
     def get_dataset(self, ds):
         ''' Open Dataset '''
         if ds is None:
@@ -124,9 +135,6 @@ class Opendap(VRT):
 
     def create_vrt(self, fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         ''' Create VRT '''
-        if not fileName.startswith(self.baseURL):
-            raise WrongMapperError
-
         if date is None:
             raise OptionError('Date is not specified! Please add date="YYYY-MM-DD"')
 
