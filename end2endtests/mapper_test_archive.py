@@ -103,5 +103,9 @@ class DataForTestingOnlineMappers(object):
         'fileName' : 'http://thredds.met.no/thredds/dodsC/osisaf_test/met.no/ice/drift_lr/merged/2013/09/ice_drift_nh_polstere-625_multi-oi_201309171200-201309191200.nc',
         'mapperName' : 'opendap_osisaf',
         'bands': ['dX', 'dY'],
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/20121001000000-METNO-L4_GHRSST-SSTfnd-METNO_OI-ARC-v02.0-fv01.0.nc',
+        'mapperName' : 'opendap_siwtacsst',
+        'bands': ['analysed_sst'],
         }
         ]

@@ -940,7 +940,8 @@ class Domain(object):
                   pColor='r', pLine='k', pAlpha=0.5, padding=0.,
                   merLabels=[False, False, False, False],
                   parLabels=[False, False, False, False],
-                  pltshow=False):
+                  pltshow=False,
+                  labels=None):
         ''' Create an image with a map of the domain
 
         Uses Basemap to create a World Map
@@ -951,6 +952,10 @@ class Domain(object):
         -----------
         outputFileName : string
             name of the output file name
+        lonVec : [floats] or [[floats]]
+            longitudes of patches to display
+        latVec : [floats] or [[floats]]
+            latitudes of patches to display
         lonBorder : float
             10, horisontal border around patch (degrees of longitude)
         latBorder : float
@@ -986,7 +991,8 @@ class Domain(object):
             where to put meridian labels, see also Basemap.drawmeridians()
         parLables : list of 4 booleans
             where to put parallel labels, see also Basemap.drawparallels()
-
+        labels : list of str
+            labels to print on top of patches
         '''
         # if lat/lon vectors are not given as input
         if lonVec is None or latVec is None or len(lonVec) != len(latVec):
@@ -1024,12 +1030,12 @@ class Domain(object):
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given
         if len(lonVec.shape) == 1:
-            lonVec = lonVec.reshape(1, lonVec.shape[0])
-            latVec = latVec.reshape(1, latVec.shape[0])
+            lonVec = [lonVec]
+            latVec = [latVec]
 
-        for lonSubVec, latSubVec in zip(lonVec, latVec):
+        for i in range(len(lonVec)):
             # convert lat/lons to map units
-            mapX, mapY = bmap(list(lonSubVec.flat), list(latSubVec.flat))
+            mapX, mapY = bmap(list(lonVec[i].flat), list(latVec[i].flat))
 
             # from x/y vectors create a Patch to be added to map
             boundary = Polygon(zip(mapX, mapY),
@@ -1038,6 +1044,10 @@ class Domain(object):
             # add patch to the map
             plt.gca().add_patch(boundary)
             plt.gca().set_aspect('auto')
+
+            if labels is not None and labels[i] is not None:
+                plt.text(np.mean(mapX), np.mean(mapY), labels[i],
+                         va='center', ha='center')
 
         # save figure and close
         plt.savefig(outputFileName, bbox_inches='tight',

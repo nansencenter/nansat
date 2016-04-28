@@ -96,7 +96,7 @@ class Opendap(VRT):
     def get_layer_datetime(self, date, datetimes):
         ''' Get datetime of the matching layer and layer number '''
 
-        if len(datetimes) == 1:
+        if len(datetimes) == 1 or date is None:
             layerNumber = 0
         else:
             # find closest layer
@@ -129,14 +129,21 @@ class Opendap(VRT):
             attrVal = self.ds.variables[varName].getncattr(attr)
             if type(attrVal) in [str, unicode]:
                 attrVal = attrVal.encode('ascii', 'ignore')
-            metaItem['dst'][attrKey] = str(attrVal)
+            if attrKey in ['scale', 'scale_factor']:
+                metaItem['src']['ScaleRatio'] = attrVal
+            elif attrKey in ['offset', 'add_offset']:
+                metaItem['src']['ScaleOffset'] = attrVal
+            else:
+                metaItem['dst'][attrKey] = str(attrVal)
 
         return metaItem
 
     def create_vrt(self, fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         ''' Create VRT '''
         if date is None:
-            raise OptionError('Date is not specified! Please add date="YYYY-MM-DD"')
+            warnings.warn('''
+            Date is not specified! Will return the first layer.
+            Please add date="YYYY-MM-DD"''')
 
         self.fileName = fileName
         self.cachedir = cachedir
