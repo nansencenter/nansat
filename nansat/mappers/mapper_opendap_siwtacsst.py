@@ -34,6 +34,7 @@ class Mapper(Opendap):
                 previously opened dataset
 
         '''
+        self.test_mapper(fileName)
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
 

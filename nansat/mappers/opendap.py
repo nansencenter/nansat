@@ -5,6 +5,8 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
+# http://cfconventions.org/wkt-proj-4.html
+
 import os
 import datetime
 from dateutil.parser import parse
