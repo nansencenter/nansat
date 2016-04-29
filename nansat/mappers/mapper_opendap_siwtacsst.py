@@ -9,19 +9,19 @@ import numpy as np
 import os
 
 from nansat.nsr import NSR
-from nansat.mappers.opendap import Opendap
+from nansat.mappers.opendap import Dataset, Opendap
+
+#http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/20121001000000-METNO-L4_GHRSST-SSTfnd-METNO_OI-ARC-v02.0-fv01.0.nc
 
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
-            #  http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh-agg
-            #  http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_200703010000.nc
-    baseURL = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh'
+    baseURLs = ['http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/']
     timeVarName = 'time'
-    xName = 'xc'
-    yName = 'yc'
-    timeCalendarStart = '1978-01-01'
+    xName = 'lon'
+    yName = 'lat'
+    t0 = dt.datetime(1981,01,01)
+    srcDSProjection = NSR().wkt
 
-    srcDSProjection = NSR('+proj=stere +a=6378273 +b=6356889.44891 +lat_0=90 +lat_ts=70 +lon_0=-45 +units=km').wkt
     def __init__(self, fileName, gdalDataset, gdalMetadata,
                  date=None, ds=None, bands=None, cachedir=None,
                  **kwargs):
@@ -34,17 +34,13 @@ class Mapper(Opendap):
                 previously opened dataset
 
         '''
-        if fileName[-3:] == '.nc':
-            fname = os.path.split(fileName)[1]
-            fdate = fname.split('.')[0].split('_')[-1]
-            date = '%s-%s-%s' % (fdate[0:4], fdate[4:6], fdate[6:8])
-
+        self.test_mapper(fileName)
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
 
     def convert_dstime_datetimes(self, dsTime):
         ''' Convert time variable to np.datetime64 '''
-        t0 = dt.datetime.strptime(self.timeCalendarStart, '%Y-%m-%d')
-        dsDatetimes = np.array([np.datetime64(t0 + dt.timedelta(seconds=day))
+
+        dsDatetimes = np.array([np.datetime64(self.t0 + dt.timedelta(seconds=int(day)))
                                 for day in dsTime]).astype('M8[s]')
         return dsDatetimes

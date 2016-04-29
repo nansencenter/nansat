@@ -12,7 +12,7 @@ from nansat.mappers.opendap import Opendap
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    baseURL = 'https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL'
+    baseURLs = ['https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL']
     timeVarName = 'time'
     xName = 'lon'
     yName = 'lat'
@@ -32,6 +32,7 @@ class Mapper(Opendap):
                 previously opened dataset
 
         '''
+        self.test_mapper(fileName)
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
 

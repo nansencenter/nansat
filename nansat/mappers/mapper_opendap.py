@@ -48,6 +48,7 @@ class Mapper(VRT):
             'polar_stereographic': {
                 0: '+proj=stere ',
                 'straight_vertical_longitude_from_pole': '+lon_0',
+                'standard_parallel': '+lat_1',
                 'latitude_of_projection_origin': '+lat_0',
                 'scale_factor_at_projection_origin': '+k_0',
                 'false_easting': '+x_0',
@@ -55,6 +56,7 @@ class Mapper(VRT):
             },
             'stereographic': {
                 0: '+proj=stere ',
+                'standard_parallel': '+lat_1',
                 'longitude_of_projection_origin': '+lon_0',
                 'latitude_of_projection_origin': '+lat_0',
                 'scale_factor_at_projection_origin': '+k_0',
