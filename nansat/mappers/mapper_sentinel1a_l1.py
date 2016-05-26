@@ -18,6 +18,7 @@ import zipfile
 import numpy as np
 import scipy
 from dateutil.parser import parse
+import xml.etree.ElementTree as ET
 
 import json
 import pythesint as pti
@@ -33,7 +34,8 @@ class Mapper(VRT):
         Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 manifestonly=False, **kwargs):
 
         if zipfile.is_zipfile(fileName):
             zz = zipfile.PyZipFile(fileName)
@@ -88,6 +90,11 @@ class Mapper(VRT):
                                 split('-'))[-1:][0])] = ff
 
         manifestXML = self.read_xml(manifestFile[0])
+
+        # very fast constructor without any bands
+        if manifestonly:
+            self.init_from_manifest_only(manifestXML)
+            return
 
         gdalDatasets = {}
         for key in mdsDict.keys():
@@ -487,3 +494,28 @@ class Mapper(VRT):
             LUT_VRTs[LUT] = VRT(array=LUTs[LUT], lat=latitude, lon=longitude)
 
         return LUT_VRTs, longitude, latitude
+
+    def init_from_manifest_only(self, manifestXML):
+        ''' Create fake VRT and add metadata only from the manifest.safe '''
+        VRT.__init__(self, srcRasterXSize=100, srcRasterYSize=100)
+        doc = ET.fromstring(manifestXML)
+        coords = doc.findall(".//*[{http://www.opengis.net/gml}coordinates]")[0][0].text
+        coords = [map(float, pr.split(',')) for pr in coords.split(' ')]
+
+        gcps = [
+            gdal.GCP(coords[0][1], coords[0][0], 0, 0, 100),
+            gdal.GCP(coords[1][1], coords[1][0], 0, 100, 100),
+            gdal.GCP(coords[2][1], coords[2][0], 0, 100, 0),
+            gdal.GCP(coords[3][1], coords[3][0], 0, 0, 0)]
+        self.dataset.SetGCPs(gcps, NSR().wkt)
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}startTime]")[0][0].text)
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}stopTime]")[0][0].text)
+        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('SENTINEL-1A')))
+        self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
+        self.dataset.SetMetadataItem('Entry Title', 'Sentinel-1A SAR')
+        self.dataset.SetMetadataItem('Data Center', 'ESA/EO')
+        self.dataset.SetMetadataItem('ISO Topic Category', 'Oceans')
+        self.dataset.SetMetadataItem('Summary', 'S1A SAR data')
+
