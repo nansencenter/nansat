@@ -93,7 +93,8 @@ class Mapper(VRT):
 
         # very fast constructor without any bands
         if manifestonly:
-            self.init_from_manifest_only(manifestXML)
+            annotXML = self.read_xml(annotationFiles[0])
+            self.init_from_manifest_only(manifestXML, annotXML)
             return
 
         gdalDatasets = {}
@@ -128,34 +129,19 @@ class Mapper(VRT):
         pol = {}
         it = 0
         for key in annotationDict.keys():
-            xml = Node.create(self.read_xml(annotationDict[key]))
+            annotXML = self.read_xml(annotationDict[key])
+            xml = Node.create(annotXML)
             pol[key] = (xml.node('product').
                         node('adsHeader')['polarisation'].upper())
             it += 1
             if it == 1:
                 # Get incidence angle
                 pi = xml.node('generalAnnotation').node('productInformation')
+
                 self.dataset.SetMetadataItem('ORBIT_DIRECTION',
-                                             str(pi['pass']))
-                # Incidence angles are found in
-                #<geolocationGrid>
-                #    <geolocationGridPointList count="#">
-                #          <geolocationGridPoint>
-                geolocationGridPointList = (xml.node('geolocationGrid').
-                                            children[0])
-                X = []
-                Y = []
-                lon = []
-                lat = []
-                inc = []
-                ele = []
-                for gridPoint in geolocationGridPointList.children:
-                    X.append(int(gridPoint['pixel']))
-                    Y.append(int(gridPoint['line']))
-                    lon.append(float(gridPoint['longitude']))
-                    lat.append(float(gridPoint['latitude']))
-                    inc.append(float(gridPoint['incidenceAngle']))
-                    ele.append(float(gridPoint['elevationAngle']))
+                                              str(pi['pass']))
+                (X, Y, lon, lat, inc, ele, numberOfSamples,
+                 numberOfLines) = self.read_geolocation_lut(annotXML)
 
                 X = np.unique(X)
                 Y = np.unique(Y)
@@ -495,18 +481,47 @@ class Mapper(VRT):
 
         return LUT_VRTs, longitude, latitude
 
-    def init_from_manifest_only(self, manifestXML):
-        ''' Create fake VRT and add metadata only from the manifest.safe '''
-        VRT.__init__(self, srcRasterXSize=100, srcRasterYSize=100)
-        doc = ET.fromstring(manifestXML)
-        coords = doc.findall(".//*[{http://www.opengis.net/gml}coordinates]")[0][0].text
-        coords = [map(float, pr.split(',')) for pr in coords.split(' ')]
+    def read_geolocation_lut(self, annotXML):
+        ''' Read lon, lat, pixel, line, ia, ea from XML string <annotXML>'''
+        xml = Node.create(annotXML)
+        geolocationGridPointList = xml.node('geolocationGrid').node('geolocationGridPointList').children
+        X = []
+        Y = []
+        lon = []
+        lat = []
+        inc = []
+        ele = []
+        for gridPoint in geolocationGridPointList:
+            X.append(gridPoint['pixel'])
+            Y.append(gridPoint['line'])
+            lon.append(gridPoint['longitude'])
+            lat.append(gridPoint['latitude'])
+            inc.append(gridPoint['incidenceAngle'])
+            ele.append(gridPoint['elevationAngle'])
 
-        gcps = [
-            gdal.GCP(coords[0][1], coords[0][0], 0, 0, 100),
-            gdal.GCP(coords[1][1], coords[1][0], 0, 100, 100),
-            gdal.GCP(coords[2][1], coords[2][0], 0, 100, 0),
-            gdal.GCP(coords[3][1], coords[3][0], 0, 0, 0)]
+        X = np.array(map(float, X))
+        Y = np.array(map(float, Y))
+        lon = np.array(map(float, lon))
+        lat = np.array(map(float, lat))
+        inc = np.array(map(float, inc))
+        ele = np.array(map(float, ele))
+
+        numberOfSamples = int(xml.node('imageAnnotation').node('imageInformation').node('numberOfSamples').value)
+        numberOfLines = int(xml.node('imageAnnotation').node('imageInformation').node('numberOfLines').value)
+
+        return X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines
+
+    def init_from_manifest_only(self, manifestXML, annotXML):
+        ''' Create fake VRT and add metadata only from the manifest.safe '''
+        X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines = self.read_geolocation_lut(annotXML)
+
+        VRT.__init__(self, srcRasterXSize=numberOfSamples, srcRasterYSize=numberOfLines)
+        doc = ET.fromstring(manifestXML)
+
+        gcps = []
+        for i in range(len(X)):
+            gcps.append(gdal.GCP(lon[i], lat[i], 0, X[i], Y[i]))
+
         self.dataset.SetGCPs(gcps, NSR().wkt)
         self.dataset.SetMetadataItem('time_coverage_start',
                                      doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}startTime]")[0][0].text)
@@ -518,4 +533,5 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('Data Center', 'ESA/EO')
         self.dataset.SetMetadataItem('ISO Topic Category', 'Oceans')
         self.dataset.SetMetadataItem('Summary', 'S1A SAR data')
+
 
