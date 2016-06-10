@@ -73,28 +73,35 @@ class Mapper(VRT):
             raise WrongMapperError
 
         mdsDict = {}
-        for mds in mdsFiles:
-            mdsDict[int((os.path.splitext(os.path.basename(mds))[0].
-                         split('-'))[-1:][0])] = mds
-        calDict = {}
-        for ff in calFiles:
-            calDict[int((os.path.splitext(os.path.basename(ff))[0].
-                         split('-'))[-1:][0])] = ff
-        noiseDict = {}
-        for ff in noiseFiles:
-            noiseDict[int((os.path.splitext(os.path.basename(ff))[0].
-                           split('-'))[-1:][0])] = ff
-        annotationDict = {}
-        for ff in annotationFiles:
-            annotationDict[int((os.path.splitext(os.path.basename(ff))[0].
-                                split('-'))[-1:][0])] = ff
+        for ff in mdsFiles:
+            mdsDict[
+                os.path.splitext(os.path.basename(ff))[0].split('-')[3]] = ff
 
-        manifestXML = self.read_xml(manifestFile[0])
+        self.calXMLDict = {}
+        for ff in calFiles:
+            self.calXMLDict[
+                os.path.splitext(
+                os.path.basename(ff))[0].split('-')[4]] = self.read_xml(ff)
+
+        self.noiseXMLDict = {}
+        for ff in noiseFiles:
+            self.noiseXMLDict[
+                os.path.splitext(
+                os.path.basename(ff))[0].split('-')[4]] = self.read_xml(ff)
+
+        self.annotationXMLDict = {}
+        for ff in annotationFiles:
+            self.annotationXMLDict[
+                os.path.splitext(
+                os.path.basename(ff))[0].split('-')[3]] = self.read_xml(ff)
+
+        self.manifestXML = self.read_xml(manifestFile[0])
 
         # very fast constructor without any bands
         if manifestonly:
-            annotXML = self.read_xml(annotationFiles[0])
-            self.init_from_manifest_only(manifestXML, annotXML)
+            self.init_from_manifest_only(self.manifestXML,
+                                         self.annotationXMLDict[
+                                         self.annotationXMLDict.keys()[0]])
             return
 
         gdalDatasets = {}
@@ -128,9 +135,8 @@ class Mapper(VRT):
         # Read annotation, noise and calibration xml-files
         pol = {}
         it = 0
-        for key in annotationDict.keys():
-            annotXML = self.read_xml(annotationDict[key])
-            xml = Node.create(annotXML)
+        for key in self.annotationXMLDict:
+            xml = Node.create(self.annotationXMLDict[key])
             pol[key] = (xml.node('product').
                         node('adsHeader')['polarisation'].upper())
             it += 1
@@ -141,7 +147,8 @@ class Mapper(VRT):
                 self.dataset.SetMetadataItem('ORBIT_DIRECTION',
                                               str(pi['pass']))
                 (X, Y, lon, lat, inc, ele, numberOfSamples,
-                 numberOfLines) = self.read_geolocation_lut(annotXML)
+                numberOfLines) = self.read_geolocation_lut(
+                                                self.annotationXMLDict[key])
 
                 X = np.unique(X)
                 Y = np.unique(Y)
@@ -161,10 +168,10 @@ class Mapper(VRT):
                                                 eResampleAlg=2)
                 self.bandVRTs['incVRT'] = incVRT
                 self.bandVRTs['eleVRT'] = eleVRT
-        for key in calDict.keys():
-            xml = self.read_xml(calDict[key])
+
+        for key in self.calXMLDict:
             calibration_LUT_VRTs, longitude, latitude = (
-                self.get_LUT_VRTs(xml,
+                self.get_LUT_VRTs(self.calXMLDict[key],
                                   'calibrationVectorList',
                                   ['sigmaNought', 'betaNought',
                                    'gamma', 'dn']
@@ -181,9 +188,10 @@ class Mapper(VRT):
                                 eResampleAlg=1))
             self.bandVRTs['LUT_gamma_VRT'] = calibration_LUT_VRTs['gamma']
             self.bandVRTs['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
-        for key in noiseDict.keys():
-            xml = self.read_xml(noiseDict[key])
-            noise_LUT_VRT = self.get_LUT_VRTs(xml, 'noiseVectorList',
+
+        for key in self.noiseXMLDict:
+            noise_LUT_VRT = self.get_LUT_VRTs(self.noiseXMLDict[key],
+                                              'noiseVectorList',
                                               ['noiseLut'])[0]
             self.bandVRTs['LUT_noise_VRT_'+pol[key]] = (
                 noise_LUT_VRT['noiseLut'].get_resized_vrt(
@@ -414,7 +422,7 @@ class Mapper(VRT):
             self.dataset.FlushCache()
 
         # set time as acquisition start time
-        n = Node.create(manifestXML)
+        n = Node.create(self.manifestXML)
         meta = n.node('metadataSection')
         for nn in meta.children:
             if nn.getAttribute('ID') == u'acquisitionPeriod':
