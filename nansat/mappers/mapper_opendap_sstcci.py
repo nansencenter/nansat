@@ -5,9 +5,13 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
+
 from dateutil.parser import parse
+import json
 
 import numpy as np
+
+import pythesint as pti
 
 from nansat.nsr import NSR
 from nansat.mappers.opendap import Opendap
@@ -39,6 +43,12 @@ class Mapper(Opendap):
         date = '%s-%s-%s' % (fname[0:4], fname[4:6], fname[6:8])
 
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
+
+        # add instrument and platform
+        mm = pti.get_gcmd_instrument('Passive Remote Sensing')
+        ee = pti.get_gcmd_platform('Earth Observation Satellites')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
     def convert_dstime_datetimes(self, dsTime):
         ''' Convert time variable to np.datetime64 '''
