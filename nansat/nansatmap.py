@@ -141,6 +141,10 @@ class Nansatmap(Basemap):
             kwargs['lon_0'] = lon_0
             kwargs['lat_0'] = lat_0
 
+        if projStr == 'utm':
+            kwargs['lon_0'] = -180 + NSR(proj4).GetUTMZone()*6 - 3
+            kwargs['lat_0'] = 0
+
         self.extensionList = ['png', 'emf', 'eps', 'pdf', 'rgba',
                               'ps', 'raw', 'svg', 'svgz']
 

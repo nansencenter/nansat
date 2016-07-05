@@ -5,6 +5,8 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
+# http://cfconventions.org/wkt-proj-4.html
+
 import os
 import datetime
 from dateutil.parser import parse
@@ -37,6 +39,17 @@ class Opendap(VRT):
 
     ### TODOs:
     # add band metadata
+
+    def test_mapper(self, fileName):
+        ''' Tests if fileName fits mapper. May raise WrongMapperError '''
+        baseURLmatch = False
+        for baseURL in self.baseURLs:
+            if fileName.startswith(baseURL):
+                baseURLmatch = True
+                break
+        if not baseURLmatch:
+            raise WrongMapperError
+
 
     def get_dataset(self, ds):
         ''' Open Dataset '''
@@ -85,7 +98,7 @@ class Opendap(VRT):
     def get_layer_datetime(self, date, datetimes):
         ''' Get datetime of the matching layer and layer number '''
 
-        if len(datetimes) == 1:
+        if len(datetimes) == 1 or date is None:
             layerNumber = 0
         else:
             # find closest layer
@@ -118,17 +131,21 @@ class Opendap(VRT):
             attrVal = self.ds.variables[varName].getncattr(attr)
             if type(attrVal) in [str, unicode]:
                 attrVal = attrVal.encode('ascii', 'ignore')
-            metaItem['dst'][attrKey] = str(attrVal)
+            if attrKey in ['scale', 'scale_factor']:
+                metaItem['src']['ScaleRatio'] = attrVal
+            elif attrKey in ['offset', 'add_offset']:
+                metaItem['src']['ScaleOffset'] = attrVal
+            else:
+                metaItem['dst'][attrKey] = str(attrVal)
 
         return metaItem
 
     def create_vrt(self, fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         ''' Create VRT '''
-        if not fileName.startswith(self.baseURL):
-            raise WrongMapperError
-
         if date is None:
-            raise OptionError('Date is not specified! Please add date="YYYY-MM-DD"')
+            warnings.warn('''
+            Date is not specified! Will return the first layer.
+            Please add date="YYYY-MM-DD"''')
 
         self.fileName = fileName
         self.cachedir = cachedir
