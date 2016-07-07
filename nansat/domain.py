@@ -1023,9 +1023,9 @@ class Domain(object):
         bmap.drawcoastlines()
         bmap.fillcontinents(color=continetsColor)
         bmap.drawmeridians(np.linspace(minLon, maxLon, meridians),
-                           labels=merLabels)
+                           labels=merLabels, fmt='%2.1f')
         bmap.drawparallels(np.linspace(minLat, maxLat, parallels),
-                           labels=parLabels)
+                           labels=parLabels, fmt='%2.1f')
 
         # convert input lat/lon vectors to arrays of vectors with one row
         # if only one vector was given
@@ -1047,7 +1047,7 @@ class Domain(object):
 
             if labels is not None and labels[i] is not None:
                 plt.text(np.mean(mapX), np.mean(mapY), labels[i],
-                         va='center', ha='center')
+                         va='center', ha='right', alpha=0.5, fontsize=10)
 
         # save figure and close
         plt.savefig(outputFileName, bbox_inches='tight',
