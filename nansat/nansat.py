@@ -938,8 +938,8 @@ class Nansat(Domain):
             factor = float(height) / rasterYSize
 
         # calculate new size
-        newRasterYSize = int(rasterYSize * factor)
-        newRasterXSize = int(rasterXSize * factor)
+        newRasterYSize = np.round(rasterYSize * factor)
+        newRasterXSize = np.round(rasterXSize * factor)
 
         self.logger.info('New size/factor: (%f, %f)/%f' %
                          (newRasterXSize, newRasterYSize, factor))

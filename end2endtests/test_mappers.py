@@ -43,24 +43,29 @@ class TestAllMappers(object):
         cls.testData = DataForTestingMappers()
 
     def test_mappers_basic(self):
-        ''' Run similar basic tests for all mappers '''
+        ''' Basic mapper test '''
         for kwargs in self.testData.mapperData:
             fileName = kwargs.pop('fileName')
             mapperName = kwargs.pop('mapperName')
-            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
             # Test call to Nansat, mapper not specified
+            sys.stderr.write('\n -> '+fileName+'\n')
             yield self.open_with_nansat, fileName, None, kwargs
             # Test call to Nansat, mapper specified
+            sys.stderr.write('\n'+mapperName+' -> '+fileName+'\n')
             yield self.open_with_nansat, fileName, mapperName, kwargs
 
-    def test_mappers_start_time(self):
-        ''' Run similar NansenCloud reated tests for all mappers '''
-        for fileName, mapperName in self.testData.mapperData:
-            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
-            n = Nansat(fileName, mapperName=mapperName)
-            # Test nansat.start_time() and nansat.end_time()
-            yield self.has_start_time, n
+    def open_with_nansat(self, filePath, mapper=None, kwargs=None):
+        ''' Ensures that you can open the filePath as a Nansat object '''
+        if kwargs is None:
+            kwargs = {}
 
+        if mapper:
+            n = Nansat(filePath, mapperName=mapper, **kwargs)
+        else:
+            n = Nansat(filePath, **kwargs)
+        assert type(n) == Nansat
+
+"""
     def test_mappers_advanced(self):
         ''' Run similar NansenCloud related tests for all mappers '''
         for fileName, mapperName in self.testData.mapperData:
@@ -105,17 +110,6 @@ class TestAllMappers(object):
     def is_correct_mapper(self, n, mapper):
         assert n.mapper == mapper
 
-    def open_with_nansat(self, filePath, mapper=None, kwargs=None):
-        ''' Ensures that you can open the filePath as a Nansat object '''
-        if kwargs is None:
-            kwargs = {}
-
-        if mapper:
-            n = Nansat(filePath, mapperName=mapper, **kwargs)
-        else:
-            n = Nansat(filePath, **kwargs)
-        assert type(n) == Nansat
-
     def exist_intensity_band(self, n):
         ''' Test if intensity bands exist for complex data '''
         allBandNames = []
@@ -128,7 +122,7 @@ class TestAllMappers(object):
 
         for iComplexName in complexBandNames:
             assert iComplexName.replace('_complex', '') in allBandNames
-
+"""
 
 class TestOnlineMappers(TestAllMappers):
     @classmethod
