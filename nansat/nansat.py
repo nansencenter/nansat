@@ -1917,13 +1917,14 @@ class Nansat(Domain):
 
         return points
 
-    def crop_interactive(self, band=1):
+    def crop_interactive(self, band=1,**kwargs):
         ''' Interactively select boundary and crop Nansat object
 
         Parameters
         ----------
         band : int or str
             id of the band to show for interactive selection of boundaries
+        **kwargs : keyword arguments for imshow
 
         Modifies
         --------
@@ -1940,7 +1941,8 @@ class Nansat(Domain):
         Examples
         --------
         # crop a subimage interactively
-        extent = n.crop()
+        from matplotlib import cm
+        extent = n.crop_interactive(band=1,cmap=cm.gray)
 
         '''
         maxwidth = 1000
@@ -1951,7 +1953,13 @@ class Nansat(Domain):
         else:
             factor = 1
         # use interactive PointBrowser for selecting extent
-        points = self.digitize_points(band=band)[0]
+        try:
+           points = self.digitize_points(band=band,**kwargs)[0]
+        except:
+           if resized:
+              self.undo()
+           return
+
         xOff = round(points.min(axis=1)[0] / factor)
         yOff = round(points.min(axis=1)[1] / factor)
         xSize = round((points.max(axis=1)[0] - xOff) / factor)
