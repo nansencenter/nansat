@@ -28,17 +28,14 @@ chmod +x miniconda.sh
 # install miniconda virtual environment
 ./miniconda.sh -b -f -p $HOME/miniconda
 
-# deactivate existing packages
-export PYTHONPATH=
-
-# activate the environment
+# activate the miniconda environment
 export PATH=$HOME/miniconda/bin/:$PATH
 
-# install some requirements from common repositories
-conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
+# update miniconda packages and metadata
+conda update -q --yes conda
 
-#install some requirements from NERSC repository
-conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
+# install all requirements from conda-forge channel
+conda install -q --yes -c conda-forge numpy scipy matplotlib nose pillow basemap netcdf4 gdal
 
 # configure environment
 export GDAL_DATA=$HOME/miniconda/share/gdal/
