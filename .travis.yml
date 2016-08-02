@@ -15,8 +15,7 @@ before_install:
 
 install:
   - conda update -q --yes conda
-  - conda install -q --yes numpy scipy matplotlib nose pillow basemap netcdf4 proj.4
-  - conda install -q --yes -c https://conda.anaconda.org/nersc nansat-gdal
+  - conda install -q --yes -c conda-forge numpy scipy matplotlib nose pillow basemap netcdf4 gdal
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
   - python -c 'import gdal; print gdal.__file__'
