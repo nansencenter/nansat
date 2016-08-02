@@ -25,8 +25,12 @@ import pkgutil
 import warnings
 
 from scipy.io.netcdf import netcdf_file
-from scipy.stats import nanmedian
 import numpy as np
+if 'nanmedian' in np.__all__:
+    from numpy import nanmedian
+else:
+    from scipy.stats import nanmedian
+
 from numpy.lib.recfunctions import append_fields
 import matplotlib
 from matplotlib import cm
