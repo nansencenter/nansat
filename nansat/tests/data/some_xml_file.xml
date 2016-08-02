@@ -1,0 +1,8 @@
+<Element attr="attrValue">
+    <Subnode>testValue</Subnode>
+    <Subnode2>
+        <AnotherLayer>
+            <FinalLayer>Deep Value</FinalLayer>
+        </AnotherLayer>
+    </Subnode2>
+</Element>
