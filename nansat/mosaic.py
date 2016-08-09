@@ -20,7 +20,10 @@ import multiprocessing as mp
 import ctypes
 
 import numpy as np
-import scipy.stats as st
+if 'nanmedian' in np.__all__:
+    from numpy import nanmedian
+else:
+    from scipy.stats import nanmedian
 
 from nansat.nansat import Nansat
 
@@ -379,7 +382,7 @@ class Mosaic(Nansat):
                                                     opener,
                                                     eResampleAlg,
                                                     period, vmin, vmax)
-            median = st.nanmedian(cube, axis=0)
+            median = nanmedian(cube, axis=0)
 
             # add band and std with metadata
             self.add_band(array=median, parameters=metadata)

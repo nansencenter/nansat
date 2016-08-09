@@ -192,16 +192,6 @@ class Node(object):
 
         return theChild
 
-    def _replace_dom_Node(self, tag, nodeNumber, contents):
-        '''Replace child node with new contents'''
-
-        dom0 = self.dom()
-        oldChild = self.find_dom_child(dom0, tag, nodeNumber)
-        newChild = xdm.parseString(contents).childNodes[0]
-        dom0.replaceChild(newChild, oldChild)
-
-        return Node.create(dom0)
-
     def nodeList(self, tag):
         '''
         Produce a list of subnodes with the same tag.

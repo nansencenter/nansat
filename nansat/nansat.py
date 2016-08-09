@@ -25,8 +25,12 @@ import pkgutil
 import warnings
 
 from scipy.io.netcdf import netcdf_file
-from scipy.stats import nanmedian
 import numpy as np
+if 'nanmedian' in np.__all__:
+    from numpy import nanmedian
+else:
+    from scipy.stats import nanmedian
+
 from numpy.lib.recfunctions import append_fields
 import matplotlib
 from matplotlib import cm
@@ -372,8 +376,8 @@ class Nansat(Domain):
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
-            False: Write swath-projected data with rows and columns organized
-                   as in the original product.
+            False: Default. Write swath-projected data with rows and columns
+                   organized as in the original product.
             True:  Use the default behaviour of GDAL, which is to flip the rows
         options : str or list
             GDAL export options in format of: 'OPT=VAL', or
@@ -1917,13 +1921,14 @@ class Nansat(Domain):
 
         return points
 
-    def crop_interactive(self, band=1):
+    def crop_interactive(self, band=1,**kwargs):
         ''' Interactively select boundary and crop Nansat object
 
         Parameters
         ----------
         band : int or str
             id of the band to show for interactive selection of boundaries
+        **kwargs : keyword arguments for imshow
 
         Modifies
         --------
@@ -1940,7 +1945,8 @@ class Nansat(Domain):
         Examples
         --------
         # crop a subimage interactively
-        extent = n.crop()
+        from matplotlib import cm
+        extent = n.crop_interactive(band=1,cmap=cm.gray)
 
         '''
         maxwidth = 1000
@@ -1951,7 +1957,13 @@ class Nansat(Domain):
         else:
             factor = 1
         # use interactive PointBrowser for selecting extent
-        points = self.digitize_points(band=band)[0]
+        try:
+           points = self.digitize_points(band=band,**kwargs)[0]
+        except:
+           if resized:
+              self.undo()
+           return
+
         xOff = round(points.min(axis=1)[0] / factor)
         yOff = round(points.min(axis=1)[1] / factor)
         xSize = round((points.max(axis=1)[0] - xOff) / factor)
