@@ -16,10 +16,13 @@ from nansat.nsr import NSR
 from nansat.mappers.opendap import Dataset, Opendap
 
 #http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/20121001000000-METNO-L4_GHRSST-SSTfnd-METNO_OI-ARC-v02.0-fv01.0.nc
-
+#http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03_V1/20120808-METNO-L4UHfnd-ARC-v01-fv01-METNO_OI.nc
+#http://thredds.met.no/thredds/dodsC/sea_ice/SST-METNO-ARC-SST_L4-OBS-V2-V1/sst_arctic_aggregated
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
-    baseURLs = ['http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/']
+    baseURLs = ['http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/',
+                'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03_V1/',
+                'http://thredds.met.no/thredds/dodsC/sea_ice/SST-METNO-ARC-SST_L4-OBS-V2-V1/']
     timeVarName = 'time'
     xName = 'lon'
     yName = 'lat'

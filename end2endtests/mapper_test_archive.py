@@ -65,15 +65,24 @@ class DataForTestingOnlineMappers(object):
         'fileName' : 'http://dap.ceda.ac.uk/data/neodc/esacci/sst/data/lt/Analysis/L4/v01.1/2010/05/01/20100501120000-ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_LT-v02.0-fv01.1.nc',
         'mapperName': 'opendap_sstcci',
         'bands': ['analysed_sst'],
+
+        },{
+        'fileName' : 'https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-8DAY',
+        'mapperName' : 'opendap_occci',
+        'date' : '2010-01-01',
+        'bands': ['chlor_a'],
         },{
         'fileName' : 'https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-MONTHLY',
         'mapperName' : 'opendap_occci',
         'date' : '2010-01-01',
         'bands': ['chlor_a'],
+
+
         },{
         'fileName' : 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/total_hs/2010/002/20100102000000-GLOBCURRENT-L4-CUReul_hs-ALT_SUM-v02.0-fv01.0.nc',
         'mapperName' : 'opendap_globcurrent',
         'bands': ['eastward_eulerian_current_velocity'],
+
         },{
         'fileName' : 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc',
         'mapperName' : 'opendap_osisaf',
@@ -99,13 +108,19 @@ class DataForTestingOnlineMappers(object):
         'fileName' : 'http://thredds.met.no/thredds/dodsC/osisaf/met.no/ice/edge/2016/04/ice_edge_nh_polstere-100_multi_201604241200.nc',
         'mapperName' : 'opendap_osisaf',
         'bands': ['ice_edge'],
-        },{
-        'fileName' : 'http://thredds.met.no/thredds/dodsC/osisaf_test/met.no/ice/drift_lr/merged/2013/09/ice_drift_nh_polstere-625_multi-oi_201309171200-201309191200.nc',
-        'mapperName' : 'opendap_osisaf',
-        'bands': ['dX', 'dY'],
+
         },{
         'fileName' : 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03/20121001000000-METNO-L4_GHRSST-SSTfnd-METNO_OI-ARC-v02.0-fv01.0.nc',
         'mapperName' : 'opendap_siwtacsst',
         'bands': ['analysed_sst'],
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/sst-metno-arc-sst03_V1/20120808-METNO-L4UHfnd-ARC-v01-fv01-METNO_OI.nc',
+        'mapperName' : 'opendap_siwtacsst',
+        'bands': ['analysed_sst'],
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/sea_ice/SST-METNO-ARC-SST_L4-OBS-V2-V1/sst_arctic_aggregated',
+        'mapperName' : 'opendap_siwtacsst',
+        'bands': ['analysed_sst'],
+        'date': '2012-08-08'
         }
         ]

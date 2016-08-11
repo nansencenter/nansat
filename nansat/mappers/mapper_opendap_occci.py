@@ -13,6 +13,8 @@ import pythesint as pti
 from nansat.nsr import NSR
 from nansat.mappers.opendap import Opendap
 
+#https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-8DAY
+#https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-MONTHLY
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
