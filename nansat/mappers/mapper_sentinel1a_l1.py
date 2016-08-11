@@ -223,8 +223,8 @@ class Mapper(VRT):
                 },
                 'dst': {
                     'name': name,
-                    'SourceTransferType': gdal.GetDataTypeName(dtype),
-                    'dataType': 6,
+                    #'SourceTransferType': gdal.GetDataTypeName(dtype),
+                    #'dataType': 6,
                 },
             })
         # add bands with metadata and corresponding values to the empty VRT
