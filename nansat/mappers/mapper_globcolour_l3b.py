@@ -5,9 +5,11 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 import glob
-import os.path
+import os
 import datetime
 import json
+import tempfile
+import shutil
 
 from scipy.io.netcdf import netcdf_file
 import numpy as np
@@ -41,8 +43,12 @@ class Mapper(VRT, Globcolour):
         iDir, iFile = os.path.split(fileName)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
-        if (iFileName[0:4] != 'L3b_' or iFileExt != '.nc' or
-           not os.path.exists(fileName) or gdalDataset is not None):
+        if (iFileName[0:4] != 'L3b_'
+            or iFileExt != '.nc'
+            or not os.path.exists(fileName)
+            or (gdalDataset is not None
+                and (len(gdalDataset.GetSubDatasets()) > 0
+                     or gdalDataset.RasterCount > 0))):
             raise WrongMapperError
 
         # define shape of GLOBCOLOUR grid
@@ -69,7 +75,10 @@ class Mapper(VRT, Globcolour):
         mask = None
         for simFile in simFiles:
             print 'sim: ', simFile
-            f = Dataset(simFile)
+            # copy simFile to a temporary file
+            tmpf = tempfile.mkstemp()
+            shutil.copyfile(simFile, tmpf[1])
+            f = Dataset(tmpf[1])
 
             # get iBinned, index for converting from binned into GLOBCOLOR-grid
             colBinned = f.variables['col'][:]
@@ -156,6 +165,7 @@ class Mapper(VRT, Globcolour):
             if metaEntry2 is not None:
                 metaDict.append(metaEntry2)
 
+            os.remove(tmpf[1])
 
         instrument = f.title.strip().split(' ')[-2].split('/')[0]
         mm = pti.get_gcmd_instrument(instrument)
