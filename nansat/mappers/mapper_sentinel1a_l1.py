@@ -18,6 +18,7 @@ import zipfile
 import numpy as np
 import scipy
 from dateutil.parser import parse
+import xml.etree.ElementTree as ET
 
 import json
 import pythesint as pti
@@ -33,7 +34,8 @@ class Mapper(VRT):
         Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata,
+                 manifestonly=False, **kwargs):
 
         if zipfile.is_zipfile(fileName):
             zz = zipfile.PyZipFile(fileName)
@@ -71,23 +73,36 @@ class Mapper(VRT):
             raise WrongMapperError
 
         mdsDict = {}
-        for mds in mdsFiles:
-            mdsDict[int((os.path.splitext(os.path.basename(mds))[0].
-                         split('-'))[-1:][0])] = mds
-        calDict = {}
-        for ff in calFiles:
-            calDict[int((os.path.splitext(os.path.basename(ff))[0].
-                         split('-'))[-1:][0])] = ff
-        noiseDict = {}
-        for ff in noiseFiles:
-            noiseDict[int((os.path.splitext(os.path.basename(ff))[0].
-                           split('-'))[-1:][0])] = ff
-        annotationDict = {}
-        for ff in annotationFiles:
-            annotationDict[int((os.path.splitext(os.path.basename(ff))[0].
-                                split('-'))[-1:][0])] = ff
+        for ff in mdsFiles:
+            mdsDict[
+                os.path.splitext(os.path.basename(ff))[0].split('-')[3]] = ff
 
-        manifestXML = self.read_xml(manifestFile[0])
+        self.calXMLDict = {}
+        for ff in calFiles:
+            self.calXMLDict[
+                os.path.splitext(
+                os.path.basename(ff))[0].split('-')[4]] = self.read_xml(ff)
+
+        self.noiseXMLDict = {}
+        for ff in noiseFiles:
+            self.noiseXMLDict[
+                os.path.splitext(
+                os.path.basename(ff))[0].split('-')[4]] = self.read_xml(ff)
+
+        self.annotationXMLDict = {}
+        for ff in annotationFiles:
+            self.annotationXMLDict[
+                os.path.splitext(
+                os.path.basename(ff))[0].split('-')[3]] = self.read_xml(ff)
+
+        self.manifestXML = self.read_xml(manifestFile[0])
+
+        # very fast constructor without any bands
+        if manifestonly:
+            self.init_from_manifest_only(self.manifestXML,
+                                         self.annotationXMLDict[
+                                         self.annotationXMLDict.keys()[0]])
+            return
 
         gdalDatasets = {}
         for key in mdsDict.keys():
@@ -120,35 +135,20 @@ class Mapper(VRT):
         # Read annotation, noise and calibration xml-files
         pol = {}
         it = 0
-        for key in annotationDict.keys():
-            xml = Node.create(self.read_xml(annotationDict[key]))
+        for key in self.annotationXMLDict:
+            xml = Node.create(self.annotationXMLDict[key])
             pol[key] = (xml.node('product').
                         node('adsHeader')['polarisation'].upper())
             it += 1
             if it == 1:
                 # Get incidence angle
                 pi = xml.node('generalAnnotation').node('productInformation')
+
                 self.dataset.SetMetadataItem('ORBIT_DIRECTION',
-                                             str(pi['pass']))
-                # Incidence angles are found in
-                #<geolocationGrid>
-                #    <geolocationGridPointList count="#">
-                #          <geolocationGridPoint>
-                geolocationGridPointList = (xml.node('geolocationGrid').
-                                            children[0])
-                X = []
-                Y = []
-                lon = []
-                lat = []
-                inc = []
-                ele = []
-                for gridPoint in geolocationGridPointList.children:
-                    X.append(int(gridPoint['pixel']))
-                    Y.append(int(gridPoint['line']))
-                    lon.append(float(gridPoint['longitude']))
-                    lat.append(float(gridPoint['latitude']))
-                    inc.append(float(gridPoint['incidenceAngle']))
-                    ele.append(float(gridPoint['elevationAngle']))
+                                              str(pi['pass']))
+                (X, Y, lon, lat, inc, ele, numberOfSamples,
+                numberOfLines) = self.read_geolocation_lut(
+                                                self.annotationXMLDict[key])
 
                 X = np.unique(X)
                 Y = np.unique(Y)
@@ -168,10 +168,10 @@ class Mapper(VRT):
                                                 eResampleAlg=2)
                 self.bandVRTs['incVRT'] = incVRT
                 self.bandVRTs['eleVRT'] = eleVRT
-        for key in calDict.keys():
-            xml = self.read_xml(calDict[key])
+
+        for key in self.calXMLDict:
             calibration_LUT_VRTs, longitude, latitude = (
-                self.get_LUT_VRTs(xml,
+                self.get_LUT_VRTs(self.calXMLDict[key],
                                   'calibrationVectorList',
                                   ['sigmaNought', 'betaNought',
                                    'gamma', 'dn']
@@ -188,9 +188,10 @@ class Mapper(VRT):
                                 eResampleAlg=1))
             self.bandVRTs['LUT_gamma_VRT'] = calibration_LUT_VRTs['gamma']
             self.bandVRTs['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
-        for key in noiseDict.keys():
-            xml = self.read_xml(noiseDict[key])
-            noise_LUT_VRT = self.get_LUT_VRTs(xml, 'noiseVectorList',
+
+        for key in self.noiseXMLDict:
+            noise_LUT_VRT = self.get_LUT_VRTs(self.noiseXMLDict[key],
+                                              'noiseVectorList',
                                               ['noiseLut'])[0]
             self.bandVRTs['LUT_noise_VRT_'+pol[key]] = (
                 noise_LUT_VRT['noiseLut'].get_resized_vrt(
@@ -222,8 +223,8 @@ class Mapper(VRT):
                 },
                 'dst': {
                     'name': name,
-                    'SourceTransferType': gdal.GetDataTypeName(dtype),
-                    'dataType': 6,
+                    #'SourceTransferType': gdal.GetDataTypeName(dtype),
+                    #'dataType': 6,
                 },
             })
         # add bands with metadata and corresponding values to the empty VRT
@@ -329,10 +330,6 @@ class Mapper(VRT):
                 {'src': [{'SourceFilename': self.fileName,
                           'SourceBand': bandNumberDict['DN_%s' % pol[key]],
                           },
-                         {'SourceFilename': (self.bandVRTs['LUT_noise_VRT_%s'
-                                             % pol[key]].fileName),
-                          'SourceBand': 1
-                          },
                          {'SourceFilename':
                           (self.bandVRTs['LUT_sigmaNought_VRT_%s'
                            % pol[key]].fileName),
@@ -351,10 +348,6 @@ class Mapper(VRT):
             metaDict.append(
                 {'src': [{'SourceFilename': self.fileName,
                           'SourceBand': bandNumberDict['DN_%s' % pol[key]]
-                          },
-                         {'SourceFilename': (self.bandVRTs['LUT_noise_VRT_%s'
-                                             % pol[key]].fileName),
-                          'SourceBand': 1
                           },
                          {'SourceFilename':
                           (self.bandVRTs['LUT_betaNought_VRT_%s'
@@ -421,7 +414,7 @@ class Mapper(VRT):
             self.dataset.FlushCache()
 
         # set time as acquisition start time
-        n = Node.create(manifestXML)
+        n = Node.create(self.manifestXML)
         meta = n.node('metadataSection')
         for nn in meta.children:
             if nn.getAttribute('ID') == u'acquisitionPeriod':
@@ -487,3 +480,58 @@ class Mapper(VRT):
             LUT_VRTs[LUT] = VRT(array=LUTs[LUT], lat=latitude, lon=longitude)
 
         return LUT_VRTs, longitude, latitude
+
+    def read_geolocation_lut(self, annotXML):
+        ''' Read lon, lat, pixel, line, ia, ea from XML string <annotXML>'''
+        xml = Node.create(annotXML)
+        geolocationGridPointList = xml.node('geolocationGrid').node('geolocationGridPointList').children
+        X = []
+        Y = []
+        lon = []
+        lat = []
+        inc = []
+        ele = []
+        for gridPoint in geolocationGridPointList:
+            X.append(gridPoint['pixel'])
+            Y.append(gridPoint['line'])
+            lon.append(gridPoint['longitude'])
+            lat.append(gridPoint['latitude'])
+            inc.append(gridPoint['incidenceAngle'])
+            ele.append(gridPoint['elevationAngle'])
+
+        X = np.array(map(float, X))
+        Y = np.array(map(float, Y))
+        lon = np.array(map(float, lon))
+        lat = np.array(map(float, lat))
+        inc = np.array(map(float, inc))
+        ele = np.array(map(float, ele))
+
+        numberOfSamples = int(xml.node('imageAnnotation').node('imageInformation').node('numberOfSamples').value)
+        numberOfLines = int(xml.node('imageAnnotation').node('imageInformation').node('numberOfLines').value)
+
+        return X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines
+
+    def init_from_manifest_only(self, manifestXML, annotXML):
+        ''' Create fake VRT and add metadata only from the manifest.safe '''
+        X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines = self.read_geolocation_lut(annotXML)
+
+        VRT.__init__(self, srcRasterXSize=numberOfSamples, srcRasterYSize=numberOfLines)
+        doc = ET.fromstring(manifestXML)
+
+        gcps = []
+        for i in range(len(X)):
+            gcps.append(gdal.GCP(lon[i], lat[i], 0, X[i], Y[i]))
+
+        self.dataset.SetGCPs(gcps, NSR().wkt)
+        self.dataset.SetMetadataItem('time_coverage_start',
+                                     doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}startTime]")[0][0].text)
+        self.dataset.SetMetadataItem('time_coverage_end',
+                                     doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}stopTime]")[0][0].text)
+        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('SENTINEL-1A')))
+        self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
+        self.dataset.SetMetadataItem('Entry Title', 'Sentinel-1A SAR')
+        self.dataset.SetMetadataItem('Data Center', 'ESA/EO')
+        self.dataset.SetMetadataItem('ISO Topic Category', 'Oceans')
+        self.dataset.SetMetadataItem('Summary', 'S1A SAR data')
+
+

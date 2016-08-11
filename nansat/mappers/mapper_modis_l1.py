@@ -8,6 +8,8 @@ from dateutil.parser import parse
 import warnings
 import json
 
+import numpy as np
+
 import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError
@@ -18,7 +20,7 @@ from hdf4_mapper import HDF4Mapper
 class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, GCP_COUNT=30, **kwargs):
         ''' Create MODIS_L1 VRT '''
 
         #list of available modis names:resolutions
@@ -360,3 +362,24 @@ class Mapper(HDF4Mapper):
         ee = pti.get_gcmd_platform(platformName)
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        lonSubdataset = [subdatasetName[0]
+                         for subdatasetName in gdalDataset.GetSubDatasets()
+                         if 'Longitude' in subdatasetName[1]][0]
+        latSubdataset = [subdatasetName[0]
+                         for subdatasetName in gdalDataset.GetSubDatasets()
+                         if 'Latitude' in subdatasetName[1]][0]
+        lons = gdal.Open(lonSubdataset).ReadAsArray()
+        lats = gdal.Open(latSubdataset).ReadAsArray()
+        gcps = []
+        rows = range(0, lons.shape[0], lons.shape[0]/GCP_COUNT)
+        cols = range(0, lons.shape[1], lons.shape[1]/GCP_COUNT)
+        factor = self.dataset.RasterYSize / lons.shape[0]
+        for r in rows:
+            for c in cols:
+                gcps.append(gdal.GCP(float(lons[r,c]),
+                                     float(lats[r,c]), 0,
+                                     factor*c+0.5,
+                                     factor*r+0.5))
+        self.dataset.SetGCPs(gcps, self.dataset.GetGCPProjection())
+        self.tps = True

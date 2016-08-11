@@ -1135,7 +1135,7 @@ double Sentinel1CalibrationFunction(double *b){
     // squared or not but have sent an email to esa..
     //return ( pow(b[1],2.0) - pow(b[2],2.0) ) / pow(b[0], 2.0);
     // Without noise removal
-    return pow(b[1],2.0) / pow(b[0], 2.0);
+    return pow(b[0],2.0) / pow(b[1], 2.0);
 
 }
 

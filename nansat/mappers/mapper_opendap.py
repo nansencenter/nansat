@@ -48,6 +48,7 @@ class Mapper(VRT):
             'polar_stereographic': {
                 0: '+proj=stere ',
                 'straight_vertical_longitude_from_pole': '+lon_0',
+                'standard_parallel': '+lat_1',
                 'latitude_of_projection_origin': '+lat_0',
                 'scale_factor_at_projection_origin': '+k_0',
                 'false_easting': '+x_0',
@@ -55,6 +56,7 @@ class Mapper(VRT):
             },
             'stereographic': {
                 0: '+proj=stere ',
+                'standard_parallel': '+lat_1',
                 'longitude_of_projection_origin': '+lon_0',
                 'latitude_of_projection_origin': '+lat_0',
                 'scale_factor_at_projection_origin': '+k_0',
@@ -78,11 +80,15 @@ class Mapper(VRT):
                               + str(var.getncattr(projKey)) + ' ')
         return proj4
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, fileName, gdalDataset, gdalMetadata, varName=None, **kwargs):
         ''' Create VRT from OpenDAP dataset'''
+        raise WrongMapperError
         # quit if file is not online
         if fileName[:7] not in  ['http://', 'https:/']:
             raise WrongMapperError
+
+        if bandName is None:
+            WrongMapperError('Please specify band name')
 
         # open file through OpenDAP using netCDF4 library
         f = Dataset(fileName)
@@ -111,15 +117,15 @@ class Mapper(VRT):
 
         # if grid_mapping_name is found: find all bands that have grid_mapping
         # else: find lon/lat variables that have 1D
+        import ipdb; ipdb.set_trace()
 
         if srcProjection != '':
             # find bands with grid_mapping
-            for varName in f.variables:
-                var = f.variables[varName]
-                attrs = var.ncattrs()
-                if 'grid_mapping' in attrs:
-                    validVars.append(str(varName))
-                    validDims += [str(dim) for dim in var.dimensions]
+            var = f.variables[varName]
+            attrs = var.ncattrs()
+            if 'grid_mapping' in attrs:
+                validVars.append(str(varName))
+                validDims += [str(dim) for dim in var.dimensions]
 
             # assume NORMAP compatibility:
             # dimensions should be
@@ -143,12 +149,11 @@ class Mapper(VRT):
         else:
             # if input file is not CF-compliant but has 1D lon/lat dimensions
             # find 1D lon, lat (longitude, latitude) dims
-            for varName in f.variables:
-                var = f.variables[varName]
-                if 'lon' in varName and var.ndim == 1:
-                    xDim = varName
-                if 'lat' in varName and var.ndim == 1:
-                    yDim = varName
+            var = f.variables[varName]
+            if 'lon' in varName and var.ndim == 1:
+                xDim = varName
+            if 'lat' in varName and var.ndim == 1:
+                yDim = varName
 
             # find all datasets with lon/lat dimensions
             for varName in f.variables:
@@ -162,6 +167,7 @@ class Mapper(VRT):
             else:
                 # cancel usage of this mapper a input file seem unappropriate
                 raise
+
 
         # get X/Y size
         var0 = f.variables[validVars[0]]

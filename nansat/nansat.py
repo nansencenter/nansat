@@ -23,11 +23,6 @@ import tempfile
 import datetime
 import pkgutil
 import warnings
-import collections
-if hasattr(collections, 'OrderedDict'):
-    from collections import OrderedDict
-else:
-    from ordereddict import OrderedDict
 
 from scipy.io.netcdf import netcdf_file
 import numpy as np
@@ -50,6 +45,11 @@ from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALErr
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
+import collections
+if hasattr(collections, 'OrderedDict'):
+    from collections import OrderedDict
+else:
+    from ordereddict import OrderedDict
 
 # container for all mappers
 nansatMappers = None
@@ -376,8 +376,8 @@ class Nansat(Domain):
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
-            False: Write swath-projected data with rows and columns organized
-                   as in the original product.
+            False: Default. Write swath-projected data with rows and columns
+                   organized as in the original product.
             True:  Use the default behaviour of GDAL, which is to flip the rows
         options : str or list
             GDAL export options in format of: 'OPT=VAL', or
@@ -942,8 +942,8 @@ class Nansat(Domain):
             factor = float(height) / rasterYSize
 
         # calculate new size
-        newRasterYSize = int(rasterYSize * factor)
-        newRasterXSize = int(rasterXSize * factor)
+        newRasterYSize = np.round(rasterYSize * factor)
+        newRasterXSize = np.round(rasterXSize * factor)
 
         self.logger.info('New size/factor: (%f, %f)/%f' %
                          (newRasterXSize, newRasterYSize, factor))
@@ -1043,7 +1043,7 @@ class Nansat(Domain):
         else:
             return outString
 
-    def reproject(self, dstDomain=None, eResampleAlg=0, blockSize=None,
+    def reproject(self, dstDomain, eResampleAlg=0, blockSize=None,
                   WorkingDataType=None, tps=None, skip_gcps=1, addmask=True,
                   **kwargs):
         ''' Change projection of the object based on the given Domain
@@ -1100,10 +1100,6 @@ class Nansat(Domain):
         ---------
         http://www.gdal.org/gdalwarp.html
         '''
-        # if no domain: quit
-        if dstDomain is None:
-            return
-
         # if self spans from 0 to 360 and dstDomain is west of 0:
         #     shift self westwards by 180 degrees
         # check span

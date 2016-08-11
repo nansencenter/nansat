@@ -61,10 +61,10 @@ AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Al
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["UNKNOWN"]
 MAJOR               = 0
-MINOR               = 6
-MICRO               = 12
+MINOR               = 7
+MICRO               = 0
 ISRELEASED          = True
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.dev%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
                         "pythesint",

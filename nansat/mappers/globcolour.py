@@ -26,7 +26,8 @@ class Globcolour():
                    'L709_mean': 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water',
                    'CDM_mean': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
                    'BBP_mean': 'volume_backscattering_coefficient_of_radiative_flux_in_sea_water_due_to_suspended_particles',
-                   }
+                   'PAR_mean': 'surface_downwelling_photosynthetic_radiative_flux_in_air',
+                       }
 
     def make_rrsw_meta_entry(self, nlwMetaEntry):
         '''Make metaEntry for calculation of Rrsw'''

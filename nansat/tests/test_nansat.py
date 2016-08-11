@@ -27,6 +27,7 @@ from nansat import Nansat, Domain
 from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
+from __builtin__ import int
 
 
 class NansatTest(unittest.TestCase):
@@ -52,9 +53,9 @@ class NansatTest(unittest.TestCase):
         n.set_metadata('time_coverage_end', '2016-01-21')
 
         self.assertEqual(type(n.time_coverage_start),
-                        datetime.datetime)
+                         datetime.datetime)
         self.assertEqual(type(n.time_coverage_end),
-                        datetime.datetime)
+                         datetime.datetime)
 
     def test_init_domain(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -90,11 +91,11 @@ class NansatTest(unittest.TestCase):
     def test_special_characters_in_exported_metadata(self):
         orig = Nansat(self.test_file_gcps)
         orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
-            'hei', 'meta2': 'derr'}))
+                                         'hei', 'meta2': 'derr'}))
         orig.export(self.tmpfilename)
         copy = Nansat(self.tmpfilename)
-        dd = json.loads( unescape( copy.get_metadata('jsonstring'), {'&quot;':
-            '"'}))
+        dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
+                                                                   '"'}))
         self.assertIsInstance(dd, dict)
         os.unlink(self.tmpfilename)
 
@@ -117,8 +118,8 @@ class NansatTest(unittest.TestCase):
         arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
-        arrWithNaN[n.shape()[0]/2-10:n.shape()[0]/2+10,
-                   n.shape()[1]/2-10:n.shape()[1]/2+10] = np.nan
+        arrWithNaN[n.shape()[0] / 2 - 10:n.shape()[0] / 2 + 10,
+                   n.shape()[1] / 2 - 10:n.shape()[1] / 2 + 10] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
@@ -157,6 +158,17 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n[2]), np.ndarray)
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n.get_metadata('name', 2), 'band2')
+
+    def test_add_bands_no_parameter(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+
+        n = Nansat(domain=d, logLevel=40)
+        n.add_bands([arr, arr])
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(type(n[2]), np.ndarray)
 
     def test_add_subvrts_only_to_one_nansat(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -295,6 +307,41 @@ class NansatTest(unittest.TestCase):
 #         self.assertTrue(nn.has_band('L_555'))
 #         os.unlink(resfile)
 
+    def test_export_option(self):
+        n = Nansat(self.test_file_arctic)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_export_option.nc')
+        # Test with band numbers
+        n.export(tmpfilename, options='WRITE_LONLAT=YES')
+        n.export(tmpfilename + '2', options=['WRITE_LONLAT=YES'])
+        nn = Nansat(tmpfilename)
+        nn2 = Nansat(tmpfilename + '2')
+        self.assertTrue(nn.has_band('lon'))
+        self.assertTrue(nn.has_band('lat'))
+        self.assertTrue(nn.has_band('Bristol'))
+        self.assertTrue(nn2.has_band('lon'))
+        self.assertTrue(nn2.has_band('lat'))
+        self.assertTrue(nn2.has_band('Bristol'))
+
+    def test_write_fig_wrong_type_filename(self):
+        n = Nansat(self.test_file_arctic)
+        with self.assertRaises(OptionError):
+            n.write_figure(1.2)
+        with self.assertRaises(OptionError):
+            n.write_figure(['filename'])
+        with self.assertRaises(OptionError):
+            n.write_figure({'name': 'filename'})
+
+    def test_write_fig_tif(self):
+        n = Nansat(self.test_file_arctic)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_write_fig_tif.tif')
+        n.write_figure(tmpfilename)
+        nn = Nansat(tmpfilename)
+        # Asserts that the basic georeference (corners in this case) is still
+        # present after opening the image
+        self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
+
     def test_export2thredds_arctic_long_lat(self):
         n = Nansat(self.test_file_arctic, logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -305,7 +352,7 @@ class NansatTest(unittest.TestCase):
             'UMass_AES': {'type': '>i2'},
         }
         n.export2thredds(tmpfilename, bands,
-                        time=datetime.datetime(2016,1,20))
+                         time=datetime.datetime(2016, 1, 20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
@@ -347,7 +394,7 @@ class NansatTest(unittest.TestCase):
                    "-te 27 70 31 72 -ts 200 200")
         n = Nansat(domain=d)
         n.add_band(np.ones(d.shape(), np.float32),
-                    parameters={'name': 'L_469'})
+                   parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
 
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -362,7 +409,7 @@ class NansatTest(unittest.TestCase):
                    "-te 27 70 31 72 -ts 200 200")
         n = Nansat(domain=d)
         n.add_band(np.ones(d.shape(), np.float32),
-                    parameters={'name': 'L_469'})
+                   parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
 
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -547,8 +594,8 @@ class NansatTest(unittest.TestCase):
                                    'nansat_reproject_gcps_resize.png')
         n1.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n1.shape()[0], n2.shape()[0]*2)
-        self.assertEqual(n1.shape()[1], n2.shape()[1]*2)
+        self.assertEqual(n1.shape()[0], n2.shape()[0] * 2)
+        self.assertEqual(n1.shape()[1], n2.shape()[1] * 2)
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_undo(self):
@@ -644,7 +691,7 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[28.31299128, 28.93691525],
                              [70.93709219, 70.69646524]],
-                             ['L_645'])
+                            ['L_645'])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
         plt.plot(t['lat'], t['L_645'], '.-')
@@ -690,8 +737,8 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[10, 20],
                              [10, 10]],
-                             ['L_645'],
-                             lonlat=False)
+                            ['L_645'],
+                            lonlat=False)
 
         self.assertTrue('L_645' in t.dtype.fields)
         self.assertTrue('line' in t.dtype.fields)
@@ -705,7 +752,7 @@ class NansatTest(unittest.TestCase):
     def test_get_transect_data(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         b1 = n1[1]
-        t = n1.get_transect([[28.3],[70.9]], [], data=b1)
+        t = n1.get_transect([[28.3], [70.9]], [], data=b1)
 
         self.assertTrue('input' in t.dtype.fields)
         self.assertTrue('L_645' not in t.dtype.fields)
@@ -727,6 +774,22 @@ class NansatTest(unittest.TestCase):
 
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
+        ext = n1.crop(10, 20, 50, 60)
+
+        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(ext, (10, 20, 50, 60))
+        self.assertEqual(type(n1[1]), np.ndarray)
+
+    def test_crop_complex(self):
+        n1 = Nansat(self.test_file_complex, logLevel=40)
+        ext = n1.crop(10, 20, 50, 60)
+
+        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(ext, (10, 20, 50, 60))
+        self.assertEqual(type(n1[1]), np.ndarray)
+
+    def test_crop_no_gcps_arctic(self):
+        n1 = Nansat(self.test_file_arctic, logLevel=40)
         ext = n1.crop(10, 20, 50, 60)
 
         self.assertEqual(n1.shape(), (60, 50))
@@ -761,6 +824,73 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         os.environ['MOD44WPATH'] = '/fakepath'
         self.assertRaises(IOError, n1.watermask)
+
+    def test_init_no_arguments(self):
+        ''' No arguments should raise OptionError '''
+        self.assertRaises(OptionError, Nansat)
+
+    def test_get_item_basic_expressions(self):
+        ''' Testing get_item with some basic expressions '''
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+        arr = np.empty((500, 500))
+        n.add_band(arr, {'expression': '1+1'})
+        n.add_band(arr, {'expression': 'np.random.randn(500, 500)'})
+        self.assertIsInstance(n[1], int)
+        self.assertIsInstance(n[2], np.ndarray)
+        self.assertEqual(n[1], 2)
+        self.assertEqual(len(n[2]), 500)
+        self.assertEqual(len(n[2][0]), 500)
+
+    def test_get_item_inf_expressions(self):
+        ''' inf should be replaced with nan '''
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+        arr = np.empty((500, 500))
+        n.add_band(arr, {'expression': 'np.array([0,1,2,3,np.inf,5,6,7])'})
+        self.assertIsInstance(n[1], np.ndarray)
+        self.assertTrue(np.isnan(n[1][4]))
+
+    def test_repr_basic(self):
+        ''' repr should include some basic elements '''
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        n = Nansat(domain=d, logLevel=40)
+        arr = np.empty((500, 500))
+        exp = 'np.array([0,1,2,3,np.inf,5,6,7])'
+        n.add_band(arr, {'expression': exp})
+        n_repr = repr(n)
+        self.assertIn(exp, n_repr, 'The expressions should be in repr')
+        self.assertIn('SourceFilename', n_repr)
+        self.assertIn('/vsimem/', n_repr)
+        self.assertIn('500 x 500', n_repr)
+        self.assertIn('Projection:', n_repr)
+        self.assertIn('25', n_repr)
+        self.assertIn('72', n_repr)
+        self.assertIn('35', n_repr)
+        self.assertIn('70', n_repr)
+
+    def test_export_netcdf_complex_remove_meta(self):
+        ''' Test export of complex data with pixelfunctions
+        '''
+        n = Nansat(self.test_file_complex)
+        self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
+        n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
+        exported = Nansat(self.tmpfilename)
+        with self.assertRaises(OptionError):
+            exported.get_metadata('PRODUCT_TYPE')
+        self.assertTrue((n[1] == exported[1]).any())
+        os.unlink(self.tmpfilename)
+
+    def test_export_netcdf_arctic(self):
+        ''' Test export of the arctic data without GCPS
+        '''
+        n = Nansat(self.test_file_arctic)
+        n.export(self.tmpfilename)
+        exported = Nansat(self.tmpfilename)
+        self.assertTrue((n[1] == exported[1]).any())
+        self.assertTrue((n[2] == exported[2]).any())
+        self.assertTrue((n[3] == exported[3]).any())
+        os.unlink(self.tmpfilename)
 
 if __name__ == "__main__":
     unittest.main()
