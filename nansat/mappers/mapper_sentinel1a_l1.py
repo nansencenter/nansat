@@ -223,8 +223,6 @@ class Mapper(VRT):
                 },
                 'dst': {
                     'name': name,
-                    #'SourceTransferType': gdal.GetDataTypeName(dtype),
-                    #'dataType': 6,
                 },
             })
         # add bands with metadata and corresponding values to the empty VRT
@@ -394,10 +392,6 @@ class Mapper(VRT):
             bnmax = bandNumberDict[name]
             src = [{'SourceFilename': self.fileName,
                     'SourceBand': bandNumberDict['DN_HH'],
-                    },
-                   {'SourceFilename': (self.bandVRTs['LUT_noise_VRT_HH'].
-                                       fileName),
-                    'SourceBand': 1
                     },
                    {'SourceFilename': (self.bandVRTs['LUT_sigmaNought_VRT_HH'].
                                        fileName),

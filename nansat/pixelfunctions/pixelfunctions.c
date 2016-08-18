@@ -1156,7 +1156,7 @@ double Sentinel1Sigma0HHToSigma0VVFunction( double *b ){
 
     bcal[0] = b[0]; // sigmaNought LUT
     bcal[1] = b[2]; // DN
-    bcal[2] = b[3]; // noise
+    //bcal[2] = b[3]; // noise
     s0hh = Sentinel1CalibrationFunction(bcal);
 
     s0hh2s0vv[0] = s0hh;
