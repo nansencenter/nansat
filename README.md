@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/nansencenter/nansat.svg?branch=develop)](https://travis-ci.org/nansencenter/nansat)
-[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=develop)](https://coveralls.io/r/nansencenter/nansat)
+[![Build Status](https://travis-ci.org/nansencenter/nansat.svg?branch=master)](https://travis-ci.org/nansencenter/nansat)
+[![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master)](https://coveralls.io/r/nansencenter/nansat)
 [![DOI](https://zenodo.org/badge/20132/nansencenter/nansat.svg)](https://zenodo.org/badge/latestdoi/20132/nansencenter/nansat)
 
 ![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
