@@ -46,6 +46,9 @@ class NansatTest(unittest.TestCase):
         n = Nansat(self.test_file_gcps, logLevel=40)
 
         self.assertEqual(type(n), Nansat)
+        self.assertEqual(n.vrt.dataset.GetProjection(), '')
+        self.assertTrue((n.vrt.dataset.GetGCPProjection()
+                                            .startswith('GEOGCS["WGS 84",')))
 
     def test_get_time_coverage_start_end(self):
         n = Nansat(self.test_file_gcps, logLevel=40)

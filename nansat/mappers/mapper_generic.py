@@ -219,6 +219,8 @@ class Mapper(VRT):
 
         # check if GCPs were added from input dataset
         gcps = firstSubDataset.GetGCPs()
+        gcpProjection = firstSubDataset.GetGCPProjection()
+
         # if no GCPs in input dataset: try to add GCPs from metadata
         if not gcps:
             gcps = self.add_gcps_from_metadata(geoMetadata)
@@ -227,11 +229,13 @@ class Mapper(VRT):
             gcps = self.add_gcps_from_variables(inputFileName)
 
         if gcps:
-            # get GCP projection and repare
-            projection = self.repare_projection(geoMetadata.
+            if len(gcpProjection) == 0:
+                # get GCP projection and repare
+                gcpProjection = self.repare_projection(geoMetadata.
                                                 get('GCPProjection', ''))
             # add GCPs to dataset
-            self.dataset.SetGCPs(gcps, projection)
+            self.dataset.SetGCPs(gcps, gcpProjection)
+            self.dataset.SetProjection('')
             self._remove_geotransform()
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset

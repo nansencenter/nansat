@@ -550,6 +550,9 @@ class Nansat(Domain):
             exportVRT._remove_geotransform()
             exportVRT.dataset.SetMetadataItem(
                 'NANSAT_GCPProjection', srs.replace(',', '|').replace('"', '&'))
+        elif driver == 'GTiff':
+            #  remove GeoTransform
+            exportVRT._remove_geotransform()
         else:
             # add projection metadata
             exportVRT.dataset.SetMetadataItem(
