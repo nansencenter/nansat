@@ -3,6 +3,10 @@ python:
   - 2.7
 sudo: false
 
+env:
+ - CONDA_COMMAND='conda install -q --yes -c conda-forge gdal=1.11.4 numpy=1.10 scipy=0.17.1 matplotlib=1.5.1 basemap=1.0.8.dev pillow=3.2.0'
+ - CONDA_COMMAND='conda install -q --yes -c conda-forge gdal numpy scipy matplotlib basemap pillow'
+
 # Setup miniconda
 before_install:
   - if [[ ! -e $HOME/miniconda/bin ]]; then
@@ -15,7 +19,8 @@ before_install:
 
 install:
   - conda update -q --yes conda
-  - conda install -q --yes -c conda-forge numpy scipy matplotlib nose pillow basemap netcdf4 gdal
+  - eval $CONDA_COMMAND
+  - conda install -q --yes -c conda-forge nose netcdf4
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
   - python -c 'import gdal; print gdal.__file__'
