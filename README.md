@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/nansencenter/nansat.svg?branch=master)](https://travis-ci.org/nansencenter/nansat)
 [![Coverage Status](https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master)](https://coveralls.io/r/nansencenter/nansat)
-[![DOI](https://zenodo.org/badge/20132/nansencenter/nansat.svg)](https://zenodo.org/badge/latestdoi/20132/nansencenter/nansat)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg)](https://doi.org/10.5281/zenodo.59998)
 
 ![NANSAT](http://nansencenter.github.io/nansat/images/nansat_logo.png)
 
@@ -35,7 +35,7 @@ export PATH=$HOME/miniconda/bin/:$PATH
 conda update -q --yes conda
 
 # install all requirements from conda-forge channel
-conda install -q --yes -c conda-forge numpy scipy matplotlib nose pillow basemap netcdf4 gdal
+conda install -q --yes -c conda-forge qt=4.8.7=0 numpy scipy matplotlib nose pillow basemap netcdf4 gdal
 
 # configure environment
 export GDAL_DATA=$HOME/miniconda/share/gdal/
