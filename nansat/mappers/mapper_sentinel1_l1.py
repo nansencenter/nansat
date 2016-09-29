@@ -1,14 +1,14 @@
 #------------------------------------------------------------------------------
-# Name:     mapper_s1a_l1.py
+# Name:     mapper_sentinel1_l1.py
 # Purpose:
 #
-# Author:       Morten Wergeland Hansen
-# Modified: Morten Wergeland Hansen
+# Author:       Morten Wergeland Hansen, Anton Korosov
+# Modified:     Anton Korosov
 #
 # Created:  12.09.2014
-# Last modified:02.07.2015 15:43
+# Last modified:29.09.2016
 # Copyright:    (c) NERSC
-# License:
+# License: GPL V3
 #------------------------------------------------------------------------------
 import warnings
 
@@ -31,7 +31,7 @@ from nansat.node import Node
 
 class Mapper(VRT):
     '''
-        Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
+        Create VRT with mapping of Sentinel-1 (A and B) stripmap mode (S1A_SM)
     '''
 
     def __init__(self, fileName, gdalDataset, gdalMetadata,
@@ -44,27 +44,27 @@ class Mapper(VRT):
             # same indices consistently for all the following lists
             # THIS IS NOT THE CASE...
             mdsFiles = ['/vsizip/%s/%s' % (fileName, fn)
-                        for fn in zz.namelist() if 'measurement/s1a' in fn]
+                        for fn in zz.namelist() if 'measurement/s1' in fn]
             calFiles = ['/vsizip/%s/%s' % (fileName, fn)
                         for fn in zz.namelist()
-                        if 'annotation/calibration/calibration-s1a' in fn]
+                        if 'annotation/calibration/calibration-s1' in fn]
             noiseFiles = ['/vsizip/%s/%s' % (fileName, fn)
                           for fn in zz.namelist()
-                          if 'annotation/calibration/noise-s1a' in fn]
+                          if 'annotation/calibration/noise-s1' in fn]
             annotationFiles = ['/vsizip/%s/%s' % (fileName, fn)
                                for fn in zz.namelist()
-                               if 'annotation/s1a' in fn]
+                               if 'annotation/s1' in fn]
             manifestFile = ['/vsizip/%s/%s' % (fileName, fn)
                             for fn in zz.namelist()
                             if 'manifest.safe' in fn]
             zz.close()
         else:
-            mdsFiles = glob.glob('%s/measurement/s1a*' % fileName)
-            calFiles = glob.glob('%s/annotation/calibration/calibration-s1a*'
+            mdsFiles = glob.glob('%s/measurement/s1*' % fileName)
+            calFiles = glob.glob('%s/annotation/calibration/calibration-s1*'
                                  % fileName)
-            noiseFiles = glob.glob('%s/annotation/calibration/noise-s1a*'
+            noiseFiles = glob.glob('%s/annotation/calibration/noise-s1*'
                                    % fileName)
-            annotationFiles = glob.glob('%s/annotation/s1a*'
+            annotationFiles = glob.glob('%s/annotation/s1*'
                                         % fileName)
             manifestFile = glob.glob('%s/manifest.safe' % fileName)
 
@@ -97,11 +97,18 @@ class Mapper(VRT):
 
         self.manifestXML = self.read_xml(manifestFile[0])
 
+        if not os.path.split(fileName)[1][:3] in ['S1A', 'S1B']:
+            raise WrongMapperError('Not Sentinel 1A or 1B')
+
+        missionName = {'S1A': 'SENTINEL-1A', 'S1B': 'SENTINEL-1B'}[
+            os.path.split(fileName)[1][:3]]
+
         # very fast constructor without any bands
         if manifestonly:
             self.init_from_manifest_only(self.manifestXML,
                                          self.annotationXMLDict[
-                                         self.annotationXMLDict.keys()[0]])
+                                         self.annotationXMLDict.keys()[0]],
+                                         missionName)
             return
 
         gdalDatasets = {}
@@ -113,9 +120,8 @@ class Mapper(VRT):
             raise WrongMapperError('No Sentinel-1 datasets found')
 
         # Check metadata to confirm it is Sentinel-1 L1
-        for key in gdalDatasets:
-            metadata = gdalDatasets[key].GetMetadata()
-            break
+        metadata = gdalDatasets[mdsDict.keys()[0]].GetMetadata()
+        
         if not 'TIFFTAG_IMAGEDESCRIPTION' in metadata.keys():
             raise WrongMapperError
         if (not 'Sentinel-1' in metadata['TIFFTAG_IMAGEDESCRIPTION']
@@ -429,7 +435,7 @@ class Mapper(VRT):
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
         mm = pti.get_gcmd_instrument('sar')
-        ee = pti.get_gcmd_platform('sentinel-1a')
+        ee = pti.get_gcmd_platform(missionName)
 
         # TODO: Validate that the found instrument and platform are indeed what we
         # want....
@@ -505,7 +511,7 @@ class Mapper(VRT):
 
         return X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines
 
-    def init_from_manifest_only(self, manifestXML, annotXML):
+    def init_from_manifest_only(self, manifestXML, annotXML, missionName):
         ''' Create fake VRT and add metadata only from the manifest.safe '''
         X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines = self.read_geolocation_lut(annotXML)
 
@@ -521,11 +527,11 @@ class Mapper(VRT):
                                      doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}startTime]")[0][0].text)
         self.dataset.SetMetadataItem('time_coverage_end',
                                      doc.findall(".//*[{http://www.esa.int/safe/sentinel-1.0}stopTime]")[0][0].text)
-        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('SENTINEL-1A')))
+        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform(missionName)))
         self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
-        self.dataset.SetMetadataItem('Entry Title', 'Sentinel-1A SAR')
+        self.dataset.SetMetadataItem('Entry Title', missionName + ' SAR')
         self.dataset.SetMetadataItem('Data Center', 'ESA/EO')
         self.dataset.SetMetadataItem('ISO Topic Category', 'Oceans')
-        self.dataset.SetMetadataItem('Summary', 'S1A SAR data')
+        self.dataset.SetMetadataItem('Summary', missionName + ' SAR data')
 
 
