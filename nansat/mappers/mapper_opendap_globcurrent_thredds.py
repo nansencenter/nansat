@@ -17,11 +17,12 @@ from nansat.mappers.opendap import Opendap
 #https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-MONTHLY
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
-    baseURLs = ['https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL', 'https://www.oceancolour.org/thredds/dodsC/CCI_ALL']
+
+    baseURLs = ['http://tds0.ifremer.fr/thredds/dodsC/CLS-L4']
     timeVarName = 'time'
     xName = 'lon'
     yName = 'lat'
-    timeCalendarStart = '1970-01-01'
+    timeCalendarStart = '1950-01-01'
 
     srcDSProjection = NSR().wkt
 
@@ -48,7 +49,7 @@ class Mapper(Opendap):
 
     def convert_dstime_datetimes(self, dsTime):
         ''' Convert time variable to np.datetime64 '''
-        dsDatetimes = np.array([np.datetime64(self.timeCalendarStart) + day
+        dsDatetimes = np.array([np.datetime64(self.timeCalendarStart) + int(day)
                                 for day in dsTime]).astype('M8[s]')
 
         return dsDatetimes
