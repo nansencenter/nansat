@@ -82,15 +82,15 @@ class Mapper(VRT):
                                                 '":wind_speed'),
                              'ScaleRatio': 0.01,
                              'NODATA': -32767},
-                     'dst': {'name': 'wind_speed',
+                     'dst': {'name': 'windspeed',
                              'wkv': 'wind_speed'}
                      },
                     {'src': {'SourceFilename': ('NETCDF:"' + fileName +
                                                 '":wind_dir'),
                              'ScaleRatio': 0.1,
                              'NODATA': -32767},
-                     'dst': {'name': 'wind_direction',
-                             'wkv': 'wind_direction'}}]
+                     'dst': {'name': 'winddirection',
+                             'wkv': 'wind_from_direction'}}]
 
         self._create_bands(metaDict)
 
