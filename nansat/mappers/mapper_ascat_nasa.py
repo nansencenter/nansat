@@ -11,6 +11,9 @@ import os.path
 import datetime
 import warnings
 
+import json
+import pythesint as pti
+
 from nansat.tools import gdal, ogr
 from nansat.vrt import VRT, GeolocationArray
 from nansat.tools import WrongMapperError
@@ -106,9 +109,13 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('time_coverage_start', startTime.isoformat())
         self.dataset.SetMetadataItem('time_coverage_end', startTime.isoformat())
 
-        # set SADCAT specific metadata
-        self.dataset.SetMetadataItem('sensor', 'ASCAT')
-        self.dataset.SetMetadataItem('satellite', 'Metop-A')
-        warnings.warn("Setting satellite to Metop-A - update mapper if it is" \
-                " e.g. Metop-B")
-        self.dataset.SetMetadataItem('mapper', 'ascat_nasa')
+        # Get dictionary describing the instrument and platform according to
+        # the GCMD keywords
+        mm = pti.get_gcmd_instrument('ascat')
+        ee = pti.get_gcmd_platform('metop-a')
+
+        # TODO: Validate that the found instrument and platform are indeed what
+        # we want....
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
