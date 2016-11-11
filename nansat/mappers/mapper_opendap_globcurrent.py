@@ -18,6 +18,7 @@ from nansat.mappers.opendap import Opendap
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
     #http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/total_hs/2010/001/20100101000000-GLOBCURRENT-L4-CUReul_hs-ALT_SUM-v02.0-fv01.0.nc
+    #http://tds0.ifremer.fr/thredds/dodsC/CLS-L4-CUREUL_HS-ALT_SUM-V02.0_FULL_TIME_SERIE
     baseURLs = ['http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/']
     timeVarName = 'time'
     xName = 'lon'
