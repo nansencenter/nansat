@@ -870,7 +870,8 @@ class Domain(object):
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0):
+    def transform_points(self, colVector, rowVector, DstToSrc=0,
+                         dstSRS=NSR()):
 
         '''Transform given lists of X,Y coordinates into lon/lat or inverse
 
@@ -881,14 +882,17 @@ class Domain(object):
         DstToSrc : 0 or 1
             0 - forward transform (pix/line => lon/lat)
             1 - inverse transformation
-
+        dstSRS : NSR
+            destination spatial reference
+            
         Returns
         --------
         X, Y : lists
             X and Y coordinates in lon/lat or pixel/line coordinate system
 
         '''
-        return self.vrt.transform_points(colVector, rowVector, DstToSrc)
+        return self.vrt.transform_points(colVector, rowVector,
+                                         DstToSrc, dstSRS=dstSRS)
 
     def azimuth_y(self, reductionFactor=1):
         '''Calculate the azimuth of 'upward' direction in each pixel
