@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io.netcdf import netcdf_file
 
-from nansat import Nansat, Domain
+from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
@@ -787,10 +787,13 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         n1.reproject_GCPs()
         ext = n1.crop(10, 20, 50, 60)
-
-        self.assertEqual(n1.shape(), (60, 50))
-        self.assertEqual(ext, (10, 20, 50, 60))
-        self.assertEqual(type(n1[1]), np.ndarray)
+        xmed = abs(np.median(np.array([gcp.GCPX
+                                for gcp in n1.vrt.dataset.GetGCPs()])))
+        gcpproj = NSR(n1.vrt.dataset.GetGCPProjection()
+                                        ).ExportToProj4().split(' ')[0]
+        
+        self.assertTrue(xmed > 360)
+        self.assertTrue(gcpproj=='+proj=stere')
 
     def test_crop_complex(self):
         n1 = Nansat(self.test_file_complex, logLevel=40)
