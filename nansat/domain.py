@@ -870,7 +870,8 @@ class Domain(object):
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0):
+    def transform_points(self, colVector, rowVector, DstToSrc=0,
+                         dstSRS=NSR()):
 
         '''Transform given lists of X,Y coordinates into lon/lat or inverse
 
@@ -881,14 +882,17 @@ class Domain(object):
         DstToSrc : 0 or 1
             0 - forward transform (pix/line => lon/lat)
             1 - inverse transformation
-
+        dstSRS : NSR
+            destination spatial reference
+            
         Returns
         --------
         X, Y : lists
             X and Y coordinates in lon/lat or pixel/line coordinate system
 
         '''
-        return self.vrt.transform_points(colVector, rowVector, DstToSrc)
+        return self.vrt.transform_points(colVector, rowVector,
+                                         DstToSrc, dstSRS=dstSRS)
 
     def azimuth_y(self, reductionFactor=1):
         '''Calculate the azimuth of 'upward' direction in each pixel
@@ -1057,7 +1061,7 @@ class Domain(object):
         else:
             plt.close('all')
 
-    def reproject_GCPs(self, srsString):
+    def reproject_GCPs(self, srsString=''):
         '''Reproject all GCPs to a new spatial reference system
 
         Necessary before warping an image if the given GCPs
@@ -1067,10 +1071,16 @@ class Domain(object):
         Parameters
         ----------
         srsString : string
-            SRS given as Proj4 string
+            SRS given as Proj4 string. If empty '+proj=stere' is used
 
         Modifies
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
         '''
+        if srsString == '':
+            lon, lat = self.get_border()
+            srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'%(
+            np.nanmedian(lat), np.nanmedian(lon)) 
+        
+        
         self.vrt.reproject_GCPs(srsString)
