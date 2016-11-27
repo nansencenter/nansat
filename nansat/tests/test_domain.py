@@ -19,7 +19,8 @@ from types import ModuleType, FloatType
 import numpy as np
 import matplotlib.pyplot as plt
 
-from nansat import Domain
+from nansat.nsr import NSR
+from nansat.domain import Domain
 from nansat.tools import OptionError, gdal, ogr
 from nansat.figure import Image
 
@@ -190,6 +191,15 @@ class DomainTest(unittest.TestCase):
 
         self.assertTrue(gcp.GCPX > 636161)
         self.assertTrue(gcp.GCPY < -288344)
+
+    def test_reproject_GCPs_auto(self):
+        ds = gdal.Open(self.test_file)
+        d = Domain(ds=ds)
+        d.reproject_GCPs()
+        
+        gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
+        self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),
+                        'Stereographic')
 
     def test_overlaps_contains(self):
         Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")

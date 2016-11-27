@@ -783,6 +783,15 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
+    def test_crop_gcpproj(self):
+        n1 = Nansat(self.test_file_gcps, logLevel=40)
+        n1.reproject_GCPs()
+        ext = n1.crop(10, 20, 50, 60)
+
+        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(ext, (10, 20, 50, 60))
+        self.assertEqual(type(n1[1]), np.ndarray)
+
     def test_crop_complex(self):
         n1 = Nansat(self.test_file_complex, logLevel=40)
         ext = n1.crop(10, 20, 50, 60)
