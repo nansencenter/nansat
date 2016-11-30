@@ -1527,7 +1527,7 @@ class VRT(object):
         return subsamVRT
 
     def transform_points(self, colVector, rowVector, DstToSrc=0,
-                         dstDs=None, options=None):
+                         dstSRS=NSR(), dstDs=None, options=None):
         '''Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -1536,10 +1536,11 @@ class VRT(object):
             X and Y coordinates with any coordinate system
         DstToSrc : 0 or 1
             1 for inverse transformation, 0 for forward transformation.
+        dstSRS : NSR
+            destination SRS.
         dstDs : dataset
             destination dataset. The default is None.
             It means transform ownPixLin <--> ownXY.
-
         option : string
             if 'METHOD=GEOLOC_ARRAY', specify here.
 
@@ -1554,7 +1555,7 @@ class VRT(object):
 
         # prepare options
         if options is None:
-            options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + NSR().wkt]
+            options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + dstSRS.wkt]
             # add TPS method if we have GCPs and self.tps is True
             if self.tps and len(self.dataset.GetGCPs()) > 0:
                 options.append('METHOD=GCP_TPS')

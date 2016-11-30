@@ -2140,7 +2140,8 @@ class Nansat(Domain):
                         linArray.append(newLin + yOff)
 
                 lonArray, latArray = self.vrt.transform_points(pixArray,
-                                                               linArray)
+                                                               linArray,
+                        dstSRS=NSR(self.vrt.dataset.GetGCPProjection()))
 
                 for i in range(len(lonArray)):
                     dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
@@ -2149,10 +2150,8 @@ class Nansat(Domain):
                                             '', str(numOfGCPs+i+1)))
 
             # set new GCPss
-            self.vrt.dataset.SetGCPs(dstGCPs, NSR().wkt)
-            # reproject new GCPs to the SRS of original GCPs
-            nsr = NSR(self.vrt.dataset.GetGCPProjection())
-            self.vrt.reproject_GCPs(nsr)
+            self.vrt.dataset.SetGCPs(dstGCPs,
+                                     self.vrt.dataset.GetGCPProjection())
             # remove geotranform which was automatically added
             self.vrt._remove_geotransform()
         else:

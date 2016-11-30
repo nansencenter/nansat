@@ -19,7 +19,8 @@ from types import ModuleType, FloatType
 import numpy as np
 import matplotlib.pyplot as plt
 
-from nansat import Domain
+from nansat.nsr import NSR
+from nansat.domain import Domain
 from nansat.tools import OptionError, gdal, ogr
 from nansat.figure import Image
 
@@ -136,6 +137,14 @@ class DomainTest(unittest.TestCase):
         self.assertTrue(all(np.round(x) == [0, 50, 100]))
         self.assertTrue(all(np.round(y) == [500, 250, 0]))
 
+    def test_transform_points_dstsrs(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        lon, lat = d.transform_points([1, 2, 3], [1, 2, 3],
+        dstSRS=NSR('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs'))
+
+        self.assertEqual(type(lon), np.ndarray)
+        self.assertEqual(type(lat), np.ndarray)
+
     def test_azimuth_y(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         au = d.azimuth_y()
@@ -190,6 +199,15 @@ class DomainTest(unittest.TestCase):
 
         self.assertTrue(gcp.GCPX > 636161)
         self.assertTrue(gcp.GCPY < -288344)
+
+    def test_reproject_GCPs_auto(self):
+        ds = gdal.Open(self.test_file)
+        d = Domain(ds=ds)
+        d.reproject_GCPs()
+        
+        gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
+        self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),
+                        'Stereographic')
 
     def test_overlaps_contains(self):
         Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")
