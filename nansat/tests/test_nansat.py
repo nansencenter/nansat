@@ -102,16 +102,19 @@ class NansatTest(unittest.TestCase):
         self.assertIsInstance(dd, dict)
         os.unlink(self.tmpfilename)
 
-    def test_add_band(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        arr = np.random.randn(500, 500)
-        n = Nansat(domain=d, logLevel=40)
-        n.add_band(arr, {'name': 'band1'})
+    def test_time_coverage_metadata_of_exported_equals_original(self):
+        orig = Nansat(self.test_file_gcps)
+        orig.set_metadata('time_coverage_start', '2010-01-02T08:49:02.347809')
+        orig.set_metadata('time_coverage_end', '2010-01-02T08:50:03.599373')
+        orig.export(self.tmpfilename)
+        copy = Nansat(self.tmpfilename)
 
-        self.assertEqual(type(n), Nansat)
-        self.assertEqual(type(n[1]), np.ndarray)
-        self.assertEqual(n.get_metadata('name', 1), 'band1')
-        self.assertEqual(n[1].shape, (500, 500))
+        self.assertEqual(orig.get_metadata('time_coverage_start'),
+                copy.get_metadata('time_coverage_start'))
+        self.assertEqual(orig.get_metadata('time_coverage_end'),
+                copy.get_metadata('time_coverage_end'))
+
+        os.unlink(self.tmpfilename)
 
     def test_export_netcdf(self):
         ''' Test export and following import of data with bands containing
@@ -132,6 +135,17 @@ class NansatTest(unittest.TestCase):
         earrWithNaN = exported['testBandWithNaN']
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
         os.unlink(self.tmpfilename)
+
+    def test_add_band(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        arr = np.random.randn(500, 500)
+        n = Nansat(domain=d, logLevel=40)
+        n.add_band(arr, {'name': 'band1'})
+
+        self.assertEqual(type(n), Nansat)
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertEqual(n.get_metadata('name', 1), 'band1')
+        self.assertEqual(n[1].shape, (500, 500))
 
     def test_add_band_twice(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
