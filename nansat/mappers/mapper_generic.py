@@ -269,18 +269,18 @@ class Mapper(VRT):
         ### GET END TIME from METADATA
         time_coverage_end = None
         if 'stop_time' in gdalMetadata:
-            time_coverage_start = parse_time(gdalMetadata['stop_time'])
+            time_coverage_end = parse_time(gdalMetadata['stop_time'])
         elif 'stop_date' in gdalMetadata:
-            time_coverage_start = parse_time(gdalMetadata['stop_date'])
+            time_coverage_end = parse_time(gdalMetadata['stop_date'])
         elif 'time_coverage_stop' in gdalMetadata:
-            time_coverage_start = parse_time(
+            time_coverage_end = parse_time(
                                         gdalMetadata['time_coverage_stop'])
         elif 'end_time' in gdalMetadata:
-            time_coverage_start = parse_time(gdalMetadata['end_time'])
+            time_coverage_end = parse_time(gdalMetadata['end_time'])
         elif 'end_date' in gdalMetadata:
-            time_coverage_start = parse_time(gdalMetadata['end_date'])
+            time_coverage_end = parse_time(gdalMetadata['end_date'])
         elif 'time_coverage_end' in gdalMetadata:
-            time_coverage_start = parse_time(
+            time_coverage_end = parse_time(
                                         gdalMetadata['time_coverage_end'])
 
         ### GET start time from time variable
