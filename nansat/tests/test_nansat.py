@@ -602,6 +602,18 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n1.shape(), n2.shape())
         self.assertEqual(type(n1[1]), np.ndarray)
 
+    def test_reproject_gcps_on_repro_gcps(self):
+        n1 = Nansat(self.test_file_stere, logLevel=40)
+        n2 = Nansat(self.test_file_gcps, logLevel=40)
+        n2.reproject_GCPs()
+        n1.reproject(n2)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_gcps_on_repro_gcps.png')
+        n1.write_figure(tmpfilename, 2, clim='hist')
+
+        self.assertEqual(n1.shape(), n2.shape())
+        self.assertEqual(type(n1[1]), np.ndarray)
+
     def test_reproject_gcps_resize(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
         n2 = Nansat(self.test_file_gcps, logLevel=40)
