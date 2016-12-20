@@ -953,7 +953,7 @@ class VRT(object):
 
         # if destination GCPs are given: create and add fake GCPs to src
         if len(dstGCPs) > 0 and use_gcps:
-            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, skip_gcps)
+            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, NSR(dstSRS), skip_gcps)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
             use_geolocationArray = False
@@ -1095,7 +1095,7 @@ class VRT(object):
 
         return warpedVRT
 
-    def _create_fake_gcps(self, gcps, skip_gcps):
+    def _create_fake_gcps(self, dstGCPs, dstSRS, skip_gcps):
         '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
 
         GCPs from a destination image (dstGCP) are converted to a gcp of source
@@ -1122,11 +1122,11 @@ class VRT(object):
         # create transformer. converts lat/lon to pixel/line of SRC image
         srcTransformer = gdal.Transformer(self.dataset, None,
                                           ['SRC_SRS=' + self.get_projection(),
-                                           'DST_SRS=' + NSR().wkt])
+                                           'DST_SRS=' + dstSRS.wkt])
 
         # create 'fake' GCPs
         fakeGCPs = []
-        for g in gcps[::skip_gcps]:
+        for g in dstGCPs[::skip_gcps]:
             # transform DST lat/lon to SRC pixel/line
             succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
             srcPixel = point[0]
