@@ -35,7 +35,7 @@ export PATH=$HOME/miniconda/bin/:$PATH
 conda update -q --yes conda
 
 # install all requirements from conda-forge channel
-conda install -q --yes -c conda-forge qt=4.8.7=0 numpy scipy matplotlib nose pillow basemap netcdf4 gdal
+conda install -q --yes -c conda-forge qt numpy scipy matplotlib nose pillow basemap netcdf4 gdal
 
 # configure environment
 export GDAL_DATA=$HOME/miniconda/share/gdal/
