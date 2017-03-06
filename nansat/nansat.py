@@ -1790,7 +1790,8 @@ class Nansat(Domain):
                         lonlat=True,
                         smoothRadius=0,
                         smooth_function=nanmedian,
-                        data=None):
+                        data=None,
+                        cornersonly=False):
         '''Get values from transect from given vector of poins
 
         Parameters
@@ -1842,24 +1843,27 @@ class Nansat(Domain):
         else:
             pix, lin = points[0], points[1]
 
-        # full vectors of pixel coordinates based on coordinates of vertices
-        pixVector, linVector = [pix[0]], [lin[0]]
-        for pn in range(len(pix[1:])):
-            px0, px1 = pix[pn], pix[pn+1]
-            py0, py1 = lin[pn], lin[pn+1]
-            length = np.round(np.hypot(px1-px0, py0-py1))
-            pixVector += list(np.linspace(px0, px1, length+1)[1:])
-            linVector += list(np.linspace(py0, py1, length+1)[1:])
+        if cornersonly:
+            pixVector, linVector = pix, lin
+        else:
+            # full vectors of pixel coordinates based on coordinates of vertices
+            pixVector, linVector = [pix[0]], [lin[0]]
+            for pn in range(len(pix[1:])):
+                px0, px1 = pix[pn], pix[pn+1]
+                py0, py1 = lin[pn], lin[pn+1]
+                length = np.round(np.hypot(px1-px0, py0-py1))
+                pixVector += list(np.linspace(px0, px1, length+1)[1:])
+                linVector += list(np.linspace(py0, py1, length+1)[1:])
 
-        # remove out of region points
-        pixVector = np.floor(pixVector)
-        linVector = np.floor(linVector)
-        gpi = ((pixVector >= (0 + smoothRadius)) *
-               (linVector >= (0 + smoothRadius)) *
-               (pixVector < (self.shape()[1] - smoothRadius)) *
-               (linVector < (self.shape()[0] - smoothRadius)))
-        pixVector = pixVector[gpi]
-        linVector = linVector[gpi]
+            # remove out of region points
+            pixVector = np.floor(pixVector)
+            linVector = np.floor(linVector)
+            gpi = ((pixVector >= (0 + smoothRadius)) *
+                   (linVector >= (0 + smoothRadius)) *
+                   (pixVector < (self.shape()[1] - smoothRadius)) *
+                   (linVector < (self.shape()[0] - smoothRadius)))
+            pixVector = pixVector[gpi]
+            linVector = linVector[gpi]
 
         # create output transect
         t = np.recarray((len(pixVector)), dtype=[('pixel', int),
