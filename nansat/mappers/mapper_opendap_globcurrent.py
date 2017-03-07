@@ -46,10 +46,13 @@ class Mapper(Opendap):
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
         # add instrument and platform
-        mm = pti.get_gcmd_instrument('active remote sensing')
-        ee = pti.get_gcmd_platform('Earth Observation Satellites')
-        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
-        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+        instr = pti.get_gcmd_instrument('active remote sensing')
+        pltfr = pti.get_gcmd_platform('Earth Observation Satellites')
+
+        self.dataset.SetMetadataItem('instrument',  json.dumps(instr))
+        self.dataset.SetMetadataItem('platform',    json.dumps(pltfr))
+        self.dataset.SetMetadataItem('Data Center', 'FR/IFREMER/CERSAT')
+        self.dataset.SetMetadataItem('Entry Title', 'GLOBCURRENT')
 
     def convert_dstime_datetimes(self, dsTime):
         ''' Convert time variable to np.datetime64 '''
