@@ -23,6 +23,7 @@ class Mapper(VRT):
 
 
     def _band_list(self, filename, gdal_metadata, time=None, bands=[]):
+        SELECT BANDS AND TIMES
         metadictlist = []
         gdal_dataset = gdal.Open(filename)
         for fn in self.sub_filenames(gdal_dataset):
