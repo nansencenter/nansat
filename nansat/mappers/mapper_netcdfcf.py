@@ -3,7 +3,13 @@
     Check CF-compliance of your files here:
     http://cfconventions.org/compliance-checker.html
 '''
+import warnings, os
+import numpy as np
+from dateutil.parser import parse
+
 import gdal
+
+from netCDF4 import Dataset
 
 from nansat.vrt import VRT, GeolocationArray
 from nansat.tools import WrongMapperError
@@ -14,6 +20,10 @@ class Mapper(VRT):
 
         gdal_metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
 
+        # Check conventions metadata
+        if not gdal_metadata.has_key('Conventions') or not 'CF' in gdal_metadata['Conventions']:
+            raise WrongMapperError
+
         # Create empty VRT dataset with geo-reference
         self._create_empty(gdal_dataset, gdal_metadata)
     
@@ -21,11 +31,62 @@ class Mapper(VRT):
         self._create_bands(self._band_list(filename, gdal_metadata, *args, **kwargs))
         #xsize, ysize = self.ds_size(sub0)
 
+        # Add GCMD/DIF compatible metadata
 
-    def _band_list(self, filename, gdal_metadata, time=None, bands=[]):
-        SELECT BANDS AND TIMES
+    def times(self, filename):
+        ''' Get times from time variable 
+
+        NOTE: This cannot be done with gdal because the time variable is a
+        vector
+
+        Parameters
+        ----------
+        filename : string
+            Name of the original CF-compliant NetCDF file
+        '''
+        ds = Dataset(filename)
+        # Consider caching to save time - see nansat/mappers/opendap.py
+
+        times = ds.variables['time']
+        rt = parse(xx.units, fuzzy=True) # Sets timezone to local
+        # Remove timezone information from reference time, which defaults to
+        # utc (otherwise the timezone should be given in the dataset)
+        t0 = datetime.datetime(rt.year, rt.month, rt.day, rt.hour,
+                rt.minute, rt.second)
+        # Create numpy array of np.datetime64 times
+        tt = np.array([np.datetime64(t0 + datetime.timedelta(seconds=tn)) for
+            tn in times])
+
+        return tt
+
+    def _band_list(self, filename, gdal_metadata, netcdf_dim={}, bands=[]):
+        ''' Create list of dictionaries mapping source and destination metadata
+        of bands that should be added to the Nansat object.
+
+        Parameters
+        ----------
+        filename : string
+            Name of the original CF-compliant NetCDF file
+        gdal_metadata : dict
+            Dictionary of global metadata
+        netcdf_dim : dict
+            Dictionary of desired slice of a multi-dimensional array. Since
+            gdal only returns 2D bands, a multi-dimensional array (x,y,z) is
+            split into z bands accompanied with metadata information about the
+            position of the slice along the z-axis.
+        bands : list
+            List of desired bands following NetCDF-CF standard names. NOTE:
+            some datasets have other bands as well, i.e., of data not yet
+            implemented in CF. We may at some point generalize this to provide
+            a dict with key name and value, where the key is, e.g.,
+            "standard_name" or "metno_name", etc.
+        '''
+        class ContinueI(Exception):
+            pass
         metadictlist = []
         gdal_dataset = gdal.Open(filename)
+        import ipdb
+        ipdb.set_trace()
         for fn in self.sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
@@ -37,10 +98,37 @@ class Mapper(VRT):
                 band_metadata = band.GetMetadata_Dict()
                 if 'PixelFunctionType' in band_metadata:
                     band_metadata.pop('PixelFunctionType')
+                # Keep only desired bands (given in "bands" list)
+                try:
+                    if bands:
+                        if not band_metadata.has_key('standard_name'):
+                            raise ContinueI
+                        if not band_metadata['standard_name'] in bands:
+                            raise ContinueI
+                except ContinueI:
+                    continue
+                # Keep only desired slices following "netcdf_dim" dictionary
+                try:
+                    for key, val in netcdf_dim.iteritems():
+                        match = [s for s in band_metadata if key in s]
+                        if key=='time':
+                            see get_layer_datetime method in opendap.py
+                            it may be possible to retrieve the band directly
+                            based on this selection by time
+                            - in that case, move this part of the code to the
+                              beginning of the method to avoid looping. Keep
+                              below functionality in any case...
+                        if not match or not band_metadata[match[0]]==val:
+                            raise ContinueI
+                        else:
+                            band_metadata[key] = band_metadata.pop(match[0])
+                except ContinueI:
+                    continue
 
                 # Generate source metadata
                 src = {'SourceFilename': filename,
                        'SourceBand': band_num}
+
 
                 # Set scale ratio 
                 scaleRatio = band_metadata.get('ScaleRatio',
@@ -74,13 +162,13 @@ class Mapper(VRT):
                     if len(bandName) == 0:
                         bandName = bandMetadata.get('dods_variable', '')
 
-                    # remove digits added by gdal when exporting to netcdf
-                    if (len(bandName) > 0 and gdal_metadata.has_key('origin')
-                            and gdal_metadata['origin'].lower()=='nansat'):
-                        if bandName[-1:].isdigit():
-                            bandName = bandName[:-1]
-                        if bandName[-1:].isdigit():
-                            bandName = bandName[:-1]
+                    ## remove digits added by gdal when exporting to netcdf
+                    #if (len(bandName) > 0 and gdal_metadata.has_key('origin')
+                    #        and gdal_metadata['origin'].lower()=='nansat'):
+                    #    if bandName[-1:].isdigit():
+                    #        bandName = bandName[:-1]
+                    #    if bandName[-1:].isdigit():
+                    #        bandName = bandName[:-1]
 
                 # if still no bandname, create one
                 if len(bandName) == 0:
@@ -93,11 +181,11 @@ class Mapper(VRT):
 
         return metadictlist
 
-    def _create_empty(self, gdal_dataset, metadata):
+    def _create_empty(self, gdal_dataset, gdal_metadata):
         subfiles = self.sub_filenames(gdal_dataset)
         sub0 = gdal.Open(subfiles[0])
 
-        super(Mapper, self).__init__(self, sub0, srcMetadata=metadata)
+        super(Mapper, self).__init__(gdalDataset=sub0, srcMetadata=gdal_metadata)
 
         if not self.get_projection():
             # Set geolocation array from bands
@@ -107,6 +195,7 @@ class Mapper(VRT):
                             'GEOLOCATION_X_DATASET' in s][0],
                         [s for s in subfiles if 'latitude' in s or
                             'GEOLOCATION_Y_DATASET' in s][0]))
+
             # Get band projections
             projections = [gdal.Open(sub).GetProjection() for sub in subfiles if
                     gdal.Open(sub).GetProjection()]
@@ -115,20 +204,20 @@ class Mapper(VRT):
             # Set projection
             self.dataset.SetProjection(projections[0])
 
-    def _remove_strings_in_metadata_keys(self, gdalMetadata):
-        if not gdalMetadata:
+    def _remove_strings_in_metadata_keys(self, gdal_metadata):
+        if not gdal_metadata:
             raise WrongMapperError
 
-        for key in gdalMetadata.keys():
+        for key in gdal_metadata.keys():
             newkey = key.replace('NC_GLOBAL#', '')
-            gdalMetadata[newkey] = gdalMetadata.pop(key)
+            gdal_metadata[newkey] = gdal_metadata.pop(key)
         nans = 'NANSAT_'
-        for key in gdalMetadata.keys():
+        for key in gdal_metadata.keys():
             if nans in key:
-                gdalMetadata[key.replace(nans, '')] = gdalMetadata.pop(newkey)
-                gdalMetadata['origin'] = 'NANSAT'
+                gdal_metadata[key.replace(nans, '')] = gdal_metadata.pop(newkey)
+                #gdal_metadata['origin'] = 'NANSAT'
 
-        return gdalMetadata
+        return gdal_metadata
 
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets
