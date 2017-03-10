@@ -10,11 +10,9 @@ class Mapper(NetcdfCF):
 
     def __init__(self, *args, **kwargs):
 
-        #fn = args[0] # filename
-        #ds = args[1] # dataset
         mm = args[2] # metadata
-        if not 'arome' in mm['NC_GLOBAL#source'].lower() and \
-                not 'meps' in mm['NC_GLOBAL#source'].lower():
+        if not ('ecmwf' in mm['NC_GLOBAL#source'].lower() and 'met.no' in
+                mm['NC_GLOBAL#institution'].lower()):
             raise WrongMapperError
     
         super(Mapper, self).__init__(*args, **kwargs)
@@ -31,3 +29,4 @@ class Mapper(NetcdfCF):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
