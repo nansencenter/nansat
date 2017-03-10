@@ -8,11 +8,10 @@ class Mapper(Opendap, MapperArome):
 
     def __init__(self, *args, **kwargs):
 
+        raise WrongMapperError
+
         fn = args[0]
         #ds = args[1] - None
         #mm = args[2] - None
-
-        import ipdb
-        ipdb.set_trace()
 
         self.test_mapper(fn)

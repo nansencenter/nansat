@@ -13,6 +13,10 @@ class Mapper(NetcdfCF):
         mm = args[2] # metadata
         if not mm:
             raise WrongMapperError
+        if not mm.has_key('NC_GLOBAL#source'):
+            raise WrongMapperError
+        if not mm.has_key('NC_GLOBAL#institution'):
+            raise WrongMapperError
         if not ('ecmwf' in mm['NC_GLOBAL#source'].lower() and 'met.no' in
                 mm['NC_GLOBAL#institution'].lower()):
             raise WrongMapperError

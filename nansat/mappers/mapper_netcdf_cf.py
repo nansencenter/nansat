@@ -18,6 +18,9 @@ class Mapper(VRT):
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
 
+        if not filename.endswith('nc'):
+            raise WrongMapperError
+
         gdal_metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
 
         # Check conventions metadata
@@ -204,12 +207,17 @@ class Mapper(VRT):
 
         if not self.get_projection():
             # Set geolocation array from bands
-            self.add_geolocationArray(
+            try:
+                self.add_geolocationArray(
                     GeolocationArray(
                         [s for s in subfiles if 'longitude' in s or
                             'GEOLOCATION_X_DATASET' in s][0],
                         [s for s in subfiles if 'latitude' in s or
                             'GEOLOCATION_Y_DATASET' in s][0]))
+            except:
+                import ipdb
+                ipdb.set_trace()
+                print 'hei'
 
             # Get band projections
             projections = [gdal.Open(sub).GetProjection() for sub in subfiles if
