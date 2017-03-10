@@ -52,7 +52,7 @@ class NetCDFCFMapperTests(unittest.TestCase):
     def test_open_arome_arctic_y_wind_and_x_wind_at_given_datetime(self):
         n = Nansat(self.test_file_arome_arctic, bands=['y_wind', 'x_wind'],
             netcdf_dim={'time':
-                np.datetime64(datetime.datetime(2017,2,28,15,0,0))},
+                np.datetime64(datetime.datetime(2017,2,28,15,30,0))},
                 mapperName='netcdfcf')
         self.assertIsInstance(n, Nansat)
         self.assertEqual(2, len(n.bands()))

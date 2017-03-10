@@ -31,7 +31,7 @@ class Mapper(VRT):
         self._create_bands(self._band_list(filename, gdal_metadata, *args, **kwargs))
         #xsize, ysize = self.ds_size(sub0)
 
-        # Add GCMD/DIF compatible metadata
+        # Add GCMD/DIF compatible metadata in inheriting mappers
 
     def times(self, filename):
         ''' Get times from time variable 
@@ -110,12 +110,8 @@ class Mapper(VRT):
                     for key, val in netcdf_dim.iteritems():
                         match = [s for s in band_metadata if key in s]
                         if key=='time' and type(val)==np.datetime64:
-                            #see get_layer_datetime method in opendap.py
-                            #it may be possible to retrieve the band directly
-                            #based on this selection by time
-                            #- in that case, move this part of the code to the
-                            #  beginning of the method to avoid looping. Keep
-                            #  below functionality in any case...
+                            # Select band directly from given timestamp, and
+                            # break the for loop
                             band_num = np.argmin(np.abs(self.times(filename) -
                                 val))
                             metadictlist.append(self._band_dict(filename,
