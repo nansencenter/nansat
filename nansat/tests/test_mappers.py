@@ -1,6 +1,7 @@
 import unittest 
 
-import os
+import os, datetime
+import numpy as np
 
 from nansat.nansat import Nansat
 
@@ -36,19 +37,27 @@ class NetCDFCFMapperTests(unittest.TestCase):
                 mapperName='netcdfcf')
         self.assertIsInstance(n, Nansat)
 
-    def test_open_arome_metcoop_y_wind_and_x_wind_at_give_time(self):
+    def test_open_arome_metcoop_y_wind_and_x_wind_at_given_time(self):
         n = Nansat(self.test_file_arome_metcoop, bands=['y_wind', 'x_wind'],
                 netcdf_dim={'time': '1488153600'}, mapperName='netcdfcf')
         self.assertIsInstance(n, Nansat)
         self.assertEqual(2, len(n.bands()))
 
-    def test_open_arome_arctic_y_wind_and_x_wind_at_give_time(self):
+    def test_open_arome_arctic_y_wind_and_x_wind_at_given_time(self):
         n = Nansat(self.test_file_arome_arctic, bands=['y_wind', 'x_wind'],
                 netcdf_dim={'time': '1488387600'}, mapperName='netcdfcf')
         self.assertIsInstance(n, Nansat)
         self.assertEqual(2, len(n.bands()))
 
-    def test_open_ecmwf_y_wind_and_x_wind_at_give_time(self):
+    def test_open_arome_arctic_y_wind_and_x_wind_at_given_datetime(self):
+        n = Nansat(self.test_file_arome_arctic, bands=['y_wind', 'x_wind'],
+            netcdf_dim={'time':
+                np.datetime64(datetime.datetime(2017,2,28,15,0,0))},
+                mapperName='netcdfcf')
+        self.assertIsInstance(n, Nansat)
+        self.assertEqual(2, len(n.bands()))
+
+    def test_open_ecmwf_y_wind_and_x_wind_at_given_time(self):
         n = Nansat(self.test_file_ecmwf, bands=['y_wind', 'x_wind'],
                 netcdf_dim={'time': '1488409200'}, mapperName='netcdfcf')
         self.assertIsInstance(n, Nansat)

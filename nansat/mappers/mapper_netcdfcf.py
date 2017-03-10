@@ -3,7 +3,7 @@
     Check CF-compliance of your files here:
     http://cfconventions.org/compliance-checker.html
 '''
-import warnings, os
+import warnings, os, datetime
 import numpy as np
 from dateutil.parser import parse
 
@@ -48,7 +48,7 @@ class Mapper(VRT):
         # Consider caching to save time - see nansat/mappers/opendap.py
 
         times = ds.variables['time']
-        rt = parse(xx.units, fuzzy=True) # Sets timezone to local
+        rt = parse(times.units, fuzzy=True) # Sets timezone to local
         # Remove timezone information from reference time, which defaults to
         # utc (otherwise the timezone should be given in the dataset)
         t0 = datetime.datetime(rt.year, rt.month, rt.day, rt.hour,
@@ -83,10 +83,10 @@ class Mapper(VRT):
         '''
         class ContinueI(Exception):
             pass
+        class BreakI(Exception):
+            pass
         metadictlist = []
         gdal_dataset = gdal.Open(filename)
-        import ipdb
-        ipdb.set_trace()
         for fn in self.sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
@@ -95,9 +95,7 @@ class Mapper(VRT):
             for i in range(subds.RasterCount):
                 band_num = i + 1
                 band = subds.GetRasterBand(band_num)
-                band_metadata = band.GetMetadata_Dict()
-                if 'PixelFunctionType' in band_metadata:
-                    band_metadata.pop('PixelFunctionType')
+                band_metadata = self._clean_band_metadata(band)
                 # Keep only desired bands (given in "bands" list)
                 try:
                     if bands:
@@ -111,75 +109,96 @@ class Mapper(VRT):
                 try:
                     for key, val in netcdf_dim.iteritems():
                         match = [s for s in band_metadata if key in s]
-                        if key=='time':
-                            see get_layer_datetime method in opendap.py
-                            it may be possible to retrieve the band directly
-                            based on this selection by time
-                            - in that case, move this part of the code to the
-                              beginning of the method to avoid looping. Keep
-                              below functionality in any case...
+                        if key=='time' and type(val)==np.datetime64:
+                            #see get_layer_datetime method in opendap.py
+                            #it may be possible to retrieve the band directly
+                            #based on this selection by time
+                            #- in that case, move this part of the code to the
+                            #  beginning of the method to avoid looping. Keep
+                            #  below functionality in any case...
+                            band_num = np.argmin(np.abs(self.times(filename) -
+                                val))
+                            metadictlist.append(self._band_dict(filename,
+                                band_num, subds))
+                            raise BreakI
                         if not match or not band_metadata[match[0]]==val:
                             raise ContinueI
                         else:
                             band_metadata[key] = band_metadata.pop(match[0])
                 except ContinueI:
                     continue
-
-                # Generate source metadata
-                src = {'SourceFilename': filename,
-                       'SourceBand': band_num}
-
-
-                # Set scale ratio 
-                scaleRatio = band_metadata.get('ScaleRatio',
-                        band_metadata.get('scale',
-                            band_metadata.get('scale_factor', '')))
-                if len(scaleRatio) > 0:
-                    src['ScaleRatio'] = scaleRatio
-
-                # Set scale offset
-                scaleOffset = band_metadata.get('ScaleOffset',
-                        band_metadata.get('offset',
-                            band_metadata.get('add_offset', '')))
-                if len(scaleOffset) > 0:
-                    src['ScaleOffset'] = scaleOffset
-
-                # Set data type
-                src['DataType'] = band.DataType
-
-                # Generate destination metadata
-                # Copy all metadata from input band
-                dst = band_metadata
-                # Set wkv
-                dst['wkv'] = band_metadata.get('standard_name', '')
-                
-                # Set band name
-                if 'name' in band_metadata:
-                    bandName = band_metadata['name']
-                else:
-                    # if it doesn't exist get name from NETCDF_VARNAME
-                    bandName = band_metadata.get('NETCDF_VARNAME', '')
-                    if len(bandName) == 0:
-                        bandName = bandMetadata.get('dods_variable', '')
-
-                    ## remove digits added by gdal when exporting to netcdf
-                    #if (len(bandName) > 0 and gdal_metadata.has_key('origin')
-                    #        and gdal_metadata['origin'].lower()=='nansat'):
-                    #    if bandName[-1:].isdigit():
-                    #        bandName = bandName[:-1]
-                    #    if bandName[-1:].isdigit():
-                    #        bandName = bandName[:-1]
-
-                # if still no bandname, create one
-                if len(bandName) == 0:
-                    bandName = 'band_%03d' % i
-
-                dst['name'] = bandName
+                except BreakI:
+                    break
 
                 # append band with src and dst dictionaries
-                metadictlist.append({'src': src, 'dst': dst})
+                metadictlist.append(self._band_dict(filename, band_num, subds,
+                    band=band, band_metadata=band_metadata))
 
         return metadictlist
+
+    def _clean_band_metadata(self, band):
+        band_metadata = band.GetMetadata_Dict()
+        if 'PixelFunctionType' in band_metadata:
+            band_metadata.pop('PixelFunctionType')
+        return band_metadata
+
+    def _band_dict(self, filename, band_num, subds, band=None, band_metadata=None):
+
+        if not band:
+            band = subds.GetRasterBand(band_num)
+        if not band_metadata:
+            band_metadata = self._clean_band_metadata(band)
+
+        # Generate source metadata
+        src = {'SourceFilename': filename, 'SourceBand': band_num}
+
+        # Set scale ratio 
+        scaleRatio = band_metadata.get('ScaleRatio',
+                band_metadata.get('scale',
+                    band_metadata.get('scale_factor', '')))
+        if len(scaleRatio) > 0:
+            src['ScaleRatio'] = scaleRatio
+
+        # Set scale offset
+        scaleOffset = band_metadata.get('ScaleOffset',
+                band_metadata.get('offset',
+                    band_metadata.get('add_offset', '')))
+        if len(scaleOffset) > 0:
+            src['ScaleOffset'] = scaleOffset
+
+        # Set data type
+        src['DataType'] = band.DataType
+
+        # Generate destination metadata
+        # Copy all metadata from input band
+        dst = band_metadata
+        # Set wkv
+        dst['wkv'] = band_metadata.get('standard_name', '')
+                
+        # Set band name
+        if 'name' in band_metadata:
+            bandName = band_metadata['name']
+        else:
+            # if it doesn't exist get name from NETCDF_VARNAME
+            bandName = band_metadata.get('NETCDF_VARNAME', '')
+            if len(bandName) == 0:
+                bandName = bandMetadata.get('dods_variable', '')
+
+            ## remove digits added by gdal when exporting to netcdf
+            #if (len(bandName) > 0 and gdal_metadata.has_key('origin')
+            #        and gdal_metadata['origin'].lower()=='nansat'):
+            #    if bandName[-1:].isdigit():
+            #        bandName = bandName[:-1]
+            #    if bandName[-1:].isdigit():
+            #        bandName = bandName[:-1]
+
+        # if still no bandname, create one
+        if len(bandName) == 0:
+            bandName = 'band_%03d' % i
+
+        dst['name'] = bandName
+
+        return {'src': src, 'dst': dst}
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
         subfiles = self.sub_filenames(gdal_dataset)
