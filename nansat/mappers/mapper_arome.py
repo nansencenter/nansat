@@ -10,9 +10,9 @@ class Mapper(NetcdfCF):
 
     def __init__(self, *args, **kwargs):
 
-        #fn = args[0] # filename
-        #ds = args[1] # dataset
         mm = args[2] # metadata
+        if not mm:
+            raise WrongMapperError
         if not 'arome' in mm['NC_GLOBAL#source'].lower() and \
                 not 'meps' in mm['NC_GLOBAL#source'].lower():
             raise WrongMapperError

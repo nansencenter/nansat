@@ -14,6 +14,7 @@ class NetCDFCFMapperTests(unittest.TestCase):
         self.test_file_arome_metcoop = '/vagrant/shared/test_data/generic/arome_metcoop_default2_5km_20170227T00Z.nc'
         self.test_file_arome_arctic = '/vagrant/shared/test_data/generic/arome_arctic_pp_2_5km_20170227T00Z.nc'
         self.test_file_ecmwf = '/vagrant/shared/test_data/generic/ec_atmo_0_1deg_20170227T000000Z_1h.nc'
+        self.test_file_arome_opendap = 'http://thredds.met.no/thredds/catalog/arome25/catalog.html?dataset=arome25/arome_metcoop_default2_5km_latest.nc'
 
     def test_netcdf_cf_mapper_is_used(self):
         n = Nansat(self.test_file_arctic)
@@ -72,6 +73,10 @@ class NetCDFCFMapperTests(unittest.TestCase):
     def test_ecmwf_mapper_is_used(self):
         n = Nansat(self.test_file_ecmwf)
         self.assertEqual(n.mapper, 'ecmwf_metno')
+
+    def test_mapper_opendap_arome(self):
+        n = Nansat(self.test_file_arome_opendap, mapperName='opendap_arome')
+        self.assertEqual(n.mapper, 'opendap_arome')
 
 if __name__ == "__main__":
     unittest.main()

@@ -34,7 +34,7 @@ class TestDataForTestingMappers(unittest.TestCase):
 # https://nose.readthedocs.org/en/latest/writing_tests.html#test-generators
 # The x-flag results in the test stopping at first failure or error - use it
 # for easier debugging:
-# nosetests -v -x end2endtests.test_mappers:TestAllMappers.test_mappers_basic
+# nosetests -v -x integration_tests.test_mappers:TestAllMappers.test_mappers_basic
 class TestAllMappers(object):
 
     @classmethod

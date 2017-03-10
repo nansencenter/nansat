@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 # Name:         mapper_test_archive.py
-# Purpose:      To discover test data for the end2endtests
+# Purpose:      To discover test data for the integration tests
 #
 # Author:       Anton Korosov, Morten Wergeland Hansen, Asuka Yamakawa
 # Modified:     Morten Wergeland Hansen, Aleksander Vines
