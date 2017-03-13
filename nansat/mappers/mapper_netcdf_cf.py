@@ -218,6 +218,9 @@ class Mapper(VRT):
             # Get band projections
             projections = [gdal.Open(sub).GetProjection() for sub in subfiles if
                     gdal.Open(sub).GetProjection()]
+            if not projections:
+                raise WrongMapperError
+
             # Check that projection is the same for all bands
             assert all(proj==projections[0] for proj in projections)
             # Set projection
@@ -230,11 +233,12 @@ class Mapper(VRT):
         for key in gdal_metadata.keys():
             newkey = key.replace('NC_GLOBAL#', '')
             gdal_metadata[newkey] = gdal_metadata.pop(key)
-        nans = 'NANSAT_'
-        for key in gdal_metadata.keys():
-            if nans in key:
-                gdal_metadata[key.replace(nans, '')] = gdal_metadata.pop(newkey)
-                #gdal_metadata['origin'] = 'NANSAT'
+        # Don't do this yet...
+        #nans = 'NANSAT_'
+        #for key in gdal_metadata.keys():
+        #    if nans in key:
+        #        gdal_metadata[key.replace(nans, '')] = gdal_metadata.pop(newkey)
+        #        #gdal_metadata['origin'] = 'NANSAT'
 
         return gdal_metadata
 
