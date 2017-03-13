@@ -205,20 +205,16 @@ class Mapper(VRT):
 
         super(Mapper, self).__init__(gdalDataset=sub0, srcMetadata=gdal_metadata)
 
-        if not self.get_projection():
+        if not (self.dataset.GetGeoTransform() or self.geolocationArray.xVRT):
             # Set geolocation array from bands
-            try:
-                self.add_geolocationArray(
+            self.add_geolocationArray(
                     GeolocationArray(
                         [s for s in subfiles if 'longitude' in s or
                             'GEOLOCATION_X_DATASET' in s][0],
                         [s for s in subfiles if 'latitude' in s or
                             'GEOLOCATION_Y_DATASET' in s][0]))
-            except:
-                import ipdb
-                ipdb.set_trace()
-                print 'hei'
 
+        if not self.get_projection():
             # Get band projections
             projections = [gdal.Open(sub).GetProjection() for sub in subfiles if
                     gdal.Open(sub).GetProjection()]
