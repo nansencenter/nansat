@@ -5,7 +5,7 @@ import numpy as np
 
 from nansat.nansat import Nansat
 
-import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 
 class NetCDFCFMapperTests(unittest.TestCase):
 
