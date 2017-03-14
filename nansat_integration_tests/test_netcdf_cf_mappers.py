@@ -104,7 +104,7 @@ class NetCDFCFMapperTests(unittest.TestCase):
         wind = Nansat(self.test_file_arome_metcoop, netcdf_dim={'time':
             np.datetime64(sar.time_coverage_start)},
             bands=['y_wind_10m','x_wind_10m'])
-        wind.reproject(sar)
+        wind.reproject(sar, addmask=False)
         self.assertTrue(wind['x_wind_10m'].any())
         self.assertTrue(wind['y_wind_10m'].any())
 
