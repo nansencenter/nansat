@@ -22,9 +22,9 @@ class Mapper(NetcdfCF):
         super(Mapper, self).__init__(*args, **kwargs)
 
         self.dataset.SetMetadataItem('time_coverage_start',
-                (parse(mm['min_time'], fuzzy=True).isoformat()))
+                (parse(mm['min_time'], ignoretz=True, fuzzy=True).isoformat()))
         self.dataset.SetMetadataItem('time_coverage_end',
-                (parse(mm['max_time'], fuzzy=True).isoformat()))
+                (parse(mm['max_time'], ignoretz=True, fuzzy=True).isoformat()))
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
