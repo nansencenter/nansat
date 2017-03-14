@@ -42,8 +42,7 @@ class NetCDFCFMapperTests(unittest.TestCase):
         n = Nansat(self.test_file_arome_metcoop, netcdf_dim={'height0': '0'},
                 mapperName='netcdf_cf')
         self.assertIsInstance(n, Nansat)
-        self.assertTrue(n['x_wind_10m'].any())
-        self.assertTrue(n['y_wind_10m'].any())
+        self.assertTrue(n['surface_air_pressure'].any())
 
     def test_open_arome_metcoop_y_wind_and_x_wind_at_given_time(self):
         n = Nansat(self.test_file_arome_metcoop, bands=['y_wind', 'x_wind'],
@@ -101,7 +100,8 @@ class NetCDFCFMapperTests(unittest.TestCase):
 
     def test_reproject_arome_to_SAR(self):
         sar = Nansat(self.s1bIW)
-        wind = Nansat(self.test_file_arome_metcoop, netcdf_dim={'time':
+        #wind = Nansat(self.test_file_arome_metcoop, netcdf_dim={'time':
+        wind = Nansat(self.test_file_ecmwf, netcdf_dim={'time':
             np.datetime64(sar.time_coverage_start)},
             bands=['y_wind_10m','x_wind_10m'])
         wind.reproject(sar, addmask=False)
