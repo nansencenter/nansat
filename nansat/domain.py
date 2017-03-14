@@ -895,17 +895,13 @@ class Domain(object):
                                          DstToSrc, dstSRS=dstSRS)
 
     def azimuth_y(self, reductionFactor=1):
-        '''Calculate the azimuth of 'upward' direction in each pixel
+        '''Calculate the angle of each pixel position vector with respect to
+        the Y-axis (azimuth).
 
-        Generaly speaking, azimuth is angle from the reference vector
-        (direction to North) to the chosen direction. Azimuth increases
-        clockwise from direction to North. http://en.wikipedia.org/wiki/Azimuth
-
-        Here we calcluate azimuth of 'upward' direction.
-        'Upward' direction coincides with Y-axis direction (and hence is
-        opposite to the ROW-axis direction). For lon-lat (cylindrical,
-        Plate Caree) and Mercator projections 'upward' direction coincides with
-        direction to North, hence azimuth is 0.
+        In general, azimuth is the angle from a reference vector (e.g., the
+        direction to North) to the chosen position vector. The azimuth
+        increases clockwise from direction to North.
+        http://en.wikipedia.org/wiki/Azimuth
 
         Parameters
         -----------
@@ -914,7 +910,7 @@ class Domain(object):
 
         Returns
         -------
-        azimuth        : numpy array
+        azimuth : numpy array
             Values of azimuth in degrees in range 0 - 360
 
         '''
