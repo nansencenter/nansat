@@ -117,7 +117,7 @@ class Mapper(VRT):
                             # break the for loop
                             band_num = np.argmin(np.abs(self.times(filename) -
                                 val))
-                            metadictlist.append(self._band_dict(filename,
+                            metadictlist.append(self._band_dict(fn,
                                 band_num, subds))
                             raise BreakI
                         if not match or not band_metadata[match[0]]==val:
@@ -130,7 +130,7 @@ class Mapper(VRT):
                     break
 
                 # append band with src and dst dictionaries
-                metadictlist.append(self._band_dict(filename, band_num, subds,
+                metadictlist.append(self._band_dict(fn, band_num, subds,
                     band=band, band_metadata=band_metadata))
 
         return metadictlist
