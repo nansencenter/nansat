@@ -592,10 +592,7 @@ class VRT(object):
 
         # set metadata from WKV
         if wkv_exists:
-            try:
-                dstRasterBand = self._put_metadata(dstRasterBand, wkv)
-            except:
-                import ipdb; ipdb.set_trace()
+            dstRasterBand = self._put_metadata(dstRasterBand, wkv)
 
         # set metadata from provided parameters
         # remove and add params
