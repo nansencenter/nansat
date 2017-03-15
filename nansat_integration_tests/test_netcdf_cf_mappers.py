@@ -15,6 +15,7 @@ class NetCDFCFMapperTests(unittest.TestCase):
         self.test_file_arome_arctic = '/vagrant/shared/test_data/generic/arome_arctic_pp_2_5km_20170227T00Z.nc'
         self.test_file_ecmwf = '/vagrant/shared/test_data/generic/ec_atmo_0_1deg_20170227T000000Z_1h.nc'
         self.test_file_arome_opendap = 'http://thredds.met.no/thredds/catalog/arome25/catalog.html?dataset=arome25/arome_metcoop_default2_5km_latest.nc'
+        self.s1aEW = '/vagrant/shared/test_data/sentinel1_l1/S1A_EW_GRDM_1SDH_20170227T065537_20170227T065637_015466_019652_DD9C.SAFE'
         self.s1bIW = '/vagrant/shared/test_data/sentinel1_l1/S1B_IW_GRDM_1SDV_20170227T061040_20170227T061113_004482_007CD7_3205.SAFE'
 
     def test_netcdf_cf_mapper_is_used(self):
@@ -100,10 +101,22 @@ class NetCDFCFMapperTests(unittest.TestCase):
 
     def test_reproject_arome_to_SAR(self):
         sar = Nansat(self.s1bIW)
-        #wind = Nansat(self.test_file_arome_metcoop, netcdf_dim={'time':
+        wind = Nansat(self.test_file_arome_metcoop, netcdf_dim={'time':
+            np.datetime64(sar.time_coverage_start)},
+            bands=['y_wind','x_wind'])
+        self.assertTrue(wind['x_wind_10m'].any())
+        self.assertTrue(wind['y_wind_10m'].any())
+        wind.reproject(sar, addmask=False)
+        self.assertTrue(wind['x_wind_10m'].any())
+        self.assertTrue(wind['y_wind_10m'].any())
+
+    def test_reproject_ecmwf_to_SAR(self):
+        sar = Nansat(self.s1aEW)
         wind = Nansat(self.test_file_ecmwf, netcdf_dim={'time':
             np.datetime64(sar.time_coverage_start)},
-            bands=['y_wind_10m','x_wind_10m'])
+            bands=['y_wind','x_wind'])
+        self.assertTrue(wind['x_wind_10m'].any())
+        self.assertTrue(wind['y_wind_10m'].any())
         wind.reproject(sar, addmask=False)
         self.assertTrue(wind['x_wind_10m'].any())
         self.assertTrue(wind['y_wind_10m'].any())
