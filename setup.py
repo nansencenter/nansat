@@ -116,8 +116,8 @@ def use_gdal_config():
 try:
     use_gdal_config()
 except Exception as e:
-    print 'WARNING: gdal-config could not be called, ' +\
-          'pixel functions will not be available.'
+    print ('WARNING: gdal-config could not be called pixel functions will not be available.')
+          
     print 'Error details follow:'
     print repr(e)
     skip_compile = True
