@@ -15,7 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import re
+import re, warnings
 from math import sin, pi, cos, acos, copysign
 import string
 from xml.etree.ElementTree import ElementTree
@@ -673,10 +673,15 @@ class Domain(object):
         '''
         lonList, latList = self.get_border(*args, **kwargs)
 
-        # apply > 180 deg correction to longitudes
-        for ilon, lon in enumerate(lonList):
-            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
-                                     sin(lon * pi / 180.))
+        ''' The following causes erratic geometry when using
+        WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
+        now since this may cause other problems...
+        '''
+        warnings.warn("> 180 deg correction to longitudes - disabled..")
+        ## apply > 180 deg correction to longitudes
+        #for ilon, lon in enumerate(lonList):
+        #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
+        #                             sin(lon * pi / 180.))
 
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
