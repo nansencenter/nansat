@@ -46,8 +46,10 @@ class Mapper(Opendap):
         self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
         # add instrument and platform
-        instr = pti.get_gcmd_instrument('active remote sensing')
-        pltfr = pti.get_gcmd_platform('Earth Observation Satellites')
+        #instr = pti.get_gcmd_instrument('active remote sensing')
+        #pltfr = pti.get_gcmd_platform('Earth Observation Satellites')
+        pltfr = pti.get_gcmd_platform('JASON-1')
+        instr = pti.get_gcmd_instrument('JASON-2 RADAR ALTIMETER')
 
         self.dataset.SetMetadataItem('instrument',  json.dumps(instr))
         self.dataset.SetMetadataItem('platform',    json.dumps(pltfr))

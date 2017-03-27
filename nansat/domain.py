@@ -673,10 +673,10 @@ class Domain(object):
         '''
         lonList, latList = self.get_border(*args, **kwargs)
 
-        # apply > 180 deg correction to longitudes
-        for ilon, lon in enumerate(lonList):
-            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
-                                     sin(lon * pi / 180.))
+        ## apply > 180 deg correction to longitudes
+        #for ilon, lon in enumerate(lonList):
+        #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
+        #                             sin(lon * pi / 180.))
 
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
