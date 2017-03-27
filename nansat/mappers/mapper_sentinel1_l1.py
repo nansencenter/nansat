@@ -37,6 +37,9 @@ class Mapper(VRT):
     def __init__(self, fileName, gdalDataset, gdalMetadata,
                  manifestonly=False, **kwargs):
 
+        if not os.path.split(fileName.rstrip('/'))[1][:3] in ['S1A', 'S1B']:
+            raise WrongMapperError('Not Sentinel 1A or 1B')
+
         if zipfile.is_zipfile(fileName):
             zz = zipfile.PyZipFile(fileName)
             # Assuming the file names are consistent, the polarization
@@ -97,11 +100,8 @@ class Mapper(VRT):
 
         self.manifestXML = self.read_xml(manifestFile[0])
 
-        if not os.path.split(fileName)[1][:3] in ['S1A', 'S1B']:
-            raise WrongMapperError('Not Sentinel 1A or 1B')
-
         missionName = {'S1A': 'SENTINEL-1A', 'S1B': 'SENTINEL-1B'}[
-            os.path.split(fileName)[1][:3]]
+            os.path.split(fileName.rstrip('/'))[1][:3]]
 
         # very fast constructor without any bands
         if manifestonly:
