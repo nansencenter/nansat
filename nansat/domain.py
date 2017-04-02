@@ -592,7 +592,7 @@ class Domain(object):
                               '"-ts" or "-tr" should be chosen.')
         return extentDic
 
-    def get_border(self, nPoints=10):
+    def get_border(self, nPoints=10, **kwargs):
         '''Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
