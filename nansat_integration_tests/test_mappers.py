@@ -1,17 +1,3 @@
-# ------------------------------------------------------------------------------
-# Name:         test_mappers.py
-# Purpose:      Test all the mappers
-#
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:     Morten Wergeland Hansen, Aleksander Vines
-#
-# Created:      2014-06-18
-# Last modified:2015-12-28 16:00
-# Copyright:    (c) NERSC
-# Licence:      This file is part of NANSAT. You can redistribute it or modify
-#               under the terms of GNU General Public License, v.3
-#               http://www.gnu.org/licenses/gpl-3.0.html
-# ------------------------------------------------------------------------------
 import unittest
 import sys
 import datetime
