@@ -226,26 +226,5 @@ class Mapper(VRT):
             # Set projection
             self.dataset.SetProjection(projections[0])
 
-    def _remove_strings_in_metadata_keys(self, gdal_metadata):
-        if not gdal_metadata:
-            raise WrongMapperError
-
-        for key in gdal_metadata.keys():
-            newkey = key.replace('NC_GLOBAL#', '')
-            gdal_metadata[newkey] = gdal_metadata.pop(key)
-        # Don't do this yet...
-        #nans = 'NANSAT_'
-        #for key in gdal_metadata.keys():
-        #    if nans in key:
-        #        gdal_metadata[key.replace(nans, '')] = gdal_metadata.pop(newkey)
-        #        #gdal_metadata['origin'] = 'NANSAT'
-
-        return gdal_metadata
-
-    def sub_filenames(self, gdal_dataset):
-        # Get filenames of subdatasets
-        sub_datasets = gdal_dataset.GetSubDatasets()
-        return [f[0] for f in sub_datasets]
-
     #def ds_size(self, ds):
     #    return ds.RasterXSize, ds.RasterYSize
