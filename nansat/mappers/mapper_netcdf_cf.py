@@ -12,6 +12,7 @@ import gdal
 from netCDF4 import Dataset
 
 from nansat.vrt import VRT, GeolocationArray
+from nansat.nsr import NSR
 from nansat.tools import WrongMapperError
 
 class Mapper(VRT):
@@ -218,13 +219,20 @@ class Mapper(VRT):
             # Get band projections
             projections = [gdal.Open(sub).GetProjection() for sub in subfiles if
                     gdal.Open(sub).GetProjection()]
-            if not projections:
-                raise WrongMapperError
 
             # Check that projection is the same for all bands
             assert all(proj==projections[0] for proj in projections)
             # Set projection
-            self.dataset.SetProjection(projections[0])
+            if projections:
+                self.dataset.SetProjection(projections[0])
+
+        if not self.get_projection():
+            # no projection was found in dataset or metadata:
+            # generate WGS84 by default
+            warnings.warn(
+                'No projection was found - guessing Nansat Spatial Reference')
+            projection = NSR().wkt
+            self.dataset.SetProjection(projection)
 
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         if not gdal_metadata:
