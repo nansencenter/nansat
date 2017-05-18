@@ -1577,7 +1577,7 @@ class VRT(object):
         return lonVector, latVector
 
     def get_projection(self):
-        '''Get projection form self.dataset
+        '''Get projection from self.dataset
 
         Get projection from GetProjection() or GetGCPProjection().
         If both are empty, raise error
@@ -1588,7 +1588,9 @@ class VRT(object):
 
         Raises
         -------
-        ProjectionError : occurrs when the projection is empty.
+        ProjectionError : occurs when the projection is empty.
+
+        TODO: see issue #190 in nansat...
 
         '''
         # get projection or GCPProjection
