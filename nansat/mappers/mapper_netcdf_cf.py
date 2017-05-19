@@ -21,7 +21,7 @@ class Mapper(VRT):
 
         if not filename.endswith('nc'):
             raise WrongMapperError
-
+        
         gdal_metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
 
         # Check conventions metadata
@@ -253,7 +253,12 @@ class Mapper(VRT):
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets
         sub_datasets = gdal_dataset.GetSubDatasets()
-        return [f[0] for f in sub_datasets]
+        # add subdatasets with Projection only
+        sub_fnames = []
+        for f in sub_datasets:
+            if gdal.Open(f[0]).GetProjection():
+                sub_fnames.append(f[0])
+        return sub_fnames
 
     #def ds_size(self, ds):
     #    return ds.RasterXSize, ds.RasterYSize

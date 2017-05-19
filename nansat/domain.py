@@ -364,7 +364,7 @@ class Domain(object):
         kmlFile.write('</kml>')
         kmlFile.close()
 
-    def get_geolocation_grids(self, stepSize=1):
+    def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
         '''Get longitude and latitude grids representing the full data grid
 
         If GEOLOCATION is not present in the self.vrt.dataset then grids
@@ -396,7 +396,7 @@ class Domain(object):
             longitude, latitude = lon[Ym, Xm], lat[Ym, Xm]
         else:
             # generate lon,lat grids using GDAL Transformer
-            lonVec, latVec = self.transform_points(Xm.flatten(), Ym.flatten())
+            lonVec, latVec = self.transform_points(Xm.flatten(), Ym.flatten(), dstSRS=dstSRS)
             longitude = lonVec.reshape(Xm.shape)
             latitude = latVec.reshape(Xm.shape)
 
