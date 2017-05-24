@@ -34,32 +34,32 @@ class Mapper(VRT):
             # Probably Nansat generated netcdf of swath data - see issue #192
             raise WrongMapperError
         
-        gdal_metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
+        metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
 
         # Set origin metadata (TODO: agree on keyword...)
         origin = ''
         nans = 'NANSAT'
-        if gdal_metadata.has_key('origin'):
-            origin = gdal_metadata['origin'] + ' '
-        for key in gdal_metadata.keys():
+        if metadata.has_key('origin'):
+            origin = metadata['origin'] + ' '
+        for key in metadata.keys():
             if nans in key:
-                gdal_metadata['origin'] =  origin + nans
+                metadata['origin'] =  origin + nans
             # else: Nothing needs to be done, origin stays the same...
 
         # Check conventions metadata
-        if not gdal_metadata.has_key('Conventions') or not 'CF' in gdal_metadata['Conventions']:
+        if not metadata.has_key('Conventions') or not 'CF' in metadata['Conventions']:
             raise WrongMapperError
 
         # OBS: at this point, generic mapper fails...
-        #if gdal_metadata.has_key('GCPProjection'):
+        #if metadata.has_key('GCPProjection'):
         #    # Probably Nansat generated netcdf of swath data - see issue #192
         #    raise WrongMapperError
 
         # Create empty VRT dataset with geo-reference
-        self._create_empty(gdal_dataset, gdal_metadata)
+        self._create_empty(gdal_dataset, metadata)
 
         # Add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(self._band_list(filename, gdal_metadata, *args, **kwargs))
+        self._create_bands(self._band_list(filename, metadata, *args, **kwargs))
 
         # Check size?
         #xsize, ysize = self.ds_size(sub0)
@@ -69,7 +69,7 @@ class Mapper(VRT):
         self._create_complex_bands(self.sub_filenames(gdal_dataset))
 
         # Set GCMD/DIF compatible metadata if available
-        self._set_time_coverage_metadata(gdal_metadata)
+        self._set_time_coverage_metadata(metadata)
 
         # Then add remaining GCMD/DIF compatible metadata in inheriting mappers
 
@@ -266,16 +266,18 @@ class Mapper(VRT):
         if not gdal_metadata:
             raise WrongMapperError
 
+        meta = gdal_metadata.copy()
+
         # These strings are added when datasets are exported in
         # nansat.nansat.Nansat.export...
         rm_strings = ['NC_GLOBAL#', 'NANSAT_', 'GDAL_']
 
         for rms in rm_strings:
-            for key in gdal_metadata.keys():
+            for key in meta.keys():
                 newkey = key.replace(rms, '')
-                gdal_metadata[newkey] = gdal_metadata.pop(key)
+                meta[newkey] = meta.pop(key)
 
-        return gdal_metadata
+        return meta
 
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets

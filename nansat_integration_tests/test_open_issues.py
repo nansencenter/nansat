@@ -20,3 +20,14 @@ class TestOpenIssues(unittest.TestCase):
         n.reproject(d, eResampleAlg=1, tps=True)
         inci = n['incidence_angle']
 
+    def test_issue_193(self):
+        fn = [
+            '/vagrant/shared/test_data/cmems/GLOBAL_ANALYSIS_FORECAST_PHY_001_024-TDS-x10-X30-y55-Y73-201705181200-201705271200.nc',
+            '/vagrant/shared/test_data/cmems/ARC-METNO-ARC-TOPAZ4_2_PHYS-FOR-TDS-x10-X30-y55-Y73-20170518-20170526.nc',
+        ]
+        for f in fn:
+            n = Nansat(f)
+            self.assertTrue(n.get_metadata().has_key('time_coverage_start'))
+            self.assertTrue(n.get_metadata().has_key('time_coverage_end'))
+            self.assertTrue(n.get_metadata().has_key('instrument'))
+            self.assertTrue(n.get_metadata().has_key('platform'))
