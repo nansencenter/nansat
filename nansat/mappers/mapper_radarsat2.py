@@ -48,6 +48,8 @@ class Mapper(VRT):
 
         # read product.xml
         productXmlName = os.path.join(fileName, 'product.xml')
+        if not os.path.isfile(productXmlName):
+            raise WrongMapperError
         productXml = self.read_xml(productXmlName)
 
         # Get additional metadata from product.xml

@@ -5,37 +5,73 @@
 '''
 import warnings, os, datetime
 import numpy as np
-from dateutil.parser import parse
-
 import gdal
 
+from cfunits import Units
+from scipy.io.netcdf import netcdf_file
+from dateutil.parser import parse
 from netCDF4 import Dataset
 
 from nansat.vrt import VRT, GeolocationArray
 from nansat.nsr import NSR
-from nansat.tools import WrongMapperError
+from nansat.tools import WrongMapperError, parse_time
 
 class Mapper(VRT):
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
 
+        # test_nansat is failing - this mapper needs more work..
+        #raise WrongMapperError
+
         if not filename.endswith('nc'):
+            raise WrongMapperError
+
+        if not gdal_metadata:
+            raise WrongMapperError
+
+        if gdal_metadata.has_key('NC_GLOBAL#GDAL_NANSAT_GCPY_000') or \
+                gdal_metadata.has_key('NC_GLOBAL#GDAL_NANSAT_GCPProjection'):
+            # Probably Nansat generated netcdf of swath data - see issue #192
             raise WrongMapperError
         
         gdal_metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
+
+        # Set origin metadata (TODO: agree on keyword...)
+        origin = ''
+        nans = 'NANSAT'
+        if gdal_metadata.has_key('origin'):
+            origin = gdal_metadata['origin'] + ' '
+        for key in gdal_metadata.keys():
+            if nans in key:
+                gdal_metadata['origin'] =  origin + nans
+            # else: Nothing needs to be done, origin stays the same...
 
         # Check conventions metadata
         if not gdal_metadata.has_key('Conventions') or not 'CF' in gdal_metadata['Conventions']:
             raise WrongMapperError
 
+        # OBS: at this point, generic mapper fails...
+        #if gdal_metadata.has_key('GCPProjection'):
+        #    # Probably Nansat generated netcdf of swath data - see issue #192
+        #    raise WrongMapperError
+
         # Create empty VRT dataset with geo-reference
         self._create_empty(gdal_dataset, gdal_metadata)
-    
+
         # Add bands with metadata and corresponding values to the empty VRT
         self._create_bands(self._band_list(filename, gdal_metadata, *args, **kwargs))
+
+        # Check size?
         #xsize, ysize = self.ds_size(sub0)
 
-        # Add GCMD/DIF compatible metadata in inheriting mappers
+        # Create complex bands from *_real and *_imag bands (the function is in
+        # vrt.py)
+        self._create_complex_bands(self.sub_filenames(gdal_dataset))
+
+        # Set GCMD/DIF compatible metadata if available
+        self._set_time_coverage_metadata(gdal_metadata)
+
+        # Then add remaining GCMD/DIF compatible metadata in inheriting mappers
 
     def times(self, filename):
         ''' Get times from time variable 
@@ -136,10 +172,14 @@ class Mapper(VRT):
 
         return metadictlist
 
-    def _clean_band_metadata(self, band):
+    def _clean_band_metadata(self, band, remove = ['_Unsigned', 'ScaleRatio',
+        'ScaleOffset', 'PixelFunctionType']):
+
         band_metadata = band.GetMetadata_Dict()
-        if 'PixelFunctionType' in band_metadata:
-            band_metadata.pop('PixelFunctionType')
+        for key in remove:
+            if key in band_metadata:
+                band_metadata.pop(key)
+
         return band_metadata
 
     def _band_dict(self, filename, band_num, subds, band=None, band_metadata=None):
@@ -174,7 +214,7 @@ class Mapper(VRT):
         dst = band_metadata
         # Set wkv
         dst['wkv'] = band_metadata.get('standard_name', '')
-                
+
         # Set band name
         if 'name' in band_metadata:
             bandName = band_metadata['name']
@@ -182,85 +222,131 @@ class Mapper(VRT):
             # if it doesn't exist get name from NETCDF_VARNAME
             bandName = band_metadata.get('NETCDF_VARNAME', '')
             if len(bandName) == 0:
-                bandName = bandMetadata.get('dods_variable', '')
+                bandName = band_metadata.get('dods_variable', '')
 
-            ## remove digits added by gdal when exporting to netcdf
-            #if (len(bandName) > 0 and gdal_metadata.has_key('origin')
-            #        and gdal_metadata['origin'].lower()=='nansat'):
-            #    if bandName[-1:].isdigit():
-            #        bandName = bandName[:-1]
-            #    if bandName[-1:].isdigit():
-            #        bandName = bandName[:-1]
+            # remove digits added by gdal when exporting to netcdf
+            if (len(bandName) > 0 and band_metadata.has_key('origin')
+                    and 'nansat' in band_metadata['origin'].lower()):
+                if bandName[-1:].isdigit():
+                    bandName = bandName[:-1]
+                if bandName[-1:].isdigit():
+                    bandName = bandName[:-1]
 
         # if still no bandname, create one
         if len(bandName) == 0:
-            bandName = 'band_%03d' % i
+            bandName = 'band_%03d' % band_num
 
         dst['name'] = bandName
 
         return {'src': src, 'dst': dst}
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
-        subfiles = self.sub_filenames(gdal_dataset)
-        if len(subfiles) == 0:
-            raise WrongMapperError
-        sub0 = gdal.Open(subfiles[0])
-
-        super(Mapper, self).__init__(gdalDataset=sub0, srcMetadata=gdal_metadata)
-
-        if not (self.dataset.GetGeoTransform() or self.geolocationArray.xVRT):
-            # Set geolocation array from bands
-            self.add_geolocationArray(
-                    GeolocationArray(
-                        [s for s in subfiles if 'longitude' in s or
-                            'GEOLOCATION_X_DATASET' in s][0],
-                        [s for s in subfiles if 'latitude' in s or
-                            'GEOLOCATION_Y_DATASET' in s][0]))
-
-        if not self.get_projection():
-            # Get band projections
-            projections = [gdal.Open(sub).GetProjection() for sub in subfiles if
-                    gdal.Open(sub).GetProjection()]
-
-            # Check that projection is the same for all bands
-            assert all(proj==projections[0] for proj in projections)
-            # Set projection
-            if projections:
-                self.dataset.SetProjection(projections[0])
-
-        if not self.get_projection():
-            # no projection was found in dataset or metadata:
-            # generate WGS84 by default
-            warnings.warn(
-                'No projection was found - guessing Nansat Spatial Reference')
-            projection = NSR().wkt
-            self.dataset.SetProjection(projection)
+        subfiles = self.sub_filenames_with_projection(gdal_dataset)
+        if not subfiles:
+            ''' In this case, gdal cannot find the projection of any
+            subdatasets. We therefore assume a regular longitude/latitude grid,
+            and set the projection to the Nansat Spatial Reference WKT
+            [NSR().wkt], using the first subdataset as source
+            '''
+            fn = self.sub_filenames(gdal_dataset)
+            if not fn:
+                raise WrongMapperError
+            sub = gdal.Open(fn[0])
+            super(Mapper, self).__init__(
+                    srcRasterXSize = sub.RasterXSize,
+                    srcRasterYSize = sub.RasterYSize, 
+                    srcGeoTransform = sub.GetGeoTransform(), 
+                    srcProjection = NSR().wkt, 
+                    srcMetadata = gdal_metadata)
+        else:
+            sub0 = gdal.Open(subfiles[0])
+            super(Mapper, self).__init__(gdalDataset=sub0, srcMetadata=gdal_metadata)
 
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         if not gdal_metadata:
             raise WrongMapperError
 
-        for key in gdal_metadata.keys():
-            newkey = key.replace('NC_GLOBAL#', '')
-            gdal_metadata[newkey] = gdal_metadata.pop(key)
-        # Don't do this yet...
-        #nans = 'NANSAT_'
-        #for key in gdal_metadata.keys():
-        #    if nans in key:
-        #        gdal_metadata[key.replace(nans, '')] = gdal_metadata.pop(newkey)
-        #        #gdal_metadata['origin'] = 'NANSAT'
+        # These strings are added when datasets are exported in
+        # nansat.nansat.Nansat.export...
+        rm_strings = ['NC_GLOBAL#', 'NANSAT_', 'GDAL_']
+
+        for rms in rm_strings:
+            for key in gdal_metadata.keys():
+                newkey = key.replace(rms, '')
+                gdal_metadata[newkey] = gdal_metadata.pop(key)
 
         return gdal_metadata
 
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets
         sub_datasets = gdal_dataset.GetSubDatasets()
-        # add subdatasets with Projection only
-        sub_fnames = []
-        for f in sub_datasets:
-            if gdal.Open(f[0]).GetProjection():
-                sub_fnames.append(f[0])
-        return sub_fnames
+        return [f[0] for f in sub_datasets]
+
+    def sub_filenames_with_projection(self, gdal_dataset):
+        # Get filenames of subdatasets containing projection
+        sub_fnames = self.sub_filenames(gdal_dataset)
+        with_proj = []
+        for f in sub_fnames:
+            if gdal.Open(f).GetProjection():
+                with_proj.append(f)
+        return with_proj
 
     #def ds_size(self, ds):
     #    return ds.RasterXSize, ds.RasterYSize
+
+    def _set_time_coverage_metadata(self, gdal_metadata):
+        ### GET START TIME from METADATA
+        time_coverage_start = None
+        if 'time_coverage_start' in gdal_metadata:
+            time_coverage_start = parse_time(
+                                    gdal_metadata['time_coverage_start'])
+
+        ### GET END TIME from METADATA
+        time_coverage_end = None
+        if 'time_coverage_end' in gdal_metadata:
+            time_coverage_end = parse_time(
+                                    gdal_metadata['time_coverage_end'])
+
+        ### GET start time from time variable
+        if (time_coverage_start is None and
+                 'time#standard_name' in gdal_metadata and
+                 gdal_metadata['time#standard_name'] == 'time' and
+                 'time#units' in gdal_metadata and
+                 'time#calendar' in gdal_metadata):
+            # get data from netcdf data
+            ncFile = netcdf_file(inputFileName, 'r')
+            timeLength = ncFile.variables['time'].shape[0]
+            timeValueStart = ncFile.variables['time'][0]
+            timeValueEnd = ncFile.variables['time'][-1]
+            ncFile.close()
+            try:
+                timeDeltaStart = Units.conform(timeValueStart,
+                                  Units(subMetadata['time#units'],
+                                        calendar=subMetadata['time#calendar']),
+                                  Units('days since 1950-01-01'))
+            except ValueError:
+                self.logger.error('calendar units are wrong: %s' %
+                                  subMetadata['time#calendar'])
+            else:
+                time_coverage_start = (datetime.datetime(1950,1,1) +
+                                   datetime.timedelta(float(timeDeltaStart)))
+
+                if timeLength > 1:
+                    timeDeltaEnd = Units.conform(timeValueStart,
+                                          Units(subMetadata['time#units'],
+                                                calendar=subMetadata['time#calendar']),
+                                          Units('days since 1950-01-01'))
+                else:
+                    timeDeltaEnd = timeDeltaStart + 1
+                time_coverage_end = (datetime.datetime(1950,1,1) +
+                                     datetime.timedelta(float(timeDeltaEnd)))
+
+        # set time_coverage_start if available
+        if time_coverage_start is not None:
+            self.dataset.SetMetadataItem('time_coverage_start',
+                                    time_coverage_start.isoformat())
+        # set time_coverage_end if available
+        if time_coverage_end is not None:
+            self.dataset.SetMetadataItem('time_coverage_end',
+                                    time_coverage_end.isoformat())
+

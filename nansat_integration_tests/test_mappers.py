@@ -45,10 +45,13 @@ class TestAllMappers(object):
         if kwargs is None:
             kwargs = {}
 
-        if mapper:
-            n = Nansat(filePath, mapperName=mapper, **kwargs)
-        else:
-            n = Nansat(filePath, **kwargs)
+        try:
+            if mapper:
+                n = Nansat(filePath, mapperName=mapper, **kwargs)
+            else:
+                n = Nansat(filePath, **kwargs)
+        except Exception as e:
+            raise Exception('%s: %s'%(filePath, e.message))
         assert type(n) == Nansat
 
 """

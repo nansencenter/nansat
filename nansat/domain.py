@@ -209,8 +209,9 @@ class Domain(object):
         outStr += '-' * 40 + '\n'
         try:
             corners = self.get_corners()
-        except:
-            self.logger.error('Cannot read projection from source!')
+        except Exception as e:
+            self.logger.error('Cannot read projection from source! Exception' \
+                    ' is: %s'%e.message)
         else:
             outStr += 'Projection:\n'
             outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) +

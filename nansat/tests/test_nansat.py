@@ -922,6 +922,8 @@ class NansatTest(unittest.TestCase):
         self.assertTrue((n[1] == exported[1]).any())
         os.unlink(self.tmpfilename)
 
+    #def test_projection_of_netcdf_complex(self):
+
     def test_export_netcdf_arctic(self):
         ''' Test export of the arctic data without GCPS
         '''

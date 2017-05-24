@@ -1,8 +1,12 @@
 import unittest
 
+from nansat.nansat import Nansat
 from nansat.domain import Domain
 from nansat.nsr import NSR
-from sardoppler.sardoppler import Doppler
+try:
+    from sardoppler.sardoppler import Doppler
+except Exception as e:
+    print e.message
 
 class TestOpenIssues(unittest.TestCase):
 
@@ -15,3 +19,4 @@ class TestOpenIssues(unittest.TestCase):
                     xlon.min(), xlat.min(), xlon.max(), xlat.max()))
         n.reproject(d, eResampleAlg=1, tps=True)
         inci = n['incidence_angle']
+
