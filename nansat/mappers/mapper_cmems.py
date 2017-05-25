@@ -33,7 +33,7 @@ class Mapper(NetcdfCF):
                 instrument = gcmd_keywords_mapping[key]['instrument']
                 platform = gcmd_keywords_mapping[key]['platform']
 
-        if not instrument:
+        if not 'instrument' in locals():
             raise WrongMapperError
 
         super(Mapper, self).__init__(*args, **kwargs)
