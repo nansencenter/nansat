@@ -31,3 +31,4 @@ class TestOpenIssues(unittest.TestCase):
             self.assertTrue(n.get_metadata().has_key('time_coverage_end'))
             self.assertTrue(n.get_metadata().has_key('instrument'))
             self.assertTrue(n.get_metadata().has_key('platform'))
+            self.assertEqual(n.mapper, 'cmems')

@@ -94,8 +94,14 @@ class Mapper(VRT):
         t0 = datetime.datetime(rt.year, rt.month, rt.day, rt.hour,
                 rt.minute, rt.second)
         # Create numpy array of np.datetime64 times
-        tt = np.array([np.datetime64(t0 + datetime.timedelta(seconds=tn)) for
-            tn in times])
+        if 'second' in times.units:
+            tt = np.array([np.datetime64(t0 + datetime.timedelta(seconds=tn)) for
+                tn in times])
+        elif 'hour' in times.units:
+            tt = np.array([np.datetime64(t0 + datetime.timedelta(hours=int(tn))) for
+                tn in times])
+        else:
+            raise Exception('Check time units..')
 
         return tt
 
