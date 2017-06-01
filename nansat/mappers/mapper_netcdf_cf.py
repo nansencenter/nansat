@@ -175,10 +175,6 @@ class Mapper(VRT):
                 band_num = i + 1
                 band = subds.GetRasterBand(band_num)
                 band_metadata = self._clean_band_metadata(band)
-                if not band_metadata.has_key('time_iso_8601'):
-                    timecountname = 'NETCDF_DIM_'+self._timevarname()
-                    band_metadata['time_iso_8601'] = self._time_count_to_np_datetime64(
-                        band_metadata[timecountname])
                 # Keep only desired bands (given in "bands" list)
                 try:
                     if bands:
@@ -196,9 +192,8 @@ class Mapper(VRT):
                             # Select band directly from given timestamp, and
                             # break the for loop
                             band_num = np.argmin(np.abs(self.times() -
-                                val))
-                            metadictlist.append(self._band_dict(fn,
-                                band_num, subds))
+                                val)) + 1 # indexing starts on one, not zero...
+                            metadictlist.append(self._band_dict(fn, band_num, subds))
                             raise BreakI
                         if not match or not band_metadata[match[0]]==val:
                             raise ContinueI
@@ -235,6 +230,11 @@ class Mapper(VRT):
             band = subds.GetRasterBand(band_num)
         if not band_metadata:
             band_metadata = self._clean_band_metadata(band)
+
+        if not band_metadata.has_key('time_iso_8601'):
+            timecountname = 'NETCDF_DIM_'+self._timevarname()
+            band_metadata['time_iso_8601'] = self._time_count_to_np_datetime64(
+                band_metadata[timecountname])
 
         # Generate source metadata
         src = {'SourceFilename': subfilename, 'SourceBand': band_num}
