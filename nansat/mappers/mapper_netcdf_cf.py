@@ -26,6 +26,8 @@ class Mapper(VRT):
         if not filename.endswith('nc'):
             raise WrongMapperError
 
+        self.filename = filename
+
         if not gdal_metadata:
             raise WrongMapperError
 
@@ -59,7 +61,7 @@ class Mapper(VRT):
         self._create_empty(gdal_dataset, metadata)
 
         # Add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(self._band_list(filename, metadata, *args, **kwargs))
+        self._create_bands(self._band_list(metadata, *args, **kwargs))
 
         # Check size?
         #xsize, ysize = self.ds_size(sub0)
@@ -73,46 +75,77 @@ class Mapper(VRT):
 
         # Then add remaining GCMD/DIF compatible metadata in inheriting mappers
 
-    def times(self, filename):
+    def times(self):
         ''' Get times from time variable 
 
         NOTE: This cannot be done with gdal because the time variable is a
         vector
 
-        Parameters
-        ----------
-        filename : string
-            Name of the original CF-compliant NetCDF file
         '''
-        ds = Dataset(filename)
-        # Consider caching to save time - see nansat/mappers/opendap.py
+        ds = Dataset(self.filename)
 
-        times = ds.variables['time']
-        rt = parse(times.units, fuzzy=True) # Sets timezone to local
-        # Remove timezone information from reference time, which defaults to
-        # utc (otherwise the timezone should be given in the dataset)
-        t0 = datetime.datetime(rt.year, rt.month, rt.day, rt.hour,
-                rt.minute, rt.second)
-        # Create numpy array of np.datetime64 times
-        if 'second' in times.units:
-            tt = np.array([np.datetime64(t0 + datetime.timedelta(seconds=tn)) for
-                tn in times])
-        elif 'hour' in times.units:
-            tt = np.array([np.datetime64(t0 + datetime.timedelta(hours=int(tn))) for
-                tn in times])
-        else:
-            raise Exception('Check time units..')
+        # Get datetime object of epoch and time_units string
+        time_units = self._time_units(ds=ds)
+
+        # Get all times - consider caching to save time (see
+        # nansat/mappers/opendap.py)
+        times = ds.variables[self._timevarname(ds=ds)]
+
+        # Create numpy array of np.datetime64 times (provide epoch to save time)
+        tt = np.array([self._time_count_to_np_datetime64(tn,
+            time_units=time_units) for tn in times])
 
         return tt
 
-    def _band_list(self, filename, gdal_metadata, netcdf_dim={}, bands=[]):
+    def _time_units(self, ds=None):
+        if not ds:
+            ds = Dataset(self.filename)
+        times = ds.variables[self._timevarname(ds=ds)]
+        rt = parse(times.units, fuzzy=True) # This sets timezone to local
+        # Remove timezone information from epoch, which defaults to
+        # utc (otherwise the timezone should be given in the dataset)
+        epoch = datetime.datetime(rt.year, rt.month, rt.day, rt.hour,
+                rt.minute, rt.second)
+        return epoch, times.units
+
+    def _timevarname(self, ds=None):
+        if not ds:
+            ds = Dataset(self.filename)
+        timevarname = 'time'
+        try:
+            ncvar = ds.variables[timevarname]
+        except KeyError:
+            for var in ds.variables:
+                try:
+                    standard_name = ds.variables[var].standard_name
+                except:
+                    continue
+                if standard_name=='time':
+                    timevarname = var
+                    break
+            ncvar = ds.variables[timevarname]
+        return timevarname
+
+    def _time_count_to_np_datetime64(self, time_count, time_units=None):
+        if not time_units:
+            time_units = self._time_units()
+        if 'second' in time_units[1]:
+            tt = np.datetime64(time_units[0] +
+                    datetime.timedelta(seconds=float(time_count)))
+        elif 'hour' in time_units[1]:
+            tt = np.datetime64(time_units[0] + datetime.timedelta(hours=int(time_count)))
+        elif 'day' in time_units[1]:
+            tt = np.datetime64(time_units[0] + datetime.timedelta(days=int(time_count)))
+        else:
+            raise Exception('Check time units..')
+        return tt
+
+    def _band_list(self, gdal_metadata, netcdf_dim={}, bands=[]):
         ''' Create list of dictionaries mapping source and destination metadata
         of bands that should be added to the Nansat object.
 
         Parameters
         ----------
-        filename : string
-            Name of the original CF-compliant NetCDF file
         gdal_metadata : dict
             Dictionary of global metadata
         netcdf_dim : dict
@@ -132,7 +165,7 @@ class Mapper(VRT):
         class BreakI(Exception):
             pass
         metadictlist = []
-        gdal_dataset = gdal.Open(filename)
+        gdal_dataset = gdal.Open(self.filename)
         for fn in self.sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
@@ -142,6 +175,10 @@ class Mapper(VRT):
                 band_num = i + 1
                 band = subds.GetRasterBand(band_num)
                 band_metadata = self._clean_band_metadata(band)
+                if not band_metadata.has_key('time_iso_8601'):
+                    timecountname = 'NETCDF_DIM_'+self._timevarname()
+                    band_metadata['time_iso_8601'] = self._time_count_to_np_datetime64(
+                        band_metadata[timecountname])
                 # Keep only desired bands (given in "bands" list)
                 try:
                     if bands:
@@ -158,7 +195,7 @@ class Mapper(VRT):
                         if key=='time' and type(val)==np.datetime64:
                             # Select band directly from given timestamp, and
                             # break the for loop
-                            band_num = np.argmin(np.abs(self.times(filename) -
+                            band_num = np.argmin(np.abs(self.times() -
                                 val))
                             metadictlist.append(self._band_dict(fn,
                                 band_num, subds))
@@ -188,7 +225,11 @@ class Mapper(VRT):
 
         return band_metadata
 
-    def _band_dict(self, filename, band_num, subds, band=None, band_metadata=None):
+    def _band_dict(self, subfilename, band_num, subds, band=None, band_metadata=None):
+        '''
+        subfilename : string
+            Name of subdataset file
+        '''
 
         if not band:
             band = subds.GetRasterBand(band_num)
@@ -196,7 +237,7 @@ class Mapper(VRT):
             band_metadata = self._clean_band_metadata(band)
 
         # Generate source metadata
-        src = {'SourceFilename': filename, 'SourceBand': band_num}
+        src = {'SourceFilename': subfilename, 'SourceBand': band_num}
 
         # Set scale ratio 
         scaleRatio = band_metadata.get('ScaleRatio',

@@ -24,6 +24,7 @@ class TestOpenIssues(unittest.TestCase):
         fn = [
             '/vagrant/shared/test_data/cmems/GLOBAL_ANALYSIS_FORECAST_PHY_001_024-TDS-x10-X30-y55-Y73-201705181200-201705271200.nc',
             '/vagrant/shared/test_data/cmems/ARC-METNO-ARC-TOPAZ4_2_PHYS-FOR-TDS-x10-X30-y55-Y73-20170518-20170526.nc',
+            '/vagrant/shared/test_data/cmems/GLOBAL_ANALYSIS_FORECAST_BIO_001_014-TDS-x-180-X179.5-y-89-Y90-20170520-20170527.nc',
         ]
         for f in fn:
             n = Nansat(f)

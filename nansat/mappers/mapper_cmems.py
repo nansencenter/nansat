@@ -18,6 +18,10 @@ gcmd_keywords_mapping = {
         'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
         'platform': json.dumps(pti.get_gcmd_platform('models')),
     },
+    'MERCATOR BIOMER4V1R2': {
+        'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
+        'platform': json.dumps(pti.get_gcmd_platform('models')),
+    },
 }
 
 class Mapper(NetcdfCF):
@@ -38,7 +42,7 @@ class Mapper(NetcdfCF):
 
         super(Mapper, self).__init__(*args, **kwargs)
 
-        time_coverage_start, time_coverage_end = self.time_coverage(filename)
+        time_coverage_start, time_coverage_end = self.time_coverage()
 
         self.dataset.SetMetadataItem('time_coverage_start',
                 (time_coverage_start.isoformat()))
@@ -47,7 +51,7 @@ class Mapper(NetcdfCF):
         self.dataset.SetMetadataItem('instrument', instrument)
         self.dataset.SetMetadataItem('platform', platform)
 
-    def time_coverage(self, filename):
-        times = self.times(filename)
+    def time_coverage(self):
+        times = self.times()
         return times[0].astype(datetime.datetime), \
                 times[-1].astype(datetime.datetime)
