@@ -26,18 +26,20 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, inputFileName, gdalDataset, gdalMetadata, **kwargs):
         ''' Create Radarsat2 VRT '''
-        fPathName, fExt = os.path.splitext(fileName)
+        fPathName, fExt = os.path.splitext(inputFileName)
 
-        if zipfile.is_zipfile(fileName):
+        if zipfile.is_zipfile(inputFileName):
             # Open zip file using VSI
             fPath, fName = os.path.split(fPathName)
-            fileName = '/vsizip/%s/%s' % (fileName, fName)
+            fileName = '/vsizip/%s/%s' % (inputFileName, fName)
             if not 'RS' in fName[0:2]:
                 raise WrongMapperError('Provided data is not Radarsat-2')
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
+        else:
+            fileName = inputFileName
 
         #if it is not RADARSAT-2, return
         if (not gdalMetadata or
@@ -46,11 +48,18 @@ class Mapper(VRT):
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
             raise WrongMapperError
 
-        # read product.xml
-        productXmlName = os.path.join(fileName, 'product.xml')
-        if not os.path.isfile(productXmlName):
-            raise WrongMapperError
-        productXml = self.read_xml(productXmlName)
+        import ipdb; ipdb.set_trace()
+        if zipfile.is_zipfile(inputFileName):
+            # Open product.xml to get additional metadata
+            zz = zipfile.ZipFile(inputFileName)
+            productXmlName = os.path.join(os.path.basename(inputFileName).split('.')[0],'product.xml')
+            productXml = zz.open(productXmlName).read()
+        else:
+            # product.xml to get additionali metadata
+            productXmlName = os.path.join(fileName,'product.xml')
+            if not os.path.isfile(productXmlName):
+                raise WrongMapperError
+            productXml = open(productXmlName).read()            
 
         # Get additional metadata from product.xml
         rs2_0 = Node.create(productXml)
@@ -256,5 +265,3 @@ class Mapper(VRT):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
-
-        self._add_swath_mask_band()
