@@ -19,8 +19,8 @@ before_install:
 
 install:
   - conda update -q --yes conda
-  - eval $CONDA_COMMAND
   - conda install -q --yes -c conda-forge gdal numpy scipy matplotlib pillow netcdf4 nose
+  - conda install -q --yes -c conda-forge basemap
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
   - python -c 'import gdal; print gdal.__file__'
