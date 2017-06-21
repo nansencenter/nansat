@@ -287,27 +287,29 @@ class Figure(object):
         self._set_defaults(kwargs)
 
         # get values of free indeces in the palette
-        availIndeces = range(self.numOfColor, 255 - 1)
+        availIndices = range(self.numOfColor, 255 - 1)
 
         # for all lut color indeces
         for i, maskValue in enumerate(self.mask_lut):
-            if i < len(availIndeces):
+            if i < len(availIndices):
                 # get color for that index
                 maskColor = self.mask_lut[maskValue]
                 # get indeces for that index
-                maskIndeces = self.mask_array == maskValue
+                maskIndices = self.mask_array == maskValue
                 # exchange colors
                 if self.array.shape[0] == 1:
                     # in a indexed image
-                    self.array[0][maskIndeces] = availIndeces[i]
+                    import ipdb
+                    ipdb.set_trace()
+                    self.array[0][maskIndices] = availIndices[i]
                 elif self.array.shape[0] == 3:
                     # in RGB image
                     for c in range(0, 3):
-                        self.array[c][maskIndeces] = maskColor[c]
+                        self.array[c][maskIndices] = maskColor[c]
 
                 # exchage palette
-                self.palette[(availIndeces[i] * 3):
-                             (availIndeces[i] * 3 + 3)] = maskColor
+                self.palette[(availIndices[i] * 3):
+                             (availIndices[i] * 3 + 3)] = maskColor
 
     def add_logo(self, **kwargs):
         '''Insert logo into the PIL image
