@@ -136,11 +136,11 @@ class Figure(object):
         legend : boolean, default = False
             if True, information as textString, colorbar, longName and
             units are added in the figure.
-        mask_array : 2D numpy array, int, the shape should be equal
-            array.shape. If given this array is used for masking land,
+        mask_array : 2D numpy array, int, the shape should be equal to
+            array.shape. If given, this array is used for masking land,
             clouds, etc on the output image. Value of the array are
-            indeces. LUT from mask_lut is used for coloring upon this
-            indeces.
+            indices. LUT from mask_lut is used for coloring upon this
+            indices.
         mask_lut : dictionary
             Look-Up-Table with colors for masking land, clouds etc. Used
             tgether with mask_array:
@@ -286,21 +286,19 @@ class Figure(object):
         # modify default parameters
         self._set_defaults(kwargs)
 
-        # get values of free indeces in the palette
+        # get values of free indices in the palette
         availIndices = range(self.numOfColor, 255 - 1)
 
-        # for all lut color indeces
+        # for all lut color indices
         for i, maskValue in enumerate(self.mask_lut):
             if i < len(availIndices):
                 # get color for that index
                 maskColor = self.mask_lut[maskValue]
-                # get indeces for that index
+                # get indices for that index
                 maskIndices = self.mask_array == maskValue
                 # exchange colors
                 if self.array.shape[0] == 1:
                     # in a indexed image
-                    import ipdb
-                    ipdb.set_trace()
                     self.array[0][maskIndices] = availIndices[i]
                 elif self.array.shape[0] == 3:
                     # in RGB image
@@ -404,7 +402,7 @@ class Figure(object):
         latTicks = self._get_auto_ticks(self.latTicks, self.latGrid)
         lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
 
-        # convert lat/lon grids to indeces
+        # convert lat/lon grids to indices
         latI = np.zeros(self.latGrid.shape, 'int8')
         lonI = np.zeros(self.latGrid.shape, 'int8')
         for latTick in latTicks:
