@@ -411,8 +411,17 @@ class Figure(object):
             lonI[self.lonGrid > lonTick] += 1
 
         # find pixels on the grid lines (binarize)
-        latI = np.diff(latI, axis=0)[:, :-1] + np.diff(latI, axis=1)[:-1, :]
-        lonI = np.diff(lonI, axis=0)[:, :-1] + np.diff(lonI, axis=1)[:-1, :]
+        latI[:-1,:-1] = np.diff(latI, axis=0)[:, :-1] + np.diff(latI, axis=1)[:-1, :]
+        lonI[:-1,:-1] = np.diff(lonI, axis=0)[:, :-1] + np.diff(lonI, axis=1)[:-1, :]
+
+        # Set border pixels equal to nearest neighbouring pixels - the error
+        # should be minor (alternatively, they should all be 0) - this and the
+        # two lines above solve VisibleDeprecationWarning in numpy<1.13.0 and
+        # IndexError in numpy>=1.13.0
+        latI[latI.shape[0]-1, :] = latI[latI.shape[0]-2, :]
+        latI[:, latI.shape[0]-1] = latI[:, latI.shape[0]-2]
+        lonI[lonI.shape[0]-1, :] = lonI[lonI.shape[0]-2, :]
+        lonI[:, lonI.shape[0]-1] = lonI[:, lonI.shape[0]-2]
 
         # make grid from both lat and lon
         latI += lonI
