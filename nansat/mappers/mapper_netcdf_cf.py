@@ -232,9 +232,21 @@ class Mapper(VRT):
             band_metadata = self._clean_band_metadata(band)
 
         if not band_metadata.has_key('time_iso_8601'):
-            timecountname = 'NETCDF_DIM_'+self._timevarname()
-            band_metadata['time_iso_8601'] = self._time_count_to_np_datetime64(
-                band_metadata[timecountname])
+            if self._timevarname() in band_metadata.keys():
+                timecountname = self._timevarname()
+            else:
+                timecountname = 'NETCDF_DIM_'+self._timevarname()
+            try:
+                band_metadata['time_iso_8601'] = self._time_count_to_np_datetime64(
+                    band_metadata[timecountname])
+            except KeyError as e:
+                # No timing information available for this band - it is
+                # probably a constant, such as land area fraction or similar.
+                # Then we don't need time for this band...
+                warnings.warn(
+                        '%s: %s - %s Continuing without time metadata for band %s'
+                        %(e.__repr__().split('(')[0], e.message, e.__doc__,
+                            band_metadata['NETCDF_VARNAME']))
 
         # Generate source metadata
         src = {'SourceFilename': subfilename, 'SourceBand': band_num}

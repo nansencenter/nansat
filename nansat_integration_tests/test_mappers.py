@@ -54,17 +54,16 @@ class TestAllMappers(object):
             raise Exception('%s: %s'%(filePath, e.message))
         assert type(n) == Nansat
 
-"""
     def test_mappers_advanced(self):
-        ''' Run similar NansenCloud related tests for all mappers '''
-        for fileName, mapperName in self.testData.mapperData:
-            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
-            n = Nansat(fileName, mapperName=mapperName)
-            yield self.is_correct_mapper, n, mapperName
-            yield self.has_start_time, n
-            yield self.has_end_time, n
-            yield self.has_correct_platform, n
-            yield self.has_correct_instrument, n
+        ''' Run tests to check DIF/GCMD metadata content in all mappers'''
+        for dd in self.testData.mapperData:
+            sys.stderr.write('\nMapper '+dd['mapperName']+' -> '+dd['fileName']+'\n')
+            n = Nansat(dd['fileName'], mapperName=dd['mapperName'])
+            yield self.is_correct_mapper, n, dd['mapperName']
+            yield self.has_metadata_time_coverage_start, n
+            yield self.has_metadata_time_coverage_end, n
+            yield self.has_metadata_platform, n
+            yield self.has_metadata_instrument, n
 
             # Test that SAR objects have sigma0 intensity bands in addition
             # to complex bands
@@ -73,14 +72,14 @@ class TestAllMappers(object):
                     ):
                 yield self.exist_intensity_band, n
 
-    def has_start_time(self, n):
+    def has_metadata_time_coverage_start(self, n):
         ''' Has start time '''
         assert type(n.time_coverage_start) == datetime.datetime
 
-    def has_end_time(self, n):
+    def has_metadata_time_coverage_end(self, n):
         assert type(n.time_coverage_end) == datetime.datetime
 
-    def has_correct_platform(self, n):
+    def has_metadata_platform(self, n):
         meta1 = json.loads(n.get_metadata('platform'))
         meta1ShortName = meta1['Short_Name']
         meta2 = pti.get_gcmd_platform(meta1ShortName)
@@ -88,7 +87,7 @@ class TestAllMappers(object):
         assert type(meta1) == dict
         assert meta1 == meta2
 
-    def has_correct_instrument(self, n):
+    def has_metadata_instrument(self, n):
         meta1 = json.loads(n.get_metadata('instrument'))
         meta1ShortName = meta1['Short_Name']
         meta2 = pti.get_gcmd_instrument(meta1ShortName)
@@ -111,7 +110,6 @@ class TestAllMappers(object):
 
         for iComplexName in complexBandNames:
             assert iComplexName.replace('_complex', '') in allBandNames
-"""
 
 class TestOnlineMappers(TestAllMappers):
     @classmethod

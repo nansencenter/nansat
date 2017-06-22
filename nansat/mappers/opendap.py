@@ -48,7 +48,7 @@ class Opendap(VRT):
                 baseURLmatch = True
                 break
         if not baseURLmatch:
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
 
     def get_dataset(self, ds):

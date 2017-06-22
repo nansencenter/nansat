@@ -23,7 +23,7 @@ class Mapper(VRT):
         ''' Create NCEP VRT '''
 
         if not gdalDataset:
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         geotransform = gdalDataset.GetGeoTransform()
         if (geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
@@ -37,9 +37,9 @@ class Mapper(VRT):
                              'u-component': 8,
                              'v-component': 9}
             else:
-                raise WrongMapperError
+                raise WrongMapperError(fileName)
         else:
-            raise WrongMapperError  # Not water proof
+            raise WrongMapperError(fileName)  # Not water proof
 
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['u-component']},
