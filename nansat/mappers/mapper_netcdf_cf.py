@@ -193,7 +193,9 @@ class Mapper(VRT):
                             # break the for loop
                             band_num = np.argmin(np.abs(self.times() -
                                 val)) + 1 # indexing starts on one, not zero...
-                            metadictlist.append(self._band_dict(fn, band_num, subds))
+                            bdict = self._band_dict(fn, band_num, subds)
+                            if bdict:
+                                metadictlist.append(bdict)
                             raise BreakI
                         if not match or not band_metadata[match[0]]==val:
                             raise ContinueI
@@ -205,8 +207,10 @@ class Mapper(VRT):
                     break
 
                 # append band with src and dst dictionaries
-                metadictlist.append(self._band_dict(fn, band_num, subds,
-                    band=band, band_metadata=band_metadata))
+                bdict = self._band_dict(fn, band_num, subds, band=band,
+                        band_metadata=band_metadata)
+                if bdict:
+                    metadictlist.append(bdict)
 
         return metadictlist
 
@@ -227,7 +231,14 @@ class Mapper(VRT):
         '''
 
         if not band:
-            band = subds.GetRasterBand(band_num)
+            try:
+                band = subds.GetRasterBand(band_num)
+            except RuntimeError as e:
+                if 'illegal band' in e.message.lower():
+                    warnings.warn('Skipping band due to GDAL error: %s' %e.message)
+                    return {}
+                else:
+                    raise
         if not band_metadata:
             band_metadata = self._clean_band_metadata(band)
 
