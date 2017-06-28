@@ -165,6 +165,16 @@ class Mapper(VRT):
         class BreakI(Exception):
             pass
         metadictlist = []
+        ds = Dataset(self.filename)
+        # Pop netcdf_dim item if the dimension is not in the dimension
+        # list of the given dataset
+        kpop = []
+        for key, val in netcdf_dim.iteritems():
+            if not key in ds.dimensions.keys():
+                kpop.append(key)
+        for key in kpop:
+            netcdf_dim.pop(key)
+
         gdal_dataset = gdal.Open(self.filename)
         for fn in self.sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
