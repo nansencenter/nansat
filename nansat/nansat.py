@@ -1183,10 +1183,11 @@ class Nansat(Domain):
                                            WorkingDataType=WorkingDataType,
                                            **kwargs)
 
-        # Assert successful reprojection
-        bnum = 1
-        assert np.any(~np.isnan(self[bnum])), 'Reprojection failed - all ' \
-                'pixels in band number %d are NaN' %bnum
+        # This violates lazy operations and is therefore commented out..
+        ## Assert successful reprojection
+        #bnum = 1
+        #assert np.any(~np.isnan(self[bnum])), 'Reprojection failed - all ' \
+        #        'pixels in band number %d are NaN' %bnum
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
@@ -2069,8 +2070,9 @@ class Nansat(Domain):
         if (xOff > RasterXSize or (xOff + xSize) < 0 or
                 yOff > RasterYSize or (yOff + ySize) < 0):
             raise OptionError('''Cropping region is outside the image!
-                               xOff: %d, yOff: %d, xSize: %d, ySize: %d''' %
-                              (xOff,  yOff, xSize, ySize))
+                               xOff: %.f, yOff: %.f, xSize: %.f, ySize: %.f'''
+                               %(float(xOff),  float(yOff), float(xSize),
+                                  float(ySize)))
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:
