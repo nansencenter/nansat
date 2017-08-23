@@ -19,7 +19,6 @@ import sys
 import glob
 from types import ModuleType, FloatType
 import datetime
-import matplotlib.pyplot as plt
 import numpy as np
 
 from nansat import Nansat, Domain, Mosaic
@@ -34,7 +33,6 @@ class MosaicTest(unittest.TestCase):
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         self.domain = Domain(4326, '-lle 27 70 31 72 -ts 700 650')
-        plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')

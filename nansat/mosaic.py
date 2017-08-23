@@ -20,10 +20,7 @@ import multiprocessing as mp
 import ctypes
 
 import numpy as np
-if 'nanmedian' in np.__all__:
-    from numpy import nanmedian
-else:
-    from scipy.stats import nanmedian
+from numpy import nanmedian
 
 from nansat.nansat import Nansat
 

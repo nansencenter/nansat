@@ -17,7 +17,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 import numpy as np
-import matplotlib.pyplot as plt
+
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
 
 
 class PointBrowser():
@@ -51,6 +58,13 @@ class PointBrowser():
         self.coordinates = []
         self.connect = []
         '''
+        if not MATPLOTLIB_EXISTS:
+            raise ImportError(' Matplotlib is not installed ')
+        if not matplotlib.is_interactive():
+            raise ImportError('''
+        Python is started with -pylab option, transect will not work.
+        Please restart python without -pylab.''')
+
         self.fig = plt.figure()
         self.data = data
         self.fmt = fmt

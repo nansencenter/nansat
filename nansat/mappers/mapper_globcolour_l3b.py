@@ -11,9 +11,7 @@ import json
 import tempfile
 import shutil
 
-from scipy.io.netcdf import netcdf_file
 import numpy as np
-import matplotlib.pyplot as plt
 
 from netCDF4 import Dataset
 
@@ -120,7 +118,6 @@ class Mapper(VRT, Globcolour):
 
             # convert to latlonGrid
             varPro = varRawPro.flat[iRawPro.flat[:]].reshape(iRawPro.shape)
-            #plt.imshow(varPro);plt.colorbar();plt.show()
 
             # add mask band
             if mask is None:

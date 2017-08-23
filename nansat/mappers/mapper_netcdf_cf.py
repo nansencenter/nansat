@@ -201,7 +201,10 @@ class Mapper(VRT):
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
         subfiles = self.sub_filenames(gdal_dataset)
-        sub0 = gdal.Open(subfiles[0])
+        try:
+            sub0 = gdal.Open(subfiles[0])
+        except:
+            raise WrongMapperError
 
         super(Mapper, self).__init__(gdalDataset=sub0, srcMetadata=gdal_metadata)
 

@@ -21,11 +21,15 @@ import warnings
 import logging
 from dateutil.parser import parse
 
-from matplotlib import cm
-from matplotlib.colors import hex2color
+try:
+    from matplotlib import cm
+    from matplotlib.colors import hex2color
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
 
 import numpy as np
-from scipy import mod
 
 try:
     import gdal, ogr, osr
@@ -165,7 +169,7 @@ def initial_bearing(lon1, lat1, lon2, lat2):
                              np.cos(rlat1) * np.sin(rlat2) -
                              np.sin(rlat1) * np.cos(rlat2) *
                              np.cos(rlon2 - rlon1))
-        return mod(np.degrees(bearing) + 360, 360)
+        return np.mod(np.degrees(bearing) + 360, 360)
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -242,6 +246,9 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
         c0 : str
             hexademical representation of the new random color
     '''
+    if not MATPLOTLIB_EXISTS:
+        raise ImportError('Matplotlib does not exist')
+
     # check inputs
     if c0 is None:
         c0 = '#000000'

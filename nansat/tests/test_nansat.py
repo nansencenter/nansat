@@ -19,9 +19,17 @@ import datetime
 import json
 from xml.sax.saxutils import unescape
 
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io.netcdf import netcdf_file
+
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
+
+from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal, OptionError
@@ -216,18 +224,18 @@ class NansatTest(unittest.TestCase):
 
     def test_export_gcps_to_netcdf(self):
         ''' Should export file with GCPs and write correct bands'''
-        n0 = Nansat(self.test_file_gcps, logLevel=40)
+        n0 = Nansat(self.test_file_gcps, logLevel=40, mapperName='generic')
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
         n0.export(tmpfilename)
 
-        ncf = netcdf_file(tmpfilename)
+        ncf = Dataset(tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertTrue('GCPX' in ncf.variables)
         self.assertTrue('GCPY' in ncf.variables)
         self.assertTrue('GCPPixel' in ncf.variables)
         self.assertTrue('GCPLine' in ncf.variables)
 
-        n1 = Nansat(tmpfilename)
+        n1 = Nansat(tmpfilename, mapperName='generic')
         b0 = n0['L_469']
         b1 = n1['L_469']
         np.testing.assert_allclose(b0, b1)
@@ -250,7 +258,7 @@ class NansatTest(unittest.TestCase):
                                    'nansat_export_gcps_complex.nc')
         n1.export(tmpfilename)
 
-        ncf = netcdf_file(tmpfilename)
+        ncf = Dataset(tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertTrue('GCPX' in ncf.variables)
         self.assertTrue('GCPY' in ncf.variables)
@@ -330,14 +338,15 @@ class NansatTest(unittest.TestCase):
                                    'nansat_export_option.nc')
         # Test with band numbers
         n.export(tmpfilename, options='WRITE_LONLAT=YES')
-        n.export(tmpfilename + '2', options=['WRITE_LONLAT=YES'])
-        nn = Nansat(tmpfilename)
-        nn2 = Nansat(tmpfilename + '2')
+        n.export(tmpfilename + '2', options=['WRITE_LONLAT=NO'])
+        nn = Nansat(tmpfilename, mapperName='generic')
+        nn2 = Nansat(tmpfilename + '2', mapperName='generic')
+        #import ipdb; ipdb.set_trace()
         self.assertTrue(nn.has_band('lon'))
         self.assertTrue(nn.has_band('lat'))
         self.assertTrue(nn.has_band('Bristol'))
-        self.assertTrue(nn2.has_band('lon'))
-        self.assertTrue(nn2.has_band('lat'))
+        self.assertFalse(nn2.has_band('lon'))
+        self.assertFalse(nn2.has_band('lat'))
         self.assertTrue(nn2.has_band('Bristol'))
 
     def test_write_fig_wrong_type_filename(self):
@@ -360,7 +369,7 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
 
     def test_export2thredds_arctic_long_lat(self):
-        n = Nansat(self.test_file_arctic, logLevel=40)
+        n = Nansat(self.test_file_arctic, mapperName='generic', logLevel=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_arctic.nc')
         bands = {
@@ -417,7 +426,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_longlat.nc')
         n.export2thredds(tmpfilename, ['L_469'])
-        ncI = netcdf_file(tmpfilename, 'r')
+        ncI = Dataset(tmpfilename, 'r')
         ncIVar = ncI.variables['L_469']
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
 
@@ -432,7 +441,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_longlat.nc')
         n.export2thredds(tmpfilename, {'L_469': {'type': '>i1'}})
-        ncI = netcdf_file(tmpfilename, 'r')
+        ncI = Dataset(tmpfilename, 'r')
         ncIVar = ncI.variables['L_469']
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
         self.assertEqual(ncIVar[:].dtype, np.int8)
@@ -716,6 +725,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(m, 'newVal')
 
+    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_get_transect(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[28.31299128, 28.93691525],
@@ -792,6 +802,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
+    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
         plt.ion()
