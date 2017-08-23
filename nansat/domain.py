@@ -21,15 +21,20 @@ import string
 from xml.etree.ElementTree import ElementTree
 
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
-from matplotlib.patches import Polygon
+try:
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.basemap import Basemap
+    from matplotlib.patches import Polygon
+except ImportError:
+    BASEMAP_LIB_EXISTS = False
+else:
+    BASEMAP_LIB_EXISTS = True
 
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError, ProjectionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-
+    
 
 class Domain(object):
     '''Container for geographical reference of a raster
@@ -994,6 +999,9 @@ class Domain(object):
         labels : list of str
             labels to print on top of patches
         '''
+        if not BASEMAP_LIB_EXISTS:
+            raise ImportError('Basemap is not installed')
+
         # if lat/lon vectors are not given as input
         if lonVec is None or latVec is None or len(lonVec) != len(latVec):
             lonVec, latVec = self.get_border()

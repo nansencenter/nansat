@@ -17,7 +17,14 @@ import sys
 import glob
 from types import ModuleType, FloatType
 import numpy as np
-import matplotlib.pyplot as plt
+
+try:
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.basemap import Basemap
+except ImportError:
+    BASEMAP_LIB_EXISTS = False
+else:
+    BASEMAP_LIB_EXISTS = True
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -30,7 +37,8 @@ import nansat_test_data as ntd
 class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
-        plt.switch_backend('Agg')
+        if BASEMAP_LIB_EXISTS:
+            plt.switch_backend('Agg')
 
         if not os.path.exists(self.test_file):
             raise ValueError('No test data available')
@@ -158,6 +166,7 @@ class DomainTest(unittest.TestCase):
 
         self.assertEqual(shape, (500, 500))
 
+    @unittest.skipUnless(BASEMAP_LIB_EXISTS, 'Basemap is required')
     def test_write_map(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
@@ -168,6 +177,7 @@ class DomainTest(unittest.TestCase):
         i.verify()
         self.assertEqual(i.info['dpi'], (50, 50))
 
+    @unittest.skipUnless(BASEMAP_LIB_EXISTS, 'Basemap is required')
     def test_write_map_dpi100(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -179,6 +189,7 @@ class DomainTest(unittest.TestCase):
         i.verify()
         self.assertEqual(i.info['dpi'], (100, 100))
 
+    @unittest.skipUnless(BASEMAP_LIB_EXISTS, 'Basemap is required')
     def test_write_map_labels(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         tmpfilename = os.path.join(ntd.tmp_data_path,
