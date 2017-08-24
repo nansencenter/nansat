@@ -2,7 +2,7 @@
 # Name:         test_pointbrowser.py
 # Purpose:      Test the PointBrowser class
 #
-# Author:       Aleksander Vines
+# Author:       Aleksander Vines, Anton Korosov
 #
 # Created:      2015-10-22
 # Copyright:    (c) NERSC
@@ -14,16 +14,40 @@ import unittest
 import numpy as np
 from nansat.pointbrowser import PointBrowser
 
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
 
 class PointBrowserTest(unittest.TestCase):
+    def setUp(self):
+        # switch on inetractive backend
+        for bk in matplotlib.rcsetup.interactive_bk:
+            # qt4agg raises strange error in backend_qt4.py
+            if bk.lower() == 'qt4agg':
+                continue
+            try:
+                plt.switch_backend(bk)
+            except ImportError:
+                BACKEND_IS_INTERACTIVE = False
+            else:
+                BACKEND_IS_INTERACTIVE = True
+                break
+        if not BACKEND_IS_INTERACTIVE:
+            self.skipTest('Backend is not interactive')
 
-    def test_onclick(self):
+        plt.ion()            
         data = np.ndarray(shape=(4, 4), dtype=float, order='F')
-        point = PointBrowser(data)
-        event = Event(xdata=0, ydata=0, key=None)
+        self.point = PointBrowser(data)
 
-        point.onclick(event)
-        t = point._convert_coordinates()[0]
+    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    def test_onclick(self):
+        event = Event(xdata=0, ydata=0, key=None)
+        self.point.onclick(event)
+        t = self.point._convert_coordinates()[0]
         self.assertIsInstance(t, np.ndarray)
         xPoints = t[0]
         self.assertIsInstance(xPoints, np.ndarray)
@@ -32,23 +56,21 @@ class PointBrowserTest(unittest.TestCase):
         self.assertEqual(xPoints[0], event.xdata, "x coordinates is set wrong")
         self.assertEqual(yPoints[0], event.ydata, "y coordinates is set wrong")
 
+    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_onclick_multilines(self):
-        data = np.ndarray(shape=(4, 4), dtype=float, order='F')
-        point = PointBrowser(data)
         events = []
         events.append(Event(xdata=0, ydata=0, key=None))
         events.append(Event(xdata=1, ydata=0, key=None))
         events.append(Event(xdata=2, ydata=2, key='AnyKeyButZorAltZ'))
         events.append(Event(xdata=2, ydata=3, key=None))
         for event in events:
-            point.onclick(event)
-        points = point._convert_coordinates()
+            self.point.onclick(event)
+        points = self.point._convert_coordinates()
         self.assertEqual(len(points), 2, 'There should be two transects')
         self.assertTrue(np.alltrue(points[0] == np.array([[0, 1], [0, 0]])),
                         't1 is not correct')
         self.assertTrue(np.alltrue(points[1] == np.array([[2, 2], [2, 3]])),
                         't2 is not correct')
-
 
 class Event:
     def __init__(self, **kwds):

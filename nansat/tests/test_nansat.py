@@ -2,11 +2,10 @@
 # Name:         test_nansat.py
 # Purpose:      Test the Nansat class
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified:     Morten Wergeland Hansen, Aleksander Vines
+# Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
 #
 # Created:      18.06.2014
-# Last modified:30.09.2015 14:00
+# Last modified:24.08.2017 14:00
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -45,7 +44,7 @@ class NansatTest(unittest.TestCase):
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
         self.tmpfilename = os.path.join(ntd.tmp_data_path, 'test.nc')
-        plt.switch_backend('Agg')
+        plt.switch_backend('agg')
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
