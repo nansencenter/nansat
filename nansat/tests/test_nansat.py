@@ -44,7 +44,6 @@ class NansatTest(unittest.TestCase):
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
         self.tmpfilename = os.path.join(ntd.tmp_data_path, 'test.nc')
-        plt.switch_backend('agg')
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
@@ -726,6 +725,7 @@ class NansatTest(unittest.TestCase):
 
     @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_get_transect(self):
+        plt.switch_backend('agg')
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         t = n1.get_transect([[28.31299128, 28.93691525],
                              [70.93709219, 70.69646524]],
@@ -804,6 +804,7 @@ class NansatTest(unittest.TestCase):
     @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
+        plt.switch_backend('qt5agg')
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         points = n1.digitize_points(1)
