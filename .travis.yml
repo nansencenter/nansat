@@ -11,7 +11,7 @@ before_install:
 
 install:
   - conda update -q --yes conda
-  - conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 nose cfunits coveralls
+  - conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 nose cfunits coveralls python-dateutil
   - export GDAL_DATA=/home/vagrant/miniconda/share/gdal/
   - export GEOS_DIR=/home/vagrant/miniconda/
   - python -c 'import gdal; print gdal.__file__'
