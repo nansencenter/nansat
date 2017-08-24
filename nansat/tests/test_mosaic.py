@@ -42,7 +42,7 @@ class MosaicTest(unittest.TestCase):
             raise ValueError('No test data available')
 
     def test_average(self):
-        mo = Mosaic(domain=self.domain, opener=NansatGeneric)
+        mo = Mosaic(domain=self.domain)#, opener=NansatGeneric)
         mo.average([self.test_file_gcps, self.test_file_stere],
                     bands=['L_645', 'L_555', 'L_469'])
 
