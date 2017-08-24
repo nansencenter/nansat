@@ -27,10 +27,6 @@ from nansat.tools import gdal
 
 import nansat_test_data as ntd
 
-class NansatGeneric(Nansat):
-    def __init__(self, fileName, **kwargs):
-        return Nansat.__init__(self, fileName, mapperName='generic', **kwargs)
-
 class MosaicTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
@@ -42,7 +38,7 @@ class MosaicTest(unittest.TestCase):
             raise ValueError('No test data available')
 
     def test_average(self):
-        mo = Mosaic(domain=self.domain)#, opener=NansatGeneric)
+        mo = Mosaic(domain=self.domain)
         mo.average([self.test_file_gcps, self.test_file_stere],
                     bands=['L_645', 'L_555', 'L_469'])
 
@@ -62,7 +58,7 @@ class MosaicTest(unittest.TestCase):
         mo.export2thredds(tmpfilename, bands)
 
     def test_median(self):
-        mo = Mosaic(domain=self.domain, opener=NansatGeneric)
+        mo = Mosaic(domain=self.domain)
         mo.median([self.test_file_gcps, self.test_file_stere],
                     bands=['L_645', 'L_555', 'L_469'])
 
