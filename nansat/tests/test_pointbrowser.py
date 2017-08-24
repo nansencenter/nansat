@@ -17,21 +17,15 @@ from nansat.pointbrowser import PointBrowser
 try:
     import matplotlib
     import matplotlib.pyplot as plt
+    plt.switch_backend('qt5agg')
 except ImportError:
     MATPLOTLIB_EXISTS = False
 else:
     MATPLOTLIB_EXISTS = True
 
-try:
-    plt.switch_backend('qt5agg')
-except ImportError:
-    QT5_EXISTS = False
-else:
-    QT5_EXISTS = True
 
 class PointBrowserTest(unittest.TestCase):
     @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
-    @unittest.skipUnless(QT5_EXISTS, 'QT5 is required')
     def setUp(self):
         plt.switch_backend('qt5agg')
         plt.ion()            
