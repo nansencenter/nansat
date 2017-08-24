@@ -22,28 +22,22 @@ except ImportError:
 else:
     MATPLOTLIB_EXISTS = True
 
-class PointBrowserTest(unittest.TestCase):
-    def setUp(self):
-        # switch on inetractive backend
-        for bk in matplotlib.rcsetup.interactive_bk:
-            # qt4agg raises strange error in backend_qt4.py
-            if bk.lower() == 'qt4agg':
-                continue
-            try:
-                plt.switch_backend(bk)
-            except ImportError:
-                BACKEND_IS_INTERACTIVE = False
-            else:
-                BACKEND_IS_INTERACTIVE = True
-                break
-        if not BACKEND_IS_INTERACTIVE:
-            self.skipTest('Backend is not interactive')
+try:
+    plt.switch_backend('qt5agg')
+except ImportError:
+    QT5_EXISTS = False
+else:
+    QT5_EXISTS = True
 
+class PointBrowserTest(unittest.TestCase):
+    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(QT5_EXISTS, 'QT5 is required')
+    def setUp(self):
+        plt.switch_backend('qt5agg')
         plt.ion()            
         data = np.ndarray(shape=(4, 4), dtype=float, order='F')
         self.point = PointBrowser(data)
 
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_onclick(self):
         event = Event(xdata=0, ydata=0, key=None)
         self.point.onclick(event)
@@ -56,7 +50,6 @@ class PointBrowserTest(unittest.TestCase):
         self.assertEqual(xPoints[0], event.xdata, "x coordinates is set wrong")
         self.assertEqual(yPoints[0], event.ydata, "y coordinates is set wrong")
 
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_onclick_multilines(self):
         events = []
         events.append(Event(xdata=0, ydata=0, key=None))
