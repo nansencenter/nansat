@@ -38,7 +38,7 @@ class Mapper(VRT):
                  manifestonly=False, **kwargs):
 
         if not os.path.split(fileName.rstrip('/'))[1][:3] in ['S1A', 'S1B']:
-            raise WrongMapperError('Not Sentinel 1A or 1B')
+            raise WrongMapperError('%s: Not Sentinel 1A or 1B' %fileName)
 
         if zipfile.is_zipfile(fileName):
             zz = zipfile.PyZipFile(fileName)
@@ -73,7 +73,7 @@ class Mapper(VRT):
 
         if (not mdsFiles or not calFiles or not noiseFiles or
                 not annotationFiles or not manifestFile):
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         mdsDict = {}
         for ff in mdsFiles:
@@ -117,16 +117,17 @@ class Mapper(VRT):
             gdalDatasets[key] = gdal.Open(mdsDict[key])
 
         if not gdalDatasets:
-            raise WrongMapperError('No Sentinel-1 datasets found')
+            raise WrongMapperError('%s: No Sentinel-1 datasets found'
+                    %mdsDict[key])
 
         # Check metadata to confirm it is Sentinel-1 L1
         metadata = gdalDatasets[mdsDict.keys()[0]].GetMetadata()
         
         if not 'TIFFTAG_IMAGEDESCRIPTION' in metadata.keys():
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
         if (not 'Sentinel-1' in metadata['TIFFTAG_IMAGEDESCRIPTION']
                 and not 'L1' in metadata['TIFFTAG_IMAGEDESCRIPTION']):
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         warnings.warn('Sentinel-1 level-1 mapper is not yet adapted to '
                       'complex data. In addition, the band names should be '

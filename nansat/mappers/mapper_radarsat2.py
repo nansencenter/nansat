@@ -37,7 +37,8 @@ class Mapper(VRT):
             fPath, fName = os.path.split(fPathName)
             fileName = '/vsizip/%s/%s' % (inputFileName, fName)
             if not 'RS' in fName[0:2]:
-                raise WrongMapperError('Provided data is not Radarsat-2')
+                raise WrongMapperError('%s: Provided data is not Radarsat-2'
+                        %fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
         else:
@@ -46,9 +47,9 @@ class Mapper(VRT):
         #if it is not RADARSAT-2, return
         if (not gdalMetadata or
                 not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys()):
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         if zipfile.is_zipfile(inputFileName):
             # Open product.xml to get additional metadata
@@ -59,7 +60,7 @@ class Mapper(VRT):
             # product.xml to get additionali metadata
             productXmlName = os.path.join(fileName,'product.xml')
             if not os.path.isfile(productXmlName):
-                raise WrongMapperError
+                raise WrongMapperError(fileName)
             productXml = open(productXmlName).read()            
 
         # parse product.XML

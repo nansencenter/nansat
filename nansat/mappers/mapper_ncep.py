@@ -10,6 +10,8 @@
 # mapper will not work for other NCEP GFS files before made more generic
 import datetime
 import json
+import numpy as np
+from dateutil.parser import parse
 import pythesint as pti
 
 from nansat.vrt import VRT
@@ -23,7 +25,7 @@ class Mapper(VRT):
         ''' Create NCEP VRT '''
 
         if not gdalDataset:
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         geotransform = gdalDataset.GetGeoTransform()
         if (geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
@@ -37,18 +39,28 @@ class Mapper(VRT):
                              'u-component': 8,
                              'v-component': 9}
             else:
-                raise WrongMapperError
+                raise WrongMapperError(fileName)
         else:
-            raise WrongMapperError  # Not water proof
+            raise WrongMapperError(fileName)  # Not water proof
 
+        # Adding valid time from the GRIB file to dataset
+        band = gdalDataset.GetRasterBand(srcBandId['u-component'])
+        validTime = band.GetMetadata()['GRIB_VALID_TIME']
+        time_isoformat = (datetime.datetime.utcfromtimestamp(
+            int(validTime.strip().split(' ')[0])).isoformat())
+
+        # Set band metadata time_iso_8601 for use in OpenWind
+        time_iso_8601 = np.datetime64(parse(time_isoformat))
         metaDict = [{'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['u-component']},
                      'dst': {'wkv': 'eastward_wind',
-                             'height': '10 m'}},
+                             'height': '10 m',
+                             'time_iso_8601': time_iso_8601}},
                     {'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['v-component']},
                      'dst': {'wkv': 'northward_wind',
-                             'height': '10 m'}},
+                             'height': '10 m',
+                             'time_iso_8601': time_iso_8601}},
                     {'src': [{'SourceFilename': fileName,
                               'SourceBand': srcBandId['u-component'],
                               'DataType': (gdalDataset.GetRasterBand(srcBandId['u-component']).DataType)
@@ -60,7 +72,8 @@ class Mapper(VRT):
                      'dst': {'wkv': 'wind_speed',
                              'PixelFunctionType': 'UVToMagnitude',
                              'name': 'windspeed',
-                             'height': '2 m'
+                             'height': '2 m',
+                             'time_iso_8601': time_iso_8601
                              }},
                     {'src': [{'SourceFilename': fileName,
                               'SourceBand': srcBandId['u-component'],
@@ -73,13 +86,15 @@ class Mapper(VRT):
                      'dst': {'wkv': 'wind_from_direction',
                              'PixelFunctionType': 'UVToDirectionFrom',
                              'name': 'winddirection',
-                             'height': '2 m'
+                             'height': '2 m',
+                             'time_iso_8601': time_iso_8601
                              }},
                     {'src': {'SourceFilename': fileName,
                              'SourceBand': srcBandId['temperature']},
                      'dst': {'wkv': 'air_temperature',
                              'name': 'air_t',
-                             'height': '2 m'}
+                             'height': '2 m',
+                             'time_iso_8601': time_iso_8601}
                      }]
 
         # create empty VRT dataset with geolocation only
@@ -88,18 +103,9 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # Adding valid time from the GRIB file to dataset
-        band = gdalDataset.GetRasterBand(srcBandId['u-component'])
-        validTime = band.GetMetadata()['GRIB_VALID_TIME']
+        self.dataset.SetMetadataItem('time_coverage_start', time_isoformat)
 
-        self.dataset.SetMetadataItem('time_coverage_start',
-            (datetime.datetime.utcfromtimestamp(
-                int(validTime.strip().split(' ')[0])).isoformat()))
-
-        self.dataset.SetMetadataItem('time_coverage_end',
-            ((datetime.datetime.utcfromtimestamp(
-                int(validTime.strip().split(' ')[0]))
-             + datetime.timedelta(hours=3)).isoformat()))
+        self.dataset.SetMetadataItem('time_coverage_end', time_isoformat)
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
@@ -107,3 +113,4 @@ class Mapper(VRT):
         ee = pti.get_gcmd_platform('ncep-gfs')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+

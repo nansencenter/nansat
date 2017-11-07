@@ -450,7 +450,7 @@ class Nansatmap(Basemap):
         x2, y2 = self(lon2, lat2)
 
         qKwargs = {}
-        for iKey in ['width', 'scale', 'units', 'angles', 'scale_units']:
+        for iKey in ['width', 'scale', 'units', 'angles', 'scale_units', 'color']:
             if iKey in kwargs.keys():
                 qKwargs[iKey] = kwargs.pop(iKey)
         Q = Basemap.quiver(self, x2, y2, dataX2, dataY2, **qKwargs)
