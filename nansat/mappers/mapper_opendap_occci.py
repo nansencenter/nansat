@@ -17,7 +17,10 @@ from nansat.mappers.opendap import Opendap
 #https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-MONTHLY
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
-    baseURLs = ['https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL', 'https://www.oceancolour.org/thredds/dodsC/CCI_ALL']
+    baseURLs = ['https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL',
+                'https://www.oceancolour.org/thredds/dodsC/CCI_ALL',
+                'https://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_esacci/ocean_colour/data/v2-release/geographic/netcdf/'
+                ]
     timeVarName = 'time'
     xName = 'lon'
     yName = 'lat'
