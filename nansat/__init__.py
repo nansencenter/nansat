@@ -35,21 +35,8 @@ except Exception as e:
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.nansat import Nansat
+from nansat.figure import Figure
 
-__all__ = ['NSR', 'Domain', 'Nansat']
-
-try:
-    from nansat.figure import Figure
-except ImportError:
-    warnings.warn('''Cannot import Figure! Nansat will not make figures!''')
-else:
-    __all__.append('Figure')
-
-try:
-    from nansat.mosaic import Mosaic
-except ImportError:
-    warnings.warn('''Cannot import Mosaic! Nansat will not mosaic files!''')
-else:
-    __all__.append('Mosaic')
+__all__ = ['NSR', 'Domain', 'Nansat', 'Figure']
 
 os.environ['LOG_LEVEL'] = '30'
