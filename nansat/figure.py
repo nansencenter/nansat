@@ -19,8 +19,12 @@ import os
 from math import floor, log10
 
 import numpy as np
-from matplotlib import cm
-import matplotlib.pyplot as plt
+try:
+    from matplotlib import cm
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
 
 try:
     import Image
@@ -305,7 +309,7 @@ class Figure(object):
                     for c in range(0, 3):
                         self.array[c][maskIndices] = maskColor[c]
 
-                # exchage palette
+                # exchange palette
                 self.palette[(availIndices[i] * 3):
                              (availIndices[i] * 3 + 3)] = maskColor
 
@@ -411,8 +415,8 @@ class Figure(object):
             lonI[self.lonGrid > lonTick] += 1
 
         # find pixels on the grid lines (binarize)
-        latI[:-1,:-1] = np.diff(latI, axis=0)[:, :-1] + np.diff(latI, axis=1)[:-1, :]
-        lonI[:-1,:-1] = np.diff(lonI, axis=0)[:, :-1] + np.diff(lonI, axis=1)[:-1, :]
+        latI = np.sum(np.gradient(latI), axis=0)
+        lonI = np.sum(np.gradient(lonI), axis=0)
 
         # Set border pixels equal to nearest neighbouring pixels - the error
         # should be minor (alternatively, they should all be 0) - this and the
@@ -944,18 +948,25 @@ class Figure(object):
         self.palette : numpy array (uint8)
 
         '''
-        # test if given colormap name is in builtin or added colormaps
-        try:
+        if not MATPLOTLIB_EXISTS:
+            # Make grayscale colormap
+            cmap = np.vstack([np.arange(256.),
+                              np.arange(256.),
+                              np.arange(256.),
+                              np.ones(256)*255]).T
+            cmapLUT = cmap[:self.numOfColor, :]
+        else:
+            # test if given colormap name is in builtin or added colormaps
+            try:
+                cmap = cm.get_cmap(self.cmapName)
+            except:
+                self.logger.error('%s is not a valid colormap' % self.cmapName)
+                self.cmapName = self._cmapName
+            # get colormap by name
             cmap = cm.get_cmap(self.cmapName)
-        except:
-            self.logger.error('%s is not a valid colormap' % self.cmapName)
-            self.cmapName = self._cmapName
+            # get colormap look-up
+            cmapLUT = np.uint8(cmap(range(self.numOfColor)) * 255)
 
-        # get colormap by name
-        cmap = cm.get_cmap(self.cmapName)
-
-        # get colormap look-up
-        cmapLUT = np.uint8(cmap(range(self.numOfColor)) * 255)
         # replace all last colors to black and...
         lut = np.zeros((3, 256), 'uint8')
         lut[:, :self.numOfColor] = cmapLUT.T[:3]
@@ -964,29 +975,6 @@ class Figure(object):
 
         # set palette to be used by PIL
         self.palette = lut.T.flatten().astype(np.uint8)
-
-    def _get_histogram(self, iBand):
-        '''Create a subset array and return the histogram.
-
-        Parameters
-        -----------
-        iBand : int
-
-        Returns
-        --------
-        hist : numpy array
-        bins : numpy array
-
-        '''
-        array = self.array[iBand, :, :].flatten()
-        array = array[array > np.nanmin(array)]
-        array = array[array < np.nanmax(array)]
-        step = max(int(round(float(len(array)) /
-                       float(self.subsetArraySize))), 1.0)
-        arraySubset = array[::int(step)]
-        hist, bins, patches = plt.hist(arraySubset, bins=100)
-        plt.close()
-        return hist.astype(float), bins
 
     def _round_number(self, val):
         '''Return writing format for scale on the colorbar
