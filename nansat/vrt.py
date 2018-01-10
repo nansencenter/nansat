@@ -603,6 +603,50 @@ class VRT(object):
         # return name of the created band
         return dst['name']
 
+    def _create_complex_bands(self, fileNames):
+        # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
+        # using pixelfunctions
+        rmBands = []
+        for iBandNo in range(self.dataset.RasterCount):
+            iBand = self.dataset.GetRasterBand(iBandNo + 1)
+            iBandName = iBand.GetMetadataItem('name')
+            # find real data band
+            if iBandName.find("_real") != -1:
+                realBandNo = iBandNo
+                realBand = self.dataset.GetRasterBand(realBandNo + 1)
+                realDtype = realBand.GetMetadataItem('DataType')
+                bandName = iBandName.replace(iBandName.split('_')[-1],
+                                             '')[0:-1]
+                for jBandNo in range(self.dataset.RasterCount):
+                    jBand = self.dataset.GetRasterBand(jBandNo + 1)
+                    jBandName = jBand.GetMetadataItem('name')
+                    # find an imaginary data band corresponding to the real
+                    # data band and create complex data band from the bands
+                    if jBandName.find(bandName+'_imag') != -1:
+                        imagBandNo = jBandNo
+                        imagBand = self.dataset.GetRasterBand(imagBandNo + 1)
+                        imagDtype = imagBand.GetMetadataItem('DataType')
+                        dst = imagBand.GetMetadata()
+                        dst['name'] = bandName
+                        dst['PixelFunctionType'] = 'ComplexData'
+                        dst['dataType'] = 10
+                        src = [{'SourceFilename': fileNames[realBandNo],
+                                'SourceBand':  1,
+                                'DataType': realDtype},
+                               {'SourceFilename': fileNames[imagBandNo],
+                                'SourceBand': 1,
+                                'DataType': imagDtype}]
+                        self._create_band(src, dst)
+                        self.dataset.FlushCache()
+                        rmBands.append(realBandNo + 1)
+                        rmBands.append(imagBandNo + 1)
+
+        # Delete real and imaginary bands
+        if len(rmBands) != 0:
+            self.delete_bands(rmBands)
+
+
+
     def _add_swath_mask_band(self):
         ''' Create a new band where all values = 1
 
@@ -652,6 +696,27 @@ class VRT(object):
                 rasterBand.SetMetadataItem(metaKey, metaValue)
 
         return rasterBand
+
+    def _remove_strings_in_metadata_keys(self, gdal_metadata):
+        if not gdal_metadata:
+            raise WrongMapperError
+
+        for key in gdal_metadata.keys():
+            newkey = key.replace('NC_GLOBAL#', '')
+            gdal_metadata[newkey] = gdal_metadata.pop(key)
+        # Don't do this yet...
+        #nans = 'NANSAT_'
+        #for key in gdal_metadata.keys():
+        #    if nans in key:
+        #        gdal_metadata[key.replace(nans, '')] = gdal_metadata.pop(newkey)
+        #        #gdal_metadata['origin'] = 'NANSAT'
+
+        return gdal_metadata
+
+    def sub_filenames(self, gdal_dataset):
+        # Get filenames of subdatasets
+        sub_datasets = gdal_dataset.GetSubDatasets()
+        return [f[0] for f in sub_datasets]
 
     def create_dataset_from_array(self, array):
         '''Create a dataset with a band from an array
@@ -1577,7 +1642,7 @@ class VRT(object):
         return lonVector, latVector
 
     def get_projection(self):
-        '''Get projection form self.dataset
+        '''Get projection from self.dataset
 
         Get projection from GetProjection() or GetGCPProjection().
         If both are empty, raise error
@@ -1588,7 +1653,9 @@ class VRT(object):
 
         Raises
         -------
-        ProjectionError : occurrs when the projection is empty.
+        ProjectionError : occurs when the projection is empty.
+
+        TODO: see issue #190 in nansat...
 
         '''
         # get projection or GCPProjection

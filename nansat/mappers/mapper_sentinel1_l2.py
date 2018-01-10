@@ -50,13 +50,13 @@ class Mapper(VRT):
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
         if not gdalMetadata or not 'NC_GLOBAL' in gdalMetadata.keys():
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
         else:
             title = gdalMetadata['NC_GLOBAL#TITLE']
 
         # Raise error if it is not Sentinel-1 format
         if not 'Sentinel-1' or 'ASA' in title:
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         metadata = {}
         for key, val in gdalMetadata.iteritems():

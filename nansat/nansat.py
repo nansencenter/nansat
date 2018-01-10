@@ -1139,6 +1139,7 @@ class Nansat(Domain):
                                                               max(corners[0]),
                                                               max(corners[1]),
                                                               xSize, ySize)
+            # TODO: check that valid Domain is returned..
             d = Domain(srs=dstSRS, ext=ext)
             geoTransform = d.vrt.dataset.GetGeoTransform()
         else:
@@ -1164,16 +1165,17 @@ class Nansat(Domain):
         # after reproject
         if addmask:
             self.vrt = self.vrt.get_super_vrt()
-            self.vrt._create_band(
-                src=[{
-                    'SourceFilename': self.vrt.vrt.fileName,
-                    'SourceBand':  1,
-                    'DataType': gdal.GDT_Byte}],
-                dst={
-                    'dataType': gdal.GDT_Byte,
-                    'wkv': 'swath_binary_mask',
-                    'PixelFunctionType': 'OnesPixelFunc',
-                })
+            src = [{
+                'SourceFilename': self.vrt.vrt.fileName,
+                'SourceBand':  1,
+                'DataType': gdal.GDT_Byte
+            }]
+            dst = {
+                'dataType': gdal.GDT_Byte,
+                'wkv': 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            }
+            self.vrt._create_band(src=src, dst=dst)
             self.vrt.dataset.FlushCache()
 
         # create Warped VRT
@@ -1185,6 +1187,12 @@ class Nansat(Domain):
                                            geoTransform=geoTransform,
                                            WorkingDataType=WorkingDataType,
                                            **kwargs)
+
+        # This violates lazy operations and is therefore commented out..
+        ## Assert successful reprojection
+        #bnum = 1
+        #assert np.any(~np.isnan(self[bnum])), 'Reprojection failed - all ' \
+        #        'pixels in band number %d are NaN' %bnum
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
@@ -2039,8 +2047,9 @@ class Nansat(Domain):
         if (xOff > RasterXSize or (xOff + xSize) < 0 or
                 yOff > RasterYSize or (yOff + ySize) < 0):
             raise OptionError('''Cropping region is outside the image!
-                               xOff: %d, yOff: %d, xSize: %d, ySize: %d''' %
-                              (xOff,  yOff, xSize, ySize))
+                               xOff: %.f, yOff: %.f, xSize: %.f, ySize: %.f'''
+                               %(float(xOff),  float(yOff), float(xSize),
+                                  float(ySize)))
 
         # set default values of invalud xOff/yOff and xSize/ySize
         if xOff < 0:

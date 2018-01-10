@@ -15,7 +15,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import re
+import re, warnings
 from math import sin, pi, cos, acos, copysign
 import string
 from xml.etree.ElementTree import ElementTree
@@ -214,8 +214,9 @@ class Domain(object):
         outStr += '-' * 40 + '\n'
         try:
             corners = self.get_corners()
-        except:
-            self.logger.error('Cannot read projection from source!')
+        except Exception as e:
+            self.logger.error('Cannot read projection from source! Exception' \
+                    ' is: %s'%e.message)
         else:
             outStr += 'Projection:\n'
             outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) +
@@ -597,7 +598,7 @@ class Domain(object):
                               '"-ts" or "-tr" should be chosen.')
         return extentDic
 
-    def get_border(self, nPoints=10):
+    def get_border(self, nPoints=10, **kwargs):
         '''Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
@@ -678,10 +679,15 @@ class Domain(object):
         '''
         lonList, latList = self.get_border(*args, **kwargs)
 
-        # apply > 180 deg correction to longitudes
-        for ilon, lon in enumerate(lonList):
-            lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
-                                     sin(lon * pi / 180.))
+        ''' The following causes erratic geometry when using
+        WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
+        now since this may cause other problems...
+        '''
+        warnings.warn("> 180 deg correction to longitudes - disabled..")
+        ## apply > 180 deg correction to longitudes
+        #for ilon, lon in enumerate(lonList):
+        #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
+        #                             sin(lon * pi / 180.))
 
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))

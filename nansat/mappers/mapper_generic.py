@@ -158,46 +158,7 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
-        # using pixelfunctions
-        rmBands = []
-        for iBandNo in range(self.dataset.RasterCount):
-            iBand = self.dataset.GetRasterBand(iBandNo + 1)
-            iBandName = iBand.GetMetadataItem('name')
-            # find real data band
-            if iBandName.find("_real") != -1:
-                realBandNo = iBandNo
-                realBand = self.dataset.GetRasterBand(realBandNo + 1)
-                realDtype = realBand.GetMetadataItem('DataType')
-                bandName = iBandName.replace(iBandName.split('_')[-1],
-                                             '')[0:-1]
-                for jBandNo in range(self.dataset.RasterCount):
-                    jBand = self.dataset.GetRasterBand(jBandNo + 1)
-                    jBandName = jBand.GetMetadataItem('name')
-                    # find an imaginary data band corresponding to the real
-                    # data band and create complex data band from the bands
-                    if jBandName.find(bandName+'_imag') != -1:
-                        imagBandNo = jBandNo
-                        imagBand = self.dataset.GetRasterBand(imagBandNo + 1)
-                        imagDtype = imagBand.GetMetadataItem('DataType')
-                        dst = imagBand.GetMetadata()
-                        dst['name'] = bandName
-                        dst['PixelFunctionType'] = 'ComplexData'
-                        dst['dataType'] = 10
-                        src = [{'SourceFilename': fileNames[realBandNo],
-                                'SourceBand':  1,
-                                'DataType': realDtype},
-                               {'SourceFilename': fileNames[imagBandNo],
-                                'SourceBand': 1,
-                                'DataType': imagDtype}]
-                        self._create_band(src, dst)
-                        self.dataset.FlushCache()
-                        rmBands.append(realBandNo + 1)
-                        rmBands.append(imagBandNo + 1)
-
-        # Delete real and imaginary bands
-        if len(rmBands) != 0:
-            self.delete_bands(rmBands)
+        self._create_complex_bands(fileNames)
 
         if len(projection) == 0:
             # projection was not set automatically

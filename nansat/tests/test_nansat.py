@@ -339,7 +339,6 @@ class NansatTest(unittest.TestCase):
         n.export(tmpfilename + '2', options=['WRITE_LONLAT=NO'])
         nn = Nansat(tmpfilename, mapperName='generic')
         nn2 = Nansat(tmpfilename + '2', mapperName='generic')
-        #import ipdb; ipdb.set_trace()
         self.assertTrue(nn.has_band('lon'))
         self.assertTrue(nn.has_band('lat'))
         self.assertTrue(nn.has_band('Bristol'))
@@ -932,6 +931,8 @@ class NansatTest(unittest.TestCase):
             exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
         os.unlink(self.tmpfilename)
+
+    #def test_projection_of_netcdf_complex(self):
 
     def test_export_netcdf_arctic(self):
         ''' Test export of the arctic data without GCPS

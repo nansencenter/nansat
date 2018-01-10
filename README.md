@@ -44,9 +44,14 @@ export GEOS_DIR=$HOME/miniconda/
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
 
-# run tests
+# run nansat.tests
 nosetests nansat
+
+# Run all tests including nansat_integration_tests with coverage
+cd <nansat_repository_folder>
+nosetests -w . --with-coverage --cover-package=nansat
 ```
+
 Fore more information see [Install-Nansat](https://github.com/nansencenter/nansat/wiki/Install-Nansat) section or
 use pre-configure virtual machines as explained on [Nansat-lectures](https://github.com/nansencenter/nansat-lectures)
 

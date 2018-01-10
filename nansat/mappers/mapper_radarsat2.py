@@ -16,6 +16,7 @@ from math import asin
 import json
 import pythesint as pti
 
+from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
@@ -26,7 +27,8 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Radarsat2 '''
 
-    def __init__(self, inputFileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, inputFileName, gdalDataset, gdalMetadata,
+                 xmlonly=False,  **kwargs):
         ''' Create Radarsat2 VRT '''
         fPathName, fExt = os.path.splitext(inputFileName)
 
@@ -35,7 +37,8 @@ class Mapper(VRT):
             fPath, fName = os.path.split(fPathName)
             fileName = '/vsizip/%s/%s' % (inputFileName, fName)
             if not 'RS' in fName[0:2]:
-                raise WrongMapperError('Provided data is not Radarsat-2')
+                raise WrongMapperError('%s: Provided data is not Radarsat-2'
+                        %fName)
             gdalDataset = gdal.Open(fileName)
             gdalMetadata = gdalDataset.GetMetadata()
         else:
@@ -44,11 +47,10 @@ class Mapper(VRT):
         #if it is not RADARSAT-2, return
         if (not gdalMetadata or
                 not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys()):
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
-        import ipdb; ipdb.set_trace()
         if zipfile.is_zipfile(inputFileName):
             # Open product.xml to get additional metadata
             zz = zipfile.ZipFile(inputFileName)
@@ -58,11 +60,17 @@ class Mapper(VRT):
             # product.xml to get additionali metadata
             productXmlName = os.path.join(fileName,'product.xml')
             if not os.path.isfile(productXmlName):
-                raise WrongMapperError
+                raise WrongMapperError(fileName)
             productXml = open(productXmlName).read()            
 
-        # Get additional metadata from product.xml
+        # parse product.XML
         rs2_0 = Node.create(productXml)
+
+        if xmlonly:
+            self.init_from_xml(rs2_0)
+            return
+
+        # Get additional metadata from product.xml
         rs2_1 = rs2_0.node('sourceAttributes')
         rs2_2 = rs2_1.node('radarParameters')
         if rs2_2['antennaPointing'].lower() == 'right':
@@ -265,3 +273,44 @@ class Mapper(VRT):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+    def init_from_xml(self, productXml):
+        ''' Fast init from metada in XML only '''
+        numberOfLines = int(productXml
+                        .node('imageAttributes')
+                        .node('rasterAttributes')
+                        .node('numberOfLines')
+                        .value)
+        numberOfSamples = int(productXml
+                        .node('imageAttributes')
+                        .node('rasterAttributes')
+                        .node('numberOfSamplesPerLine')
+                        .value)
+        
+        VRT.__init__(self, srcRasterXSize=numberOfSamples, srcRasterYSize=numberOfLines)
+
+        gcps = []
+        geogrid = productXml.node('imageAttributes').node('geographicInformation').node('geolocationGrid')
+        for child in geogrid.children:
+            pix = float(child.node('imageCoordinate').node('pixel').value)
+            lin = float(child.node('imageCoordinate').node('line').value)
+            lon = float(child.node('geodeticCoordinate').node('longitude').value)
+            lat = float(child.node('geodeticCoordinate').node('latitude').value)
+            gcps.append(gdal.GCP(lon, lat, 0, pix, lin))
+        
+        self.dataset.SetGCPs(gcps, NSR().wkt)        
+
+        dates = map(parse, [child.node('timeStamp').value for child in
+                             (productXml.node('sourceAttributes')
+                                        .node('orbitAndAttitude')
+                                        .node('orbitInformation')
+                                        .nodeList('stateVector'))])
+        
+        self.dataset.SetMetadataItem('time_coverage_start', min(dates).isoformat())
+        self.dataset.SetMetadataItem('time_coverage_end', max(dates).isoformat())
+        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('radarsat-2')))
+        self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
+        self.dataset.SetMetadataItem('Entry Title', 'Radarsat-2 SAR')
+        self.dataset.SetMetadataItem('Data Center', 'CSA')
+        self.dataset.SetMetadataItem('ISO Topic Category', 'Oceans')
+        self.dataset.SetMetadataItem('Summary', 'Radarsat-2 SAR data')

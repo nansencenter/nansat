@@ -25,7 +25,7 @@ class Mapper(VRT):
             # load file
             matFile = loadmat(fileName)
         else:
-            raise WrongMapperError
+            raise WrongMapperError(fileName)
 
         # get geolocation
         geolocArray = matFile['geolocation'][0]
