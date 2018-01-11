@@ -8,12 +8,17 @@ import os
 import tarfile
 import zipfile
 from dateutil.parser import parse
-
-import numpy as np
-import scipy.ndimage
 from math import asin
 
 import json
+import numpy as np
+try:
+    import scipy.ndimage
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
+
 import pythesint as pti
 
 from nansat.nsr import NSR
@@ -21,7 +26,7 @@ from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
 from nansat.tools import initial_bearing, gdal, ogr
-from nansat.tools import WrongMapperError
+from nansat.tools import WrongMapperError, NansatReadError
 
 
 class Mapper(VRT):
@@ -62,6 +67,10 @@ class Mapper(VRT):
             if not os.path.isfile(productXmlName):
                 raise WrongMapperError(fileName)
             productXml = open(productXmlName).read()            
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError(' Radarsat-2 data cannot be read because scipy is not installed! '
+                                  ' Please do: conda -c conda-forge install scipy ')
 
         # parse product.XML
         rs2_0 = Node.create(productXml)

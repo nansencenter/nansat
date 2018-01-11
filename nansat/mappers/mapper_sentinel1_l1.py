@@ -139,8 +139,8 @@ class Mapper(VRT):
                       'and there might be other issues.')
 
         if not IMPORT_SCIPY:
-            raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed!'
-                                  'Please do: conda -c conda-forge install scipy')
+            raise NansatReadError(' Sentinel-1 data cannot be read because scipy is not installed! '
+                                  ' Please do: conda -c conda-forge install scipy ')
 
         # create empty VRT dataset with geolocation only
         for key in gdalDatasets:
