@@ -9,11 +9,16 @@ import glob
 from datetime import datetime, timedelta
 from math import ceil
 
-from scipy.ndimage.filters import gaussian_filter
+try:
+    from scipy.ndimage.filters import gaussian_filter
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
 
 from nansat.nsr import NSR
 from nansat.vrt import GeolocationArray, VRT
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 
 
 class Mapper(VRT):
@@ -29,6 +34,10 @@ class Mapper(VRT):
         ifiledir = os.path.split(fileName)[0]
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError(' VIIRS data cannot be read because scipy is not installed! '
+                                  ' Please do: conda -c conda-forge install scipy ')
 
         viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240,
                             1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]

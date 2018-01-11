@@ -37,10 +37,6 @@ conda update -q --yes conda
 # install all requirements from conda-forge channel
 conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 cfunits python-dateutil pythesint nose
 
-# configure environment
-export GDAL_DATA=$HOME/miniconda/share/gdal/
-export GEOS_DIR=$HOME/miniconda/
-
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
 
