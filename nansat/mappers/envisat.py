@@ -408,7 +408,7 @@ class Envisat(object):
         array = self.get_array_from_ADS(adsName)
 
         if not IMPORT_SCIPY:
-            raise NansatReadError(' ASAR data cannot be read because scipy is not installed! '
+            raise NansatReadError(' ENVISAT data cannot be read because scipy is not installed! '
                                   ' Please do: conda -c conda-forge install scipy ')
 
         # zoom the array
