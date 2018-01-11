@@ -3,10 +3,8 @@
 # Purpose:
 #
 # Author:       Morten Wergeland Hansen, Anton Korosov
-# Modified:     Anton Korosov
 #
 # Created:  12.09.2014
-# Last modified:29.09.2016
 # Copyright:    (c) NERSC
 # License: GPL V3
 #------------------------------------------------------------------------------
@@ -16,15 +14,21 @@ import os
 import glob
 import zipfile
 import numpy as np
-import scipy
 from dateutil.parser import parse
 import xml.etree.ElementTree as ET
+
+try:
+    import scipy
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
 
 import json
 import pythesint as pti
 
 from nansat.vrt import VRT
-from nansat.tools import gdal, WrongMapperError, initial_bearing
+from nansat.tools import gdal, WrongMapperError, NansatReadError, initial_bearing
 from nansat.nsr import NSR
 from nansat.node import Node
 
@@ -133,6 +137,10 @@ class Mapper(VRT):
                       'complex data. In addition, the band names should be '
                       'updated for multi-swath data - '
                       'and there might be other issues.')
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed!'
+                                  'Please do: conda -c conda-forge install scipy')
 
         # create empty VRT dataset with geolocation only
         for key in gdalDatasets:
