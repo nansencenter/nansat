@@ -1072,6 +1072,8 @@ class Domain(object):
         else:
             plt.close('all')
 
+# TODO: rename vrt.reproject_GCPs for disambiguation
+
     def reproject_GCPs(self, srsString=''):
         '''Reproject all GCPs to a new spatial reference system
 

@@ -28,7 +28,14 @@ from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.tools import add_logger, gdal, osr, OptionError
 
+# TODO: Check which methods are private
 
+# TODO: Move GeolocationArray to another module
+
+# TODO: Think which variables we should rename
+
+# TODO: Think which conventional names we should use (lon, lat - OK), vrt - ?
+ 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
 
@@ -110,7 +117,6 @@ class GeolocationArray():
 
         return lonGrid, latGrid
 
-
 class VRT(object):
     '''Wrapper around GDAL VRT-file
 
@@ -152,6 +158,8 @@ class VRT(object):
     self.vrt.vrt = subVRT
 
     '''
+# TODO:
+#   move templates out of Python code to external xml files
     ComplexSource = Template('''
             <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
@@ -189,6 +197,14 @@ class VRT(object):
     bandVRTs = None
     # use Thin Spline Transformation of the VRT has GCPs?
     tps = False
+
+# TODO:
+# add class methods:
+#   from_gdal_dataset
+#   from_array
+# usage:
+#   new_vrt = VRT.from_array(array)
+# minimize __init__():
 
     def __init__(self, gdalDataset=None, vrtDataset=None,
                  array=None,
@@ -328,6 +344,7 @@ class VRT(object):
         self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
         self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
 
+# TODO: fix except
     def __del__(self):
         ''' Destructor deletes VRT and RAW files'''
         try:
@@ -336,6 +353,7 @@ class VRT(object):
         except:
             pass
 
+# TODO: add extension to mkstemp
     def _make_filename(self, extention='vrt', nomem=False):
         '''Create random VSI file name
 
@@ -384,6 +402,9 @@ class VRT(object):
             self._create_band(src, dst)
             self.logger.debug('Creating band - OK!')
         self.dataset.FlushCache()
+
+# TODO:
+#   dst=dict()
 
     def _create_band(self, src, dst=None):
         ''' Add band to self.dataset:
@@ -462,6 +483,9 @@ class VRT(object):
                        'SourceType': 'ComplexSource',
                        'ScaleRatio': 1.0,
                        'ScaleOffset': 0.0}
+# TODO:
+#   move loop body to a function
+
         for src in srcs:
             # check if SourceFilename is given
             if 'SourceFilename' not in src:
@@ -482,6 +506,8 @@ class VRT(object):
                 self.logger.debug('SRC[DataType]: %d' % src['DataType'])
 
             srcDs = gdal.Open(src['SourceFilename'])
+# TODO:
+#   write XML from dictionary using a standard method (not a filling a template)
 
             # create XML for each source
             src['XML'] = self.ComplexSource.substitute(
@@ -496,6 +522,9 @@ class VRT(object):
                 ySize=src.get('ySize', srcDs.RasterYSize),
                 xOff=src.get('xOff', 0),
                 yOff=src.get('yOff', 0),)
+
+# TODO:
+#   replace with _set_options()
 
         # create destination options
         if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
@@ -517,6 +546,9 @@ class VRT(object):
             # in common case
             options = []
         self.logger.debug('Options of AddBand: %s', str(options))
+
+# TODO:
+#   check individual dst keys in idividual functions
 
         # set destination dataType (if not given in input parameters)
         if 'dataType' not in dst:
@@ -603,6 +635,10 @@ class VRT(object):
         # return name of the created band
         return dst['name']
 
+# TODO:
+#   clarify names of iBand and jBand in docstring or in code
+#   add docstring
+
     def _create_complex_bands(self, fileNames):
         # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
         # using pixelfunctions
@@ -644,8 +680,6 @@ class VRT(object):
         # Delete real and imaginary bands
         if len(rmBands) != 0:
             self.delete_bands(rmBands)
-
-
 
     def _add_swath_mask_band(self):
         ''' Create a new band where all values = 1
@@ -697,6 +731,9 @@ class VRT(object):
 
         return rasterBand
 
+# TODO:
+#   remove obsolete commented code or enable it
+
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         if not gdal_metadata:
             raise WrongMapperError
@@ -713,6 +750,8 @@ class VRT(object):
 
         return gdal_metadata
 
+# TODO:
+#   Private method?
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets
         sub_datasets = gdal_dataset.GetSubDatasets()
@@ -746,6 +785,9 @@ class VRT(object):
         array = None
 
         self.logger.debug('arrayDType: %s', arrayDType)
+
+# TODO:
+#   Move hardcoded dicts to tools.py
 
         # create conents of VRT-file pointing to the binary file
         dataType = {'uint8': 'Byte',
@@ -918,6 +960,14 @@ class VRT(object):
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
 
+# TODO:
+#   split superfunctional get_warped_vrt into more specific methods
+#       get_warped_vrt_geotransform
+#       get_warped_vrt_gcp
+#       etc...
+#   check actual usage of get_warped_vrt and limit input params to the actually used ones only
+#   replace keywork arguments with required arguments where possible 
+ 
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
@@ -1245,6 +1295,9 @@ class VRT(object):
                 k += 1
 
         return gcps
+
+# TODO:
+#   reuse _latlon2gcps: for looping over lon/lat arrays
 
     def convert_GeolocationArray2GPCs(self, stepX=1, stepY=1):
         ''' Converting geolocation arrays to GCPs, and deleting the former

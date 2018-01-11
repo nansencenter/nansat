@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 from nansat.tools import ProjectionError, osr
-
+# TODO: import osr from osgeo
 
 class NSR(osr.SpatialReference, object):
     '''Nansat Spatial Reference
