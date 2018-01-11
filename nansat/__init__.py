@@ -18,10 +18,6 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
-# import some libraries for convenience
-from nansat.tools import gdal, ogr
-import numpy as np
-import matplotlib.pyplot as plt
 
 # check if pixel functions were compiled using setup_tools
 try:
@@ -39,30 +35,8 @@ except Exception as e:
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.nansat import Nansat
+from nansat.figure import Figure
 
-__all__ = ['NSR', 'Domain', 'Nansat']
-
-try:
-    from nansat.figure import Figure
-except ImportError:
-    warnings.warn('''Cannot import Figure! Nansat will not make figures!''')
-else:
-    __all__.append('Figure')
-
-try:
-    from nansat.nansatmap import Nansatmap
-except ImportError:
-    warnings.warn('''Cannot import Nansatmap! Nansat will not make maps!''')
-else:
-    __all__.append('Nansatmap')
-
-try:
-    from nansat.mosaic import Mosaic
-except ImportError:
-    warnings.warn('''Cannot import Mosaic! Nansat will not mosaic files!''')
-else:
-    __all__.append('Mosaic')
+__all__ = ['NSR', 'Domain', 'Nansat', 'Figure']
 
 os.environ['LOG_LEVEL'] = '30'
-
-__all__ += ['gdal', 'ogr', 'np', 'plt']

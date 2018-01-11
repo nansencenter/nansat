@@ -21,92 +21,90 @@ import warnings
 import logging
 from dateutil.parser import parse
 
-from matplotlib import cm
-from matplotlib.colors import hex2color
+try:
+    from matplotlib import cm
+    from matplotlib.colors import hex2color
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
 
 import numpy as np
-from scipy import mod
 
 try:
     import gdal, ogr, osr
 except:
     from osgeo import gdal, ogr, osr
+gdal.UseExceptions()
 
-# Force GDAL to raise exceptions
-try:
-    gdal.UseExceptions()
-except:
-    warnings.warn('GDAL will not raise exceptions.'
-                  'Probably GDAL is not installed')
+def register_colormaps():
+    ''' Create custom colormaps and register them '''
+    obpg = {'red': [(0.00, 0.56, 0.56),
+                    (0.19, 0.00, 0.00),
+                    (0.38, 0.00, 0.00),
+                    (0.50, 0.00, 0.00),
+                    (0.63, 1.00, 1.00),
+                    (0.88, 1.00, 1.00),
+                    (1.00, 0.40, 0.40)],
 
-obpg = {'red': [(0.00, 0.56, 0.56),
-                (0.19, 0.00, 0.00),
-                (0.38, 0.00, 0.00),
-                (0.50, 0.00, 0.00),
-                (0.63, 1.00, 1.00),
-                (0.88, 1.00, 1.00),
-                (1.00, 0.40, 0.40)],
+            'green': [(0.00, 0.00, 0.00),
+                      (0.19, 0.00, 0.00),
+                      (0.38, 1.00, 1.00),
+                      (0.50, 1.00, 1.00),
+                      (0.63, 1.00, 1.00),
+                      (0.88, 0.00, 0.00),
+                      (1.00, 0.00, 0.00)],
 
-        'green': [(0.00, 0.00, 0.00),
-                  (0.19, 0.00, 0.00),
-                  (0.38, 1.00, 1.00),
-                  (0.50, 1.00, 1.00),
-                  (0.63, 1.00, 1.00),
-                  (0.88, 0.00, 0.00),
-                  (1.00, 0.00, 0.00)],
-
-        'blue': [(0.00, 0.43, 0.43),
-                 (0.19, 1.00, 1.00),
-                 (0.38, 1.00, 1.00),
-                 (0.50, 0.00, 0.00),
-                 (0.63, 0.00, 0.00),
-                 (0.88, 0.00, 0.00),
-                 (1.00, 0.00, 0.00)],
-        }
+            'blue': [(0.00, 0.43, 0.43),
+                     (0.19, 1.00, 1.00),
+                     (0.38, 1.00, 1.00),
+                     (0.50, 0.00, 0.00),
+                     (0.63, 0.00, 0.00),
+                     (0.88, 0.00, 0.00),
+                     (1.00, 0.00, 0.00)],
+            }
 
 
-ak01 = {'red': [(0, 0.1, 0.1,),
-                (0.1, 0.56, 0.56,),
-                (0.22, 0, 0,),
-                (0.27, 0, 0,),
-                (0.37, 0.3, 0.3,),
-                (0.47, 0, 0,),
-                (0.52, 0, 0,),
-                (0.64, 1, 1,),
-                (0.76, 1, 1,),
-                (0.88, 0.4, 0.4,),
-                (1, 1, 1,)],
+    ak01 = {'red': [(0, 0.1, 0.1,),
+                    (0.1, 0.56, 0.56,),
+                    (0.22, 0, 0,),
+                    (0.27, 0, 0,),
+                    (0.37, 0.3, 0.3,),
+                    (0.47, 0, 0,),
+                    (0.52, 0, 0,),
+                    (0.64, 1, 1,),
+                    (0.76, 1, 1,),
+                    (0.88, 0.4, 0.4,),
+                    (1, 1, 1,)],
 
-        'green': [(0, 0, 0,),
-                  (0.1, 0, 0,),
-                  (0.22, 0, 0,),
-                  (0.27, 0, 0,),
-                  (0.37, 0.6, 0.6,),
-                  (0.47, 0.6, 0.6,),
-                  (0.52, 1, 1,),
-                  (0.64, 1, 1,),
-                  (0.76, 0, 0,),
-                  (0.88, 0, 0,),
-                  (1, 0.5, 0.5,)],
+            'green': [(0, 0, 0,),
+                      (0.1, 0, 0,),
+                      (0.22, 0, 0,),
+                      (0.27, 0, 0,),
+                      (0.37, 0.6, 0.6,),
+                      (0.47, 0.6, 0.6,),
+                      (0.52, 1, 1,),
+                      (0.64, 1, 1,),
+                      (0.76, 0, 0,),
+                      (0.88, 0, 0,),
+                      (1, 0.5, 0.5,)],
 
-        'blue': [(0, 0.1, 0.1,),
-                 (0.1, 0.5, 0.5,),
-                 (0.22, 0.5, 0.5,),
-                 (0.27, 1, 1,),
-                 (0.37, 1, 1,),
-                 (0.47, 0, 0,),
-                 (0.52, 0, 0,),
-                 (0.64, 0, 0,),
-                 (0.76, 0, 0,),
-                 (0.88, 0, 0,),
-                 (1, 0.5, 0.5,)],
-        }
+            'blue': [(0, 0.1, 0.1,),
+                     (0.1, 0.5, 0.5,),
+                     (0.22, 0.5, 0.5,),
+                     (0.27, 1, 1,),
+                     (0.37, 1, 1,),
+                     (0.47, 0, 0,),
+                     (0.52, 0, 0,),
+                     (0.64, 0, 0,),
+                     (0.76, 0, 0,),
+                     (0.88, 0, 0,),
+                     (1, 0.5, 0.5,)],
+            }
 
-try:
-    cm.register_cmap(name='obpg', data=obpg, lut=256)
-    cm.register_cmap(name='ak01', data=ak01, lut=256)
-except:
-    warnings.warn('Cannot generate and register the OBPG colormap!')
+    if MATPLOTLIB_EXISTS:
+        cm.register_cmap(name='obpg', data=obpg, lut=256)
+        cm.register_cmap(name='ak01', data=ak01, lut=256)
 
 
 class OptionError(Exception):
@@ -165,7 +163,7 @@ def initial_bearing(lon1, lat1, lon2, lat2):
                              np.cos(rlat1) * np.sin(rlat2) -
                              np.sin(rlat1) * np.cos(rlat2) *
                              np.cos(rlon2 - rlon1))
-        return mod(np.degrees(bearing) + 360, 360)
+        return np.mod(np.degrees(bearing) + 360, 360)
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -242,6 +240,9 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
         c0 : str
             hexademical representation of the new random color
     '''
+    if not MATPLOTLIB_EXISTS:
+        raise ImportError('Matplotlib does not exist')
+
     # check inputs
     if c0 is None:
         c0 = '#000000'
@@ -296,3 +297,5 @@ def test_openable(fname):
     except IOError:
         raise
     f.close()
+
+register_colormaps()

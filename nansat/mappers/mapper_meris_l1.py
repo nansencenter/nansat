@@ -1,10 +1,9 @@
 # Name:        nansat_mapper_merisL1
 # Purpose:     Mapping for Meris-L1 data
-# Authors:      Anton Korosov
-# Licence:      This file is part of NANSAT. You can redistribute it or modify
-#               under the terms of GNU General Public License, v.3
-#               http://www.gnu.org/licenses/gpl-3.0.html
-from pytz import UTC
+# Authors:     Anton Korosov
+# Licence:     This file is part of NANSAT. You can redistribute it or modify
+#              under the terms of GNU General Public License, v.3
+#              http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 import json
 
