@@ -1006,7 +1006,8 @@ class Domain(object):
             labels to print on top of patches
         '''
         if not BASEMAP_LIB_EXISTS:
-            raise ImportError('Basemap is not installed')
+            raise ImportError(' Basemap is not installed. Cannot use Domain.write_map. '
+                              ' Enable by: conda install -c conda forge basemap ')
 
         # if lat/lon vectors are not given as input
         if lonVec is None or latVec is None or len(lonVec) != len(latVec):

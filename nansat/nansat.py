@@ -28,12 +28,7 @@ import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
 
-try:
-    from netCDF4 import Dataset
-except ImportError:
-    NETCDF4_LIB_EXISTS = False
-else:
-    NETCDF4_LIB_EXISTS = True
+from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -581,11 +576,6 @@ class Nansat(Domain):
 
     def _add_gcps(self, fileName, gcps, bottomup):
         ''' Add 4 variables with gcps to the generated netCDF file '''
-        if not NETCDF4_LIB_EXISTS:
-            raise ImportError(
-            '''netCDF4 library does not exist. Cannot add GCPs to NC-file.
-               Install netCDF4 or use n.export(..., addGCPs=False)''')
-            
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
 
         # check if file exists
@@ -667,12 +657,6 @@ class Nansat(Domain):
         n.export2thredds(filename, bands)
 
         '''
-        if not NETCDF4_LIB_EXISTS:
-            raise ImportError(
-            '''netCDF4 library does not exist.
-               Cannot export for THREDDS.
-               Install netCDF4.''')
-
         # raise error if self is not projected (has GCPs)
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
