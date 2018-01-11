@@ -9,7 +9,6 @@ import os
 from dateutil.parser import parse
 
 import numpy as np
-from scipy.io.netcdf import netcdf_file
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray

@@ -11,7 +11,7 @@ from dateutil.parser import parse
 import datetime
 
 import numpy as np
-from scipy.io.netcdf import netcdf_file
+from netCDF4 import Dataset
 
 try:
     from cfunits import Units
@@ -251,7 +251,7 @@ class Mapper(VRT):
                  'time#units' in subMetadata and
                  'time#calendar' in subMetadata):
             # get data from netcdf data
-            ncFile = netcdf_file(inputFileName, 'r')
+            ncFile = Dataset(inputFileName, 'r')
             timeLength = ncFile.variables['time'].shape[0]
             timeValueStart = ncFile.variables['time'][0]
             timeValueEnd = ncFile.variables['time'][-1]
@@ -343,7 +343,7 @@ class Mapper(VRT):
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
         # open input netCDF file for reading GCPs
         try:
-            ncFile = netcdf_file(fileName, 'r')
+            ncFile = Dataset(fileName, 'r')
         except (TypeError, IOError) as e:
             self.logger.info('%s' % e)
             return None

@@ -8,10 +8,15 @@ from dateutil.parser import parse
 import struct
 
 import numpy as np
-import scipy.ndimage
+try:
+    import scipy.ndimage
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
 
 from nansat.vrt import VRT, GeolocationArray
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 
 
 class Envisat(object):
@@ -401,6 +406,10 @@ class Envisat(object):
         adsHeight = self.dsOffsetDict["NUM_DSR"]
         adsParams = self.allADSParams['list'][adsName]
         array = self.get_array_from_ADS(adsName)
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError(' ENVISAT data cannot be read because scipy is not installed! '
+                                  ' Please do: conda -c conda-forge install scipy ')
 
         # zoom the array
         array = scipy.ndimage.interpolation.zoom(array,

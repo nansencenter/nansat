@@ -5,20 +5,24 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-
 import numpy as np
-import scipy.ndimage
 from osgeo import gdal
 from dateutil.parser import parse
-
 import json
+try:
+    import scipy.ndimage
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
+
 import pythesint as pti
 
 from nansat.vrt import VRT
 from envisat import Envisat
 from nansat.domain import Domain
 from nansat.tools import initial_bearing
-from nansat.tools import WrongMapperError
+from nansat.tools import WrongMapperError, NansatReadError
 
 
 class Mapper(VRT, Envisat):
@@ -46,6 +50,10 @@ class Mapper(VRT, Envisat):
 
         if self.product[0:4] != "ASA_":
             raise WrongMapperError
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError(' ASAR data cannot be read because scipy is not installed! '
+                                  ' Please do: conda -c conda-forge install scipy ')
 
         # get channel string (remove '/', since NetCDF
         # does not support that in metadata)

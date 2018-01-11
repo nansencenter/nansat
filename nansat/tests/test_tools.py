@@ -15,10 +15,17 @@
 import unittest
 import datetime
 
-from matplotlib.colors import hex2color
+try:
+    from matplotlib.colors import hex2color
+except ImportError:
+    MATPLOTLIB_EXISTS = False
+else:
+    MATPLOTLIB_EXISTS = True
+
 from nansat.tools import get_random_color, parse_time
 
 class ToolsTest(unittest.TestCase):
+    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_get_random_color(self):
         ''' Should return HEX code of random color '''
         c0 = get_random_color()

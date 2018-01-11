@@ -35,11 +35,7 @@ export PATH=$HOME/miniconda/bin/:$PATH
 conda update -q --yes conda
 
 # install all requirements from conda-forge channel
-conda install -q --yes -c conda-forge qt numpy scipy matplotlib nose pillow basemap netcdf4 gdal
-
-# configure environment
-export GDAL_DATA=$HOME/miniconda/share/gdal/
-export GEOS_DIR=$HOME/miniconda/
+conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 cfunits python-dateutil pythesint nose
 
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz

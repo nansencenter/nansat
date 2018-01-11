@@ -20,9 +20,7 @@ import glob
 from types import ModuleType, FloatType
 import datetime
 
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io.netcdf import netcdf_file
 
 from nansat import Figure, Nansat, Domain
 from nansat.tools import gdal, OptionError
@@ -35,8 +33,6 @@ IS_CONDA = 'conda' in os.environ['PATH']
 class FigureTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
-        plt.switch_backend('Agg')
-
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
 

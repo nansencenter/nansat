@@ -24,17 +24,11 @@ import datetime
 import pkgutil
 import warnings
 
-from scipy.io.netcdf import netcdf_file
 import numpy as np
-if 'nanmedian' in np.__all__:
-    from numpy import nanmedian
-else:
-    from scipy.stats import nanmedian
-
+from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
-import matplotlib
-from matplotlib import cm
-import matplotlib.pyplot as plt
+
+from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -45,6 +39,7 @@ from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALErr
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
+
 import collections
 if hasattr(collections, 'OrderedDict'):
     from collections import OrderedDict
@@ -572,7 +567,7 @@ class Nansat(Domain):
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
                                                           options=options)
-
+        dataset = None
         # add GCPs into netCDF file as separate float variables
         if addGCPs:
             self._add_gcps(fileName, gcps, bottomup)
@@ -589,11 +584,7 @@ class Nansat(Domain):
             return 1
 
         # open output file for adding GCPs
-        try:
-            ncFile = netcdf_file(fileName, 'a')
-        except TypeError as e:
-            self.logger.warning('%s' % e)
-            return 1
+        ncFile = Dataset(fileName, 'a')
 
         # get GCP values into single array from GCPs
         gcpValues = np.zeros((5, len(gcps)))
@@ -608,7 +599,7 @@ class Nansat(Domain):
         ncFile.createDimension('gcps', len(gcps))
         # make gcps variables and add data
         for i, var in enumerate(gcpVariables):
-            var = ncFile.createVariable(var, 'f', ('gcps',))
+            var = ncFile.createVariable(var, 'f4', ('gcps',))
             var[:] = gcpValues[i]
 
         # write data, close file
@@ -743,8 +734,8 @@ class Nansat(Domain):
         data.export(tmpName)
 
         # open files for input and output
-        ncI = netcdf_file(tmpName, 'r')
-        ncO = netcdf_file(fileName, 'w')
+        ncI = Dataset(tmpName, 'r')
+        ncO = Dataset(fileName, 'w')
 
         # collect info on dimention names
         dimNames = []
@@ -790,6 +781,11 @@ class Nansat(Domain):
         # recreate file
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]
+            if 'name' in ncIVar.ncattrs():
+                ncIVar_name = ncIVar.getncattr('name')
+            else:
+                ncIVar_name = None
+
             self.logger.debug('Creating variable: %s' % ncIVarName)
             if ncIVarName in ['x', 'y', 'lon', 'lat']:
                 # create simple x/y variables
@@ -797,85 +793,78 @@ class Nansat(Domain):
                                             ncIVar.dimensions)
             elif ncIVarName == gridMappingVarName:
                 # create projection var
-                ncOVar = ncO.createVariable(gridMappingName, ncIVar.typecode(),
+                ncOVar = ncO.createVariable(gridMappingName, ncIVar.dtype.str,
                                             ncIVar.dimensions)
-            elif 'name' in ncIVar._attributes and ncIVar.name in dstBands:
+            elif ncIVar_name in dstBands:
                 # dont add time-axis to lon/lat grids
-                if ncIVar.name in ['lon', 'lat']:
+                if ncIVar_name in ['lon', 'lat']:
                     dimensions = ncIVar.dimensions
                 else:
                     dimensions = ('time', ) + ncIVar.dimensions
-
-                ncOVar = ncO.createVariable(ncIVar.name,
-                                            dstBands[ncIVar.name]['type'],
-                                            dimensions)
+                
+                fill_value = None
+                if '_FillValue' in ncIVar.ncattrs():
+                    fill_value = ncIVar._FillValue
+                if '_FillValue' in dstBands[ncIVar_name]:
+                    fill_value = dstBands['_FillValue']
+                ncOVar = ncO.createVariable(ncIVar_name,
+                                            dstBands[ncIVar_name]['type'],
+                                            dimensions, fill_value=fill_value)
 
             # copy array from input data
-            data = np.array(ncIVar.data)
+            data = ncIVar[:]
+
+            for ncattr in ncIVar.ncattrs():
+                if ncattr == '_FillValue':
+                    continue
+                ncOVar.setncattr(ncattr, ncIVar.getncattr(ncattr))
 
             # copy rounded data from x/y
             if ncIVarName in ['x', 'y']:
                 ncOVar[:] = np.floor(data).astype('>f4')
                 # add axis=X or axis=Y
                 ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName]
-                for attrib in ncIVar._attributes:
-                    if len(ncIVar._attributes[attrib]) > 0:
-                        ncOVar._attributes[attrib] = ncIVar._attributes[attrib]
 
             # copy data from lon/lat
             if ncIVarName in ['lon', 'lat']:
                 ncOVar[:] = data.astype('>f4')
-                ncOVar._attributes = ncIVar._attributes
-
-            # copy projection data (only all attributes)
-            if ncIVarName == gridMappingVarName:
-                ncOVar._attributes = ncIVar._attributes
 
             # copy data from variables in the list
-            if (len(ncIVar.dimensions) > 0 and
-                    'name' in ncIVar._attributes and ncIVar.name in dstBands):
+            if (len(ncIVar.dimensions) > 0 and ncIVar_name):
                 # add offset and scale attributes
-                scale = dstBands[ncIVar.name]['scale']
-                offset = dstBands[ncIVar.name]['offset']
+                scale = dstBands[ncIVar_name]['scale']
+                offset = dstBands[ncIVar_name]['offset']
                 if not (offset == 0.0 and scale == 1.0):
-                    ncOVar._attributes['add_offset'] = offset
-                    ncOVar._attributes['scale_factor'] = scale
+                    ncOVar.setncattr('add_offset', offset)
+                    ncOVar.setncattr('scale_factor', scale)
                     data = (data - offset) / scale
-                # replace non-value by '_FillValue'
-                if (ncIVar.name in dstBands):
-                    if '_FillValue' in dstBands[ncIVar.name].keys():
-                        data[np.isnan(data)] = dstBands[
-                                                ncIVar.name]['_FillValue']
-                        ncOVar._attributes['_FillValue'] = dstBands[
-                                                ncIVar.name]['_FillValue']
 
-                ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
+                ncOVar[:] = data.astype(dstBands[ncIVar_name]['type'])
                 # copy (some) attributes
-                for inAttrName in ncIVar._attributes:
+                for inAttrName in ncIVar.ncattrs():
                     if str(inAttrName) not in rmMetadata + ['dataType',
                                     'SourceFilename', 'SourceBand', '_Unsigned',
                                     'FillValue', 'time', '_FillValue']:
-                        ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
+                        ncOVar.setncattr(inAttrName, ncIVar.getncattr(inAttrName))
 
                 # add custom attributes from input parameter bands
-                if ncIVar.name in bands:
-                    for newAttr in bands[ncIVar.name]:
+                if ncIVar_name in bands:
+                    for newAttr in bands[ncIVar_name]:
                         if newAttr not in rmMetadata + ['type', 'scale',
                                                         'offset',
                                                         '_FillValue']:
-                            ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
+                            ncOVar.setncattr(newAttr, bands[ncIVar_name][newAttr])
                     # add grid_mapping info
                     if gridMappingName is not None:
-                        ncOVar._attributes['grid_mapping'] = gridMappingName
+                        ncOVar.setncattr('grid_mapping', gridMappingName)
 
         # copy (some) global attributes
-        for globAttr in ncI._attributes:
+        for globAttr in ncI.ncattrs():
             if not(globAttr.strip().startswith('GDAL')):
-                ncO._attributes[globAttr] = ncI._attributes[globAttr]
+                ncO.setncattr(globAttr, ncI.getncattr(globAttr))
 
         # add common and custom global attributes
-        for globMeta in globMetadata:
-            ncO._attributes[globMeta] = globMetadata[globMeta]
+        ncO.setncatts(globMetadata)
 
         # write output file
         ncO.close()
@@ -1283,7 +1272,7 @@ class Nansat(Domain):
 
         return watermask
 
-    def write_figure(self, fileName=None, bands=1, clim=None, addDate=False,
+    def write_figure(self, fileName, bands=1, clim=None, addDate=False,
                      array_modfunc=None, **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
@@ -1302,12 +1291,10 @@ class Nansat(Domain):
 
         Parameters
         -----------
-        fileName : string, optional
+        fileName : string
             Output file name. if one of extensions 'png', 'PNG', 'tif',
             'TIF', 'bmp', 'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG' is included,
-            specified file is crated. otherwise, 'png' file is created.
-            if None, the figure object is returned.
-            if True, the figure is shown
+            specified file is created. otherwise, 'png' file is created.
         bands : integer or string or list (elements are integer or string),
             default = 1
             the size of the list has to be 1 or 3.
@@ -1361,6 +1348,9 @@ class Nansat(Domain):
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
+        if not isinstance(fileName, (str, unicode)):
+            raise OptionError('Wrong filename type %s ' % type(fileName))
+
         # convert <bands> from integer, or string, or list of strings
         # into list of integers
         if isinstance(bands, list):
@@ -1445,32 +1435,11 @@ class Nansat(Domain):
         # == PROCESS figure ==
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
 
-        # == finally SAVE to a image file or SHOW ==
-        if fileName is not None:
-            if type(fileName) == bool and fileName:
-                try:
-                    if plt.get_backend() == 'agg':
-                        plt.switch_backend('QT4Agg')
-                except:
-                    fig.pilImg.show()
-                else:
-                    sz = fig.pilImg.size
-                    imgArray = np.array(fig.pilImg.im)
-                    if fig.pilImg.getbands() == ('P',):
-                        imgArray.resize(sz[1], sz[0])
-                    elif fig.pilImg.getbands() == ('R', 'G', 'B'):
-                        imgArray.resize(sz[1], sz[0], 3)
-                    plt.imshow(imgArray)
-                    plt.show()
-
-            elif type(fileName) in [str, unicode]:
-                fig.save(fileName, **kwargs)
-                # If tiff image, convert to GeoTiff
-                if fileName[-3:] == 'tif':
-                    self.vrt.copyproj(fileName)
-            else:
-                raise OptionError('%s is of wrong type %s' %
-                                  (str(fileName), str(type(fileName))))
+        # == finally SAVE to a image file ==
+        fig.save(fileName, **kwargs)
+        # If tiff image, convert to GeoTiff
+        if fileName[-3:] == 'tif':
+            self.vrt.copyproj(fileName)
         return fig
 
     def write_geotiffimage(self, fileName, bandID=1):
@@ -1478,7 +1447,7 @@ class Nansat(Domain):
 
         The output GeoTiff image is convenient e.g. for display in a GIS tool.
         Colormap is fetched from the metadata item 'colormap'.
-            Fallback colormap is 'jet'.
+            Fallback colormap is 'gray'.
         Color limits are fetched from the metadata item 'minmax'.
             If 'minmax' is not specified, min and max of raster is used.
 
@@ -1503,12 +1472,10 @@ class Nansat(Domain):
         bMin = float(minmax.split(' ')[0])
         bMax = float(minmax.split(' ')[1])
         # Make colormap from WKV information
-        try:
-            colormap = band.GetMetadataItem('colormap')
-        except:
-            colormap = 'jet'
-        cmap = cm.get_cmap(colormap, 256)
-        cmap = cmap(np.arange(256)) * 255
+        cmap = np.vstack([np.arange(256.),
+                          np.arange(256.),
+                          np.arange(256.),
+                          np.ones(256)*255]).T
         colorTable = gdal.ColorTable()
         for i in range(cmap.shape[0]):
             colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
@@ -1924,12 +1891,6 @@ class Nansat(Domain):
             list of 2xN arrays of points to be used in Nansat.get_transect()
 
         '''
-        if matplotlib.is_interactive():
-            warnings.warn('''
-        Python is started with -pylab option, transect will not work.
-        Please restart python without -pylab.''')
-            return []
-
         data = self[band]
         browser = PointBrowser(data, **kwargs)
         points = browser.get_points()

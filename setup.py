@@ -24,21 +24,6 @@ except ImportError:
     raise ImportError(import_error_msg % 'numpy')
 
 try:
-    import scipy
-except ImportError:
-    raise ImportError(import_error_msg % 'scipy')
-
-try:
-    import matplotlib
-except ImportError:
-    raise ImportError(import_error_msg % 'matplotlib')
-
-try:
-    from mpl_toolkits.basemap import Basemap
-except ImportError as e:
-    raise ImportError(import_error_msg % 'basemap')
-
-try:
     from osgeo import gdal, osr, ogr
 except ImportError:
     try:
