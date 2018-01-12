@@ -20,18 +20,20 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../'))
 
-# -- Mock imported packages and modules
-from mock import Mock as MagicMock
+## -- Mock imported packages and modules
+#from mock import Mock as MagicMock
+#
+#class Mock(MagicMock):  
+#    @classmethod
+#    def __getattr__(cls, name):
+#        return MagicMock()
+#
+#MOCK_MODULES = ['gdal', 'osr', 'ogr', 'numpy', 'scipy']  
+##MOCK_MODULES = ['scipy']  
+##MOCK_MODULES = []  
+#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-class Mock(MagicMock):  
-    @classmethod
-    def __getattr__(cls, name):
-        return MagicMock()
-
-MOCK_MODULES = ['gdal', 'osr', 'ogr', 'numpy', 'scipy']  
-#MOCK_MODULES = ['scipy']  
-#MOCK_MODULES = []  
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+autodoc_mock_imports = ['gdal', 'osr', 'ogr', 'netCDF4', 'numpy', 'scipy']
 
 # -- General configuration ------------------------------------------------
 
