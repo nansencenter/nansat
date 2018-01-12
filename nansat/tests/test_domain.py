@@ -75,6 +75,10 @@ class DomainTest(unittest.TestCase):
     def test_dont_init_from_invalid(self):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
+        with self.assertRaises(OptionError):
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   ext="-te 25 70 35 72 -ts 2000 2000")
 
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
