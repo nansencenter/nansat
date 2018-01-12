@@ -1,9 +1,10 @@
 |Build Status| |Coverage Status| |DOI|
 
-.. figure:: http://nansencenter.github.io/nansat/images/nansat_logo.png
+.. figure:: nansat_logo_transp.png
    :alt: NANSAT
 
-   NANSAT
+Nansat
+------
 
 **Nansat** is a scientist friendly Python toolbox for processing 2D
 satellite earth observation data.
