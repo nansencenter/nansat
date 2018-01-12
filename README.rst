@@ -1,6 +1,9 @@
 |Build Status| |Coverage Status| |DOI|
 
-|Logo|
+.. image:: https://www.nersc.no/sites/www.nersc.no/files/images/nansat_logo_transp.png
+   :align: right
+   :width: 250px
+   :target: https://github.com/nansencenter/nansat
 
 Nansat
 ------
@@ -100,5 +103,3 @@ Development is supported by the Research Council of Norway as a part of
    :target: https://coveralls.io/r/nansencenter/nansat
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg
    :target: https://doi.org/10.5281/zenodo.59998
-.. |Logo| image:: https://github.com/nansencenter/nansat/blob/develop/docs/_static/nansat_logo_transp.png
-   :target: https://github.com/nansencenter/nansat
