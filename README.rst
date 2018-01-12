@@ -3,7 +3,7 @@
 .. figure:: nansat_logo_transp.png
    :alt: NANSAT
 
-NANSAT
+Nansat
 ------
 
 **Nansat** is a scientist friendly Python toolbox for processing 2D
