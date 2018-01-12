@@ -155,6 +155,8 @@ class Nansat(Domain):
         self.name = os.path.basename(fileName)
         self.path = os.path.dirname(fileName)
 
+# TODO: add better comments/elifs like in Domain init on various options of initalization
+
         # create self.vrt from a file using mapper or...
         if fileName != '':
             # Make original VRT object with mapping of variables
@@ -199,6 +201,7 @@ class Nansat(Domain):
         if expression != '':
             bandData = eval(expression)
 
+# TODO: move below to _fill_with_nan() method
         # Set invalid and missing data to np.nan (for floats only)
         if ('_FillValue' in band.GetMetadata() and
              bandData.dtype.char in np.typecodes['AllFloat']):
@@ -206,6 +209,8 @@ class Nansat(Domain):
             bandData[bandData == fillValue] = np.nan
             # quick hack to avoid problem with wrong _FillValue - see issue
             # #123
+
+# TODO: use constants
             if fillValue == 9.96921e+36:
                 altFillValue = -10000.
                 bandData[bandData == altFillValue] = np.nan
@@ -224,7 +229,7 @@ class Nansat(Domain):
 
     def __repr__(self):
         '''Creates string with basic info about the Nansat object'''
-
+# TODO: replace with template
         outString = '-' * 40 + '\n'
         outString += self.fileName + '\n'
         outString += '-' * 40 + '\n'
@@ -235,6 +240,7 @@ class Nansat(Domain):
         outString += Domain.__repr__(self)
         return outString
 
+# TODO: add warning that add_band will be deprecated
     def add_band(self, array, parameters=None, nomem=False):
         '''Add band from the array to self.vrt
 
@@ -323,6 +329,7 @@ class Nansat(Domain):
             key = N, value = dict with all band metadata
 
         '''
+# TODO: use list comprehension
         b = {}
         for iBand in range(self.vrt.dataset.RasterCount):
             b[iBand + 1] = self.get_metadata(bandID=iBand + 1)
@@ -350,7 +357,10 @@ class Nansat(Domain):
 
         return bandExists
 
-    def export(self, fileName, bands=None, rmMetadata=[], addGeolocArray=True,
+# TODO:
+#   move to Exporter.export()
+#   inherit Nansat from Exporter
+    def export(self, fileName, bands=None, rmMetadata=list(), addGeolocArray=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -414,6 +424,7 @@ class Nansat(Domain):
         exportVRT.real = []
         exportVRT.imag = []
 
+# TODO: move to Exporter._delete_bands()
         # delete unnecessary bands
         rmBands = []
         selfBands = self.bands()
@@ -425,6 +436,11 @@ class Nansat(Domain):
                     rmBands.append(selfBand)
             # delete bands from VRT
             exportVRT.delete_bands(rmBands)
+
+# TODO:
+#   move to Exporter._split_complex_band()
+#   DRY: repeat for real and imag
+#   use  .bandVRTs instead of .real and .imag
 
         # Find complex data band
         complexBands = []
@@ -462,6 +478,7 @@ class Nansat(Domain):
             # delete the complex bands
             exportVRT.delete_bands(complexBands)
 
+# TODO: move to Exporter._add_geolocation_bands and DRY X/Y
         # add bands with geolocation arrays to the VRT
         if addGeolocArray and len(exportVRT.geolocationArray.d) > 0:
             exportVRT._create_band(
@@ -475,6 +492,7 @@ class Nansat(Domain):
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
+# TODO: move to Exporter._fix_band_metadata()
         # manage metadata for each band
         for iBand in range(exportVRT.dataset.RasterCount):
             band = exportVRT.dataset.GetRasterBand(iBand + 1)
@@ -494,6 +512,7 @@ class Nansat(Domain):
                                      '%s from band %d' % (rmMeta, iBand + 1))
             band.SetMetadata(bandMetadata)
 
+# TODO: move to Exporter._fix_global_metadata()
         # remove unwanted global metadata
         globMetadata = exportVRT.dataset.GetMetadata()
         for rmMeta in rmMetadata:
@@ -501,7 +520,6 @@ class Nansat(Domain):
                 globMetadata.pop(rmMeta)
             except:
                 self.logger.info('Global metadata %s not found' % rmMeta)
-
         # Apply escaping to metadata strings to preserve special characters (in
         # XML/HTML format)
         globMetadata_escaped = {}
@@ -510,21 +528,24 @@ class Nansat(Domain):
             globMetadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
         exportVRT.dataset.SetMetadata(globMetadata_escaped)
 
+# TODO: move to Exporter._hardcopy_bands
         # if output filename is same as input one...
         if self.fileName == fileName:
             numOfBands = self.vrt.dataset.RasterCount
             # create VRT from each band and add it
             for iBand in range(numOfBands):
                 vrt = VRT(array=self[iBand + 1])
+# TODO: replace with add_bands
                 self.add_band(vrt=vrt)
                 metadata = self.get_metadata(bandID=iBand + 1)
                 self.set_metadata(key=metadata,
                                   bandID=numOfBands + iBand + 1)
-
             # remove source bands
             self.vrt.delete_bands(range(1, numOfBands))
 
         # get CreateCopy() options
+# TODO: declare export(..., options=list())
+# TODO: move these checks up
         if options is None:
             options = []
         if type(options) == str:
@@ -536,9 +557,11 @@ class Nansat(Domain):
         else:
             options += ['WRITE_BOTTOMUP=YES']
 
+# TODO: move to Exporter._prepare_for_gcps()
         # if GCPs should be added
         gcps = exportVRT.dataset.GetGCPs()
         srs = exportVRT.get_projection()
+# TODO: move to ifs
         addGCPs = addGCPs and driver == 'netCDF' and len(gcps) > 0
         if addGCPs:
             #  remove GeoTransform
@@ -574,6 +597,7 @@ class Nansat(Domain):
 
         self.logger.debug('Export - OK!')
 
+# TODO: move to Exporter
     def _add_gcps(self, fileName, gcps, bottomup):
         ''' Add 4 variables with gcps to the generated netCDF file '''
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
@@ -605,6 +629,7 @@ class Nansat(Domain):
         # write data, close file
         ncFile.close()
 
+# TODO: move to Exporter
     def export2thredds(self, fileName, bands, metadata=None,
                        maskName=None, rmMetadata=[],
                        time=None, createdTime=None):
@@ -661,6 +686,7 @@ class Nansat(Domain):
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
 
+# TODO: more strict requirements for input param bands
         # replace bands as list with bands as dict
         if type(bands) is list:
             bands = dict.fromkeys(bands, {})
@@ -672,6 +698,7 @@ class Nansat(Domain):
         if maskName is not None:
             mask = self[maskName]
 
+# TODO: move to Exporter._hardcopy_bands
         # add required bands to data
         dstBands = {}
         srcBands = [self.bands()[b]['name'] for b in self.bands()]
@@ -710,11 +737,12 @@ class Nansat(Domain):
         # get corners of reprojected data
         minLat, maxLat, minLon, maxLon = data.get_min_max_lat_lon()
 
+# TODO: move to Exporter._set_global_metadata
         # common global attributes:
         if createdTime is None:
             createdTime = (datetime.datetime.utcnow().
                            strftime('%Y-%m-%d %H:%M:%S UTC'))
-
+# TODO: move 'NERSC', etc... to constants
         globMetadata = {'institution': 'NERSC',
                         'source': 'satellite remote sensing',
                         'creation_date': createdTime,
@@ -723,7 +751,6 @@ class Nansat(Domain):
                         'westernmost_longitude': np.float(minLon),
                         'easternmost_longitude': np.float(maxLon),
                         'history': ' '}
-
         # join or replace default by custom global metadata
         if metadata is not None:
             for metaKey in metadata:
@@ -737,6 +764,7 @@ class Nansat(Domain):
         ncI = Dataset(tmpName, 'r')
         ncO = Dataset(fileName, 'w')
 
+# TODO: move to Exporter._ctreate_time_dim
         # collect info on dimention names
         dimNames = []
         gridMappingName = None
@@ -759,6 +787,7 @@ class Nansat(Domain):
         for dimName in dimNames:
             ncO.createDimension(dimName, dimShapes[dimName])
 
+# TODO: move to constantd in Exporter
         # add time dimention
         ncO.createDimension('time', 1)
         ncOVar = ncO.createVariable('time', '>f8',  ('time', ))
@@ -778,6 +807,7 @@ class Nansat(Domain):
         # add date
         ncOVar[:] = days
 
+# TODO: move to Exporter._add_thredds_bands
         # recreate file
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]

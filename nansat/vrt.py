@@ -70,6 +70,7 @@ class GeolocationArray():
         All input parameters are copied to self
 
         '''
+# TODO: make self.d more understandable
         # dictionary with all metadata
         self.d = {}
         # VRT objects

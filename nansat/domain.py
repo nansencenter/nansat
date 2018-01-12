@@ -37,6 +37,8 @@ from nansat.vrt import VRT
     
 
 # TODO: Domain varname convention
+# domain_something
+
 class Domain(object):
     '''Container for geographical reference of a raster
 
@@ -116,8 +118,7 @@ class Domain(object):
             Grid with longitudes
         name : string, optional
             Name to be added to the Domain object
-        # TODO: Bug! default=None
-        logLevel : int, optional, default=30
+        logLevel : int, optional
             level of logging
 
         Raises
@@ -141,7 +142,6 @@ class Domain(object):
 
         '''
         # set default attributes
-        # TODO: I would run the logger like a separate function
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
 
@@ -187,9 +187,7 @@ class Domain(object):
                 extentDic = self._convert_extentDic(srs, extentDic)
 
             # get size/extent from the created extet dictionary
-            # TODO: _get_geotransform should return a list!
-            [geoTransform,
-             rasterXSize, rasterYSize] = self._get_geotransform(extentDic)
+            geoTransform, rasterXSize, rasterYSize = self._get_geotransform(extentDic)
             # create VRT object with given geo-reference parameters
             self.vrt = VRT(srcGeoTransform=geoTransform,
                            srcProjection=srs.wkt,
@@ -444,14 +442,10 @@ class Domain(object):
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
         # TODO: Make DRY
-        x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0],
-                                             extentDic['lle'][3])
-        x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2],
-                                             extentDic['lle'][3])
-        x3, y3, _ = coorTrans.TransformPoint(extentDic['lle'][2],
-                                             extentDic['lle'][1])
-        x4, y4, _ = coorTrans.TransformPoint(extentDic['lle'][0],
-                                             extentDic['lle'][1])
+        x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0], extentDic['lle'][3])
+        x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2], extentDic['lle'][3])
+        x3, y3, _ = coorTrans.TransformPoint(extentDic['lle'][2], extentDic['lle'][1])
+        x4, y4, _ = coorTrans.TransformPoint(extentDic['lle'][0], extentDic['lle'][1])
 
         minX = min([x1, x2, x3, x4])
         maxX = max([x1, x2, x3, x4])
@@ -625,10 +619,10 @@ class Domain(object):
         '''
         # prepare vectors with pixels and lines for upper, left, lower
         # and right borders
-        # TODO: Attention
+        # TODO: y_size, x_size = self.shape
         sizes = [self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize]
 
-        # TODO: Bad names
+        # TODO: Bad names (add r/c, row/col to conventions)
         rcVector1 = [[], []]
         rcVector2 = [[], []]
         # loop for pixels and lines
@@ -949,6 +943,8 @@ class Domain(object):
         a = np.vstack((a, a[-1, :]))
         return a
 
+# TODO:
+# add @property
     def shape(self):
         '''Return Numpy-like shape of Domain object (ySize, xSize)
 
