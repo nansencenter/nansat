@@ -12,7 +12,11 @@ Welcome to Nansat's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+Developer documentation
+=======================
 
+* Nansat conventions
+* How to create a mapper
 
 Indices and tables
 ==================

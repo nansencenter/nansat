@@ -96,7 +96,7 @@ License
 
 The project is licensed under the GNU general public license version 3.
 
-Acknowledgements
+Acknowledgments
 ----------------
 
 Development is supported by the Research Council of Norway as a part of
