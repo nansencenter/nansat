@@ -3,7 +3,8 @@
 .. figure:: nansat_logo_transp.png
    :alt: NANSAT
 
-   NANSAT
+NANSAT
+------
 
 **Nansat** is a scientist friendly Python toolbox for processing 2D
 satellite earth observation data.
