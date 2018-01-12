@@ -16,8 +16,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
+import os, sys
+from recommonmark.parser import CommonMarkParser
+
 sys.path.insert(0, os.path.abspath('..'))
 
 ## -- Mock imported packages and modules
@@ -58,8 +59,11 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_parsers = {
+        '.md': CommonMarkParser,
+    }
+source_suffix = ['.rst', '.md']
+# source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
