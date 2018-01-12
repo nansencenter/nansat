@@ -5,8 +5,8 @@
    :width: 250px
    :target: https://github.com/nansencenter/nansat
 
-Nansat
-------
+About Nansat
+------------
 
 **Nansat** is a scientist friendly Python toolbox for processing 2D
 satellite earth observation data.
@@ -22,8 +22,8 @@ was performed with the open-source NanSat
 (https://github.com/nansencenter/nansat) python package" (or equivalent)
 if you use Nansat in scientific publications.
 
-Easy to install
----------------
+Installation
+------------
 
 The easiest way to install Nansat on a Linux machine is to use
 `anaconda <http://docs.continuum.io/anaconda/index>`__
@@ -63,8 +63,8 @@ Fore more information see
 section or use pre-configure virtual machines as explained on
 `Nansat-lectures <https://github.com/nansencenter/nansat-lectures>`__
 
-Easy to use
------------
+Usage
+-----
 
 .. code:: python
 
