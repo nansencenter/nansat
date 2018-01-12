@@ -1512,12 +1512,9 @@ class VRT(object):
             # modify the 1st band
             shiftStr = str(shiftPixel)
             sizeStr = str(shiftVRT.vrt.dataset.RasterXSize - shiftPixel)
-            (node1.node('ComplexSource').node('DstRect').
-                replaceAttribute('xOff', shiftStr))
-            (node1.node('ComplexSource').node('DstRect').
-                replaceAttribute('xSize', sizeStr))
-            (node1.node('ComplexSource').node('SrcRect').
-                replaceAttribute('xSize', sizeStr))
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xOff', shiftStr)
+            node1.node('ComplexSource').node('DstRect').replaceAttribute('xSize', sizeStr)
+            node1.node('ComplexSource').node('SrcRect').replaceAttribute('xSize', sizeStr)
 
             # add the 2nd band
             xmlSource = node1.rawxml()

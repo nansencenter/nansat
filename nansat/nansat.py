@@ -946,6 +946,7 @@ class Nansat(Domain):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
+# TODO: move to _get_new_raster_size (DRY x/y)
         # get current shape
         rasterYSize = float(self.shape()[0])
         rasterXSize = float(self.shape()[1])
@@ -980,6 +981,7 @@ class Nansat(Domain):
                                                 newRasterYSize,
                                                 eResampleAlg=eResampleAlg)
 
+# TODO: move to _set_new_extent
         # resize gcps
         gcps = self.vrt.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
@@ -1122,6 +1124,7 @@ class Nansat(Domain):
         ---------
         http://www.gdal.org/gdalwarp.html
         '''
+# TODO: move the check to VRT.get_shifted_vrt
         # if self spans from 0 to 360 and dstDomain is west of 0:
         #     shift self westwards by 180 degrees
         # check span
@@ -1145,7 +1148,9 @@ class Nansat(Domain):
         xSize = dstDomain.vrt.dataset.RasterXSize
         ySize = dstDomain.vrt.dataset.RasterYSize
 
+# TODO: move to _get_geo_transform()
         # get geoTransform
+# TODO: add use_gcps to keyword arguments
         if 'use_gcps' in kwargs.keys() and not (kwargs['use_gcps']):
             corners = dstDomain.get_corners()
             ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' % (min(corners[0]),
@@ -1177,6 +1182,7 @@ class Nansat(Domain):
 
         # add band that masks valid values with 1 and nodata with 0
         # after reproject
+# TDOD: replace with VRT._add_swath_mask_band
         if addmask:
             self.vrt = self.vrt.get_super_vrt()
             src = [{
@@ -1274,6 +1280,7 @@ class Nansat(Domain):
             http://www.glcf.umd.edu/data/watermask/
 
         '''
+# TODO: move to _check_watermask_data
         mod44DataExist = True
         # check if path is given in input param or in environment
         if mod44path is None:
@@ -1302,6 +1309,9 @@ class Nansat(Domain):
 
         return watermask
 
+# TODO:
+#   Move to Figure
+#   Nansat inherits from Figure
     def write_figure(self, fileName, bands=1, clim=None, addDate=False,
                      array_modfunc=None, **kwargs):
         ''' Save a raster band to a figure in graphical format.
@@ -1472,6 +1482,7 @@ class Nansat(Domain):
             self.vrt.copyproj(fileName)
         return fig
 
+#TODO: Move to Figure
     def write_geotiffimage(self, fileName, bandID=1):
         ''' Writes an 8-bit GeoTiff image for a given band.
 
@@ -1604,6 +1615,8 @@ class Nansat(Domain):
         else:
             metaReceiverVRT.SetMetadataItem(key, value)
 
+# TODO: add _get_specific_mapper(mapper_name)
+
     def _get_mapper(self, mapperName, **kwargs):
         ''' Create VRT file in memory (VSI-file) with variable mapping
 
@@ -1633,6 +1646,7 @@ class Nansat(Domain):
         NansatReadError : occurs if no mapper fits the input file
 
         '''
+# TODO: remove!
         if os.path.isfile(self.fileName):
             # Make sure file exists and can be opened for reading
             # before proceeding
@@ -1641,14 +1655,17 @@ class Nansat(Domain):
             ff = glob.glob(os.path.join(self.fileName, '*.*'))
             for f in ff:
                 test_openable(f)
+# TODO: move to init
         # lazy import of nansat mappers
         # if nansat mappers were not imported yet
         global nansatMappers
         if nansatMappers is None:
             nansatMappers = _import_mappers()
 
+# TODO: move to _get_dataset_metadata
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = None
+# TODO: use starts_with
         if self.fileName[:4] != 'http':
             try:
                 gdalDataset = gdal.Open(self.fileName)
@@ -1663,7 +1680,7 @@ class Nansat(Domain):
 
         tmpVRT = None
 
-        importErrors = []
+# TODO: move to _get_specific_mapper
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
             # get the module name
@@ -1688,6 +1705,7 @@ class Nansat(Domain):
             self.mapper = mapperName.replace('mapper_', '')
         else:
             # We test all mappers, import one by one
+            importErrors = []
             for iMapper in nansatMappers:
                 # skip non-importable mappers
                 if isinstance(nansatMappers[iMapper], tuple):
@@ -1742,6 +1760,7 @@ class Nansat(Domain):
         else:
             return val
 
+# TODO: make public (leave private method and raise warning)
     def _get_band_number(self, bandID):
         '''Return absolute band number
 
