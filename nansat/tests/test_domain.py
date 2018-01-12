@@ -80,6 +80,11 @@ class DomainTest(unittest.TestCase):
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    ext="-te 25 70 35 72 -ts 2000 2000")
 
+    def test_init_use_AutoCreateWarpedVRT_to_determine_bounds(self):
+        d = Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
+        self.assertEqual(type(d), Domain)
+
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
