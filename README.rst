@@ -1,6 +1,6 @@
 |Build Status| |Coverage Status| |DOI|
 
-.. figure:: nansat_logo_transp.png
+.. figure:: https://github.com/nansencenter/nansat/blob/develop/nansat_logo_transp.png
    :alt: NANSAT
 
 Nansat
