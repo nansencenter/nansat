@@ -5,8 +5,8 @@
    :width: 250px
    :target: https://github.com/nansencenter/nansat
 
-About Nansat
-------------
+About
+-----
 
 **Nansat** is a scientist friendly Python toolbox for processing 2D
 satellite earth observation data.
