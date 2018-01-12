@@ -18,7 +18,7 @@ The main **goal** of Nansat is to facilitate:
 -  efficient operational processing.
 
 We appreciate acknowledments of Nansat. Please add "The image analysis
-was performed with the open-source NanSat
+was performed with the open-source Nansat
 (https://github.com/nansencenter/nansat) python package" (or equivalent)
 if you use Nansat in scientific publications.
 
