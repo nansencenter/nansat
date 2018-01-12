@@ -36,6 +36,7 @@ from nansat.nsr import NSR
 from nansat.vrt import VRT
     
 
+# TODO: Domain varname convention
 class Domain(object):
     '''Container for geographical reference of a raster
 
@@ -115,6 +116,7 @@ class Domain(object):
             Grid with longitudes
         name : string, optional
             Name to be added to the Domain object
+        # TODO: Bug! default=None
         logLevel : int, optional, default=30
             level of logging
 
@@ -139,6 +141,7 @@ class Domain(object):
 
         '''
         # set default attributes
+        # TODO: I would run the logger like a separate function
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
 
@@ -184,6 +187,7 @@ class Domain(object):
                 extentDic = self._convert_extentDic(srs, extentDic)
 
             # get size/extent from the created extet dictionary
+            # TODO: _get_geotransform should return a list!
             [geoTransform,
              rasterXSize, rasterYSize] = self._get_geotransform(extentDic)
             # create VRT object with given geo-reference parameters
@@ -277,6 +281,8 @@ class Domain(object):
              or kmlFileName(%s) are wrong' % (xmlFileName, kmlFileName))
 
         # open KML, write header
+        # TODO: Hardkode of constants inside of the function
+        # TODO: To many runs of one function! Can we run that once for whole strings?
         kmlFile = file(kmlFileName, 'wt')
         kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
@@ -342,6 +348,7 @@ class Domain(object):
                               % (kmlFigureName))
 
         # open KML, write header
+        # TODO: Hardkode and duplication (from write klm function) of constants inside of the function
         kmlFile = file(kmlFileName, 'wt')
         kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
@@ -391,6 +398,7 @@ class Domain(object):
             grid with latitudes
         '''
 
+        # TODO: X, Y are not constant!
         X = range(0, self.vrt.dataset.RasterXSize, stepSize)
         Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
         Xm, Ym = np.meshgrid(X, Y)
@@ -398,6 +406,7 @@ class Domain(object):
         if len(self.vrt.geolocationArray.d) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
+            # TODO: lat, lon name convention
             lon, lat = self.vrt.geolocationArray.get_geolocation_grids()
             longitude, latitude = lon[Ym, Xm], lat[Ym, Xm]
         else:
@@ -434,6 +443,7 @@ class Domain(object):
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
+        # TODO: Make DRY
         x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0],
                                              extentDic['lle'][3])
         x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2],
@@ -483,6 +493,7 @@ class Domain(object):
         extentDic = {}
 
         # Find -re text
+        # TODO: 4 time duplication of ~same function
         str_tr = re.findall('-tr\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
                             extentString)
         if str_tr != []:
@@ -614,8 +625,10 @@ class Domain(object):
         '''
         # prepare vectors with pixels and lines for upper, left, lower
         # and right borders
+        # TODO: Attention
         sizes = [self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize]
 
+        # TODO: Bad names
         rcVector1 = [[], []]
         rcVector2 = [[], []]
         # loop for pixels and lines
@@ -647,6 +660,7 @@ class Domain(object):
 
         # convert Border coordinates into KML-like string
         coordinates = ''
+        # TODO: template?
         for lon, lat in zip(domainLon, domainLat):
             coordinates += '%f,%f,0 ' % (lon, lat)
 
@@ -684,6 +698,7 @@ class Domain(object):
         now since this may cause other problems...
         '''
         warnings.warn("> 180 deg correction to longitudes - disabled..")
+        # TODO: Old code
         ## apply > 180 deg correction to longitudes
         #for ilon, lon in enumerate(lonList):
         #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
@@ -815,6 +830,7 @@ class Domain(object):
         # Estimate pixel size in center of domain using haversine formula
         centerCol = round(self.vrt.dataset.RasterXSize/2)
         centerRow = round(self.vrt.dataset.RasterYSize/2)
+        # TODO: Bad names
         lon00, lat00 = self.transform_points([centerCol], [centerRow])
         lon01, lat01 = self.transform_points([centerCol], [centerRow + 1])
         lon10, lat10 = self.transform_points([centerCol + 1], [centerRow])
