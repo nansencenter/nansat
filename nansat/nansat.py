@@ -1684,9 +1684,7 @@ class Nansat(Domain):
         if mapperName is not '':
             # If a specific mapper is requested, we test only this one.
             # get the module name
-            mapperName = 'mapper_' + mapperName.replace('mapper_',
-                                                        '').replace('.py',
-                                                                    '').lower()
+            mapperName = 'mapper_' + mapperName.replace('mapper_', '').replace('.py', '').lower()
             # check if the mapper is available
             if mapperName not in nansatMappers:
                 raise OptionError('Mapper ' + mapperName + ' not found')
@@ -1717,8 +1715,7 @@ class Nansat(Domain):
 
                 # show all ImportError warnings before trying generic_mapper
                 if iMapper == 'mapper_generic' and len(importErrors) > 0:
-                    self.logger.error('\nWarning! '
-                                      'The following mappers failed:')
+                    self.logger.error('\nWarning! The following mappers failed:')
                     for ie in importErrors:
                         self.logger.error(importErrors)
 
@@ -1734,6 +1731,7 @@ class Nansat(Domain):
                 except WrongMapperError:
                     pass
 
+# TODO: Remove. Pure bands should be created by the generic mapper (fix it).
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
             self.logger.warning('No mapper fits, returning GDAL bands!')
@@ -1744,6 +1742,7 @@ class Nansat(Domain):
                 tmpVRT.dataset.FlushCache()
             self.mapper = 'gdal_bands'
 
+# TODO: Remove. Test only if tmpVRT is None: rase NansatReadError
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
             # check if given data file exists
@@ -1754,6 +1753,7 @@ class Nansat(Domain):
 
         return tmpVRT
 
+# TODO: remove?
     def _get_pixelValue(self, val, defVal):
         if val == '':
             return defVal
@@ -1861,6 +1861,7 @@ class Nansat(Domain):
         if data is not None:
             bandNames.append('input')
 
+# TODO: move to _get_pix_lin_vectors
         # if points in degree, convert them into pix/lin
         if lonlat:
             pix, lin = self.transform_points(points[0], points[1], DstToSrc=1)
@@ -1903,13 +1904,14 @@ class Nansat(Domain):
 
         # mask for extraction within circular area
         xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
-        distance = ((xgrid - smoothRadius) ** 2 +
-                    (ygrid - smoothRadius) ** 2) ** 0.5
+        distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
         mask = distance <= smoothRadius
 
+# TODO: remove if
         # get values from bands or input data
         if len(bandNames) > 0:
             for bandName in bandNames:
+# TODO: move to _extract_transect_data(self, bandName)
                 if bandName == 'input':
                     bandArray = data
                 else:
@@ -1974,6 +1976,7 @@ class Nansat(Domain):
         extent = n.crop_interactive(band=1,cmap=cm.gray)
 
         '''
+# TODO: move maxwidth to arguments
         maxwidth = 1000
         resized = False
         if self.shape()[1] > maxwidth:
@@ -1989,16 +1992,29 @@ class Nansat(Domain):
               self.undo()
            return
 
+        # TODO: check standards wrt such function. What are the best practices?
+        # TODO: check independent view
+        def get_offset_size(i, points, factor):
+            offset = round(points.min(axis=1)[i] / factor)
+            size = round((points.max(axis=1)[i] - offset) / factor)
+            return offset, size
+        x_offset, x_size = get_offset_size(0, points, factor)
+        y_offset, y_size = get_offset_size(1, points, factor)
+        """
         xOff = round(points.min(axis=1)[0] / factor)
         yOff = round(points.min(axis=1)[1] / factor)
         xSize = round((points.max(axis=1)[0] - xOff) / factor)
         ySize = round((points.max(axis=1)[1] - yOff) / factor)
+        """
+
         if resized:
             self.undo()
 
-        return self.crop(xOff, yOff, xSize, ySize)
+        return self.crop(x_offset, y_offset, x_size, y_size)
+
 
     def crop_lonlat(self, lonlim, latlim):
+# TODO: fix doctring, add lonlim, latlim
         ''' Crop Nansat object to fit into given longitude/latitude limit
         Modifies
         --------
@@ -2019,10 +2035,8 @@ class Nansat(Domain):
         extent = n.crop(lonlim=[-10,10], latlim=[-20,20])
 
         '''
-        crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0],
-                                                lonlim[1], lonlim[1]],
-                                               [latlim[0], latlim[1],
-                                                latlim[0], latlim[1]], 1)
+        crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0], lonlim[1], lonlim[1]],
+                                               [latlim[0], latlim[1], latlim[0], latlim[1]], 1)
         xOff = round(min(crnPix))
         yOff = round(min(crnLin))
         xSize = round(max(crnPix) - min(crnPix))
@@ -2067,6 +2081,7 @@ class Nansat(Domain):
             extent = n.crop(10, 20, 100, 200)
 
         '''
+# TODO: move to _get_correct_offsets, DRY X/Y
         RasterXSize = self.vrt.dataset.RasterXSize
         RasterYSize = self.vrt.dataset.RasterYSize
 
@@ -2113,6 +2128,7 @@ class Nansat(Domain):
         xml = self.vrt.read_xml()
         node0 = Node.create(xml)
 
+# TODO: Move to _make_cropped_node, DRY X/Y
         # change size
         node0.node('VRTDataset').replaceAttribute('rasterXSize', str(xSize))
         node0.node('VRTDataset').replaceAttribute('rasterYSize', str(ySize))
@@ -2139,14 +2155,12 @@ class Nansat(Domain):
         # modify GCPs or GeoTranfrom to fit the new shape of image
         gcps = self.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
+# TODO: move to _update_cropped_gcps
             dstGCPs = []
             i = 0
             # keep current GCPs
             for igcp in gcps:
-                if (0 < igcp.GCPPixel - xOff and
-                        igcp.GCPPixel - xOff < xSize and
-                        0 < igcp.GCPLine - yOff and
-                        igcp.GCPLine - yOff < ySize):
+                if (0 < igcp.GCPPixel - xOff < xSize and 0 < igcp.GCPLine - yOff < ySize):
                     i += 1
                     dstGCPs.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
                                             igcp.GCPPixel - xOff,
@@ -2208,14 +2222,14 @@ def _import_mappers(logLevel=None):
     import nansat.mappers
     mappersPackages = [nansat.mappers]
 
+# TODO: add exception
     # import user-defined mappers (if any)
     try:
         import nansat_mappers
     except:
         pass
     else:
-        logger.info('User defined mappers found in %s'
-                    % nansat_mappers.__path__)
+        logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
         mappersPackages = [nansat_mappers, nansat.mappers]
 
     # create ordered dict for mappers
@@ -2224,8 +2238,7 @@ def _import_mappers(logLevel=None):
     for mappersPackage in mappersPackages:
         logger.debug('From package: %s' % mappersPackage.__path__)
         # scan through modules and load all modules that contain class Mapper
-        for finder, name, ispkg in (pkgutil.
-                                    iter_modules(mappersPackage.__path__)):
+        for finder, name, ispkg in (pkgutil.iter_modules(mappersPackage.__path__)):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
             # try to import mapper module
@@ -2234,8 +2247,7 @@ def _import_mappers(logLevel=None):
             except ImportError:
                 # keep ImportError instance instead of the mapper
                 exc_info = sys.exc_info()
-                logger.error('Mapper %s could not be imported'
-                             % name, exc_info=exc_info)
+                logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
                 nansatMappers[name] = exc_info
             else:
                 # add the imported mapper to nansatMappers

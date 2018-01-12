@@ -24,7 +24,7 @@ from nansat.nsr import NSR
 from nansat.vrt import VRT, GeolocationArray
 from nansat.tools import gdal, WrongMapperError, parse_time
 
-
+# TODO: remove WrongMapperError
 class Mapper(VRT):
     def __init__(self, inputFileName, gdalDataset, gdalMetadata, logLevel=30,
                  rmMetadatas=['NETCDF_VARNAME', '_Unsigned',
