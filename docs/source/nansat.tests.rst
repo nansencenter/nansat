@@ -28,26 +28,10 @@ nansat\.tests\.test\_figure module
     :undoc-members:
     :show-inheritance:
 
-nansat\.tests\.test\_mosaic module
-----------------------------------
-
-.. automodule:: nansat.tests.test_mosaic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.tests\.test\_nansat module
 ----------------------------------
 
 .. automodule:: nansat.tests.test_nansat
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-nansat\.tests\.test\_nansatmap module
--------------------------------------
-
-.. automodule:: nansat.tests.test_nansatmap
     :members:
     :undoc-members:
     :show-inheritance:

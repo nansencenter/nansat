@@ -444,14 +444,6 @@ nansat\.mappers\.mapper\_sentinel1\_l2 module
     :undoc-members:
     :show-inheritance:
 
-nansat\.mappers\.mapper\_smos\_mat module
------------------------------------------
-
-.. automodule:: nansat.mappers.mapper_smos_mat
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.mappers\.mapper\_viirs\_l1 module
 -----------------------------------------
 
