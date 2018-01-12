@@ -91,8 +91,13 @@ Fore more information see
 notebooks for `Nansat
 lectures <https://github.com/nansencenter/nansat-lectures/tree/master/notebooks>`__
 
+License
+-------
+
+The project is licensed under the GNU general public license version 3.
+
 Acknowledgements
-~~~~~~~~~~~~~~~~
+----------------
 
 Development is supported by the Research Council of Norway as a part of
 `NORMAP <https://normap.nersc.no/>`__ project (grant no. 195397/V30).
