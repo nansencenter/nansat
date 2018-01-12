@@ -156,14 +156,6 @@ nansat\.mappers\.mapper\_generic module
     :undoc-members:
     :show-inheritance:
 
-nansat\.mappers\.mapper\_geostationary module
----------------------------------------------
-
-.. automodule:: nansat.mappers.mapper_geostationary
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.mappers\.mapper\_globcolour\_l3b module
 -----------------------------------------------
 

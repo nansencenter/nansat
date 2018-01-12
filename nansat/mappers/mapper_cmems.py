@@ -9,20 +9,22 @@ from nansat.tools import WrongMapperError
 
 
 # Dictionary with mappings of GCMD metadata keywords:
-gcmd_keywords_mapping = {
-    'MERCATOR PSY4QV3R1': {
-        'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
-        'platform': json.dumps(pti.get_gcmd_platform('models')),
-    },
-    'NERSC-HYCOM model fields': {
-        'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
-        'platform': json.dumps(pti.get_gcmd_platform('models')),
-    },
-    'MERCATOR BIOMER4V1R2': {
-        'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
-        'platform': json.dumps(pti.get_gcmd_platform('models')),
-    },
-}
+def get_gcmd_keywords_mapping():
+    gcmd_keywords_mapping = {
+        'MERCATOR PSY4QV3R1': {
+            'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
+            'platform': json.dumps(pti.get_gcmd_platform('models')),
+        },
+        'NERSC-HYCOM model fields': {
+            'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
+            'platform': json.dumps(pti.get_gcmd_platform('models')),
+        },
+        'MERCATOR BIOMER4V1R2': {
+            'instrument': json.dumps(pti.get_gcmd_instrument('computer')),
+            'platform': json.dumps(pti.get_gcmd_platform('models')),
+        },
+    }
+    return gcmd_keywords_mapping 
 
 class Mapper(NetcdfCF):
 
@@ -31,6 +33,7 @@ class Mapper(NetcdfCF):
         filename = args[0]
         gdal_metadata = self._remove_strings_in_metadata_keys(args[2])
 
+        gcmd_keywords_mapping = get_gcmd_keywords_mapping()
         for key, val in gcmd_keywords_mapping.iteritems():
             if (gdal_metadata.has_key('source') and key in
                     gdal_metadata['source']):

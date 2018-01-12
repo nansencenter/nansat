@@ -33,7 +33,8 @@ sys.path.insert(0, os.path.abspath('..'))
 ##MOCK_MODULES = []  
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-autodoc_mock_imports = ['gdal', 'osr', 'ogr', 'netCDF4', 'numpy', 'scipy']
+autodoc_mock_imports = ['osgeo', 'gdal', 'osr', 'ogr', 'netCDF4', 'numpy', 'scipy', \
+        'dateutil', 'pythesint', 'PIL', 'Pillow', '_pixfun', 'nansat._pixfun']
 
 # -- General configuration ------------------------------------------------
 
