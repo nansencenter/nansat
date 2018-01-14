@@ -34,6 +34,7 @@ from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
+from nansat.geolocation_array import GeolocationArray
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
 from nansat.tools import parse_time, test_openable
@@ -480,15 +481,15 @@ class Nansat(Domain):
 
 # TODO: move to Exporter._add_geolocation_bands and DRY X/Y
         # add bands with geolocation arrays to the VRT
-        if addGeolocArray and len(exportVRT.geolocationArray.d) > 0:
+        if addGeolocArray and len(exportVRT.geolocationArray.data) > 0:
             exportVRT._create_band(
-                {'SourceFilename': self.vrt.geolocationArray.d['X_DATASET'],
-                 'SourceBand': int(self.vrt.geolocationArray.d['X_BAND'])},
+                {'SourceFilename': self.vrt.geolocationArray.data['X_DATASET'],
+                 'SourceBand': int(self.vrt.geolocationArray.data['X_BAND'])},
                 {'wkv': 'longitude',
                  'name': 'GEOLOCATION_X_DATASET'})
             exportVRT._create_band(
-                {'SourceFilename': self.vrt.geolocationArray.d['Y_DATASET'],
-                 'SourceBand': int(self.vrt.geolocationArray.d['Y_BAND'])},
+                {'SourceFilename': self.vrt.geolocationArray.data['Y_DATASET'],
+                 'SourceBand': int(self.vrt.geolocationArray.data['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 

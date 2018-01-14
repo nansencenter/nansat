@@ -15,7 +15,8 @@ except:
 else:
     IMPORT_SCIPY = True
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
+from nansat.geolocation_array import GeolocationArray
 from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 
 
@@ -487,14 +488,14 @@ class Envisat(object):
                                    step)
 
         # Add geolocation domain metadata to the dataset
-        self.add_geolocationArray(GeolocationArray(xVRT=xyVRTs[0],
-                                  yVRT=xyVRTs[1],
-                                  xBand=1, yBand=1,
+        self.add_geolocationArray(GeolocationArray(x_vrt=xyVRTs[0],
+                                  y_vrt=xyVRTs[1],
+                                  x_band=1, y_band=1,
                                   srs=gdalDataset.GetGCPProjection(),
-                                  lineOffset=0,
-                                  lineStep=step,
-                                  pixelOffset=0,
-                                  pixelStep=step))
+                                  line_offset=0,
+                                  line_step=step,
+                                  pixel_offset=0,
+                                  pixel_step=step))
 
 
 #m = MERIS()

@@ -401,7 +401,7 @@ class Domain(object):
         Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
         Xm, Ym = np.meshgrid(X, Y)
 
-        if len(self.vrt.geolocationArray.d) > 0:
+        if len(self.vrt.geolocationArray.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
             # TODO: lat, lon name convention
