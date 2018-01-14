@@ -266,7 +266,7 @@ class Mapper(OBPGL2BaseClass):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
-        self.remove_geolocationArray()
+        self._remove_geolocation_array()
 
         # reproject GCPs
         center_lon /= k

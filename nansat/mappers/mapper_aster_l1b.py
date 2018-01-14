@@ -110,4 +110,4 @@ class Mapper(HDF4Mapper):
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
-        self.remove_geolocationArray()
+        self._remove_geolocation_array()

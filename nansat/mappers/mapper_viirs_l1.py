@@ -83,7 +83,7 @@ class Mapper(VRT):
         yVRTArray = gaussian_filter(yVRTArray, 5).astype('float32')
         yVRT = VRT(array=yVRTArray)
 
-        #self.add_geolocationArray(GeolocationArray(xDatasetSource,
+        #self._add_geolocation_array(GeolocationArray(xDatasetSource,
         #                                           yDatasetSource))
         #"""
         # estimate pixel/line step
@@ -122,5 +122,5 @@ class Mapper(VRT):
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
         # remove geolocation array
-        self.remove_geolocationArray()
+        self._remove_geolocation_array()
         #"""

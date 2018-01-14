@@ -201,7 +201,7 @@ class Mapper(VRT):
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
-            self.add_geolocationArray(GeolocationArray(xDatasetSource,
+            self._add_geolocation_array(GeolocationArray(xDatasetSource,
                                                        yDatasetSource))
 
         elif not gcps:

@@ -230,7 +230,7 @@ class VRT(object):
                                                      srcRasterYSize,
                                                      bands=0)
             else:
-                self.create_dataset_from_array(array)
+                self._dataset_from_array(array)
 
             # set geo-metadata in the VRT dataset
             self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
@@ -246,9 +246,9 @@ class VRT(object):
 
         # add geolocation array from input or from source data
         if geolocationArray is None:
-            self.add_geolocationArray(srcGeolocationArray)
+            self._add_geolocation_array(srcGeolocationArray)
         else:
-            self.add_geolocationArray(geolocationArray)
+            self._add_geolocation_array(geolocationArray)
 
         # add self.fileName to metadata
         self.dataset.SetMetadataItem('fileName', self.fileName)
@@ -270,6 +270,12 @@ class VRT(object):
             gdal.Unlink(self.fileName.replace('vrt', 'raw'))
         except:
             pass
+
+    def __repr__(self):
+        strOut = os.path.split(self.fileName)[1]
+        if self.vrt is not None:
+            strOut += '=>%s' % self.vrt.__repr__()
+        return strOut
 
 # TODO: add extension to mkstemp
     def _make_filename(self, extention='vrt', nomem=False):
@@ -668,14 +674,7 @@ class VRT(object):
 
         return gdal_metadata
 
-# TODO:
-#   Private method?
-    def sub_filenames(self, gdal_dataset):
-        # Get filenames of subdatasets
-        sub_datasets = gdal_dataset.GetSubDatasets()
-        return [f[0] for f in sub_datasets]
-
-    def create_dataset_from_array(self, array):
+    def _dataset_from_array(self, array):
         '''Create a dataset with a band from an array
 
         Write contents of the array into flat binary file (VSI)
@@ -742,6 +741,199 @@ class VRT(object):
             LineOffset=lineOffset)
         # write XML contents to
         self.write_xml(contents)
+
+    def _add_geolocation_array(self, geolocationArray=None):
+        ''' Add GEOLOCATION ARRAY to the VRT
+
+        Parameters
+        -----------
+        geolocationArray: GeolocationArray object
+
+        Modifes
+        --------
+        Add geolocationArray to self
+        Sets GEOLOCATION ARRAY metadata
+
+        '''
+        if geolocationArray is None:
+            geolocationArray = GeolocationArray()
+        self.geolocationArray = geolocationArray
+
+        # add GEOLOCATION ARRAY metadata  if geolocationArray is not empty
+        if len(geolocationArray.data) > 0:
+            self.dataset.SetMetadata(geolocationArray.data, 'GEOLOCATION')
+
+    def _remove_geolocation_array(self):
+        ''' Remove GEOLOCATION ARRAY from the VRT
+
+        Modifes
+        --------
+        Set self.geolocationArray to None
+        Sets GEOLOCATION ARRAY metadata to ''
+
+        '''
+        self.geolocationArray.data = dict()
+
+        # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
+        self.dataset.SetMetadata('', 'GEOLOCATION')
+
+    def _remove_geotransform(self):
+        '''Remove GeoTransfomr from VRT Object
+
+        Modifies
+        ---------
+        The tag <GeoTransform> is revoved from the VRT-file
+
+        '''
+        # read XML content from VRT
+        tmpVRTXML = self.read_xml()
+        # find and remove GeoTransform
+        node0 = Node.create(tmpVRTXML)
+        node0.delNode('GeoTransform')
+        # Write the modified elemements back into temporary VRT
+        self.write_xml(node0.rawxml())
+
+    def _create_fake_gcps(self, dstGCPs, dstSRS, skip_gcps):
+        '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
+
+        GCPs from a destination image (dstGCP) are converted to a gcp of source
+        image (srcGCP) this way:
+
+        srcGCPPixel = srcPixel
+        srcGCPLine = srcLine
+        srcGCPX = dstGCPPixel = f(srcSRS, dstGCPX, dstGCPY)
+        srcGCPY = dstGCPLine = f(srcSRS, dstGCPX, dstGCPY)
+
+        Parameters
+        -----------
+        gcps : list
+            GDAL GCPs
+        skip_gcps : int
+            See nansat.reproject() for explanation
+
+        Returns
+        --------
+        gcps : dict
+            {'gcps': list with GDAL GCPs, 'srs': fake stereo WKT}
+
+        '''
+        # create transformer. converts lat/lon to pixel/line of SRC image
+        srcTransformer = gdal.Transformer(self.dataset, None,
+                                          ['SRC_SRS=' + self.get_projection(),
+                                           'DST_SRS=' + dstSRS.wkt])
+
+        # create 'fake' GCPs
+        fakeGCPs = []
+        for g in dstGCPs[::skip_gcps]:
+            # transform DST lat/lon to SRC pixel/line
+            succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
+            srcPixel = point[0]
+            srcLine = point[1]
+
+            # swap coordinates in GCPs:
+            # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
+            fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine,
+                                     0, srcPixel, srcLine))
+
+        return {'gcps': fakeGCPs, 'srs': NSR('+proj=stere').wkt}
+
+    def _latlon2gcps(self, lat, lon, numOfGCPs=100):
+        ''' Create list of GCPs from given grids of latitude and longitude
+
+        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
+        Create GCPs from these pixels
+        Create latlong GCPs projection
+
+        Parameters
+        -----------
+        lat : Numpy grid
+            array of latitudes
+        lon : Numpy grid
+            array of longitudes (should be the same size as lat)
+        numOfGCPs : int, optional, default = 100
+            number of GCPs to create
+
+        Returns
+        --------
+        gcsp : List with GDAL GCPs
+
+        '''
+        # estimate step of GCPs
+        gcpSize = np.sqrt(numOfGCPs)
+        step0 = max(1, int(float(lat.shape[0]) / gcpSize))
+        step1 = max(1, int(float(lat.shape[1]) / gcpSize))
+        self.logger.debug('gcpCount: %d %d %f %d %d',
+                          lat.shape[0], lat.shape[1], gcpSize, step0, step1)
+
+        # generate list of GCPs
+        gcps = []
+        k = 0
+        for i0 in range(0, lat.shape[0], step0):
+            for i1 in range(0, lat.shape[1], step1):
+                # create GCP with X,Y,pixel,line from lat/lon matrices
+                gcp = gdal.GCP(float(lon[i0, i1]),
+                               float(lat[i0, i1]),
+                               0, i1, i0)
+                self.logger.debug('%d %d %d %f %f',
+                                  k, gcp.GCPPixel, gcp.GCPLine,
+                                  gcp.GCPX, gcp.GCPY)
+                gcps.append(gcp)
+                k += 1
+
+        return gcps
+
+# TODO:
+#   reuse _latlon2gcps: for looping over lon/lat arrays
+
+    def _geolocation_array_to_gcps(self, stepX=1, stepY=1):
+        ''' Converting geolocation arrays to GCPs, and deleting the former
+
+        When the geolocation arrays are much smaller than the raster bands,
+        warping quality is very bad. This function is a temporary solution
+        until (eventually) the problem with geolocation interpolation
+        is solved:
+        http://trac.osgeo.org/gdal/ticket/4907
+
+        Parameters
+        -----------
+        stepX : int, optional (default 1)
+        stepY : int, optional (default 1)
+            If density of GCPs is too high, warping speed increases
+            dramatically when using -tps (switch to gdalwarp).
+            stepX and stepY can be adjusted to reduce density of GCPs
+            (always keeping the ones around boundaries)
+
+        Modifies
+        ---------
+        self.GCPs are added
+        self.geolocationArray is removed
+
+        '''
+        geolocArray = self.dataset.GetMetadata('GEOLOCATION')
+        x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
+        y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
+        numy, numx = x.shape
+        PIXEL_OFFSET = int(geolocArray['PIXEL_OFFSET'])
+        PIXEL_STEP = int(geolocArray['PIXEL_STEP'])
+        LINE_OFFSET = int(geolocArray['LINE_OFFSET'])
+        LINE_STEP = int(geolocArray['LINE_STEP'])
+        pixels = np.linspace(PIXEL_OFFSET, PIXEL_OFFSET + (numx - 1) *
+                             PIXEL_STEP, numx)
+        lines = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy - 1) *
+                            LINE_STEP, numy)
+        # Make GCPs
+        GCPs = []
+        # Subsample (if requested), but use linspace to
+        # make sure endpoints are ntained
+        for p in np.around(np.linspace(0, len(pixels) - 1, numx / stepX)):
+            for l in np.around(np.linspace(0, len(lines) - 1, numy / stepY)):
+                g = gdal.GCP(float(x[l, p]), float(y[l, p]), 0,
+                             pixels[p], lines[l])
+                GCPs.append(g)
+        # Insert GCPs
+        self.dataset.SetGCPs(GCPs, geolocArray['SRS'])
+        # Delete geolocation array
+        self._add_geolocation_array()
 
     def read_xml(self, inFileName=None):
         '''Read XML content of the VRT-file
@@ -826,57 +1018,6 @@ class VRT(object):
             vrt.write_xml(vrtXML)
 
         return vrt
-
-    def add_geolocationArray(self, geolocationArray=None):
-        ''' Add GEOLOCATION ARRAY to the VRT
-
-        Parameters
-        -----------
-        geolocationArray: GeolocationArray object
-
-        Modifes
-        --------
-        Add geolocationArray to self
-        Sets GEOLOCATION ARRAY metadata
-
-        '''
-        if geolocationArray is None:
-            geolocationArray = GeolocationArray()
-        self.geolocationArray = geolocationArray
-
-        # add GEOLOCATION ARRAY metadata  if geolocationArray is not empty
-        if len(geolocationArray.data) > 0:
-            self.dataset.SetMetadata(geolocationArray.data, 'GEOLOCATION')
-
-    def remove_geolocationArray(self):
-        ''' Remove GEOLOCATION ARRAY from the VRT
-
-        Modifes
-        --------
-        Set self.geolocationArray to None
-        Sets GEOLOCATION ARRAY metadata to ''
-
-        '''
-        self.geolocationArray.data = dict()
-
-        # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
-        self.dataset.SetMetadata('', 'GEOLOCATION')
-
-    def _remove_geotransform(self):
-        '''Remove GeoTransfomr from VRT Object
-
-        Modifies
-        ---------
-        The tag <GeoTransform> is revoved from the VRT-file
-
-        '''
-        # read XML content from VRT
-        tmpVRTXML = self.read_xml()
-        # find and remove GeoTransform
-        node0 = Node.create(tmpVRTXML)
-        node0.delNode('GeoTransform')
-        # Write the modified elemements back into temporary VRT
-        self.write_xml(node0.rawxml())
 
 # TODO:
 #   split superfunctional get_warped_vrt into more specific methods
@@ -1108,7 +1249,7 @@ class VRT(object):
         self.logger.debug('# if given, add dst GeolocationArray')
         if dstGeolocationArray is not None:
             warpedVRT._remove_geotransform()
-            warpedVRT.add_geolocationArray(dstGeolocationArray)
+            warpedVRT._add_geolocation_array(dstGeolocationArray)
             warpedVRT.dataset.SetProjection('')
 
         # Copy self to warpedVRT
@@ -1124,148 +1265,6 @@ class VRT(object):
         warpedVRT.write_xml(node0.rawxml())
 
         return warpedVRT
-
-    def _create_fake_gcps(self, dstGCPs, dstSRS, skip_gcps):
-        '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
-
-        GCPs from a destination image (dstGCP) are converted to a gcp of source
-        image (srcGCP) this way:
-
-        srcGCPPixel = srcPixel
-        srcGCPLine = srcLine
-        srcGCPX = dstGCPPixel = f(srcSRS, dstGCPX, dstGCPY)
-        srcGCPY = dstGCPLine = f(srcSRS, dstGCPX, dstGCPY)
-
-        Parameters
-        -----------
-        gcps : list
-            GDAL GCPs
-        skip_gcps : int
-            See nansat.reproject() for explanation
-
-        Returns
-        --------
-        gcps : dict
-            {'gcps': list with GDAL GCPs, 'srs': fake stereo WKT}
-
-        '''
-        # create transformer. converts lat/lon to pixel/line of SRC image
-        srcTransformer = gdal.Transformer(self.dataset, None,
-                                          ['SRC_SRS=' + self.get_projection(),
-                                           'DST_SRS=' + dstSRS.wkt])
-
-        # create 'fake' GCPs
-        fakeGCPs = []
-        for g in dstGCPs[::skip_gcps]:
-            # transform DST lat/lon to SRC pixel/line
-            succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
-            srcPixel = point[0]
-            srcLine = point[1]
-
-            # swap coordinates in GCPs:
-            # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
-            fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine,
-                                     0, srcPixel, srcLine))
-
-        return {'gcps': fakeGCPs, 'srs': NSR('+proj=stere').wkt}
-
-    def _latlon2gcps(self, lat, lon, numOfGCPs=100):
-        ''' Create list of GCPs from given grids of latitude and longitude
-
-        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
-        Create GCPs from these pixels
-        Create latlong GCPs projection
-
-        Parameters
-        -----------
-        lat : Numpy grid
-            array of latitudes
-        lon : Numpy grid
-            array of longitudes (should be the same size as lat)
-        numOfGCPs : int, optional, default = 100
-            number of GCPs to create
-
-        Returns
-        --------
-        gcsp : List with GDAL GCPs
-
-        '''
-        # estimate step of GCPs
-        gcpSize = np.sqrt(numOfGCPs)
-        step0 = max(1, int(float(lat.shape[0]) / gcpSize))
-        step1 = max(1, int(float(lat.shape[1]) / gcpSize))
-        self.logger.debug('gcpCount: %d %d %f %d %d',
-                          lat.shape[0], lat.shape[1], gcpSize, step0, step1)
-
-        # generate list of GCPs
-        gcps = []
-        k = 0
-        for i0 in range(0, lat.shape[0], step0):
-            for i1 in range(0, lat.shape[1], step1):
-                # create GCP with X,Y,pixel,line from lat/lon matrices
-                gcp = gdal.GCP(float(lon[i0, i1]),
-                               float(lat[i0, i1]),
-                               0, i1, i0)
-                self.logger.debug('%d %d %d %f %f',
-                                  k, gcp.GCPPixel, gcp.GCPLine,
-                                  gcp.GCPX, gcp.GCPY)
-                gcps.append(gcp)
-                k += 1
-
-        return gcps
-
-# TODO:
-#   reuse _latlon2gcps: for looping over lon/lat arrays
-
-    def convert_GeolocationArray2GPCs(self, stepX=1, stepY=1):
-        ''' Converting geolocation arrays to GCPs, and deleting the former
-
-        When the geolocation arrays are much smaller than the raster bands,
-        warping quality is very bad. This function is a temporary solution
-        until (eventually) the problem with geolocation interpolation
-        is solved:
-        http://trac.osgeo.org/gdal/ticket/4907
-
-        Parameters
-        -----------
-        stepX : int, optional (default 1)
-        stepY : int, optional (default 1)
-            If density of GCPs is too high, warping speed increases
-            dramatically when using -tps (switch to gdalwarp).
-            stepX and stepY can be adjusted to reduce density of GCPs
-            (always keeping the ones around boundaries)
-
-        Modifies
-        ---------
-        self.GCPs are added
-        self.geolocationArray is removed
-
-        '''
-        geolocArray = self.dataset.GetMetadata('GEOLOCATION')
-        x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
-        y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
-        numy, numx = x.shape
-        PIXEL_OFFSET = int(geolocArray['PIXEL_OFFSET'])
-        PIXEL_STEP = int(geolocArray['PIXEL_STEP'])
-        LINE_OFFSET = int(geolocArray['LINE_OFFSET'])
-        LINE_STEP = int(geolocArray['LINE_STEP'])
-        pixels = np.linspace(PIXEL_OFFSET, PIXEL_OFFSET + (numx - 1) *
-                             PIXEL_STEP, numx)
-        lines = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy - 1) *
-                            LINE_STEP, numy)
-        # Make GCPs
-        GCPs = []
-        # Subsample (if requested), but use linspace to
-        # make sure endpoints are ntained
-        for p in np.around(np.linspace(0, len(pixels) - 1, numx / stepX)):
-            for l in np.around(np.linspace(0, len(lines) - 1, numy / stepY)):
-                g = gdal.GCP(float(x[l, p]), float(y[l, p]), 0,
-                             pixels[p], lines[l])
-                GCPs.append(g)
-        # Insert GCPs
-        self.dataset.SetGCPs(GCPs, geolocArray['SRS'])
-        # Delete geolocation array
-        self.add_geolocationArray()
 
     def copyproj(self, fileName):
         ''' Copy geoloctation data from given VRT to a figure file
@@ -1314,67 +1313,6 @@ class VRT(object):
         bandNums.sort(reverse=True)
         for iBand in bandNums:
             self.delete_band(iBand)
-
-    def set_subsetMask(self, maskDs, xOff, yOff, dstXSize, dstYSize):
-        ''' Add maskband and modify xml to proper size
-
-        Parameters
-        ----------
-        maskDs : dataset
-            gdal dataset (mask)
-        xOff, yOff : int
-            offset of the subset based on the underlying dataset
-        dstXSize, dstYSize : int
-            size of the subset data
-
-        '''
-        # create empty maskband
-        self.dataset.CreateMaskBand(gdal.GMF_PER_DATASET)
-        self.dataset = self.vrtDriver.CreateCopy(self.fileName, self.dataset)
-
-        # get source bandsize
-        srcXSize = self.dataset.RasterXSize
-        srcYSize = self.dataset.RasterYSize
-
-        # read xml and create the node
-        XML = self.read_xml()
-        node0 = Node.create(XML)
-
-        # replace the rastersize to the masked raster size
-        node0.replaceAttribute('rasterXSize', str(dstXSize))
-        node0.replaceAttribute('rasterYSize', str(dstYSize))
-
-        # replace source band data to masked band data
-        for iNode in node0.nodeList('VRTRasterBand'):
-            node1 = iNode.node('ComplexSource').node('SrcRect')
-            node1.replaceAttribute('xOff', str(xOff))
-            node1.replaceAttribute('yOff', str(yOff))
-            node1.replaceAttribute('xSize', str(dstXSize))
-            node1.replaceAttribute('ySize', str(dstYSize))
-            node1 = iNode.node('ComplexSource').node('DstRect')
-            node1.replaceAttribute('xSize', str(dstXSize))
-            node1.replaceAttribute('ySize', str(dstYSize))
-
-        # create contents for mask band
-        contents = self.ComplexSource.substitute(
-            SourceType='SimpleSource',
-            Dataset=maskDs.GetDescription(),
-            SourceBand='mask,1',
-            NODATA='',
-            ScaleOffset='',
-            ScaleRatio='',
-            LUT='',
-            srcXSize=srcXSize,
-            srcYSize=srcYSize,
-            dstXSize=dstXSize,
-            dstYSize=dstYSize)
-
-        # add mask band contents to xml
-        node1 = node0.node('MaskBand').node('VRTRasterBand').insert(contents)
-        node0.replaceNode('VRTRasterBand', 0, node1)
-
-        # write contents
-        self.write_xml(node0.rawxml())
 
     def get_shifted_vrt(self, shiftDegree):
         ''' Roll data in bands westwards or eastwards
@@ -1486,12 +1424,6 @@ class VRT(object):
 
         # return restored sub-VRT
         return self.vrt.get_sub_vrt(steps)
-
-    def __repr__(self):
-        strOut = os.path.split(self.fileName)[1]
-        if self.vrt is not None:
-            strOut += '=>%s' % self.vrt.__repr__()
-        return strOut
 
     def get_super_vrt(self):
         '''Create vrt with subVRT

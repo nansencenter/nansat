@@ -488,7 +488,7 @@ class Envisat(object):
                                    step)
 
         # Add geolocation domain metadata to the dataset
-        self.add_geolocationArray(GeolocationArray(x_vrt=xyVRTs[0],
+        self._add_geolocation_array(GeolocationArray(x_vrt=xyVRTs[0],
                                   y_vrt=xyVRTs[1],
                                   x_band=1, y_band=1,
                                   srs=gdalDataset.GetGCPProjection(),

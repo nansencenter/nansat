@@ -152,7 +152,7 @@ class Mapper(VRT):
         # are here converted to GCPs. Only a subset of GCPs is added,
         # significantly increasing speed when using -tps warping
         reductionFactor = 2
-        self.convert_GeolocationArray2GPCs(1 * reductionFactor,
+        self._geolocation_array_to_gcps(1 * reductionFactor,
                                            40 * reductionFactor)
 
         ##################
