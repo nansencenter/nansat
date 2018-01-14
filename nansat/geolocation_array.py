@@ -18,10 +18,7 @@ import gdal, osr
 
 from nansat.nsr import NSR
 
-# TODO: Think which variables we should rename
 
-# TODO: Think which conventional names we should use (lon, lat - OK), vrt - ?
- 
 class GeolocationArray():
     '''Container for GEOLOCATION ARRAY data
 
