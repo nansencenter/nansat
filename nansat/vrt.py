@@ -199,131 +199,12 @@ class VRT(object):
         vrt._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
 
         return vrt
-# TODO:
-# add class methods:
-#   from_gdal_dataset
-#   from_array
-# usage:
-#   new_vrt = VRT.from_array(array)
-# minimize __init__():
 
-    def __init__2(self, gdalDataset=None,
-                 array=None,
-                 srcGeoTransform=(0, 1, 0, 0, 0, 1),
-                 srcProjection='',
-                 srcRasterXSize=None,
-                 srcRasterYSize=None,
-                 srcGCPs=[],
-                 srcGCPProjection='',
-                 srcMetadata='',
-                 geolocationArray=None,
-                 nomem=False,
-                 lat=None, lon=None):
-        pass
-        """ Create VRT dataset from GDAL dataset, or from given parameters
-
-        If vrt_dataset is given, creates full copy of VRT content
-        Otherwise takes reprojection parameters (geotransform, projection, etc)
-        either from given GDAL dataset or from separate parameters.
-        Create VRT dataset (self.dataset) based on these parameters
-        Adds logger
-
-        Parameters
-        -----------
-        gdalDataset : GDAL Dataset
-            source dataset of geo-reference
-        array : Numpy array
-            source matrix with data
-        srcGeoTransform : GDALGeoTransform
-            parameter of geo-reference
-        srcProjection : GDALProjection
-            parameter of geo-reference
-        srcRasterXSize : int
-            parameter of geo-reference
-        srcRasterYSize : int
-            parameter of geo-reference
-        srcMetadata : GDAL Metadata
-            all global metadata
-        geolocationArray : GeolocationArray
-            object with info on geolocation array
-            and VRTs with x/y datasets
-        nomem : boolean, saves the vrt to a tempfile if nomem is True
-        lon : Numpy array
-            grid with longitudes
-        lat : Numpy array
-            grid with latitudes
-        band_vrts : dict
-            dictionary with VRTs that are used inside VRT
-
-        Modifies
-        ---------
-        self.fileName
-        self.dataset : GDAL VRT dataset
-        self.logger : logging logger
-
-        """
-        '''
-        # default empty geolocation array of source
-        srcGeolocationArray = GeolocationArray()
-        if gdalDataset is not None:
-        elif lat is not None and lon is not None:
-            # get geo-metadata from given lat/lon grids
-            srcRasterYSize, srcRasterXSize = lon.shape
-            srcGCPs = self._latlon2gcps(lat, lon)
-            srcGCPProjection = NSR().wkt
-            latVRT = VRT(array=lat)
-            lonVRT = VRT(array=lon)
-            # create source geolocation array
-            srcGeolocationArray = GeolocationArray(x_vrt=lonVRT,
-                                                   y_vrt=latVRT)
-
-        # create VRT dataset (empty or with a band from array)
-        if array is None:
-            self.dataset = self.vrt_driver.Create(self.fileName,
-                                                 srcRasterXSize,
-                                                 srcRasterYSize,
-                                                 bands=0)
-        else:
-            self._dataset_from_array(array)
-
-        # set geo-metadata in the VRT dataset
-        self.dataset.SetGCPs(srcGCPs, srcGCPProjection)
-        self.dataset.SetProjection(srcProjection)
-        self.dataset.SetGeoTransform(srcGeoTransform)
-
-        # set source metadata corrected for potential Unicode
-        if type(srcMetadata) is dict:
-            for key in srcMetadata.keys():
-                srcMetadata[key] = srcMetadata[key].encode('ascii',
-                                                           'ignore')
-            self.dataset.SetMetadata(srcMetadata)
-
-        # add geolocation array from input or from source data
-        if geolocationArray is None:
-            self._add_geolocation_array(srcGeolocationArray)
-        else:
-            self._add_geolocation_array(geolocationArray)
-
-        # add self.fileName to metadata
-        self.dataset.SetMetadataItem('fileName', self.fileName)
-
-        # write file contents
-        self.dataset.FlushCache()
-
-        self.logger.debug('VRT self.dataset: %s' % self.dataset)
-        self.logger.debug('VRT description: %s'
-                          % self.dataset.GetDescription())
-        self.logger.debug('VRT RasterXSize %d' % self.dataset.RasterXSize)
-        self.logger.debug('VRT RasterYSize %d' % self.dataset.RasterYSize)
-        '''
-# TODO: fix except
     def __del__(self):
         """ Destructor deletes VRT and RAW files"""
-        try:
-            gdal.Unlink(self.fileName)
-            gdal.Unlink(self.fileName.replace('vrt', 'raw'))
-        except:
-            pass
+        self.dataset = None
+        gdal.Unlink(self.fileName)
+        gdal.Unlink(self.fileName.replace('vrt', 'raw'))
 
     def __repr__(self):
         strOut = os.path.split(self.fileName)[1]
@@ -1041,19 +922,12 @@ class VRT(object):
         """Export VRT file as XML into given <fileName>"""
         self.vrt_driver.CreateCopy(fileName, self.dataset)
 
-    '''def copy(self):
+    def copy(self):
         """Creates a full copy of a VRT instance"""
-        vrt = VRT.__new__(VRT)
-        vrt.logger = add_logger('Nansat')
-        vrt.fileName = vrt._make_filename()
-        vrt.dataset = self.vrt_driver.CreateCopy(vrt.fileName, self.dataset)
-        vrt.geolocationArray = GeolocationArray(dataset=self.dataset)
-
-        # add band_vrts: dictionary with several VRTs generated in mappers
-        # or with added bands
-        vrt.band_vrts = self.band_vrts
-
-        # set TPS flag
+        vrt = VRT()
+        vrt.dataset = self.driver.CreateCopy(vrt.fileName, self.dataset)
+        vrt.geolocation = Geolocation.from_dataset(self.dataset)
+        vrt.band_vrts = dict(self.band_vrts)
         vrt.tps = bool(self.tps)
 
         # iterative copy of self.vrt
@@ -1064,7 +938,7 @@ class VRT(object):
                                     os.path.split(vrt.vrt.fileName)[1])
             vrt.write_xml(vrtXML)
 
-        return vrt'''
+        return vrt
 
 # TODO:
 #   split superfunctional get_warped_vrt into more specific methods
@@ -1218,7 +1092,7 @@ class VRT(object):
 
         # create VRT object from Warped VRT GDAL Dataset
         self.logger.debug('create VRT object from Warped VRT GDAL Dataset')
-        warpedVRT = VRT(vrt_dataset=warpedVRT)
+        warpedVRT = warpedVRT.copy()
 
         # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
@@ -1380,7 +1254,7 @@ class VRT(object):
 
         """
         # Copy self into self.vrt
-        shiftVRT = VRT(gdalDataset=self.dataset)
+        shiftVRT = VRT.from_gdal_dataset(self.dataset)
         shiftVRT.vrt = self.copy()
 
         if shiftDegree < 0:
@@ -1480,7 +1354,7 @@ class VRT(object):
         """
 
         # create new self
-        superVRT = VRT(gdalDataset=self.dataset)
+        superVRT = VRT.from_gdal_dataset(self.dataset)
         superVRT.vrt = self.copy()
         superVRT.tps = self.tps
 

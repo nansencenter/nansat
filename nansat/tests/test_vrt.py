@@ -30,6 +30,15 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)
 
+    def test_del(self):
+        vrt = VRT()
+        filename_vrt = vrt.fileName
+        filename_raw = vrt.fileName.replace('.vrt', '.raw')
+        vrt = None
+        
+        self.assertEqual(gdal.Unlink(filename_vrt), -1)
+        self.assertEqual(gdal.Unlink(filename_raw), -1)
+
     def test_init_nomem(self):
         vrt = VRT(nomem=True)
 
@@ -45,7 +54,6 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt.fileName, str)
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
-        
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file)
@@ -57,11 +65,14 @@ class VRTTest(unittest.TestCase):
                                       ds.GetGCPProjection(),
                                       ds.GetMetadata())
                                       
+        filename_vrt = vrt.fileName
+        filename_raw = vrt.fileName.replace('.vrt', '.raw')
         self.assertIsInstance(vrt, VRT)
-        self.assertIsInstance(vrt.fileName, str)
+        self.assertIsInstance(filename_vrt, str)
+        self.assertIsInstance(filename_raw, str)
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
-
+        
     def test_from_array(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
@@ -80,3 +91,11 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
+
+    def test_copy(self):
+        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        vrt = VRT.from_array(array)
+        vrt2 = vrt.copy()
+
+        self.assertIsInstance(vrt2, VRT)
+        self.assertIsInstance(vrt2.fileName, str)
