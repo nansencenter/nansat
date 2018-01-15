@@ -81,6 +81,16 @@ class Domain(object):
 
     """
 
+    XML_BASE = '''
+    <?xml version="1.0" encoding="UTF-8"?>
+    <kml xmlns="http://www.opengis.net/kml/2.2"
+    xmlns:gx="http://www.google.com/kml/ext/2.2"
+    xmlns:kml="http://www.opengis.net/kml/2.2"
+    xmlns:atom="http://www.w3.org/2005/Atom">
+    {content}
+    </kml>
+    '''
+
     # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
                  lat=None, name='', logLevel=None):
@@ -264,6 +274,7 @@ class Domain(object):
                                                                corners[1][3])
         return out_str
 
+    # TODO: Test requested
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         """Write KML file with domains
 
@@ -283,32 +294,26 @@ class Domain(object):
         xml_filename = xmlFileName
         kml_filename = kmlFileName
 
+        # TODO: Duplication of links in the header of the template
         template = '''
-        <?xml version="1.0" encoding="UTF-8"?>
-        <kml xmlns="http://www.opengis.net/kml/2.2"
-        xmlns:gx="http://www.google.com/kml/ext/2.2"
-        xmlns:kml="http://www.opengis.net/kml/2.2"
-        xmlns:atom="http://www.w3.org/2005/Atom">
         <Document>
-        \t<name>{klm_filename}</name>
-        \t\t<Folder><name>{klm_filename}</name><open>1</open>
+        \t<name>{filename}</name>
+        \t\t<Folder><name>{filename}</name><open>1</open>
+        {borders}
+        \t\t</Folder></Document>
         '''
+
         # test input options
         if not xml_filename and not kml_filename:
             # if only input XML-file is given - convert it to KML
 
             # open XML, get all domains
-            xml_file = open(xml_filename, 'rb')
-            kml_filename = xml_filename + '.kml'
-            xml_domains = ElementTree(file=xml_file).getroot()
-            xml_file.close()
+            with open(xml_filename, 'rb') as xml_file:
+                xml_domains = list(ElementTree(file=xml_file).getroot())
 
             # convert domains in XML into list of domains
-            domains = []
-            for xml_domain in list(xml_domains):
-                # append Domain object to domains list
-                domain_name = xml_domain.attrib['name']
-                domains.append(Domain(srs=xml_filename, ext=domain_name))
+            domains = [Domain(srs=xml_filename, ext=domain.attrib['name'])
+                       for domain in xml_domains]
 
         elif not xml_filename and kml_filename:
             # if only output KML-file is given
@@ -320,20 +325,12 @@ class Domain(object):
             raise OptionError('Either xmlFileName(%s)\
              or kmlFileName(%s) are wrong' % (xml_filename, kml_filename))
 
-        # open KML, write header
-        # TODO: Hardkode of constants inside of the function
-        # TODO: To many runs of one function! Can we run that once for whole strings?
-        kml_file = open(kml_filename, 'wt')
-        kml_file.write(template)
-
-        # get border of each domain and add to KML
-        for domain in list(domains):
-            kml_entry = domain._get_border_kml()
-            kml_file.write(kml_entry)
-
-        # write footer and close
-        kml_file.write('        </Folder></Document></kml>\n')
-        kml_file.close()
+        # get border of each domain and join them to a one string
+        borders = ''.join([domain._get_border_kml() for domain in domains])
+        # open KML, write the modified template
+        with open(kml_filename, 'wt') as kml_file:
+            xml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
+            kml_file.write(self.XML_BASE.format(xml_content))
 
     def _get_border_kml(self):
         """Generate Placemark entry for KML
