@@ -884,7 +884,7 @@ class Nansat(Domain):
         ncI.close()
 
         # Delete the temprary netCDF file
-        fid = None
+        os.close(fid)
         os.remove(tmpName)
 
         return 0
