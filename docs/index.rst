@@ -6,11 +6,28 @@
 Welcome to Nansat's documentation!
 ==================================
 
-.. include:: ../README.rst
+.. include:: ../about.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+About Nansat
+============
+
+* Background scientifics needs
+* Data formats readable with Nansat
+* Projects employing Nansat
+* How to get support
+* Contributing to Nansat
+
+User documentation
+==================
+
+* Installation
+
+Feature documentation
+=====================
 
 Developer documentation
 =======================
