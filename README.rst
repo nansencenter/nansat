@@ -1,6 +1,6 @@
 |Build Status| |Coverage Status| |DOI|
 
-.. include:: ../about.rst
+.. include:: about.rst
 
 Documentation
 -------------
@@ -8,6 +8,11 @@ Documentation
 You will find complete documentation for Nansat at `Read the Docs`_.
 
 .. _Read the Docs: http://nansat.readthedocs.io/
+
+Contributing
+------------
+
+You will find information about contributing to Nansat at our 
 
 Installation
 ------------
