@@ -206,6 +206,7 @@ class Domain(object):
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
+    # TODO: Back later
     def repr_beta(self):
         separator = '-' * 40
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)'
@@ -264,7 +265,7 @@ class Domain(object):
         return out_str
 
     def write_kml(self, xmlFileName=None, kmlFileName=None):
-        '''Write KML file with domains
+        """Write KML file with domains
 
         Convert XML-file with domains into KML-file for GoogleEarth
         or write KML-file with the current Domain
@@ -278,25 +279,28 @@ class Domain(object):
         kmlFileName : string, optional
             Name of the KML-file to generate from the current Domain
 
-        '''
+        """
+        xml_filename = xmlFileName
+        kml_filename = kmlFileName
+
         # test input options
-        if xmlFileName is not None and kmlFileName is None:
+        if not xml_filename and not kml_filename:
             # if only input XML-file is given - convert it to KML
 
             # open XML, get all domains
-            xmlFile = file(xmlFileName, 'rb')
-            kmlFileName = xmlFileName + '.kml'
-            xmlDomains = ElementTree(file=xmlFile).getroot()
-            xmlFile.close()
+            xml_file = file(xml_filename, 'rb')
+            kml_filename = xml_filename + '.kml'
+            xml_domains = ElementTree(file=xml_file).getroot()
+            xml_file.close()
 
             # convert domains in XML into list of domains
             domains = []
-            for xmlDomain in list(xmlDomains):
+            for xml_domain in list(xml_domains):
                 # append Domain object to domains list
-                domainName = xmlDomain.attrib['name']
-                domains.append(Domain(srs=xmlFileName, ext=domainName))
+                domain_name = xml_domain.attrib['name']
+                domains.append(Domain(srs=xml_filename, ext=domain_name))
 
-        elif xmlFileName is None and kmlFileName is not None:
+        elif not xml_filename and kml_filename:
             # if only output KML-file is given
             # then convert the current domain to KML
             domains = [self]
@@ -304,30 +308,30 @@ class Domain(object):
         else:
             # otherwise it is potentially error
             raise OptionError('Either xmlFileName(%s)\
-             or kmlFileName(%s) are wrong' % (xmlFileName, kmlFileName))
+             or kmlFileName(%s) are wrong' % (xml_filename, kml_filename))
 
         # open KML, write header
         # TODO: Hardkode of constants inside of the function
         # TODO: To many runs of one function! Can we run that once for whole strings?
-        kmlFile = file(kmlFileName, 'wt')
-        kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                      'xmlns:gx="http://www.google.com/kml/ext/2.2" '
-                      'xmlns:kml="http://www.opengis.net/kml/2.2" '
-                      'xmlns:atom="http://www.w3.org/2005/Atom">\n')
-        kmlFile.write('<Document>\n')
-        kmlFile.write('    <name>%s</name>\n' % kmlFileName)
-        kmlFile.write('        <Folder><name>%s</name><open>1</open>\n'
-                      % kmlFileName)
+        kml_file = file(kml_filename, 'wt')
+        kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        kml_file.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
+                       'xmlns:gx="http://www.google.com/kml/ext/2.2" '
+                       'xmlns:kml="http://www.opengis.net/kml/2.2" '
+                       'xmlns:atom="http://www.w3.org/2005/Atom">\n')
+        kml_file.write('<Document>\n')
+        kml_file.write('    <name>%s</name>\n' % kmlFileName)
+        kml_file.write('        <Folder><name>%s</name><open>1</open>\n'
+                      % kml_filename)
 
         # get border of each domain and add to KML
         for domain in list(domains):
-            kmlEntry = domain._get_border_kml()
-            kmlFile.write(kmlEntry)
+            kml_entry = domain._get_border_kml()
+            kml_file.write(kml_entry)
 
         # write footer and close
-        kmlFile.write('        </Folder></Document></kml>\n')
-        kmlFile.close()
+        kml_file.write('        </Folder></Document></kml>\n')
+        kml_file.close()
 
     def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
         '''Create KML file for already projected image
