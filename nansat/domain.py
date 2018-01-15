@@ -81,7 +81,7 @@ class Domain(object):
 
     """
 
-    XML_BASE = '''
+    KML_BASE = '''
     <?xml version="1.0" encoding="UTF-8"?>
     <kml xmlns="http://www.opengis.net/kml/2.2"
     xmlns:gx="http://www.google.com/kml/ext/2.2"
@@ -294,7 +294,6 @@ class Domain(object):
         xml_filename = xmlFileName
         kml_filename = kmlFileName
 
-        # TODO: Duplication of links in the header of the template
         template = '''
         <Document>
         \t<name>{filename}</name>
@@ -304,7 +303,7 @@ class Domain(object):
         '''
 
         # test input options
-        if not xml_filename and not kml_filename:
+        if xml_filename and not kml_filename:
             # if only input XML-file is given - convert it to KML
 
             # open XML, get all domains
@@ -329,8 +328,8 @@ class Domain(object):
         borders = ''.join([domain._get_border_kml() for domain in domains])
         # open KML, write the modified template
         with open(kml_filename, 'wt') as kml_file:
-            xml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
-            kml_file.write(self.XML_BASE.format(xml_content))
+            kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
+            kml_file.write(self.KML_BASE.format(kml_content))
 
     def _get_border_kml(self):
         """Generate Placemark entry for KML
@@ -357,7 +356,7 @@ class Domain(object):
         coordinates = ''.join(['%f,%f,0 ' % (lon, lat) for lon, lat in zip(domain_lon, domain_lat)])
         return klm_entry.format(name=self.name, coordinates=coordinates)
 
-    def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
+    def write_kml_image(self, kmlFileName, kmlFigureName=None):
         '''Create KML file for already projected image
 
         Write Domain Image into KML-file for GoogleEarth
@@ -393,43 +392,38 @@ class Domain(object):
                           kmlFigureName=figureName) # 6.
 
         '''
+
+        kml_filename = kmlFileName
+        kml_figurename = kmlFigureName
+
+        template = '''
+        <GroundOverlay>
+        \t<name>{filename}</name>
+        \t<Icon>
+        \t\t<href>{figurename}</href>
+        \t\t<viewBoundScale>0.75</viewBoundScale>
+        \t</Icon>
+        \t<LatLonBox>
+        \t\t<north>{north}</north>
+        \t\t<south>{south}</south>
+        \t\t<east>{east}</east>
+        \t\t<west>{west}</west>
+        \t</LatLonBox>
+        </GroundOverlay>
+        '''
         # test input options
-        if kmlFileName is None:
-            raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
-
-        if kmlFigureName is None:
-            raise OptionError('kmlFigureName(%s) is not specified'
-                              % (kmlFigureName))
-
-        # open KML, write header
-        # TODO: Hardkode and duplication (from write klm function) of constants inside of the function
-        kmlFile = file(kmlFileName, 'wt')
-        kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                      'xmlns:gx="http://www.google.com/kml/ext/2.2" '
-                      'xmlns:kml="http://www.opengis.net/kml/2.2" '
-                      'xmlns:atom="http://www.w3.org/2005/Atom">\n')
-        kmlFile.write('<GroundOverlay>\n')
-        kmlFile.write('    <name>%s</name>\n' % kmlFileName)
-        kmlFile.write('    <Icon>\n')
-        kmlFile.write('        <href>%s</href>\n' % kmlFigureName)
-        kmlFile.write('        <viewBoundScale>0.75</viewBoundScale>\n')
-        kmlFile.write('    </Icon>\n')
+        # TODO: kml_figurename can be not optional
+        if kml_figurename is None:
+            raise OptionError('kmlFigureName(%s) is not specified' % kmlFigureName)
 
         # get corner of the domain and add to KML
-        domainLon, domainLat = self.get_corners()
-
-        kmlFile.write('    <LatLonBox>\n')
-        kmlFile.write('        <north>%s</north>\n' % max(domainLat))
-        kmlFile.write('        <south>%s</south>\n' % min(domainLat))
-        kmlFile.write('        <east>%s</east>\n' % max(domainLon))
-        kmlFile.write('        <west>%s</west>\n' % min(domainLon))
-        kmlFile.write('    </LatLonBox>\n')
-
-        # write footer and close
-        kmlFile.write('</GroundOverlay>\n')
-        kmlFile.write('</kml>')
-        kmlFile.close()
+        # TODO: can we change that to max_min_lat_lon?
+        domain_lon, domain_lat = self.get_corners()
+        with open(kml_filename, 'wt') as kml_file:
+            kml_content = template.format(filename=kml_filename, figurename=kml_figurename,
+                                          north=max(domain_lat), south=min(domain_lat),
+                                          east=max(domain_lon), west=min(domain_lon))
+            kml_file.write(self.KML_BASE.format(kml_content))
 
     def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
         '''Get longitude and latitude grids representing the full data grid
