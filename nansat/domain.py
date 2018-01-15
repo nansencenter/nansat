@@ -206,6 +206,33 @@ class Domain(object):
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
+    def repr_beta(self):
+        separator = '-' * 40
+        corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)'
+        template = '''
+        Domain:[{x_size} x {y_size}]
+        {separator}
+        Projection:
+        {projection}
+        {separator}
+        Corners (lon, lat):
+        {top_corners}
+        {bottom_corners}        
+        '''
+
+        try:
+            corners = self.get_corners()
+            # TODO: Where is not going to be an exception
+        except Exception as e:
+            self.logger.error('Cannot read projection from source! '
+                              'Exception is: %s' % e.message)
+        x_size, y_size = self.shape()[::-1]
+        up_corners = corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
+        down_corners = corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
+        return template.format(separator=separator, x_size=x_size, y_size=y_size,
+                               top_corners=up_corners, bottom_corners=down_corners,
+                               projection=NSR(self.vrt.get_projection()).ExportToPrettyWkt(1))
+
     def __repr__(self):
         """Creates string with basic info about the Domain object
 
@@ -892,6 +919,7 @@ class Domain(object):
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
+    # TODO: Do we need that method?
     def transform_points(self, colVector, rowVector, DstToSrc=0,
                          dstSRS=NSR()):
 
