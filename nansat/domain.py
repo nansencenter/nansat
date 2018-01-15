@@ -324,7 +324,7 @@ class Domain(object):
         # TODO: Hardkode of constants inside of the function
         # TODO: To many runs of one function! Can we run that once for whole strings?
         kml_file = open(kml_filename, 'wt')
-        kml_file.write(template.format(kml_filename=kml_filename))
+        kml_file.write(template)
 
         # get border of each domain and add to KML
         for domain in list(domains):
@@ -335,40 +335,30 @@ class Domain(object):
         kml_file.write('        </Folder></Document></kml>\n')
         kml_file.close()
 
-    def _get_border_kml(self, *args, **kwargs):
-        '''Generate Placemark entry for KML
+    def _get_border_kml(self):
+        """Generate Placemark entry for KML
 
         Returns
         --------
         kmlEntry : String
             String with the Placemark entry
 
+        """
+        klm_entry = '''
+        \t\t\t<Placemark>
+        \t\t\t\t<name>{name}</name>
+        \t\t\t\t<Style>
+        \t\t\t\t\t<LineStyle><color>ffffffff</color></LineStyle>
+        \t\t\t\t\t<PolyStyle><fill>0</fill>'
+        \t\t\t\t</Style>
+        \t\t\t\t<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>
+        {coordinates}
+        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
         '''
-        domainLon, domainLat = self.get_border(*args, **kwargs)
-
+        domain_lon, domain_lat = self.get_border()
         # convert Border coordinates into KML-like string
-        coordinates = ''
-        # TODO: template?
-        for lon, lat in zip(domainLon, domainLat):
-            coordinates += '%f,%f,0 ' % (lon, lat)
-
-        kmlEntry = ''
-        # write placemark: name, style, polygon, coordinates
-        kmlEntry += '            <Placemark>\n'
-        kmlEntry += '                <name>%s</name>\n' % self.name
-        kmlEntry += '                <Style>\n'
-        kmlEntry += '                    <LineStyle><color>ffffffff</color>'\
-                    '</LineStyle>\n'
-        kmlEntry += '                    <PolyStyle><fill>0</fill>'\
-                    '</PolyStyle>\n'
-        kmlEntry += '                </Style>\n'
-        kmlEntry += '                <Polygon><tessellate>1</tessellate>'\
-                    '<outerBoundaryIs><LinearRing><coordinates>\n'
-        kmlEntry += coordinates + '\n'
-        kmlEntry += '            </coordinates></LinearRing>'\
-                    '</outerBoundaryIs></Polygon></Placemark>\n'
-
-        return kmlEntry
+        coordinates = ''.join(['%f,%f,0 ' % (lon, lat) for lon, lat in zip(domain_lon, domain_lat)])
+        return klm_entry.format(name=self.name, coordinates=coordinates)
 
     def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
         '''Create KML file for already projected image
