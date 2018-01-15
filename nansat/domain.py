@@ -207,36 +207,34 @@ class Domain(object):
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
     def __repr__(self):
-        '''Creates string with basic info about the Domain object
+        """Creates string with basic info about the Domain object
 
         Modifies
         ---------
         Print size, projection and corner coordinates
 
-        '''
-        outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
-                                         self.vrt.dataset.RasterYSize)
-        outStr += '-' * 40 + '\n'
+        """
+        out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
+        out_str += '-' * 40 + '\n'
         try:
             corners = self.get_corners()
         except Exception as e:
-            self.logger.error('Cannot read projection from source! Exception' \
-                    ' is: %s'%e.message)
+            self.logger.error('Cannot read projection from source! '
+                              'Exception is: %s' % e.message)
         else:
-            outStr += 'Projection:\n'
-            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) +
-                       '\n')
-            outStr += '-' * 40 + '\n'
-            outStr += 'Corners (lon, lat):\n'
-            outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
+            out_str += 'Projection:\n'
+            out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
+            out_str += '-' * 40 + '\n'
+            out_str += 'Corners (lon, lat):\n'
+            out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
                                                                corners[1][0],
                                                                corners[0][2],
                                                                corners[1][2])
-            outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
+            out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
                                                                corners[1][1],
                                                                corners[0][3],
                                                                corners[1][3])
-        return outStr
+        return out_str
 
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         '''Write KML file with domains
