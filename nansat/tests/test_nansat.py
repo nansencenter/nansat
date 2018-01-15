@@ -17,6 +17,7 @@ import warnings
 import os
 import datetime
 import json
+import sys
 from xml.sax.saxutils import unescape
 
 import matplotlib.pyplot as plt
@@ -41,6 +42,12 @@ class NansatTest(unittest.TestCase):
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
+
+    def tearDown(self):
+        try:
+            os.unlink(self.tmpfilename)
+        except OSError:
+            pass
 
     def test_open_gcps(self):
         n = Nansat(self.test_file_gcps, logLevel=40)
@@ -89,7 +96,6 @@ class NansatTest(unittest.TestCase):
         lon1, lat1 = copy.get_geolocation_grids()
         np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
-        os.unlink(self.tmpfilename)
 
     def test_special_characters_in_exported_metadata(self):
         orig = Nansat(self.test_file_gcps)
@@ -100,7 +106,6 @@ class NansatTest(unittest.TestCase):
         dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
                                                                    '"'}))
         self.assertIsInstance(dd, dict)
-        os.unlink(self.tmpfilename)
 
     def test_time_coverage_metadata_of_exported_equals_original(self):
         orig = Nansat(self.test_file_gcps)
@@ -113,8 +118,6 @@ class NansatTest(unittest.TestCase):
                 copy.get_metadata('time_coverage_start'))
         self.assertEqual(orig.get_metadata('time_coverage_end'),
                 copy.get_metadata('time_coverage_end'))
-
-        os.unlink(self.tmpfilename)
 
     def test_export_netcdf(self):
         ''' Test export and following import of data with bands containing
@@ -134,7 +137,6 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
         earrWithNaN = exported['testBandWithNaN']
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
-        os.unlink(self.tmpfilename)
 
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -368,8 +370,7 @@ class NansatTest(unittest.TestCase):
             'Bootstrap': {'type': '>i2'},
             'UMass_AES': {'type': '>i2'},
         }
-        n.export2thredds(tmpfilename, bands,
-                         time=datetime.datetime(2016, 1, 20))
+        n.export2thredds(tmpfilename, bands, time=datetime.datetime(2016, 1, 20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
@@ -377,6 +378,8 @@ class NansatTest(unittest.TestCase):
 
         # Test that the long/lat values are set aproximately correct
         ncg = 'NC_GLOBAL#'
+        if os.name == 'nt':
+            ncg = ''
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
         self.assertTrue(float(easternmost_longitude) > 179,
                         'easternmost_longitude is wrong:' +
@@ -920,7 +923,6 @@ class NansatTest(unittest.TestCase):
         with self.assertRaises(OptionError):
             exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
-        os.unlink(self.tmpfilename)
 
     def test_export_netcdf_arctic(self):
         ''' Test export of the arctic data without GCPS
@@ -931,7 +933,6 @@ class NansatTest(unittest.TestCase):
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
-        os.unlink(self.tmpfilename)
 
 if __name__ == "__main__":
     unittest.main()
