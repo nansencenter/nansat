@@ -12,23 +12,41 @@ Welcome to Nansat's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-About Nansat
-============
+.. About Nansat
+
+.. ============
 
 .. * Background scientifics needs
 
-* Data formats readable with Nansat
-* Projects employing Nansat
-* How to get support
-* Contributing to Nansat
+.. * Data formats readable with Nansat
+
+.. * Projects employing Nansat
+
+.. * How to get support
+
+.. * Contributing to Nansat
 
 User documentation
 ==================
 
-* Installation
+.. toctree::
+   :maxdepth: 2
+
+   source/installation.rst
 
 Feature documentation
 =====================
+
+Masking land/water in figures
+-----------------------------
+
+TODO: update the following text....
+
+To add land- or water-masks to your figures, you will need to use the watermask() method in the main
+Nansat class. Download the prepared MODIS 250M water-mask product from our server and add the path
+to the directory with this data to an environment variable named MOD44WPATH (e.g.
+```MOD44WPATH=/Data/sat/auxdata/mod44w```). The water-mask can be downloaded from here:
+`<ftp://ftp.nersc.no/pub/nansat/MOD44W.tgz>`_
 
 Developer documentation
 =======================
