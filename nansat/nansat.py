@@ -246,7 +246,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.vrt.bandVRTs
+        to self.vrt.band_vrts
 
         Parameters
         -----------
@@ -277,7 +277,7 @@ class Nansat(Domain):
         '''Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
-        to self.vrt.bandVRTs
+        to self.vrt.band_vrts
 
         Parameters
         -----------
@@ -304,12 +304,12 @@ class Nansat(Domain):
             parameters = [None] * len(arrays)
 
         # create VRTs from arrays
-        bandVRTs = [VRT(array=array, nomem=nomem) for array in arrays]
+        band_vrts = [VRT(array=array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
 
         # add the array band into self.vrt and get bandName
-        for bi, bandVRT in enumerate(bandVRTs):
+        for bi, bandVRT in enumerate(band_vrts):
             params = parameters[bi]
             if params is None:
                 params = {}
@@ -317,7 +317,7 @@ class Nansat(Domain):
                 {'SourceFilename': bandVRT.fileName,
                  'SourceBand': 1},
                 params)
-            self.vrt.bandVRTs[bandName] = bandVRT
+            self.vrt.band_vrts[bandName] = bandVRT
 
         self.vrt.dataset.FlushCache()  # required after adding bands
 
@@ -441,7 +441,7 @@ class Nansat(Domain):
 # TODO:
 #   move to Exporter._split_complex_band()
 #   DRY: repeat for real and imag
-#   use  .bandVRTs instead of .real and .imag
+#   use  .band_vrts instead of .real and .imag
 
         # Find complex data band
         complexBands = []

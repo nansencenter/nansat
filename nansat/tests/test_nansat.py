@@ -201,9 +201,9 @@ class NansatTest(unittest.TestCase):
         n2 = Nansat(domain=d, logLevel=40)
         n1.add_band(arr, {'name': 'band1'})
 
-        self.assertEqual(type(n1.vrt.bandVRTs), dict)
-        self.assertTrue(len(n1.vrt.bandVRTs) > 0)
-        self.assertEqual(n2.vrt.bandVRTs, {})
+        self.assertEqual(type(n1.vrt.band_vrts), dict)
+        self.assertTrue(len(n1.vrt.band_vrts) > 0)
+        self.assertEqual(n2.vrt.band_vrts, {})
 
     def test_bands(self):
         n = Nansat(self.test_file_gcps, logLevel=40)

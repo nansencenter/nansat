@@ -95,7 +95,7 @@ class Mapper(VRT):
 
         # Making VRT with raw (unscaled) lon and lat
         # (smaller bands than full dataset)
-        self.bandVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
+        self.band_vrts = {'RawGeolocVRT': VRT(srcRasterXSize=51,
                                             srcRasterYSize=srcRasterYSize)}
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
@@ -111,15 +111,15 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.bandVRTs['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
+        self.band_vrts['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
-        self.bandVRTs['GeolocVRT'] = VRT(srcRasterXSize=51,
+        self.band_vrts['GeolocVRT'] = VRT(srcRasterXSize=51,
                                         srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': (self.bandVRTs['RawGeolocVRT'].
+                {'src': {'SourceFilename': (self.band_vrts['RawGeolocVRT'].
                                             fileName),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
@@ -127,10 +127,10 @@ class Mapper(VRT):
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.bandVRTs['GeolocVRT']._create_bands(GeolocMetaDict)
+        self.band_vrts['GeolocVRT']._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.bandVRTs['GeolocVRT'],
-                                        yVRT=self.bandVRTs['GeolocVRT'],
+        GeolocObject = GeolocationArray(xVRT=self.band_vrts['GeolocVRT'],
+                                        yVRT=self.band_vrts['GeolocVRT'],
                                         xBand=2, yBand=1,  # x = lon, y = lat
                                         lineOffset=0, pixelOffset=25,
                                         lineStep=1, pixelStep=40)
@@ -158,7 +158,7 @@ class Mapper(VRT):
         ##################
         # Create bands
         ##################
-        self.bandVRTs['RawBandsVRT'] = VRT(
+        self.band_vrts['RawBandsVRT'] = VRT(
             srcRasterXSize=2048,
             srcRasterYSize=numCalibratedScanLines)
         RawMetaDict = []
@@ -192,7 +192,7 @@ class Mapper(VRT):
                 minmax = '290 210'
 
             metaDict.append(
-                {'src': {'SourceFilename': (self.bandVRTs['RawBandsVRT'].
+                {'src': {'SourceFilename': (self.band_vrts['RawBandsVRT'].
                                             fileName),
                          'SourceBand': bandNo,
                          'ScaleRatio': 0.01,
@@ -208,12 +208,12 @@ class Mapper(VRT):
         # Add temperature difference between ch3 and ch 4 as pixelfunction
         if not startsWith3A:  # Only if ch3 is IR (nighttime)
             metaDict.append(
-                {'src': [{'SourceFilename': (self.bandVRTs['RawBandsVRT'].
+                {'src': [{'SourceFilename': (self.band_vrts['RawBandsVRT'].
                                              fileName),
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 4},
-                         {'SourceFilename': (self.bandVRTs['RawBandsVRT'].
+                         {'SourceFilename': (self.band_vrts['RawBandsVRT'].
                                              fileName),
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
@@ -228,7 +228,7 @@ class Mapper(VRT):
                          'units': 'kelvin',
                          'minmax': '-3 3'}})
 
-        self.self.bandVRTs['RawBandsVRT']._create_bands(RawMetaDict)
+        self.self.band_vrts['RawBandsVRT']._create_bands(RawMetaDict)
         self._create_bands(metaDict)
 
         globalMetadata = {}
