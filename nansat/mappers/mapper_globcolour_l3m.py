@@ -104,10 +104,10 @@ class Mapper(VRT, Globcolour):
                 mask[np.bitwise_and(flags, np.power(2, 0)) > 0] = 1
                 mask[np.bitwise_and(flags, np.power(2, 3)) > 0] = 2
 
-        self.bandVRTs = {'maskVRT': VRT(array=mask)}
+        self.band_vrts = {'maskVRT': VRT(array=mask)}
 
         metaDict.append(
-            {'src': {'SourceFilename': self.bandVRTs['maskVRT'].fileName,
+            {'src': {'SourceFilename': self.band_vrts['maskVRT'].fileName,
                      'SourceBand': 1},
              'dst': {'name': 'mask'}})
 

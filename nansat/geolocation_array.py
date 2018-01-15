@@ -20,18 +20,18 @@ from nansat.nsr import NSR
 
 
 class GeolocationArray():
-    '''Container for GEOLOCATION ARRAY data
+    """Container for GEOLOCATION ARRAY data
 
     Keeps references to bands with X and Y coordinates, offset and step
     of pixel and line. All information is stored in dictionary self.data
 
     Instance of GeolocationArray is used in VRT and ususaly created in
     a Mapper.
-    '''
+    """
     def __init__(self, x_vrt=None, y_vrt=None,
                  x_band=1, y_band=1, srs='', line_offset=0, line_step=1,
                  pixel_offset=0, pixel_step=1, dataset=None):
-        '''Create GeolocationArray object from input parameters
+        """Create GeolocationArray object from input parameters
 
         Parameters
         -----------
@@ -52,7 +52,7 @@ class GeolocationArray():
         ---------
         All input parameters are copied to self
 
-        '''
+        """
         # dictionary with all metadata
         self.data = dict()
         # VRT objects
@@ -90,7 +90,7 @@ class GeolocationArray():
         self.data['PIXEL_STEP'] = str(pixel_step)
 
     def get_geolocation_grids(self):
-        '''Read values of geolocation grids'''
+        """Read values of geolocation grids"""
         lon_dataset = gdal.Open(self.data['X_DATASET'])
         lon_grid = lon_dataset.GetRasterBand(int(self.data['X_BAND'])).ReadAsArray()
         lat_dataset = gdal.Open(self.data['Y_DATASET'])

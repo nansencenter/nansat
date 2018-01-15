@@ -29,14 +29,12 @@ from nansat.nsr import NSR
 from nansat.geolocation_array import GeolocationArray
 from nansat.tools import add_logger, gdal, osr, OptionError
 
-# TODO: Check which methods are private
-
 # TODO: Think which variables we should rename
 
 # TODO: Think which conventional names we should use (lon, lat - OK), vrt - ?
  
 class VRT(object):
-    '''Wrapper around GDAL VRT-file
+    """Wrapper around GDAL VRT-file
 
     The GDAL VRT-file is an XML-file. It contains all metadata, geo-reference
     information and information ABOUT each band including band metadata,
@@ -75,7 +73,7 @@ class VRT(object):
     self.vrt = method_to_create_super_VRT()
     self.vrt.vrt = subVRT
 
-    '''
+    """
 # TODO:
 #   move templates out of Python code to external xml files
     ComplexSource = Template('''
@@ -112,7 +110,7 @@ class VRT(object):
     # main sub VRT
     vrt = None
     # other sub VRTs
-    bandVRTs = None
+    band_vrts = None
     # use Thin Spline Transformation of the VRT has GCPs?
     tps = False
 
@@ -136,7 +134,7 @@ class VRT(object):
                  geolocationArray=None,
                  nomem=False,
                  lat=None, lon=None):
-        ''' Create VRT dataset from GDAL dataset, or from given parameters
+        """ Create VRT dataset from GDAL dataset, or from given parameters
 
         If vrtDataset is given, creates full copy of VRT content
         Otherwise takes reprojection parameters (geotransform, projection, etc)
@@ -170,22 +168,22 @@ class VRT(object):
             grid with longitudes
         lat : Numpy array
             grid with latitudes
-        bandVRTs : dict
+        band_vrts : dict
             dictionary with VRTs that are used inside VRT
 
         Modifies
         ---------
         self.dataset : GDAL VRT dataset
         self.logger : logging logger
-        self.vrtDriver : GDAL Driver
+        self.vrt_driver : GDAL Driver
 
-        '''
+        """
         # essential attributes
         self.logger = add_logger('Nansat')
         self.fileName = self._make_filename(nomem=nomem)
-        self.vrtDriver = gdal.GetDriverByName('VRT')
-        if self.bandVRTs is None:
-            self.bandVRTs = {}
+        self.vrt_driver = gdal.GetDriverByName('VRT')
+        if self.band_vrts is None:
+            self.band_vrts = {}
 
         # default empty geolocation array of source
         srcGeolocationArray = GeolocationArray()
@@ -193,7 +191,7 @@ class VRT(object):
             # copy content of the provided VRT dataset using CreateCopy
             self.logger.debug('copy content of the provided VRT '
                               'dataset using CreateCopy')
-            self.dataset = self.vrtDriver.CreateCopy(self.fileName,
+            self.dataset = self.vrt_driver.CreateCopy(self.fileName,
                                                      vrtDataset)
             # get source geolocation array
             srcGeolocationArray = GeolocationArray(dataset=vrtDataset)
@@ -225,7 +223,7 @@ class VRT(object):
 
             # create VRT dataset (empty or with a band from array)
             if array is None:
-                self.dataset = self.vrtDriver.Create(self.fileName,
+                self.dataset = self.vrt_driver.Create(self.fileName,
                                                      srcRasterXSize,
                                                      srcRasterYSize,
                                                      bands=0)
@@ -264,7 +262,7 @@ class VRT(object):
 
 # TODO: fix except
     def __del__(self):
-        ''' Destructor deletes VRT and RAW files'''
+        """ Destructor deletes VRT and RAW files"""
         try:
             gdal.Unlink(self.fileName)
             gdal.Unlink(self.fileName.replace('vrt', 'raw'))
@@ -279,7 +277,7 @@ class VRT(object):
 
 # TODO: add extension to mkstemp
     def _make_filename(self, extention='vrt', nomem=False):
-        '''Create random VSI file name
+        """Create random VSI file name
 
         Parameters
         ----------
@@ -290,7 +288,7 @@ class VRT(object):
         -------
         random file name
 
-        '''
+        """
         if nomem:
             fd, filename = tempfile.mkstemp(suffix='.vrt')
             os.close(fd)
@@ -301,7 +299,7 @@ class VRT(object):
         return filename
 
     def _create_bands(self, metaDict):
-        ''' Generic function called from the mappers to create bands
+        """ Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
 
         Parameters
@@ -319,7 +317,7 @@ class VRT(object):
         ---------
         VRT._create_band()
 
-        '''
+        """
         for bandDict in metaDict:
             src = bandDict['src']
             dst = bandDict.get('dst', None)
@@ -331,7 +329,7 @@ class VRT(object):
 #   dst=dict()
 
     def _create_band(self, src, dst=None):
-        ''' Add band to self.dataset:
+        """ Add band to self.dataset:
 
         Get parameters of the source band(s) from input
         Generate source XML for the VRT, add options of creating
@@ -386,7 +384,7 @@ class VRT(object):
                           {'SourceFilename': filename, 'SourceBand': 1}],
                          {'PixelFunctionType': 'NameOfPixelFunction'})
 
-        '''
+        """
         self.logger.debug('INPUTS: %s, %s " ' % (str(src), str(dst)))
         # Make sure src is list, ready for loop
         if type(src) == dict:
@@ -606,13 +604,13 @@ class VRT(object):
             self.delete_bands(rmBands)
 
     def _add_swath_mask_band(self):
-        ''' Create a new band where all values = 1
+        """ Create a new band where all values = 1
 
         Modifies
         ---------
         Single band 'swathmask' with ones is added to the self.dataset
 
-        '''
+        """
         self._create_band(
             src=[{
                 'SourceFilename': self.fileName,
@@ -625,7 +623,7 @@ class VRT(object):
             })
 
     def _put_metadata(self, rasterBand, metadataDict):
-        ''' Put all metadata into a raster band
+        """ Put all metadata into a raster band
 
         Take metadata from metadataDict and put to the GDAL Raster Band
 
@@ -642,7 +640,7 @@ class VRT(object):
         rasterBand : GDALRasterBand
             destination band with metadata
 
-        '''
+        """
         self.logger.debug('Put: %s ' % str(metadataDict))
         for key in metadataDict:
             try:
@@ -675,7 +673,7 @@ class VRT(object):
         return gdal_metadata
 
     def _dataset_from_array(self, array):
-        '''Create a dataset with a band from an array
+        """Create a dataset with a band from an array
 
         Write contents of the array into flat binary file (VSI)
         Write VRT file with RawRastesrBand, which points to the binary file
@@ -691,7 +689,7 @@ class VRT(object):
         VRT file is written (VSI)
         self.dataset is opened
 
-        '''
+        """
         arrayDType = array.dtype.name
         arrayShape = array.shape
         # create flat binary file from array (in VSI)
@@ -743,7 +741,7 @@ class VRT(object):
         self.write_xml(contents)
 
     def _add_geolocation_array(self, geolocationArray=None):
-        ''' Add GEOLOCATION ARRAY to the VRT
+        """ Add GEOLOCATION ARRAY to the VRT
 
         Parameters
         -----------
@@ -754,7 +752,7 @@ class VRT(object):
         Add geolocationArray to self
         Sets GEOLOCATION ARRAY metadata
 
-        '''
+        """
         if geolocationArray is None:
             geolocationArray = GeolocationArray()
         self.geolocationArray = geolocationArray
@@ -764,27 +762,27 @@ class VRT(object):
             self.dataset.SetMetadata(geolocationArray.data, 'GEOLOCATION')
 
     def _remove_geolocation_array(self):
-        ''' Remove GEOLOCATION ARRAY from the VRT
+        """ Remove GEOLOCATION ARRAY from the VRT
 
         Modifes
         --------
         Set self.geolocationArray to None
         Sets GEOLOCATION ARRAY metadata to ''
 
-        '''
+        """
         self.geolocationArray.data = dict()
 
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
 
     def _remove_geotransform(self):
-        '''Remove GeoTransfomr from VRT Object
+        """Remove GeoTransfomr from VRT Object
 
         Modifies
         ---------
         The tag <GeoTransform> is revoved from the VRT-file
 
-        '''
+        """
         # read XML content from VRT
         tmpVRTXML = self.read_xml()
         # find and remove GeoTransform
@@ -794,7 +792,7 @@ class VRT(object):
         self.write_xml(node0.rawxml())
 
     def _create_fake_gcps(self, dstGCPs, dstSRS, skip_gcps):
-        '''Create GCPs with reference self.pixel/line ==> dst.pixel/line
+        """Create GCPs with reference self.pixel/line ==> dst.pixel/line
 
         GCPs from a destination image (dstGCP) are converted to a gcp of source
         image (srcGCP) this way:
@@ -816,7 +814,7 @@ class VRT(object):
         gcps : dict
             {'gcps': list with GDAL GCPs, 'srs': fake stereo WKT}
 
-        '''
+        """
         # create transformer. converts lat/lon to pixel/line of SRC image
         srcTransformer = gdal.Transformer(self.dataset, None,
                                           ['SRC_SRS=' + self.get_projection(),
@@ -838,7 +836,7 @@ class VRT(object):
         return {'gcps': fakeGCPs, 'srs': NSR('+proj=stere').wkt}
 
     def _latlon2gcps(self, lat, lon, numOfGCPs=100):
-        ''' Create list of GCPs from given grids of latitude and longitude
+        """ Create list of GCPs from given grids of latitude and longitude
 
         take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
         Create GCPs from these pixels
@@ -857,7 +855,7 @@ class VRT(object):
         --------
         gcsp : List with GDAL GCPs
 
-        '''
+        """
         # estimate step of GCPs
         gcpSize = np.sqrt(numOfGCPs)
         step0 = max(1, int(float(lat.shape[0]) / gcpSize))
@@ -886,7 +884,7 @@ class VRT(object):
 #   reuse _latlon2gcps: for looping over lon/lat arrays
 
     def _geolocation_array_to_gcps(self, stepX=1, stepY=1):
-        ''' Converting geolocation arrays to GCPs, and deleting the former
+        """ Converting geolocation arrays to GCPs, and deleting the former
 
         When the geolocation arrays are much smaller than the raster bands,
         warping quality is very bad. This function is a temporary solution
@@ -908,7 +906,7 @@ class VRT(object):
         self.GCPs are added
         self.geolocationArray is removed
 
-        '''
+        """
         geolocArray = self.dataset.GetMetadata('GEOLOCATION')
         x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
         y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
@@ -936,7 +934,7 @@ class VRT(object):
         self._add_geolocation_array()
 
     def read_xml(self, inFileName=None):
-        '''Read XML content of the VRT-file
+        """Read XML content of the VRT-file
 
         Parameters
         -----------
@@ -947,7 +945,7 @@ class VRT(object):
         --------
         string : XMl Content which is read from the VSI file
 
-        '''
+        """
         # if no input file given, flush dataset content into VRT-file
         if inFileName is None:
             inFileName = str(self.fileName)
@@ -967,7 +965,7 @@ class VRT(object):
         return vsiFileContent
 
     def write_xml(self, vsiFileContent=None):
-        '''Write XML content into a VRT dataset
+        """Write XML content into a VRT dataset
 
         Parameters
         -----------
@@ -979,7 +977,7 @@ class VRT(object):
         self.dataset
             If XML content was written, self.dataset is re-opened
 
-        '''
+        """
         vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
         gdal.VSIFWriteL(vsiFileContent,
                         len(vsiFileContent), 1, vsiFile)
@@ -988,11 +986,11 @@ class VRT(object):
         self.dataset = gdal.Open(self.fileName)
 
     def export(self, fileName):
-        '''Export VRT file as XML into given <fileName>'''
-        self.vrtDriver.CreateCopy(fileName, self.dataset)
+        """Export VRT file as XML into given <fileName>"""
+        self.vrt_driver.CreateCopy(fileName, self.dataset)
 
     def copy(self):
-        '''Creates full copy of VRT dataset'''
+        """Creates full copy of VRT dataset"""
         try:
             # deep copy (everything including bands)
             vrt = VRT(vrtDataset=self.dataset,
@@ -1002,9 +1000,9 @@ class VRT(object):
             vrt = VRT(gdalDataset=self.dataset,
                       geolocationArray=self.geolocationArray)
 
-        # add bandVRTs: dictionary with several VRTs generated in mappers
+        # add band_vrts: dictionary with several VRTs generated in mappers
         # or with added bands
-        vrt.bandVRTs = self.bandVRTs
+        vrt.band_vrts = self.band_vrts
 
         # set TPS flag
         vrt.tps = bool(self.tps)
@@ -1035,7 +1033,7 @@ class VRT(object):
                        use_geotransform=True,
                        dstGCPs=[], dstGeolocationArray=None):
 
-        ''' Create VRT object with WarpedVRT
+        """Create VRT object with WarpedVRT
 
         Modifies the input VRT according to the input options
         Creates simple WarpedVRT with AutoCreateWarpedVRT
@@ -1115,7 +1113,7 @@ class VRT(object):
         --------
         warpedVRT : VRT object with WarpedVRT
 
-        '''
+        """
         # VRT to be warped
         srcVRT = self.copy()
 
@@ -1267,7 +1265,7 @@ class VRT(object):
         return warpedVRT
 
     def copyproj(self, fileName):
-        ''' Copy geoloctation data from given VRT to a figure file
+        """ Copy geoloctation data from given VRT to a figure file
 
         Useful for adding geolocation information to figure
         files produced e.g. by Figure class, which contain no geolocation.
@@ -1278,7 +1276,7 @@ class VRT(object):
         fileName : string
             Name of file to which the geolocation data shall be written
 
-        '''
+        """
         figDataset = gdal.Open(fileName, gdal.GA_Update)
         figDataset.SetGeoTransform(self.dataset.GetGeoTransform())
         figDataset.SetProjection(self.dataset.GetProjection())
@@ -1288,34 +1286,34 @@ class VRT(object):
         figDataset = None  # Close and write output file
 
     def delete_band(self, bandNum):
-        ''' Delete a band from the given VRT
+        """ Delete a band from the given VRT
 
         Parameters
         ----------
         bandNum : int
             band number
 
-        '''
+        """
         node0 = Node.create(self.read_xml())
         node0.delNode('VRTRasterBand', options={'band': bandNum})
         node0.delNode('BandMapping', options={'src': bandNum})
         self.write_xml(node0.rawxml())
 
     def delete_bands(self, bandNums):
-        ''' Delete bands
+        """ Delete bands
 
         Parameters
         ----------
         bandNums : list
             elements are int
 
-        '''
+        """
         bandNums.sort(reverse=True)
         for iBand in bandNums:
             self.delete_band(iBand)
 
     def get_shifted_vrt(self, shiftDegree):
-        ''' Roll data in bands westwards or eastwards
+        """ Roll data in bands westwards or eastwards
 
         Create shiftVRT which references self. Modify georeference
         of shiftVRT to account for the roll. Add as many bands as in self
@@ -1331,7 +1329,7 @@ class VRT(object):
         -------
         shiftVRT : VRT object with rolled bands
 
-        '''
+        """
         # Copy self into self.vrt
         shiftVRT = VRT(gdalDataset=self.dataset)
         shiftVRT.vrt = self.copy()
@@ -1389,7 +1387,7 @@ class VRT(object):
         return shiftVRT
 
     def get_sub_vrt(self, steps=1):
-        '''Return sub-VRT from given depth
+        """Return sub-VRT from given depth
 
         Iteratively copy self.vrt into self until
         self.vrt is None or steps == 0
@@ -1409,7 +1407,7 @@ class VRT(object):
         self
         self.vrt
 
-        '''
+        """
 
         # check if self is the last valid (deepest) VRT
         if self.vrt is None:
@@ -1426,11 +1424,11 @@ class VRT(object):
         return self.vrt.get_sub_vrt(steps)
 
     def get_super_vrt(self):
-        '''Create vrt with subVRT
+        """Create vrt with subVRT
 
         copy of self in vrt.vrt and change references from vrt to vrt.vrt
 
-        '''
+        """
 
         # create new self
         superVRT = VRT(gdalDataset=self.dataset)
@@ -1451,7 +1449,7 @@ class VRT(object):
         return superVRT
 
     def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, eResampleAlg):
-        '''Create VRT and replace step in the source'''
+        """Create VRT and replace step in the source"""
 
         subsamVRT = self.get_super_vrt()
 
@@ -1490,7 +1488,7 @@ class VRT(object):
 
     def transform_points(self, colVector, rowVector, DstToSrc=0,
                          dstSRS=NSR(), dstDs=None, options=None):
-        '''Transform given lists of X,Y coordinates into lat/lon
+        """Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
         -----------
@@ -1511,7 +1509,7 @@ class VRT(object):
         lonVector, latVector : numpy arrays
             X and Y coordinates in degree of lat/lon
 
-        '''
+        """
         # get source SRS (either Projection or GCPProjection)
         srcWKT = self.get_projection()
 
@@ -1542,7 +1540,7 @@ class VRT(object):
         return lonVector, latVector
 
     def get_projection(self):
-        '''Get projection from self.dataset
+        """Get projection from self.dataset
 
         Get projection from GetProjection() or GetGCPProjection().
         If both are empty, raise error
@@ -1557,7 +1555,7 @@ class VRT(object):
 
         TODO: see issue #190 in nansat...
 
-        '''
+        """
         # get projection or GCPProjection
         projection = self.dataset.GetProjection()
         if projection == '':
@@ -1569,7 +1567,7 @@ class VRT(object):
                         use_gcps=False, use_geotransform=False,
                         eResampleAlg=1, **kwargs):
 
-        ''' Resize VRT
+        """ Resize VRT
 
         Create Warped VRT with modified RasterXSize, RasterYSize, GeoTransform.
         The returned VRT object has a copy of its original source VRT in its
@@ -1586,7 +1584,7 @@ class VRT(object):
         --------
         VRT object : Resized VRT object
 
-        '''
+        """
         # modify GeoTransform: set resolution from new X/Y size
         geoTransform = (0.5,
                         float(self.dataset.RasterXSize - 1.0) / float(xSize),
@@ -1606,7 +1604,7 @@ class VRT(object):
         return warpedVRT
 
     def reproject_GCPs(self, dstSRS):
-        '''Reproject all GCPs to a new spatial reference system
+        """Reproject all GCPs to a new spatial reference system
 
         Necessary before warping an image if the given GCPs
         are in a coordinate system which has a singularity
@@ -1620,7 +1618,7 @@ class VRT(object):
         Modifies
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
-        '''
+        """
         # Make tranformer from GCP SRS to destination SRS
         dstSRS = NSR(dstSRS)
         srcSRS = NSR(self.dataset.GetGCPProjection())

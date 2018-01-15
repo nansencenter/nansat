@@ -181,8 +181,8 @@ class Mapper(VRT):
                 eleVRT = eleVRT.get_resized_vrt(self.dataset.RasterXSize,
                                                 self.dataset.RasterYSize,
                                                 eResampleAlg=2)
-                self.bandVRTs['incVRT'] = incVRT
-                self.bandVRTs['eleVRT'] = eleVRT
+                self.band_vrts['incVRT'] = incVRT
+                self.band_vrts['eleVRT'] = eleVRT
 
         for key in self.calXMLDict:
             calibration_LUT_VRTs, longitude, latitude = (
@@ -191,24 +191,24 @@ class Mapper(VRT):
                                   ['sigmaNought', 'betaNought',
                                    'gamma', 'dn']
                                   ))
-            self.bandVRTs['LUT_sigmaNought_VRT_'+pol[key]] = (
+            self.band_vrts['LUT_sigmaNought_VRT_'+pol[key]] = (
                 calibration_LUT_VRTs['sigmaNought'].
                 get_resized_vrt(self.dataset.RasterXSize,
                                 self.dataset.RasterYSize,
                                 eResampleAlg=1))
-            self.bandVRTs['LUT_betaNought_VRT_'+pol[key]] = (
+            self.band_vrts['LUT_betaNought_VRT_'+pol[key]] = (
                 calibration_LUT_VRTs['betaNought'].
                 get_resized_vrt(self.dataset.RasterXSize,
                                 self.dataset.RasterYSize,
                                 eResampleAlg=1))
-            self.bandVRTs['LUT_gamma_VRT'] = calibration_LUT_VRTs['gamma']
-            self.bandVRTs['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
+            self.band_vrts['LUT_gamma_VRT'] = calibration_LUT_VRTs['gamma']
+            self.band_vrts['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
 
         for key in self.noiseXMLDict:
             noise_LUT_VRT = self.get_LUT_VRTs(self.noiseXMLDict[key],
                                               'noiseVectorList',
                                               ['noiseLut'])[0]
-            self.bandVRTs['LUT_noise_VRT_'+pol[key]] = (
+            self.band_vrts['LUT_noise_VRT_'+pol[key]] = (
                 noise_LUT_VRT['noiseLut'].get_resized_vrt(
                     self.dataset.RasterXSize,
                     self.dataset.RasterYSize,
@@ -287,9 +287,9 @@ class Mapper(VRT):
                                           eResampleAlg=1)
 
         # Store VRTs so that they are accessible later
-        self.bandVRTs['look_u_VRT'] = look_u_VRT
-        self.bandVRTs['look_v_VRT'] = look_v_VRT
-        self.bandVRTs['lookVRT'] = lookVRT
+        self.band_vrts['look_u_VRT'] = look_u_VRT
+        self.band_vrts['look_v_VRT'] = look_v_VRT
+        self.band_vrts['lookVRT'] = lookVRT
 
         metaDict = []
         # Add bands to full size VRT
@@ -299,7 +299,7 @@ class Mapper(VRT):
             bnmax = bandNumberDict[name]
             metaDict.append(
                 {'src': {'SourceFilename':
-                         (self.bandVRTs['LUT_sigmaNought_VRT_' +
+                         (self.band_vrts['LUT_sigmaNought_VRT_' +
                           pol[key]].fileName),
                          'SourceBand': 1
                          },
@@ -311,7 +311,7 @@ class Mapper(VRT):
             bnmax = bandNumberDict[name]
             metaDict.append({
                 'src': {
-                    'SourceFilename': self.bandVRTs['LUT_noise_VRT_' +
+                    'SourceFilename': self.band_vrts['LUT_noise_VRT_' +
                                                    pol[key]].fileName,
                     'SourceBand': 1
                 },
@@ -325,7 +325,7 @@ class Mapper(VRT):
         bnmax = bandNumberDict[name]
         metaDict.append({
             'src': {
-                'SourceFilename': self.bandVRTs['lookVRT'].fileName,
+                'SourceFilename': self.band_vrts['lookVRT'].fileName,
                 'SourceBand': 1
             },
             'dst': {
@@ -344,7 +344,7 @@ class Mapper(VRT):
                           'SourceBand': bandNumberDict['DN_%s' % pol[key]],
                           },
                          {'SourceFilename':
-                          (self.bandVRTs['LUT_sigmaNought_VRT_%s'
+                          (self.band_vrts['LUT_sigmaNought_VRT_%s'
                            % pol[key]].fileName),
                           'SourceBand': 1
                           }
@@ -363,7 +363,7 @@ class Mapper(VRT):
                           'SourceBand': bandNumberDict['DN_%s' % pol[key]]
                           },
                          {'SourceFilename':
-                          (self.bandVRTs['LUT_betaNought_VRT_%s'
+                          (self.band_vrts['LUT_betaNought_VRT_%s'
                            % pol[key]].fileName),
                           'SourceBand': 1
                           }
@@ -381,7 +381,7 @@ class Mapper(VRT):
         name = 'incidence_angle'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
-        src = {'SourceFilename': self.bandVRTs['incVRT'].fileName,
+        src = {'SourceFilename': self.band_vrts['incVRT'].fileName,
                'SourceBand': 1}
         dst = {'wkv': 'angle_of_incidence',
                'name': name}
@@ -392,7 +392,7 @@ class Mapper(VRT):
         name = 'elevation_angle'
         bandNumberDict[name] = bnmax+1
         bnmax = bandNumberDict[name]
-        src = {'SourceFilename': self.bandVRTs['eleVRT'].fileName,
+        src = {'SourceFilename': self.band_vrts['eleVRT'].fileName,
                'SourceBand': 1}
         dst = {'wkv': 'angle_of_elevation',
                'name': name}
@@ -408,11 +408,11 @@ class Mapper(VRT):
             src = [{'SourceFilename': self.fileName,
                     'SourceBand': bandNumberDict['DN_HH'],
                     },
-                   {'SourceFilename': (self.bandVRTs['LUT_sigmaNought_VRT_HH'].
+                   {'SourceFilename': (self.band_vrts['LUT_sigmaNought_VRT_HH'].
                                        fileName),
                     'SourceBand': 1,
                     },
-                   {'SourceFilename': self.bandVRTs['incVRT'].fileName,
+                   {'SourceFilename': self.band_vrts['incVRT'].fileName,
                     'SourceBand': 1}
                    ]
             dst = {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
