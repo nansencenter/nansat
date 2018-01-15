@@ -15,7 +15,7 @@ Welcome to Nansat's documentation!
 About Nansat
 ============
 
-* Background scientifics needs
+.. * Background scientifics needs
 * Data formats readable with Nansat
 * Projects employing Nansat
 * How to get support
