@@ -283,6 +283,16 @@ class Domain(object):
         xml_filename = xmlFileName
         kml_filename = kmlFileName
 
+        template = '''
+        <?xml version="1.0" encoding="UTF-8"?>
+        <kml xmlns="http://www.opengis.net/kml/2.2"
+        xmlns:gx="http://www.google.com/kml/ext/2.2"
+        xmlns:kml="http://www.opengis.net/kml/2.2"
+        xmlns:atom="http://www.w3.org/2005/Atom">
+        <Document>
+        \t<name>{klm_filename}</name>
+        \t\t<Folder><name>{klm_filename}</name><open>1</open>
+        '''
         # test input options
         if not xml_filename and not kml_filename:
             # if only input XML-file is given - convert it to KML
@@ -314,15 +324,7 @@ class Domain(object):
         # TODO: Hardkode of constants inside of the function
         # TODO: To many runs of one function! Can we run that once for whole strings?
         kml_file = open(kml_filename, 'wt')
-        kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        kml_file.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                       'xmlns:gx="http://www.google.com/kml/ext/2.2" '
-                       'xmlns:kml="http://www.opengis.net/kml/2.2" '
-                       'xmlns:atom="http://www.w3.org/2005/Atom">\n')
-        kml_file.write('<Document>\n')
-        kml_file.write('    <name>%s</name>\n' % kmlFileName)
-        kml_file.write('        <Folder><name>%s</name><open>1</open>\n'
-                      % kml_filename)
+        kml_file.write(template.format(kml_filename=kml_filename))
 
         # get border of each domain and add to KML
         for domain in list(domains):
@@ -332,6 +334,41 @@ class Domain(object):
         # write footer and close
         kml_file.write('        </Folder></Document></kml>\n')
         kml_file.close()
+
+    def _get_border_kml(self, *args, **kwargs):
+        '''Generate Placemark entry for KML
+
+        Returns
+        --------
+        kmlEntry : String
+            String with the Placemark entry
+
+        '''
+        domainLon, domainLat = self.get_border(*args, **kwargs)
+
+        # convert Border coordinates into KML-like string
+        coordinates = ''
+        # TODO: template?
+        for lon, lat in zip(domainLon, domainLat):
+            coordinates += '%f,%f,0 ' % (lon, lat)
+
+        kmlEntry = ''
+        # write placemark: name, style, polygon, coordinates
+        kmlEntry += '            <Placemark>\n'
+        kmlEntry += '                <name>%s</name>\n' % self.name
+        kmlEntry += '                <Style>\n'
+        kmlEntry += '                    <LineStyle><color>ffffffff</color>'\
+                    '</LineStyle>\n'
+        kmlEntry += '                    <PolyStyle><fill>0</fill>'\
+                    '</PolyStyle>\n'
+        kmlEntry += '                </Style>\n'
+        kmlEntry += '                <Polygon><tessellate>1</tessellate>'\
+                    '<outerBoundaryIs><LinearRing><coordinates>\n'
+        kmlEntry += coordinates + '\n'
+        kmlEntry += '            </coordinates></LinearRing>'\
+                    '</outerBoundaryIs></Polygon></Placemark>\n'
+
+        return kmlEntry
 
     def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
         '''Create KML file for already projected image
@@ -672,41 +709,6 @@ class Domain(object):
                      [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
 
         return self.transform_points(colVector, rowVector)
-
-    def _get_border_kml(self, *args, **kwargs):
-        '''Generate Placemark entry for KML
-
-        Returns
-        --------
-        kmlEntry : String
-            String with the Placemark entry
-
-        '''
-        domainLon, domainLat = self.get_border(*args, **kwargs)
-
-        # convert Border coordinates into KML-like string
-        coordinates = ''
-        # TODO: template?
-        for lon, lat in zip(domainLon, domainLat):
-            coordinates += '%f,%f,0 ' % (lon, lat)
-
-        kmlEntry = ''
-        # write placemark: name, style, polygon, coordinates
-        kmlEntry += '            <Placemark>\n'
-        kmlEntry += '                <name>%s</name>\n' % self.name
-        kmlEntry += '                <Style>\n'
-        kmlEntry += '                    <LineStyle><color>ffffffff</color>'\
-                    '</LineStyle>\n'
-        kmlEntry += '                    <PolyStyle><fill>0</fill>'\
-                    '</PolyStyle>\n'
-        kmlEntry += '                </Style>\n'
-        kmlEntry += '                <Polygon><tessellate>1</tessellate>'\
-                    '<outerBoundaryIs><LinearRing><coordinates>\n'
-        kmlEntry += coordinates + '\n'
-        kmlEntry += '            </coordinates></LinearRing>'\
-                    '</outerBoundaryIs></Polygon></Placemark>\n'
-
-        return kmlEntry
 
     def get_border_wkt(self, *args, **kwargs):
         '''Creates string with WKT representation of the border polygon
