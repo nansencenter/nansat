@@ -6,7 +6,7 @@
 Welcome to Nansat's documentation!
 ==================================
 
-.. include:: ../about.rst
+.. include:: source/about.rst
 
 .. toctree::
    :maxdepth: 2
@@ -16,6 +16,7 @@ About Nansat
 ============
 
 .. * Background scientifics needs
+
 * Data formats readable with Nansat
 * Projects employing Nansat
 * How to get support
