@@ -40,7 +40,7 @@ from nansat.vrt import VRT
 # domain_something
 
 class Domain(object):
-    '''Container for geographical reference of a raster
+    """Container for geographical reference of a raster
 
     A Domain object describes all attributes of geographical
     reference of a raster:
@@ -79,10 +79,12 @@ class Domain(object):
     The main attribute of Domain is a VRT object self.vrt.
     Nansat inherits from Domain and adds bands to self.vrt
 
-    '''
+    """
+
+    # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
                  lat=None, name='', logLevel=None):
-        '''Create Domain from GDALDataset or string options or lat/lon grids
+        """Create Domain from GDALDataset or string options or lat/lon grids
 
         d = Domain(srs, ext)
             Size, extent and spatial reference is given by strings
@@ -140,7 +142,7 @@ class Domain(object):
         [http://spatialreference.org/]
         [http://www.gdal.org/ogr/osr_tutorial.html]
 
-        '''
+        """
         # set default attributes
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
@@ -180,20 +182,21 @@ class Domain(object):
         elif srs is not None and ext is not None:
             srs = NSR(srs)
             # create full dictionary of parameters
-            extentDic = self._create_extentDic(ext)
+            extent_dic = self._create_extentDic(ext)
 
             # convert -lle to -te
-            if 'lle' in extentDic.keys():
-                extentDic = self._convert_extentDic(srs, extentDic)
+            if 'lle' in extent_dic.keys():
+                # TODO: Change _convert_extentDic funcname
+                extent_dic = self._convert_extentDic(srs, extent_dic)
 
             # get size/extent from the created extet dictionary
-            geoTransform, rasterXSize, rasterYSize = self._get_geotransform(extentDic)
+            geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dic)
             # create VRT object with given geo-reference parameters
-            self.vrt = VRT(srcGeoTransform=geoTransform,
+            self.vrt = VRT(srcGeoTransform=geo_transform,
                            srcProjection=srs.wkt,
-                           srcRasterXSize=rasterXSize,
-                           srcRasterYSize=rasterYSize)
-            self.extentDic = extentDic
+                           srcRasterXSize=raster_x_size,
+                           srcRasterYSize=raster_y_size)
+            self.extent_dic = extent_dic
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT(lat=lat, lon=lon)
