@@ -13,6 +13,7 @@
 import unittest
 import os
 
+import numpy as np
 import gdal
 
 from nansat.vrt import VRT
@@ -48,7 +49,6 @@ class VRTTest(unittest.TestCase):
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file)
-        
         vrt = VRT.from_dataset_params(ds.RasterXSize,
                                       ds.RasterYSize,
                                       ds.GetGeoTransform(),
@@ -64,10 +64,19 @@ class VRTTest(unittest.TestCase):
 
     def test_from_array(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
-        
         vrt = VRT.from_array(array)
                                       
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, array.shape[1])
+
+    def test_from_lonlat(self):
+        lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
+        vrt = VRT.from_lonlat(lon, lat)
+
+        self.assertIsInstance(vrt, VRT)
+        self.assertIsInstance(vrt.fileName, str)
+        self.assertIsInstance(vrt.dataset, gdal.Dataset)
+        self.assertEqual(vrt.dataset.RasterXSize, 10)
+        self.assertEqual(vrt.dataset.RasterYSize, 30)

@@ -34,7 +34,7 @@ from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
-from nansat.geolocation_array import GeolocationArray
+from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
 from nansat.tools import parse_time, test_openable

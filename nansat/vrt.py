@@ -26,7 +26,7 @@ import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
-from nansat.geolocation_array import GeolocationArray
+from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, gdal, osr, OptionError, numpy_to_gdal_type, gdal_type_to_offset
 
 # TODO: Think which variables we should rename
@@ -131,7 +131,7 @@ class VRT(object):
         vrt.dataset.SetProjection(gdal_dataset.GetProjection())
         vrt.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
         vrt.dataset.SetMetadata(gdal_dataset.GetMetadata())
-        vrt._add_geolocation_array(GeolocationArray(dataset=gdal_dataset))
+        vrt._add_geolocation(Geolocation.from_dataset(gdal_dataset))
         vrt.dataset.SetMetadataItem('fileName', vrt.fileName)
 
         # write file contents
@@ -196,7 +196,7 @@ class VRT(object):
         vrt = cls(lon.shape[1], lon.shape[0], **kwargs)
 
         vrt.dataset.SetGCPs(vrt._latlon2gcps(lat, lon), NSR().wkt)
-        vrt._add_geolocation_array(GeolocationArray(VRT.from_array(lon), VRT.from_array(lat)))
+        vrt._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
 
         return vrt
 # TODO:
@@ -796,24 +796,22 @@ class VRT(object):
         # write XML contents to
         self.write_xml(contents)
 
-    def _add_geolocation_array(self, geolocation_array):
-        """ Add GEOLOCATION ARRAY to the VRT
+    def _add_geolocation(self, geolocation):
+        """ Add GEOLOCATION to the VRT
 
         Parameters
         -----------
-        geolocationArray: GeolocationArray object
+            geolocation: Geolocation
+                with grids of X/Y coordinates
 
         Modifes
         --------
-        Add geolocationArray to self
-        Sets GEOLOCATION ARRAY metadata
+        Add geolocation to self
+        Sets GEOLOCATION metadata
 
         """
-        self.geolocationArray = geolocation_array
-
-        # add GEOLOCATION ARRAY metadata  if geolocationArray is not empty
-        if len(geolocationArray.data) > 0:
-            self.dataset.SetMetadata(geolocationArray.data, 'GEOLOCATION')
+        self.geolocation = geolocation
+        self.dataset.SetMetadata(geolocation.data, 'GEOLOCATION')
 
     def _remove_geolocation_array(self):
         """ Remove GEOLOCATION ARRAY from the VRT

@@ -1,5 +1,5 @@
-# Name:    geolocation_array.py
-# Purpose: Container of GeolocationDomain classes
+# Name:    geolocation.py
+# Purpose: Container of Geolocation class
 # Authors:      Anton Korosov
 # Created:      14.01.2018
 # Copyright:    (c) NERSC 2011 - 2018
@@ -19,19 +19,19 @@ import gdal, osr
 from nansat.nsr import NSR
 
 
-class GeolocationArray():
-    """Container for GEOLOCATION ARRAY data
+class Geolocation(object):
+    """Container for GEOLOCATION data
 
     Keeps references to bands with X and Y coordinates, offset and step
     of pixel and line. All information is stored in dictionary self.data
 
-    Instance of GeolocationArray is used in VRT and ususaly created in
+    Instance of Geolocation is used in VRT and ususaly created in
     a Mapper.
     """
     def __init__(self, x_vrt, y_vrt,
                  x_band=1, y_band=1, srs=NSR().wkt, line_offset=0, line_step=1,
                  pixel_offset=0, pixel_step=1):
-        """Create GeolocationArray object from input parameters
+        """Create Geolocation object from input parameters
 
         Parameters
         -----------
@@ -58,7 +58,6 @@ class GeolocationArray():
         self.x_vrt = x_vrt
         self.y_vrt = y_vrt
 
-
         self.data['SRS'] = srs
         self.data['X_DATASET'] = x_vrt.fileName
         self.data['Y_DATASET'] = y_vrt.fileName
@@ -69,16 +68,16 @@ class GeolocationArray():
         self.data['PIXEL_OFFSET'] = str(pixel_offset)
         self.data['PIXEL_STEP'] = str(pixel_step)
 
-# TODO: find usage and make a separate class method
-#        # make empty object
-#        if x_vrt_name is None or y_vrt_name is None:
-#            return
+    @classmethod
+    def from_dataset(cls, dataset):
+        """Create geolocation from GDAL dataset"""
+        self = cls.__new__(cls) # empty object
+        self.x_vrt = None
+        self.y_vrt = None
+        self.data = dataset.GetMetadata('GEOLOCATION')
+        
+        return self
 
-# TODO: find usage and make a separate class method
-#        # make object from GDAL dataset
-#        if dataset is not None:
-#            self.data = dataset.GetMetadata('GEOLOCATION')
-#            return
 
     def get_geolocation_grids(self):
         """Read values of geolocation grids"""
