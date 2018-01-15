@@ -329,7 +329,7 @@ class Domain(object):
         # open KML, write the modified template
         with open(kml_filename, 'wt') as kml_file:
             kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
-            kml_file.write(self.KML_BASE.format(kml_content))
+            kml_file.write(self.KML_BASE.format(content=kml_content))
 
     def _get_border_kml(self):
         """Generate Placemark entry for KML
@@ -423,7 +423,7 @@ class Domain(object):
             kml_content = template.format(filename=kml_filename, figurename=kml_figurename,
                                           north=max(domain_lat), south=min(domain_lat),
                                           east=max(domain_lon), west=min(domain_lon))
-            kml_file.write(self.KML_BASE.format(kml_content))
+            kml_file.write(self.KML_BASE.format(content=kml_content))
 
     def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
         '''Get longitude and latitude grids representing the full data grid
