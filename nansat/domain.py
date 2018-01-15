@@ -288,7 +288,7 @@ class Domain(object):
             # if only input XML-file is given - convert it to KML
 
             # open XML, get all domains
-            xml_file = file(xml_filename, 'rb')
+            xml_file = open(xml_filename, 'rb')
             kml_filename = xml_filename + '.kml'
             xml_domains = ElementTree(file=xml_file).getroot()
             xml_file.close()
@@ -313,7 +313,7 @@ class Domain(object):
         # open KML, write header
         # TODO: Hardkode of constants inside of the function
         # TODO: To many runs of one function! Can we run that once for whole strings?
-        kml_file = file(kml_filename, 'wt')
+        kml_file = open(kml_filename, 'wt')
         kml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         kml_file.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
                        'xmlns:gx="http://www.google.com/kml/ext/2.2" '
