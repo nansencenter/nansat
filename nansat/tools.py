@@ -299,3 +299,27 @@ def test_openable(fname):
     f.close()
 
 register_colormaps()
+
+
+numpy_to_gdal_type = {
+    'uint8': 'Byte',
+    'int8': 'Byte',
+    'uint16': 'UInt16',
+    'int16': 'Int16',
+    'uint32': 'UInt32',
+    'int32': 'Int32',
+    'float32': 'Float32',
+    'float64': 'Float64',
+    'complex64': 'CFloat32',
+    'complex128': 'CFloat64'}
+
+gdal_type_to_offset = {
+    'Byte': '1',
+    'UInt16': '2',
+    'Int16': '2',
+    'UInt32': '4',
+    'Int32': '4',
+    'Float32': '4',
+    'Float64': '8',
+    'CFloat32': '8',
+    'CFloat64': '16'}
