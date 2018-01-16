@@ -30,7 +30,7 @@ from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.tools import OptionError, gdal, ogr
 from nansat.figure import Image
-
+import sys
 import nansat_test_data as ntd
 
 
@@ -232,6 +232,47 @@ class DomainTest(unittest.TestCase):
         self.assertFalse(Norway.contains(WestCoast))
         self.assertFalse(Paris.overlaps(Norway))
         self.assertFalse(Paris.contains(Norway))
+
+    def test_check_extent_input(self):
+        test_data = (['te', '25', '70', '35', '72'],
+                     ['ts', '500', '500'],
+                     ['ts', '500'],
+                     ['ts', '500' 'str_test'],
+                     ['test_param', '500', '500'])
+
+        test_func = Domain._check_extent_input
+
+        self.assertEqual(test_func(test_data[0], ['te', 'lle'], 4), None)
+        self.assertEqual(test_func(test_data[1], ['ts', 'tr'], 2), None)
+
+        try:
+            test_func(test_data[2], ['ts', 'tr'], 2)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, 'ts requires exactly 2 parameters (1 given)')
+
+        try:
+            test_func(test_data[3], ['ts', 'tr'], 2)
+        except OptionError as val_err:
+            self.assertEqual(val_err.message, 'Input values must be int or float')
+
+        try:
+            test_func(test_data[4], ['ts', 'tr'], 2)
+        except OptionError as param_err:
+            self.assertEqual(param_err.message,
+                             'Expeced parameter is te, lle, ts, tr. (test_param given)')
+
+    def test_create_extent_dict(self):
+        test_data = ('-te 5 60 6 61 -ts 500 500',
+                     '-te 5 60 6 61')
+
+        extent_dict = Domain._create_extent_dict(test_data[0])
+        self.assertEqual(extent_dict, {'te': [5.0, 60.0, 6.0, 61.0], 'ts': [500.0, 500.0]})
+
+        try:
+            Domain._create_extent_dict(test_data[0])
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '_create_extentDic requires '
+                                              'exactly 2 parameters (1 given)')
 
 
 if __name__ == "__main__":

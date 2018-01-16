@@ -192,21 +192,20 @@ class Domain(object):
         elif srs is not None and ext is not None:
             srs = NSR(srs)
             # create full dictionary of parameters
-            extent_dic = self._create_extentDic(ext)
+            extent_dict = Domain._create_extent_dict(ext)
 
             # convert -lle to -te
-            if 'lle' in extent_dic.keys():
-                # TODO: Change _convert_extentDic funcname
-                extent_dic = self._convert_extentDic(srs, extent_dic)
+            if 'lle' in extent_dict.keys():
+                extent_dict = self._convert_extentDic(srs, extent_dict)
 
-            # get size/extent from the created extet dictionary
-            geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dic)
+            # get size/extent from the created extent dictionary
+            geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dict)
             # create VRT object with given geo-reference parameters
             self.vrt = VRT.from_dataset_params(x_size=raster_x_size, y_size=raster_y_size,
-                                                geo_transform=geo_transform,
-                                                projection=srs.wkt,
-                                                gcps=[], gcp_projection='')
-            self.extent_dic = extent_dic
+                                               geo_transform=geo_transform,
+                                               projection=srs.wkt,
+                                               gcps=[], gcp_projection='')
+            self.extent_dic = extent_dict
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
@@ -274,7 +273,7 @@ class Domain(object):
                                                                corners[1][3])
         return out_str
 
-    # TODO: Test requested
+    # TODO: Test write_kml
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         """Write KML file with domains
 
@@ -329,8 +328,9 @@ class Domain(object):
         # open KML, write the modified template
         with open(kml_filename, 'wt') as kml_file:
             kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
-            kml_file.write(self.KML_BASE.format(kml_content))
+            kml_file.write(self.KML_BASE.format(content=kml_content))
 
+    # TODO: Test _get_border_kml
     def _get_border_kml(self):
         """Generate Placemark entry for KML
 
@@ -423,7 +423,7 @@ class Domain(object):
             kml_content = template.format(filename=kml_filename, figurename=kml_figurename,
                                           north=max(domain_lat), south=min(domain_lat),
                                           east=max(domain_lon), west=min(domain_lon))
-            kml_file.write(self.KML_BASE.format(kml_content))
+            kml_file.write(self.KML_BASE.format(content=kml_content))
 
     def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
         '''Get longitude and latitude grids representing the full data grid
@@ -445,25 +445,25 @@ class Domain(object):
         latitude : numpy array
             grid with latitudes
         '''
-
-        # TODO: X, Y are not constant!
-        X = range(0, self.vrt.dataset.RasterXSize, stepSize)
-        Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
-        Xm, Ym = np.meshgrid(X, Y)
+        step_size = stepSize
+        dst_srs = dstSRS
+        x_vec = range(0, self.vrt.dataset.RasterXSize, step_size)
+        y_vec = range(0, self.vrt.dataset.RasterYSize, step_size)
+        x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
         if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
             # TODO: lat, lon name convention
-            lon, lat = self.vrt.geolocation.get_geolocation_grids()
-            longitude, latitude = lon[Ym, Xm], lat[Ym, Xm]
+            lon_grid, lat_grid = self.vrt.geolocation.get_geolocation_grids()
+            lon_arr, lat_arr = lon_grid[y_grid, x_grid], lat_grid[y_grid, x_grid]
         else:
             # generate lon,lat grids using GDAL Transformer
-            lonVec, latVec = self.transform_points(Xm.flatten(), Ym.flatten(), dstSRS=dstSRS)
-            longitude = lonVec.reshape(Xm.shape)
-            latitude = latVec.reshape(Xm.shape)
+            lon_vec, lat_vec = self.transform_points(x_grid.flatten(), y_grid.flatten(), dstSRS=dst_srs)
+            lon_arr = lon_vec.reshape(x_grid.shape)
+            lat_arr = lat_vec.reshape(x_grid.shape)
 
-        return longitude, latitude
+        return lon_arr, lat_arr
 
     def _convert_extentDic(self, dstSRS, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
@@ -506,8 +506,23 @@ class Domain(object):
 
         return extentDic
 
-    def _create_extentDic(self, extentString):
-        '''Create a dictionary from extentString
+    # TODO: Document and comment _check_parser_input
+    @staticmethod
+    def _check_extent_input(option_vars, params, size):
+        if option_vars[0] in params:
+            try:
+                # Check type of input values during counting of length
+                if len([float(el) for el in option_vars[1:]]) != size:
+                    raise OptionError('%s requires exactly %s parameters (%s given)'
+                                      % (option_vars[0], size, len(option_vars[1:])))
+            except ValueError:
+                raise OptionError('Input values must be int or float')
+        else:
+            raise OptionError('Expeced parameter is te, lle, ts, tr. (%s given)' % option_vars[0])
+
+    @staticmethod
+    def _create_extent_dict(extent_str):
+        """Create a dictionary from extentString
 
         Check if extentString is proper.
             * '-te' and '-lle' take 4 numbers.
@@ -531,127 +546,24 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when the extentString is improper
+        OptionError : occurs when the extent_str is improper
 
-        '''
-        extentDic = {}
+        """
+        options = extent_str.strip().split('-')[1:]
 
-        # Find -re text
-        # TODO: 4 time duplication of ~same function
-        str_tr = re.findall('-tr\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                            extentString)
-        if str_tr != []:
-            # Check the number of -tr elements
-            elm_str = str(str_tr[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 3 or elms_str[2] == '-':
-                raise OptionError('Domain._create_extentDic():'
-                                  '-tr is used as'
-                                  '"-tr xResolution yResolution"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_tr[0], '')
-            trElem = str(str_tr).split(None)
-            trkey = trElem[0].translate(string.maketrans('', ''), "[]-'")
-            if trkey != '':
-                elements = []
-                for i in range(2):
-                    elements.append(float(trElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "'[]'")))
-                extentDic[trkey] = elements
+        if len(options) != 2:
+            raise OptionError('_create_extentDic requires exactly '
+                              '2 parameters (%s given)' % len(options))
 
-        # Find -ts text
-        str_ts = re.findall('-ts\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                            extentString)
-        if str_ts != []:
-            # Check the number of -ts elements
-            elm_str = str(str_ts[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 3 or elms_str[2] == '-':
-                raise OptionError('Domain._create_extentDic(): '
-                                  '"-ts" is used as "-ts width height"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_ts[0], '')
-            tsElem = str(str_ts).split(None)
-            tskey = tsElem[0].translate(string.maketrans('', ''), "[]-'")
-            if tskey != '':
-                elements = []
-                for i in range(2):
-                    elements.append(float(tsElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "[]'")))
-                extentDic[tskey] = elements
+        options = list(map(lambda opt: opt.split(), options))
+        Domain._check_extent_input(options[0], ['te', 'lle'], 4)
+        Domain._check_extent_input(options[1], ['ts', 'tr'], 2)
 
-        # Find -te text
-        str_te = re.findall('-te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
-                            '+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                            extentString)
-        if str_te != []:
-            # Check the number of -te elements
-            elm_str = str(str_te[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 5:
-                raise OptionError('Domain._create_extentDic():'
-                                  '-te is used as "-te xMin yMin xMax yMax"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_te[0], '')
-            teElem = str(str_te).split(None)
-            tekey = teElem[0].translate(string.maketrans('', ''), "[]-'")
-            if tekey != '':
-                elements = []
-                for i in range(4):
-                    elements.append(float(teElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "[]'")))
-                extentDic[tekey] = elements
+        extent = {}
+        for option in options:
+            extent[option[0]] = [float(el) for el in option[1:]]
 
-        # Find -lle text
-        str_lle = re.findall('-lle\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
-                             '+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                             extentString)
-        if str_lle != []:
-            # Check the number of -lle elements
-            elm_str = str(str_lle[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 5:
-                raise OptionError('Domain._create_extentDic():'
-                                  '-lle is used as '
-                                  '"-lle minlon minlat maxlon maxlat"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_lle[0], '')
-            lleElem = str(str_lle).split(None)
-            llekey = lleElem[0].translate(string.maketrans('', ''), "[]-'")
-            if llekey != '':
-                elements = []
-                for i in range(4):
-                    elements.append(float(lleElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "[]'")))
-                extentDic[llekey] = elements
-
-        result = re.search('\S', extentString)
-        # if there are unnecessary letters, give an error
-        if result is not None:
-            raise OptionError('Domain._create_extentDic():'
-                              'extentString is not redable :',
-                              extentString)
-
-        # check if one of '-te' and '-lle' is given
-        if ('lle' not in extentDic) and ('te' not in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-lle" or "-te" is required.')
-        elif ('lle' in extentDic) and ('te' in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-lle" or "-te" should be chosen.')
-
-        # check if one of '-ts' and '-tr' is given
-        if ('ts' not in extentDic) and ('tr' not in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-ts" or "-tr" is required.')
-        elif ('ts' in extentDic) and ('tr' in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-ts" or "-tr" should be chosen.')
-        return extentDic
+        return extent
 
     def get_border(self, nPoints=10, **kwargs):
         '''Generate two vectors with values of lat/lon for the border of domain
@@ -691,33 +603,29 @@ class Domain(object):
 
         return self.transform_points(colVector, rowVector)
 
+    # TODO: Test get_border_wkt
     def get_border_wkt(self, *args, **kwargs):
-        '''Creates string with WKT representation of the border polygon
+        """Creates string with WKT representation of the border polygon
 
         Returns
         --------
         WKTPolygon : string
             string with WKT representation of the border polygon
 
-        '''
-        lonList, latList = self.get_border(*args, **kwargs)
+        """
+        lon_list, lat_list = self.get_border(*args, **kwargs)
 
         ''' The following causes erratic geometry when using
         WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
         now since this may cause other problems...
         '''
         warnings.warn("> 180 deg correction to longitudes - disabled..")
-        # TODO: Old code
-        ## apply > 180 deg correction to longitudes
-        #for ilon, lon in enumerate(lonList):
-        #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
-        #                             sin(lon * pi / 180.))
 
-        polyCont = ','.join(str(lon) + ' ' + str(lat)
-                            for lon, lat in zip(lonList, latList))
+        # TODO: Should be done with geos finctional
+        polygon_bourder = ','.join('%s %s' % (lon, lat) for lon, lat in zip(lon_list, lat_list))
         # outer quotes have to be double and inner - single!
         # wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
-        wkt = 'POLYGON((%s))' % polyCont
+        wkt = 'POLYGON((%s))' % polygon_bourder
         return wkt
 
     def get_border_geometry(self, *args, **kwargs):
@@ -783,6 +691,18 @@ class Domain(object):
         rowVector = [0, self.vrt.dataset.RasterYSize, 0,
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
+
+    def get_min_max_lat_lon_beta(self):
+        """Get minimum and maximum lat and long values in the geolocation grid
+
+        Returns
+        --------
+        minLat, maxLat, minLon, maxLon : float
+            min/max lon/lat values for the Domain
+
+        """
+        lons, lats = self.get_geolocation_grids()
+        return min(lats), max(lats), min(lons), max(lons)
 
     def get_min_max_lat_lon(self):
         '''Get minimum and maximum lat and long values in the geolocation grid
