@@ -40,7 +40,7 @@ from nansat.vrt import VRT
 # domain_something
 
 class Domain(object):
-    '''Container for geographical reference of a raster
+    """Container for geographical reference of a raster
 
     A Domain object describes all attributes of geographical
     reference of a raster:
@@ -79,10 +79,22 @@ class Domain(object):
     The main attribute of Domain is a VRT object self.vrt.
     Nansat inherits from Domain and adds bands to self.vrt
 
+    """
+
+    KML_BASE = '''
+    <?xml version="1.0" encoding="UTF-8"?>
+    <kml xmlns="http://www.opengis.net/kml/2.2"
+    xmlns:gx="http://www.google.com/kml/ext/2.2"
+    xmlns:kml="http://www.opengis.net/kml/2.2"
+    xmlns:atom="http://www.w3.org/2005/Atom">
+    {content}
+    </kml>
     '''
+
+    # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
                  lat=None, name='', logLevel=None):
-        '''Create Domain from GDALDataset or string options or lat/lon grids
+        """Create Domain from GDALDataset or string options or lat/lon grids
 
         d = Domain(srs, ext)
             Size, extent and spatial reference is given by strings
@@ -140,7 +152,7 @@ class Domain(object):
         [http://spatialreference.org/]
         [http://www.gdal.org/ogr/osr_tutorial.html]
 
-        '''
+        """
         # set default attributes
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
@@ -180,20 +192,21 @@ class Domain(object):
         elif srs is not None and ext is not None:
             srs = NSR(srs)
             # create full dictionary of parameters
-            extentDic = self._create_extentDic(ext)
+            extent_dic = self._create_extentDic(ext)
 
             # convert -lle to -te
-            if 'lle' in extentDic.keys():
-                extentDic = self._convert_extentDic(srs, extentDic)
+            if 'lle' in extent_dic.keys():
+                # TODO: Change _convert_extentDic funcname
+                extent_dic = self._convert_extentDic(srs, extent_dic)
 
             # get size/extent from the created extet dictionary
-            geoTransform, rasterXSize, rasterYSize = self._get_geotransform(extentDic)
+            geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dic)
             # create VRT object with given geo-reference parameters
-            self.vrt = VRT.from_dataset_params(x_size=rasterXSize, y_size=rasterYSize,
-                                                geo_transform=geoTransform,
+            self.vrt = VRT.from_dataset_params(x_size=raster_x_size, y_size=raster_y_size,
+                                                geo_transform=geo_transform,
                                                 projection=srs.wkt,
-                                                gcps=[], gcp_projection='', metadata=dict())
-            self.extentDic = extentDic
+                                                gcps=[], gcp_projection='')
+            self.extent_dic = extent_dic
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
@@ -203,40 +216,67 @@ class Domain(object):
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
+    # TODO: Back later
+    def repr_beta(self):
+        separator = '-' * 40
+        corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)'
+        template = '''
+        Domain:[{x_size} x {y_size}]
+        {separator}
+        Projection:
+        {projection}
+        {separator}
+        Corners (lon, lat):
+        {top_corners}
+        {bottom_corners}        
+        '''
+
+        try:
+            corners = self.get_corners()
+            # TODO: Where is not going to be an exception
+        except Exception as e:
+            self.logger.error('Cannot read projection from source! '
+                              'Exception is: %s' % e.message)
+        x_size, y_size = self.shape()[::-1]
+        up_corners = corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
+        down_corners = corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
+        return template.format(separator=separator, x_size=x_size, y_size=y_size,
+                               top_corners=up_corners, bottom_corners=down_corners,
+                               projection=NSR(self.vrt.get_projection()).ExportToPrettyWkt(1))
+
     def __repr__(self):
-        '''Creates string with basic info about the Domain object
+        """Creates string with basic info about the Domain object
 
         Modifies
         ---------
         Print size, projection and corner coordinates
 
-        '''
-        outStr = 'Domain:[%d x %d]\n' % (self.vrt.dataset.RasterXSize,
-                                         self.vrt.dataset.RasterYSize)
-        outStr += '-' * 40 + '\n'
+        """
+        out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
+        out_str += '-' * 40 + '\n'
         try:
             corners = self.get_corners()
         except Exception as e:
-            self.logger.error('Cannot read projection from source! Exception' \
-                    ' is: %s'%e.message)
+            self.logger.error('Cannot read projection from source! '
+                              'Exception is: %s' % e.message)
         else:
-            outStr += 'Projection:\n'
-            outStr += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) +
-                       '\n')
-            outStr += '-' * 40 + '\n'
-            outStr += 'Corners (lon, lat):\n'
-            outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
+            out_str += 'Projection:\n'
+            out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
+            out_str += '-' * 40 + '\n'
+            out_str += 'Corners (lon, lat):\n'
+            out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
                                                                corners[1][0],
                                                                corners[0][2],
                                                                corners[1][2])
-            outStr += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
+            out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
                                                                corners[1][1],
                                                                corners[0][3],
                                                                corners[1][3])
-        return outStr
+        return out_str
 
+    # TODO: Test requested
     def write_kml(self, xmlFileName=None, kmlFileName=None):
-        '''Write KML file with domains
+        """Write KML file with domains
 
         Convert XML-file with domains into KML-file for GoogleEarth
         or write KML-file with the current Domain
@@ -250,25 +290,31 @@ class Domain(object):
         kmlFileName : string, optional
             Name of the KML-file to generate from the current Domain
 
+        """
+        xml_filename = xmlFileName
+        kml_filename = kmlFileName
+
+        template = '''
+        <Document>
+        \t<name>{filename}</name>
+        \t\t<Folder><name>{filename}</name><open>1</open>
+        {borders}
+        \t\t</Folder></Document>
         '''
+
         # test input options
-        if xmlFileName is not None and kmlFileName is None:
+        if xml_filename and not kml_filename:
             # if only input XML-file is given - convert it to KML
 
             # open XML, get all domains
-            xmlFile = file(xmlFileName, 'rb')
-            kmlFileName = xmlFileName + '.kml'
-            xmlDomains = ElementTree(file=xmlFile).getroot()
-            xmlFile.close()
+            with open(xml_filename, 'rb') as xml_file:
+                xml_domains = list(ElementTree(file=xml_file).getroot())
 
             # convert domains in XML into list of domains
-            domains = []
-            for xmlDomain in list(xmlDomains):
-                # append Domain object to domains list
-                domainName = xmlDomain.attrib['name']
-                domains.append(Domain(srs=xmlFileName, ext=domainName))
+            domains = [Domain(srs=xml_filename, ext=domain.attrib['name'])
+                       for domain in xml_domains]
 
-        elif xmlFileName is None and kmlFileName is not None:
+        elif not xml_filename and kml_filename:
             # if only output KML-file is given
             # then convert the current domain to KML
             domains = [self]
@@ -276,32 +322,41 @@ class Domain(object):
         else:
             # otherwise it is potentially error
             raise OptionError('Either xmlFileName(%s)\
-             or kmlFileName(%s) are wrong' % (xmlFileName, kmlFileName))
+             or kmlFileName(%s) are wrong' % (xml_filename, kml_filename))
 
-        # open KML, write header
-        # TODO: Hardkode of constants inside of the function
-        # TODO: To many runs of one function! Can we run that once for whole strings?
-        kmlFile = file(kmlFileName, 'wt')
-        kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                      'xmlns:gx="http://www.google.com/kml/ext/2.2" '
-                      'xmlns:kml="http://www.opengis.net/kml/2.2" '
-                      'xmlns:atom="http://www.w3.org/2005/Atom">\n')
-        kmlFile.write('<Document>\n')
-        kmlFile.write('    <name>%s</name>\n' % kmlFileName)
-        kmlFile.write('        <Folder><name>%s</name><open>1</open>\n'
-                      % kmlFileName)
+        # get border of each domain and join them to a one string
+        borders = ''.join([domain._get_border_kml() for domain in domains])
+        # open KML, write the modified template
+        with open(kml_filename, 'wt') as kml_file:
+            kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
+            kml_file.write(self.KML_BASE.format(kml_content))
 
-        # get border of each domain and add to KML
-        for domain in list(domains):
-            kmlEntry = domain._get_border_kml()
-            kmlFile.write(kmlEntry)
+    def _get_border_kml(self):
+        """Generate Placemark entry for KML
 
-        # write footer and close
-        kmlFile.write('        </Folder></Document></kml>\n')
-        kmlFile.close()
+        Returns
+        --------
+        kmlEntry : String
+            String with the Placemark entry
 
-    def write_kml_image(self, kmlFileName=None, kmlFigureName=None):
+        """
+        klm_entry = '''
+        \t\t\t<Placemark>
+        \t\t\t\t<name>{name}</name>
+        \t\t\t\t<Style>
+        \t\t\t\t\t<LineStyle><color>ffffffff</color></LineStyle>
+        \t\t\t\t\t<PolyStyle><fill>0</fill>'
+        \t\t\t\t</Style>
+        \t\t\t\t<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>
+        {coordinates}
+        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+        '''
+        domain_lon, domain_lat = self.get_border()
+        # convert Border coordinates into KML-like string
+        coordinates = ''.join(['%f,%f,0 ' % (lon, lat) for lon, lat in zip(domain_lon, domain_lat)])
+        return klm_entry.format(name=self.name, coordinates=coordinates)
+
+    def write_kml_image(self, kmlFileName, kmlFigureName=None):
         '''Create KML file for already projected image
 
         Write Domain Image into KML-file for GoogleEarth
@@ -337,43 +392,38 @@ class Domain(object):
                           kmlFigureName=figureName) # 6.
 
         '''
+
+        kml_filename = kmlFileName
+        kml_figurename = kmlFigureName
+
+        template = '''
+        <GroundOverlay>
+        \t<name>{filename}</name>
+        \t<Icon>
+        \t\t<href>{figurename}</href>
+        \t\t<viewBoundScale>0.75</viewBoundScale>
+        \t</Icon>
+        \t<LatLonBox>
+        \t\t<north>{north}</north>
+        \t\t<south>{south}</south>
+        \t\t<east>{east}</east>
+        \t\t<west>{west}</west>
+        \t</LatLonBox>
+        </GroundOverlay>
+        '''
         # test input options
-        if kmlFileName is None:
-            raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
-
-        if kmlFigureName is None:
-            raise OptionError('kmlFigureName(%s) is not specified'
-                              % (kmlFigureName))
-
-        # open KML, write header
-        # TODO: Hardkode and duplication (from write klm function) of constants inside of the function
-        kmlFile = file(kmlFileName, 'wt')
-        kmlFile.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        kmlFile.write('<kml xmlns="http://www.opengis.net/kml/2.2" '
-                      'xmlns:gx="http://www.google.com/kml/ext/2.2" '
-                      'xmlns:kml="http://www.opengis.net/kml/2.2" '
-                      'xmlns:atom="http://www.w3.org/2005/Atom">\n')
-        kmlFile.write('<GroundOverlay>\n')
-        kmlFile.write('    <name>%s</name>\n' % kmlFileName)
-        kmlFile.write('    <Icon>\n')
-        kmlFile.write('        <href>%s</href>\n' % kmlFigureName)
-        kmlFile.write('        <viewBoundScale>0.75</viewBoundScale>\n')
-        kmlFile.write('    </Icon>\n')
+        # TODO: kml_figurename can be not optional
+        if kml_figurename is None:
+            raise OptionError('kmlFigureName(%s) is not specified' % kmlFigureName)
 
         # get corner of the domain and add to KML
-        domainLon, domainLat = self.get_corners()
-
-        kmlFile.write('    <LatLonBox>\n')
-        kmlFile.write('        <north>%s</north>\n' % max(domainLat))
-        kmlFile.write('        <south>%s</south>\n' % min(domainLat))
-        kmlFile.write('        <east>%s</east>\n' % max(domainLon))
-        kmlFile.write('        <west>%s</west>\n' % min(domainLon))
-        kmlFile.write('    </LatLonBox>\n')
-
-        # write footer and close
-        kmlFile.write('</GroundOverlay>\n')
-        kmlFile.write('</kml>')
-        kmlFile.close()
+        # TODO: can we change that to max_min_lat_lon?
+        domain_lon, domain_lat = self.get_corners()
+        with open(kml_filename, 'wt') as kml_file:
+            kml_content = template.format(filename=kml_filename, figurename=kml_figurename,
+                                          north=max(domain_lat), south=min(domain_lat),
+                                          east=max(domain_lon), west=min(domain_lon))
+            kml_file.write(self.KML_BASE.format(kml_content))
 
     def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
         '''Get longitude and latitude grids representing the full data grid
@@ -641,41 +691,6 @@ class Domain(object):
 
         return self.transform_points(colVector, rowVector)
 
-    def _get_border_kml(self, *args, **kwargs):
-        '''Generate Placemark entry for KML
-
-        Returns
-        --------
-        kmlEntry : String
-            String with the Placemark entry
-
-        '''
-        domainLon, domainLat = self.get_border(*args, **kwargs)
-
-        # convert Border coordinates into KML-like string
-        coordinates = ''
-        # TODO: template?
-        for lon, lat in zip(domainLon, domainLat):
-            coordinates += '%f,%f,0 ' % (lon, lat)
-
-        kmlEntry = ''
-        # write placemark: name, style, polygon, coordinates
-        kmlEntry += '            <Placemark>\n'
-        kmlEntry += '                <name>%s</name>\n' % self.name
-        kmlEntry += '                <Style>\n'
-        kmlEntry += '                    <LineStyle><color>ffffffff</color>'\
-                    '</LineStyle>\n'
-        kmlEntry += '                    <PolyStyle><fill>0</fill>'\
-                    '</PolyStyle>\n'
-        kmlEntry += '                </Style>\n'
-        kmlEntry += '                <Polygon><tessellate>1</tessellate>'\
-                    '<outerBoundaryIs><LinearRing><coordinates>\n'
-        kmlEntry += coordinates + '\n'
-        kmlEntry += '            </coordinates></LinearRing>'\
-                    '</outerBoundaryIs></Polygon></Placemark>\n'
-
-        return kmlEntry
-
     def get_border_wkt(self, *args, **kwargs):
         '''Creates string with WKT representation of the border polygon
 
@@ -891,6 +906,7 @@ class Domain(object):
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
+    # TODO: Do we need that method?
     def transform_points(self, colVector, rowVector, DstToSrc=0,
                          dstSRS=NSR()):
 

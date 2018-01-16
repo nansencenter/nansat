@@ -116,7 +116,7 @@ class VRT(object):
 
     @classmethod
     def from_dataset_params(cls, x_size, y_size, geo_transform, projection, 
-                         gcps, gcp_projection, metadata, **kwargs):
+                         gcps, gcp_projection, **kwargs):
         """Create VRT from GDAL dataset parameters"""
         vrt = cls.__new__(cls)
         vrt._init_from_dataset_params(x_size, y_size, geo_transform, projection, 
@@ -168,12 +168,13 @@ class VRT(object):
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
 
     def _init_from_dataset_params(self, x_size, y_size, geo_transform, projection, 
-                         gcps=list(), gcp_projection='', **kwargs):
+                         gcps=None, gcp_projection='', **kwargs):
         VRT.__init__(self, x_size, y_size, **kwargs)
         # set dataset (geo-)metadata 
         self.dataset.SetProjection(projection)
         self.dataset.SetGeoTransform(geo_transform)
-        self.dataset.SetGCPs(gcps, gcp_projection)
+        if isinstance(gcps, (list, tuple)):
+            self.dataset.SetGCPs(gcps, gcp_projection)
         self.dataset.SetMetadataItem('fileName', self.fileName)
         
         # write file contents

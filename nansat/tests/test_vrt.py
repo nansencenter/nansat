@@ -70,8 +70,7 @@ class VRTTest(unittest.TestCase):
                                       ds.GetGeoTransform(),
                                       ds.GetProjection(),
                                       ds.GetGCPs(),
-                                      ds.GetGCPProjection(),
-                                      ds.GetMetadata())
+                                      ds.GetGCPProjection())
                                       
         filename_vrt = vrt.fileName
         filename_raw = vrt.fileName.replace('.vrt', '.raw')
@@ -80,6 +79,7 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(filename_raw, str)
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
+        self.assertIsInstance(vrt.dataset.GetGCPs(), tuple)
         
     def test_from_array(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
