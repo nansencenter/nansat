@@ -44,7 +44,7 @@ LICENSE             = "GNU General Public License"
 CLASSIFIERS         = '***'  # filter(None, CLASSIFIERS.split('\n'))
 AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Aleksander Vines, Asuka Yamakawa")
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
-PLATFORMS           = ["UNKNOWN"]
+PLATFORMS           = ["Linux", "OS X", "Windows"]
 MAJOR               = 0
 MINOR               = 6
 MICRO               = 15
@@ -63,18 +63,21 @@ skip_compile = False
 libraries = []
 include_dirs = []
 library_dirs = []
-if sys.platform == 'win32':
+if os.name == 'nt':
     extra_compile_args = ['-nologo', '-DLL']
-    path = os.environ['LIB'].split(';')
-    for iFolder in path:
-        try:
-            files = os.listdir(iFolder)
-        except:
-            extra_link_args = []
-        else:
-            if 'gdal_i.lib' in files:
-                extra_link_args = [iFolder + '/gdal_i.lib']
-                break
+    try:
+        path = os.environ['CONDA_PREFIX'] + '\Library\lib'
+    except:
+        # TODO: figure out how this works if you are not using conda
+        path = os.environ['LIB'].split(';')
+    #for iFolder in path:
+    try:
+        files = os.listdir(path)
+    except:
+        extra_link_args = []
+    else:
+        if 'gdal_i.lib' in files:
+            extra_link_args = [path + '\gdal_i.lib']
 else:
     extra_compile_args = ['-fPIC', '-Wall', '-Wno-long-long', '-pedantic', '-O3']
     extra_link_args = [] # not used currently
@@ -97,12 +100,26 @@ def use_gdal_config():
     _ask_gdal_config(library_dirs, '--libs', '-L')
     _ask_gdal_config(libraries,    '--libs', '-l')
 
+def use_win_config():
+    #try:
+    path = os.environ['CONDA_PREFIX']
+    include_dirs[:] = [path+'\Library\include']
+    #except:
+        # TODO: figure out how this works if you are not using conda
+        # path = os.environ['LIB'].split(';')
 
 try:
-    use_gdal_config()
+    if os.name == 'nt':
+        use_win_config()
+    else:
+        use_gdal_config()
 except Exception as e:
-    print 'WARNING: gdal-config could not be called, ' +\
-          'pixel functions will not be available.'
+    if os.name == 'nt':
+        print 'WARNING: CONDA_PREFIX could not be found, ' +\
+        'pixel functions will not be available.'
+    else:
+        print 'WARNING: gdal-config could not be called, ' +\
+              'pixel functions will not be available.'
     print 'Error details follow:'
     print repr(e)
     skip_compile = True
