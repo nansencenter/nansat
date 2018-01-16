@@ -51,8 +51,11 @@ to the directory with this data to an environment variable named MOD44WPATH (e.g
 Developer documentation
 =======================
 
-* Nansat conventions
-* How to create a mapper
+.. toctree::
+   :maxdepth: 2
+
+   source/conventions.rst
+   source/create_mapper.rst
 
 Indices and tables
 ==================

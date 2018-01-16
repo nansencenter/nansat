@@ -27,16 +27,16 @@ Nansat depends on the following packages:
 
 The most tricky is to install GDAL and Basemap. One can find pre-built binaries
 available for different platforms. However, we recommend to download the source and
-build GDAL on your computer for reading e.g. NetCDF or HDF5 files. Some hints are
-given on the [GDAL web-site](http://trac.osgeo.org/gdal/wiki/BuildHints).
+build GDAL on your computer for reading, e.g., NetCDF or HDF5 files. Some hints are
+given on the `GDAL web-site <http://trac.osgeo.org/gdal/wiki/BuildHints>`_.
 
 Another option is to use a virtual machine managed by Virtualbox and provisioned
-using Vagrant and Ansible. We provide [configuration for virtual
-machine](https://github.com/nansencenter/nersc-vagrant) for learning and development
-of Nansat.
+using Vagrant and Ansible. We provide 
+`configurations for virtual machines <https://github.com/nansencenter/geo-spaas-vagrant>`_ 
+for learning and development of Nansat.
 
 Here are **instructions** how to initialize a virtual machine and materials for
-[Nansat lectures](https://github.com/nansencenter/nansat-lectures) 
+`Nansat lectures <https://github.com/nansencenter/nansat-lectures>`_.
 
 For regular users
 ^^^^^^^^^^^^^^^^^
@@ -60,11 +60,8 @@ is performed.
 Install from PyPi
 -----------------
 
+TODO: Add instructions when 
+
 Install from Anaconda
 ---------------------
 
-Stay updated
-------------
-
-Keep an eye on the `releases <https://github.com/nansencenter/nansat/releases>`_ or join the
-`mailing list <https://groups.google.com/forum/#!forum/nansat-dev>`_.
