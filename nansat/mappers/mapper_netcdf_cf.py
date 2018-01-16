@@ -10,14 +10,12 @@ import gdal
 from dateutil.parser import parse
 from netCDF4 import Dataset
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.tools import WrongMapperError, parse_time
 
 class Mapper(VRT):
-
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
-
         # test_nansat is failing - this mapper needs more work..
         #raise WrongMapperError
 
@@ -330,15 +328,15 @@ class Mapper(VRT):
             if not fn:
                 raise WrongMapperError
             sub = gdal.Open(fn[0])
-            super(Mapper, self).__init__(
-                    srcRasterXSize = sub.RasterXSize,
-                    srcRasterYSize = sub.RasterYSize, 
-                    srcGeoTransform = sub.GetGeoTransform(), 
-                    srcProjection = NSR().wkt, 
-                    srcMetadata = gdal_metadata)
+            self._init_dataset_params(
+                    x_size = sub.RasterXSize,
+                    y_size = sub.RasterYSize, 
+                    geo_transform = sub.GetGeoTransform(), 
+                    projection = NSR().wkt, 
+                    metadata = gdal_metadata)
         else:
             sub0 = gdal.Open(subfiles[0])
-            super(Mapper, self).__init__(gdalDataset=sub0, srcMetadata=gdal_metadata)
+            self._init_gdal_dataset(sub0, metadata=gdal_metadata)
 
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         if not gdal_metadata:

@@ -21,7 +21,8 @@ else:
     cfunitsInstalled = True
 
 from nansat.nsr import NSR
-from nansat.vrt import VRT, GeolocationArray
+from nansat.geolocation import Geolocation
+from nansat.vrt import VRT
 from nansat.tools import gdal, WrongMapperError, parse_time
 
 # TODO: remove WrongMapperError
@@ -153,7 +154,7 @@ class Mapper(VRT):
                         metaDict.append({'src': src, 'dst': dst})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, firstSubDataset, srcMetadata=gdalMetadata)
+        self._init_from_gdal_dataset(firstSubDataset, metadata=gdalMetadata)
 
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
@@ -201,8 +202,7 @@ class Mapper(VRT):
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
-            self._add_geolocation_array(GeolocationArray(xDatasetSource,
-                                                       yDatasetSource))
+            self._add_geolocation_array(Geolocation(xDatasetSource, yDatasetSource))
 
         elif not gcps:
             # if no GCPs found and not GEOLOCATION ARRAY set:
@@ -298,7 +298,7 @@ class Mapper(VRT):
             self.dataset.SetMetadataItem('instrument', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
-
+        
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
         return projection.replace("|", ",").replace("&", '"')

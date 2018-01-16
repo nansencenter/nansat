@@ -12,7 +12,7 @@ import json
 import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import GeolocationArray, VRT
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.mappers.obpg import OBPGL2BaseClass
 

@@ -14,7 +14,7 @@ import pythesint as pti
 
 import numpy as np
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.tools import gdal, ogr, WrongMapperError
 

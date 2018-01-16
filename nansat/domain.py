@@ -175,7 +175,7 @@ class Domain(object):
         # if only a dataset is given:
         #     copy geo-reference from the dataset
         if ds is not None and srs is None:
-            self.vrt = VRT(gdalDataset=ds)
+            self.vrt = VRT.from_gdal_dataset(ds)
 
         # If dataset and srs are given (but not ext):
         #   use AutoCreateWarpedVRT to determine bounds and resolution
@@ -186,7 +186,7 @@ class Domain(object):
                 raise ProjectionError('Could not warp the given dataset'
                                       'to the given SRS.')
             else:
-                self.vrt = VRT(gdalDataset=tmpVRT)
+                self.vrt = VRT.from_gdal_dataset(tmpVRT)
 
         # If SpatialRef and extent string are given (but not dataset)
         elif srs is not None and ext is not None:
@@ -202,14 +202,14 @@ class Domain(object):
             # get size/extent from the created extent dictionary
             geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dic)
             # create VRT object with given geo-reference parameters
-            self.vrt = VRT(srcGeoTransform=geo_transform,
-                           srcProjection=srs.wkt,
-                           srcRasterXSize=raster_x_size,
-                           srcRasterYSize=raster_y_size)
+            self.vrt = VRT.from_dataset_params(x_size=raster_x_size, y_size=raster_y_size,
+                                                geo_transform=geo_transform,
+                                                projection=srs.wkt,
+                                                gcps=[], gcp_projection='')
             self.extent_dic = extent_dic
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
-            self.vrt = VRT(lat=lat, lon=lon)
+            self.vrt = VRT.from_lonlat(lon, lat)
         else:
             raise OptionError('"dataset" or "srsString and extentString" '
                               'or "dataset and srsString" are required')
@@ -452,10 +452,11 @@ class Domain(object):
         y_vec = range(0, self.vrt.dataset.RasterYSize, dst_srs)
         x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
-        if len(self.vrt.geolocationArray.data) > 0:
+        if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
-            lon_grid, lat_grid = self.vrt.geolocationArray.get_geolocation_grids()
+            # TODO: lat, lon name convention
+            lon_grid, lat_grid = self.vrt.geolocation.get_geolocation_grids()
             lon_arr, lat_arr = lon_grid[y_grid, x_grid], lat_grid[y_grid, x_grid]
         else:
             # generate lon,lat grids using GDAL Transformer

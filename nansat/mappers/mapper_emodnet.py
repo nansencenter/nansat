@@ -11,7 +11,7 @@ from dateutil.parser import parse
 import numpy as np
 
 from nansat.nsr import NSR
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from nansat.node import Node
 from nansat.tools import gdal, ogr, WrongMapperError
 

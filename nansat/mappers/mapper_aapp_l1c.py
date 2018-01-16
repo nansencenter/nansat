@@ -13,7 +13,8 @@ import datetime
 import warnings
 
 from nansat.tools import WrongMapperError
-from nansat.vrt import VRT, GeolocationArray
+from nansat.geolocation import Geolocation
+from nansat.vrt import VRT
 
 dataFormats = {1: 'LAC', 2: 'GAC', 3: 'HRPT'}
 dataSetQualityIndicatorOffset = 114
@@ -129,11 +130,11 @@ class Mapper(VRT):
 
         self.band_vrts['GeolocVRT']._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.band_vrts['GeolocVRT'],
-                                        yVRT=self.band_vrts['GeolocVRT'],
-                                        xBand=2, yBand=1,  # x = lon, y = lat
-                                        lineOffset=0, pixelOffset=25,
-                                        lineStep=1, pixelStep=40)
+        GeolocObject = Geolocation(x_vrt=self.band_vrts['GeolocVRT'],
+                                        y_vrt=self.band_vrts['GeolocVRT'],
+                                        x_band=2, y_band=1,  # x = lon, y = lat
+                                        line_offset=0, pixel_offset=25,
+                                        line_step=1, pixel_step=40)
 
         #######################
         # Initialize dataset

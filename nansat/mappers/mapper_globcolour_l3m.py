@@ -11,7 +11,7 @@ import glob
 
 import numpy as np
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from globcolour import Globcolour
 from nansat.tools import gdal, ogr, WrongMapperError
 
