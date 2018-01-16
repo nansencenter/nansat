@@ -30,7 +30,7 @@ from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.tools import OptionError, gdal, ogr
 from nansat.figure import Image
-
+import sys
 import nansat_test_data as ntd
 
 
@@ -233,6 +233,33 @@ class DomainTest(unittest.TestCase):
         self.assertFalse(Paris.overlaps(Norway))
         self.assertFalse(Paris.contains(Norway))
 
+    def test_check_extent_input(self):
+        test_data = (['te', '25', '70', '35', '72'],
+                     ['ts', '500', '500'],
+                     ['ts', '500'],
+                     ['ts', '500' 'str_test'],
+                     ['test_param', '500', '500'])
+
+        test_func = Domain._check_extent_input
+
+        self.assertEqual(test_func(test_data[0], ['te', 'lle'], 4), None)
+        self.assertEqual(test_func(test_data[1], ['ts', 'tr'], 2), None)
+
+        try:
+            test_func(test_data[2], ['ts', 'tr'], 2)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, 'ts requires exactly 2 parameters (1 given)')
+
+        try:
+            test_func(test_data[3], ['ts', 'tr'], 2)
+        except OptionError as val_err:
+            self.assertEqual(val_err.message, 'Input values must be int or float')
+
+        try:
+            test_func(test_data[4], ['ts', 'tr'], 2)
+        except OptionError as param_err:
+            self.assertEqual(param_err.message,
+                             'Expeced parameter is te, lle, ts, tr. (test_param given)')
 
 if __name__ == "__main__":
     unittest.main()

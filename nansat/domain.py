@@ -507,19 +507,19 @@ class Domain(object):
 
         return extentDic
 
-    # TODO: Test _check_parser_input
     # TODO: Document and comment _check_parser_input
-    def _check_parser_input(self, option_vars, params, size):
+    @staticmethod
+    def _check_extent_input(option_vars, params, size):
         if option_vars[0] in params:
             try:
                 # Check type of input values during counting of length
-                if list(map(float, option_vars[1:])) != size:
-                    raise OptionError('%s contains exactly %s parameters (%s given)' %
-                                      (option_vars[0], size, len(option_vars[1:])))
+                if len([float(el) for el in option_vars[1:]]) != size:
+                    raise OptionError('%s requires exactly %s parameters (%s given)'
+                                      % (option_vars[0], size, len(option_vars[1:])))
             except ValueError:
                 raise OptionError('Input values must be int or float')
         else:
-            raise OptionError('')
+            raise OptionError('Expeced parameter is te, lle, ts, tr. (%s given)' % option_vars[0])
 
     # TODO: Test _create_extentDic_beta
     # TODO: Document and comment _create_extentDic_beta
@@ -528,10 +528,10 @@ class Domain(object):
         try:
             options = extentString.strip().split('-')[1:]
             options = list(map(lambda opt: opt.split(), options))
-            self._check_parser_input(options[0], ['te', 'lle'], 4)
-            self._check_parser_input(options[1], ['ts', 'tr'], 2)
+            self._check_extent_input(options[0], ['te', 'lle'], 4)
+            self._check_extent_input(options[1], ['ts', 'tr'], 2)
         except IndexError:
-            raise OptionError('msg')
+            raise OptionError('_create_extentDic requires exactly 2 parameters')
 
         extent = {}
         for option in options:
