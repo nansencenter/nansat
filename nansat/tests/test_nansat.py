@@ -806,7 +806,13 @@ class NansatTest(unittest.TestCase):
     @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
-        plt.switch_backend('qt5agg')
+        for backend in matplotlib.rcsetup.interactive_bk:
+            # Find a supported interactive backend
+            try:
+                plt.switch_backend(backend)
+                break;
+            except:
+                pass
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         points = n1.digitize_points(1)
