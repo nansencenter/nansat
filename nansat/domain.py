@@ -506,6 +506,8 @@ class Domain(object):
 
         return extentDic
 
+    # TODO: Test _check_parser_input
+    # TODO: Document and comment _check_parser_input
     def _check_parser_input(self, option_vars, params, size):
         if option_vars[0] in params:
             try:
@@ -518,6 +520,8 @@ class Domain(object):
         else:
             raise OptionError('')
 
+    # TODO: Test _create_extentDic_beta
+    # TODO: Document and comment _create_extentDic_beta
     def _create_extentDic_beta(self, extentString):
 
         try:
@@ -534,6 +538,7 @@ class Domain(object):
 
         return extent
 
+    # TODO: Replace _create_extentDic with _create_extentDic_beta
     def _create_extentDic(self, extentString):
         '''Create a dictionary from extentString
 
@@ -565,7 +570,6 @@ class Domain(object):
         extentDic = {}
 
         # Find -re text
-        # TODO: 4 time duplication of ~same function
         str_tr = re.findall('-tr\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
                             extentString)
         if str_tr != []:
@@ -812,6 +816,18 @@ class Domain(object):
         rowVector = [0, self.vrt.dataset.RasterYSize, 0,
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
+
+    def get_min_max_lat_lon_beta(self):
+        """Get minimum and maximum lat and long values in the geolocation grid
+
+        Returns
+        --------
+        minLat, maxLat, minLon, maxLon : float
+            min/max lon/lat values for the Domain
+
+        """
+        lons, lats = self.get_geolocation_grids()
+        return min(lats), max(lats), min(lons), max(lons)
 
     def get_min_max_lat_lon(self):
         '''Get minimum and maximum lat and long values in the geolocation grid
