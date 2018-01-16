@@ -8,3 +8,5 @@ dist/
 nansat.egg-info/
 .project
 .pydevproject
+.idea
+.settings
