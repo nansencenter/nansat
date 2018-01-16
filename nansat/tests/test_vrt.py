@@ -11,6 +11,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
 import unittest
+import logging
 import os
 
 import numpy as np
@@ -29,8 +30,13 @@ class VRTTest(unittest.TestCase):
 
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)
-        self.assertTrue((vrt.xml).startswith('<VRTDataset rasterXSize="1" rasterYSize="1">'))
-        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
+        self.assertIsInstance(vrt.dataset, gdal.Dataset)
+        self.assertIsInstance(vrt.logger, logging.Logger)
+        self.assertIsInstance(vrt.driver, gdal.Driver)
+        self.assertEqual(vrt.band_vrts, {})
+        self.assertEqual(vrt.tps, False)
+        self.assertTrue(vrt.vrt is None)
+        self.assertTrue(vrt.xml.startswith('<VRTDataset rasterXSize="1" rasterYSize="1"'))
 
     def test_del(self):
         vrt = VRT()
