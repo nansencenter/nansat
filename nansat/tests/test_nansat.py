@@ -333,14 +333,14 @@ class NansatTest(unittest.TestCase):
                                    'nansat_export_option.nc')
         # Test with band numbers
         n.export(tmpfilename, options='WRITE_LONLAT=YES')
-        n.export(tmpfilename + '2', options=['WRITE_LONLAT=YES'])
-        nn = Nansat(tmpfilename)
-        nn2 = Nansat(tmpfilename + '2')
+        n.export(tmpfilename + '2', options=['WRITE_LONLAT=NO'])
+        nn = Nansat(tmpfilename, mapperName='generic')
+        nn2 = Nansat(tmpfilename + '2', mapperName='generic')
         self.assertTrue(nn.has_band('lon'))
         self.assertTrue(nn.has_band('lat'))
         self.assertTrue(nn.has_band('Bristol'))
-        self.assertTrue(nn2.has_band('lon'))
-        self.assertTrue(nn2.has_band('lat'))
+        self.assertFalse(nn2.has_band('lon'))
+        self.assertFalse(nn2.has_band('lat'))
         self.assertTrue(nn2.has_band('Bristol'))
 
     def test_write_fig_wrong_type_filename(self):
