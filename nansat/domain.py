@@ -506,26 +506,8 @@ class Domain(object):
 
         return extentDic
 
-    def _parce(self, string, pattern, message=''):
-        result = re.findall(pattern, string)
-        if result:
-            # Check the number of -tr elements
-            elm_str = result[0].strip().split()
-            # Add the key and value to extentDic
-            string = string.replace(result[0], '')
-            trElem = str(result).split(None)
-            trkey = trElem[0].translate(string.maketrans('', ''), "[]-'")
-            if trkey != '':
-                elements = []
-                for i in range(2):
-                    elements.append(float(trElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "'[]'")))
-                extentDic[trkey] = elements
-
-    def _check_parser_input(self, option, params, size):
-        option_vars = option.strip().split()
-        if option_vars in params:
+    def _check_parser_input(self, option_vars, params, size):
+        if option_vars[0] in params:
             try:
                 # Check type of input values during counting of length
                 if list(map(float, option_vars[1:])) != size:
@@ -535,15 +517,22 @@ class Domain(object):
                 raise OptionError('Input values must be int or float')
         else:
             raise OptionError('')
-        
+
     def _create_extentDic_beta(self, extentString):
-        # Dash is a symbol of command start
+
         try:
             options = extentString.strip().split('-')[1:]
+            options = list(map(lambda opt: opt.split(), options))
             self._check_parser_input(options[0], ['te', 'lle'], 4)
             self._check_parser_input(options[1], ['ts', 'tr'], 2)
         except IndexError:
             raise OptionError('msg')
+
+        extent = {}
+        for option in options:
+            extent[option[0]] = [float(el) for el in option[1:]]
+
+        return extent
 
     def _create_extentDic(self, extentString):
         '''Create a dictionary from extentString
@@ -824,7 +813,6 @@ class Domain(object):
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
 
-    TODO
     def get_min_max_lat_lon(self):
         '''Get minimum and maximum lat and long values in the geolocation grid
 
