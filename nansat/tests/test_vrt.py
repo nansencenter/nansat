@@ -112,6 +112,7 @@ class VRTTest(unittest.TestCase):
 
         self.assertIsInstance(vrt2, VRT)
         self.assertIsInstance(vrt2.fileName, str)
+        self.assertEqual(vrt2.dataset.RasterCount, 1)
 
     def test_export(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]

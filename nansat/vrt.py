@@ -932,7 +932,7 @@ class VRT(object):
         """Creates a full copy of a VRT instance"""
         vrt = VRT.from_gdal_dataset(self.dataset)
         if self.dataset.RasterCount > 0:
-            self.driver.CreateCopy(vrt.fileName, self.dataset)
+            vrt.dataset = self.driver.CreateCopy(vrt.fileName, self.dataset)
         vrt.dataset.SetMetadataItem('fileName', vrt.fileName)
         vrt.dataset.FlushCache()
 
@@ -990,10 +990,10 @@ class VRT(object):
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
-                       use_geolocationArray=True,
+                       use_geolocation=True,
                        use_gcps=True, skip_gcps=1,
                        use_geotransform=True,
-                       dstGCPs=[], dstGeolocationArray=None):
+                       dstGCPs=[], dstGeolocation=None):
 
         """Create VRT object with WarpedVRT
 
@@ -1006,22 +1006,22 @@ class VRT(object):
         if not present (or canceled) tries to use GCPs;
         if not present (or canceled) tries to use GeoTransform
         (either from input dataset or calculates a new one with dx=1,dy=-1).
-        Three switches (use_geolocationArray, use_gcps, use_geotransform)
+        Three switches (use_geolocation, use_gcps, use_geotransform)
         allow to select which method to apply for warping. E.g.:
-        # #1: srcVRT has GeolocationArray, geolocation array is used
+        # #1: srcVRT has Geolocation, geolocation array is used
         warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform)
-        # #2: srcVRT has GeolocationArray, geolocation array is not used,
+        # #2: srcVRT has Geolocation, geolocation is not used,
         # either GCPs (if present) or GeoTransform is used
         warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
-                                             use_geolocationArray=False)
-        # #3: srcVRT has GeolocationArray or GCPs, geolocation array is
+                                             use_geolocation=False)
+        # #3: srcVRT has Geolocation or GCPs, geolocation is
         # not used, and GCPs are not used either.
         # Only input GeoTranform is used
         warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
-                                             use_geolocationArray=False,
+                                             use_geolocation=False,
                                              use_gcps=False)
 
         # #4: srcVRT has whatever georeference, geolocation array is not used,
@@ -1030,7 +1030,7 @@ class VRT(object):
         # Warping becomes pure affine resize
         warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
                                              geoTransform,
-                                             use_geolocationArray=False,
+                                             use_geolocation=False,
                                              use_gcps=False.,
                                              use_geotransform=false)
 
@@ -1039,8 +1039,8 @@ class VRT(object):
         and added to the SRC image. After warping dstGCPs are added to
         the WarpedVRT
 
-        If destination image has geolocation array (provided in
-        <dstGeolocationArray>):this geolocation array is added to the WarpedVRT
+        If destination image has geolocation (provided in
+        <dstGeolocation>):this geolocation is added to the WarpedVRT
 
 
         Parameters
@@ -1059,10 +1059,10 @@ class VRT(object):
             destination GDALGeoTransfrom
         dstGCPs : list with GDAL GCPs
             GCPs of the destination image
-        dstGeolocationArray : GeolocationArray object
-            Geolocation array of the destination object
-        use_geolocationArray : Boolean (True)
-            Use geolocation array in input dataset (if present) for warping
+        dstGeolocation : Geolocation object
+            Geolocation of the destination object
+        use_geolocation : bool (True)
+            Use geolocation in input dataset (if present) for warping
         use_gcps : Boolean (True)
             Use GCPs in input dataset (if present) for warping
         skip_gcps : int
@@ -1087,35 +1087,34 @@ class VRT(object):
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, NSR(dstSRS), skip_gcps)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
             # don't use geolocation array
-            use_geolocationArray = False
+            use_geolocation = False
             acwvSRS = None
 
         # prepare VRT.dataset for warping.
-        # Select if GEOLOCATION Array,
+        # Select if GEOLOCATION,
         # or GCPs, or GeoTransform from the original
         # dataset are used
-        if len(self.geolocationArray.data) > 0 and use_geolocationArray:
-            # use GEOLOCATION ARRAY by default
+        if len(self.geolocation.data) > 0 and use_geolocation:
+            # use GEOLOCATION by default
             # (remove GCP and GeoTransform)
             srcVRT.dataset.SetGCPs([], '')
             srcVRT._remove_geotransform()
         elif len(srcVRT.dataset.GetGCPs()) > 0 and use_gcps:
             # fallback to GCPs
-            # (remove GeolocationArray and GeoTransform)
+            # (remove Geolocation and GeoTransform)
             srcVRT.dataset.SetMetadata('', 'GEOLOCATION')
             srcVRT._remove_geotransform()
         elif use_geotransform:
             # fallback to GeoTransform in input VRT
-            # (remove GeolocationArray and GCP)
+            # (remove Geolocation and GCP)
             srcVRT.dataset.SetMetadata('', 'GEOLOCATION')
             srcVRT.dataset.SetGCPs([], '')
         else:
             # fallback to simplest GeoTransform
-            # (remove GeolocationArray and GCP and replace GeoTransform)
+            # (remove Geolocation and GCP and replace GeoTransform)
             srcVRT.dataset.SetMetadata('', 'GEOLOCATION')
             srcVRT.dataset.SetGCPs([], '')
-            srcVRT.dataset.SetGeoTransform((0, 1, 0,
-                                            srcVRT.dataset.RasterYSize, 0, -1))
+            srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
         warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
@@ -1190,7 +1189,7 @@ class VRT(object):
         """
         # TODO: implement the below option for proper handling stereo
         # projections over the pole get source projection from GCPs or
-        # from dataset (TODO: or from GeolocationArray)
+        # from dataset (TODO: or from Geolocation)
         if len(srcVRT.dataset.GetGCPs()) == 0:
             srcSRS = srcVRT.dataset.GetProjection()
         else:
@@ -1205,11 +1204,11 @@ class VRT(object):
             warpedVRT._remove_geotransform()
             warpedVRT.dataset.SetProjection('')
 
-        # if given, add dst GeolocationArray
-        self.logger.debug('# if given, add dst GeolocationArray')
-        if dstGeolocationArray is not None:
+        # if given, add dst Geolocation
+        self.logger.debug('# if given, add dst Geolocation')
+        if dstGeolocation is not None:
             warpedVRT._remove_geotransform()
-            warpedVRT._add_geolocation_array(dstGeolocationArray)
+            warpedVRT._add_geolocation(dstGeolocation)
             warpedVRT.dataset.SetProjection('')
 
         # Copy self to warpedVRT
