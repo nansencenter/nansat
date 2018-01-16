@@ -506,12 +506,36 @@ class Domain(object):
 
         return extentDic
 
+    def _parce(self, string, pattern, message=''):
+        result = re.findall(pattern, string)
+        if result:
+            # Check the number of -tr elements
+            elm_str = result[0].strip().split()
+            # Add the key and value to extentDic
+            string = string.replace(result[0], '')
+            trElem = str(result).split(None)
+            trkey = trElem[0].translate(string.maketrans('', ''), "[]-'")
+            if trkey != '':
+                elements = []
+                for i in range(2):
+                    elements.append(float(trElem[i + 1].
+                                          translate(string.maketrans('', ''),
+                                                    "'[]'")))
+                extentDic[trkey] = elements
+
+    def _create_extentDic_beta(self, extentString):
+        # Dash is try symbol of command start
+        extent_options = extentString.strip().split('-')[1:]
+        if len(extent_options) != 2:
+            raise OptionError
+
     def _create_extentDic(self, extentString):
         '''Create a dictionary from extentString
 
         Check if extentString is proper.
             * '-te' and '-lle' take 4 numbers.
             * '-ts' and '-tr' take 2 numbers.
+            #TODO: Right combinations are not correct
             * the combination should be ('-te' or '-lle') and ('-ts' or '-tr')
         If it is proper, create a dictionary
         Otherwise, raise the error.
@@ -713,6 +737,7 @@ class Domain(object):
         #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
         #                             sin(lon * pi / 180.))
 
+        # TODO: Should be done with geos finctional
         polyCont = ','.join(str(lon) + ' ' + str(lat)
                             for lon, lat in zip(lonList, latList))
         # outer quotes have to be double and inner - single!
@@ -784,6 +809,7 @@ class Domain(object):
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
 
+    TODO
     def get_min_max_lat_lon(self):
         '''Get minimum and maximum lat and long values in the geolocation grid
 
