@@ -29,6 +29,8 @@ class VRTTest(unittest.TestCase):
 
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)
+        self.assertTrue((vrt.xml).startswith('<VRTDataset rasterXSize="1" rasterYSize="1">'))
+        self.assertTrue('fileName' in vrt.dataset.GetMetadata().keys())
 
     def test_del(self):
         vrt = VRT()
@@ -40,12 +42,8 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(gdal.Unlink(filename_raw), -1)
 
     def test_init_metadata(self):
-        test_dict = {'aaa': 'bbb'}
-        vrt1 = VRT()
-        vrt2 = VRT(metadata=test_dict)
-
-        self.assertEqual(vrt1.dataset.GetMetadata(), {})
-        self.assertEqual(vrt2.dataset.GetMetadata(), test_dict)
+        vrt1 = VRT(metadata={'aaa': 'bbb'})
+        self.assertEqual(vrt1.dataset.GetMetadata()['aaa'], 'bbb')
 
     def test_init_nomem(self):
         vrt = VRT(nomem=True)
@@ -100,10 +98,23 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
 
-    def test_copy(self):
-        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
-        vrt = VRT.from_array(array)
-        vrt2 = vrt.copy()
+    def test_copy_empty_vrt(self):
+        vrt1 = VRT()
+        vrt2 = vrt1.copy()
 
         self.assertIsInstance(vrt2, VRT)
         self.assertIsInstance(vrt2.fileName, str)
+
+    def test_copy_vrt_with_band(self):
+        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        vrt1 = VRT.from_array(array)
+        vrt2 = vrt1.copy()
+
+        self.assertIsInstance(vrt2, VRT)
+        self.assertIsInstance(vrt2.fileName, str)
+
+    def test_export(self):
+        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        vrt = VRT.from_array(array)
+        vrt.export('temp.vrt.xml')
+        self.assertTrue(os.path.exists('temp.vrt.xml'))

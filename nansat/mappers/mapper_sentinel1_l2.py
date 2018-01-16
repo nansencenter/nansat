@@ -90,7 +90,7 @@ class Mapper(VRT):
            # 'ZeroDopplerTime' in f.split(':')[-1] )]
 
         # create empty VRT dataset
-        VRT.__init__(self, gdal.Open(subDatasets[0][0]), srcMetadata=metadata)
+        self._init_from_gdal_dataset(gdal.Open(subDatasets[0][0]), metadata=metadata)
 
         # The zero Doppler time grid is 3-dimensional - the last dimension is a
         # char array with the time as year, month, day, etc.

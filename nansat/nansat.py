@@ -445,7 +445,7 @@ class Nansat(Domain):
 
         # Find complex data band
         complexBands = []
-        node0 = Node.create(exportVRT.read_xml())
+        node0 = Node.create(exportVRT.xml)
         for iBand in node0.nodeList('VRTRasterBand'):
             dataType = iBand.getAttribute('dataType')
             if dataType[0] == 'C':
@@ -2126,7 +2126,7 @@ class Nansat(Domain):
 
         # create super VRT and get its XML
         self.vrt = self.vrt.get_super_vrt()
-        xml = self.vrt.read_xml()
+        xml = self.vrt.xml
         node0 = Node.create(xml)
 
 # TODO: Move to _make_cropped_node, DRY X/Y

@@ -235,7 +235,7 @@ class Mapper(VRT):
         # the high res channels
         # are reduced to this size.
         if satellite == 'MET7' or satellite[0:3] == 'MSG':
-            node0 = Node.create(self.read_xml())
+            node0 = Node.create(self.get_vrt_xml())
             bands = node0.nodeList("VRTRasterBand")
             if satellite == 'MET7':
                 if self.dataset.RasterXSize == 5032:  # High res ch1 is opened

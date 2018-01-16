@@ -47,7 +47,7 @@ class Mapper(VRT):
                           % fileName)
         xDatasetBand = 1
         xDataset = gdal.Open(xDatasetSource)
-        VRT.__init__(self, xDataset)
+        self._init_from_gdal_dataset(xDataset)
 
         metaDict = []
         for ifile in ifiles:
@@ -73,7 +73,7 @@ class Mapper(VRT):
 
         xVRTArray = xDataset.ReadAsArray()
         xVRTArray = gaussian_filter(xVRTArray, 5).astype('float32')
-        xVRT = VRT(array=xVRTArray)
+        xVRT = VRT.from_array(xVRTArray)
 
         yDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Latitude'
                           % fileName)
@@ -81,7 +81,7 @@ class Mapper(VRT):
         yDataset = gdal.Open(yDatasetSource)
         yVRTArray = yDataset.ReadAsArray()
         yVRTArray = gaussian_filter(yVRTArray, 5).astype('float32')
-        yVRT = VRT(array=yVRTArray)
+        yVRT = VRT.from_array(yVRTArray)
 
         # estimate pixel/line step
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))

@@ -121,8 +121,7 @@ class Mapper(VRT):
         if len(mtlFileName) > 0:
             mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0],
                                         mtlFileName)
-            mtlFileLines = [line.strip() for line in
-                            self.read_xml(mtlFileName).split('\n')]
+            mtlFileLines = [line.strip() for line in self.read_vsi(mtlFileName).split('\n')]
             dateString = [line.split('=')[1].strip()
                           for line in mtlFileLines
                             if ('DATE_ACQUIRED' in line or

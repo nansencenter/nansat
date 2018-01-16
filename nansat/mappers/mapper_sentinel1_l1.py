@@ -88,21 +88,21 @@ class Mapper(VRT):
         for ff in calFiles:
             self.calXMLDict[
                 os.path.splitext(
-                os.path.basename(ff))[0].split('-')[4]] = self.read_xml(ff)
+                os.path.basename(ff))[0].split('-')[4]] = self.read_vsi(ff)
 
         self.noiseXMLDict = {}
         for ff in noiseFiles:
             self.noiseXMLDict[
                 os.path.splitext(
-                os.path.basename(ff))[0].split('-')[4]] = self.read_xml(ff)
+                os.path.basename(ff))[0].split('-')[4]] = self.read_vsi(ff)
 
         self.annotationXMLDict = {}
         for ff in annotationFiles:
             self.annotationXMLDict[
                 os.path.splitext(
-                os.path.basename(ff))[0].split('-')[3]] = self.read_xml(ff)
+                os.path.basename(ff))[0].split('-')[3]] = self.read_vsi(ff)
 
-        self.manifestXML = self.read_xml(manifestFile[0])
+        self.manifestXML = self.read_vsi(manifestFile[0])
 
         missionName = {'S1A': 'SENTINEL-1A', 'S1B': 'SENTINEL-1B'}[
             os.path.split(fileName.rstrip('/'))[1][:3]]
@@ -144,7 +144,7 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         for key in gdalDatasets:
-            VRT.__init__(self, gdalDatasets[key])
+            self._init_from_gdal_dataset(gdalDatasets[key])
             break
 
         # Read annotation, noise and calibration xml-files
@@ -173,8 +173,8 @@ class Mapper(VRT):
                 inc = np.array(inc).reshape(len(Y), len(X))
                 ele = np.array(ele).reshape(len(Y), len(X))
 
-                incVRT = VRT(array=inc, lat=lat, lon=lon)
-                eleVRT = VRT(array=ele, lat=lat, lon=lon)
+                incVRT = VRT.from_array(inc)
+                eleVRT = VRT.from_array(ele)
                 incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
                                                 self.dataset.RasterYSize,
                                                 eResampleAlg=2)
@@ -269,11 +269,9 @@ class Mapper(VRT):
         # Decompose, to avoid interpolation errors around 0 <-> 360
         look_direction_u = np.sin(np.deg2rad(look_direction))
         look_direction_v = np.cos(np.deg2rad(look_direction))
-        look_u_VRT = VRT(array=look_direction_u,
-                         lat=latitude, lon=longitude)
-        look_v_VRT = VRT(array=look_direction_v,
-                         lat=latitude, lon=longitude)
-        lookVRT = VRT(lat=latitude, lon=longitude)
+        look_u_VRT = VRT.from_array(look_direction_u)
+        look_v_VRT = VRT.from_array(look_direction_v)
+        lookVRT = VRT.from_lonlat(longitude, latitude)
         lookVRT._create_band([{'SourceFilename': look_u_VRT.fileName,
                                'SourceBand': 1},
                               {'SourceFilename': look_v_VRT.fileName,
@@ -486,7 +484,7 @@ class Mapper(VRT):
 
         LUT_VRTs = {}
         for LUT in LUT_list:
-            LUT_VRTs[LUT] = VRT(array=LUTs[LUT], lat=latitude, lon=longitude)
+            LUT_VRTs[LUT] = VRT.from_array(LUTs[LUT])
 
         return LUT_VRTs, longitude, latitude
 
@@ -524,7 +522,7 @@ class Mapper(VRT):
         ''' Create fake VRT and add metadata only from the manifest.safe '''
         X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines = self.read_geolocation_lut(annotXML)
 
-        VRT.__init__(self, srcRasterXSize=numberOfSamples, srcRasterYSize=numberOfLines)
+        super(Mapper, self).__init__(self, numberOfSamples, numberOfLines)
         doc = ET.fromstring(manifestXML)
 
         gcps = []

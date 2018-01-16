@@ -107,6 +107,30 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
+    @staticmethod
+    def read_vsi(filename):
+        """Read text-file using VSI
+        Parameters
+        ----------
+            filename : str
+                input file name
+        Returns
+        --------
+            contents : str
+                content of the VSI file
+        """
+        # open
+        vsiFile = gdal.VSIFOpenL(filename, 'r')
+        # get file size
+        gdal.VSIFSeekL(vsiFile, 0, 2)
+        vsiFileSize = gdal.VSIFTellL(vsiFile)
+        # fseek to start again
+        gdal.VSIFSeekL(vsiFile, 0, 0)
+        # read
+        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
+        gdal.VSIFCloseL(vsiFile)
+        return vsiFileContent
+
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
         """Create VRT from gdal_dataset"""
@@ -151,6 +175,8 @@ class VRT(object):
         self.dataset = self.driver.Create(self.fileName, x_size, y_size, bands=0)
         if isinstance(metadata, dict):
             self.dataset.SetMetadata(metadata)
+        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.FlushCache()
 
     def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
         """Create VRT from gdal_dataset"""
@@ -161,7 +187,6 @@ class VRT(object):
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
         self.dataset.SetMetadata(gdal_dataset.GetMetadata())
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
-        self.dataset.SetMetadataItem('fileName', self.fileName)
 
         # write file contents
         self.dataset.FlushCache()
@@ -175,7 +200,6 @@ class VRT(object):
         self.dataset.SetGeoTransform(geo_transform)
         if isinstance(gcps, (list, tuple)):
             self.dataset.SetGCPs(gcps, gcp_projection)
-        self.dataset.SetMetadataItem('fileName', self.fileName)
         
         # write file contents
         self.dataset.FlushCache()
@@ -226,7 +250,9 @@ class VRT(object):
         
         # write XML contents to VRT-file
         self.write_xml(contents)        
-
+        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.FlushCache()
+        
     def _init_from_lonlat(self, lon, lat, **kwargs):
         """Create VRT from longitude, latitude arrays"""
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
@@ -727,6 +753,7 @@ class VRT(object):
         """
         self.geolocation = geolocation
         self.dataset.SetMetadata(geolocation.data, 'GEOLOCATION')
+        self.dataset.FlushCache()
 
     def _remove_geolocation_array(self):
         """ Remove GEOLOCATION ARRAY from the VRT
@@ -741,6 +768,7 @@ class VRT(object):
 
         # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
+        self.dataset.FlushCache()
 
     def _remove_geotransform(self):
         """Remove GeoTransfomr from VRT Object
@@ -751,7 +779,7 @@ class VRT(object):
 
         """
         # read XML content from VRT
-        tmpVRTXML = self.read_xml()
+        tmpVRTXML = self.xml
         # find and remove GeoTransform
         node0 = Node.create(tmpVRTXML)
         node0.delNode('GeoTransform')
@@ -900,36 +928,32 @@ class VRT(object):
         # Delete geolocation array
         self._add_geolocation_array()
 
-    def read_xml(self, inFileName=None):
-        """Read XML content of the VRT-file
+    def copy(self):
+        """Creates a full copy of a VRT instance"""
+        vrt = VRT.from_gdal_dataset(self.dataset)
+        if self.dataset.RasterCount > 0:
+            self.driver.CreateCopy(vrt.fileName, self.dataset)
+        vrt.dataset.SetMetadataItem('fileName', vrt.fileName)
+        vrt.dataset.FlushCache()
 
-        Parameters
-        -----------
-        inFileName : string, optional
-            Name of the file to read XML from. self.fileName by default
+        vrt.band_vrts = dict(self.band_vrts)
+        vrt.tps = bool(self.tps)
+
+        # iterative copy of self.vrt
+        if self.vrt is not None:
+            vrt.vrt = self.vrt.copy()
+
+        return vrt
+        
+    @property
+    def xml(self):
+        """Read XML content of the VRT-file using VSI
 
         Returns
         --------
         string : XMl Content which is read from the VSI file
-
         """
-        # if no input file given, flush dataset content into VRT-file
-        if inFileName is None:
-            inFileName = str(self.fileName)
-            self.dataset.FlushCache()
-
-        # read from the vsi-file
-        # open
-        vsiFile = gdal.VSIFOpenL(inFileName, 'r')
-        # get file size
-        gdal.VSIFSeekL(vsiFile, 0, 2)
-        vsiFileSize = gdal.VSIFTellL(vsiFile)
-        # fseek to start again
-        gdal.VSIFSeekL(vsiFile, 0, 0)
-        # read
-        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
-        return vsiFileContent
+        return VRT.read_vsi(self.fileName)
 
     def write_xml(self, vsiFileContent=None):
         """Write XML content into a VRT dataset
@@ -946,33 +970,14 @@ class VRT(object):
 
         """
         vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
-        gdal.VSIFWriteL(vsiFileContent,
-                        len(vsiFileContent), 1, vsiFile)
+        gdal.VSIFWriteL(vsiFileContent, len(vsiFileContent), 1, vsiFile)
         gdal.VSIFCloseL(vsiFile)
         # re-open self.dataset with new content
         self.dataset = gdal.Open(self.fileName)
 
     def export(self, fileName):
         """Export VRT file as XML into given <fileName>"""
-        self.vrt_driver.CreateCopy(fileName, self.dataset)
-
-    def copy(self):
-        """Creates a full copy of a VRT instance"""
-        vrt = VRT(self.dataset.RasterXSize, self.dataset.RasterYSize)
-        vrt.dataset = self.driver.CreateCopy(vrt.fileName, self.dataset)
-        vrt.geolocation = Geolocation.from_dataset(self.dataset)
-        vrt.band_vrts = dict(self.band_vrts)
-        vrt.tps = bool(self.tps)
-
-        # iterative copy of self.vrt
-        if self.vrt is not None:
-            vrt.vrt = self.vrt.copy()
-            vrtXML = vrt.read_xml()
-            vrtXML = vrtXML.replace(os.path.split(self.vrt.fileName)[1],
-                                    os.path.split(vrt.vrt.fileName)[1])
-            vrt.write_xml(vrtXML)
-
-        return vrt
+        self.driver.CreateCopy(fileName, self.dataset)
 
 # TODO:
 #   split superfunctional get_warped_vrt into more specific methods
@@ -1132,7 +1137,7 @@ class VRT(object):
         self.logger.debug('set x/y size, geoTransform, blockSize')
 
         # Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
-        warpedXML = warpedVRT.read_xml()
+        warpedXML = warpedVRT.xml
         node0 = Node.create(warpedXML)
 
         if xSize > 0:
@@ -1178,7 +1183,7 @@ class VRT(object):
 
         # apply thin-spline-transformation option
         if use_gcps and self.tps:
-            tmpVRTXML = warpedVRT.read_xml()
+            tmpVRTXML = warpedVRT.xml
             tmpVRTXML = tmpVRTXML.replace('GCPTransformer', 'TPSTransformer')
             warpedVRT.write_xml(tmpVRTXML)
 
@@ -1213,7 +1218,7 @@ class VRT(object):
         # replace the reference from srcVRT to self
         self.logger.debug('replace the reference from srcVRT to self')
         rawFileName = str(os.path.basename(warpedVRT.vrt.fileName))
-        warpedXML = str(warpedVRT.read_xml())
+        warpedXML = str(warpedVRT.xml)
         node0 = Node.create(warpedXML)
         node1 = node0.node('GDALWarpOptions')
         node1.node('SourceDataset').value = '/vsimem/' + rawFileName
@@ -1251,7 +1256,7 @@ class VRT(object):
             band number
 
         """
-        node0 = Node.create(self.read_xml())
+        node0 = Node.create(self.xml)
         node0.delNode('VRTRasterBand', options={'band': bandNum})
         node0.delNode('BandMapping', options={'src': bandNum})
         self.write_xml(node0.rawxml())
@@ -1312,7 +1317,7 @@ class VRT(object):
             shiftVRT._create_band(src, dst)
 
         # read xml and create the node
-        XML = shiftVRT.read_xml()
+        XML = shiftVRT.xml
         node0 = Node.create(XML)
 
         # divide into two bands and switch the bands
@@ -1411,8 +1416,7 @@ class VRT(object):
         subsamVRT = self.get_super_vrt()
 
         # Get XML content from VRT-file
-        vrtXML = subsamVRT.read_xml()
-        node0 = Node.create(vrtXML)
+        node0 = Node.create(subsamVRT.xml)
 
         # replace rasterXSize in <VRTDataset>
         node0.replaceAttribute('rasterXSize', str(newRasterXSize))
