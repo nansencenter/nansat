@@ -20,6 +20,7 @@ import json
 import sys
 from xml.sax.saxutils import unescape
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io.netcdf import netcdf_file
