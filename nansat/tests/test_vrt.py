@@ -30,7 +30,7 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)
         self.assertTrue((vrt.xml).startswith('<VRTDataset rasterXSize="1" rasterYSize="1">'))
-        self.assertTrue('fileName' in vrt.dataset.GetMetadata().keys())
+        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
 
     def test_del(self):
         vrt = VRT()
@@ -60,6 +60,7 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt.fileName, str)
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
+        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file)
@@ -78,6 +79,7 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
         self.assertIsInstance(vrt.dataset.GetGCPs(), tuple)
+        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
         
     def test_from_array(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
@@ -87,6 +89,7 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt.fileName, str)
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, array.shape[1])
+        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
 
     def test_from_lonlat(self):
         lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
@@ -97,6 +100,7 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
+        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
 
     def test_copy_empty_vrt(self):
         vrt1 = VRT()

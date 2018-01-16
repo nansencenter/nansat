@@ -182,7 +182,6 @@ class VRT(object):
         self.dataset = self.driver.Create(self.fileName, x_size, y_size, bands=0)
         if isinstance(metadata, dict):
             self.dataset.SetMetadata(metadata)
-        self.dataset.SetMetadataItem('fileName', self.fileName)
         self.dataset.FlushCache()
 
     def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
@@ -192,8 +191,11 @@ class VRT(object):
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
-        self.dataset.SetMetadata(gdal_dataset.GetMetadata())
+        metadata = gdal_dataset.GetMetadata()
+        for key in metadata:
+            self.dataset.SetMetadataItem(key, metadata[key])
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
+        self.dataset.SetMetadataItem('fileName', self.fileName)
 
         # write XML file contents
         self.dataset.FlushCache()
@@ -205,7 +207,6 @@ class VRT(object):
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset = self.driver.CreateCopy(self.fileName, gdal_dataset)
         self.dataset.SetMetadataItem('fileName', self.fileName)
-        self.dataset.FlushCache()
 
         # write XMl file contents
         self.dataset.FlushCache()
@@ -219,6 +220,7 @@ class VRT(object):
         self.dataset.SetGeoTransform(geo_transform)
         if isinstance(gcps, (list, tuple)):
             self.dataset.SetGCPs(gcps, gcp_projection)
+        self.dataset.SetMetadataItem('fileName', self.fileName)
         
         # write file contents
         self.dataset.FlushCache()
@@ -277,6 +279,8 @@ class VRT(object):
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(self._latlon2gcps(lat, lon), NSR().wkt)
         self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
+        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.FlushCache()
 
     def __del__(self):
         """ Destructor deletes VRT and RAW files"""
@@ -1134,7 +1138,7 @@ class VRT(object):
             srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
-        auto_warped_vrt = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
+        warped_dataset = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
                                              acwvSRS, eResampleAlg)
         # TODO: implement the below option for proper handling of
         # stereo projections
@@ -1142,14 +1146,12 @@ class VRT(object):
         #                                      dstSRS, eResampleAlg)
 
         # check if Warped VRT was created
-        if auto_warped_vrt is None:
+        if warped_dataset is None:
             raise AttributeError('Cannot create warpedVRT!')
 
         # create VRT object from Warped VRT GDAL Dataset
         self.logger.debug('create VRT object from Warped VRT GDAL Dataset')
-        import ipdb; ipdb.set_trace()
-        warpedVRT = auto_warped_vrt.copy()
-        
+        warpedVRT = VRT.copy_dataset(warped_dataset)
 
         # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
@@ -1408,7 +1410,6 @@ class VRT(object):
         copy of self in vrt.vrt and change references from vrt to vrt.vrt
 
         """
-
         # create new self
         superVRT = VRT.from_gdal_dataset(self.dataset)
         superVRT.vrt = self.copy()
