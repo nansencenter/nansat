@@ -107,7 +107,37 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
-    def _init(self, x_size, y_size, metadata=dict(), nomem=False, **kwargs):
+    @classmethod
+    def from_gdal_dataset(cls, gdal_dataset, **kwargs):
+        """Create VRT from gdal_dataset"""
+        vrt = cls.__new__(cls)
+        vrt._init_from_gdal_dataset(gdal_dataset, **kwargs)
+        return vrt
+
+    @classmethod
+    def from_dataset_params(cls, x_size, y_size, geo_transform, projection, 
+                         gcps, gcp_projection, metadata, **kwargs):
+        """Create VRT from GDAL dataset parameters"""
+        vrt = cls.__new__(cls)
+        vrt._init_from_dataset_params(x_size, y_size, geo_transform, projection, 
+                         gcps, gcp_projection, **kwargs)
+        return vrt
+
+    @classmethod
+    def from_array(cls, array, **kwargs):
+        """Create VRT with a dataset from an array"""
+        vrt = cls.__new__(cls)
+        vrt._init_from_array(array, **kwargs)
+        return vrt
+
+    @classmethod
+    def from_lonlat(cls, lon, lat, **kwargs):
+        """Create VRT from longitude, latitude arrays"""
+        vrt = cls.__new__(cls)
+        vrt._init_from_lonlat(lon, lat)
+        return vrt
+
+    def __init__(self, x_size=1, y_size=1, metadata=None, nomem=False, **kwargs):
         """Create VRT object with self.dataset"""
         # essential attributes
         self.logger = add_logger('Nansat')
@@ -119,19 +149,13 @@ class VRT(object):
 
         # create dataset
         self.dataset = self.driver.Create(self.fileName, x_size, y_size, bands=0)
-        self.dataset.SetMetadata(metadata)
+        if isinstance(metadata, dict):
+            self.dataset.SetMetadata(metadata)
 
-    @classmethod
-    def from_gdal_dataset(cls, gdal_dataset, **kwargs):
-        """Create VRT from gdal_dataset"""
-        vrt = cls.__new__(cls)
-        vrt._init_gdal_dataset(gdal_dataset, **kwargs)
-        return vrt
-    
-    def _init_gdal_dataset(self, gdal_dataset, **kwargs):
+    def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
         """Create VRT from gdal_dataset"""
         # set dataset geo-metadata 
-        self._init(gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
+        VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
@@ -143,18 +167,9 @@ class VRT(object):
         self.dataset.FlushCache()
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
 
-    @classmethod
-    def from_dataset_params(cls, x_size, y_size, geo_transform, projection, 
-                         gcps, gcp_projection, metadata, **kwargs):
-        """Create VRT from GDAL dataset parameters"""
-        vrt = cls.__new__(cls)
-        vrt._init_dataset_params(x_size, y_size, geo_transform, projection, 
-                         gcps, gcp_projection, **kwargs)
-        return vrt
-
-    def _init_dataset_params(self, x_size, y_size, geo_transform, projection, 
+    def _init_from_dataset_params(self, x_size, y_size, geo_transform, projection, 
                          gcps=list(), gcp_projection='', **kwargs):
-        self._init(x_size, y_size, **kwargs)
+        VRT.__init__(self, x_size, y_size, **kwargs)
         # set dataset (geo-)metadata 
         self.dataset.SetProjection(projection)
         self.dataset.SetGeoTransform(geo_transform)
@@ -165,15 +180,25 @@ class VRT(object):
         self.dataset.FlushCache()
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
 
-    @classmethod
-    def from_array(cls, array, **kwargs):
-        """Create VRT from array"""
-        vrt = cls.__new__(cls)
-        vrt._init_array(array, **kwargs)
-        return vrt
-    
-    def _init_array(self, array, **kwargs):
-        self._init(1, 1, **kwargs)
+    def _init_from_array(self, array, **kwargs):
+        """Init VRT with a dataset from an array
+
+        Write contents of the array into flat binary file (VSI)
+        Write VRT file with RawRastesrBand, which points to the binary file
+        Open the VRT file as self.dataset with GDAL
+
+        Parameters
+        -----------
+            array : numpy array
+
+        Modifies
+        ---------
+            binary file is written (VSI)
+            VRT file is written (VSI)
+            self.dataset is updated
+
+        """
+        VRT.__init__(self, **kwargs)
         # create flat binary file (in VSI) from numpy array 
         array_type = array.dtype.name
         array_shape = array.shape
@@ -201,18 +226,12 @@ class VRT(object):
         # write XML contents to VRT-file
         self.write_xml(contents)        
 
-    @classmethod
-    def from_lonlat(cls, lon, lat, **kwargs):
+    def _init_from_lonlat(self, lon, lat, **kwargs):
         """Create VRT from longitude, latitude arrays"""
-        vrt = cls.__new__(cls)
-        vrt._init_lonlat(lon, lat)
-        return vrt
-
-    def _init_lonlat(self, lon, lat, **kwargs):
-        """Create VRT from longitude, latitude arrays"""
-        self._init(lon.shape[1], lon.shape[0], **kwargs)
+        VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(self._latlon2gcps(lat, lon), NSR().wkt)
         self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
+
 
     def __del__(self):
         """ Destructor deletes VRT and RAW files"""
@@ -938,8 +957,7 @@ class VRT(object):
 
     def copy(self):
         """Creates a full copy of a VRT instance"""
-        vrt = cls.__new__(cls)
-        vrt._init(self.dataset.RasterXSize, self.dataset.RasterYSize)
+        vrt = VRT(self.dataset.RasterXSize, self.dataset.RasterYSize)
         vrt.dataset = self.driver.CreateCopy(vrt.fileName, self.dataset)
         vrt.geolocation = Geolocation.from_dataset(self.dataset)
         vrt.band_vrts = dict(self.band_vrts)
