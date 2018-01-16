@@ -328,7 +328,7 @@ class Mapper(VRT):
             if not fn:
                 raise WrongMapperError
             sub = gdal.Open(fn[0])
-            self._init_dataset_params(
+            self._init_from_dataset_params(
                     x_size = sub.RasterXSize,
                     y_size = sub.RasterYSize, 
                     geo_transform = sub.GetGeoTransform(), 
@@ -336,7 +336,7 @@ class Mapper(VRT):
                     metadata = gdal_metadata)
         else:
             sub0 = gdal.Open(subfiles[0])
-            self._init_gdal_dataset(sub0, metadata=gdal_metadata)
+            self._init_from_gdal_dataset(sub0, metadata=gdal_metadata)
 
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         if not gdal_metadata:

@@ -50,8 +50,8 @@ class VRT(object):
     and has random name.
 
     GDAL data model doesn't have place for geolocaion arrays therefore
-    VRT-object has instance of GeolocationArray self.geolocationArray-
-    an object to keep information about Geolocation Arrays:
+    VRT-object has instance of Geolocation (self.geolocation)
+    an object to keep information about Geolocation metadata:
     reference to file with source data, pixel and line step and offset, etc.
 
     Domain has an instance of VRT-class <self.vrt>. It keeps only geo-
@@ -777,18 +777,18 @@ class VRT(object):
         self.dataset.SetMetadata(geolocation.data, 'GEOLOCATION')
         self.dataset.FlushCache()
 
-    def _remove_geolocation_array(self):
-        """ Remove GEOLOCATION ARRAY from the VRT
+    def _remove_geolocation(self):
+        """ Remove GEOLOCATION from the VRT
 
         Modifes
         --------
         Set self.geolocationArray to None
-        Sets GEOLOCATION ARRAY metadata to ''
+        Sets GEOLOCATION metadata to ''
 
         """
         self.geolocationArray.data = dict()
 
-        # add GEOLOCATION ARRAY metadata (empty if geolocationArray is empty)
+        # add GEOLOCATION metadata (empty if geolocation is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
         self.dataset.FlushCache()
 
@@ -900,8 +900,8 @@ class VRT(object):
 # TODO:
 #   reuse _latlon2gcps: for looping over lon/lat arrays
 
-    def _geolocation_array_to_gcps(self, stepX=1, stepY=1):
-        """ Converting geolocation arrays to GCPs, and deleting the former
+    def _geolocation_to_gcps(self, stepX=1, stepY=1):
+        """ Converting geolocation to GCPs, and deleting the former
 
         When the geolocation arrays are much smaller than the raster bands,
         warping quality is very bad. This function is a temporary solution
@@ -921,34 +921,31 @@ class VRT(object):
         Modifies
         ---------
         self.GCPs are added
-        self.geolocationArray is removed
+        self.geolocation is removed
 
         """
-        geolocArray = self.dataset.GetMetadata('GEOLOCATION')
-        x = self.geolocationArray.xVRT.dataset.GetRasterBand(2).ReadAsArray()
-        y = self.geolocationArray.xVRT.dataset.GetRasterBand(1).ReadAsArray()
+        geolocation_metadata = self.dataset.GetMetadata('GEOLOCATION')
+        x = self.geolocation.xVRT.dataset.GetRasterBand(2).ReadAsArray()
+        y = self.geolocation.xVRT.dataset.GetRasterBand(1).ReadAsArray()
         numy, numx = x.shape
-        PIXEL_OFFSET = int(geolocArray['PIXEL_OFFSET'])
-        PIXEL_STEP = int(geolocArray['PIXEL_STEP'])
-        LINE_OFFSET = int(geolocArray['LINE_OFFSET'])
-        LINE_STEP = int(geolocArray['LINE_STEP'])
-        pixels = np.linspace(PIXEL_OFFSET, PIXEL_OFFSET + (numx - 1) *
-                             PIXEL_STEP, numx)
-        lines = np.linspace(LINE_OFFSET, LINE_OFFSET + (numy - 1) *
-                            LINE_STEP, numy)
+        pix_offset = int(geolocation_metadata['PIXEL_OFFSET'])
+        pix_step = int(geolocation_metadata['PIXEL_STEP'])
+        lin_offset = int(geolocation_metadata['LINE_OFFSET'])
+        lin_step = int(geolocation_metadata['LINE_STEP'])
+        pixls = np.linspace(pix_offset, pix_offset + (numx - 1) * pix_step, numx)
+        lines = np.linspace(lin_offset, lin_offset + (numy - 1) * lin_step, numy)
         # Make GCPs
-        GCPs = []
+        gcps = []
         # Subsample (if requested), but use linspace to
         # make sure endpoints are ntained
-        for p in np.around(np.linspace(0, len(pixels) - 1, numx / stepX)):
+        for p in np.around(np.linspace(0, len(pixls) - 1, numx / stepX)):
             for l in np.around(np.linspace(0, len(lines) - 1, numy / stepY)):
                 g = gdal.GCP(float(x[l, p]), float(y[l, p]), 0,
                              pixels[p], lines[l])
-                GCPs.append(g)
+                gcps.append(g)
         # Insert GCPs
-        self.dataset.SetGCPs(GCPs, geolocArray['SRS'])
-        # Delete geolocation array
-        self._add_geolocation_array()
+        self.dataset.SetGCPs(gcps, geolocation_metadata['SRS'])
+        self._remove_geolocation()
 
     def copy(self):
         """Creates a full copy of a VRT instance"""
@@ -960,10 +957,13 @@ class VRT(object):
         vrt.band_vrts = dict(self.band_vrts)
         vrt.tps = bool(self.tps)
 
-        # iterative copy of self.vrt
+        # recursive copy of vrt.vrt
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
-
+            # make reference from the new vrt to the copy of vrt.vrt
+            new_vrt_xml = vrt.xml.replace(os.path.split(self.vrt.fileName)[1],
+                                          os.path.split(vrt.vrt.fileName)[1])
+            vrt.write_xml(new_vrt_xml)
         return vrt
         
     @property
@@ -1045,7 +1045,7 @@ class VRT(object):
                                              use_geolocation=False,
                                              use_gcps=False)
 
-        # #4: srcVRT has whatever georeference, geolocation array is not used,
+        # #4: srcVRT has whatever georeference, geolocation is not used,
         # GCPs are not used, GeoTransform is not used either.
         # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.xSize, -1)
         # Warping becomes pure affine resize
@@ -1108,7 +1108,7 @@ class VRT(object):
         if len(dstGCPs) > 0 and use_gcps:
             fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, NSR(dstSRS), skip_gcps)
             srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
-            # don't use geolocation array
+            # don't use geolocation
             use_geolocation = False
             acwvSRS = None
 
@@ -1411,12 +1411,12 @@ class VRT(object):
         copy of self in vrt.vrt and change references from vrt to vrt.vrt
 
         """
-        # create new self
+        # create new vrt that refers to a copy of self
         superVRT = VRT.from_gdal_dataset(self.dataset)
-        superVRT.vrt = self.copy()
+        superVRT.vrt = self
         superVRT.tps = self.tps
 
-        # Add bands to newSelf
+        # add bands to the new vrt
         for iBand in range(superVRT.vrt.dataset.RasterCount):
             src = {'SourceFilename': superVRT.vrt.fileName,
                    'SourceBand': iBand + 1}
@@ -1543,7 +1543,7 @@ class VRT(object):
 
         return projection
 
-    def get_resized_vrt(self, xSize, ySize, use_geolocationArray=False,
+    def get_resized_vrt(self, xSize, ySize, use_geolocation=False,
                         use_gcps=False, use_geotransform=False,
                         eResampleAlg=1, **kwargs):
 
@@ -1576,7 +1576,7 @@ class VRT(object):
         # update size and GeoTranform in XML of the warped VRT object
         warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
                                         geoTransform=geoTransform,
-                                        use_geolocationArray=use_geolocationArray,
+                                        use_geolocation=use_geolocation,
                                         use_gcps=use_gcps,
                                         use_geotransform=use_geotransform,
                                         eResampleAlg=eResampleAlg)

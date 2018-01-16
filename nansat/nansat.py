@@ -361,7 +361,7 @@ class Nansat(Domain):
 # TODO:
 #   move to Exporter.export()
 #   inherit Nansat from Exporter
-    def export(self, fileName, bands=None, rmMetadata=list(), addGeolocArray=True,
+    def export(self, fileName, bands=None, rmMetadata=list(), addGeoloc=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -375,7 +375,7 @@ class Nansat(Domain):
         rmMetadata : list
             metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
-        addGeolocArray : bool
+        addGeoloc : bool
             add geolocation array datasets to exported file?
         addGCPs : bool
             add GCPs to exported file?
@@ -480,16 +480,16 @@ class Nansat(Domain):
             exportVRT.delete_bands(complexBands)
 
 # TODO: move to Exporter._add_geolocation_bands and DRY X/Y
-        # add bands with geolocation arrays to the VRT
-        if addGeolocArray and len(exportVRT.geolocationArray.data) > 0:
+        # add bands with geolocation to the VRT
+        if addGeoloc and hasattr(exportVRT, 'geolocation') and len(exportVRT.geolocation.data) > 0:
             exportVRT._create_band(
-                {'SourceFilename': self.vrt.geolocationArray.data['X_DATASET'],
-                 'SourceBand': int(self.vrt.geolocationArray.data['X_BAND'])},
+                {'SourceFilename': self.vrt.geolocation.data['X_DATASET'],
+                 'SourceBand': int(self.vrt.geolocation.data['X_BAND'])},
                 {'wkv': 'longitude',
                  'name': 'GEOLOCATION_X_DATASET'})
             exportVRT._create_band(
-                {'SourceFilename': self.vrt.geolocationArray.data['Y_DATASET'],
-                 'SourceBand': int(self.vrt.geolocationArray.data['Y_BAND'])},
+                {'SourceFilename': self.vrt.geolocation.data['Y_DATASET'],
+                 'SourceBand': int(self.vrt.geolocation.data['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'GEOLOCATION_Y_DATASET'})
 
@@ -1180,7 +1180,6 @@ class Nansat(Domain):
             kwargs['skip_gcps'] = int(dst_skip_gcps)
         if src_skip_gcps is not None:  # ...or use setting from src
             kwargs['skip_gcps'] = int(src_skip_gcps)
-        import ipdb; ipdb.set_trace()
 
         # add band that masks valid values with 1 and nodata with 0
         # after reproject
