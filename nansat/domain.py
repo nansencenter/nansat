@@ -449,7 +449,7 @@ class Domain(object):
         step_size = stepSize
         dst_srs = dstSRS
         x_vec = range(0, self.vrt.dataset.RasterXSize, step_size)
-        y_vec = range(0, self.vrt.dataset.RasterYSize, dst_srs)
+        y_vec = range(0, self.vrt.dataset.RasterYSize, step_size)
         x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
         if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
