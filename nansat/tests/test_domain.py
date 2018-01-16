@@ -261,20 +261,15 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(param_err.message,
                              'Expeced parameter is te, lle, ts, tr. (test_param given)')
 
-    def test_create_extentDic(self):
-        dom = Domain(4326, '-te 5 60 6 61 -ts 500 500')
-        extent_dict = dom._create_extentDic('-te 5 60 6 61 -ts 500 500')
-        self.assertEqual(extent_dict, {'te': [5.0, 60.0, 6.0, 61.0], 'ts': [500.0, 500.0]})
-
-    def test_create_extent_dict_beta(self):
+    def test_create_extent_dict(self):
         test_data = ('-te 5 60 6 61 -ts 500 500',
                      '-te 5 60 6 61')
 
-        extent_dict = Domain._create_extent_dict_beta(test_data[0])
+        extent_dict = Domain._create_extent_dict(test_data[0])
         self.assertEqual(extent_dict, {'te': [5.0, 60.0, 6.0, 61.0], 'ts': [500.0, 500.0]})
 
         try:
-            Domain._create_extent_dict_beta(test_data[0])
+            Domain._create_extent_dict(test_data[0])
         except OptionError as opt_err:
             self.assertEqual(opt_err.message, '_create_extentDic requires '
                                               'exactly 2 parameters (1 given)')

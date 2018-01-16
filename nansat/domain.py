@@ -192,21 +192,20 @@ class Domain(object):
         elif srs is not None and ext is not None:
             srs = NSR(srs)
             # create full dictionary of parameters
-            extent_dic = self._create_extentDic(ext)
+            extent_dict = Domain._create_extent_dict(ext)
 
             # convert -lle to -te
-            if 'lle' in extent_dic.keys():
-                # TODO: Change _convert_extentDic funcname
-                extent_dic = self._convert_extentDic(srs, extent_dic)
+            if 'lle' in extent_dict.keys():
+                extent_dict = self._convert_extentDic(srs, extent_dict)
 
             # get size/extent from the created extent dictionary
-            geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dic)
+            geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dict)
             # create VRT object with given geo-reference parameters
             self.vrt = VRT.from_dataset_params(x_size=raster_x_size, y_size=raster_y_size,
-                                                geo_transform=geo_transform,
-                                                projection=srs.wkt,
-                                                gcps=[], gcp_projection='')
-            self.extent_dic = extent_dic
+                                               geo_transform=geo_transform,
+                                               projection=srs.wkt,
+                                               gcps=[], gcp_projection='')
+            self.extent_dic = extent_dict
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
@@ -521,29 +520,9 @@ class Domain(object):
         else:
             raise OptionError('Expeced parameter is te, lle, ts, tr. (%s given)' % option_vars[0])
 
-    # TODO: Test _create_extentDic_beta
-    # TODO: Document and comment _create_extentDic_beta
     @staticmethod
-    def _create_extent_dict_beta(extent_str):
-        options = extent_str.strip().split('-')[1:]
-
-        if len(options) != 2:
-            raise OptionError('_create_extentDic requires exactly '
-                              '2 parameters (%s given)' % len(options))
-
-        options = list(map(lambda opt: opt.split(), options))
-        Domain._check_extent_input(options[0], ['te', 'lle'], 4)
-        Domain._check_extent_input(options[1], ['ts', 'tr'], 2)
-
-        extent = {}
-        for option in options:
-            extent[option[0]] = [float(el) for el in option[1:]]
-
-        return extent
-
-    # TODO: Replace _create_extentDic with _create_extentDic_beta
-    def _create_extentDic(self, extentString):
-        '''Create a dictionary from extentString
+    def _create_extent_dict(extent_str):
+        """Create a dictionary from extentString
 
         Check if extentString is proper.
             * '-te' and '-lle' take 4 numbers.
@@ -567,126 +546,24 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when the extentString is improper
+        OptionError : occurs when the extent_str is improper
 
-        '''
-        extentDic = {}
+        """
+        options = extent_str.strip().split('-')[1:]
 
-        # Find -re text
-        str_tr = re.findall('-tr\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                            extentString)
-        if str_tr != []:
-            # Check the number of -tr elements
-            elm_str = str(str_tr[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 3 or elms_str[2] == '-':
-                raise OptionError('Domain._create_extentDic():'
-                                  '-tr is used as'
-                                  '"-tr xResolution yResolution"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_tr[0], '')
-            trElem = str(str_tr).split(None)
-            trkey = trElem[0].translate(string.maketrans('', ''), "[]-'")
-            if trkey != '':
-                elements = []
-                for i in range(2):
-                    elements.append(float(trElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "'[]'")))
-                extentDic[trkey] = elements
+        if len(options) != 2:
+            raise OptionError('_create_extentDic requires exactly '
+                              '2 parameters (%s given)' % len(options))
 
-        # Find -ts text
-        str_ts = re.findall('-ts\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                            extentString)
-        if str_ts != []:
-            # Check the number of -ts elements
-            elm_str = str(str_ts[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 3 or elms_str[2] == '-':
-                raise OptionError('Domain._create_extentDic(): '
-                                  '"-ts" is used as "-ts width height"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_ts[0], '')
-            tsElem = str(str_ts).split(None)
-            tskey = tsElem[0].translate(string.maketrans('', ''), "[]-'")
-            if tskey != '':
-                elements = []
-                for i in range(2):
-                    elements.append(float(tsElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "[]'")))
-                extentDic[tskey] = elements
+        options = list(map(lambda opt: opt.split(), options))
+        Domain._check_extent_input(options[0], ['te', 'lle'], 4)
+        Domain._check_extent_input(options[1], ['ts', 'tr'], 2)
 
-        # Find -te text
-        str_te = re.findall('-te\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
-                            '+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                            extentString)
-        if str_te != []:
-            # Check the number of -te elements
-            elm_str = str(str_te[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 5:
-                raise OptionError('Domain._create_extentDic():'
-                                  '-te is used as "-te xMin yMin xMax yMax"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_te[0], '')
-            teElem = str(str_te).split(None)
-            tekey = teElem[0].translate(string.maketrans('', ''), "[]-'")
-            if tekey != '':
-                elements = []
-                for i in range(4):
-                    elements.append(float(teElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "[]'")))
-                extentDic[tekey] = elements
+        extent = {}
+        for option in options:
+            extent[option[0]] = [float(el) for el in option[1:]]
 
-        # Find -lle text
-        str_lle = re.findall('-lle\s+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s'
-                             '+[-+]?\d*[.\d*]*\s+[-+]?\d*[.\d*]*\s?',
-                             extentString)
-        if str_lle != []:
-            # Check the number of -lle elements
-            elm_str = str(str_lle[0].rstrip())
-            elms_str = elm_str.split(None)
-            if len(elms_str) != 5:
-                raise OptionError('Domain._create_extentDic():'
-                                  '-lle is used as '
-                                  '"-lle minlon minlat maxlon maxlat"')
-            # Add the key and value to extentDic
-            extentString = extentString.replace(str_lle[0], '')
-            lleElem = str(str_lle).split(None)
-            llekey = lleElem[0].translate(string.maketrans('', ''), "[]-'")
-            if llekey != '':
-                elements = []
-                for i in range(4):
-                    elements.append(float(lleElem[i + 1].
-                                          translate(string.maketrans('', ''),
-                                                    "[]'")))
-                extentDic[llekey] = elements
-
-        result = re.search('\S', extentString)
-        # if there are unnecessary letters, give an error
-        if result is not None:
-            raise OptionError('Domain._create_extentDic():'
-                              'extentString is not redable :',
-                              extentString)
-
-        # check if one of '-te' and '-lle' is given
-        if ('lle' not in extentDic) and ('te' not in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-lle" or "-te" is required.')
-        elif ('lle' in extentDic) and ('te' in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-lle" or "-te" should be chosen.')
-
-        # check if one of '-ts' and '-tr' is given
-        if ('ts' not in extentDic) and ('tr' not in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-ts" or "-tr" is required.')
-        elif ('ts' in extentDic) and ('tr' in extentDic):
-            raise OptionError('Domain._create_extentDic():'
-                              '"-ts" or "-tr" should be chosen.')
-        return extentDic
+        return extent
 
     def get_border(self, nPoints=10, **kwargs):
         '''Generate two vectors with values of lat/lon for the border of domain
