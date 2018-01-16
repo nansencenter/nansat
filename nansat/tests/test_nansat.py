@@ -6,7 +6,7 @@
 # Modified:     Morten Wergeland Hansen, Aleksander Vines
 #
 # Created:      18.06.2014
-# Last modified:30.09.2015 14:00
+# Last modified:16.01.2018 11:00
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -795,6 +795,13 @@ class NansatTest(unittest.TestCase):
 
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
+        for backend in matplotlib.rcsetup.interactive_bk:
+            # Find a supported interactive backend
+            try:
+                plt.switch_backend(backend)
+                break;
+            except:
+                pass
         plt.ion()
         n1 = Nansat(self.test_file_gcps, logLevel=40)
         points = n1.digitize_points(1)
