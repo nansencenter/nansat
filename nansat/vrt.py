@@ -1097,6 +1097,7 @@ class VRT(object):
         warpedVRT : VRT object with WarpedVRT
 
         """
+
         # VRT to be warped
         srcVRT = self.copy()
 
@@ -1138,7 +1139,6 @@ class VRT(object):
             srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
-        srcVRT.export('/home/antonk/py/nansat/srcVRT.xml')
         warped_dataset = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
                                              acwvSRS, eResampleAlg)
         # TODO: implement the below option for proper handling of

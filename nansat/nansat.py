@@ -1180,6 +1180,7 @@ class Nansat(Domain):
             kwargs['skip_gcps'] = int(dst_skip_gcps)
         if src_skip_gcps is not None:  # ...or use setting from src
             kwargs['skip_gcps'] = int(src_skip_gcps)
+        import ipdb; ipdb.set_trace()
 
         # add band that masks valid values with 1 and nodata with 0
         # after reproject
