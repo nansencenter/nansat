@@ -199,7 +199,7 @@ class Domain(object):
                 # TODO: Change _convert_extentDic funcname
                 extent_dic = self._convert_extentDic(srs, extent_dic)
 
-            # get size/extent from the created extet dictionary
+            # get size/extent from the created extent dictionary
             geo_transform, raster_x_size, raster_y_size = self._get_geotransform(extent_dic)
             # create VRT object with given geo-reference parameters
             self.vrt = VRT(srcGeoTransform=geo_transform,
@@ -274,7 +274,7 @@ class Domain(object):
                                                                corners[1][3])
         return out_str
 
-    # TODO: Test requested
+    # TODO: Test write_kml
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         """Write KML file with domains
 
@@ -331,6 +331,7 @@ class Domain(object):
             kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
             kml_file.write(self.KML_BASE.format(content=kml_content))
 
+    # TODO: Test _get_border_kml
     def _get_border_kml(self):
         """Generate Placemark entry for KML
 
@@ -445,25 +446,24 @@ class Domain(object):
         latitude : numpy array
             grid with latitudes
         '''
-
-        # TODO: X, Y are not constant!
-        X = range(0, self.vrt.dataset.RasterXSize, stepSize)
-        Y = range(0, self.vrt.dataset.RasterYSize, stepSize)
-        Xm, Ym = np.meshgrid(X, Y)
+        step_size = stepSize
+        dst_srs = dstSRS
+        x_vec = range(0, self.vrt.dataset.RasterXSize, step_size)
+        y_vec = range(0, self.vrt.dataset.RasterYSize, dst_srs)
+        x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
         if len(self.vrt.geolocationArray.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
-            # TODO: lat, lon name convention
-            lon, lat = self.vrt.geolocationArray.get_geolocation_grids()
-            longitude, latitude = lon[Ym, Xm], lat[Ym, Xm]
+            lon_grid, lat_grid = self.vrt.geolocationArray.get_geolocation_grids()
+            lon_arr, lat_arr = lon_grid[y_grid, x_grid], lat_grid[y_grid, x_grid]
         else:
             # generate lon,lat grids using GDAL Transformer
-            lonVec, latVec = self.transform_points(Xm.flatten(), Ym.flatten(), dstSRS=dstSRS)
-            longitude = lonVec.reshape(Xm.shape)
-            latitude = latVec.reshape(Xm.shape)
+            lon_vec, lat_vec = self.transform_points(x_grid.flatten(), y_grid.flatten(), dstSRS=dst_srs)
+            lon_arr = lon_vec.reshape(x_grid.shape)
+            lat_arr = lat_vec.reshape(x_grid.shape)
 
-        return longitude, latitude
+        return lon_arr, lat_arr
 
     def _convert_extentDic(self, dstSRS, extentDic):
         '''Convert -lle option (lat/lon) to -te (proper coordinate system)
@@ -739,11 +739,6 @@ class Domain(object):
         now since this may cause other problems...
         '''
         warnings.warn("> 180 deg correction to longitudes - disabled..")
-        # TODO: Old code
-        ## apply > 180 deg correction to longitudes
-        #for ilon, lon in enumerate(lonList):
-        #    lonList[ilon] = copysign(acos(cos(lon * pi / 180.)) / pi * 180,
-        #                             sin(lon * pi / 180.))
 
         # TODO: Should be done with geos finctional
         polyCont = ','.join(str(lon) + ' ' + str(lat)
