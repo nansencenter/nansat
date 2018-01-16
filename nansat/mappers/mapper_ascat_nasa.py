@@ -15,7 +15,8 @@ import json
 import pythesint as pti
 
 from nansat.tools import gdal, ogr
-from nansat.vrt import VRT, GeolocationArray
+from nansat.geolocation import Geolocation
+from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 
 
@@ -62,12 +63,12 @@ class Mapper(VRT):
 
         self.GeolocVRT._create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.GeolocVRT,
-                                        yVRT=self.GeolocVRT,
+        GeolocObject = Geolocation(x_vrt=self.GeolocVRT,
+                                        y_vrt=self.GeolocVRT,
                                         # x = lon, y = lat
-                                        xBand=1, yBand=2,
-                                        lineOffset=0, pixelOffset=0,
-                                        lineStep=1, pixelStep=1)
+                                        x_band=1, y_band=2,
+                                        line_offset=0, pixel_offset=0,
+                                        line_step=1, pixel_step=1)
 
         # create empty VRT dataset with geolocation only
         VRT.__init__(self,

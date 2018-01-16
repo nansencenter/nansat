@@ -17,7 +17,7 @@ else:
     IMPORT_SCIPY = True
 
 from nansat.nsr import NSR
-from nansat.vrt import GeolocationArray, VRT
+from nansat.vrt import VRT
 from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 
 
@@ -83,9 +83,6 @@ class Mapper(VRT):
         yVRTArray = gaussian_filter(yVRTArray, 5).astype('float32')
         yVRT = VRT(array=yVRTArray)
 
-        #self._add_geolocation_array(GeolocationArray(xDatasetSource,
-        #                                           yDatasetSource))
-        #"""
         # estimate pixel/line step
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
 

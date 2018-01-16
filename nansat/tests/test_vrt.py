@@ -25,13 +25,13 @@ class VRTTest(unittest.TestCase):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
 
     def test_init(self):
-        vrt = VRT()
+        vrt = VRT.init()
 
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)
 
     def test_del(self):
-        vrt = VRT()
+        vrt = VRT.init()
         filename_vrt = vrt.fileName
         filename_raw = vrt.fileName.replace('.vrt', '.raw')
         vrt = None
@@ -39,8 +39,16 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(gdal.Unlink(filename_vrt), -1)
         self.assertEqual(gdal.Unlink(filename_raw), -1)
 
+    def test_init_metadata(self):
+        test_dict = {'aaa': 'bbb'}
+        vrt1 = VRT.init()
+        vrt2 = VRT.init(metadata=test_dict)
+
+        self.assertEqual(vrt1.dataset.GetMetadata(), {})
+        self.assertEqual(vrt2.dataset.GetMetadata(), test_dict)
+
     def test_init_nomem(self):
-        vrt = VRT(nomem=True)
+        vrt = VRT.init(nomem=True)
 
         self.assertIsInstance(vrt, VRT)
         self.assertIsInstance(vrt.fileName, str)

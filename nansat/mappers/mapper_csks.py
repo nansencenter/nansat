@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 from nansat.tools import gdal, ogr, osr, WrongMapperError, parse_time
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 
 
 class Mapper(VRT):

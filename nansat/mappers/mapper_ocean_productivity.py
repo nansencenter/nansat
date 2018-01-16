@@ -13,7 +13,7 @@ import glob
 import numpy as np
 
 from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 
 
 class Mapper(VRT):

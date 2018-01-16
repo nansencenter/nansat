@@ -165,7 +165,7 @@ class Nansat(Domain):
         # ...create using array, domain, and parameters
         else:
             # Set current VRT object
-            self.vrt = VRT(gdalDataset=domain.vrt.dataset)
+            self.vrt = VRT.from_gdal_dataset(domain.vrt.dataset)
             self.domain = domain
             self.mapper = ''
             if array is not None:
@@ -304,7 +304,7 @@ class Nansat(Domain):
             parameters = [None] * len(arrays)
 
         # create VRTs from arrays
-        band_vrts = [VRT(array=array, nomem=nomem) for array in arrays]
+        band_vrts = [VRT.from_array(array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
 
@@ -464,8 +464,8 @@ class Nansat(Domain):
                 bandMetadataR['name'] = bandMetadataR.pop('name') + '_real'
                 bandMetadataI['name'] = bandMetadataI.pop('name') + '_imag'
                 # Create bands from the real and imaginary numbers
-                exportVRT.real.append(VRT(array=self[i].real))
-                exportVRT.imag.append(VRT(array=self[i].imag))
+                exportVRT.real.append(VRT.from_array(self[i].real))
+                exportVRT.imag.append(VRT.from_array(self[i].imag))
 
                 metaDict = [{'src': {
                              'SourceFilename': exportVRT.real[-1].fileName,
@@ -535,7 +535,7 @@ class Nansat(Domain):
             numOfBands = self.vrt.dataset.RasterCount
             # create VRT from each band and add it
             for iBand in range(numOfBands):
-                vrt = VRT(array=self[iBand + 1])
+                vrt = VRT.from_array(self[iBand + 1])
 # TODO: replace with add_bands
                 self.add_band(vrt=vrt)
                 metadata = self.get_metadata(bandID=iBand + 1)
@@ -1736,7 +1736,7 @@ class Nansat(Domain):
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmpVRT is None and gdalDataset is not None:
             self.logger.warning('No mapper fits, returning GDAL bands!')
-            tmpVRT = VRT(gdalDataset=gdalDataset)
+            tmpVRT = VRT.from_gdal_dataset(gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
                 tmpVRT._create_band({'SourceFilename': self.fileName,
                                      'SourceBand': iBand + 1})
