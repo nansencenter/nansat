@@ -139,6 +139,13 @@ class VRT(object):
         return vrt
 
     @classmethod
+    def copy_dataset(cls, gdal_dataset, **kwargs):
+        """Create VRT from full copy of gdal_dataset"""
+        vrt = cls.__new__(cls)
+        vrt._copy_from_dataset(gdal_dataset, **kwargs)
+        return vrt
+
+    @classmethod
     def from_dataset_params(cls, x_size, y_size, geo_transform, projection, 
                          gcps, gcp_projection, **kwargs):
         """Create VRT from GDAL dataset parameters"""
@@ -188,7 +195,19 @@ class VRT(object):
         self.dataset.SetMetadata(gdal_dataset.GetMetadata())
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
 
-        # write file contents
+        # write XML file contents
+        self.dataset.FlushCache()
+        self.logger.debug('VRT self.dataset: %s' % self.dataset)
+
+    def _copy_from_dataset(self, gdal_dataset, **kwargs):
+        """Create VRT from gdal_dataset"""
+        # set dataset geo-metadata 
+        VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
+        self.dataset = self.driver.CreateCopy(self.fileName, gdal_dataset)
+        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.FlushCache()
+
+        # write XMl file contents
         self.dataset.FlushCache()
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
 
@@ -258,7 +277,6 @@ class VRT(object):
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(self._latlon2gcps(lat, lon), NSR().wkt)
         self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
-
 
     def __del__(self):
         """ Destructor deletes VRT and RAW files"""
@@ -930,11 +948,10 @@ class VRT(object):
 
     def copy(self):
         """Creates a full copy of a VRT instance"""
-        vrt = VRT.from_gdal_dataset(self.dataset)
-        if self.dataset.RasterCount > 0:
-            vrt.dataset = self.driver.CreateCopy(vrt.fileName, self.dataset)
-        vrt.dataset.SetMetadataItem('fileName', vrt.fileName)
-        vrt.dataset.FlushCache()
+        if self.dataset.RasterCount == 0:
+            vrt = VRT.from_gdal_dataset(self.dataset)
+        else:
+            vrt = VRT.copy_dataset(self.dataset)
 
         vrt.band_vrts = dict(self.band_vrts)
         vrt.tps = bool(self.tps)
@@ -1117,7 +1134,7 @@ class VRT(object):
             srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
-        warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
+        auto_warped_vrt = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
                                              acwvSRS, eResampleAlg)
         # TODO: implement the below option for proper handling of
         # stereo projections
@@ -1125,19 +1142,20 @@ class VRT(object):
         #                                      dstSRS, eResampleAlg)
 
         # check if Warped VRT was created
-        if warpedVRT is None:
+        if auto_warped_vrt is None:
             raise AttributeError('Cannot create warpedVRT!')
 
         # create VRT object from Warped VRT GDAL Dataset
         self.logger.debug('create VRT object from Warped VRT GDAL Dataset')
-        warpedVRT = warpedVRT.copy()
+        import ipdb; ipdb.set_trace()
+        warpedVRT = auto_warped_vrt.copy()
+        
 
         # set x/y size, geoTransform, blockSize
         self.logger.debug('set x/y size, geoTransform, blockSize')
 
         # Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
-        warpedXML = warpedVRT.xml
-        node0 = Node.create(warpedXML)
+        node0 = Node.create(warpedVRT.xml)
 
         if xSize > 0:
             node0.replaceAttribute('rasterXSize', str(xSize))
