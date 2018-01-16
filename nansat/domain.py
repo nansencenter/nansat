@@ -523,11 +523,27 @@ class Domain(object):
                                                     "'[]'")))
                 extentDic[trkey] = elements
 
+    def _check_parser_input(self, option, params, size):
+        option_vars = option.strip().split()
+        if option_vars in params:
+            try:
+                # Check type of input values during counting of length
+                if list(map(float, option_vars[1:])) != size:
+                    raise OptionError('%s contains exactly %s parameters (%s given)' %
+                                      (option_vars[0], size, len(option_vars[1:])))
+            except ValueError:
+                raise OptionError('Input values must be int or float')
+        else:
+            raise OptionError('')
+        
     def _create_extentDic_beta(self, extentString):
-        # Dash is try symbol of command start
-        extent_options = extentString.strip().split('-')[1:]
-        if len(extent_options) != 2:
-            raise OptionError
+        # Dash is a symbol of command start
+        try:
+            options = extentString.strip().split('-')[1:]
+            self._check_parser_input(options[0], ['te', 'lle'], 4)
+            self._check_parser_input(options[1], ['ts', 'tr'], 2)
+        except IndexError:
+            raise OptionError('msg')
 
     def _create_extentDic(self, extentString):
         '''Create a dictionary from extentString
@@ -535,7 +551,6 @@ class Domain(object):
         Check if extentString is proper.
             * '-te' and '-lle' take 4 numbers.
             * '-ts' and '-tr' take 2 numbers.
-            #TODO: Right combinations are not correct
             * the combination should be ('-te' or '-lle') and ('-ts' or '-tr')
         If it is proper, create a dictionary
         Otherwise, raise the error.
