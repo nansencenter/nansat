@@ -723,16 +723,17 @@ class Domain(object):
 
         return self.transform_points(colVector, rowVector)
 
+    # TODO: Test get_border_wkt
     def get_border_wkt(self, *args, **kwargs):
-        '''Creates string with WKT representation of the border polygon
+        """Creates string with WKT representation of the border polygon
 
         Returns
         --------
         WKTPolygon : string
             string with WKT representation of the border polygon
 
-        '''
-        lonList, latList = self.get_border(*args, **kwargs)
+        """
+        lon_list, lat_list = self.get_border(*args, **kwargs)
 
         ''' The following causes erratic geometry when using
         WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
@@ -741,11 +742,10 @@ class Domain(object):
         warnings.warn("> 180 deg correction to longitudes - disabled..")
 
         # TODO: Should be done with geos finctional
-        polyCont = ','.join(str(lon) + ' ' + str(lat)
-                            for lon, lat in zip(lonList, latList))
+        polygon_bourder = ','.join('%s %s' % (lon, lat) for lon, lat in zip(lon_list, lat_list))
         # outer quotes have to be double and inner - single!
         # wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
-        wkt = 'POLYGON((%s))' % polyCont
+        wkt = 'POLYGON((%s))' % polygon_bourder
         return wkt
 
     def get_border_geometry(self, *args, **kwargs):
