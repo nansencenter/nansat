@@ -523,15 +523,17 @@ class Domain(object):
 
     # TODO: Test _create_extentDic_beta
     # TODO: Document and comment _create_extentDic_beta
-    def _create_extentDic_beta(self, extentString):
+    @staticmethod
+    def _create_extent_dict_beta(extent_str):
+        options = extent_str.strip().split('-')[1:]
 
-        try:
-            options = extentString.strip().split('-')[1:]
-            options = list(map(lambda opt: opt.split(), options))
-            self._check_extent_input(options[0], ['te', 'lle'], 4)
-            self._check_extent_input(options[1], ['ts', 'tr'], 2)
-        except IndexError:
-            raise OptionError('_create_extentDic requires exactly 2 parameters')
+        if len(options) != 2:
+            raise OptionError('_create_extentDic requires exactly '
+                              '2 parameters (%s given)' % len(options))
+
+        options = list(map(lambda opt: opt.split(), options))
+        Domain._check_extent_input(options[0], ['te', 'lle'], 4)
+        Domain._check_extent_input(options[1], ['ts', 'tr'], 2)
 
         extent = {}
         for option in options:
