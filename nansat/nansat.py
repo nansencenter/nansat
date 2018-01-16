@@ -743,7 +743,7 @@ class Nansat(Domain):
         data.export(tmpName)
 
         # open files for input and output
-        ncI = netcdf_file(tmpName, 'r')
+        ncI = netcdf_file(tmpName, 'r', mmap=False)
         ncO = netcdf_file(fileName, 'w')
 
         # collect info on dimention names
