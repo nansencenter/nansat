@@ -28,7 +28,7 @@ else:
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
-from nansat.tools import OptionError, gdal, ogr
+from nansat.tools import OptionError, gdal, ogr, ProjectionError
 from nansat.figure import Image
 import sys
 import nansat_test_data as ntd
@@ -75,6 +75,18 @@ class DomainTest(unittest.TestCase):
     def test_dont_init_from_invalid(self):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
+        with self.assertRaises(OptionError):
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   ext="-te 25 70 35 72 -ts 2000 2000")
+        with self.assertRaises(ProjectionError):
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="unmatched srs")
+
+    def test_init_use_AutoCreateWarpedVRT_to_determine_bounds(self):
+        d = Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
+        self.assertEqual(type(d), Domain)
 
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")

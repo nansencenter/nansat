@@ -3,9 +3,12 @@
 *.swp
 *.so
 *.o
+.project
+.pydevproject
 test_data/
 build/
 dist/
 nansat.egg-info/
-.project
-.pydevproject
+docs/_build/
+docs/_static/
+#docs/_templates/
