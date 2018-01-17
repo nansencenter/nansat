@@ -274,6 +274,10 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(opt_err.message, '_create_extentDic requires '
                                               'exactly 2 parameters (1 given)')
 
+    def test_get_min_max_lat_lon(self):
+        dom = Domain(4326, "-te 5 60 6 61 -ts 500 500")
+        self.assertEqual(dom.get_min_max_lat_lon(), (60.002, 61.0, 5.0, 5.998))
+
 
 if __name__ == "__main__":
     unittest.main()

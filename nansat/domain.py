@@ -81,15 +81,13 @@ class Domain(object):
 
     """
 
-    KML_BASE = '''
-    <?xml version="1.0" encoding="UTF-8"?>
+    KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
     <kml xmlns="http://www.opengis.net/kml/2.2"
     xmlns:gx="http://www.google.com/kml/ext/2.2"
     xmlns:kml="http://www.opengis.net/kml/2.2"
     xmlns:atom="http://www.w3.org/2005/Atom">
     {content}
-    </kml>
-    '''
+    </kml>'''
 
     # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
@@ -219,23 +217,16 @@ class Domain(object):
     def repr_beta(self):
         separator = '-' * 40
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)'
-        template = '''
-        Domain:[{x_size} x {y_size}]
+        template = '''Domain:[{x_size} x {y_size}]
         {separator}
         Projection:
         {projection}
         {separator}
         Corners (lon, lat):
         {top_corners}
-        {bottom_corners}        
-        '''
+        {bottom_corners}'''
 
-        try:
-            corners = self.get_corners()
-            # TODO: Where is not going to be an exception
-        except Exception as e:
-            self.logger.error('Cannot read projection from source! '
-                              'Exception is: %s' % e.message)
+        corners = self.get_corners()
         x_size, y_size = self.shape()[::-1]
         up_corners = corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
         down_corners = corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
@@ -264,13 +255,13 @@ class Domain(object):
             out_str += '-' * 40 + '\n'
             out_str += 'Corners (lon, lat):\n'
             out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
-                                                               corners[1][0],
-                                                               corners[0][2],
-                                                               corners[1][2])
+                                                                corners[1][0],
+                                                                corners[0][2],
+                                                                corners[1][2])
             out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
-                                                               corners[1][1],
-                                                               corners[0][3],
-                                                               corners[1][3])
+                                                                corners[1][1],
+                                                                corners[0][3],
+                                                                corners[1][3])
         return out_str
 
     # TODO: Test write_kml
@@ -293,13 +284,11 @@ class Domain(object):
         xml_filename = xmlFileName
         kml_filename = kmlFileName
 
-        template = '''
-        <Document>
+        template = '''<Document>
         \t<name>{filename}</name>
         \t\t<Folder><name>{filename}</name><open>1</open>
         {borders}
-        \t\t</Folder></Document>
-        '''
+        \t\t</Folder></Document>'''
 
         # test input options
         if xml_filename and not kml_filename:
@@ -340,8 +329,7 @@ class Domain(object):
             String with the Placemark entry
 
         """
-        klm_entry = '''
-        \t\t\t<Placemark>
+        klm_entry = '''\t\t\t<Placemark>
         \t\t\t\t<name>{name}</name>
         \t\t\t\t<Style>
         \t\t\t\t\t<LineStyle><color>ffffffff</color></LineStyle>
@@ -349,8 +337,7 @@ class Domain(object):
         \t\t\t\t</Style>
         \t\t\t\t<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>
         {coordinates}
-        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
-        '''
+        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>'''
         domain_lon, domain_lat = self.get_border()
         # convert Border coordinates into KML-like string
         coordinates = ''.join(['%f,%f,0 ' % (lon, lat) for lon, lat in zip(domain_lon, domain_lat)])
@@ -396,8 +383,7 @@ class Domain(object):
         kml_filename = kmlFileName
         kml_figurename = kmlFigureName
 
-        template = '''
-        <GroundOverlay>
+        template = '''<GroundOverlay>
         \t<name>{filename}</name>
         \t<Icon>
         \t\t<href>{figurename}</href>
@@ -409,8 +395,7 @@ class Domain(object):
         \t\t<east>{east}</east>
         \t\t<west>{west}</west>
         \t</LatLonBox>
-        </GroundOverlay>
-        '''
+        </GroundOverlay>'''
         # test input options
         # TODO: kml_figurename can be not optional
         if kml_figurename is None:
@@ -454,7 +439,6 @@ class Domain(object):
         if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
-            # TODO: lat, lon name convention
             lon_grid, lat_grid = self.vrt.geolocation.get_geolocation_grids()
             lon_arr, lat_arr = lon_grid[y_grid, x_grid], lat_grid[y_grid, x_grid]
         else:
@@ -622,10 +606,10 @@ class Domain(object):
         warnings.warn("> 180 deg correction to longitudes - disabled..")
 
         # TODO: Should be done with geos finctional
-        polygon_bourder = ','.join('%s %s' % (lon, lat) for lon, lat in zip(lon_list, lat_list))
+        polygon_border = ','.join('%s %s' % (lon, lat) for lon, lat in zip(lon_list, lat_list))
         # outer quotes have to be double and inner - single!
         # wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
-        wkt = 'POLYGON((%s))' % polygon_bourder
+        wkt = 'POLYGON((%s))' % polygon_border
         return wkt
 
     def get_border_geometry(self, *args, **kwargs):
@@ -692,7 +676,7 @@ class Domain(object):
                      self.vrt.dataset.RasterYSize]
         return self.transform_points(colVector, rowVector)
 
-    def get_min_max_lat_lon_beta(self):
+    def get_min_max_lat_lon(self):
         """Get minimum and maximum lat and long values in the geolocation grid
 
         Returns
@@ -701,38 +685,8 @@ class Domain(object):
             min/max lon/lat values for the Domain
 
         """
-        lons, lats = self.get_geolocation_grids()
-        return min(lats), max(lats), min(lons), max(lons)
-
-    def get_min_max_lat_lon(self):
-        '''Get minimum and maximum lat and long values in the geolocation grid
-
-        Returns
-        --------
-        minLat, maxLat, minLon, maxLon : float
-            min/max lon/lat values for the Domain
-
-        '''
-        allLongitudes, allLatitudes = self.get_geolocation_grids()
-        maxLat = -90
-        minLat = 90
-        for latitudes in allLatitudes:
-            for lat in latitudes:
-                if lat > maxLat:
-                    maxLat = lat
-                if lat < minLat:
-                    minLat = lat
-
-        maxLon = -180
-        minLon = 180
-        for longitudes in allLongitudes:
-            for lon in longitudes:
-                if lon > maxLon:
-                    maxLon = lon
-                if lon < minLon:
-                    minLon = lon
-
-        return minLat, maxLat, minLon, maxLon
+        lon_grd, lat_grd = self.get_geolocation_grids()
+        return min(lat_grd[:, 1]), max(lat_grd[:, 1]), min(lon_grd[1, :]), max(lon_grd[1, :])
 
     def get_pixelsize_meters(self):
         '''Returns the pixelsize (deltaX, deltaY) of the domain
