@@ -74,9 +74,7 @@ class VRT(object):
     self.vrt.vrt = subVRT
 
     """
-# TODO:
-#   move templates out of Python code to external xml files
-    COMPLEX_SOURCE_XML = '''
+    COMPLEX_SOURCE_XML = Template('''
             <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
                 <SourceBand>$SourceBand</SourceBand>
@@ -86,9 +84,9 @@ class VRT(object):
                 <LUT>$LUT</LUT>
                 <SrcRect xOff="$xOff" yOff="$yOff" xSize="$xSize" ySize="$ySize"/>
                 <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
-            </$SourceType> '''
+            </$SourceType> ''')
 
-    RawRasterBandSource = Template('''
+    RAW_RASTER_BAND_SOURCE_XML = Template'''
             <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
               <VRTRasterBand dataType="$DataType"
                 band="$BandNum" subClass="VRTRawRasterBand">
@@ -99,7 +97,7 @@ class VRT(object):
               </VRTRasterBand>
             </VRTDataset> ''')
 
-    ReprojectTransformer = Template('''
+    REPROJECT_TRANSFORMER = Template('''
         <ReprojectTransformer>
           <ReprojectionTransformer>
             <SourceSRS>$SourceSRS</SourceSRS>
@@ -139,13 +137,6 @@ class VRT(object):
         return vrt
 
     @classmethod
-    def copy_dataset(cls, gdal_dataset, **kwargs):
-        """Create VRT from full copy of gdal_dataset"""
-        vrt = cls.__new__(cls)
-        vrt._copy_from_dataset(gdal_dataset, **kwargs)
-        return vrt
-
-    @classmethod
     def from_dataset_params(cls, x_size, y_size, geo_transform, projection, 
                          gcps, gcp_projection, **kwargs):
         """Create VRT from GDAL dataset parameters"""
@@ -156,16 +147,23 @@ class VRT(object):
 
     @classmethod
     def from_array(cls, array, **kwargs):
-        """Create VRT with a dataset from an array"""
+        """Create VRT from input array"""
         vrt = cls.__new__(cls)
         vrt._init_from_array(array, **kwargs)
         return vrt
 
     @classmethod
     def from_lonlat(cls, lon, lat, **kwargs):
-        """Create VRT from longitude, latitude arrays"""
+        """Create VRT from input longitude, latitude arrays"""
         vrt = cls.__new__(cls)
         vrt._init_from_lonlat(lon, lat)
+        return vrt
+
+    @classmethod
+    def copy_dataset(cls, gdal_dataset, **kwargs):
+        """Create VRT from full copy of gdal_dataset"""
+        vrt = cls.__new__(cls)
+        vrt._copy_from_dataset(gdal_dataset, **kwargs)
         return vrt
 
     def __init__(self, x_size=1, y_size=1, metadata=None, nomem=False, **kwargs):
@@ -198,17 +196,6 @@ class VRT(object):
         self.dataset.SetMetadataItem('fileName', self.fileName)
 
         # write XML file contents
-        self.dataset.FlushCache()
-        self.logger.debug('VRT self.dataset: %s' % self.dataset)
-
-    def _copy_from_dataset(self, gdal_dataset, **kwargs):
-        """Create VRT from gdal_dataset"""
-        # set dataset geo-metadata 
-        VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
-        self.dataset = self.driver.CreateCopy(self.fileName, gdal_dataset)
-        self.dataset.SetMetadataItem('fileName', self.fileName)
-
-        # write XMl file contents
         self.dataset.FlushCache()
         self.logger.debug('VRT self.dataset: %s' % self.dataset)
 
@@ -260,7 +247,7 @@ class VRT(object):
 
         # create XML contents of VRT-file
         line_offset = str(int(pixel_offset) * array_shape[1])
-        contents = self.RawRasterBandSource.substitute(
+        contents = self.RAW_RASTER_BAND_SOURCE_XML.substitute(
             XSize=array_shape[1],
             YSize=array_shape[0],
             DataType=gdal_data_type,
@@ -281,6 +268,17 @@ class VRT(object):
         self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
         self.dataset.SetMetadataItem('fileName', self.fileName)
         self.dataset.FlushCache()
+
+    def _copy_from_dataset(self, gdal_dataset, **kwargs):
+        """Create VRT from gdal_dataset"""
+        # set dataset geo-metadata 
+        VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
+        self.dataset = self.driver.CreateCopy(self.fileName, gdal_dataset)
+        self.dataset.SetMetadataItem('fileName', self.fileName)
+
+        # write XMl file contents
+        self.dataset.FlushCache()
+        self.logger.debug('VRT self.dataset: %s' % self.dataset)
 
     def __del__(self):
         """ Destructor deletes VRT and RAW files"""
@@ -451,7 +449,7 @@ class VRT(object):
 #   write XML from dictionary using a standard method (not a filling a template)
 
             # create XML for each source
-            src['XML'] = Template(self.COMPLEX_SOURCE_XML).substitute(
+            src['XML'] = self.COMPLEX_SOURCE_XML.substitute(
                 Dataset=src['SourceFilename'],
                 SourceBand=src['SourceBand'],
                 SourceType=src['SourceType'],
@@ -748,7 +746,7 @@ class VRT(object):
         self.logger.debug('DataType: %s', dataType)
 
         lineOffset = str(int(pixelOffset) * arrayShape[1])
-        contents = self.RawRasterBandSource.substitute(
+        contents = self.RAW_RASTER_BAND_SOURCE_XML.substitute(
             XSize=arrayShape[1],
             YSize=arrayShape[0],
             DataType=dataType,
@@ -1187,7 +1185,7 @@ class VRT(object):
         """
         # TODO: test thoroughly and implement later
         if srcSRS is not None and dstSRS is not None:
-            rt = self.ReprojectTransformer.substitute(SourceSRS=None,
+            rt = self.REPROJECT_TRANSFORMER.substitute(SourceSRS=None,
                                                       TargetSRS=None)
             print 'rt', rt
             rtNode = Node.create(rt)
