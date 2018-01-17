@@ -40,13 +40,28 @@ Feature documentation
 Masking land/water in figures
 -----------------------------
 
-TODO: update the following text....
+Using MODIS water-mask product
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To add land- or water-masks to your figures, you will need to use the watermask() method in the main
+To add simple land- or water-masks to your figures, you can use the watermask() method in the main
 Nansat class. Download the prepared MODIS 250M water-mask product from our server and add the path
 to the directory with this data to an environment variable named MOD44WPATH (e.g.
 ```MOD44WPATH=/Data/sat/auxdata/mod44w```). The water-mask can be downloaded from here:
 `<ftp://ftp.nersc.no/pub/nansat/MOD44W.tgz>`_
+
+Using a digital elevation model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Global Multi-resolution Terrain Elevation Data 2010 (GMTED2010)
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The GMTED2010 datasets are provided by the `U.S. Geological Survey
+<https://topotools.cr.usgs.gov/gmted_viewer/>`_. We have prepared a GDAL vrt file and a mapper that
+can be used to open the 30 arcseconds Digital Elevation Model (DEM) with Nansat.
+
+Global 30 Arc-Second Elevation (GTOPO30)
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 
 Developer documentation
 =======================
