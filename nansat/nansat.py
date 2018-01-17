@@ -1200,13 +1200,13 @@ class Nansat(Domain):
             self.vrt.dataset.FlushCache()
 
         # create Warped VRT
-        self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
-                                           dstGCPs=dstGCPs,
-                                           eResampleAlg=eResampleAlg,
-                                           xSize=xSize, ySize=ySize,
-                                           blockSize=blockSize,
-                                           geoTransform=geoTransform,
-                                           WorkingDataType=WorkingDataType,
+        self.vrt = self.vrt.get_warped_vrt(dst_srs=dstSRS,
+                                           dst_gcps=dstGCPs,
+                                           resample_alg=eResampleAlg,
+                                           x_size=xSize, y_size=ySize,
+                                           block_size=blockSize,
+                                           geo_transform=geoTransform,
+                                           working_data_type=WorkingDataType,
                                            **kwargs)
 
         # This violates lazy operations and is therefore commented out..

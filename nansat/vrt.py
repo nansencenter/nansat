@@ -99,6 +99,9 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
+    filename = ''
+    vrt = None
+
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
         """Create VRT from GDAL Dataset with the same size/georeference but wihout bands.
@@ -431,8 +434,6 @@ class VRT(object):
         if self.vrt is not None:
             str_out += '=>%s' % self.vrt.__repr__()
         return str_out
-
-
 
     def _create_bands(self, metadata_dict):
         """ Generic function called from the mappers to create bands
@@ -855,13 +856,13 @@ class VRT(object):
 #   check actual usage of get_warped_vrt and limit input params to the actually used ones only
 #   replace keywork arguments with required arguments where possible
 
-    def get_warped_vrt(self, dst_srs=None, eResampleAlg=0,
-                       xSize=0, ySize=0, blockSize=None,
-                       geoTransform=None, WorkingDataType=None,
+    def get_warped_vrt(self, dst_srs=None, resample_alg=0,
+                       x_size=0, y_size=0, block_size=None,
+                       geo_transform=None, working_data_type=None,
                        use_geolocation=True,
                        use_gcps=True, skip_gcps=1,
                        use_geotransform=True,
-                       dst_gcps=[], dstGeolocation=None):
+                       dst_gcps=[], dst_geolocation=None):
 
         """Create VRT object with WarpedVRT
 
@@ -877,27 +878,27 @@ class VRT(object):
         Three switches (use_geolocation, use_gcps, use_geotransform)
         allow to select which method to apply for warping. E.g.:
         # #1: srcVRT has Geolocation, geolocation array is used
-        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
-                                             geoTransform)
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, x_size, y_size,
+                                             geo_transform)
         # #2: srcVRT has Geolocation, geolocation is not used,
         # either GCPs (if present) or GeoTransform is used
-        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
-                                             geoTransform,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, x_size, y_size,
+                                             geo_transform,
                                              use_geolocation=False)
         # #3: srcVRT has Geolocation or GCPs, geolocation is
         # not used, and GCPs are not used either.
         # Only input GeoTranform is used
-        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
-                                             geoTransform,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, x_size, y_size,
+                                             geo_transform,
                                              use_geolocation=False,
                                              use_gcps=False)
 
         # #4: srcVRT has whatever georeference, geolocation is not used,
         # GCPs are not used, GeoTransform is not used either.
-        # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.xSize, -1)
+        # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.x_size, -1)
         # Warping becomes pure affine resize
-        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
-                                             geoTransform,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, x_size, y_size,
+                                             geo_transform,
                                              use_geolocation=False,
                                              use_gcps=False.,
                                              use_geotransform=false)
@@ -908,26 +909,26 @@ class VRT(object):
         the WarpedVRT
 
         If destination image has geolocation (provided in
-        <dstGeolocation>):this geolocation is added to the WarpedVRT
+        <dst_geolocation>):this geolocation is added to the WarpedVRT
 
 
         Parameters
         -----------
         dst_srs : string
             WKT of the destination projection
-        eResampleAlg : int (GDALResampleAlg)
+        resample_alg : int (GDALResampleAlg)
             0 : NearestNeighbour,
             1 : Bilinear,
             2 : Cubic,
             3 : CubicSpline,
             4 : Lancoz
-        xSize, ySize : int
+        x_size, y_size : int
             width and height of the destination rasetr
-        geoTransform : tuple with 6 floats
+        geo_transform : tuple with 6 floats
             destination GDALGeoTransfrom
         dst_gcps : list with GDAL GCPs
             GCPs of the destination image
-        dstGeolocation : Geolocation object
+        dst_geolocation : Geolocation object
             Geolocation of the destination object
         use_geolocation : bool (True)
             Use geolocation in input dataset (if present) for warping
@@ -937,7 +938,7 @@ class VRT(object):
             See nansat.reproject() for explanation
         use_geotransform : Boolean (True)
             Use GeoTransform in input dataset for warping or make artificial
-            GeoTransform : (0, 1, 0, srcVRT.xSize, -1)
+            GeoTransform : (0, 1, 0, srcVRT.x_size, -1)
 
         Returns
         --------
@@ -987,11 +988,11 @@ class VRT(object):
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
         warped_dataset = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
-                                             acwvSRS, eResampleAlg)
+                                             acwvSRS, resample_alg)
         # TODO: implement the below option for proper handling of
         # stereo projections
         # warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, '',
-        #                                      dst_srs, eResampleAlg)
+        #                                      dst_srs, resample_alg)
 
         # check if Warped VRT was created
         if warped_dataset is None:
@@ -1001,35 +1002,35 @@ class VRT(object):
         self.logger.debug('create VRT object from Warped VRT GDAL Dataset')
         warpedVRT = VRT.copy_dataset(warped_dataset)
 
-        # set x/y size, geoTransform, blockSize
-        self.logger.debug('set x/y size, geoTransform, blockSize')
+        # set x/y size, geo_transform, block_size
+        self.logger.debug('set x/y size, geo_transform, block_size')
 
         # Modify rasterXsize, rasterYsize and geotranforms in the warped VRT
         node0 = Node.create(warpedVRT.xml)
 
-        if xSize > 0:
-            node0.replaceAttribute('rasterXSize', str(xSize))
-        if ySize > 0:
-            node0.replaceAttribute('rasterYSize', str(ySize))
+        if x_size > 0:
+            node0.replaceAttribute('rasterXSize', str(x_size))
+        if y_size > 0:
+            node0.replaceAttribute('rasterYSize', str(y_size))
 
-        if geoTransform is not None:
-            invGeotransform = gdal.InvGeoTransform(geoTransform)
+        if geo_transform is not None:
+            invGeotransform = gdal.InvGeoTransform(geo_transform)
             # convert proper string style and set to the GeoTransform element
-            node0.node('GeoTransform').value = str(geoTransform).strip('()')
-            node0.node('DstGeoTransform').value = str(geoTransform).strip('()')
+            node0.node('GeoTransform').value = str(geo_transform).strip('()')
+            node0.node('DstGeoTransform').value = str(geo_transform).strip('()')
             node0.node('DstInvGeoTransform').value = (
                 str(invGeotransform[1]).strip('()'))
 
             if node0.node('SrcGeoLocTransformer'):
-                node0.node('BlockXSize').value = str(xSize)
-                node0.node('BlockYSize').value = str(ySize)
+                node0.node('BlockXSize').value = str(x_size)
+                node0.node('BlockYSize').value = str(y_size)
 
-            if blockSize is not None:
-                node0.node('BlockXSize').value = str(blockSize)
-                node0.node('BlockYSize').value = str(blockSize)
+            if block_size is not None:
+                node0.node('BlockXSize').value = str(block_size)
+                node0.node('BlockYSize').value = str(block_size)
 
-            if WorkingDataType is not None:
-                node0.node('WorkingDataType').value = WorkingDataType
+            if working_data_type is not None:
+                node0.node('WorkingDataType').value = working_data_type
 
         """
         # TODO: test thoroughly and implement later
@@ -1074,9 +1075,9 @@ class VRT(object):
 
         # if given, add dst Geolocation
         self.logger.debug('# if given, add dst Geolocation')
-        if dstGeolocation is not None:
+        if dst_geolocation is not None:
             warpedVRT._remove_geotransform()
-            warpedVRT._add_geolocation(dstGeolocation)
+            warpedVRT._add_geolocation(dst_geolocation)
             warpedVRT.dataset.SetProjection('')
 
         # Copy self to warpedVRT
@@ -1166,15 +1167,15 @@ class VRT(object):
         if shiftDegree < 0:
             shiftDegree += 360.0
 
-        geoTransform = shiftVRT.vrt.dataset.GetGeoTransform()
-        shiftPixel = int(shiftDegree / float(geoTransform[1]))
-        geoTransform = list(geoTransform)
-        geoTransform[0] = round(geoTransform[0] + shiftDegree, 3)
-        newEastBorder = geoTransform[0] + (geoTransform[1] *
+        geo_transform = shiftVRT.vrt.dataset.GetGeoTransform()
+        shiftPixel = int(shiftDegree / float(geo_transform[1]))
+        geo_transform = list(geo_transform)
+        geo_transform[0] = round(geo_transform[0] + shiftDegree, 3)
+        newEastBorder = geo_transform[0] + (geo_transform[1] *
                                            shiftVRT.dataset.RasterXSize)
         if newEastBorder > 360.0:
-            geoTransform[0] -= 360.0
-        shiftVRT.dataset.SetGeoTransform(tuple(geoTransform))
+            geo_transform[0] -= 360.0
+        shiftVRT.dataset.SetGeoTransform(tuple(geo_transform))
 
         # Add bands to self
         for iBand in range(shiftVRT.vrt.dataset.RasterCount):
@@ -1276,7 +1277,7 @@ class VRT(object):
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, eResampleAlg):
+    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, resample_alg):
         """Create VRT and replace step in the source"""
 
         subsamVRT = self.get_super_vrt()
@@ -1298,7 +1299,7 @@ class VRT(object):
                     iNodeDstRect.replaceAttribute('ySize',
                                                   str(newRasterYSize))
             # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
-            if eResampleAlg == -1:
+            if resample_alg == -1:
                 iNode1.replaceTag('ComplexSource', 'AveragedSource')
                 iNode1.replaceTag('SimpleSource', 'AveragedSource')
                 # if the values are complex number, give a warning
@@ -1306,7 +1307,7 @@ class VRT(object):
                     warnings.warn(
                         'Band %s : The imaginary parts of complex numbers '
                         'are lost when resampling by averaging '
-                        '(eResampleAlg=-1)' % iNode1.getAttribute('band'))
+                        '(resample_alg=-1)' % iNode1.getAttribute('band'))
 
         # Write the modified elemements into VRT
         subsamVRT.write_xml(node0.rawxml())
@@ -1390,9 +1391,9 @@ class VRT(object):
 
         return projection
 
-    def get_resized_vrt(self, xSize, ySize, use_geolocation=False,
+    def get_resized_vrt(self, x_size, y_size, use_geolocation=False,
                         use_gcps=False, use_geotransform=False,
-                        eResampleAlg=1, **kwargs):
+                        resample_alg=1, **kwargs):
 
         """ Resize VRT
 
@@ -1402,9 +1403,9 @@ class VRT(object):
 
         Parameters
         -----------
-        xSize, ySize : int
+        x_size, y_size : int
             new size of the VRT object
-        eResampleAlg : GDALResampleAlg
+        resample_alg : GDALResampleAlg
             see also gdal.AutoCreateWarpedVRT
 
         Returns
@@ -1413,20 +1414,20 @@ class VRT(object):
 
         """
         # modify GeoTransform: set resolution from new X/Y size
-        geoTransform = (0.5,
-                        float(self.dataset.RasterXSize - 1.0) / float(xSize),
+        geo_transform = (0.5,
+                        float(self.dataset.RasterXSize - 1.0) / float(x_size),
                         0,
                         self.dataset.RasterYSize - 0.5,
                         0,
-                        - float(self.dataset.RasterYSize - 1.0) / float(ySize))
+                        - float(self.dataset.RasterYSize - 1.0) / float(y_size))
 
         # update size and GeoTranform in XML of the warped VRT object
-        warpedVRT = self.get_warped_vrt(xSize=xSize, ySize=ySize,
-                                        geoTransform=geoTransform,
+        warpedVRT = self.get_warped_vrt(x_size=x_size, y_size=y_size,
+                                        geo_transform=geo_transform,
                                         use_geolocation=use_geolocation,
                                         use_gcps=use_gcps,
                                         use_geotransform=use_geotransform,
-                                        eResampleAlg=eResampleAlg)
+                                        resample_alg=resample_alg)
 
         return warpedVRT
 
