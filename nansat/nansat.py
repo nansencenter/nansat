@@ -1204,6 +1204,8 @@ class Nansat(Domain):
     def watermask(self, mod44path=None, dstDomain=None, **kwargs):
         ''' Create numpy array with watermask (water=1, land=0)
 
+        TODO: cross-check and update docstring and references/links
+
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
 
@@ -1443,24 +1445,24 @@ class Nansat(Domain):
         return fig
 
     def write_geotiffimage(self, fileName, bandID=1):
-        ''' Writes an 8-bit GeoTiff image for a given band.
+        """ Writes an 8-bit GeoTiff image for a given band.
 
-        The output GeoTiff image is convenient e.g. for display in a GIS tool.
-        Colormap is fetched from the metadata item 'colormap'.
-            Fallback colormap is 'gray'.
-        Color limits are fetched from the metadata item 'minmax'.
-            If 'minmax' is not specified, min and max of raster is used.
+        The output GeoTiff image is convenient, e.g., for display in a GIS tool.
 
-        The method can be replaced by using nansat.write_figure(),
-        however, write_figure uses PIL which does not allow
-        Tiff compression, giving much larger files
+        The colormap is fetched from the metadata item 'colormap'. Fallback colormap is 'gray'.
+
+        Color limits are fetched from the metadata item 'minmax'. If 'minmax' is not specified, min
+        and max of the raster data is used.
+
+        The method can be replaced by using nansat.write_figure(). However, write_figure uses PIL,
+        which does not allow Tiff compression. This gives much larger files.
 
         Parameters
         -----------
         fileName : string
         bandID : integer or string(default = 1)
 
-        '''
+        """
         bandNo = self._get_band_number(bandID)
         band = self.get_GDALRasterBand(bandID)
         minmax = band.GetMetadataItem('minmax')
