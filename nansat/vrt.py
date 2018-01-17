@@ -447,7 +447,6 @@ class VRT(object):
             strOut += '=>%s' % self.vrt.__repr__()
         return strOut
 
-# TODO: add extension to mkstemp
     def _make_filename(self, extention='vrt', nomem=False):
         """Create random VSI file name
 
@@ -470,13 +469,13 @@ class VRT(object):
             filename = '/vsimem/%s.%s' % (randomChars, extention)
         return filename
 
-    def _create_bands(self, metaDict):
+    def _create_bands(self, metadata_dict):
         """ Generic function called from the mappers to create bands
         in the VRT dataset from an input dictionary of metadata
 
         Parameters
         ----------
-        metaDict : list of dict with params of input bands and generated bands.
+        metadata_dict : list of dict with params of input bands and generated bands.
             Each dict has:
                 'src' : dictionary with parameters of the sources:
                 'dst' : dictionary with parameters of the generated bands
@@ -490,15 +489,12 @@ class VRT(object):
         VRT._create_band()
 
         """
-        for bandDict in metaDict:
-            src = bandDict['src']
-            dst = bandDict.get('dst', None)
+        for band_dict in metadata_dict:
+            src = band_dict['src']
+            dst = band_dict.get('dst', None)
             self._create_band(src, dst)
             self.logger.debug('Creating band - OK!')
         self.dataset.FlushCache()
-
-# TODO:
-#   dst=dict()
 
     def _create_band(self, src, dst=None):
         """ Add band to self.dataset:
@@ -564,14 +560,14 @@ class VRT(object):
         elif type(src) in [list, tuple]:
             srcs = src
         else:
-            raise AttributeError('Wrong src!')
+            raise AttributeError('Wrong src type (%s)! Should be dict or list/tuple of dict'%type(src))
 
         # Check if dst is given, or create empty dict
         if dst is None:
             dst = {}
 
         # process all sources: check, set defaults, make XML
-        srcDefaults = {'SourceBand': 1,
+        src_defaults = {'SourceBand': 1,
                        'LUT': '',
                        'NODATA': '',
                        'SourceType': 'ComplexSource',
@@ -586,9 +582,9 @@ class VRT(object):
                 raise AttributeError('SourceFilename not given!')
 
             # set default values
-            for srcDefault in srcDefaults:
+            for srcDefault in src_defaults:
                 if srcDefault not in src:
-                    src[srcDefault] = srcDefaults[srcDefault]
+                    src[srcDefault] = src_defaults[srcDefault]
 
             # Find DataType of source (if not given in src)
             if src['SourceBand'] > 0 and 'DataType' not in src:
