@@ -13,6 +13,7 @@
 import unittest
 import logging
 import os
+from mock import patch
 
 import numpy as np
 import gdal
@@ -25,11 +26,12 @@ class VRTTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
 
-    def test_init(self):
+    @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
+    def test_init(self, _make_filename_mock):
         vrt = VRT()
 
         self.assertIsInstance(vrt, VRT)
-        self.assertIsInstance(vrt.fileName, str)
+        self.assertEqual(vrt.fileName, '/vsimem/filename.vrt')
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertIsInstance(vrt.logger, logging.Logger)
         self.assertIsInstance(vrt.driver, gdal.Driver)
@@ -37,6 +39,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.tps, False)
         self.assertTrue(vrt.vrt is None)
         self.assertTrue(vrt.xml.startswith('<VRTDataset rasterXSize="1" rasterYSize="1"'))
+        _make_filename_mock.called_once()
 
     def test_del(self):
         vrt = VRT()
@@ -135,3 +138,6 @@ class VRTTest(unittest.TestCase):
         vrt = VRT.from_array(array)
         vrt.export('temp.vrt.xml')
         self.assertTrue(os.path.exists('temp.vrt.xml'))
+
+if __name__ == "__main__":
+    unittest.main()
