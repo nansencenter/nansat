@@ -379,8 +379,6 @@ class NansatTest(unittest.TestCase):
 
         # Test that the long/lat values are set aproximately correct
         ncg = 'NC_GLOBAL#'
-        if os.name == 'nt':
-            ncg = ''
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
         self.assertTrue(float(easternmost_longitude) > 179,
                         'easternmost_longitude is wrong:' +
