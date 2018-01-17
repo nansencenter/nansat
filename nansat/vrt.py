@@ -32,7 +32,7 @@ from nansat.tools import add_logger, gdal, osr, OptionError, numpy_to_gdal_type,
 # TODO: Think which variables we should rename
 
 # TODO: Think which conventional names we should use (lon, lat - OK), vrt - ?
- 
+
 class VRT(object):
     """Wrapper around GDAL VRT-file
 
@@ -117,7 +117,7 @@ class VRT(object):
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
         """Create VRT from GDAL Dataset with the same size/georeference but wihout bands.
-        
+
         Parameters
         ----------
             gdal_dataset : gdal.Dataset
@@ -127,19 +127,20 @@ class VRT(object):
         Returns
         -------
             vrt : VRT
+
         """
         vrt = cls.__new__(cls)
         vrt._init_from_gdal_dataset(gdal_dataset, **kwargs)
         return vrt
 
     @classmethod
-    def from_dataset_params(cls, x_size, y_size, geo_transform, projection, 
+    def from_dataset_params(cls, x_size, y_size, geo_transform, projection,
                             gcps, gcp_projection, **kwargs):
         """Create VRT from GDAL Dataset parameters
 
-        Create VRT with dataset wihout bands but with size/georeference corresponding to 
+        Create VRT with dataset wihout bands but with size/georeference corresponding to
         input parameters.
-        
+
         Parameters
         ----------
             x_size : int
@@ -147,7 +148,7 @@ class VRT(object):
             y_size : int
                 Y-size of dataset
             geotransform : tuple with 6 floats
-                informaton on affine transformtaion 
+                informaton on affine transformtaion
             projection : str
                 WKT representation of spatial reference system
             gcps : tuple or list with GDAL GCP objects
@@ -159,16 +160,17 @@ class VRT(object):
         Returns
         -------
             vrt : VRT
+
         """
         vrt = cls.__new__(cls)
-        vrt._init_from_dataset_params(x_size, y_size, geo_transform, projection, 
+        vrt._init_from_dataset_params(x_size, y_size, geo_transform, projection,
                          gcps, gcp_projection, **kwargs)
         return vrt
 
     @classmethod
     def from_array(cls, array, **kwargs):
         """Create VRT from numpy array with dataset wih one band but without georeference.
-        
+
         Parameters
         ----------
             array : numpy.ndarray
@@ -178,6 +180,7 @@ class VRT(object):
         Returns
         -------
             vrt : VRT
+
         """
         vrt = cls.__new__(cls)
         vrt._init_from_array(array, **kwargs)
@@ -190,7 +193,7 @@ class VRT(object):
         Create VRT with dataset without bands but with GEOLOCATION metadata and Geolocation
         object. Geolocation contains 2 2D arrays with lon/lat values given at regular pixel/line
         steps.
-        
+
         Parameters
         ----------
             lon : numpy.ndarray
@@ -202,6 +205,7 @@ class VRT(object):
         Returns
         -------
             vrt : VRT
+
         """
         vrt = cls.__new__(cls)
         vrt._init_from_lonlat(lon, lat)
@@ -219,6 +223,7 @@ class VRT(object):
         Returns
         -------
             vrt : VRT
+
         """
         vrt = cls.__new__(cls)
         vrt._copy_from_dataset(gdal_dataset, **kwargs)
@@ -242,7 +247,7 @@ class VRT(object):
             adds self.dataset - GDAL Dataset without bands and with size=(x_zie, y_size)
             adds metadata to self.dataset
             writes VRT file content to self.fileName
-        
+
         """
         # essential attributes
         self.logger = add_logger('Nansat')
@@ -260,7 +265,7 @@ class VRT(object):
 
     def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
         """Init VRT from GDAL Dataset with the same size/georeference but wihout bands.
-        
+
         Parameters
         ----------
             gdal_dataset : gdal.Dataset
@@ -271,9 +276,10 @@ class VRT(object):
         -------
             self - adds all VRT attributes
             self.dataset - sets size and georeference
+
         """
 
-        # set dataset geo-metadata 
+        # set dataset geo-metadata
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
@@ -287,13 +293,13 @@ class VRT(object):
         # write XML file contents
         self.dataset.FlushCache()
 
-    def _init_from_dataset_params(self, x_size, y_size, geo_transform, projection, 
+    def _init_from_dataset_params(self, x_size, y_size, geo_transform, projection,
                                     gcps=None, gcp_projection='', **kwargs):
         """Init VRT from GDAL Dataset parameters
 
-        Init VRT with dataset wihout bands but with size/georeference corresponding to 
+        Init VRT with dataset wihout bands but with size/georeference corresponding to
         input parameters.
-        
+
         Parameters
         ----------
             x_size : int
@@ -301,7 +307,7 @@ class VRT(object):
             y_size : int
                 Y-size of dataset
             geotransform : tuple with 6 floats
-                informaton on affine transformtaion 
+                informaton on affine transformtaion
             projection : str
                 WKT representation of spatial reference system
             gcps : tuple or list with GDAL GCP objects
@@ -314,15 +320,16 @@ class VRT(object):
         -------
             self - adds all VRT attributes
             self.dataset - sets size and georeference
+
         """
         VRT.__init__(self, x_size, y_size, **kwargs)
-        # set dataset (geo-)metadata 
+        # set dataset (geo-)metadata
         self.dataset.SetProjection(projection)
         self.dataset.SetGeoTransform(geo_transform)
         if isinstance(gcps, (list, tuple)):
             self.dataset.SetGCPs(gcps, gcp_projection)
         self.dataset.SetMetadataItem('fileName', self.fileName)
-        
+
         # write file contents
         self.dataset.FlushCache()
 
@@ -332,7 +339,7 @@ class VRT(object):
         Write contents of the array into flat binary file (VSI)
         Write VRT file with RawRastesrBand, which points to the binary file
         Open the VRT file as self.dataset with GDAL
-        
+
         Parameters
         ----------
             array : numpy.ndarray
@@ -346,9 +353,10 @@ class VRT(object):
             VRT file is written (VSI)
             self - adds all VRT attributes
             self.dataset is updated
+
         """
         VRT.__init__(self, **kwargs)
-        # create flat binary file (in VSI) from numpy array 
+        # create flat binary file (in VSI) from numpy array
         array_type = array.dtype.name
         array_shape = array.shape
         binary_file = self.fileName.replace('.vrt', '.raw')
@@ -371,19 +379,19 @@ class VRT(object):
             SrcFileName=binary_file,
             PixelOffset=pixel_offset,
             LineOffset=line_offset)
-        
+
         # write XML contents to VRT-file
-        self.write_xml(contents)        
+        self.write_xml(contents)
         self.dataset.SetMetadataItem('fileName', self.fileName)
         self.dataset.FlushCache()
-        
+
     def _init_from_lonlat(self, lon, lat, **kwargs):
         """Init VRT from longitude, latitude arrays
 
         Init VRT with dataset without bands but with GEOLOCATION metadata and Geolocation
         object. Geolocation contains 2 2D arrays with lon/lat values given at regular pixel/line
         steps.
-        
+
         Parameters
         ----------
             lon : numpy.ndarray
@@ -397,6 +405,7 @@ class VRT(object):
             self - adds all VRT attributes
             self.dataset - sets size and georeference
             self.geolocation - add Geolocation object with all attributes
+
         """
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(self._latlon2gcps(lat, lon), NSR().wkt)
@@ -416,8 +425,9 @@ class VRT(object):
         -------
             self - adds all VRT attributes
             self.dataset - sets size and georeference
+
         """
-        # set dataset geo-metadata 
+        # set dataset geo-metadata
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset = self.driver.CreateCopy(self.fileName, gdal_dataset)
         self.dataset.SetMetadataItem('fileName', self.fileName)
@@ -452,7 +462,7 @@ class VRT(object):
 
         """
         if nomem:
-            fd, filename = tempfile.mkstemp(suffix='.vrt')
+            fd, filename = tempfile.mkstemp(suffix='.'+extention)
             os.close(fd)
         else:
             allChars = ascii_uppercase + digits
@@ -1108,7 +1118,7 @@ class VRT(object):
                                           os.path.split(vrt.vrt.fileName)[1])
             vrt.write_xml(new_vrt_xml)
         return vrt
-        
+
     @property
     def xml(self):
         """Read XML content of the VRT-file using VSI
@@ -1149,8 +1159,8 @@ class VRT(object):
 #       get_warped_vrt_gcp
 #       etc...
 #   check actual usage of get_warped_vrt and limit input params to the actually used ones only
-#   replace keywork arguments with required arguments where possible 
- 
+#   replace keywork arguments with required arguments where possible
+
     def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
