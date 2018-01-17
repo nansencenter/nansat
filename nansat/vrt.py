@@ -237,7 +237,7 @@ class VRT(object):
         # essential attributes
         self.logger = add_logger('Nansat')
         self.driver = gdal.GetDriverByName('VRT')
-        self.filename = self._make_filename(nomem=nomem)
+        self.filename = VRT._make_filename(nomem=nomem)
         self.band_vrts = dict()
         self.tps = False
         self.vrt = None
@@ -427,32 +427,12 @@ class VRT(object):
         gdal.Unlink(self.filename.replace('vrt', 'raw'))
 
     def __repr__(self):
-        strOut = os.path.split(self.filename)[1]
+        str_out = os.path.split(self.filename)[1]
         if self.vrt is not None:
-            strOut += '=>%s' % self.vrt.__repr__()
-        return strOut
+            str_out += '=>%s' % self.vrt.__repr__()
+        return str_out
 
-    def _make_filename(self, extention='vrt', nomem=False):
-        """Create random VSI file name
 
-        Parameters
-        ----------
-        extention : string
-            extension of the file
-
-        Returns
-        -------
-        random file name
-
-        """
-        if nomem:
-            fd, filename = tempfile.mkstemp(suffix='.'+extention)
-            os.close(fd)
-        else:
-            allChars = ascii_uppercase + digits
-            randomChars = ''.join(choice(allChars) for x in range(10))
-            filename = '/vsimem/%s.%s' % (randomChars, extention)
-        return filename
 
     def _create_bands(self, metadata_dict):
         """ Generic function called from the mappers to create bands
@@ -593,54 +573,52 @@ class VRT(object):
             dst['name'] = wkv['short_name'] + dstSuffix
 
         # create list of available bands (to prevent duplicate names)
-        bandNames = []
-        for iBand in range(self.dataset.RasterCount):
-            bandNames.append(self.dataset.GetRasterBand(iBand + 1).
+        band_names = []
+        for i in range(self.dataset.RasterCount):
+            band_names.append(self.dataset.GetRasterBand(i + 1).
                              GetMetadataItem('name'))
 
         # if name is not given add 'band_00N'
         if 'name' not in dst:
             for n in range(999):
-                bandName = 'band_%03d' % n
-                if bandName not in bandNames:
-                    dst['name'] = bandName
+                band_name = 'band_%03d' % n
+                if band_name not in band_names:
+                    dst['name'] = band_name
                     break
         # if name already exist add '_00N'
-        elif dst['name'] in bandNames:
+        elif dst['name'] in band_names:
             for n in range(999):
-                bandName = dst['name'] + '_%03d' % n
-                if bandName not in bandNames:
-                    dst['name'] = bandName
+                band_name = dst['name'] + '_%03d' % n
+                if band_name not in band_names:
+                    dst['name'] = band_name
                     break
 
         self.logger.debug('dst[name]:%s' % dst['name'])
 
         # Add Band
         self.dataset.AddBand(int(dst['dataType']), options=options)
-        dstRasterBand = self.dataset.GetRasterBand(self.dataset.RasterCount)
+        dst_raster_band = self.dataset.GetRasterBand(self.dataset.RasterCount)
 
         # Append sources to destination dataset
         if len(srcs) == 1 and srcs[0]['SourceBand'] > 0:
             # only one source
-            dstRasterBand.SetMetadataItem('source_0',
-                                          str(srcs[0]['XML']), 'new_vrt_sources')
+            dst_raster_band.SetMetadataItem('source_0', str(srcs[0]['XML']), 'new_vrt_sources')
         elif len(srcs) > 1:
             # several sources for PixelFunction
             metadataSRC = {}
             for i, src in enumerate(srcs):
                 metadataSRC['source_%d' % i] = src['XML']
-
-            dstRasterBand.SetMetadata(metadataSRC, 'vrt_sources')
+            dst_raster_band.SetMetadata(metadataSRC, 'vrt_sources')
 
         # set metadata from WKV
         if wkv_exists:
-            dstRasterBand = self._put_metadata(dstRasterBand, wkv)
+            dst_raster_band = VRT._put_metadata(dst_raster_band, wkv)
 
         # set metadata from provided parameters
         # remove and add params
         dst['SourceFilename'] = srcs[0]['SourceFilename']
         dst['SourceBand'] = str(srcs[0]['SourceBand'])
-        dstRasterBand = self._put_metadata(dstRasterBand, dst)
+        dst_raster_band = VRT._put_metadata(dst_raster_band, dst)
 
         # return name of the created band
         return dst['name']
@@ -713,37 +691,6 @@ class VRT(object):
                 'PixelFunctionType': 'OnesPixelFunc',
             })
 
-    def _put_metadata(self, rasterBand, metadataDict):
-        """ Put all metadata into a raster band
-
-        Take metadata from metadataDict and put to the GDAL Raster Band
-
-        Parameters
-        ----------
-        rasterBand : GDALRasterBand
-            destination band without metadata
-
-        metadataDict : dictionary
-            keys are names of metadata, values are values
-
-        Returns
-        --------
-        rasterBand : GDALRasterBand
-            destination band with metadata
-
-        """
-        self.logger.debug('Put: %s ' % str(metadataDict))
-        for key in metadataDict:
-            try:
-                metaValue = str(metadataDict[key])
-                metaKey = str(key)
-            except UnicodeEncodeError:
-                self.logger.error('Cannot add %s to metadata' % key)
-            else:
-                rasterBand.SetMetadataItem(metaKey, metaValue)
-
-        return rasterBand
-
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         if not gdal_metadata:
             raise WrongMapperError
@@ -781,7 +728,7 @@ class VRT(object):
         Sets GEOLOCATION metadata to ''
 
         """
-        self.geolocationArray.data = dict()
+        self.geolocation.data = dict()
 
         # add GEOLOCATION metadata (empty if geolocation is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
@@ -796,18 +743,18 @@ class VRT(object):
 
         """
         # read XML content from VRT
-        tmpVRTXML = self.xml
+        tmp_vrt_xml = self.xml
         # find and remove GeoTransform
-        node0 = Node.create(tmpVRTXML)
+        node0 = Node.create(tmp_vrt_xml)
         node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
 
-    def _create_fake_gcps(self, dstGCPs, dstSRS, skip_gcps):
+    def _create_fake_gcps(self, dst_gcps, dst_srs, skip_gcps):
         """Create GCPs with reference self.pixel/line ==> dst.pixel/line
 
-        GCPs from a destination image (dstGCP) are converted to a gcp of source
-        image (srcGCP) this way:
+        GCPs from a destination image (dst_gcps) are converted to a gcp of source
+        image (src_gcps) this way:
 
         srcGCPPixel = srcPixel
         srcGCPLine = srcLine
@@ -828,24 +775,24 @@ class VRT(object):
 
         """
         # create transformer. converts lat/lon to pixel/line of SRC image
-        srcTransformer = gdal.Transformer(self.dataset, None,
+        src_transformer = gdal.Transformer(self.dataset, None,
                                           ['SRC_SRS=' + self.get_projection(),
-                                           'DST_SRS=' + dstSRS.wkt])
+                                           'DST_SRS=' + dst_srs.wkt])
 
         # create 'fake' GCPs
-        fakeGCPs = []
-        for g in dstGCPs[::skip_gcps]:
+        fake_gcps = []
+        for g in dst_gcps[::skip_gcps]:
             # transform DST lat/lon to SRC pixel/line
-            succ, point = srcTransformer.TransformPoint(1, g.GCPX, g.GCPY)
+            succ, point = src_transformer.TransformPoint(1, g.GCPX, g.GCPY)
             srcPixel = point[0]
             srcLine = point[1]
 
             # swap coordinates in GCPs:
             # pix1/line1 -> lat/lon  =>=>  pix2/line2 -> pix1/line1
-            fakeGCPs.append(gdal.GCP(g.GCPPixel, g.GCPLine,
+            fake_gcps.append(gdal.GCP(g.GCPPixel, g.GCPLine,
                                      0, srcPixel, srcLine))
 
-        return {'gcps': fakeGCPs, 'srs': NSR('+proj=stere').wkt}
+        return {'gcps': fake_gcps, 'srs': NSR('+proj=stere').wkt}
 
     def copy(self):
         """Create and return a full copy of a VRT instance"""
@@ -908,13 +855,13 @@ class VRT(object):
 #   check actual usage of get_warped_vrt and limit input params to the actually used ones only
 #   replace keywork arguments with required arguments where possible
 
-    def get_warped_vrt(self, dstSRS=None, eResampleAlg=0,
+    def get_warped_vrt(self, dst_srs=None, eResampleAlg=0,
                        xSize=0, ySize=0, blockSize=None,
                        geoTransform=None, WorkingDataType=None,
                        use_geolocation=True,
                        use_gcps=True, skip_gcps=1,
                        use_geotransform=True,
-                       dstGCPs=[], dstGeolocation=None):
+                       dst_gcps=[], dstGeolocation=None):
 
         """Create VRT object with WarpedVRT
 
@@ -930,17 +877,17 @@ class VRT(object):
         Three switches (use_geolocation, use_gcps, use_geotransform)
         allow to select which method to apply for warping. E.g.:
         # #1: srcVRT has Geolocation, geolocation array is used
-        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
                                              geoTransform)
         # #2: srcVRT has Geolocation, geolocation is not used,
         # either GCPs (if present) or GeoTransform is used
-        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
                                              geoTransform,
                                              use_geolocation=False)
         # #3: srcVRT has Geolocation or GCPs, geolocation is
         # not used, and GCPs are not used either.
         # Only input GeoTranform is used
-        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
                                              geoTransform,
                                              use_geolocation=False,
                                              use_gcps=False)
@@ -949,15 +896,15 @@ class VRT(object):
         # GCPs are not used, GeoTransform is not used either.
         # Artificial GeoTranform is calculated: (0, 1, 0, srcVRT.xSize, -1)
         # Warping becomes pure affine resize
-        warpedVRT = srcVRT.get_warped_vrt(dstSRS, xSize, ySize,
+        warpedVRT = srcVRT.get_warped_vrt(dst_srs, xSize, ySize,
                                              geoTransform,
                                              use_geolocation=False,
                                              use_gcps=False.,
                                              use_geotransform=false)
 
-        If destination image has GCPs (provided in <dstGCPs>): fake GCPs for
+        If destination image has GCPs (provided in <dst_gcps>): fake GCPs for
         referencing line/piex of SRC image and X/Y of DST image are created
-        and added to the SRC image. After warping dstGCPs are added to
+        and added to the SRC image. After warping dst_gcps are added to
         the WarpedVRT
 
         If destination image has geolocation (provided in
@@ -966,7 +913,7 @@ class VRT(object):
 
         Parameters
         -----------
-        dstSRS : string
+        dst_srs : string
             WKT of the destination projection
         eResampleAlg : int (GDALResampleAlg)
             0 : NearestNeighbour,
@@ -978,7 +925,7 @@ class VRT(object):
             width and height of the destination rasetr
         geoTransform : tuple with 6 floats
             destination GDALGeoTransfrom
-        dstGCPs : list with GDAL GCPs
+        dst_gcps : list with GDAL GCPs
             GCPs of the destination image
         dstGeolocation : Geolocation object
             Geolocation of the destination object
@@ -1002,12 +949,12 @@ class VRT(object):
         srcVRT = self.copy()
 
         # srs to be used in AutoCreateWarpedVRT
-        acwvSRS = dstSRS
+        acwvSRS = dst_srs
 
         # if destination GCPs are given: create and add fake GCPs to src
-        if len(dstGCPs) > 0 and use_gcps:
-            fakeGCPs = srcVRT._create_fake_gcps(dstGCPs, NSR(dstSRS), skip_gcps)
-            srcVRT.dataset.SetGCPs(fakeGCPs['gcps'], fakeGCPs['srs'])
+        if len(dst_gcps) > 0 and use_gcps:
+            fake_gcps = srcVRT._create_fake_gcps(dst_gcps, NSR(dst_srs), skip_gcps)
+            srcVRT.dataset.SetGCPs(fake_gcps['gcps'], fake_gcps['srs'])
             # don't use geolocation
             use_geolocation = False
             acwvSRS = None
@@ -1044,7 +991,7 @@ class VRT(object):
         # TODO: implement the below option for proper handling of
         # stereo projections
         # warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, '',
-        #                                      dstSRS, eResampleAlg)
+        #                                      dst_srs, eResampleAlg)
 
         # check if Warped VRT was created
         if warped_dataset is None:
@@ -1086,7 +1033,7 @@ class VRT(object):
 
         """
         # TODO: test thoroughly and implement later
-        if srcSRS is not None and dstSRS is not None:
+        if srcSRS is not None and dst_srs is not None:
             rt = self.REPROJECT_TRANSFORMER.substitute(SourceSRS=None,
                                                       TargetSRS=None)
             print 'rt', rt
@@ -1120,8 +1067,8 @@ class VRT(object):
 
         # if given, add dst GCPs
         self.logger.debug('if given, add dst GCPs')
-        if len(dstGCPs) > 0:
-            warpedVRT.dataset.SetGCPs(dstGCPs, dstSRS)
+        if len(dst_gcps) > 0:
+            warpedVRT.dataset.SetGCPs(dst_gcps, dst_srs)
             warpedVRT._remove_geotransform()
             warpedVRT.dataset.SetProjection('')
 
@@ -1367,7 +1314,7 @@ class VRT(object):
         return subsamVRT
 
     def transform_points(self, colVector, rowVector, DstToSrc=0,
-                         dstSRS=NSR(), dstDs=None, options=None):
+                         dst_srs=NSR(), dstDs=None, options=None):
         """Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
@@ -1376,7 +1323,7 @@ class VRT(object):
             X and Y coordinates with any coordinate system
         DstToSrc : 0 or 1
             1 for inverse transformation, 0 for forward transformation.
-        dstSRS : NSR
+        dst_srs : NSR
             destination SRS.
         dstDs : dataset
             destination dataset. The default is None.
@@ -1395,7 +1342,7 @@ class VRT(object):
 
         # prepare options
         if options is None:
-            options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + dstSRS.wkt]
+            options = ['SRC_SRS=' + srcWKT, 'DST_SRS=' + dst_srs.wkt]
             # add TPS method if we have GCPs and self.tps is True
             if self.tps and len(self.dataset.GetGCPs()) > 0:
                 options.append('METHOD=GCP_TPS')
@@ -1483,7 +1430,7 @@ class VRT(object):
 
         return warpedVRT
 
-    def reproject_GCPs(self, dstSRS):
+    def reproject_GCPs(self, dst_srs):
         """Reproject all GCPs to a new spatial reference system
 
         Necessary before warping an image if the given GCPs
@@ -1492,7 +1439,7 @@ class VRT(object):
 
         Parameters
         ----------
-        dstSRS : proj4, WKT, NSR, EPSG
+        dst_srs : proj4, WKT, NSR, EPSG
             Destiination SRS given as any NSR input parameter
 
         Modifies
@@ -1500,23 +1447,23 @@ class VRT(object):
             Reprojects all GCPs to new SRS and updates GCPProjection
         """
         # Make tranformer from GCP SRS to destination SRS
-        dstSRS = NSR(dstSRS)
+        dst_srs = NSR(dst_srs)
         srcSRS = NSR(self.dataset.GetGCPProjection())
-        transformer = osr.CoordinateTransformation(srcSRS, dstSRS)
+        transformer = osr.CoordinateTransformation(srcSRS, dst_srs)
 
         # Reproject all GCPs
         srcGCPs = self.dataset.GetGCPs()
-        dstGCPs = []
+        dst_gcps = []
         for srcGCP in srcGCPs:
             (x, y, z) = transformer.TransformPoint(srcGCP.GCPX,
                                                    srcGCP.GCPY,
                                                    srcGCP.GCPZ)
             dstGCP = gdal.GCP(x, y, z, srcGCP.GCPPixel,
                               srcGCP.GCPLine, srcGCP.Info, srcGCP.Id)
-            dstGCPs.append(dstGCP)
+            dst_gcps.append(dstGCP)
 
         # Update dataset
-        self.dataset.SetGCPs(dstGCPs, dstSRS.wkt)
+        self.dataset.SetGCPs(dst_gcps, dst_srs.wkt)
 
     @staticmethod
     def read_vsi(filename):
@@ -1648,3 +1595,57 @@ class VRT(object):
                 k += 1
 
         return gcps
+
+    @staticmethod
+    def _put_metadata(raster_band, metadata_dict):
+        """ Put all metadata into a raster band
+
+        Take metadata from metadataDict and put to the GDAL Raster Band
+
+        Parameters
+        ----------
+        rasterBand : GDALRasterBand
+            destination band without metadata
+
+        metadataDict : dictionary
+            keys are names of metadata, values are values
+
+        Returns
+        --------
+        rasterBand : GDALRasterBand
+            destination band with metadata
+
+        """
+        for key in metadata_dict:
+            try:
+                meta_value = str(metadata_dict[key])
+                meta_key = str(key)
+            except UnicodeEncodeError:
+                self.logger.error('Cannot add %s to metadata' % key)
+            else:
+                raster_band.SetMetadataItem(meta_key, meta_value)
+
+        return raster_band
+
+    @staticmethod
+    def _make_filename(extention='vrt', nomem=False):
+        """Create random VSI file name
+
+        Parameters
+        ----------
+        extention : string
+            extension of the file
+
+        Returns
+        -------
+        random file name
+
+        """
+        if nomem:
+            fd, filename = tempfile.mkstemp(suffix='.'+extention)
+            os.close(fd)
+        else:
+            allChars = ascii_uppercase + digits
+            randomChars = ''.join(choice(allChars) for x in range(10))
+            filename = '/vsimem/%s.%s' % (randomChars, extention)
+        return filename
