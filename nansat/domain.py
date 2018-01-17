@@ -706,21 +706,21 @@ class Domain(object):
         if srs.IsProjected:
             if srs.GetAttrValue('unit') == 'metre':
                 geoTransform = self.vrt.dataset.GetGeoTransform()
-                deltaX = abs(geoTransform[1])
-                deltaY = abs(geoTransform[5])
-                return deltaX, deltaY
+                delta_x = abs(geoTransform[1])
+                delta_y = abs(geoTransform[5])
+                return delta_x, delta_y
 
         # Estimate pixel size in center of domain using haversine formula
-        centerCol = round(self.vrt.dataset.RasterXSize/2)
-        centerRow = round(self.vrt.dataset.RasterYSize/2)
+        center_col = round(self.vrt.dataset.RasterXSize/2)
+        center_row = round(self.vrt.dataset.RasterYSize/2)
         # TODO: Bad names
-        lon00, lat00 = self.transform_points([centerCol], [centerRow])
-        lon01, lat01 = self.transform_points([centerCol], [centerRow + 1])
-        lon10, lat10 = self.transform_points([centerCol + 1], [centerRow])
+        lon00, lat00 = self.transform_points([center_col], [center_row])
+        lon01, lat01 = self.transform_points([center_col], [center_row + 1])
+        lon10, lat10 = self.transform_points([center_col + 1], [center_row])
 
-        deltaX = haversine(lon00, lat00, lon01, lat01)
-        deltaY = haversine(lon00, lat00, lon10, lat10)
-        return deltaX[0], deltaY[0]
+        delta_x = haversine(lon00, lat00, lon01, lat01)
+        delta_y = haversine(lon00, lat00, lon10, lat10)
+        return delta_x[0], delta_y[0]
 
     def _get_geotransform(self, extentDic):
         '''
