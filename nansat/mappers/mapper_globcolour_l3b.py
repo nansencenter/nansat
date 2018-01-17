@@ -25,25 +25,25 @@ from globcolour import Globcolour
 class Mapper(VRT, Globcolour):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, latlonGrid=None,
+    def __init__(self, filename, gdalDataset, gdalMetadata, latlonGrid=None,
                  mask='', **kwargs):
 
         ''' Create MER2 VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
         gdalDataset : gdal dataset
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
         # test if input files is GLOBCOLOUR L3B
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
         if (iFileName[0:4] != 'L3b_'
             or iFileExt != '.nc'
-            or not os.path.exists(fileName)
+            or not os.path.exists(filename)
             or (gdalDataset is not None
                 and (len(gdalDataset.GetSubDatasets()) > 0
                      or gdalDataset.RasterCount > 0))):
@@ -131,7 +131,7 @@ class Mapper(VRT, Globcolour):
                 # add metadata to the dictionary
                 metaDict.append({
                     'src': {'SourceFilename': (self.band_vrts['mask'][-1].
-                                               fileName),
+                                               filename),
                             'SourceBand':  1},
                     'dst': {'name': 'mask'}})
 
@@ -140,7 +140,7 @@ class Mapper(VRT, Globcolour):
 
             # add metadata to the dictionary
             metaEntry = {
-                'src': {'SourceFilename': self.band_vrts['lonlat'][-1].fileName,
+                'src': {'SourceFilename': self.band_vrts['lonlat'][-1].filename,
                         'SourceBand':  1},
                 'dst': {'wkv': varWKV, 'original_name': varName}}
 

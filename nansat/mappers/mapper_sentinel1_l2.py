@@ -28,7 +28,7 @@ class Mapper(VRT):
         Create VRT with mapping of Sentinel-1A stripmap mode (S1A_SM)
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  product_type='RVL', GCP_COUNT=10, **kwargs):
         '''
         Parameters
@@ -40,7 +40,7 @@ class Mapper(VRT):
         GCP_COUNT : int
             number of GCPs along each dimention
         '''
-        fPathName, fExt = os.path.splitext(fileName)
+        fPathName, fExt = os.path.splitext(filename)
 
         # List of Sentinel-1 level-2 components
         unwanted_product_components = ['osw', 'owi', 'rvl']
@@ -50,13 +50,13 @@ class Mapper(VRT):
 
         # Check if it is Sentinel-1 (or ASAR) level-2 (in S1 data format)
         if not gdalMetadata or not 'NC_GLOBAL' in gdalMetadata.keys():
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
         else:
             title = gdalMetadata['NC_GLOBAL#TITLE']
 
         # Raise error if it is not Sentinel-1 format
         if not 'Sentinel-1' or 'ASA' in title:
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
         metadata = {}
         for key, val in gdalMetadata.iteritems():
@@ -64,12 +64,12 @@ class Mapper(VRT):
             metadata[new_key] = val
 
         subDatasets = gdalDataset.GetSubDatasets()
-        fileNames = [f[0] for f in subDatasets]
+        filenames = [f[0] for f in subDatasets]
 
         rm_bands = []
         # Find all data that is not relevant for the selected product type
         # and get bands of longitude, latitude and zero doppler time
-        for i, f in enumerate(fileNames):
+        for i, f in enumerate(filenames):
             if f.split(':')[-1][:3] in unwanted_product_components:
                 rm_bands.append(i)
             if 'Lon' in f.split(':')[-1]:
@@ -83,7 +83,7 @@ class Mapper(VRT):
                 rm_bands.append(i)
         # Remove bands in rm_bands from the list of bands to add to the Nansat
         # object
-        fileNames = [f for i, f in enumerate(fileNames) if not i in rm_bands]
+        filenames = [f for i, f in enumerate(filenames) if not i in rm_bands]
            #     (
            # 'Lon' in f.split(':')[-1] or
            # 'Lat' in f.split(':')[-1] or
@@ -143,8 +143,8 @@ class Mapper(VRT):
         geoFileDict = {}
         xDatasetSource = ''
         yDatasetSource = ''
-        for i, fileName in enumerate(fileNames):
-            band = gdal.Open(fileName)
+        for i, filename in enumerate(filenames):
+            band = gdal.Open(filename)
 
             # check that the band size is the same size as the latitude and
             # longitude grids
@@ -155,12 +155,12 @@ class Mapper(VRT):
 
             bandMetadata = band.GetMetadata()
             # generate src metadata
-            src = {'SourceFilename': fileName,
+            src = {'SourceFilename': filename,
                    'SourceBand': 1
                    }
 
             # Generate dst metadata
-            short_name = fileName.split(':')[-1]
+            short_name = filename.split(':')[-1]
             dst = {'name': short_name,
                    'short_name': short_name,
                    'long_name': bandMetadata[short_name+'#long_name'],

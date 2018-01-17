@@ -20,7 +20,7 @@ from hdf4_mapper import HDF4Mapper
 class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, GCP_COUNT=30, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, GCP_COUNT=30, **kwargs):
         ''' Create MODIS_L1 VRT '''
 
         #list of available modis names:resolutions
@@ -50,12 +50,12 @@ class Mapper(HDF4Mapper):
         metaDict250SF = ['EV_250_RefSB']
 
         metaDict250 = [{'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_250_RefSB'),
+                                (filename, 'EV_250_RefSB'),
                                 'SourceBand': 1},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '645'}},
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_250_RefSB'),
+                                (filename, 'EV_250_RefSB'),
                                 'SourceBand': 2},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '858'}}]
@@ -63,38 +63,38 @@ class Mapper(HDF4Mapper):
         metaDict500SF = ['EV_250_Aggr500_RefSB', 'EV_500_RefSB']
 
         metaDict500 = [{'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_250_Aggr500_RefSB'),
+                                (filename, 'EV_250_Aggr500_RefSB'),
                                 'SourceBand': 1},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '645'}},
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_250_Aggr500_RefSB'),
+                                (filename, 'EV_250_Aggr500_RefSB'),
                                 'SourceBand': 2},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '858'}},
 
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_500_RefSB'),
+                                (filename, 'EV_500_RefSB'),
                                 'SourceBand': 1},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '469'}},
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_500_RefSB'),
+                                (filename, 'EV_500_RefSB'),
                                 'SourceBand': 2},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '555'}},
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_500_RefSB'),
+                                (filename, 'EV_500_RefSB'),
                                 'SourceBand': 3},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '1240'}},
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_500_RefSB'),
+                                (filename, 'EV_500_RefSB'),
                                 'SourceBand': 4},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '1640'}},
                        {'src': {'SourceFilename': subDsString %
-                                (fileName, 'EV_500_RefSB'),
+                                (filename, 'EV_500_RefSB'),
                                 'SourceBand': 5},
                         'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                 'wavelength': '2130'}}]
@@ -103,195 +103,195 @@ class Mapper(HDF4Mapper):
                           'EV_1KM_RefSB', 'EV_1KM_Emissive']
 
         metaDict1000 = [{'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_250_Aggr1km_RefSB'),
+                                 (filename, 'EV_250_Aggr1km_RefSB'),
                                  'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '645'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_250_Aggr1km_RefSB'),
+                                 (filename, 'EV_250_Aggr1km_RefSB'),
                                  'SourceBand': 2},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '858'}},
 
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_500_Aggr1km_RefSB'),
+                                 (filename, 'EV_500_Aggr1km_RefSB'),
                                  'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '469'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_500_Aggr1km_RefSB'),
+                                 (filename, 'EV_500_Aggr1km_RefSB'),
                                  'SourceBand': 2},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '555'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_500_Aggr1km_RefSB'),
+                                 (filename, 'EV_500_Aggr1km_RefSB'),
                                  'SourceBand': 3},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '1240'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_500_Aggr1km_RefSB'),
+                                 (filename, 'EV_500_Aggr1km_RefSB'),
                                  'SourceBand': 4},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '1640'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_500_Aggr1km_RefSB'),
+                                 (filename, 'EV_500_Aggr1km_RefSB'),
                                  'SourceBand': 5},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '2130'}},
 
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '412'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 2},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '443'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 3},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '488'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 4},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '531'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 5},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '551'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 6},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '667'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 7},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '667'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 8},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '678'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 9},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '678'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 10},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '748'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 11},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '869'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 12},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '905'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 13},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '936'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 14},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '940'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_RefSB'),
+                                 (filename, 'EV_1KM_RefSB'),
                                  'SourceBand': 15},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '1375'}},
 
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '3750'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 2},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '3959'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 3},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '3959'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 4},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '4050'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 5},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '4465'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 6},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '4515'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 7},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '6715'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 8},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '7325'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 9},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '8550'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 10},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '9730'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 11},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '11030'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 12},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '12020'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 13},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '13335'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 14},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '13635'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 15},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '13935'}},
                         {'src': {'SourceFilename': subDsString %
-                                 (fileName, 'EV_1KM_Emissive'),
+                                 (filename, 'EV_1KM_Emissive'),
                                  'SourceBand': 16},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                                  'wavelength': '14235'}}]
@@ -311,7 +311,7 @@ class Mapper(HDF4Mapper):
         rScales = {}
         rOffsets = {}
         for sf in metaDictSF:
-            dsName = subDsString % (fileName, sf)
+            dsName = subDsString % (filename, sf)
             ds = gdal.Open(dsName)
             rScales[dsName] = map(float,
                                   ds.GetMetadataItem('radiance_scales').

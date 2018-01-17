@@ -16,14 +16,14 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MOD44W produc (MODIS watermask at 250 m)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
 
-        fileBaseName = os.path.basename(fileName)
+        fileBaseName = os.path.basename(filename)
         if not fileBaseName == 'MOD44W.vrt':
             raise WrongMapperError
 
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1},
+        metaDict = [{'src': {'SourceFilename': filename, 'SourceBand':  1},
                      'dst': {'wkv': 'land_binary_mask'}}]
 
         # create empty VRT dataset with geolocation only

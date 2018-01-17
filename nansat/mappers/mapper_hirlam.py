@@ -19,7 +19,7 @@ import pythesint as pti
 class Mapper(VRT):
     ''' VRT with mapping of WKV for HIRLAM '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         try:
             geo_transform = gdalDataset.GetGeoTransform()[0:5]
@@ -28,23 +28,23 @@ class Mapper(VRT):
         if geo_transform != (-12.1, 0.2, 0.0, 81.95, 0.0):
             raise WrongMapperError
 
-        metaDict = [{'src': {'SourceFilename': fileName,
+        metaDict = [{'src': {'SourceFilename': filename,
                              'SourceBand': 2,
                              'NODATA': 9999},
                      'dst': {'wkv': 'eastward_wind',
                              'height': '10 m'}
                      },
-                    {'src': {'SourceFilename': fileName,
+                    {'src': {'SourceFilename': filename,
                              'SourceBand': 3,
                              'NODATA': 9999},
                      'dst': {'wkv': 'northward_wind',
                              'height': '10 m'}
                      },
-                    {'src': [{'SourceFilename': fileName,
+                    {'src': [{'SourceFilename': filename,
                               'SourceBand': 2,
                               'DataType': gdalDataset.GetRasterBand(2).DataType
                               },
-                             {'SourceFilename': fileName,
+                             {'SourceFilename': filename,
                               'SourceBand': 3,
                               'DataType': gdalDataset.GetRasterBand(3).DataType
                               }],
@@ -54,11 +54,11 @@ class Mapper(VRT):
                              'PixelFunctionType': 'UVToMagnitude',
                              'NODATA': 9999}
                      },
-                    {'src': [{'SourceFilename': fileName,
+                    {'src': [{'SourceFilename': filename,
                               'SourceBand': 2,
                               'DataType': gdalDataset.GetRasterBand(2).DataType
                               },
-                             {'SourceFilename': fileName,
+                             {'SourceFilename': filename,
                               'SourceBand': 3,
                               'DataType': gdalDataset.GetRasterBand(3).DataType
                               }],

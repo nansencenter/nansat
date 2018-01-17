@@ -228,22 +228,22 @@ class VRT(object):
                 don't create VRT in VSI memory?
         Modifies
         -------
-            adds self.logger, self.driver, self.fileName, self.band_vrts, self.tps, self.vrt
+            adds self.logger, self.driver, self.filename, self.band_vrts, self.tps, self.vrt
             adds self.dataset - GDAL Dataset without bands and with size=(x_zie, y_size)
             adds metadata to self.dataset
-            writes VRT file content to self.fileName
+            writes VRT file content to self.filename
 
         """
         # essential attributes
         self.logger = add_logger('Nansat')
         self.driver = gdal.GetDriverByName('VRT')
-        self.fileName = self._make_filename(nomem=nomem)
+        self.filename = self._make_filename(nomem=nomem)
         self.band_vrts = dict()
         self.tps = False
         self.vrt = None
 
         # create dataset
-        self.dataset = self.driver.Create(self.fileName, x_size, y_size, bands=0)
+        self.dataset = self.driver.Create(self.filename, x_size, y_size, bands=0)
         if isinstance(metadata, dict):
             self.dataset.SetMetadata(metadata)
         self.dataset.FlushCache()
@@ -273,7 +273,7 @@ class VRT(object):
         for key in metadata:
             self.dataset.SetMetadataItem(key, metadata[key])
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
-        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.SetMetadataItem('filename', self.filename)
 
         # write XML file contents
         self.dataset.FlushCache()
@@ -313,7 +313,7 @@ class VRT(object):
         self.dataset.SetGeoTransform(geo_transform)
         if isinstance(gcps, (list, tuple)):
             self.dataset.SetGCPs(gcps, gcp_projection)
-        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.SetMetadataItem('filename', self.filename)
 
         # write file contents
         self.dataset.FlushCache()
@@ -344,7 +344,7 @@ class VRT(object):
         # create flat binary file (in VSI) from numpy array
         array_type = array.dtype.name
         array_shape = array.shape
-        binary_file = self.fileName.replace('.vrt', '.raw')
+        binary_file = self.filename.replace('.vrt', '.raw')
         ofile = gdal.VSIFOpenL(binary_file, 'wb')
         gdal.VSIFWriteL(array.tostring(), len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
@@ -367,7 +367,7 @@ class VRT(object):
 
         # write XML contents to VRT-file
         self.write_xml(contents)
-        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.SetMetadataItem('filename', self.filename)
         self.dataset.FlushCache()
 
     def _init_from_lonlat(self, lon, lat, **kwargs):
@@ -395,7 +395,7 @@ class VRT(object):
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(self._latlon2gcps(lat, lon), NSR().wkt)
         self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
-        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset.SetMetadataItem('filename', self.filename)
         self.dataset.FlushCache()
 
     def _copy_from_dataset(self, gdal_dataset, **kwargs):
@@ -414,8 +414,8 @@ class VRT(object):
         """
         # set dataset geo-metadata
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
-        self.dataset = self.driver.CreateCopy(self.fileName, gdal_dataset)
-        self.dataset.SetMetadataItem('fileName', self.fileName)
+        self.dataset = self.driver.CreateCopy(self.filename, gdal_dataset)
+        self.dataset.SetMetadataItem('filename', self.filename)
 
         # write XMl file contents
         self.dataset.FlushCache()
@@ -423,11 +423,11 @@ class VRT(object):
     def __del__(self):
         """Destructor deletes VRT and RAW files"""
         self.dataset = None
-        gdal.Unlink(self.fileName)
-        gdal.Unlink(self.fileName.replace('vrt', 'raw'))
+        gdal.Unlink(self.filename)
+        gdal.Unlink(self.filename.replace('vrt', 'raw'))
 
     def __repr__(self):
-        strOut = os.path.split(self.fileName)[1]
+        strOut = os.path.split(self.filename)[1]
         if self.vrt is not None:
             strOut += '=>%s' % self.vrt.__repr__()
         return strOut
@@ -649,7 +649,7 @@ class VRT(object):
 #   clarify names of iBand and jBand in docstring or in code
 #   add docstring
 
-    def _create_complex_bands(self, fileNames):
+    def _create_complex_bands(self, filenames):
         # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
         # using pixelfunctions
         rmBands = []
@@ -676,10 +676,10 @@ class VRT(object):
                         dst['name'] = bandName
                         dst['PixelFunctionType'] = 'ComplexData'
                         dst['dataType'] = 10
-                        src = [{'SourceFilename': fileNames[realBandNo],
+                        src = [{'SourceFilename': filenames[realBandNo],
                                 'SourceBand':  1,
                                 'DataType': realDtype},
-                               {'SourceFilename': fileNames[imagBandNo],
+                               {'SourceFilename': filenames[imagBandNo],
                                 'SourceBand': 1,
                                 'DataType': imagDtype}]
                         self._create_band(src, dst)
@@ -701,7 +701,7 @@ class VRT(object):
         """
         self._create_band(
             src=[{
-                'SourceFilename': self.fileName,
+                'SourceFilename': self.filename,
                 'SourceBand':  1,
                 'DataType': gdal.GDT_Byte}],
             dst={
@@ -781,7 +781,7 @@ class VRT(object):
         arrayDType = array.dtype.name
         arrayShape = array.shape
         # create flat binary file from array (in VSI)
-        binaryFile = self.fileName.replace('.vrt', '.raw')
+        binaryFile = self.filename.replace('.vrt', '.raw')
         ofile = gdal.VSIFOpenL(binaryFile, 'wb')
         gdal.VSIFWriteL(array.tostring(), len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
@@ -1030,8 +1030,8 @@ class VRT(object):
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
             # make reference from the new vrt to the copy of vrt.vrt
-            new_vrt_xml = vrt.xml.replace(os.path.split(self.vrt.fileName)[1],
-                                          os.path.split(vrt.vrt.fileName)[1])
+            new_vrt_xml = vrt.xml.replace(os.path.split(self.vrt.filename)[1],
+                                          os.path.split(vrt.vrt.filename)[1])
             vrt.write_xml(new_vrt_xml)
         return vrt
 
@@ -1043,7 +1043,7 @@ class VRT(object):
         --------
         string : XMl Content which is read from the VSI file
         """
-        return VRT.read_vsi(self.fileName)
+        return VRT.read_vsi(self.filename)
 
     def write_xml(self, vsiFileContent=None):
         """Write XML content into a VRT dataset
@@ -1059,15 +1059,15 @@ class VRT(object):
             If XML content was written, self.dataset is re-opened
 
         """
-        vsiFile = gdal.VSIFOpenL(self.fileName, 'w')
+        vsiFile = gdal.VSIFOpenL(self.filename, 'w')
         gdal.VSIFWriteL(vsiFileContent, len(vsiFileContent), 1, vsiFile)
         gdal.VSIFCloseL(vsiFile)
         # re-open self.dataset with new content
-        self.dataset = gdal.Open(self.fileName)
+        self.dataset = gdal.Open(self.filename)
 
-    def export(self, fileName):
-        """Export VRT file as XML into given <fileName>"""
-        self.driver.CreateCopy(fileName, self.dataset)
+    def export(self, filename):
+        """Export VRT file as XML into given <filename>"""
+        self.driver.CreateCopy(filename, self.dataset)
 
 # TODO:
 #   split superfunctional get_warped_vrt into more specific methods
@@ -1306,7 +1306,7 @@ class VRT(object):
 
         # replace the reference from srcVRT to self
         self.logger.debug('replace the reference from srcVRT to self')
-        rawFileName = str(os.path.basename(warpedVRT.vrt.fileName))
+        rawFileName = str(os.path.basename(warpedVRT.vrt.filename))
         warpedXML = str(warpedVRT.xml)
         node0 = Node.create(warpedXML)
         node1 = node0.node('GDALWarpOptions')
@@ -1315,7 +1315,7 @@ class VRT(object):
 
         return warpedVRT
 
-    def copyproj(self, fileName):
+    def copyproj(self, filename):
         """ Copy geoloctation data from given VRT to a figure file
 
         Useful for adding geolocation information to figure
@@ -1324,11 +1324,11 @@ class VRT(object):
 
         Parameters
         -----------
-        fileName : string
+        filename : string
             Name of file to which the geolocation data shall be written
 
         """
-        figDataset = gdal.Open(fileName, gdal.GA_Update)
+        figDataset = gdal.Open(filename, gdal.GA_Update)
         figDataset.SetGeoTransform(self.dataset.GetGeoTransform())
         figDataset.SetProjection(self.dataset.GetProjection())
         gcps = self.dataset.GetGCPs()
@@ -1400,7 +1400,7 @@ class VRT(object):
 
         # Add bands to self
         for iBand in range(shiftVRT.vrt.dataset.RasterCount):
-            src = {'SourceFilename': shiftVRT.vrt.fileName,
+            src = {'SourceFilename': shiftVRT.vrt.filename,
                    'SourceBand': iBand + 1}
             dst = shiftVRT.vrt.dataset.GetRasterBand(iBand+1).GetMetadata()
             shiftVRT._create_band(src, dst)
@@ -1487,7 +1487,7 @@ class VRT(object):
 
         # add bands to the new vrt
         for iBand in range(superVRT.vrt.dataset.RasterCount):
-            src = {'SourceFilename': superVRT.vrt.fileName,
+            src = {'SourceFilename': superVRT.vrt.filename,
                    'SourceBand': iBand + 1}
             dst = superVRT.vrt.dataset.GetRasterBand(iBand + 1).GetMetadata()
             # remove PixelFunctionType from metadata to prevent its application

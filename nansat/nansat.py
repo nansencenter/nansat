@@ -314,7 +314,7 @@ class Nansat(Domain):
             if params is None:
                 params = {}
             bandName = self.vrt._create_band(
-                {'SourceFilename': bandVRT.fileName,
+                {'SourceFilename': bandVRT.filename,
                  'SourceBand': 1},
                 params)
             self.vrt.band_vrts[bandName] = bandVRT
@@ -468,11 +468,11 @@ class Nansat(Domain):
                 exportVRT.imag.append(VRT.from_array(self[i].imag))
 
                 metaDict = [{'src': {
-                             'SourceFilename': exportVRT.real[-1].fileName,
+                             'SourceFilename': exportVRT.real[-1].filename,
                              'SourceBand':  1},
                              'dst': bandMetadataR},
                             {'src': {
-                             'SourceFilename': exportVRT.imag[-1].fileName,
+                             'SourceFilename': exportVRT.imag[-1].filename,
                              'SourceBand':  1},
                              'dst': bandMetadataI}]
                 exportVRT._create_bands(metaDict)
@@ -832,7 +832,7 @@ class Nansat(Domain):
                     dimensions = ncIVar.dimensions
                 else:
                     dimensions = ('time', ) + ncIVar.dimensions
-                
+
                 fill_value = None
                 if '_FillValue' in ncIVar.ncattrs():
                     fill_value = ncIVar._FillValue
@@ -1187,7 +1187,7 @@ class Nansat(Domain):
         if addmask:
             self.vrt = self.vrt.get_super_vrt()
             src = [{
-                'SourceFilename': self.vrt.vrt.fileName,
+                'SourceFilename': self.vrt.vrt.filename,
                 'SourceBand':  1,
                 'DataType': gdal.GDT_Byte
             }]
@@ -1217,7 +1217,7 @@ class Nansat(Domain):
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('fileName')
+        subMetaData.pop('filename')
         self.set_metadata(subMetaData)
 
     def undo(self, steps=1):
@@ -2202,7 +2202,7 @@ class Nansat(Domain):
 
         # set global metadata
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('fileName')
+        subMetaData.pop('filename')
         self.set_metadata(subMetaData)
 
         return extent

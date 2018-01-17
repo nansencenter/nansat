@@ -19,7 +19,7 @@ from nansat.tools import gdal, ogr, WrongMapperError
 class Mapper(VRT, Globcolour):
     ''' Mapper for GLOBCOLOR L3M products'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' GLOBCOLOR L3M VRT '''
 
         try:
@@ -31,7 +31,7 @@ class Mapper(VRT, Globcolour):
             raise WrongMapperError
 
         # get list of similar (same date) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         print 'idir:', iDir, iFile, iFileName[0:30], iFileExt[0:8]
 
@@ -107,7 +107,7 @@ class Mapper(VRT, Globcolour):
         self.band_vrts = {'maskVRT': VRT(array=mask)}
 
         metaDict.append(
-            {'src': {'SourceFilename': self.band_vrts['maskVRT'].fileName,
+            {'src': {'SourceFilename': self.band_vrts['maskVRT'].filename,
                      'SourceBand': 1},
              'dst': {'name': 'mask'}})
 

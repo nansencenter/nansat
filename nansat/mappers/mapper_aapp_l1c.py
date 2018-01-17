@@ -26,13 +26,13 @@ imageOffset = headerLength + 1092
 class Mapper(VRT):
     ''' VRT with mapping of WKV for AVHRR L1C output from AAPP '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         ########################################
         # Read metadata from binary file
         ########################################
         try:
-            fp = open(fileName, 'rb')
+            fp = open(filename, 'rb')
         except IOError:
             raise WrongMapperError
         fp.seek(24)
@@ -101,7 +101,7 @@ class Mapper(VRT):
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
             RawGeolocMetaDict.append(
-                {'src': {'SourceFilename': fileName,
+                {'src': {'SourceFilename': filename,
                          'SourceBand': 0,
                          'SourceType': "RawRasterBand",
                          'DataType': gdal.GDT_Int32,
@@ -121,7 +121,7 @@ class Mapper(VRT):
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
                 {'src': {'SourceFilename': (self.band_vrts['RawGeolocVRT'].
-                                            fileName),
+                                            filename),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,
@@ -175,7 +175,7 @@ class Mapper(VRT):
 
         for bandNo in range(1, 6):
             RawMetaDict.append(
-                {'src': {'SourceFilename': fileName,
+                {'src': {'SourceFilename': filename,
                          'SourceBand': 0,
                          'SourceType': "RawRasterBand",
                          'dataType': gdal.GDT_UInt16,
@@ -194,12 +194,12 @@ class Mapper(VRT):
 
             metaDict.append(
                 {'src': {'SourceFilename': (self.band_vrts['RawBandsVRT'].
-                                            fileName),
+                                            filename),
                          'SourceBand': bandNo,
                          'ScaleRatio': 0.01,
                          'ScaleOffset': 0,
                          'DataType': gdal.GDT_UInt16},
-                 'dst': {'originalFilename': fileName,
+                 'dst': {'originalFilename': filename,
                          'dataType': gdal.GDT_Float32,
                          'wkv': wkv,
                          'colormap': 'gray',
@@ -210,17 +210,17 @@ class Mapper(VRT):
         if not startsWith3A:  # Only if ch3 is IR (nighttime)
             metaDict.append(
                 {'src': [{'SourceFilename': (self.band_vrts['RawBandsVRT'].
-                                             fileName),
+                                             filename),
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 4},
                          {'SourceFilename': (self.band_vrts['RawBandsVRT'].
-                                             fileName),
+                                             filename),
                           'ScaleRatio': 0.01,
                           'ScaleOffset': 0,
                           'SourceBand': 3}],
                  'dst': {'PixelFunctionType': 'diff',
-                         'originalFilename': fileName,
+                         'originalFilename': filename,
                          'dataType': gdal.GDT_Float32,
                          'name': 'ch4-ch3',
                          'short_name': 'ch4-ch3',

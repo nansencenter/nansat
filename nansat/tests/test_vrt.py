@@ -31,7 +31,7 @@ class VRTTest(unittest.TestCase):
         vrt = VRT()
 
         self.assertIsInstance(vrt, VRT)
-        self.assertEqual(vrt.fileName, '/vsimem/filename.vrt')
+        self.assertEqual(vrt.filename, '/vsimem/filename.vrt')
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
         self.assertIsInstance(vrt.logger, logging.Logger)
         self.assertIsInstance(vrt.driver, gdal.Driver)
@@ -43,10 +43,10 @@ class VRTTest(unittest.TestCase):
 
     def test_del(self):
         vrt = VRT()
-        self.assertEqual(gdal.Unlink(vrt.fileName), 0)
+        self.assertEqual(gdal.Unlink(vrt.filename), 0)
 
         vrt = VRT()
-        filename_vrt = vrt.fileName
+        filename_vrt = vrt.filename
         vrt = None
         self.assertEqual(gdal.Unlink(filename_vrt), -1)
 
@@ -57,7 +57,7 @@ class VRTTest(unittest.TestCase):
     def test_init_nomem(self):
         vrt = VRT(nomem=True)
 
-        self.assertTrue(os.path.exists(vrt.fileName))
+        self.assertTrue(os.path.exists(vrt.filename))
 
     def test_from_gdal_dataset(self):
         ds = gdal.Open(self.test_file)
@@ -68,7 +68,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetProjection(), ds.GetProjection())
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
-        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file)
@@ -84,7 +84,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetProjection(), ds.GetProjection())
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
-        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
 
     def test_from_array(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
@@ -93,8 +93,8 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.RasterXSize, array.shape[1])
         self.assertEqual(vrt.dataset.RasterYSize, array.shape[0])
         self.assertEqual(vrt.dataset.RasterCount, 1)
-        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
-        self.assertEqual(gdal.Unlink(vrt.fileName.replace('.vrt', '.raw')), 0)
+        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertEqual(gdal.Unlink(vrt.filename.replace('.vrt', '.raw')), 0)
 
     def test_from_lonlat(self):
         geo_keys = ['LINE_OFFSET', 'LINE_STEP', 'PIXEL_OFFSET', 'PIXEL_STEP', 'SRS',
@@ -104,27 +104,27 @@ class VRTTest(unittest.TestCase):
 
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
-        self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
         geo_metadata = vrt.dataset.GetMetadata('GEOLOCATION')
         for geo_key in geo_keys:
             self.assertEqual(vrt.geolocation.data[geo_key], geo_metadata[geo_key])
         self.assertIsInstance(vrt.geolocation.x_vrt, VRT)
         self.assertIsInstance(vrt.geolocation.y_vrt, VRT)
-        self.assertEqual(vrt.geolocation.x_vrt.fileName, geo_metadata['X_DATASET'])
-        self.assertEqual(vrt.geolocation.y_vrt.fileName, geo_metadata['Y_DATASET'])
+        self.assertEqual(vrt.geolocation.x_vrt.filename, geo_metadata['X_DATASET'])
+        self.assertEqual(vrt.geolocation.y_vrt.filename, geo_metadata['Y_DATASET'])
 
     def test_copy_empty_vrt(self):
         vrt1 = VRT()
         vrt2 = vrt1.copy()
 
         self.assertIsInstance(vrt2, VRT)
-        self.assertIsInstance(vrt2.fileName, str)
+        self.assertIsInstance(vrt2.filename, str)
         self.assertEqual(vrt2.dataset.RasterXSize, vrt1.dataset.RasterXSize)
         self.assertEqual(vrt2.dataset.RasterYSize, vrt1.dataset.RasterYSize)
         self.assertEqual(vrt2.dataset.GetProjection(), vrt1.dataset.GetProjection())
         self.assertEqual(vrt2.dataset.GetGeoTransform(), vrt1.dataset.GetGeoTransform())
         self.assertEqual(vrt2.dataset.GetGCPProjection(), vrt1.dataset.GetGCPProjection())
-        self.assertIn('fileName', vrt2.dataset.GetMetadata().keys())
+        self.assertIn('filename', vrt2.dataset.GetMetadata().keys())
 
     def test_copy_vrt_with_band(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
@@ -144,16 +144,16 @@ class VRTTest(unittest.TestCase):
         vrt1 = VRT.from_array(array)
         vrt2 = VRT(x_size=array.shape[1], y_size=array.shape[0])
         self.assertEqual(vrt2.dataset.RasterCount, 0)
-        vrt2._create_band({'SourceFilename': vrt1.fileName})
+        vrt2._create_band({'SourceFilename': vrt1.filename})
         self.assertEqual(vrt2.dataset.RasterCount, 1)
 
     def test_make_source_bands_xml(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
         vrt1 = VRT.from_array(array)
-        src1 = {'SourceFilename': vrt1.fileName}
+        src1 = {'SourceFilename': vrt1.filename}
         src2 = VRT._make_source_bands_xml(src1)
         self.assertIn('XML', src2)
-        self.assertEqual(src2['SourceFilename'], vrt1.fileName)
+        self.assertEqual(src2['SourceFilename'], vrt1.filename)
         self.assertEqual(src2['SourceBand'], 1)
         self.assertEqual(src2['LUT'], '')
         self.assertEqual(src2['NODATA'], '')

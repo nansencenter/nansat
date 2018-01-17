@@ -27,9 +27,9 @@ class GeolocationTest(unittest.TestCase):
 
     def test_init(self):
         x_vrt = Mock()
-        x_vrt.fileName = 'aaa'
+        x_vrt.filename = 'aaa'
         y_vrt = Mock()
-        y_vrt.fileName = 'bbb'
+        y_vrt.filename = 'bbb'
 
         ga = Geolocation(x_vrt, y_vrt)
 
@@ -38,5 +38,5 @@ class GeolocationTest(unittest.TestCase):
     def test_from_dataset(self):
         ds = gdal.Open(self.test_file)
         ga = Geolocation.from_dataset(ds)
-        
+
         self.assertIsInstance(ga, Geolocation)

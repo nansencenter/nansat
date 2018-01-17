@@ -205,13 +205,13 @@ class Envisat(object):
     lonlatNames = {'ASA_': ['first_line_longs', 'first_line_lats'],
                    'MER_': ['longitude', 'latitude']}
 
-    def setup_ads_parameters(self, fileName, gdalMetadata):
+    def setup_ads_parameters(self, filename, gdalMetadata):
         '''Select set of params and read offset of ADS'''
         if not gdalMetadata or not ('MPH_PRODUCT' in gdalMetadata.keys()):
             raise WrongMapperError
 
         self.product = gdalMetadata["MPH_PRODUCT"]
-        self.iFileName = fileName
+        self.iFileName = filename
         self.prodType = gdalMetadata["MPH_PRODUCT"][0:4]
         self.allADSParams = self.allADSParams[self.prodType]
         self.dsOffsetDict = self.read_offset_from_header(
@@ -295,7 +295,7 @@ class Envisat(object):
 
         Parameters
         ----------
-            fileName : string
+            filename : string
             indeces : list
 
         Returns

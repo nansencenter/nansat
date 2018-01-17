@@ -11,7 +11,7 @@ from nansat.vrt import VRT
 
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
+    def __init__(self, filename, gdalDataset, gdalMetadata, logLevel=30,
                  **kwargs):
 
         if not gdalMetadata:
@@ -26,19 +26,19 @@ class Mapper(VRT):
             raise WrongMapperError
 
         #GeolocMetaDict = [{'src':
-        #        {'SourceFilename': 'NETCDF:"' + fileName + '":longitude',
+        #        {'SourceFilename': 'NETCDF:"' + filename + '":longitude',
         #         'SourceBand': 1,
         #         'ScaleRatio': 1,
         #         'ScaleOffset': 0},
         #     'dst': {}},
         #           {'src':
-        #        {'SourceFilename': 'NETCDF:"' + fileName + '":latitude',
+        #        {'SourceFilename': 'NETCDF:"' + filename + '":latitude',
         #         'SourceBand': 1,
         #         'ScaleRatio': 1,
         #         'ScaleOffset': 0},
         #     'dst': {}}]
 
-        subDataset = gdal.Open('NETCDF:"' + fileName + '":x_wind_10m')
+        subDataset = gdal.Open('NETCDF:"' + filename + '":x_wind_10m')
         #self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
         #                srcRasterYSize=subDataset.RasterYSize)
         #self.GeolocVRT._create_bands(GeolocMetaDict)
@@ -55,29 +55,29 @@ class Mapper(VRT):
         #                geolocationArray = GeolocObject,
         #                srcProjection = GeolocObject.d['SRS'])
         lon = gdal.Open(
-            'NETCDF:"' + fileName + '":longitude"').ReadAsArray()
+            'NETCDF:"' + filename + '":longitude"').ReadAsArray()
         lat = gdal.Open(
-            'NETCDF:"' + fileName + '":latitude"').ReadAsArray()
+            'NETCDF:"' + filename + '":latitude"').ReadAsArray()
         VRT.__init__(self, lat=lat, lon=lon)
 
         # Add bands with wind components
-        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                 '":x_wind_10m'),
                              'NODATA': -32767},
                      'dst': {'name': 'U',
                              'wkv': 'eastward_wind'}},
-                    {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                    {'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                 '":y_wind_10m'),
                              'NODATA': -32767},
                      'dst': {'name': 'V',
                              'wkv': 'northward_wind'}}]
 
         # Add pixel function with wind speed
-        metaDict.append({'src': [{'SourceFilename': ('NETCDF:"' + fileName +
+        metaDict.append({'src': [{'SourceFilename': ('NETCDF:"' + filename +
                                                      '":x_wind_10m'),
                                   'SourceBand': 1,
                                   'DataType': 6},
-                                 {'SourceFilename': ('NETCDF:"' + fileName +
+                                 {'SourceFilename': ('NETCDF:"' + filename +
                                                      '":y_wind_10m'),
                                   'SourceBand': 1,
                                   'DataType': 6}],

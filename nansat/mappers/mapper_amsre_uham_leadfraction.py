@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:		mapper_amsre_UHAM_lead_fraction.py
-# Purpose:      
+# Purpose:
 #
 # Author:       Morten Wergeland Hansen
 # Modified:	Morten Wergeland Hansen
@@ -8,7 +8,7 @@
 # Created:	18.02.2015
 # Last modified:24.02.2015 09:26
 # Copyright:    (c) NERSC
-# License:      
+# License:
 #-------------------------------------------------------------------------------
 import datetime
 from osgeo import gdal, osr
@@ -19,8 +19,8 @@ from nansat.tools import WrongMapperError
 
 class Mapper(VRT):
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
-        
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
+
         title_correct = False
         if not gdalMetadata:
             raise WrongMapperError
@@ -44,7 +44,7 @@ class Mapper(VRT):
                      srcRasterYSize=1792)
 
         src = {
-            'SourceFilename': 'NETCDF:"%s":lf'%fileName,
+            'SourceFilename': 'NETCDF:"%s":lf'%filename,
             'SourceBand': 1,
         }
         dst = {

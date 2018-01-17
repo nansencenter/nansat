@@ -51,9 +51,9 @@ class Mapper(VRT):
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
         if len(subDatasets) == 0:
-            fileNames = [inputFileName]
+            filenames = [inputFileName]
         else:
-            fileNames = [f[0] for f in subDatasets]
+            filenames = [f[0] for f in subDatasets]
 
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
@@ -61,8 +61,8 @@ class Mapper(VRT):
         yDatasetSource = ''
         firstXSize = 0
         firstYSize = 0
-        for _, fileName in enumerate(fileNames):
-            subDataset = gdal.Open(fileName)
+        for _, filename in enumerate(filenames):
+            subDataset = gdal.Open(filename)
             # choose the first dataset whith grid
             if (firstXSize == 0 and firstYSize == 0 and
                     subDataset.RasterXSize > 1 and subDataset.RasterYSize > 1):
@@ -77,12 +77,12 @@ class Mapper(VRT):
                     subDataset.RasterYSize == firstYSize):
                 if projection == '':
                     projection = subDataset.GetProjection()
-                if ('GEOLOCATION_X_DATASET' in fileName or
-                        'longitude' in fileName):
-                    xDatasetSource = fileName
-                elif ('GEOLOCATION_Y_DATASET' in fileName or
-                        'latitude' in fileName):
-                    yDatasetSource = fileName
+                if ('GEOLOCATION_X_DATASET' in filename or
+                        'longitude' in filename):
+                    xDatasetSource = filename
+                elif ('GEOLOCATION_Y_DATASET' in filename or
+                        'latitude' in filename):
+                    yDatasetSource = filename
                 else:
                     for iBand in range(subDataset.RasterCount):
                         subBand = subDataset.GetRasterBand(iBand+1)
@@ -93,7 +93,7 @@ class Mapper(VRT):
                         # sourceBands = i*subDataset.RasterCount + iBand + 1
 
                         # generate src metadata
-                        src = {'SourceFilename': fileName,
+                        src = {'SourceFilename': filename,
                                'SourceBand': sourceBands}
                         # set scale ratio and scale offset
                         scaleRatio = bandMetadata.get(
@@ -159,7 +159,7 @@ class Mapper(VRT):
         # add bands with metadata and corresponding values to the empty VRT
         self._create_bands(metaDict)
 
-        self._create_complex_bands(fileNames)
+        self._create_complex_bands(filenames)
 
         if len(projection) == 0:
             # projection was not set automatically
@@ -298,7 +298,7 @@ class Mapper(VRT):
             self.dataset.SetMetadataItem('instrument', 'unknown')
 
         self.logger.info('Use generic mapper - OK!')
-        
+
     def repare_projection(self, projection):
         '''Replace odd symbols in projection string '|' => ','; '&' => '"' '''
         return projection.replace("|", ",").replace("&", '"')
@@ -338,12 +338,12 @@ class Mapper(VRT):
 
         return gcps
 
-    def add_gcps_from_variables(self, fileName):
+    def add_gcps_from_variables(self, filename):
         ''' Get GCPs from GCPPixel, GCPLine, GCPX, GCPY, GCPZ variables '''
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
         # open input netCDF file for reading GCPs
         try:
-            ncFile = Dataset(fileName, 'r')
+            ncFile = Dataset(filename, 'r')
         except (TypeError, IOError) as e:
             self.logger.info('%s' % e)
             return None

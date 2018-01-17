@@ -33,12 +33,12 @@ class Mapper(VRT, Envisat):
             http://envisat.esa.int/handbooks/asar/CNTR6-6-9.htm#eph.asar.asardf.asarrec.ASAR_Geo_Grid_ADSR
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         '''
         Parameters
         -----------
-        fileName : string
+        filename : string
 
         gdalDataset : gdal dataset
 
@@ -46,7 +46,7 @@ class Mapper(VRT, Envisat):
 
         '''
 
-        self.setup_ads_parameters(fileName, gdalMetadata)
+        self.setup_ads_parameters(filename, gdalMetadata)
 
         if self.product[0:4] != "ASA_":
             raise WrongMapperError
@@ -102,13 +102,13 @@ class Mapper(VRT, Envisat):
                 bandName = shortName+'_complex'
                 dstName = dstName + '_complex'
 
-            metaDict.append({'src': {'SourceFilename': fileName,
+            metaDict.append({'src': {'SourceFilename': filename,
                                      'SourceBand': iPolarization['bandNum']},
                              'dst': {'name': dstName}})
 
 
             '''
-            metaDict.append({'src': {'SourceFilename': fileName,
+            metaDict.append({'src': {'SourceFilename': filename,
                                      'SourceBand': iPolarization['bandNum']},
                              'dst': {'name': 'raw_counts_%s'
                                      % iPolarization['channel']}})
@@ -125,7 +125,7 @@ class Mapper(VRT, Envisat):
                                      '10': 5, '11': 6}.get(str(dtype), 4)
                 # add intensity band
                 metaDict.append(
-                    {'src': {'SourceFilename': fileName,
+                    {'src': {'SourceFilename': filename,
                              'SourceBand': iPolarization['bandNum'],
                              'DataType': dtype},
                      'dst': {'name': 'raw_counts_%s'
@@ -157,9 +157,9 @@ class Mapper(VRT, Envisat):
         #       same VRT, access time is about twice as large
         incVRT = VRT(array=inc, lat=lat, lon=lon)
         lookVRT = VRT(lat=lat, lon=lon)
-        lookVRT._create_band([{'SourceFilename': look_u_VRT.fileName,
+        lookVRT._create_band([{'SourceFilename': look_u_VRT.filename,
                                'SourceBand': 1},
-                              {'SourceFilename': look_v_VRT.fileName,
+                              {'SourceFilename': look_v_VRT.filename,
                                'SourceBand': 1}],
                              {'PixelFunctionType': 'UVToDirectionTo'})
 
@@ -175,8 +175,8 @@ class Mapper(VRT, Envisat):
                         'lookVRT': lookVRT}
 
         # Add band to full sized VRT
-        incFileName = self.band_vrts['incVRT'].fileName
-        lookFileName = self.band_vrts['lookVRT'].fileName
+        incFileName = self.band_vrts['incVRT'].filename
+        lookFileName = self.band_vrts['lookVRT'].filename
         metaDict.append({'src': {'SourceFilename': incFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'angle_of_incidence',
@@ -199,7 +199,7 @@ class Mapper(VRT, Envisat):
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_ice',
                     'surface_backwards_scattering_coefficient_of_radar_wave_normalized_over_water']
                 sphPass = [gdalMetadata['SPH_PASS'], '', '']
-                sourceFileNames = [fileName, incFileName]
+                sourceFileNames = [filename, incFileName]
 
                 pixelFunctionTypes = ['RawcountsIncidenceToSigma0',
                                       'Sigma0NormalizedIce']

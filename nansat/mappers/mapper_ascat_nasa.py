@@ -23,20 +23,20 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  latlonGrid=None, mask='', **kwargs):
 
         ''' Create VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
         gdalDataset : gdal dataset
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
         # test if input files is ASCAT
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         try:
             assert iFileName[0:6] == 'ascat_' and iFileExt == '.nc'
@@ -44,17 +44,17 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # Create geolocation
-        subDataset = gdal.Open('NETCDF:"' + fileName + '":lat')
+        subDataset = gdal.Open('NETCDF:"' + filename + '":lat')
         self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
                              srcRasterYSize=subDataset.RasterYSize)
 
-        GeolocMetaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+        GeolocMetaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                       '":lon'),
                                    'SourceBand': 1,
                                    'ScaleRatio': 0.00001,
                                    'ScaleOffset': -360},
                            'dst': {}},
-                          {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                          {'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                       '":lat'),
                                    'SourceBand': 1,
                                    'ScaleRatio': 0.00001,
@@ -79,14 +79,14 @@ class Mapper(VRT):
                      srcProjection=GeolocObject.d['SRS'])
 
         # Scale and NODATA should ideally be taken directly from raw file
-        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                 '":wind_speed'),
                              'ScaleRatio': 0.01,
                              'NODATA': -32767},
                      'dst': {'name': 'windspeed',
                              'wkv': 'wind_speed'}
                      },
-                    {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                    {'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                 '":wind_dir'),
                              'ScaleRatio': 0.1,
                              'NODATA': -32767},

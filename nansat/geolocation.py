@@ -59,8 +59,8 @@ class Geolocation(object):
         self.y_vrt = y_vrt
 
         self.data['SRS'] = srs
-        self.data['X_DATASET'] = x_vrt.fileName
-        self.data['Y_DATASET'] = y_vrt.fileName
+        self.data['X_DATASET'] = x_vrt.filename
+        self.data['Y_DATASET'] = y_vrt.filename
         self.data['X_BAND'] = str(x_band)
         self.data['Y_BAND'] = str(y_band)
         self.data['LINE_OFFSET'] = str(line_offset)
@@ -75,7 +75,7 @@ class Geolocation(object):
         self.x_vrt = None
         self.y_vrt = None
         self.data = dataset.GetMetadata('GEOLOCATION')
-        
+
         return self
 
 

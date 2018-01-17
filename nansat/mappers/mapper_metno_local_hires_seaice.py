@@ -27,7 +27,7 @@ import mapper_generic as mg
 class Mapper(mg.Mapper):
     ''' Create VRT with mapping of WKV for Met.no seaice '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
 
         try:
@@ -38,24 +38,24 @@ class Mapper(mg.Mapper):
 
         keywordBase = 'metno_local_hires_seaice'
 
-        if fileName[0:len(keywordBase)] != keywordBase:
+        if filename[0:len(keywordBase)] != keywordBase:
             raise WrongMapperError
 
-        keywordTime = fileName[len(keywordBase)+1:]
+        keywordTime = filename[len(keywordBase)+1:]
         requestedTime = datetime.strptime(keywordTime, '%Y%m%d')
         # Search for nearest available file, within the closest 3 days
         foundDataset = False
         for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
             validTime = (requestedTime + timedelta(days=deltaDay) +
                          timedelta(hours=15))
-            fileName = (iceFolderName + 'ice_conc_svalbard_' +
+            filename = (iceFolderName + 'ice_conc_svalbard_' +
                         validTime.strftime('%Y%m%d1500.nc'))
-            if os.path.exists(fileName):
+            if os.path.exists(filename):
                 print 'Found file:'
-                print fileName
-                gdalDataset = gdal.Open(fileName)
+                print filename
+                gdalDataset = gdal.Open(filename)
                 gdalMetadata = gdalDataset.GetMetadata()
-                mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
+                mg.Mapper.__init__(self, filename, gdalDataset, gdalMetadata)
                 foundDataset = True
                 # Modify GeoTransform from netCDF file
                 # - otherwise a shift is seen!

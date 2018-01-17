@@ -24,7 +24,7 @@ class Mapper(VRT):
 
     freqs = [6, 7, 10, 18, 23, 36, 89]
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' OBPG L3 VRT '''
 
         # test the product
@@ -36,7 +36,7 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # get list of similar (same date, A/D orbit) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileMask = iFile[:30] + '%02d' + iFile[32:]
         simFiles = []
         for freq in self.freqs:

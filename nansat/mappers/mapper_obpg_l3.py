@@ -32,7 +32,7 @@ class Mapper(VRT):
                  'Instantaneous Photosynthetically Available Radiation': 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water',
                  }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' OBPG L3 VRT '''
 
         try:
@@ -41,7 +41,7 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # get list of similar (same date) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         simFilesMask = os.path.join(iDir, iFileName)
         simFiles = glob.glob(simFilesMask + iFileExt[0:6] + '*')
@@ -129,7 +129,7 @@ class Mapper(VRT):
         self.band_vrts = {'mask': VRT(array=mask)}
 
         metaDict.append(
-            {'src': {'SourceFilename': self.band_vrts['mask'].fileName,
+            {'src': {'SourceFilename': self.band_vrts['mask'].filename,
                      'SourceBand':  1},
              'dst': {'name': 'mask'}})
 

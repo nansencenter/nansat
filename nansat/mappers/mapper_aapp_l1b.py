@@ -28,13 +28,13 @@ imageOffset = headerLength + 1264
 class Mapper(VRT):
     ''' VRT with mapping of WKV for AVHRR L1B output from AAPP '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         ########################################
         # Read metadata from binary file
         ########################################
         try:
-            fp = open(fileName, 'rb')
+            fp = open(filename, 'rb')
         except IOError:
             raise WrongMapperError
         fp.seek(72)
@@ -175,7 +175,7 @@ class Mapper(VRT):
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
             RawGeolocMetaDict.append(
-                {'src': {'SourceFilename': fileName,
+                {'src': {'SourceFilename': filename,
                          'SourceBand': 0,
                          'SourceType': "RawRasterBand",
                          'DataType': gdal.GDT_Int32,
@@ -195,7 +195,7 @@ class Mapper(VRT):
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
                 {'src': {'SourceFilename': (self.band_vrts['RawGeolocVRT'].
-                                            fileName),
+                                            filename),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,
@@ -249,7 +249,7 @@ class Mapper(VRT):
         ch[5]['minmax'] = '400 1000'
 
         for bandNo in range(1, 6):
-            metaDict.append({'src': {'SourceFilename': fileName,
+            metaDict.append({'src': {'SourceFilename': filename,
                                      'SourceBand': 0,
                                      'SourceType': "RawRasterBand",
                                      'dataType': gdal.GDT_UInt16,
