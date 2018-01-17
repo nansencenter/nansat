@@ -76,7 +76,7 @@ class VRT(object):
     """
 # TODO:
 #   move templates out of Python code to external xml files
-    ComplexSource = Template('''
+    COMPLEX_SOURCE_XML = '''
             <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
                 <SourceBand>$SourceBand</SourceBand>
@@ -86,7 +86,7 @@ class VRT(object):
                 <LUT>$LUT</LUT>
                 <SrcRect xOff="$xOff" yOff="$yOff" xSize="$xSize" ySize="$ySize"/>
                 <DstRect xOff="0" yOff="0" xSize="$xSize" ySize="$ySize"/>
-            </$SourceType> ''')
+            </$SourceType> '''
 
     RawRasterBandSource = Template('''
             <VRTDataset rasterXSize="$XSize" rasterYSize="$YSize">
@@ -451,7 +451,7 @@ class VRT(object):
 #   write XML from dictionary using a standard method (not a filling a template)
 
             # create XML for each source
-            src['XML'] = self.ComplexSource.substitute(
+            src['XML'] = Template(self.COMPLEX_SOURCE_XML).substitute(
                 Dataset=src['SourceFilename'],
                 SourceBand=src['SourceBand'],
                 SourceType=src['SourceType'],
