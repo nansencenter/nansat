@@ -24,7 +24,6 @@ import datetime
 import pkgutil
 import warnings
 
-from scipy.io.netcdf import netcdf_file
 import numpy as np
 if 'nanmedian' in np.__all__:
     from numpy import nanmedian
@@ -740,8 +739,8 @@ class Nansat(Domain):
         data.export(tmpName)
 
         # open files for input and output
-        ncI = netcdf_file(tmpName, 'r', mmap=False)
-        ncO = netcdf_file(fileName, 'w')
+        ncI = Dataset(tmpName, 'r')
+        ncO = Dataset(fileName, 'w')
 
         # collect info on dimention names
         dimNames = []
@@ -787,6 +786,11 @@ class Nansat(Domain):
         # recreate file
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]
+            if 'name' in ncIVar.ncattrs():
+                ncIVar_name = ncIVar.getncattr('name')
+            else:
+                ncIVar_name = None
+
             self.logger.debug('Creating variable: %s' % ncIVarName)
             if ncIVarName in ['x', 'y', 'lon', 'lat']:
                 # create simple x/y variables
@@ -794,9 +798,9 @@ class Nansat(Domain):
                                             ncIVar.dimensions)
             elif ncIVarName == gridMappingVarName:
                 # create projection var
-                ncOVar = ncO.createVariable(gridMappingName, ncIVar.typecode(),
+                ncOVar = ncO.createVariable(gridMappingName, ncIVar.dtype.str,
                                             ncIVar.dimensions)
-            elif 'name' in ncIVar._attributes and ncIVar.name in dstBands:
+            elif ncIVar_name in dstBands:
                 # dont add time-axis to lon/lat grids
                 if ncIVar.name in ['lon', 'lat']:
                     dimensions = ncIVar.dimensions
@@ -804,55 +808,46 @@ class Nansat(Domain):
                     dimensions = ('time', ) + ncIVar.dimensions
 
                 ncOVar = ncO.createVariable(ncIVar.name,
-                                            dstBands[ncIVar.name]['type'],
+                                            dstBands[ncIVar_name]['type'],
                                             dimensions)
 
             # copy array from input data
-            data = np.array(ncIVar.data)
+            data = ncIVar[:]
 
             # copy rounded data from x/y
             if ncIVarName in ['x', 'y']:
                 ncOVar[:] = np.floor(data).astype('>f4')
                 # add axis=X or axis=Y
                 ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName]
-                for attrib in ncIVar._attributes:
-                    if len(ncIVar._attributes[attrib]) > 0:
-                        ncOVar._attributes[attrib] = ncIVar._attributes[attrib]
 
             # copy data from lon/lat
             if ncIVarName in ['lon', 'lat']:
                 ncOVar[:] = data.astype('>f4')
-                ncOVar._attributes = ncIVar._attributes
-
-            # copy projection data (only all attributes)
-            if ncIVarName == gridMappingVarName:
-                ncOVar._attributes = ncIVar._attributes
 
             # copy data from variables in the list
-            if (len(ncIVar.dimensions) > 0 and
-                    'name' in ncIVar._attributes and ncIVar.name in dstBands):
+            if (len(ncIVar.dimensions) > 0 and ncIVar_name):
                 # add offset and scale attributes
-                scale = dstBands[ncIVar.name]['scale']
-                offset = dstBands[ncIVar.name]['offset']
+                scale = dstBands[ncIVar_name]['scale']
+                offset = dstBands[ncIVar_name]['offset']
                 if not (offset == 0.0 and scale == 1.0):
-                    ncOVar._attributes['add_offset'] = offset
-                    ncOVar._attributes['scale_factor'] = scale
+                    ncOVar.setncattr('add_offset', offset)
+                    ncOVar.setncattr('scale_factor', scale)
                     data = (data - offset) / scale
                 # replace non-value by '_FillValue'
                 if (ncIVar.name in dstBands):
-                    if '_FillValue' in dstBands[ncIVar.name].keys():
+                    if '_FillValue' in dstBands[ncIVar_name].keys():
                         data[np.isnan(data)] = dstBands[
-                                                ncIVar.name]['_FillValue']
+                                                ncIVar_name]['_FillValue']
                         ncOVar._attributes['_FillValue'] = dstBands[
-                                                ncIVar.name]['_FillValue']
+                                                ncIVar_name]['_FillValue']
 
-                ncOVar[:] = data.astype(dstBands[ncIVar.name]['type'])
+                ncOVar[:] = data.astype(dstBands[ncIVar_name]['type'])
                 # copy (some) attributes
-                for inAttrName in ncIVar._attributes:
+                for inAttrName in ncIVar.ncattrs():
                     if str(inAttrName) not in rmMetadata + ['dataType',
                                     'SourceFilename', 'SourceBand', '_Unsigned',
                                     'FillValue', 'time', '_FillValue']:
-                        ncOVar._attributes[inAttrName] = ncIVar._attributes[inAttrName]
+                        ncOVar.setncattr(inAttrName, ncIVar.getncattr(inAttrName))
 
                 # add custom attributes from input parameter bands
                 if ncIVar.name in bands:
@@ -863,16 +858,15 @@ class Nansat(Domain):
                             ncOVar._attributes[newAttr] = bands[ncIVar.name][newAttr]
                     # add grid_mapping info
                     if gridMappingName is not None:
-                        ncOVar._attributes['grid_mapping'] = gridMappingName
+                        ncOVar.setncattr('grid_mapping', gridMappingName)
 
         # copy (some) global attributes
-        for globAttr in ncI._attributes:
+        for globAttr in ncI.ncattrs():
             if not(globAttr.strip().startswith('GDAL')):
-                ncO._attributes[globAttr] = ncI._attributes[globAttr]
+                ncO.setncattr(globAttr, ncI.getncattr(globAttr))
 
         # add common and custom global attributes
-        for globMeta in globMetadata:
-            ncO._attributes[globMeta] = globMetadata[globMeta]
+        ncO.setncatts(globMetadata)
 
         # write output file
         ncO.close()

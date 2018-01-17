@@ -22,7 +22,6 @@ import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io.netcdf import netcdf_file
 
 from nansat import Figure, Nansat, Domain
 from nansat.tools import gdal, OptionError

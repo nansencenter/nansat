@@ -11,7 +11,6 @@ import json
 import tempfile
 import shutil
 
-from scipy.io.netcdf import netcdf_file
 import numpy as np
 import matplotlib.pyplot as plt
 

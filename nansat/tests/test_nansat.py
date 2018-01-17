@@ -23,7 +23,7 @@ from xml.sax.saxutils import unescape
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io.netcdf import netcdf_file
+from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal, OptionError
@@ -223,7 +223,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
         n0.export(tmpfilename)
 
-        ncf = netcdf_file(tmpfilename)
+        ncf = Dataset(tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertTrue('GCPX' in ncf.variables)
         self.assertTrue('GCPY' in ncf.variables)
@@ -253,7 +253,7 @@ class NansatTest(unittest.TestCase):
                                    'nansat_export_gcps_complex.nc')
         n1.export(tmpfilename)
 
-        ncf = netcdf_file(tmpfilename)
+        ncf = Dataset(tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertTrue('GCPX' in ncf.variables)
         self.assertTrue('GCPY' in ncf.variables)
@@ -379,6 +379,7 @@ class NansatTest(unittest.TestCase):
 
         # Test that the long/lat values are set aproximately correct
         ncg = 'NC_GLOBAL#'
+        ncg = ''
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
         self.assertTrue(float(easternmost_longitude) > 179,
                         'easternmost_longitude is wrong:' +
@@ -419,7 +420,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_longlat.nc')
         n.export2thredds(tmpfilename, ['L_469'])
-        ncI = netcdf_file(tmpfilename, 'r')
+        ncI = Dataset(tmpfilename, 'r')
         ncIVar = ncI.variables['L_469']
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
 
@@ -434,7 +435,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_longlat.nc')
         n.export2thredds(tmpfilename, {'L_469': {'type': '>i1'}})
-        ncI = netcdf_file(tmpfilename, 'r')
+        ncI = Dataset(tmpfilename, 'r')
         ncIVar = ncI.variables['L_469']
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
         self.assertEqual(ncIVar[:].dtype, np.int8)

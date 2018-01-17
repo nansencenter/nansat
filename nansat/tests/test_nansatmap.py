@@ -22,7 +22,6 @@ import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io.netcdf import netcdf_file
 from scipy.interpolate import griddata
 
 from nansat import Nansat, Domain, Nansatmap, NSR
