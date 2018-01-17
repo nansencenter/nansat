@@ -161,8 +161,7 @@ class Domain(object):
 
         # If too much information is given raise error
         if ds is not None and srs is not None and ext is not None:
-            raise OptionError('Ambiguous specification of both '
-                              'dataset, srs- and ext-strings.')
+            raise OptionError('Ambiguous specification of both dataset, srs- and ext-strings.')
 
         # choose between input opitons:
         # ds
@@ -179,12 +178,11 @@ class Domain(object):
         #   use AutoCreateWarpedVRT to determine bounds and resolution
         elif ds is not None and srs is not None:
             srs = NSR(srs)
-            tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
-            if tmpVRT is None:
-                raise ProjectionError('Could not warp the given dataset'
-                                      'to the given SRS.')
+            tmp_vrt = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
+            if tmp_vrt is None:
+                raise ProjectionError('Could not warp the given dataset to the given SRS.')
             else:
-                self.vrt = VRT.from_gdal_dataset(tmpVRT)
+                self.vrt = VRT.from_gdal_dataset(tmp_vrt)
 
         # If SpatialRef and extent string are given (but not dataset)
         elif srs is not None and ext is not None:
@@ -548,6 +546,26 @@ class Domain(object):
             extent[option[0]] = [float(el) for el in option[1:]]
 
         return extent
+
+    def get_border_beta(self, n_points=10):
+        x_size, y_size = self.shape()[::-1]
+        x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
+        y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
+        col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
+        return self.transform_points(col_vec, row_vec)
+
+    @staticmethod
+    def _compound_row_col_vectors(x_size, y_size, x_vec, y_vec):
+        col_vec = (x_vec + [x_size] * len(y_vec) + x_vec[::-1] + [0] * len(y_vec))
+        row_vec = ([0] * len(x_vec) + y_vec + [y_size] * len(x_vec) + y_vec[::-1])
+        return col_vec, row_vec
+
+    @staticmethod
+    def _get_row_col_vector(raster_size, n_points):
+        step = max(1, raster_size / n_points)
+        rc_vec = range(0, raster_size, step)[0:n_points]
+        rc_vec.append(raster_size)
+        return rc_vec
 
     def get_border(self, nPoints=10, **kwargs):
         '''Generate two vectors with values of lat/lon for the border of domain
