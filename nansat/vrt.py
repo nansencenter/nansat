@@ -99,21 +99,6 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
-    @staticmethod
-    def read_vsi(filename):
-        """Read text from input <filename:str> using VSI and return <content:str>."""
-        # open
-        vsiFile = gdal.VSIFOpenL(filename, 'r')
-        # get file size
-        gdal.VSIFSeekL(vsiFile, 0, 2)
-        vsiFileSize = gdal.VSIFTellL(vsiFile)
-        # fseek to start again
-        gdal.VSIFSeekL(vsiFile, 0, 0)
-        # read
-        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
-        return vsiFileContent
-
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
         """Create VRT from GDAL Dataset with the same size/georeference but wihout bands.
@@ -520,6 +505,8 @@ class VRT(object):
             PixelOffset (RawVRT)
             LineOffset (RawVRT)
             ByteOrder (RawVRT)
+            xSize
+            ySize
         dst : dict with parameters of the created band
             name
             dataType
@@ -566,76 +553,10 @@ class VRT(object):
         if dst is None:
             dst = {}
 
-        # process all sources: check, set defaults, make XML
-        src_defaults = {'SourceBand': 1,
-                       'LUT': '',
-                       'NODATA': '',
-                       'SourceType': 'ComplexSource',
-                       'ScaleRatio': 1.0,
-                       'ScaleOffset': 0.0}
-# TODO:
-#   move loop body to a function
+        srcs = list(map(VRT._make_source_bands_xml, srcs))
 
-        for src in srcs:
-            # check if SourceFilename is given
-            if 'SourceFilename' not in src:
-                raise AttributeError('SourceFilename not given!')
+        options = VRT._set_add_band_options(srcs, dst)
 
-            # set default values
-            for srcDefault in src_defaults:
-                if srcDefault not in src:
-                    src[srcDefault] = src_defaults[srcDefault]
-
-            # Find DataType of source (if not given in src)
-            if src['SourceBand'] > 0 and 'DataType' not in src:
-                self.logger.debug('SRC[SourceFilename]: %s'
-                                  % src['SourceFilename'])
-                srcDataset = gdal.Open(src['SourceFilename'])
-                srcRasterBand = srcDataset.GetRasterBand(src['SourceBand'])
-                src['DataType'] = srcRasterBand.DataType
-                self.logger.debug('SRC[DataType]: %d' % src['DataType'])
-
-            srcDs = gdal.Open(src['SourceFilename'])
-# TODO:
-#   write XML from dictionary using a standard method (not a filling a template)
-
-            # create XML for each source
-            src['XML'] = self.COMPLEX_SOURCE_XML.substitute(
-                Dataset=src['SourceFilename'],
-                SourceBand=src['SourceBand'],
-                SourceType=src['SourceType'],
-                NODATA=src['NODATA'],
-                ScaleOffset=src['ScaleOffset'],
-                ScaleRatio=src['ScaleRatio'],
-                LUT=src['LUT'],
-                xSize=src.get('xSize', srcDs.RasterXSize),
-                ySize=src.get('ySize', srcDs.RasterYSize),
-                xOff=src.get('xOff', 0),
-                yOff=src.get('yOff', 0),)
-
-# TODO:
-#   replace with _set_options()
-
-        # create destination options
-        if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
-            # in case of PixelFunction
-            options = ['subClass=VRTDerivedRasterBand',
-                       'PixelFunctionType=%s' % dst['PixelFunctionType']]
-            if 'SourceTransferType' in dst:
-                options.append('SourceTransferType=%s' %
-                               dst['SourceTransferType'])
-        elif len(srcs) == 1 and srcs[0]['SourceBand'] == 0:
-            # in case of VRTRawRasterBand
-            options = ['subclass=VRTRawRasterBand',
-                       'SourceFilename=%s' % src['SourceFilename'],
-                       'ImageOffset=%f' % src['ImageOffset'],
-                       'PixelOffset=%f' % src['PixelOffset'],
-                       'LineOffset=%f' % src['LineOffset'],
-                       'ByteOrder=%s' % src['ByteOrder']]
-        else:
-            # in common case
-            options = []
-        self.logger.debug('Options of AddBand: %s', str(options))
 
 # TODO:
 #   check individual dst keys in idividual functions
@@ -650,9 +571,8 @@ class VRT(object):
                 # if source band not available: float32
                 dst['dataType'] = gdal.GDT_Float32
             else:
-                self.logger.debug('Set dst[dataType]: %d' % src['DataType'])
                 # otherwise take the DataType from source
-                dst['dataType'] = src['DataType']
+                dst['dataType'] = srcs[0]['DataType']
 
         # get metadata from WKV using PyThesInt
         wkv_exists = False
@@ -703,7 +623,7 @@ class VRT(object):
         if len(srcs) == 1 and srcs[0]['SourceBand'] > 0:
             # only one source
             dstRasterBand.SetMetadataItem('source_0',
-                                          str(src['XML']), 'new_vrt_sources')
+                                          str(srcs[0]['XML']), 'new_vrt_sources')
         elif len(srcs) > 1:
             # several sources for PixelFunction
             metadataSRC = {}
@@ -1766,3 +1686,95 @@ class VRT(object):
 
         # Update dataset
         self.dataset.SetGCPs(dstGCPs, dstSRS.wkt)
+
+    @staticmethod
+    def read_vsi(filename):
+        """Read text from input <filename:str> using VSI and return <content:str>."""
+        # open
+        vsiFile = gdal.VSIFOpenL(filename, 'r')
+        # get file size
+        gdal.VSIFSeekL(vsiFile, 0, 2)
+        vsiFileSize = gdal.VSIFTellL(vsiFile)
+        # fseek to start again
+        gdal.VSIFSeekL(vsiFile, 0, 0)
+        # read
+        vsiFileContent = gdal.VSIFReadL(vsiFileSize, 1, vsiFile)
+        gdal.VSIFCloseL(vsiFile)
+        return vsiFileContent
+
+    @staticmethod
+    def _make_source_bands_xml(src_in):
+        """Check parameters of band source, set defaults and generate XML for VRT
+
+        Parameters
+        -------
+            src_in : dict
+                dict with band source parameters (SourceFilename, SourceBand, etc)
+        Returns
+        -------
+            src : dict
+                updated dict with XML entry
+        """
+        # check if SourceFilename is given
+        if 'SourceFilename' not in src_in:
+            raise AttributeError('SourceFilename not given!')
+        # set default values
+        src = {'SourceBand': 1,
+               'LUT': '',
+               'NODATA': '',
+               'SourceType': 'ComplexSource',
+               'ScaleRatio': 1.0,
+               'ScaleOffset': 0.0}
+        src.update(src_in)
+
+        # find DataType of source (if not given in src)
+        if src['SourceBand'] > 0 and 'DataType' not in src:
+            raster_band = gdal.Open(src['SourceFilename']).GetRasterBand(src['SourceBand'])
+            src['DataType'] = raster_band.DataType
+
+        if 'xSize' not in src or 'ySize' not in src:
+            ds = gdal.Open(src['SourceFilename'])
+            src['xSize'] = ds.RasterXSize
+            src['ySize'] = ds.RasterYSize
+
+        # TODO:
+        #   write XML from dictionary using a standard method (not a filling a template)
+
+        # create XML for each source
+        src['XML'] = VRT.COMPLEX_SOURCE_XML.substitute(
+            Dataset=src['SourceFilename'],
+            SourceBand=src['SourceBand'],
+            SourceType=src['SourceType'],
+            NODATA=src['NODATA'],
+            ScaleOffset=src['ScaleOffset'],
+            ScaleRatio=src['ScaleRatio'],
+            LUT=src['LUT'],
+            xSize=src['xSize'],
+            ySize=src['ySize'],
+            xOff=src.get('xOff', 0),
+            yOff=src.get('yOff', 0),)
+
+        return src
+
+    @staticmethod
+    def _set_add_band_options(srcs, dst):
+        """Generate options for gdal.AddBand based on input band src and dst parameters"""
+        if 'PixelFunctionType' in dst and len(dst['PixelFunctionType']) > 0:
+            # in case of PixelFunction
+            options = ['subClass=VRTDerivedRasterBand',
+                       'PixelFunctionType=%s' % dst['PixelFunctionType']]
+            if 'SourceTransferType' in dst:
+                options.append('SourceTransferType=%s' % dst['SourceTransferType'])
+        elif len(srcs) == 1 and srcs[0]['SourceBand'] == 0:
+            # in case of VRTRawRasterBand
+            options = ['subclass=VRTRawRasterBand',
+                       'SourceFilename=%s' % srcs[0]['SourceFilename'],
+                       'ImageOffset=%d' % srcs[0]['ImageOffset'],
+                       'PixelOffset=%d' % srcs[0]['PixelOffset'],
+                       'LineOffset=%d' % srcs[0]['LineOffset'],
+                       'ByteOrder=%s' % srcs[0]['ByteOrder']]
+        else:
+            # in common case
+            options = []
+
+        return options

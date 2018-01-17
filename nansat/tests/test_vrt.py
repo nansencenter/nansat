@@ -78,18 +78,18 @@ class VRTTest(unittest.TestCase):
                                       ds.GetProjection(),
                                       ds.GetGCPs(),
                                       ds.GetGCPProjection())
-                                      
+
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
         self.assertEqual(vrt.dataset.RasterYSize, ds.RasterYSize)
         self.assertEqual(vrt.dataset.GetProjection(), ds.GetProjection())
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
         self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
-        
+
     def test_from_array(self):
         array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
-                                      
+
         self.assertEqual(vrt.dataset.RasterXSize, array.shape[1])
         self.assertEqual(vrt.dataset.RasterYSize, array.shape[0])
         self.assertEqual(vrt.dataset.RasterCount, 1)
@@ -101,7 +101,7 @@ class VRTTest(unittest.TestCase):
                     'X_BAND', 'X_DATASET', 'Y_BAND', 'Y_DATASET']
         lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
         vrt = VRT.from_lonlat(lon, lat)
-        
+
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
         self.assertIn('fileName', vrt.dataset.GetMetadata().keys())
@@ -138,6 +138,56 @@ class VRTTest(unittest.TestCase):
         vrt = VRT.from_array(array)
         vrt.export('temp.vrt.xml')
         self.assertTrue(os.path.exists('temp.vrt.xml'))
+
+    def test_create_band(self):
+        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        vrt1 = VRT.from_array(array)
+        vrt2 = VRT(x_size=array.shape[1], y_size=array.shape[0])
+        self.assertEqual(vrt2.dataset.RasterCount, 0)
+        vrt2._create_band({'SourceFilename': vrt1.fileName})
+        self.assertEqual(vrt2.dataset.RasterCount, 1)
+
+    def test_make_source_bands_xml(self):
+        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        vrt1 = VRT.from_array(array)
+        src1 = {'SourceFilename': vrt1.fileName}
+        src2 = VRT._make_source_bands_xml(src1)
+        self.assertIn('XML', src2)
+        self.assertEqual(src2['SourceFilename'], vrt1.fileName)
+        self.assertEqual(src2['SourceBand'], 1)
+        self.assertEqual(src2['LUT'], '')
+        self.assertEqual(src2['NODATA'], '')
+        self.assertEqual(src2['SourceType'], 'ComplexSource')
+        self.assertEqual(src2['ScaleRatio'], 1.0)
+        self.assertEqual(src2['ScaleOffset'], 0.0)
+        self.assertEqual(src2['DataType'], 1)
+        self.assertEqual(src2['xSize'], 200)
+        self.assertEqual(src2['ySize'], 190)
+
+        with self.assertRaises(AttributeError):
+            src2 = VRT._make_source_bands_xml({})
+
+    def test_set_add_band_options(self):
+        # case 1
+        srcs = [{'SourceFilename': 'filename', 'SourceBand': 1}]
+        dst = []
+        options = VRT._set_add_band_options(srcs, dst)
+        self.assertEqual(options, [])
+        # case 2
+        srcs = [{'SourceFilename': 'filename',
+                 'SourceBand': 0,
+                 'ImageOffset': 0,
+                 'PixelOffset': 0,
+                 'LineOffset': 0,
+                 'ByteOrder': 'i'}]
+        options = VRT._set_add_band_options(srcs, dst)
+        self.assertIn('subclass=VRTRawRasterBand', options)
+        self.assertIn('SourceFilename=filename', options)
+        self.assertIn('ImageOffset=0', options)
+        self.assertIn('PixelOffset=0', options)
+        self.assertIn('LineOffset=0', options)
+        self.assertIn('ByteOrder=i', options)
+
 
 if __name__ == "__main__":
     unittest.main()
