@@ -1002,7 +1002,7 @@ class Nansat(Domain):
 
         # set global metadata
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('fileName')
+        subMetaData.pop('filename')
         self.set_metadata(subMetaData)
 
         return factor

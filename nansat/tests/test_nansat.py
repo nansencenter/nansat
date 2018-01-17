@@ -577,7 +577,7 @@ class NansatTest(unittest.TestCase):
 
     def test_reproject_no_addmask(self):
         ''' Should not add swath mask and return 0 in areas out of swath '''
-        n = Nansat(self.test_file_complex, logLevel=40)
+        n = Nansat(self.test_file_gcps, logLevel=40)
         d = Domain(4326, '-te -92.08 26.85 -92.00 26.91 -ts 200 200')
         n.reproject(d, addmask=False)
         b = n[1]
@@ -687,11 +687,11 @@ class NansatTest(unittest.TestCase):
         m = n1.get_metadata()
 
         self.assertEqual(type(m), dict)
-        self.assertTrue('fileName' in m)
+        self.assertTrue('filename' in m)
 
     def test_get_metadata_key(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
-        m = n1.get_metadata('fileName')
+        m = n1.get_metadata('filename')
 
         self.assertEqual(type(m), str)
 
@@ -827,7 +827,7 @@ class NansatTest(unittest.TestCase):
                                 for gcp in n1.vrt.dataset.GetGCPs()])))
         gcpproj = NSR(n1.vrt.dataset.GetGCPProjection()
                                         ).ExportToProj4().split(' ')[0]
-        
+
         self.assertTrue(xmed > 360)
         self.assertTrue(gcpproj=='+proj=stere')
 
