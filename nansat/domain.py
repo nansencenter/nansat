@@ -547,7 +547,21 @@ class Domain(object):
 
         return extent
 
-    def get_border_beta(self, n_points=10):
+    def get_border(self, nPoints=10):
+        """Generate two vectors with values of lat/lon for the border of domain
+
+        Parameters
+        -----------
+        nPoints : int, optional
+            Number of points on each border
+
+        Returns
+        --------
+        lonVec, latVec : lists
+            vectors with lon/lat values for each point at the border
+
+        """
+        n_points = nPoints
         x_size, y_size = self.shape()[::-1]
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
@@ -566,44 +580,6 @@ class Domain(object):
         rc_vec = range(0, raster_size, step)[0:n_points]
         rc_vec.append(raster_size)
         return rc_vec
-
-    def get_border(self, nPoints=10, **kwargs):
-        '''Generate two vectors with values of lat/lon for the border of domain
-
-        Parameters
-        -----------
-        nPoints : int, optional
-            Number of points on each border
-
-        Returns
-        --------
-        lonVec, latVec : lists
-            vectors with lon/lat values for each point at the border
-
-        '''
-        # prepare vectors with pixels and lines for upper, left, lower
-        # and right borders
-        # TODO: y_size, x_size = self.shape
-        sizes = [self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize]
-
-        # TODO: Bad names (add r/c, row/col to conventions)
-        rcVector1 = [[], []]
-        rcVector2 = [[], []]
-        # loop for pixels and lines
-        for n in range(0, 2):
-            step = max(1, sizes[n] / nPoints)
-            rcVector1[n] = range(0, sizes[n], step)[0:nPoints]
-            rcVector1[n].append(sizes[n])
-            rcVector2[n] = rcVector1[n][:]
-            rcVector2[n].reverse()
-
-        # coumpund vectors of pixels (col) and lines (row)
-        colVector = (rcVector1[0] + [sizes[0]] * len(rcVector1[1]) +
-                     rcVector2[0] + [0] * len(rcVector1[1]))
-        rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] +
-                     [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
-
-        return self.transform_points(colVector, rowVector)
 
     # TODO: Test get_border_wkt
     def get_border_wkt(self, *args, **kwargs):

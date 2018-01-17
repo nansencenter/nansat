@@ -103,16 +103,6 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(lat.shape, (500, 500))
 
-    def test_get_border(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        lon, lat = d.get_border()
-
-        self.assertEqual(type(lon), np.ndarray)
-        self.assertEqual(type(lat), np.ndarray)
-        self.assertEqual(len(lat), 44)
-        self.assertEqual(lat[0], lat[-1])
-        self.assertEqual(lon[0], lon[-1])
-
     def test_get_border_wkt(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         bwkt = d.get_border_wkt()
@@ -319,10 +309,12 @@ class DomainTest(unittest.TestCase):
         self.assertEquals(output_col, test_col)
         self.assertEquals(output_row, test_row)
 
-    def test_get_border_beta(self):
+    def test_get_border(self):
         dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
-        result = dom.get_border_beta(n_points=10)
-        res_x, res_y = result
+        result = dom.get_border(nPoints=10)
+        lat, lon = result
+        self.assertEqual(type(lat), np.ndarray)
+        self.assertEqual(type(lon), np.ndarray)
         self.assertIsInstance(result, tuple)
         self.assertEquals(len(result), 2)
         test_x = [4.5, 4.65, 4.8, 4.95, 5.1, 5.25, 5.4, 5.55, 5.7, 5.85, 6., 6., 6.,
@@ -332,8 +324,9 @@ class DomainTest(unittest.TestCase):
                   60.5, 60.4, 60.3, 60.2, 60.1, 60., 60., 60., 60., 60., 60., 60., 60., 60., 60.,
                   60., 60., 60., 60.1, 60.2, 60.3, 60.4, 60.5, 60.6, 60.7, 60.8, 60.9, 61.]
 
-        self.assertEquals(list(res_x), test_x)
-        self.assertEquals(list(res_y), test_y)
+        self.assertEquals(list(lat), test_x)
+        self.assertEquals(list(lon), test_y)
+
 
 if __name__ == "__main__":
     unittest.main()
