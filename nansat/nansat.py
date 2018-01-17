@@ -35,6 +35,7 @@ from numpy.lib.recfunctions import append_fields
 import matplotlib
 from matplotlib import cm
 import matplotlib.pyplot as plt
+from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
@@ -572,7 +573,7 @@ class Nansat(Domain):
         dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
                                                           exportVRT.dataset,
                                                           options=options)
-
+        dataset = None
         # add GCPs into netCDF file as separate float variables
         if addGCPs:
             self._add_gcps(fileName, gcps, bottomup)
@@ -589,11 +590,7 @@ class Nansat(Domain):
             return 1
 
         # open output file for adding GCPs
-        try:
-            ncFile = netcdf_file(fileName, 'a')
-        except TypeError as e:
-            self.logger.warning('%s' % e)
-            return 1
+        ncFile = Dataset(fileName, 'a')
 
         # get GCP values into single array from GCPs
         gcpValues = np.zeros((5, len(gcps)))
@@ -608,7 +605,7 @@ class Nansat(Domain):
         ncFile.createDimension('gcps', len(gcps))
         # make gcps variables and add data
         for i, var in enumerate(gcpVariables):
-            var = ncFile.createVariable(var, 'f', ('gcps',))
+            var = ncFile.createVariable(var, 'f4', ('gcps',))
             var[:] = gcpValues[i]
 
         # write data, close file
