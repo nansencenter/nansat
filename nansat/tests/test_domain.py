@@ -288,8 +288,52 @@ class DomainTest(unittest.TestCase):
 
     def test_get_min_max_lat_lon(self):
         dom = Domain(4326, "-te 5 60 6 61 -ts 500 500")
+        result = dom.get_min_max_lat_lon()
+        self.assertIsInstance(result, tuple)
+        self.assertLess(result[0], result[1])
+        self.assertLess(result[2], result[3])
         self.assertEqual(dom.get_min_max_lat_lon(), (60.002, 61.0, 5.0, 5.998))
 
+    def test_get_row_col_vector(self):
+        test_1 = Domain._get_row_col_vector(250, 500)
+        self.assertIsInstance(test_1, list)
+        self.assertEquals(test_1, range(251))
+        self.assertEquals(len(test_1), 251)
+        test_2 = Domain._get_row_col_vector(500, 10)
+        self.assertEquals(test_2, range(0, 550, 50))
+        self.assertEquals(len(test_2), 10 + 1)
+
+    def test_compound_row_col_vectors(self):
+
+        result = Domain._compound_row_col_vectors(30, 40, range(0, 33, 3), range(0, 44, 4))
+        output_col, output_row = result
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 2)
+        test_col = [0,  3,  6,  9,  12,  15,  18,  21,  24,  27,  30,  30,  30,  30,  30,  30,
+                    30,  30,  30,  30,  30,  30,  30,  27,  24,  21,  18,  15,  12,  9,  6,  3,
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0]
+        test_row = [0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  4,  8,  12,  16,  20,  24,
+                    28,  32,  36,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,
+                    40,  36,  32,  28,  24,  20,  16,  12,  8,  4,  0]
+
+        self.assertEquals(output_col, test_col)
+        self.assertEquals(output_row, test_row)
+
+    def test_get_border_beta(self):
+        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
+        result = dom.get_border_beta(n_points=10)
+        res_x, res_y = result
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 2)
+        test_x = [4.5, 4.65, 4.8, 4.95, 5.1, 5.25, 5.4, 5.55, 5.7, 5.85, 6., 6., 6.,
+                  6., 6., 6., 6., 6., 6., 6., 6., 6., 6., 5.85, 5.7, 5.55, 5.4, 5.25,
+                  5.1, 4.95, 4.8, 4.65, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5]
+        test_y = [61., 61., 61., 61., 61., 61., 61., 61., 61., 61., 61., 61., 60.9, 60.8, 60.7, 60.6,
+                  60.5, 60.4, 60.3, 60.2, 60.1, 60., 60., 60., 60., 60., 60., 60., 60., 60., 60.,
+                  60., 60., 60., 60.1, 60.2, 60.3, 60.4, 60.5, 60.6, 60.7, 60.8, 60.9, 61.]
+
+        self.assertEquals(list(res_x), test_x)
+        self.assertEquals(list(res_y), test_y)
 
 if __name__ == "__main__":
     unittest.main()
