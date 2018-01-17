@@ -180,14 +180,6 @@ nansat\.mappers\.mapper\_goci\_l1 module
     :undoc-members:
     :show-inheritance:
 
-nansat\.mappers\.mapper\_gtopo30 module
----------------------------------------
-
-.. automodule:: nansat.mappers.mapper_gtopo30
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.mappers\.mapper\_hirlam module
 --------------------------------------
 
@@ -432,6 +424,14 @@ nansat\.mappers\.mapper\_sentinel1\_l2 module
 ---------------------------------------------
 
 .. automodule:: nansat.mappers.mapper_sentinel1_l2
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.mappers\.mapper\_topography module
+------------------------------------------
+
+.. automodule:: nansat.mappers.mapper_topography
     :members:
     :undoc-members:
     :show-inheritance:
