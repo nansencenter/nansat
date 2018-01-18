@@ -327,6 +327,11 @@ class DomainTest(unittest.TestCase):
         self.assertEquals(list(lat), test_x)
         self.assertEquals(list(lon), test_y)
 
+    def test_transform_ts(self):
+        result = Domain._transform_ts(1.5, 1.0, [750.0, 500.0])
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 4)
+        map(lambda el: self.assertIsInstance(el, float), result)
 
 if __name__ == "__main__":
     unittest.main()
