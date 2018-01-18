@@ -175,7 +175,7 @@ class Nansat(Domain):
         self.logger.debug('Object created from %s ' % self.fileName)
 
     def __getitem__(self, bandID):
-        ''' Returns the band as a NumPy array, by overloading []
+        """ Returns the band as a NumPy array, by overloading []
 
         Parameters
         -----------
@@ -188,19 +188,20 @@ class Nansat(Domain):
         --------
         self.get_GDALRasterBand(bandID).ReadAsArray() : NumPy array
 
-        '''
+        """
+        band_id = bandID
         # get band
-        band = self.get_GDALRasterBand(bandID)
+        band = self.get_GDALRasterBand(band_id)
         # get expression from metadata
         expression = band.GetMetadata().get('expression', '')
         # get data
-        bandData = band.ReadAsArray()
-        if bandData is None:
-            raise GDALError('Cannot read array from band %s' % str(bandID))
+        band_data = band.ReadAsArray()
+        if not band_data:
+            raise GDALError('Cannot read array from band %s' % str(band_data))
 
         # execute expression if any
         if expression != '':
-            bandData = eval(expression)
+            band_data = eval(expression)
 
 # TODO: move below to _fill_with_nan() method
         # Set invalid and missing data to np.nan (for floats only)
