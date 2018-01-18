@@ -67,6 +67,7 @@ class Domain(object):
 
     """
 
+    OUTPUT_SEPARATOR = '-' * 40 + '\n'
     KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
     <kml xmlns="http://www.opengis.net/kml/2.2"
     xmlns:gx="http://www.google.com/kml/ext/2.2"
@@ -206,14 +207,13 @@ class Domain(object):
 
         """
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
-        separator = '-' * 40 + '\n'
 
         out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
-        out_str += separator
+        out_str += self.OUTPUT_SEPARATOR
         corners = self.get_corners()
         out_str += 'Projection:\n'
         out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
-        out_str += separator
+        out_str += self.OUTPUT_SEPARATOR
         out_str += 'Corners (lon, lat):\n'
         out_str += corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
         out_str += corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])

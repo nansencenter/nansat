@@ -235,17 +235,10 @@ class Nansat(Domain):
         return band_data
 
     def __repr__(self):
-        '''Creates string with basic info about the Nansat object'''
-# TODO: replace with template
-        outString = '-' * 40 + '\n'
-        outString += self.fileName + '\n'
-        outString += '-' * 40 + '\n'
-        outString += 'Mapper: ' + self.mapper + '\n'
-        outString += '-' * 40 + '\n'
-        outString += self.list_bands(False)
-        outString += '-' * 40 + '\n'
-        outString += Domain.__repr__(self)
-        return outString
+        """Creates string with basic info about the Nansat object"""
+        out_str = '{separator}{filename}{separator}Mapper: {mapper}{bands}{separator}{domain}'
+        return out_str.format(separator=self.OUTPUT_SEPARATOR, filename=self.fileName,
+                              mapper=self.mapper, domain=Domain.__repr__(self))
 
 # TODO: add warning that add_band will be deprecated
     def add_band(self, array, parameters=None, nomem=False):
