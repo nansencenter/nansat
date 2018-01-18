@@ -175,12 +175,8 @@ class Mapper(VRT):
 
                 incVRT = VRT.from_array(inc)
                 eleVRT = VRT.from_array(ele)
-                incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize,
-                                                self.dataset.RasterYSize,
-                                                eResampleAlg=2)
-                eleVRT = eleVRT.get_resized_vrt(self.dataset.RasterXSize,
-                                                self.dataset.RasterYSize,
-                                                eResampleAlg=2)
+                incVRT = incVRT.get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 2)
+                eleVRT = eleVRT.get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 2)
                 self.band_vrts['incVRT'] = incVRT
                 self.band_vrts['eleVRT'] = eleVRT
 
@@ -193,14 +189,10 @@ class Mapper(VRT):
                                   ))
             self.band_vrts['LUT_sigmaNought_VRT_'+pol[key]] = (
                 calibration_LUT_VRTs['sigmaNought'].
-                get_resized_vrt(self.dataset.RasterXSize,
-                                self.dataset.RasterYSize,
-                                eResampleAlg=1))
+                get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1))
             self.band_vrts['LUT_betaNought_VRT_'+pol[key]] = (
                 calibration_LUT_VRTs['betaNought'].
-                get_resized_vrt(self.dataset.RasterXSize,
-                                self.dataset.RasterYSize,
-                                eResampleAlg=1))
+                get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1))
             self.band_vrts['LUT_gamma_VRT'] = calibration_LUT_VRTs['gamma']
             self.band_vrts['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
 
@@ -209,10 +201,7 @@ class Mapper(VRT):
                                               'noiseVectorList',
                                               ['noiseLut'])[0]
             self.band_vrts['LUT_noise_VRT_'+pol[key]] = (
-                noise_LUT_VRT['noiseLut'].get_resized_vrt(
-                    self.dataset.RasterXSize,
-                    self.dataset.RasterYSize,
-                    eResampleAlg=1))
+                noise_LUT_VRT['noiseLut'].get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1))
 
         metaDict = []
         bandNumberDict = {}
@@ -280,9 +269,7 @@ class Mapper(VRT):
                              )
 
         # Blow up to full size
-        lookVRT = lookVRT.get_resized_vrt(self.dataset.RasterXSize,
-                                          self.dataset.RasterYSize,
-                                          eResampleAlg=1)
+        lookVRT = lookVRT.get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1)
 
         # Store VRTs so that they are accessible later
         self.band_vrts['look_u_VRT'] = look_u_VRT

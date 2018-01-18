@@ -193,8 +193,7 @@ class Mapper(VRT):
             {'PixelFunctionType': 'UVToDirectionTo'})
 
         # Blow up to full size
-        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize,
-                                          gdalDataset.RasterYSize)
+        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
         self.band_vrts['look_u_VRT'] = look_u_VRT
         self.band_vrts['look_v_VRT'] = look_v_VRT
