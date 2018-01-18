@@ -31,6 +31,7 @@ Welcome to Nansat's documentation!
    :caption: User documentation
 
    source/installation.rst
+   source/tutorials.rst
    source/modules.rst
    source/nansat.mappers.rst
 
