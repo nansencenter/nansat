@@ -2179,7 +2179,7 @@ class Nansat(Domain):
 
                 lonArray, latArray = self.vrt.transform_points(pixArray,
                                                                linArray,
-                        dstSRS=NSR(self.vrt.dataset.GetGCPProjection()))
+                        dst_srs=NSR(self.vrt.dataset.GetGCPProjection()))
 
                 for i in range(len(lonArray)):
                     dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
