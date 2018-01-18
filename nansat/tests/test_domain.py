@@ -345,6 +345,25 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(param_err.message,
                              '"-tr" is too large. width is 4.0, height is 1.3 ')
 
+    def test_get_geotransform(self):
+        input_1 = {'te': [27.0, 70.3, 31.0, 71.6], 'tr': [0.015, 0.005]}
+        test_1 = ([27.0, 0.015, 0.0, 71.6, 0.0, -0.005], 266, 259)
+        result = Domain._get_geotransform(input_1)
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 3)
+        self.assertIsInstance(result[0], list)
+        self.assertEquals(len(result[0]), 6)
+        map(lambda el: self.assertIsInstance(el, float), result[0])
+        self.assertIsInstance(result[1], int)
+        self.assertIsInstance(result[2], int)
+
+        self.assertEquals(result, test_1)
+
+        input_2 = {'te': [4.5, 60.0, 6.0, 61.0], 'ts': [750.0, 500.0]}
+        test_2 = ([4.5, 0.002, 0.0, 61.0, 0.0, -0.002], 750, 500)
+        result = Domain._get_geotransform_beta(input_2)
+        self.assertEquals(result, test_2)
+
 
 if __name__ == "__main__":
     unittest.main()
