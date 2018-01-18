@@ -17,14 +17,13 @@ keywordBase = __name__[7:]
 
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
+    def __init__(self, filename, gdalDataset, gdalMetadata, logLevel=30,
                  **kwargs):
-
-        if fileName[0:len(keywordBase)] != keywordBase:
+        if filename[0:len(keywordBase)] != keywordBase:
             raise WrongMapperError(__file__,
                                    "Not Nora10 data converted from felt to netCDF")
 
-        requestedTime = datetime.strptime(fileName[len(keywordBase)+1:],
+        requestedTime = datetime.strptime(filename[len(keywordBase)+1:],
                                           '%Y%m%d%H%M')
         # For correct rounding
         fileTime = requestedTime + timedelta(minutes=30)
@@ -69,21 +68,21 @@ class Mapper(VRT):
                         'v_VRT': VRT_v10}
 
         metaDict = []
-        metaDict.append({'src': {'SourceFilename': VRT_u10.fileName,
+        metaDict.append({'src': {'SourceFilename': VRT_u10.filename,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'eastward_wind',
                                  'name': 'eastward_wind'}})
-        metaDict.append({'src': {'SourceFilename': VRT_v10.fileName,
+        metaDict.append({'src': {'SourceFilename': VRT_v10.filename,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'northward_wind',
                                  'name': 'northward_wind'}})
 
         # Add pixel function with wind speed
         metaDict.append({
-            'src': [{'SourceFilename': self.band_vrts['u_VRT'].fileName,
+            'src': [{'SourceFilename': self.band_vrts['u_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6},
-                    {'SourceFilename': self.band_vrts['v_VRT'].fileName,
+                    {'SourceFilename': self.band_vrts['v_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6}],
             'dst': {'wkv': 'wind_speed',
@@ -93,10 +92,10 @@ class Mapper(VRT):
 
         # Add pixel function with wind direction
         metaDict.append({
-            'src': [{'SourceFilename': self.band_vrts['u_VRT'].fileName,
+            'src': [{'SourceFilename': self.band_vrts['u_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6},
-                    {'SourceFilename': self.band_vrts['v_VRT'].fileName,
+                    {'SourceFilename': self.band_vrts['v_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6}],
             'dst': {'wkv': 'wind_from_direction',

@@ -28,10 +28,10 @@ except ImportError:
          Nansat will work.
          ''')
 
-#fileName = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
-#fileName = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'
-#fileName = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-glo-osisaf/conc/2014/06/ice_conc_sh_polstere-100_multi_201406051200.nc'
-#fileName = 'http://thredds.nersc.no/thredds/dodsC/normap/arctic12km_seaice/arctic12km_seaice_20110301_20110331.nc'
+#filename = 'http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh/osisaf-nh_aggregated_ice_concentration_nh_polstere-100_197810010000.nc'
+#filename = 'http://thredds.met.no/thredds/dodsC/topaz/dataset-topaz4-nat-myoceanv2-20111026'
+#filename = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-glo-osisaf/conc/2014/06/ice_conc_sh_polstere-100_multi_201406051200.nc'
+#filename = 'http://thredds.nersc.no/thredds/dodsC/normap/arctic12km_seaice/arctic12km_seaice_20110301_20110331.nc'
 
 
 class Mapper(VRT):
@@ -80,18 +80,18 @@ class Mapper(VRT):
                               + str(var.getncattr(projKey)) + ' ')
         return proj4
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, varName=None, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, varName=None, **kwargs):
         ''' Create VRT from OpenDAP dataset'''
         raise WrongMapperError
         # quit if file is not online
-        if fileName[:7] not in  ['http://', 'https:/']:
+        if filename[:7] not in  ['http://', 'https:/']:
             raise WrongMapperError
 
         if bandName is None:
             WrongMapperError('Please specify band name')
 
         # open file through OpenDAP using netCDF4 library
-        f = Dataset(fileName)
+        f = Dataset(filename)
 
         # assume CF-compatibility:
         # compulsory grid_mapping_name
@@ -220,7 +220,7 @@ class Mapper(VRT):
             # generate bands for each additional dimension
             for nonxyi in range(totNonXYDims):
                 dstVarName = str(varName)
-                url = fileName + '?%s.%s' % (varName, varName)
+                url = filename + '?%s.%s' % (varName, varName)
                 #assert varName != 'v'
                 # vector of nonX/Y indeces
                 iVec = np.unravel_index(nonxyi, nonXYShape)

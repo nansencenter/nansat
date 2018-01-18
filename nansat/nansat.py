@@ -314,7 +314,7 @@ class Nansat(Domain):
             if params is None:
                 params = {}
             bandName = self.vrt._create_band(
-                {'SourceFilename': bandVRT.fileName,
+                {'SourceFilename': bandVRT.filename,
                  'SourceBand': 1},
                 params)
             self.vrt.band_vrts[bandName] = bandVRT
@@ -361,7 +361,7 @@ class Nansat(Domain):
 # TODO:
 #   move to Exporter.export()
 #   inherit Nansat from Exporter
-    def export(self, fileName, bands=None, rmMetadata=list(), addGeoloc=True,
+    def export(self, fileName, bands=None, rmMetadata=None, addGeoloc=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -420,6 +420,9 @@ class Nansat(Domain):
         # export all bands into a GeoTiff
 
         '''
+        if rmMetadata is None:
+            rmMetadata = []
+
         # temporary VRT for exporting
         exportVRT = self.vrt.copy()
         exportVRT.real = []
@@ -468,11 +471,11 @@ class Nansat(Domain):
                 exportVRT.imag.append(VRT.from_array(self[i].imag))
 
                 metaDict = [{'src': {
-                             'SourceFilename': exportVRT.real[-1].fileName,
+                             'SourceFilename': exportVRT.real[-1].filename,
                              'SourceBand':  1},
                              'dst': bandMetadataR},
                             {'src': {
-                             'SourceFilename': exportVRT.imag[-1].fileName,
+                             'SourceFilename': exportVRT.imag[-1].filename,
                              'SourceBand':  1},
                              'dst': bandMetadataI}]
                 exportVRT._create_bands(metaDict)
@@ -832,7 +835,7 @@ class Nansat(Domain):
                     dimensions = ncIVar.dimensions
                 else:
                     dimensions = ('time', ) + ncIVar.dimensions
-                
+
                 fill_value = None
                 if '_FillValue' in ncIVar.ncattrs():
                     fill_value = ncIVar._FillValue
@@ -1002,7 +1005,7 @@ class Nansat(Domain):
 
         # set global metadata
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('fileName')
+        subMetaData.pop('filename')
         self.set_metadata(subMetaData)
 
         return factor
@@ -1187,7 +1190,7 @@ class Nansat(Domain):
         if addmask:
             self.vrt = self.vrt.get_super_vrt()
             src = [{
-                'SourceFilename': self.vrt.vrt.fileName,
+                'SourceFilename': self.vrt.vrt.filename,
                 'SourceBand':  1,
                 'DataType': gdal.GDT_Byte
             }]
@@ -1200,13 +1203,13 @@ class Nansat(Domain):
             self.vrt.dataset.FlushCache()
 
         # create Warped VRT
-        self.vrt = self.vrt.get_warped_vrt(dstSRS=dstSRS,
-                                           dstGCPs=dstGCPs,
-                                           eResampleAlg=eResampleAlg,
-                                           xSize=xSize, ySize=ySize,
-                                           blockSize=blockSize,
-                                           geoTransform=geoTransform,
-                                           WorkingDataType=WorkingDataType,
+        self.vrt = self.vrt.get_warped_vrt(dst_srs=dstSRS,
+                                           dst_gcps=dstGCPs,
+                                           resample_alg=eResampleAlg,
+                                           x_size=xSize, y_size=ySize,
+                                           block_size=blockSize,
+                                           geo_transform=geoTransform,
+                                           working_data_type=WorkingDataType,
                                            **kwargs)
 
         # This violates lazy operations and is therefore commented out..
@@ -1217,7 +1220,7 @@ class Nansat(Domain):
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('fileName')
+        subMetaData.pop('filename')
         self.set_metadata(subMetaData)
 
     def undo(self, steps=1):
@@ -2179,7 +2182,7 @@ class Nansat(Domain):
 
                 lonArray, latArray = self.vrt.transform_points(pixArray,
                                                                linArray,
-                        dstSRS=NSR(self.vrt.dataset.GetGCPProjection()))
+                        dst_srs=NSR(self.vrt.dataset.GetGCPProjection()))
 
                 for i in range(len(lonArray)):
                     dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
@@ -2202,7 +2205,7 @@ class Nansat(Domain):
 
         # set global metadata
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('fileName')
+        subMetaData.pop('filename')
         self.set_metadata(subMetaData)
 
         return extent

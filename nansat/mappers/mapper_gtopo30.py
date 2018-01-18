@@ -18,14 +18,14 @@ from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         '''
         Mapping for the global 30 arc-second elevation (see
         https://lta.cr.usgs.gov/GTOPO30).
 
         Parameters:
         -----------
-        fileName : string
+        filename : string
             Either the name of a gtopo30 DEM file, or <path>/gtopo30.vrt. The
             latter is an aggregation of the DEM-files available with gtopo30
             except the Antarctic one, which is in polarstereographic
@@ -33,11 +33,11 @@ class Mapper(VRT):
             > gdalbuildvrt gtopo30.vrt [E,W]*.DEM
         '''
 
-        bn = os.path.basename(fileName)
+        bn = os.path.basename(filename)
         if not bn=='gtopo30.vrt' and not os.path.splitext(bn)[1]=='.DEM':
             raise WrongMapperError
 
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand':  1},
+        metaDict = [{'src': {'SourceFilename': filename, 'SourceBand':  1},
                      'dst': {'wkv': 'height_above_reference_ellipsoid'}}]
 
         # create empty VRT dataset with geolocation only

@@ -40,24 +40,24 @@ class Opendap(VRT):
     ### TODOs:
     # add band metadata
 
-    def test_mapper(self, fileName):
-        ''' Tests if fileName fits mapper. May raise WrongMapperError '''
+    def test_mapper(self, filename):
+        ''' Tests if filename fits mapper. May raise WrongMapperError '''
         baseURLmatch = False
         for baseURL in self.baseURLs:
-            if fileName.startswith(baseURL):
+            if filename.startswith(baseURL):
                 baseURLmatch = True
                 break
         if not baseURLmatch:
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
 
     def get_dataset(self, ds):
         ''' Open Dataset '''
         if ds is None:
             try:
-                ds = Dataset(self.fileName)
+                ds = Dataset(self.filename)
             except:
-                raise OptionError('Cannot open %s' % self.fileName)
+                raise OptionError('Cannot open %s' % self.filename)
         elif type(ds) != Dataset:
             raise OptionError('Input ds is not netCDF.Dataset!')
 
@@ -80,7 +80,7 @@ class Opendap(VRT):
             os.path.isdir(self.cachedir)):
             # do caching
             cachefile = '%s_%s.npz' % (os.path.join(self.cachedir,
-                                       os.path.split(self.fileName)[1]),
+                                       os.path.split(self.filename)[1]),
                                        self.timeVarName)
 
         if os.path.exists(cachefile):
@@ -140,14 +140,14 @@ class Opendap(VRT):
 
         return metaItem
 
-    def create_vrt(self, fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
+    def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         ''' Create VRT '''
         if date is None:
             warnings.warn('''
             Date is not specified! Will return the first layer.
             Please add date="YYYY-MM-DD"''')
 
-        self.fileName = fileName
+        self.filename = filename
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
 
@@ -167,7 +167,7 @@ class Opendap(VRT):
         srcGeoTransform = self.get_geotransform()
         self._init_from_dataset_params(self, srcRasterXSize, srcRasterYSize, srcGeoTransform, srcProjection)
 
-        metaDict = [self.get_metaitem(fileName, dsVarName, dsLayerNo)
+        metaDict = [self.get_metaitem(filename, dsVarName, dsLayerNo)
                       for dsVarName in dsVarNames]
 
         self._create_bands(metaDict)

@@ -18,30 +18,30 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create NCEP VRT '''
 
         if not gdalDataset:
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
         geotransform = gdalDataset.GetGeoTransform()
         if (geotransform != (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
                 gdalDataset.RasterCount != 2):  # Not water proof
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
-        metaDict = [{'src': {'SourceFilename': fileName,
+        metaDict = [{'src': {'SourceFilename': filename,
                              'SourceBand': 1},
                      'dst': {'wkv': 'eastward_wind',
                              'height': '10 m'}},
-                    {'src': {'SourceFilename': fileName,
+                    {'src': {'SourceFilename': filename,
                              'SourceBand': 2},
                      'dst': {'wkv': 'northward_wind',
                              'height': '10 m'}},
-                    {'src': [{'SourceFilename': fileName,
+                    {'src': [{'SourceFilename': filename,
                               'SourceBand': 1,
                               'DataType': gdalDataset.GetRasterBand(1).DataType
                               },
-                             {'SourceFilename': fileName,
+                             {'SourceFilename': filename,
                               'SourceBand': 2,
                               'DataType': gdalDataset.GetRasterBand(2).DataType
                               }],
@@ -50,11 +50,11 @@ class Mapper(VRT):
                              'name': 'windspeed',
                              'height': '2 m'
                              }},
-                    {'src': [{'SourceFilename': fileName,
+                    {'src': [{'SourceFilename': filename,
                               'SourceBand': 1,
                               'DataType': gdalDataset.GetRasterBand(1).DataType
                               },
-                             {'SourceFilename': fileName,
+                             {'SourceFilename': filename,
                               'SourceBand': 2,
                               'DataType': gdalDataset.GetRasterBand(2).DataType
                               }],

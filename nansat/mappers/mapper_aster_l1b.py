@@ -18,7 +18,7 @@ from hdf4_mapper import HDF4Mapper
 class Mapper(HDF4Mapper):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, emrange='VNIR', **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, emrange='VNIR', **kwargs):
         ''' Create MODIS_L1 VRT '''
         # check mapper
         try:
@@ -37,27 +37,27 @@ class Mapper(HDF4Mapper):
         # set up metadict for data with various resolution
         subDSString = 'HDF4_EOS:EOS_SWATH:"%s":%s:%s'
         metaDictVNIR = [
-        {'src': {'SourceFilename': subDSString % (fileName, 'VNIR_Swath', 'ImageData1' )}, 'dst': {'wavelength': '560'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'VNIR_Swath', 'ImageData2' )}, 'dst': {'wavelength': '660'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'VNIR_Swath', 'ImageData3N')}, 'dst': {'wavelength': '820'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'VNIR_Swath', 'ImageData3B')}, 'dst': {'wavelength': '820'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'VNIR_Swath', 'ImageData1' )}, 'dst': {'wavelength': '560'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'VNIR_Swath', 'ImageData2' )}, 'dst': {'wavelength': '660'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'VNIR_Swath', 'ImageData3N')}, 'dst': {'wavelength': '820'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'VNIR_Swath', 'ImageData3B')}, 'dst': {'wavelength': '820'}},
         ]
 
         metaDictSWIR = [
-        {'src': {'SourceFilename': subDSString % (fileName, 'SWIR_Swath', 'ImageData4')}, 'dst': {'wavelength': '1650'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'SWIR_Swath', 'ImageData5')}, 'dst': {'wavelength': '2165'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'SWIR_Swath', 'ImageData6')}, 'dst': {'wavelength': '2205'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'SWIR_Swath', 'ImageData7')}, 'dst': {'wavelength': '2260'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'SWIR_Swath', 'ImageData8')}, 'dst': {'wavelength': '2330'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'SWIR_Swath', 'ImageData9')}, 'dst': {'wavelength': '2395'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'SWIR_Swath', 'ImageData4')}, 'dst': {'wavelength': '1650'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'SWIR_Swath', 'ImageData5')}, 'dst': {'wavelength': '2165'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'SWIR_Swath', 'ImageData6')}, 'dst': {'wavelength': '2205'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'SWIR_Swath', 'ImageData7')}, 'dst': {'wavelength': '2260'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'SWIR_Swath', 'ImageData8')}, 'dst': {'wavelength': '2330'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'SWIR_Swath', 'ImageData9')}, 'dst': {'wavelength': '2395'}},
         ]
 
         metaDictTIR = [
-        {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData10')}, 'dst': {'wavelength': '8300'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData11')}, 'dst': {'wavelength': '8650'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData12')}, 'dst': {'wavelength': '9100'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData13')}, 'dst': {'wavelength': '10600'}},
-        {'src': {'SourceFilename': subDSString % (fileName, 'TIR_Swath',  'ImageData14')}, 'dst': {'wavelength': '11300'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'TIR_Swath',  'ImageData10')}, 'dst': {'wavelength': '8300'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'TIR_Swath',  'ImageData11')}, 'dst': {'wavelength': '8650'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'TIR_Swath',  'ImageData12')}, 'dst': {'wavelength': '9100'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'TIR_Swath',  'ImageData13')}, 'dst': {'wavelength': '10600'}},
+        {'src': {'SourceFilename': subDSString % (filename, 'TIR_Swath',  'ImageData14')}, 'dst': {'wavelength': '11300'}},
         ]
 
         # select appropriate metaDict based on <emrange> parameter

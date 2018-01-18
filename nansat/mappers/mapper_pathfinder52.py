@@ -20,12 +20,12 @@ class Mapper(vrt.VRT):
     * remote files
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4,
+    def __init__(self, filename, gdalDataset, gdalMetadata, minQual=4,
                  **kwargs):
         ''' Create VRT '''
 
-        if not 'AVHRR_Pathfinder-PFV5.2' in fileName:
-            raise WrongMapperError(fileName)
+        if not 'AVHRR_Pathfinder-PFV5.2' in filename:
+            raise WrongMapperError(filename)
 
         subDatasets = gdalDataset.GetSubDatasets()
         metaDict = []
@@ -78,7 +78,7 @@ class Mapper(vrt.VRT):
             self.band_vrts = {'maskVRT': vrt.VRT(array=qualArray.astype('int8'))}
             metaDict.append({'src': {'SourceFilename': (self.
                                                         band_vrts['maskVRT'].
-                                                        fileName),
+                                                        filename),
                                      'SourceBand': 1,
                                      'SourceType': 'SimpleSource',
                                      'DataType': 1},

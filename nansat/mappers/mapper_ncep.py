@@ -21,11 +21,11 @@ from nansat.tools import WrongMapperError
 class Mapper(VRT):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create NCEP VRT '''
 
         if not gdalDataset:
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
         geotransform = gdalDataset.GetGeoTransform()
         if (geotransform == (-0.25, 0.5, 0.0, 90.25, 0.0, -0.5) or
@@ -39,9 +39,9 @@ class Mapper(VRT):
                              'u-component': 8,
                              'v-component': 9}
             else:
-                raise WrongMapperError(fileName)
+                raise WrongMapperError(filename)
         else:
-            raise WrongMapperError(fileName)  # Not water proof
+            raise WrongMapperError(filename)  # Not water proof
 
         # Adding valid time from the GRIB file to dataset
         band = gdalDataset.GetRasterBand(srcBandId['u-component'])
@@ -51,21 +51,21 @@ class Mapper(VRT):
 
         # Set band metadata time_iso_8601 for use in OpenWind
         time_iso_8601 = np.datetime64(parse(time_isoformat))
-        metaDict = [{'src': {'SourceFilename': fileName,
+        metaDict = [{'src': {'SourceFilename': filename,
                              'SourceBand': srcBandId['u-component']},
                      'dst': {'wkv': 'eastward_wind',
                              'height': '10 m',
                              'time_iso_8601': time_iso_8601}},
-                    {'src': {'SourceFilename': fileName,
+                    {'src': {'SourceFilename': filename,
                              'SourceBand': srcBandId['v-component']},
                      'dst': {'wkv': 'northward_wind',
                              'height': '10 m',
                              'time_iso_8601': time_iso_8601}},
-                    {'src': [{'SourceFilename': fileName,
+                    {'src': [{'SourceFilename': filename,
                               'SourceBand': srcBandId['u-component'],
                               'DataType': (gdalDataset.GetRasterBand(srcBandId['u-component']).DataType)
                               },
-                             {'SourceFilename': fileName,
+                             {'SourceFilename': filename,
                               'SourceBand': srcBandId['v-component'],
                               'DataType': gdalDataset.GetRasterBand(srcBandId['v-component']).DataType
                               }],
@@ -75,11 +75,11 @@ class Mapper(VRT):
                              'height': '2 m',
                              'time_iso_8601': time_iso_8601
                              }},
-                    {'src': [{'SourceFilename': fileName,
+                    {'src': [{'SourceFilename': filename,
                               'SourceBand': srcBandId['u-component'],
                               'DataType': gdalDataset.GetRasterBand(srcBandId['u-component']).DataType
                               },
-                             {'SourceFilename': fileName,
+                             {'SourceFilename': filename,
                               'SourceBand': srcBandId['v-component'],
                               'DataType': gdalDataset.GetRasterBand(srcBandId['v-component']).DataType
                               }],
@@ -89,7 +89,7 @@ class Mapper(VRT):
                              'height': '2 m',
                              'time_iso_8601': time_iso_8601
                              }},
-                    {'src': {'SourceFilename': fileName,
+                    {'src': {'SourceFilename': filename,
                              'SourceBand': srcBandId['temperature']},
                      'dst': {'wkv': 'air_temperature',
                              'name': 'air_t',

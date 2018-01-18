@@ -16,7 +16,7 @@ from nansat.nsr import NSR
 class Mapper(VRT):
     ''' Mapper for ASTER L1A VNIR data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT=10,
                  bandNames=['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
                  bandWaves=[560, 660, 820], **kwargs):
@@ -39,7 +39,7 @@ class Mapper(VRT):
         '''
         # check if it is ASTER L1A
         try:
-            assert 'AST_L1A_' in fileName
+            assert 'AST_L1A_' in filename
             shortName = gdalMetadata['INSTRUMENTSHORTNAME']
             assert shortName == 'ASTER'
         except:
@@ -52,7 +52,7 @@ class Mapper(VRT):
         bandDatasetMask = 'HDF4_EOS:EOS_SWATH:"%s":%s:ImageData'
         for bandName, bandWave in zip(bandNames, bandWaves):
             metaEntry = {'src': {'SourceFilename': (bandDatasetMask
-                                                    % (fileName, bandName)),
+                                                    % (filename, bandName)),
                                  'SourceBand': 1,
                                  'DataType': 6,
                                  },

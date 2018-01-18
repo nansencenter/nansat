@@ -17,12 +17,12 @@ from nansat.tools import WrongMapperError, parse_time
 class Mapper(VRT):
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
         # test_nansat is failing - this mapper needs more work..
-        #raise WrongMapperError
+        # raise WrongMapperError
 
         if not filename.endswith('nc'):
             raise WrongMapperError
 
-        self.filename = filename
+        self.input_filename = filename
 
         if not gdal_metadata:
             raise WrongMapperError
@@ -31,7 +31,7 @@ class Mapper(VRT):
                 gdal_metadata.has_key('NC_GLOBAL#GDAL_NANSAT_GCPProjection'):
             # Probably Nansat generated netcdf of swath data - see issue #192
             raise WrongMapperError
-        
+
         metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
 
         # Set origin metadata (TODO: agree on keyword...)
@@ -72,13 +72,13 @@ class Mapper(VRT):
         # Then add remaining GCMD/DIF compatible metadata in inheriting mappers
 
     def times(self):
-        ''' Get times from time variable 
+        ''' Get times from time variable
 
         NOTE: This cannot be done with gdal because the time variable is a
         vector
 
         '''
-        ds = Dataset(self.filename)
+        ds = Dataset(self.input_filename)
 
         # Get datetime object of epoch and time_units string
         time_units = self._time_units(ds=ds)
@@ -95,7 +95,7 @@ class Mapper(VRT):
 
     def _time_units(self, ds=None):
         if not ds:
-            ds = Dataset(self.filename)
+            ds = Dataset(self.input_filename)
         times = ds.variables[self._timevarname(ds=ds)]
         rt = parse(times.units, fuzzy=True) # This sets timezone to local
         # Remove timezone information from epoch, which defaults to
@@ -106,7 +106,7 @@ class Mapper(VRT):
 
     def _timevarname(self, ds=None):
         if not ds:
-            ds = Dataset(self.filename)
+            ds = Dataset(self.input_filename)
         timevarname = 'time'
         try:
             ncvar = ds.variables[timevarname]
@@ -161,7 +161,7 @@ class Mapper(VRT):
         class BreakI(Exception):
             pass
         metadictlist = []
-        ds = Dataset(self.filename)
+        ds = Dataset(self.input_filename)
         # Pop netcdf_dim item if the dimension is not in the dimension
         # list of the given dataset
         kpop = []
@@ -171,7 +171,7 @@ class Mapper(VRT):
         for key in kpop:
             netcdf_dim.pop(key)
 
-        gdal_dataset = gdal.Open(self.filename)
+        gdal_dataset = gdal.Open(self.input_filename)
         for fn in self.sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
@@ -268,7 +268,7 @@ class Mapper(VRT):
         # Generate source metadata
         src = {'SourceFilename': subfilename, 'SourceBand': band_num}
 
-        # Set scale ratio 
+        # Set scale ratio
         scaleRatio = band_metadata.get('ScaleRatio',
                 band_metadata.get('scale',
                     band_metadata.get('scale_factor', '')))
@@ -330,9 +330,9 @@ class Mapper(VRT):
             sub = gdal.Open(fn[0])
             self._init_from_dataset_params(
                     x_size = sub.RasterXSize,
-                    y_size = sub.RasterYSize, 
-                    geo_transform = sub.GetGeoTransform(), 
-                    projection = NSR().wkt, 
+                    y_size = sub.RasterYSize,
+                    geo_transform = sub.GetGeoTransform(),
+                    projection = NSR().wkt,
                     metadata = gdal_metadata)
         else:
             sub0 = gdal.Open(subfiles[0])

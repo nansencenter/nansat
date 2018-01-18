@@ -27,7 +27,7 @@ from nansat.vrt import VRT
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV for Met.no seaice '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
 
         ThreddsBase = 'http://thredds.met.no/thredds/dodsC/myocean/siw-tac/siw-metno-svalbard/'
@@ -35,18 +35,18 @@ class Mapper(VRT):
         # filename = metno_hires_seaice:YYYYmmdd
         keywordBase = 'metno_hires_seaice'
         foundDataset = False
-        if fileName[0:len(keywordBase)] == keywordBase:
-            keywordTime = fileName[len(keywordBase)+1:]
+        if filename[0:len(keywordBase)] == keywordBase:
+            keywordTime = filename[len(keywordBase)+1:]
             requestedTime = datetime.strptime(keywordTime, '%Y%m%d')
             # Search for nearest available file, within the closest 3 days
             for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
                 validTime = (requestedTime + timedelta(days=deltaDay) +
                              timedelta(hours=15))
-                fileName = (ThreddsBase +
+                filename = (ThreddsBase +
                             validTime.strftime(
                                 '%Y/%m/ice_conc_svalbard_%Y%m%d1500.nc'))
                 try:
-                    urllib2.urlopen(fileName + '.dds')
+                    urllib2.urlopen(filename + '.dds')
                     foundDataset = True
                     # Data is found for this day
                     break
@@ -59,13 +59,13 @@ class Mapper(VRT):
 
         # Then check if a valid OPeNDAP URL is given
         # (or has been constructed from keyword)
-        if fileName[0:len(ThreddsBase)] != ThreddsBase:
+        if filename[0:len(ThreddsBase)] != ThreddsBase:
             AttributeError("Not Met.no Svalbard-ice Thredds URL")
         else:
-            timestr = fileName[-15:-3]
+            timestr = filename[-15:-3]
             validTime = datetime.strptime(timestr, '%Y%m%d%H%M')
 
-        fileName = fileName + '?ice_concentration[0][y][x]'
+        filename = filename + '?ice_concentration[0][y][x]'
         srcProjection = osr.SpatialReference()
         srcProjection.ImportFromProj4('+proj=stere lon_0=0.0 +lat_0=90 +datum=WGS84 +ellps=WGS84 +units=km +no_defs')
         srcProjection = srcProjection.ExportToWkt()
@@ -80,7 +80,7 @@ class Mapper(VRT):
                      srcRasterXSize=3812,
                      srcRasterYSize=2980)
 
-        metaDict = [{'src': {'SourceFilename': fileName,
+        metaDict = [{'src': {'SourceFilename': filename,
                              'sourceBand': 1},
                      'dst': {'name': 'sea_ice_area_fraction',
                              'wkv': 'sea_ice_area_fraction'}}]

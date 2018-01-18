@@ -14,14 +14,14 @@ from envisat import Envisat
 class Mapper(VRT, Envisat):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  geolocation=False, zoomSize=500, step=1, **kwargs):
 
         ''' Create MER2 VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
         gdalDataset : gdal dataset
         gdalMetadata : gdal metadata
         geolocation : bool (default is False)
@@ -34,63 +34,63 @@ class Mapper(VRT, Envisat):
             generated at that step
         '''
 
-        self.setup_ads_parameters(fileName, gdalMetadata)
+        self.setup_ads_parameters(filename, gdalMetadata)
 
         if self.product[0:9] != "MER_FRS_2" and self.product[0:9] != "MER_RR__2":
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
+        metaDict = [{'src': {'SourceFilename': filename, 'SourceBand': 1},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '412'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 2},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 2},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '443'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand':  3},
+                    {'src': {'SourceFilename': filename, 'SourceBand':  3},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '490'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 4},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 4},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '510'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 5},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 5},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '560'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand':  6},
+                    {'src': {'SourceFilename': filename, 'SourceBand':  6},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '620'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand':  7},
+                    {'src': {'SourceFilename': filename, 'SourceBand':  7},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '665'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand':  8},
+                    {'src': {'SourceFilename': filename, 'SourceBand':  8},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '680'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand':  9},
+                    {'src': {'SourceFilename': filename, 'SourceBand':  9},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '708'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 10},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 10},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '753'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 11},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 11},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '761'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 12},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 12},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '778'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 13},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 13},
                      'dst': {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
                              'wavelength': '864'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 15},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 15},
                      'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water',
                              'suffix': '1_log', 'case': 'I'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 16},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 16},
                      'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
                              'suffix': '2_log', 'case': 'II'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 17},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 17},
                      'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water',
                              'suffix': '2_log', 'case': 'II'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 18},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 18},
                      'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water',
                              'suffix': '2_log', 'case': 'II'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 22},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 22},
                      'dst': {'wkv': 'quality_flags', 'suffix': 'l2'}}
                     ]
 
@@ -108,19 +108,19 @@ class Mapper(VRT, Envisat):
             bandDict['src']['ScaleOffset'] = str(offsets[i])
 
         # add log10-scaled variables
-        metaDict += [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
+        metaDict += [{'src': {'SourceFilename': filename, 'SourceBand': 1},
                       'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water',
                               'suffix': '1', 'case': 'I',
                               'expression': 'np.power(10., self["chlor_a_1_log"])'}},
-                     {'src': {'SourceFilename': fileName, 'SourceBand': 1},
+                     {'src': {'SourceFilename': filename, 'SourceBand': 1},
                       'dst': {'wkv': 'mass_concentration_of_chlorophyll_a_in_sea_water',
                               'suffix': '2', 'case': 'II',
                               'expression': 'np.power(10., self["chlor_a_2_log"])'}},
-                     {'src': {'SourceFilename': fileName, 'SourceBand': 1},
+                     {'src': {'SourceFilename': filename, 'SourceBand': 1},
                       'dst': {'wkv': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
                               'suffix': '2', 'case': 'II',
                               'expression': 'np.power(10., self["cdom_a_2_log"])'}},
-                     {'src': {'SourceFilename': fileName, 'SourceBand': 1},
+                     {'src': {'SourceFilename': filename, 'SourceBand': 1},
                       'dst': {'wkv': 'mass_concentration_of_suspended_matter_in_sea_water',
                               'suffix': '2', 'case': 'II',
                               'expression': 'np.power(10., self["tsm_2_log"])'}}
@@ -137,7 +137,7 @@ class Mapper(VRT, Envisat):
 
         # add bands from the ADS VRTs
         for adsVRT in self.band_vrts['adsVRTs']:
-            metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
+            metaDict.append({'src': {'SourceFilename': adsVRT.filename,
                                      'SourceBand': 1},
                              'dst': {'name': (adsVRT.dataset.GetRasterBand(1).
                                               GetMetadataItem('name')),

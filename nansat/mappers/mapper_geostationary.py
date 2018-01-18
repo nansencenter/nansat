@@ -155,7 +155,7 @@ satDict = [{'name': 'GOES13',
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Geostationary satellite data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         try:
             satellite = gdalDataset.GetDescription().split(",")[2]

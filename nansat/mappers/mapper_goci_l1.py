@@ -12,7 +12,7 @@ from nansat.vrt import VRT
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MODIS_L1 VRT '''
 
         # raise error in case of not GOCI L1B

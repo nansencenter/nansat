@@ -16,14 +16,14 @@ import pythesint as pti
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  geolocation=False, zoomSize=500, step=1, **kwargs):
 
         ''' Create MER1 VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
 
         gdalDataset : gdal dataset
 
@@ -42,58 +42,58 @@ class Mapper(VRT, Envisat):
 
         '''
 
-        self.setup_ads_parameters(fileName, gdalMetadata)
+        self.setup_ads_parameters(filename, gdalMetadata)
 
         if (self.product[0:9] != "MER_FRS_1" and
                 self.product[0:9] != "MER_RR__1"):
             raise WrongMapperError
 
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
+        metaDict = [{'src': {'SourceFilename': filename, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '413'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 2},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 2},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '443'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 3},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 3},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '490'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 4},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 4},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '510'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 5},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 5},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '560'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 6},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 6},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '620'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 7},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 7},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '665'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 8},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 8},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '681'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 9},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 9},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '709'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 10},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 10},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '753'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 11},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 11},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '761'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 12},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 12},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '778'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 13},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 13},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '864'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 14},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 14},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '849'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 15},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 15},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '900'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 16,
+                    {'src': {'SourceFilename': filename, 'SourceBand': 16,
                              'DataType': 1},
                      'dst': {'wkv': 'quality_flags', 'suffix': 'l1'}}
                     ]
@@ -122,7 +122,7 @@ class Mapper(VRT, Envisat):
                                                      step=step)}
         # add bands from the ADS VRTs
         for adsVRT in self.band_vrts['adsVRTs']:
-            metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
+            metaDict.append({'src': {'SourceFilename': adsVRT.filename,
                                      'SourceBand': 1},
                              'dst': {'name': (adsVRT.dataset.GetRasterBand(1).
                                               GetMetadataItem('name')),

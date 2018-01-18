@@ -33,7 +33,7 @@ class Mapper(VRT):
                  'particle_backscatter_at_443_nm': 'bbp_443'
                  }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Ocean Productivity website VRT '''
 
         try:
@@ -44,7 +44,7 @@ class Mapper(VRT):
 
         print 'Ocean Productivity website data'
         # get list of similar (same date) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         simFilesMask = os.path.join(iDir, '*' + iFileName[4:11] + iFileExt)
         #print 'simFilesMask', simFilesMask
@@ -60,9 +60,9 @@ class Mapper(VRT):
 
             # get metadata, get 'Parameter'
             tmpGdalMetadata = tmpGdalDataset.GetMetadata()
-            iDir, ifileName = os.path.split(tmpSourceFilename)
-            #print 'ifileName',ifileName
-            simParameter = ifileName[0:3]
+            iDir, ifilename = os.path.split(tmpSourceFilename)
+            #print 'ifilename',ifilename
+            simParameter = ifilename[0:3]
 
             # set params of the similar file
             simSourceFilename = tmpSourceFilename
@@ -96,7 +96,7 @@ class Mapper(VRT):
         self.band_vrts = {'maskVRT': VRT(array=mask)}
 
         metaDict.append({'src': {'SourceFilename': (self.band_vrts['maskVRT'].
-                                                    fileName),
+                                                    filename),
                                  'SourceBand': 1},
                          'dst': {'name': 'mask'}})
 

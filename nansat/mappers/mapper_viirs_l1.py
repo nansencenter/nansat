@@ -24,14 +24,14 @@ from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1,
                  lineStep=1, **kwargs):
         ''' Create VIIRS VRT '''
 
-        if not 'GMTCO_npp_' in fileName:
-            raise WrongMapperError(fileName)
-        ifiledir = os.path.split(fileName)[0]
+        if not 'GMTCO_npp_' in filename:
+            raise WrongMapperError(filename)
+        ifiledir = os.path.split(filename)[0]
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()
 
@@ -44,7 +44,7 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         xDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude'
-                          % fileName)
+                          % filename)
         xDatasetBand = 1
         xDataset = gdal.Open(xDatasetSource)
         self._init_from_gdal_dataset(xDataset)
@@ -76,7 +76,7 @@ class Mapper(VRT):
         xVRT = VRT.from_array(xVRTArray)
 
         yDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Latitude'
-                          % fileName)
+                          % filename)
         yDatasetBand = 1
         yDataset = gdal.Open(yDatasetSource)
         yVRTArray = yDataset.ReadAsArray()

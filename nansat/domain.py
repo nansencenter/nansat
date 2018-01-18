@@ -771,7 +771,7 @@ class Domain(object):
             1 - inverse transformation
         dstSRS : NSR
             destination spatial reference
-            
+
         Returns
         --------
         X, Y : lists
@@ -967,7 +967,7 @@ class Domain(object):
         if srsString == '':
             lon, lat = self.get_border()
             srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'%(
-            np.nanmedian(lat), np.nanmedian(lon)) 
-        
-        
+            np.nanmedian(lat), np.nanmedian(lon))
+
+
         self.vrt.reproject_GCPs(srsString)
