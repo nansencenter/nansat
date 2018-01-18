@@ -361,7 +361,7 @@ class DomainTest(unittest.TestCase):
 
         input_2 = {'te': [4.5, 60.0, 6.0, 61.0], 'ts': [750.0, 500.0]}
         test_2 = ([4.5, 0.002, 0.0, 61.0, 0.0, -0.002], 750, 500)
-        result = Domain._get_geotransform_beta(input_2)
+        result = Domain._get_geotransform(input_2)
         self.assertEquals(result, test_2)
 
 

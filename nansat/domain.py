@@ -678,7 +678,28 @@ class Domain(object):
         return delta_x[0], delta_y[0]
 
     @staticmethod
-    def _get_geotransform_beta(extent_dict):
+    def _get_geotransform(extent_dict):
+        """
+        the new coordinates and raster size are calculated based on
+        the given extentDic.
+
+        Parameters
+        -----------
+        extent_dict : dictionary
+            includes 'te' key and 'ts' or 'tr' key
+
+        Raises
+        -------
+        OptionError : occurs when maxX - minX < 0 or maxY - minY < 0
+
+        Returns
+        --------
+        coordinate : list with 6 float
+            GeoTransform
+
+        raster_x_size and raster_y_size
+
+        """
         width = extent_dict['te'][2] - extent_dict['te'][0]
         height = extent_dict['te'][3] - extent_dict['te'][1]
 
@@ -736,64 +757,6 @@ class Domain(object):
         resolution_y = -abs(height / raster_y_size)
 
         return resolution_x, resolution_y, raster_x_size, raster_y_size
-
-    def _get_geotransform(self, extentDic):
-        """
-        the new coordinates and raster size are calculated based on
-        the given extentDic.
-
-        Parameters
-        -----------
-        extentDic : dictionary
-            includes 'te' key and 'ts' or 'tr' key
-
-        Raises
-        -------
-        OptionError : occurs when maxX - minX < 0 or maxY - minY < 0
-        OptionError : occurs when the given resolution is larger than
-                     width or height.
-
-        Returns
-        --------
-        coordinate : list with 6 float
-            GeoTransform
-
-        rasterSize : list with two int
-            rasterXSize and rasterYSize
-
-        """
-        # recalculate GeoTransform based on extent option
-        minX = extentDic['te'][0]
-        minY = extentDic['te'][1]
-        maxX = extentDic['te'][2]
-        maxY = extentDic['te'][3]
-        cornerX = minX
-        cornerY = maxY
-        width = maxX - minX
-        height = maxY - minY
-        if width <= 0 or height <= 0:
-            raise OptionError('The extent is illegal. '
-                              '"-te xMin yMin xMax yMax" ')
-
-        if 'tr' in extentDic.keys():
-            resolutionX = extentDic['tr'][0]
-            resolutionY = -(extentDic['tr'][1])
-            if (width < resolutionX or height < resolutionY):
-                raise OptionError('"-tr" is too large. '
-                                  'width is %s, height is %s '
-                                  % (str(width), str(height)))
-            rasterXSize = width / resolutionX
-            rasterYSize = abs(height / resolutionY)
-        else:
-            rasterXSize = extentDic['ts'][0]
-            rasterYSize = extentDic['ts'][1]
-            resolutionX = width / rasterXSize
-            resolutionY = -abs(height / rasterYSize)
-
-        # create a list for GeoTransform
-        coordinates = [cornerX, resolutionX, 0.0, cornerY, 0.0, resolutionY]
-
-        return coordinates, int(rasterXSize), int(rasterYSize)
 
     def transform_points(self, colVector, rowVector, DstToSrc=0, dstSRS=NSR()):
 
