@@ -36,9 +36,6 @@ from nansat.nsr import NSR
 from nansat.vrt import VRT
     
 
-# TODO: Domain varname convention
-# domain_something
-
 class Domain(object):
     """Container for geographical reference of a raster
 
@@ -201,7 +198,7 @@ class Domain(object):
                                                geo_transform=geo_transform,
                                                projection=srs.wkt,
                                                gcps=[], gcp_projection='')
-            self.extent_dic = extent_dict
+            self.extent_dict = extent_dict
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
@@ -680,6 +677,65 @@ class Domain(object):
         delta_y = haversine(lon00, lat00, lon10, lat10)
         return delta_x[0], delta_y[0]
 
+    @staticmethod
+    def _get_geotransform_beta(extent_dict):
+        width = extent_dict['te'][2] - extent_dict['te'][0]
+        height = extent_dict['te'][3] - extent_dict['te'][1]
+
+        if width <= 0 or height <= 0:
+            raise OptionError('The extent is illegal "-te xMin yMin xMax yMax"')
+
+        if 'tr' in extent_dict.keys():
+            resolution_x, resolution_y, raster_x_size, raster_y_size = \
+                Domain._transform_tr(width, height, extent_dict['tr'])
+        else:
+            resolution_x, resolution_y, raster_x_size, raster_y_size = \
+                Domain._transform_tr(width, height, extent_dict['ts'])
+
+        # create a list for GeoTransform
+        coordinates = [extent_dict['te'][0], resolution_x, 0.0,
+                       extent_dict['te'][2], 0.0, resolution_y]
+
+        return coordinates, int(raster_x_size), int(raster_y_size)
+
+    @staticmethod
+    def _transform_tr(width, height, tr_arr):
+        """
+        Calculate X and Y resolution and raster sizes from the "-tr" parameter
+
+        Parameters
+        -----------
+        width : float, width of domain calculated from the "-te" extent parameter
+        height: float, height of domain calculated from the "-te" extent parameter
+        tr_arr: list, [<x_resolution>, <y_resolution>]
+
+        Raises
+        -------
+        OptionError : occurs when the given resolution is larger than width or height.
+
+        Returns
+        --------
+        resolution_x, resolution_y, raster_x_size, raster_y_size : float
+        """
+        resolution_x = tr_arr[0]
+        resolution_y = -(tr_arr[1])
+
+        if width < resolution_x or height < resolution_y:
+            raise OptionError('"-tr" is too large. width is %s, height is %s ' % (width, height))
+
+        raster_x_size = width / resolution_x
+        raster_y_size = abs(height / resolution_y)
+
+        return resolution_x, resolution_y, raster_x_size, raster_y_size
+
+    @staticmethod
+    def _transform_ts(width, height, ts_arr):
+        raster_x_size, raster_y_size = ts_arr
+        resolution_x = width / raster_x_size
+        resolution_y = -abs(height / raster_y_size)
+
+        return resolution_x, resolution_y, raster_x_size, raster_y_size
+
     def _get_geotransform(self, extentDic):
         """
         the new coordinates and raster size are calculated based on
@@ -738,7 +794,6 @@ class Domain(object):
 
         return coordinates, int(rasterXSize), int(rasterYSize)
 
-    # TODO: Do we need that method?
     def transform_points(self, colVector, rowVector, DstToSrc=0, dstSRS=NSR()):
 
         """Transform given lists of X,Y coordinates into lon/lat or inverse
