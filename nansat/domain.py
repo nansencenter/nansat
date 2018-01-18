@@ -778,7 +778,7 @@ class Domain(object):
             X and Y coordinates in lon/lat or pixel/line coordinate system
 
         """
-        return self.vrt.transform_points(colVector, rowVector, DstToSrc, dstSRS=dstSRS)
+        return self.vrt.transform_points(colVector, rowVector, dst2src=DstToSrc, dst_srs=dstSRS)
 
     def azimuth_y(self, reductionFactor=1):
         """Calculate the angle of each pixel position vector with respect to
