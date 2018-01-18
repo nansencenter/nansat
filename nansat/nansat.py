@@ -75,6 +75,9 @@ class Nansat(Domain):
     Nansat uses instance of Figure (collection of methods for visualization)
     '''
 
+    FILL_VALUE = 9.96921e+36
+    ALT_FILL_VALUE = -10000.
+
     def __init__(self, fileName='', mapperName='', domain=None,
                  array=None, parameters=None, logLevel=30, **kwargs):
         '''Create Nansat object
@@ -196,7 +199,7 @@ class Nansat(Domain):
         expression = band.GetMetadata().get('expression', '')
         # get data
         band_data = band.ReadAsArray()
-        if not band_data:
+        if band_data is None:
             raise GDALError('Cannot read array from band %s' % str(band_data))
 
         # execute expression if any
@@ -205,29 +208,25 @@ class Nansat(Domain):
 
 # TODO: move below to _fill_with_nan() method
         # Set invalid and missing data to np.nan (for floats only)
-        if ('_FillValue' in band.GetMetadata() and
-             bandData.dtype.char in np.typecodes['AllFloat']):
-            fillValue = float(band.GetMetadata()['_FillValue'])
-            bandData[bandData == fillValue] = np.nan
+        if '_FillValue' in band.GetMetadata() and band_data.dtype.char in np.typecodes['AllFloat']:
+            fill_value = float(band.GetMetadata()['_FillValue'])
+            band_data[band_data == fill_value] = np.nan
             # quick hack to avoid problem with wrong _FillValue - see issue
             # #123
 
-# TODO: use constants
-            if fillValue == 9.96921e+36:
-                altFillValue = -10000.
-                bandData[bandData == altFillValue] = np.nan
+            if fill_value == self.FILL_VALUE:
+                band_data[band_data == self.ALT_FILL_VALUE] = np.nan
 
         # replace infs with np.NAN
-        if np.size(np.where(np.isinf(bandData))) > 0:
-            bandData[np.isinf(bandData)] = np.nan
+        if np.size(np.where(np.isinf(band_data))) > 0:
+            band_data[np.isinf(band_data)] = np.nan
 
         # erase out-of-swath pixels with np.Nan (if not integer)
-        if (self.has_band('swathmask') and bandData.dtype.char in
-                                            np.typecodes['AllFloat']):
+        if self.has_band('swathmask') and band_data.dtype.char in np.typecodes['AllFloat']:
             swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
-            bandData[swathmask == 0] = np.nan
+            band_data[swathmask == 0] = np.nan
 
-        return bandData
+        return band_data
 
     def __repr__(self):
         '''Creates string with basic info about the Nansat object'''
