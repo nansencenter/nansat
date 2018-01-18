@@ -947,9 +947,8 @@ class Domain(object):
             plt.close('all')
 
 # TODO: rename vrt.reproject_GCPs for disambiguation
-
     def reproject_GCPs(self, srsString=''):
-        '''Reproject all GCPs to a new spatial reference system
+        """Reproject all GCPs to a new spatial reference system
 
         Necessary before warping an image if the given GCPs
         are in a coordinate system which has a singularity
@@ -963,11 +962,10 @@ class Domain(object):
         Modifies
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
-        '''
+        """
         if srsString == '':
             lon, lat = self.get_border()
-            srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'%(
-            np.nanmedian(lat), np.nanmedian(lon))
-
+            srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'\
+                        % (np.nanmedian(lat), np.nanmedian(lon))
 
         self.vrt.reproject_GCPs(srsString)
