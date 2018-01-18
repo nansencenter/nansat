@@ -240,9 +240,8 @@ class Nansat(Domain):
         return out_str.format(separator=self.OUTPUT_SEPARATOR, filename=self.fileName,
                               mapper=self.mapper, domain=Domain.__repr__(self))
 
-# TODO: add warning that add_band will be deprecated
     def add_band(self, array, parameters=None, nomem=False):
-        '''Add band from the array to self.vrt
+        """Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
         to self.vrt.band_vrts
@@ -269,7 +268,8 @@ class Nansat(Domain):
         n.add_band(a, p, nomem=True)
         # add new band from an array <a> with metadata <p> but keep it
         # temporarli on disk intead of memory
-        '''
+        """
+        warnings.warn('Method <add_band> will be removed since Nansat v.1.3')
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):
