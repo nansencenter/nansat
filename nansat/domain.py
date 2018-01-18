@@ -34,10 +34,7 @@ from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError, ProjectionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-
-
-# TODO: Domain varname convention
-# domain_something
+    
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -81,15 +78,13 @@ class Domain(object):
 
     """
 
-    KML_BASE = '''
-    <?xml version="1.0" encoding="UTF-8"?>
+    KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
     <kml xmlns="http://www.opengis.net/kml/2.2"
     xmlns:gx="http://www.google.com/kml/ext/2.2"
     xmlns:kml="http://www.opengis.net/kml/2.2"
     xmlns:atom="http://www.w3.org/2005/Atom">
     {content}
-    </kml>
-    '''
+    </kml>'''
 
     # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
@@ -163,8 +158,7 @@ class Domain(object):
 
         # If too much information is given raise error
         if ds is not None and srs is not None and ext is not None:
-            raise OptionError('Ambiguous specification of both '
-                              'dataset, srs- and ext-strings.')
+            raise OptionError('Ambiguous specification of both dataset, srs- and ext-strings.')
 
         # choose between input opitons:
         # ds
@@ -181,12 +175,11 @@ class Domain(object):
         #   use AutoCreateWarpedVRT to determine bounds and resolution
         elif ds is not None and srs is not None:
             srs = NSR(srs)
-            tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
-            if tmpVRT is None:
-                raise ProjectionError('Could not warp the given dataset'
-                                      'to the given SRS.')
+            tmp_vrt = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
+            if tmp_vrt is None:
+                raise ProjectionError('Could not warp the given dataset to the given SRS.')
             else:
-                self.vrt = VRT.from_gdal_dataset(tmpVRT)
+                self.vrt = VRT.from_gdal_dataset(tmp_vrt)
 
         # If SpatialRef and extent string are given (but not dataset)
         elif srs is not None and ext is not None:
@@ -205,7 +198,7 @@ class Domain(object):
                                                geo_transform=geo_transform,
                                                projection=srs.wkt,
                                                gcps=[], gcp_projection='')
-            self.extent_dic = extent_dict
+            self.extent_dict = extent_dict
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
@@ -215,34 +208,6 @@ class Domain(object):
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
 
-    # TODO: Back later
-    def repr_beta(self):
-        separator = '-' * 40
-        corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)'
-        template = '''
-        Domain:[{x_size} x {y_size}]
-        {separator}
-        Projection:
-        {projection}
-        {separator}
-        Corners (lon, lat):
-        {top_corners}
-        {bottom_corners}
-        '''
-
-        try:
-            corners = self.get_corners()
-            # TODO: Where is not going to be an exception
-        except Exception as e:
-            self.logger.error('Cannot read projection from source! '
-                              'Exception is: %s' % e.message)
-        x_size, y_size = self.shape()[::-1]
-        up_corners = corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
-        down_corners = corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
-        return template.format(separator=separator, x_size=x_size, y_size=y_size,
-                               top_corners=up_corners, bottom_corners=down_corners,
-                               projection=NSR(self.vrt.get_projection()).ExportToPrettyWkt(1))
-
     def __repr__(self):
         """Creates string with basic info about the Domain object
 
@@ -251,26 +216,18 @@ class Domain(object):
         Print size, projection and corner coordinates
 
         """
+        corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
+        separator = '-' * 40 + '\n'
+
         out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
-        out_str += '-' * 40 + '\n'
-        try:
-            corners = self.get_corners()
-        except Exception as e:
-            self.logger.error('Cannot read projection from source! '
-                              'Exception is: %s' % e.message)
-        else:
-            out_str += 'Projection:\n'
-            out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
-            out_str += '-' * 40 + '\n'
-            out_str += 'Corners (lon, lat):\n'
-            out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][0],
-                                                               corners[1][0],
-                                                               corners[0][2],
-                                                               corners[1][2])
-            out_str += '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n' % (corners[0][1],
-                                                               corners[1][1],
-                                                               corners[0][3],
-                                                               corners[1][3])
+        out_str += separator
+        corners = self.get_corners()
+        out_str += 'Projection:\n'
+        out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
+        out_str += separator
+        out_str += 'Corners (lon, lat):\n'
+        out_str += corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
+        out_str += corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
         return out_str
 
     # TODO: Test write_kml
@@ -293,13 +250,11 @@ class Domain(object):
         xml_filename = xmlFileName
         kml_filename = kmlFileName
 
-        template = '''
-        <Document>
+        template = '''<Document>
         \t<name>{filename}</name>
         \t\t<Folder><name>{filename}</name><open>1</open>
         {borders}
-        \t\t</Folder></Document>
-        '''
+        \t\t</Folder></Document>'''
 
         # test input options
         if xml_filename and not kml_filename:
@@ -340,8 +295,7 @@ class Domain(object):
             String with the Placemark entry
 
         """
-        klm_entry = '''
-        \t\t\t<Placemark>
+        klm_entry = '''\t\t\t<Placemark>
         \t\t\t\t<name>{name}</name>
         \t\t\t\t<Style>
         \t\t\t\t\t<LineStyle><color>ffffffff</color></LineStyle>
@@ -349,15 +303,14 @@ class Domain(object):
         \t\t\t\t</Style>
         \t\t\t\t<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>
         {coordinates}
-        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
-        '''
+        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>'''
         domain_lon, domain_lat = self.get_border()
         # convert Border coordinates into KML-like string
         coordinates = ''.join(['%f,%f,0 ' % (lon, lat) for lon, lat in zip(domain_lon, domain_lat)])
         return klm_entry.format(name=self.name, coordinates=coordinates)
 
     def write_kml_image(self, kmlFileName, kmlFigureName=None):
-        '''Create KML file for already projected image
+        """Create KML file for already projected image
 
         Write Domain Image into KML-file for GoogleEarth
 
@@ -391,13 +344,12 @@ class Domain(object):
         n.write_kml_image(kmlFileName=oPath + fileName + '.kml',
                           kmlFigureName=figureName) # 6.
 
-        '''
+        """
 
         kml_filename = kmlFileName
         kml_figurename = kmlFigureName
 
-        template = '''
-        <GroundOverlay>
+        template = '''<GroundOverlay>
         \t<name>{filename}</name>
         \t<Icon>
         \t\t<href>{figurename}</href>
@@ -409,8 +361,7 @@ class Domain(object):
         \t\t<east>{east}</east>
         \t\t<west>{west}</west>
         \t</LatLonBox>
-        </GroundOverlay>
-        '''
+        </GroundOverlay>'''
         # test input options
         # TODO: kml_figurename can be not optional
         if kml_figurename is None:
@@ -426,7 +377,7 @@ class Domain(object):
             kml_file.write(self.KML_BASE.format(content=kml_content))
 
     def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
-        '''Get longitude and latitude grids representing the full data grid
+        """Get longitude and latitude grids representing the full data grid
 
         If GEOLOCATION is not present in the self.vrt.dataset then grids
         are generated by converting pixel/line of each pixel into lat/lon
@@ -444,7 +395,7 @@ class Domain(object):
             grid with longitudes
         latitude : numpy array
             grid with latitudes
-        '''
+        """
         step_size = stepSize
         dst_srs = dstSRS
         x_vec = range(0, self.vrt.dataset.RasterXSize, step_size)
@@ -454,7 +405,6 @@ class Domain(object):
         if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
-            # TODO: lat, lon name convention
             lon_grid, lat_grid = self.vrt.geolocation.get_geolocation_grids()
             lon_arr, lat_arr = lon_grid[y_grid, x_grid], lat_grid[y_grid, x_grid]
         else:
@@ -466,7 +416,7 @@ class Domain(object):
         return lon_arr, lat_arr
 
     def _convert_extentDic(self, dstSRS, extentDic):
-        '''Convert -lle option (lat/lon) to -te (proper coordinate system)
+        """Convert -lle option (lat/lon) to -te (proper coordinate system)
 
         Source SRS from LAT/LON projection and target SRS from dstWKT.
         Create osr.CoordinateTransformation based on these SRSs and
@@ -486,7 +436,7 @@ class Domain(object):
         extentDic : dictionary
             input dictionary + 'te' key and its values
 
-        '''
+        """
         coorTrans = osr.CoordinateTransformation(NSR(), dstSRS)
 
         # convert lat/lon given by 'lle' to the target coordinate system and
@@ -565,8 +515,8 @@ class Domain(object):
 
         return extent
 
-    def get_border(self, nPoints=10, **kwargs):
-        '''Generate two vectors with values of lat/lon for the border of domain
+    def get_border(self, nPoints=10):
+        """Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
         -----------
@@ -578,32 +528,27 @@ class Domain(object):
         lonVec, latVec : lists
             vectors with lon/lat values for each point at the border
 
-        '''
-        # prepare vectors with pixels and lines for upper, left, lower
-        # and right borders
-        # TODO: y_size, x_size = self.shape
-        sizes = [self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterYSize]
+        """
+        n_points = nPoints
+        x_size, y_size = self.shape()[::-1]
+        x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
+        y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
+        col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
+        return self.transform_points(col_vec, row_vec)
 
-        # TODO: Bad names (add r/c, row/col to conventions)
-        rcVector1 = [[], []]
-        rcVector2 = [[], []]
-        # loop for pixels and lines
-        for n in range(0, 2):
-            step = max(1, sizes[n] / nPoints)
-            rcVector1[n] = range(0, sizes[n], step)[0:nPoints]
-            rcVector1[n].append(sizes[n])
-            rcVector2[n] = rcVector1[n][:]
-            rcVector2[n].reverse()
+    @staticmethod
+    def _compound_row_col_vectors(x_size, y_size, x_vec, y_vec):
+        col_vec = (x_vec + [x_size] * len(y_vec) + x_vec[::-1] + [0] * len(y_vec))
+        row_vec = ([0] * len(x_vec) + y_vec + [y_size] * len(x_vec) + y_vec[::-1])
+        return col_vec, row_vec
 
-        # coumpund vectors of pixels (col) and lines (row)
-        colVector = (rcVector1[0] + [sizes[0]] * len(rcVector1[1]) +
-                     rcVector2[0] + [0] * len(rcVector1[1]))
-        rowVector = ([0] * len(rcVector1[0]) + rcVector1[1] +
-                     [sizes[1]] * len(rcVector1[0]) + rcVector2[1])
+    @staticmethod
+    def _get_row_col_vector(raster_size, n_points):
+        step = max(1, raster_size / n_points)
+        rc_vec = range(0, raster_size, step)[0:n_points]
+        rc_vec.append(raster_size)
+        return rc_vec
 
-        return self.transform_points(colVector, rowVector)
-
-    # TODO: Test get_border_wkt
     def get_border_wkt(self, *args, **kwargs):
         """Creates string with WKT representation of the border polygon
 
@@ -613,86 +558,80 @@ class Domain(object):
             string with WKT representation of the border polygon
 
         """
-        lon_list, lat_list = self.get_border(*args, **kwargs)
+        lon_vec, lat_vec = self.get_border(*args, **kwargs)
 
         ''' The following causes erratic geometry when using
         WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
         now since this may cause other problems...
         '''
         warnings.warn("> 180 deg correction to longitudes - disabled..")
-
-        # TODO: Should be done with geos finctional
-        polygon_bourder = ','.join('%s %s' % (lon, lat) for lon, lat in zip(lon_list, lat_list))
+        polygon_border = ','.join('%s %s' % (lon, lat) for lon, lat in zip(lon_vec, lat_vec))
         # outer quotes have to be double and inner - single!
         # wktPolygon = "PolygonFromText('POLYGON((%s))')" % polyCont
-        wkt = 'POLYGON((%s))' % polygon_bourder
+        wkt = 'POLYGON((%s))' % polygon_border
         return wkt
 
     def get_border_geometry(self, *args, **kwargs):
-        ''' Get OGR Geometry of the border Polygon
+        """ Get OGR Geometry of the border Polygon
 
         Returns
         -------
         OGR Geometry, type Polygon
 
-        '''
+        """
 
         return ogr.CreateGeometryFromWkt(self.get_border_wkt(*args, **kwargs))
 
     def overlaps(self, anotherDomain):
-        ''' Checks if this Domain overlaps another Domain
+        """ Checks if this Domain overlaps another Domain
 
         Returns
         -------
         overlaps : bool
             True if Domains overlaps, False otherwise
 
-        '''
+        """
 
-        return self.get_border_geometry().Intersects(
-                anotherDomain.get_border_geometry())
+        return self.get_border_geometry().Intersects(anotherDomain.get_border_geometry())
 
     def contains(self, anotherDomain):
-        ''' Checks if this Domain fully covers another Domain
+        """ Checks if this Domain fully covers another Domain
 
         Returns
         -------
         contains : bool
             True if this Domain fully covers another Domain, False otherwise
 
-        '''
+        """
 
-        return self.get_border_geometry().Contains(
-                anotherDomain.get_border_geometry())
+        return self.get_border_geometry().Contains(anotherDomain.get_border_geometry())
 
     def get_border_postgis(self):
-        ''' Get PostGIS formatted string of the border Polygon
+        """ Get PostGIS formatted string of the border Polygon
 
         Returns
         -------
         str : 'PolygonFromText(PolygonWKT)'
 
-        '''
+        """
 
         return "PolygonFromText('%s')" % self.get_border_wkt()
 
     def get_corners(self):
-        '''Get coordinates of corners of the Domain
+        """Get coordinates of corners of the Domain
 
         Returns
         --------
         lonVec, latVec : lists
             vectors with lon/lat values for each corner
 
-        '''
+        """
 
-        colVector = [0, 0, self.vrt.dataset.RasterXSize,
-                     self.vrt.dataset.RasterXSize]
-        rowVector = [0, self.vrt.dataset.RasterYSize, 0,
-                     self.vrt.dataset.RasterYSize]
-        return self.transform_points(colVector, rowVector)
+        col_vec = [0, 0, self.vrt.dataset.RasterXSize, self.vrt.dataset.RasterXSize]
+        row_vec = [0, self.vrt.dataset.RasterYSize, 0, self.vrt.dataset.RasterYSize]
+        return self.transform_points(col_vec, row_vec)
 
-    def get_min_max_lat_lon_beta(self):
+    def get_min_max_lat_lon(self):
         """Get minimum and maximum lat and long values in the geolocation grid
 
         Returns
@@ -701,41 +640,11 @@ class Domain(object):
             min/max lon/lat values for the Domain
 
         """
-        lons, lats = self.get_geolocation_grids()
-        return min(lats), max(lats), min(lons), max(lons)
-
-    def get_min_max_lat_lon(self):
-        '''Get minimum and maximum lat and long values in the geolocation grid
-
-        Returns
-        --------
-        minLat, maxLat, minLon, maxLon : float
-            min/max lon/lat values for the Domain
-
-        '''
-        allLongitudes, allLatitudes = self.get_geolocation_grids()
-        maxLat = -90
-        minLat = 90
-        for latitudes in allLatitudes:
-            for lat in latitudes:
-                if lat > maxLat:
-                    maxLat = lat
-                if lat < minLat:
-                    minLat = lat
-
-        maxLon = -180
-        minLon = 180
-        for longitudes in allLongitudes:
-            for lon in longitudes:
-                if lon > maxLon:
-                    maxLon = lon
-                if lon < minLon:
-                    minLon = lon
-
-        return minLat, maxLat, minLon, maxLon
+        lon_grd, lat_grd = self.get_geolocation_grids()
+        return min(lat_grd[:, 1]), max(lat_grd[:, 1]), min(lon_grd[1, :]), max(lon_grd[1, :])
 
     def get_pixelsize_meters(self):
-        '''Returns the pixelsize (deltaX, deltaY) of the domain
+        """Returns the pixelsize (deltaX, deltaY) of the domain
 
         For projected domains, the exact result which is constant
         over the domain is returned.
@@ -746,91 +655,112 @@ class Domain(object):
         --------
         deltaX, deltaY : float
         pixel size in X and Y directions given in meters
-        '''
+        """
 
         srs = osr.SpatialReference(self.vrt.dataset.GetProjection())
         if srs.IsProjected:
             if srs.GetAttrValue('unit') == 'metre':
                 geoTransform = self.vrt.dataset.GetGeoTransform()
-                deltaX = abs(geoTransform[1])
-                deltaY = abs(geoTransform[5])
-                return deltaX, deltaY
+                delta_x = abs(geoTransform[1])
+                delta_y = abs(geoTransform[5])
+                return delta_x, delta_y
 
         # Estimate pixel size in center of domain using haversine formula
-        centerCol = round(self.vrt.dataset.RasterXSize/2)
-        centerRow = round(self.vrt.dataset.RasterYSize/2)
+        center_col = round(self.vrt.dataset.RasterXSize/2)
+        center_row = round(self.vrt.dataset.RasterYSize/2)
         # TODO: Bad names
-        lon00, lat00 = self.transform_points([centerCol], [centerRow])
-        lon01, lat01 = self.transform_points([centerCol], [centerRow + 1])
-        lon10, lat10 = self.transform_points([centerCol + 1], [centerRow])
+        lon00, lat00 = self.transform_points([center_col], [center_row])
+        lon01, lat01 = self.transform_points([center_col], [center_row + 1])
+        lon10, lat10 = self.transform_points([center_col + 1], [center_row])
 
-        deltaX = haversine(lon00, lat00, lon01, lat01)
-        deltaY = haversine(lon00, lat00, lon10, lat10)
-        return deltaX[0], deltaY[0]
+        delta_x = haversine(lon00, lat00, lon01, lat01)
+        delta_y = haversine(lon00, lat00, lon10, lat10)
+        return delta_x[0], delta_y[0]
 
-    def _get_geotransform(self, extentDic):
-        '''
+    @staticmethod
+    def _get_geotransform(extent_dict):
+        """
         the new coordinates and raster size are calculated based on
         the given extentDic.
 
         Parameters
         -----------
-        extentDic : dictionary
+        extent_dict : dictionary
             includes 'te' key and 'ts' or 'tr' key
 
         Raises
         -------
         OptionError : occurs when maxX - minX < 0 or maxY - minY < 0
-        OptionError : occurs when the given resolution is larger than
-                     width or height.
 
         Returns
         --------
         coordinate : list with 6 float
             GeoTransform
 
-        rasterSize : list with two int
-            rasterXSize and rasterYSize
+        raster_x_size and raster_y_size
 
-        '''
-        # recalculate GeoTransform based on extent option
-        minX = extentDic['te'][0]
-        minY = extentDic['te'][1]
-        maxX = extentDic['te'][2]
-        maxY = extentDic['te'][3]
-        cornerX = minX
-        cornerY = maxY
-        width = maxX - minX
-        height = maxY - minY
+        """
+        width = extent_dict['te'][2] - extent_dict['te'][0]
+        height = extent_dict['te'][3] - extent_dict['te'][1]
+
         if width <= 0 or height <= 0:
-            raise OptionError('The extent is illegal. '
-                              '"-te xMin yMin xMax yMax" ')
+            raise OptionError('The extent is illegal "-te xMin yMin xMax yMax"')
 
-        if 'tr' in extentDic.keys():
-            resolutionX = extentDic['tr'][0]
-            resolutionY = -(extentDic['tr'][1])
-            if (width < resolutionX or height < resolutionY):
-                raise OptionError('"-tr" is too large. '
-                                  'width is %s, height is %s '
-                                  % (str(width), str(height)))
-            rasterXSize = width / resolutionX
-            rasterYSize = abs(height / resolutionY)
+        if 'tr' in extent_dict.keys():
+            resolution_x, resolution_y, raster_x_size, raster_y_size = \
+                Domain._transform_tr(width, height, extent_dict['tr'])
         else:
-            rasterXSize = extentDic['ts'][0]
-            rasterYSize = extentDic['ts'][1]
-            resolutionX = width / rasterXSize
-            resolutionY = -abs(height / rasterYSize)
+            resolution_x, resolution_y, raster_x_size, raster_y_size = \
+                Domain._transform_ts(width, height, extent_dict['ts'])
 
         # create a list for GeoTransform
-        coordinates = [cornerX, resolutionX, 0.0, cornerY, 0.0, resolutionY]
+        coordinates = [extent_dict['te'][0], resolution_x, 0.0,
+                       extent_dict['te'][3], 0.0, resolution_y]
 
-        return coordinates, int(rasterXSize), int(rasterYSize)
+        return coordinates, int(raster_x_size), int(raster_y_size)
 
-    # TODO: Do we need that method?
-    def transform_points(self, colVector, rowVector, DstToSrc=0,
-                         dstSRS=NSR()):
+    @staticmethod
+    def _transform_tr(width, height, tr_arr):
+        """
+        Calculate X and Y resolution and raster sizes from the "-tr" parameter
 
-        '''Transform given lists of X,Y coordinates into lon/lat or inverse
+        Parameters
+        -----------
+        width : float, width of domain calculated from the "-te" extent parameter
+        height: float, height of domain calculated from the "-te" extent parameter
+        tr_arr: list, [<x_resolution>, <y_resolution>]
+
+        Raises
+        -------
+        OptionError : occurs when the given resolution is larger than width or height.
+
+        Returns
+        --------
+        resolution_x, resolution_y, raster_x_size, raster_y_size : float
+        """
+        resolution_x = tr_arr[0]
+        # TODO: Review requested, falsification of negative value in resolution_y
+        resolution_y = -(tr_arr[1])
+
+        if width < resolution_x or height < resolution_y:
+            raise OptionError('"-tr" is too large. width is %s, height is %s ' % (width, height))
+
+        raster_x_size = width / resolution_x
+        raster_y_size = abs(height / resolution_y)
+
+        return resolution_x, resolution_y, raster_x_size, raster_y_size
+
+    @staticmethod
+    def _transform_ts(width, height, ts_arr):
+        raster_x_size, raster_y_size = ts_arr
+        resolution_x = width / raster_x_size
+        resolution_y = -abs(height / raster_y_size)
+
+        return resolution_x, resolution_y, raster_x_size, raster_y_size
+
+    def transform_points(self, colVector, rowVector, DstToSrc=0, dstSRS=NSR()):
+
+        """Transform given lists of X,Y coordinates into lon/lat or inverse
 
         Parameters
         -----------
@@ -847,12 +777,11 @@ class Domain(object):
         X, Y : lists
             X and Y coordinates in lon/lat or pixel/line coordinate system
 
-        '''
-        return self.vrt.transform_points(colVector, rowVector,
-                                         DstToSrc, dst_srs=dstSRS)
+        """
+        return self.vrt.transform_points(colVector, rowVector, dst2src=DstToSrc, dst_srs=dstSRS)
 
     def azimuth_y(self, reductionFactor=1):
-        '''Calculate the angle of each pixel position vector with respect to
+        """Calculate the angle of each pixel position vector with respect to
         the Y-axis (azimuth).
 
         In general, azimuth is the angle from a reference vector (e.g., the
@@ -870,26 +799,23 @@ class Domain(object):
         azimuth : numpy array
             Values of azimuth in degrees in range 0 - 360
 
-        '''
+        """
 
-        lon, lat = self.get_geolocation_grids(reductionFactor)
-        a = initial_bearing(lon[1:, :], lat[1:, :],
-                            lon[:-1:, :], lat[:-1:, :])
+        lon_grd, lat_grd = self.get_geolocation_grids(reductionFactor)
+        a = initial_bearing(lon_grd[1:, :], lat_grd[1:, :], lon_grd[:-1:, :], lat_grd[:-1:, :])
         # Repeat last row once to match size of lon-lat grids
         a = np.vstack((a, a[-1, :]))
         return a
 
-# TODO:
-# add @property
     def shape(self):
-        '''Return Numpy-like shape of Domain object (ySize, xSize)
+        """Return Numpy-like shape of Domain object (ySize, xSize)
 
         Returns
         --------
         shape : tuple of two INT
             Numpy-like shape of Domain object (ySize, xSize)
 
-        '''
+        """
         return self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
 
     def write_map(self, outputFileName,
@@ -901,7 +827,7 @@ class Domain(object):
                   parLabels=[False, False, False, False],
                   pltshow=False,
                   labels=None):
-        ''' Create an image with a map of the domain
+        """Create an image with a map of the domain
 
         Uses Basemap to create a World Map
         Adds a semitransparent patch with outline of the Domain
@@ -952,7 +878,7 @@ class Domain(object):
             where to put parallel labels, see also Basemap.drawparallels()
         labels : list of str
             labels to print on top of patches
-        '''
+        """
         if not BASEMAP_LIB_EXISTS:
             raise ImportError(' Basemap is not installed. Cannot use Domain.write_map. '
                               ' Enable by: conda install -c conda forge basemap ')

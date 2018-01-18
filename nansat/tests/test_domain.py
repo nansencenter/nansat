@@ -28,7 +28,7 @@ else:
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
-from nansat.tools import OptionError, gdal, ogr
+from nansat.tools import OptionError, gdal, ogr, ProjectionError
 from nansat.figure import Image
 import sys
 import nansat_test_data as ntd
@@ -75,6 +75,18 @@ class DomainTest(unittest.TestCase):
     def test_dont_init_from_invalid(self):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
+        with self.assertRaises(OptionError):
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   ext="-te 25 70 35 72 -ts 2000 2000")
+        with self.assertRaises(ProjectionError):
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="unmatched srs")
+
+    def test_init_use_AutoCreateWarpedVRT_to_determine_bounds(self):
+        d = Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
+        self.assertEqual(type(d), Domain)
 
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -90,16 +102,6 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lon), np.ndarray)
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(lat.shape, (500, 500))
-
-    def test_get_border(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        lon, lat = d.get_border()
-
-        self.assertEqual(type(lon), np.ndarray)
-        self.assertEqual(type(lat), np.ndarray)
-        self.assertEqual(len(lat), 44)
-        self.assertEqual(lat[0], lat[-1])
-        self.assertEqual(lon[0], lon[-1])
 
     def test_get_border_wkt(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -273,6 +275,94 @@ class DomainTest(unittest.TestCase):
         except OptionError as opt_err:
             self.assertEqual(opt_err.message, '_create_extentDic requires '
                                               'exactly 2 parameters (1 given)')
+
+    def test_get_min_max_lat_lon(self):
+        dom = Domain(4326, "-te 5 60 6 61 -ts 500 500")
+        result = dom.get_min_max_lat_lon()
+        self.assertIsInstance(result, tuple)
+        self.assertLess(result[0], result[1])
+        self.assertLess(result[2], result[3])
+        self.assertEqual(dom.get_min_max_lat_lon(), (60.002, 61.0, 5.0, 5.998))
+
+    def test_get_row_col_vector(self):
+        test_1 = Domain._get_row_col_vector(250, 500)
+        self.assertIsInstance(test_1, list)
+        self.assertEquals(test_1, range(251))
+        self.assertEquals(len(test_1), 251)
+        test_2 = Domain._get_row_col_vector(500, 10)
+        self.assertEquals(test_2, range(0, 550, 50))
+        self.assertEquals(len(test_2), 10 + 1)
+
+    def test_compound_row_col_vectors(self):
+
+        result = Domain._compound_row_col_vectors(30, 40, range(0, 33, 3), range(0, 44, 4))
+        output_col, output_row = result
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 2)
+        test_col = [0,  3,  6,  9,  12,  15,  18,  21,  24,  27,  30,  30,  30,  30,  30,  30,
+                    30,  30,  30,  30,  30,  30,  30,  27,  24,  21,  18,  15,  12,  9,  6,  3,
+                    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0]
+        test_row = [0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  4,  8,  12,  16,  20,  24,
+                    28,  32,  36,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,
+                    40,  36,  32,  28,  24,  20,  16,  12,  8,  4,  0]
+
+        self.assertEquals(output_col, test_col)
+        self.assertEquals(output_row, test_row)
+
+    def test_get_border(self):
+        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
+        result = dom.get_border(nPoints=10)
+        lat, lon = result
+        self.assertEqual(type(lat), np.ndarray)
+        self.assertEqual(type(lon), np.ndarray)
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 2)
+        test_x = [4.5, 4.65, 4.8, 4.95, 5.1, 5.25, 5.4, 5.55, 5.7, 5.85, 6., 6., 6.,
+                  6., 6., 6., 6., 6., 6., 6., 6., 6., 6., 5.85, 5.7, 5.55, 5.4, 5.25,
+                  5.1, 4.95, 4.8, 4.65, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5]
+        test_y = [61., 61., 61., 61., 61., 61., 61., 61., 61., 61., 61., 61., 60.9, 60.8, 60.7, 60.6,
+                  60.5, 60.4, 60.3, 60.2, 60.1, 60., 60., 60., 60., 60., 60., 60., 60., 60., 60.,
+                  60., 60., 60., 60.1, 60.2, 60.3, 60.4, 60.5, 60.6, 60.7, 60.8, 60.9, 61.]
+
+        self.assertEquals(list(lat), test_x)
+        self.assertEquals(list(lon), test_y)
+
+    def test_transform_ts(self):
+        result = Domain._transform_ts(1.5, 1.0, [750.0, 500.0])
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 4)
+        map(lambda el: self.assertIsInstance(el, float), result)
+
+    def test_transform_tr(self):
+        result = Domain._transform_ts(4.0, 1.3, [0.015, 0.005])
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 4)
+        map(lambda el: self.assertIsInstance(el, float), result)
+
+        try:
+            result = Domain._transform_ts(4.0, 1.3, [5.0, 0.005])
+        except OptionError as param_err:
+            self.assertEqual(param_err.message,
+                             '"-tr" is too large. width is 4.0, height is 1.3 ')
+
+    def test_get_geotransform(self):
+        input_1 = {'te': [27.0, 70.3, 31.0, 71.6], 'tr': [0.015, 0.005]}
+        test_1 = ([27.0, 0.015, 0.0, 71.6, 0.0, -0.005], 266, 259)
+        result = Domain._get_geotransform(input_1)
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 3)
+        self.assertIsInstance(result[0], list)
+        self.assertEquals(len(result[0]), 6)
+        map(lambda el: self.assertIsInstance(el, float), result[0])
+        self.assertIsInstance(result[1], int)
+        self.assertIsInstance(result[2], int)
+
+        self.assertEquals(result, test_1)
+
+        input_2 = {'te': [4.5, 60.0, 6.0, 61.0], 'ts': [750.0, 500.0]}
+        test_2 = ([4.5, 0.002, 0.0, 61.0, 0.0, -0.002], 750, 500)
+        result = Domain._get_geotransform(input_2)
+        self.assertEquals(result, test_2)
 
 
 if __name__ == "__main__":
