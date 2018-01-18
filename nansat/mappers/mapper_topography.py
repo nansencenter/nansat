@@ -50,9 +50,6 @@ class Mapper(VRT):
 
     def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
-        import ipdb
-        ipdb.set_trace()
-
         bn = os.path.basename(filename)
         accepted_names = [
                 'gmted2010_30.vrt',
