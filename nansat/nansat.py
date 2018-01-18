@@ -1184,19 +1184,10 @@ class Nansat(Domain):
             self.vrt.dataset.FlushCache()
 
         # create Warped VRT
-        self.vrt = self.vrt.get_warped_vrt(dst_srs=dstSRS,
-                                           dst_gcps=dstGCPs,
+        self.vrt = self.vrt.get_warped_vrt(dstSRS, xSize, ySize, geoTransform,
                                            resample_alg=eResampleAlg,
-                                           x_size=xSize, y_size=ySize,
-                                           block_size=blockSize,
-                                           geo_transform=geoTransform,
-                                           **kwargs)
-
-        # This violates lazy operations and is therefore commented out..
-        ## Assert successful reprojection
-        #bnum = 1
-        #assert np.any(~np.isnan(self[bnum])), 'Reprojection failed - all ' \
-        #        'pixels in band number %d are NaN' %bnum
+                                           dst_gcps=dstGCPs,
+                                           block_size=blockSize, **kwargs)
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
