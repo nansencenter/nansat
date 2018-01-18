@@ -32,6 +32,7 @@ Welcome to Nansat's documentation!
 
    source/installation.rst
    source/tutorials.rst
+   source/packages_and_modules.rst
    source/modules.rst
    source/nansat.mappers.rst
 
