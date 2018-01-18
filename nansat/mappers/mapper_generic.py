@@ -193,8 +193,7 @@ class Mapper(VRT):
         if gcps:
             if len(gcpProjection) == 0:
                 # get GCP projection and repare
-                gcpProjection = self.repare_projection(geoMetadata.
-                                                get('GCPProjection', ''))
+                gcpProjection = self.repare_projection(geoMetadata. get('GCPProjection', ''))
             # add GCPs to dataset
             self.dataset.SetGCPs(gcps, gcpProjection)
             self.dataset.SetProjection('')

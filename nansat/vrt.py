@@ -744,6 +744,7 @@ class VRT(object):
 
         """
         # read XML content from VRT
+        self.dataset.FlushCache()
         tmp_vrt_xml = self.xml
         # find and remove GeoTransform
         node0 = Node.create(tmp_vrt_xml)
