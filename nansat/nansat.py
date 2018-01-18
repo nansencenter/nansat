@@ -912,8 +912,7 @@ class Nansat(Domain):
 
         return 0
 
-    def resize(self, factor=1, width=None, height=None,
-               pixelsize=None, eResampleAlg=-1):
+    def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor)
@@ -981,9 +980,7 @@ class Nansat(Domain):
                                                    eResampleAlg)
         else:
             # update size and GeoTranform in XML of the warped VRT object
-            self.vrt = self.vrt.get_resized_vrt(newRasterXSize,
-                                                newRasterYSize,
-                                                eResampleAlg=eResampleAlg)
+            self.vrt = self.vrt.get_resized_vrt(newRasterXSize, newRasterYSize, eResampleAlg)
 
 # TODO: move to _set_new_extent
         # resize gcps

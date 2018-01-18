@@ -1392,9 +1392,7 @@ class VRT(object):
 
         return projection
 
-    def get_resized_vrt(self, x_size, y_size, use_geolocation=False,
-                        use_gcps=False, use_geotransform=False,
-                        resample_alg=1, **kwargs):
+    def get_resized_vrt(self, x_size, y_size, resample_alg=1):
 
         """ Resize VRT
 
@@ -1425,9 +1423,9 @@ class VRT(object):
         # update size and GeoTranform in XML of the warped VRT object
         warped_vrt = self.get_warped_vrt(x_size=x_size, y_size=y_size,
                                         geo_transform=geo_transform,
-                                        use_geolocation=use_geolocation,
-                                        use_gcps=use_gcps,
-                                        use_geotransform=use_geotransform,
+                                        use_geolocation=False,
+                                        use_gcps=False,
+                                        use_geotransform=False,
                                         resample_alg=resample_alg)
 
         return warped_vrt

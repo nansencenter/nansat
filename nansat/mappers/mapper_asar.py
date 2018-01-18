@@ -164,10 +164,8 @@ class Mapper(VRT, Envisat):
                              {'PixelFunctionType': 'UVToDirectionTo'})
 
         # Blow up bands to full size
-        incVRT = incVRT.get_resized_vrt(gdalDataset.RasterXSize,
-                                        gdalDataset.RasterYSize)
-        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize,
-                                          gdalDataset.RasterYSize)
+        incVRT = incVRT.get_resized_vrt(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
+        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
         self.band_vrts = {'incVRT': incVRT,
                         'look_u_VRT': look_u_VRT,
