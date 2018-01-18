@@ -36,7 +36,10 @@ You will find complete documentation for Nansat at `Read the Docs`_.
 Contributing
 ------------
 
-You will find information about contributing to Nansat at our 
+You will find information about contributing to Nansat at `Read the Docs`_.
+
+.. _Read the Docs: http://nansat.readthedocs.io/
+
 
 Installation
 ------------
