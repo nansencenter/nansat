@@ -160,4 +160,4 @@ developers to add such tests to avoid such potential problems
 Doctests
 ^^^^^^^^^^^^
 
-TODO...
+TODO: add information about how to use doctests

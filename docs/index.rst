@@ -26,30 +26,29 @@ Welcome to Nansat's documentation!
 
 .. * Contributing to Nansat
 
-User documentation
-==================
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: User documentation
 
    source/installation.rst
+   source/modules.rst
+   source/nansat.mappers.rst
 
-Feature documentation
-=====================
 
 .. toctree::
    :maxdepth: 2
+   :caption: Feature documentation
 
    source/features.rst
 
-Developer documentation
-=======================
 
 .. toctree::
    :maxdepth: 2
+   :caption: Developer documentation
 
    source/conventions.rst
-   source/create_mapper.rst
+   source/about_mappers.rst
+   source/documenting.rst
 
 Indices and tables
 ==================

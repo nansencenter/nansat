@@ -1,4 +1,4 @@
-Nansat mappers
+About Nansat mappers
 ============================
 
 Concept 
@@ -108,6 +108,6 @@ Note that user defined mappers have higher priority than standard mappers.
 Adding mapper tests
 -------------------
 
-TODO...
+TODO: add documentation about how to write mapper tests
 
 

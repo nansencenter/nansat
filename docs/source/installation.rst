@@ -12,7 +12,7 @@ Get code and dependencies
 Requirements
 ^^^^^^^^^^^^
 
-TODO: update!
+TODO: update requirements
 
 Nansat depends on the following packages:
 * Python 2.6 or higher
@@ -60,8 +60,9 @@ is performed.
 Install from PyPi
 -----------------
 
-TODO: Add instructions when 
+TODO: Add instructions about installing from PyPi
 
 Install from Anaconda
 ---------------------
 
+TODO: Add instructions about installing from Anaconda
