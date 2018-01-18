@@ -15,21 +15,10 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import re, warnings
-from math import sin, pi, cos, acos, copysign
-import string
+import warnings
 from xml.etree.ElementTree import ElementTree
 
 import numpy as np
-try:
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap
-    from matplotlib.patches import Polygon
-except ImportError:
-    BASEMAP_LIB_EXISTS = False
-else:
-    BASEMAP_LIB_EXISTS = True
-
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError, ProjectionError
 from nansat.nsr import NSR
