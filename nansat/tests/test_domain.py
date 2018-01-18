@@ -333,5 +333,12 @@ class DomainTest(unittest.TestCase):
         self.assertEquals(len(result), 4)
         map(lambda el: self.assertIsInstance(el, float), result)
 
+    def test_transform_tr(self):
+        result = Domain._transform_ts(4.0, 1.3, [0.015, 0.005])
+        self.assertIsInstance(result, tuple)
+        self.assertEquals(len(result), 4)
+        map(lambda el: self.assertIsInstance(el, float), result)
+
+
 if __name__ == "__main__":
     unittest.main()
