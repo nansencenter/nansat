@@ -690,11 +690,11 @@ class Domain(object):
                 Domain._transform_tr(width, height, extent_dict['tr'])
         else:
             resolution_x, resolution_y, raster_x_size, raster_y_size = \
-                Domain._transform_tr(width, height, extent_dict['ts'])
+                Domain._transform_ts(width, height, extent_dict['ts'])
 
         # create a list for GeoTransform
         coordinates = [extent_dict['te'][0], resolution_x, 0.0,
-                       extent_dict['te'][2], 0.0, resolution_y]
+                       extent_dict['te'][3], 0.0, resolution_y]
 
         return coordinates, int(raster_x_size), int(raster_y_size)
 
@@ -718,6 +718,7 @@ class Domain(object):
         resolution_x, resolution_y, raster_x_size, raster_y_size : float
         """
         resolution_x = tr_arr[0]
+        # TODO: Review requested, falsification of negative value in resolution_y
         resolution_y = -(tr_arr[1])
 
         if width < resolution_x or height < resolution_y:
