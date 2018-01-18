@@ -339,6 +339,12 @@ class DomainTest(unittest.TestCase):
         self.assertEquals(len(result), 4)
         map(lambda el: self.assertIsInstance(el, float), result)
 
+        try:
+            result = Domain._transform_ts(4.0, 1.3, [5.0, 0.005])
+        except OptionError as param_err:
+            self.assertEqual(param_err.message,
+                             '"-tr" is too large. width is 4.0, height is 1.3 ')
+
 
 if __name__ == "__main__":
     unittest.main()
