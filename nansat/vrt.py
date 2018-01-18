@@ -825,7 +825,7 @@ class VRT(object):
         self.dataset.FlushCache()
         return VRT.read_vsi(self.filename)
 
-    def write_xml(self, vsiFileContent=None):
+    def write_xml(self, vsi_file_content=None):
         """Write XML content into a VRT dataset
 
         Parameters
@@ -839,9 +839,9 @@ class VRT(object):
             If XML content was written, self.dataset is re-opened
 
         """
-        vsiFile = gdal.VSIFOpenL(self.filename, 'w')
-        gdal.VSIFWriteL(vsiFileContent, len(vsiFileContent), 1, vsiFile)
-        gdal.VSIFCloseL(vsiFile)
+        vsi_file = gdal.VSIFOpenL(self.filename, 'w')
+        gdal.VSIFWriteL(vsi_file_content, len(vsi_file_content), 1, vsi_file)
+        gdal.VSIFCloseL(vsi_file)
         # re-open self.dataset with new content
         self.dataset = gdal.Open(self.filename)
 
@@ -1116,21 +1116,21 @@ class VRT(object):
             figDataset.SetGCPs(gcps, self.dataset.GetGCPProjection())
         figDataset = None  # Close and write output file
 
-    def delete_band(self, bandNum):
+    def delete_band(self, band_num):
         """ Delete a band from the given VRT
 
         Parameters
         ----------
-        bandNum : int
+        band_num : int
             band number
 
         """
         node0 = Node.create(self.xml)
-        node0.delNode('VRTRasterBand', options={'band': bandNum})
-        node0.delNode('BandMapping', options={'src': bandNum})
+        node0.delNode('VRTRasterBand', options={'band': band_num})
+        node0.delNode('BandMapping', options={'src': band_num})
         self.write_xml(node0.rawxml())
 
-    def delete_bands(self, bandNums):
+    def delete_bands(self, band_nums):
         """ Delete bands
 
         Parameters
@@ -1139,11 +1139,11 @@ class VRT(object):
             elements are int
 
         """
-        bandNums.sort(reverse=True)
-        for iBand in bandNums:
-            self.delete_band(iBand)
+        band_nums.sort(reverse=True)
+        for i in band_nums:
+            self.delete_band(i)
 
-    def get_shifted_vrt(self, shiftDegree):
+    def get_shifted_vrt(self, shift_degree):
         """ Roll data in bands westwards or eastwards
 
         Create shiftVRT which references self. Modify georeference
@@ -1153,7 +1153,7 @@ class VRT(object):
 
         Parameters
         ----------
-        shiftDegree : float
+        shift_degree : float
             rolling angle, how far east/west to roll
 
         Returns
@@ -1165,13 +1165,13 @@ class VRT(object):
         shiftVRT = VRT.from_gdal_dataset(self.dataset)
         shiftVRT.vrt = self.copy()
 
-        if shiftDegree < 0:
-            shiftDegree += 360.0
+        if shift_degree < 0:
+            shift_degree += 360.0
 
         geo_transform = shiftVRT.vrt.dataset.GetGeoTransform()
-        shiftPixel = int(shiftDegree / float(geo_transform[1]))
+        shiftPixel = int(shift_degree / float(geo_transform[1]))
         geo_transform = list(geo_transform)
-        geo_transform[0] = round(geo_transform[0] + shiftDegree, 3)
+        geo_transform[0] = round(geo_transform[0] + shift_degree, 3)
         newEastBorder = geo_transform[0] + (geo_transform[1] *
                                            shiftVRT.dataset.RasterXSize)
         if newEastBorder > 360.0:
@@ -1278,7 +1278,7 @@ class VRT(object):
 
         return superVRT
 
-    def get_subsampled_vrt(self, newRasterXSize, newRasterYSize, resample_alg):
+    def get_subsampled_vrt(self, new_raster_x_size, new_raster_y_size, resample_alg):
         """Create VRT and replace step in the source"""
 
         subsamVRT = self.get_super_vrt()
@@ -1287,8 +1287,8 @@ class VRT(object):
         node0 = Node.create(subsamVRT.xml)
 
         # replace rasterXSize in <VRTDataset>
-        node0.replaceAttribute('rasterXSize', str(newRasterXSize))
-        node0.replaceAttribute('rasterYSize', str(newRasterYSize))
+        node0.replaceAttribute('rasterXSize', str(new_raster_x_size))
+        node0.replaceAttribute('rasterYSize', str(new_raster_y_size))
 
         # replace xSize in <DstRect> of each source
         for iNode1 in node0.nodeList('VRTRasterBand'):
@@ -1296,9 +1296,9 @@ class VRT(object):
                 for iNode2 in iNode1.nodeList(sourceName):
                     iNodeDstRect = iNode2.node('DstRect')
                     iNodeDstRect.replaceAttribute('xSize',
-                                                  str(newRasterXSize))
+                                                  str(new_raster_x_size))
                     iNodeDstRect.replaceAttribute('ySize',
-                                                  str(newRasterYSize))
+                                                  str(new_raster_y_size))
             # if method=-1, overwrite 'ComplexSource' to 'AveragedSource'
             if resample_alg == -1:
                 iNode1.replaceTag('ComplexSource', 'AveragedSource')
@@ -1315,19 +1315,19 @@ class VRT(object):
 
         return subsamVRT
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0,
-                         dst_srs=NSR(), dstDs=None, options=None):
+    def transform_points(self, col_vector, row_vector, dst2src=0,
+                         dst_srs=NSR(), dst_ds=None, options=None):
         """Transform given lists of X,Y coordinates into lat/lon
 
         Parameters
         -----------
-        colVector, rowVector : lists
+        col_vector, row_vector : lists
             X and Y coordinates with any coordinate system
-        DstToSrc : 0 or 1
+        dst2src : 0 or 1
             1 for inverse transformation, 0 for forward transformation.
         dst_srs : NSR
             destination SRS.
-        dstDs : dataset
+        dst_ds : GDAL Dataset
             destination dataset. The default is None.
             It means transform ownPixLin <--> ownXY.
         option : string
@@ -1335,7 +1335,7 @@ class VRT(object):
 
         Returns
         --------
-        lonVector, latVector : numpy arrays
+        lon_vector, lat_vector : numpy arrays
             X and Y coordinates in degree of lat/lon
 
         """
@@ -1350,23 +1350,23 @@ class VRT(object):
                 options.append('METHOD=GCP_TPS')
 
         # create transformer
-        transformer = gdal.Transformer(self.dataset, dstDs, options)
+        transformer = gdal.Transformer(self.dataset, dst_ds, options)
 
         # convert lists with X,Y coordinates to 2D numpy array
-        xy = np.array([colVector, rowVector]).transpose()
+        xy = np.array([col_vector, row_vector]).transpose()
 
         # transfrom coordinates
-        lonlat = transformer.TransformPoints(DstToSrc, xy)[0]
+        lonlat = transformer.TransformPoints(dst2src, xy)[0]
 
         # convert return to lon,lat vectors
         lonlat = np.array(lonlat)
         if lonlat.shape[0] > 0:
-            lonVector = lonlat[:, 0]
-            latVector = lonlat[:, 1]
+            lon_vector = lonlat[:, 0]
+            lat_vector = lonlat[:, 1]
         else:
-            lonVector, latVector = [], []
+            lon_vector, lat_vector = [], []
 
-        return lonVector, latVector
+        return lon_vector, lat_vector
 
     def get_projection(self):
         """Get projection from self.dataset
@@ -1411,7 +1411,7 @@ class VRT(object):
 
         Returns
         --------
-        VRT object : Resized VRT object
+        warped_vrt : Resized VRT object
 
         """
         # modify GeoTransform: set resolution from new X/Y size
@@ -1423,14 +1423,14 @@ class VRT(object):
                         - float(self.dataset.RasterYSize - 1.0) / float(y_size))
 
         # update size and GeoTranform in XML of the warped VRT object
-        warpedVRT = self.get_warped_vrt(x_size=x_size, y_size=y_size,
+        warped_vrt = self.get_warped_vrt(x_size=x_size, y_size=y_size,
                                         geo_transform=geo_transform,
                                         use_geolocation=use_geolocation,
                                         use_gcps=use_gcps,
                                         use_geotransform=use_geotransform,
                                         resample_alg=resample_alg)
 
-        return warpedVRT
+        return warped_vrt
 
     def reproject_GCPs(self, dst_srs):
         """Reproject all GCPs to a new spatial reference system
