@@ -1069,7 +1069,7 @@ class Nansat(Domain):
             return outString
 
     def reproject(self, dstDomain, eResampleAlg=0, blockSize=None,
-                  WorkingDataType=None, tps=None, skip_gcps=1, addmask=True,
+                  tps=None, skip_gcps=1, addmask=True,
                   **kwargs):
         ''' Change projection of the object based on the given Domain
 
@@ -1093,8 +1093,6 @@ class Nansat(Domain):
         blockSize : int
             size of blocks for resampling. Large value decrease speed
             but increase accuracy at the edge
-        WorkingDataType : int (GDT_int, ...)
-            type of data in bands. Shuold be integer for int32 bands
         tps : bool
             Apply Thin Spline Transformation if source or destination has GCPs
             Usage of TPS can also be triggered by setting self.vrt.tps=True
@@ -1149,21 +1147,7 @@ class Nansat(Domain):
         xSize = dstDomain.vrt.dataset.RasterXSize
         ySize = dstDomain.vrt.dataset.RasterYSize
 
-# TODO: move to _get_geo_transform()
-        # get geoTransform
-# TODO: add use_gcps to keyword arguments
-        if 'use_gcps' in kwargs.keys() and not (kwargs['use_gcps']):
-            corners = dstDomain.get_corners()
-            ext = '-lle %0.3f %0.3f %0.3f %0.3f -ts %d %d' % (min(corners[0]),
-                                                              min(corners[1]),
-                                                              max(corners[0]),
-                                                              max(corners[1]),
-                                                              xSize, ySize)
-            # TODO: check that valid Domain is returned..
-            d = Domain(srs=dstSRS, ext=ext)
-            geoTransform = d.vrt.dataset.GetGeoTransform()
-        else:
-            geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+        geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
 
         # set trigger for using TPS
         if tps is True:
@@ -1206,7 +1190,6 @@ class Nansat(Domain):
                                            x_size=xSize, y_size=ySize,
                                            block_size=blockSize,
                                            geo_transform=geoTransform,
-                                           working_data_type=WorkingDataType,
                                            **kwargs)
 
         # This violates lazy operations and is therefore commented out..
