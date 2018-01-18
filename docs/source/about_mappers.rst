@@ -43,18 +43,21 @@ these steps follow:
   * Each mapper checks if the input Dataset is appropriate for the mapper, i.e., if the format, the metadata and the set of bands in the Dataset corresponds to what is expected in the mapper
 
     * If the Dataset is not valid, the mapper silently fails and the next mapper is tested
-    * If the Dataset fits the mapper: the mapper creates a  `GDAL VRT file <http://www.gdal.org/gdal_vrttut.html>`_ with raster bands corresponding to the "well known variables" in `nersc-vocabularies <https://github.com/nansencenter/nersc-vocabularies>`_ and adds respective metadata to each band (standard_name, units, etc).
+    * If the Dataset fits the mapper:
 
-* The mapper opens the VRT file with gdal.Open(VRTFileName) and returns a GDAL dataset back to Nansat.
+        * the mapper creates a  `GDAL VRT file <http://www.gdal.org/gdal_vrttut.html>`_ with georeference and raster bands corresponding to the "well known variables" in `nersc-vocabularies <https://github.com/nansencenter/nersc-vocabularies>`_ and adds respective metadata to each band (standard_name, units, etc).
 
-The output of the steps above is a VRT GDAL Dataset which has the following properties:
+* The mapper object, which is an instance of the VRT-class, is then returned to the Nansat instance as an attribute named ``vrt`` (``Nansat.vrt``)
+
+
+The VRT has the following properties:
 
 * we can use any available GDAL API functions, e.g., warping or exporting
 * it contains georeferencing recognised by GDAL
-* being a VRT Dataset we can add PixelFunctions for, e.g., calculation of *speed* given two vector components of wind or current
+* we can add PixelFunctions for, e.g., calculation of *speed* given two vector components of wind or current
 * still it contains only Raster Bands with metadata which correspond to any of the NANSAT "Well Known Variables"
 
-The VRT Dataset now available to the user/application may, e.g., be subsetted, reprojected, merged,
+The Dataset may, e.g., be subsetted, reprojected, merged,
 etc., by simply modifying the VRT-file, either automatically by the GDAL high level
 applications/functions, or with NANSAT-specific Python logic. An important benefit of this approach
 is that we employ the *lazy processing concept* in GDAL.
@@ -73,15 +76,6 @@ Technical details
 * The VRT-file is stored in memory using GDAL VSI-approach
 * The VRT-class is a wrapper around the VRT-file. It has methods for generating, modifying, copying and other operations with VRT-files. VRT-class uses both GDAL methods and direct writing for modifying the VRT-file.
 * Each mapper inherits the VRT-class.
-
-Common logic of mappers
------------------------
-
-1. Test if the input Dataset fits the mapper:
-   * Retrieve metadata and find keywords that correspond only to this mapper. If Dataset doesn't fit - raise error.
-2. Call VRT-class constructor. This will create VRT-opbject with an empty GDAL Dataset containing georeference copied from the input Dataset
-3. Create list of dictionaries, {{{metaDict}}}, defining the mapping between GDAL Raster Bands in the input Dataset and WKVs. Each band in the list is a dictionary with 'src' and 'dst' keys pointing to dictionaries describing source band (in the input Dataset) and destination band (in the to-be-generated VRT file). For a description of 'src' and 'dst', see below.
-4. Call the function VRT._create_bands() which loops through the {{{metaDict}}} items and calls the VRT._create_band() method for actually adding bands with all metadata to the GDAL Dataset of the VRT-object
 
 Where to put new mappers?
 -------------------------
