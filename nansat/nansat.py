@@ -199,6 +199,8 @@ class Nansat(Domain):
         expression = band.GetMetadata().get('expression', '')
         # get data
         band_data = band.ReadAsArray()
+
+        # TODO: Fail tests with get item
         if band_data is None:
             raise GDALError('Cannot read array from band %s' % str(band_data))
 
@@ -206,7 +208,7 @@ class Nansat(Domain):
         if expression != '':
             band_data = eval(expression)
 
-# TODO: move below to _fill_with_nan() method
+        # TODO: move below to _fill_with_nan() method
         # Set invalid and missing data to np.nan (for floats only)
         if '_FillValue' in band.GetMetadata() and band_data.dtype.char in np.typecodes['AllFloat']:
             fill_value = float(band.GetMetadata()['_FillValue'])
@@ -225,6 +227,17 @@ class Nansat(Domain):
         if self.has_band('swathmask') and band_data.dtype.char in np.typecodes['AllFloat']:
             swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
             band_data[swathmask == 0] = np.nan
+
+        return band_data
+
+    # TODO: Test _fill_with_nan
+    def _fill_with_nan(self, band, band_data):
+        fill_value = float(band.GetMetadata()['_FillValue'])
+        band_data[band_data == fill_value] = np.nan
+        # quick hack to avoid problem with wrong _FillValue - see issue
+        # #123
+        if fill_value == self.FILL_VALUE:
+            band_data[band_data == self.ALT_FILL_VALUE] = np.nan
 
         return band_data
 
