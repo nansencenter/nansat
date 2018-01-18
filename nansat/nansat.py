@@ -361,7 +361,7 @@ class Nansat(Domain):
 # TODO:
 #   move to Exporter.export()
 #   inherit Nansat from Exporter
-    def export(self, fileName, bands=None, rmMetadata=list(), addGeoloc=True,
+    def export(self, fileName, bands=None, rmMetadata=None, addGeoloc=True,
                addGCPs=True, driver='netCDF', bottomup=False, options=None):
         '''Export Nansat object into netCDF or GTiff file
 
@@ -420,6 +420,9 @@ class Nansat(Domain):
         # export all bands into a GeoTiff
 
         '''
+        if rmMetadata is None:
+            rmMetadata = []
+
         # temporary VRT for exporting
         exportVRT = self.vrt.copy()
         exportVRT.real = []

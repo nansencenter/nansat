@@ -744,7 +744,6 @@ class VRT(object):
 
         """
         # read XML content from VRT
-        self.dataset.FlushCache()
         tmp_vrt_xml = self.xml
         # find and remove GeoTransform
         node0 = Node.create(tmp_vrt_xml)
@@ -823,6 +822,7 @@ class VRT(object):
         --------
         string : XMl Content which is read from the VSI file
         """
+        self.dataset.FlushCache()
         return VRT.read_vsi(self.filename)
 
     def write_xml(self, vsiFileContent=None):
