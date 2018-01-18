@@ -15,23 +15,12 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import re, warnings
-from math import sin, pi, cos, acos, copysign
-import string
+import warnings
 from xml.etree.ElementTree import ElementTree
 
 import numpy as np
-try:
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap
-    from matplotlib.patches import Polygon
-except ImportError:
-    BASEMAP_LIB_EXISTS = False
-else:
-    BASEMAP_LIB_EXISTS = True
-
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import OptionError, ProjectionError
+from nansat.tools import OptionError, ProjectionError, write_domain_map
 from nansat.nsr import NSR
 from nansat.vrt import VRT
     
@@ -818,15 +807,11 @@ class Domain(object):
         """
         return self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
 
-    def write_map(self, outputFileName,
-                  lonVec=None, latVec=None, lonBorder=10., latBorder=10.,
+    def write_map(self, outputFileName, lonVec=None, latVec=None, lonBorder=10., latBorder=10.,
                   figureSize=(6, 6), dpi=50, projection='cyl', resolution='c',
-                  continetsColor='coral', meridians=10, parallels=10,
-                  pColor='r', pLine='k', pAlpha=0.5, padding=0.,
-                  merLabels=[False, False, False, False],
-                  parLabels=[False, False, False, False],
-                  pltshow=False,
-                  labels=None):
+                  continetsColor='coral', meridians=10, parallels=10, pColor='r', pLine='k',
+                  pAlpha=0.5, padding=0., merLabels=[False, False, False, False],
+                  parLabels=[False, False, False, False], pltshow=False, labels=None):
         """Create an image with a map of the domain
 
         Uses Basemap to create a World Map
@@ -879,77 +864,19 @@ class Domain(object):
         labels : list of str
             labels to print on top of patches
         """
-        if not BASEMAP_LIB_EXISTS:
-            raise ImportError(' Basemap is not installed. Cannot use Domain.write_map. '
-                              ' Enable by: conda install -c conda forge basemap ')
 
-        # if lat/lon vectors are not given as input
-        if lonVec is None or latVec is None or len(lonVec) != len(latVec):
-            lonVec, latVec = self.get_border()
-
-        # convert vectors to numpy arrays
-        lonVec = np.array(lonVec)
-        latVec = np.array(latVec)
-
-        # estimate mean/min/max values of lat/lon of the shown area
-        # (real lat min max +/- latBorder) and (real lon min max +/- lonBorder)
-        minLon = max(-180, lonVec.min() - lonBorder)
-        maxLon = min(180, lonVec.max() + lonBorder)
-        minLat = max(-90, latVec.min() - latBorder)
-        maxLat = min(90, latVec.max() + latBorder)
-        meanLon = lonVec.mean()
-        meanLat = latVec.mean()
-
-        # generate template map (can be also tmerc)
-        plt.figure(num=1, figsize=figureSize, dpi=dpi)
-        bmap = Basemap(projection=projection,
-                       lat_0=meanLat, lon_0=meanLon,
-                       llcrnrlon=minLon, llcrnrlat=minLat,
-                       urcrnrlon=maxLon, urcrnrlat=maxLat,
-                       resolution=resolution)
-
-        # add content: coastline, continents, meridians, parallels
-        bmap.drawcoastlines()
-        bmap.fillcontinents(color=continetsColor)
-        bmap.drawmeridians(np.linspace(minLon, maxLon, meridians),
-                           labels=merLabels, fmt='%2.1f')
-        bmap.drawparallels(np.linspace(minLat, maxLat, parallels),
-                           labels=parLabels, fmt='%2.1f')
-
-        # convert input lat/lon vectors to arrays of vectors with one row
-        # if only one vector was given
-        if len(lonVec.shape) == 1:
-            lonVec = [lonVec]
-            latVec = [latVec]
-
-        for i in range(len(lonVec)):
-            # convert lat/lons to map units
-            mapX, mapY = bmap(list(lonVec[i].flat), list(latVec[i].flat))
-
-            # from x/y vectors create a Patch to be added to map
-            boundary = Polygon(zip(mapX, mapY),
-                               alpha=pAlpha, ec=pLine, fc=pColor)
-
-            # add patch to the map
-            plt.gca().add_patch(boundary)
-            plt.gca().set_aspect('auto')
-
-            if labels is not None and labels[i] is not None:
-                plt.text(np.mean(mapX), np.mean(mapY), labels[i],
-                         va='center', ha='right', alpha=0.5, fontsize=10)
-
-        # save figure and close
-        plt.savefig(outputFileName, bbox_inches='tight',
-                    dpi=dpi, pad_inches=padding)
-        if pltshow:
-            plt.show()
-        else:
-            plt.close('all')
+        warnings.warn('Method "write_map" was moved to nansat.tools like write_domain_map')
+        border = self.get_border()
+        write_domain_map(border, outputFileName, lon_vec=lonVec, lat_vec=latVec, lon_border=lonBorder,
+                         lat_border=latBorder, figure_size=figureSize, dpi=dpi, projection=projection,
+                         resolution=resolution, continets_color=continetsColor, meridians=meridians,
+                         parallels=parallels, p_color=pColor, p_line=pLine, p_alpha=pAlpha,
+                         padding=padding, mer_labels=merLabels, par_labels=parLabels,
+                         pltshow=pltshow, labels=labels)
 
 # TODO: rename vrt.reproject_GCPs for disambiguation
-
     def reproject_GCPs(self, srsString=''):
-        '''Reproject all GCPs to a new spatial reference system
+        """Reproject all GCPs to a new spatial reference system
 
         Necessary before warping an image if the given GCPs
         are in a coordinate system which has a singularity
@@ -963,11 +890,10 @@ class Domain(object):
         Modifies
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
-        '''
+        """
         if srsString == '':
             lon, lat = self.get_border()
-            srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'%(
-            np.nanmedian(lat), np.nanmedian(lon))
-
+            srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'\
+                        % (np.nanmedian(lat), np.nanmedian(lon))
 
         self.vrt.reproject_GCPs(srsString)

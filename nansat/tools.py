@@ -23,10 +23,16 @@ from dateutil.parser import parse
 
 try:
     from matplotlib import cm
+    import matplotlib.pyplot as plt
     from matplotlib.colors import hex2color
+    from mpl_toolkits.basemap import Basemap
+    from matplotlib.patches import Polygon
 except ImportError:
+    BASEMAP_LIB_EXISTS = False
     MATPLOTLIB_EXISTS = False
+
 else:
+    BASEMAP_LIB_EXISTS = True
     MATPLOTLIB_EXISTS = True
 
 import numpy as np
@@ -297,6 +303,131 @@ def test_openable(fname):
     except IOError:
         raise
     f.close()
+
+
+def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_border=10.,
+                     lat_border=10.,figure_size=(6, 6), dpi=50, projection='cyl', resolution='c',
+                     continets_color='coral',meridians=10, parallels=10, p_color='r', p_line='k',
+                     p_alpha=0.5, padding=0., mer_labels=[False, False, False, False],
+                     par_labels=[False, False, False, False], pltshow=False, labels=None):
+        """Create an image with a map of the domain
+
+        Uses Basemap to create a World Map
+        Adds a semitransparent patch with outline of the Domain
+        Writes to an image file
+
+        Parameters
+        -----------
+        out_filename : string
+            name of the output file name
+        lon_vec : [floats] or [[floats]]
+            longitudes of patches to display
+        lat_vec : [floats] or [[floats]]
+            latitudes of patches to display
+        lon_border : float
+            10, horisontal border around patch (degrees of longitude)
+        lat_border : float
+            10, vertical border around patch (degrees of latitude)
+        figure_size : tuple of two integers
+            (6, 6), size of the generated figure in inches
+        dpi: int
+            50, resolution of the output figure (size 6,6 and dpi 50
+            produces 300 x 300 figure)
+        projection : string, one of Basemap projections
+            'cyl', projection of the map
+        resolution : string, resolution of the map
+            'c', crude
+            'l', low
+            'i', intermediate
+            'h', high
+            'f', full
+        continets_color : string or any matplotlib color representation
+            'coral', color of continets
+        meridians : int
+            10, number of meridians to draw
+        parallels : int
+            10, number of parallels to draw
+        p_color : string or any matplotlib color representation
+            'r', color of the Domain patch
+        p_line : string or any matplotlib color representation
+            'k', color of the Domain outline
+        p_alpha : float 0 - 1
+            0.5, transparency of Domain patch
+        padding : float
+            0., width of white padding around the map
+        mer_labels : list of 4 booleans
+            where to put meridian labels, see also Basemap.drawmeridians()
+        par_lables : list of 4 booleans
+            where to put parallel labels, see also Basemap.drawparallels()
+        labels : list of str
+            labels to print on top of patches
+        """
+        if not BASEMAP_LIB_EXISTS:
+            raise ImportError(' Basemap is not installed. Cannot use Domain.write_map. '
+                              ' Enable by: conda install -c conda forge basemap ')
+
+        # if lat/lon vectors are not given as input
+        if lon_vec is None or lat_vec is None or len(lon_vec) != len(lat_vec):
+            lon_vec, lat_vec = border
+
+        # convert vectors to numpy arrays
+        lon_vec = np.array(lon_vec)
+        lat_vec = np.array(lat_vec)
+
+        # estimate mean/min/max values of lat/lon of the shown area
+        # (real lat min max +/- latBorder) and (real lon min max +/- lonBorder)
+        min_lon = max(-180, lon_vec.min() - lon_border)
+        max_lon = min(180, lon_vec.max() + lon_border)
+        min_lat = max(-90, lat_vec.min() - lat_border)
+        max_lat = min(90, lat_vec.max() + lat_border)
+        mean_lon = lon_vec.mean()
+        mean_lat = lat_vec.mean()
+
+        # generate template map (can be also tmerc)
+        plt.figure(num=1, figsize=figure_size, dpi=dpi)
+        bmap = Basemap(projection=projection,
+                       lat_0=mean_lat, lon_0=mean_lon,
+                       llcrnrlon=min_lon, llcrnrlat=min_lat,
+                       urcrnrlon=max_lon, urcrnrlat=max_lat,
+                       resolution=resolution)
+
+        # add content: coastline, continents, meridians, parallels
+        bmap.drawcoastlines()
+        bmap.fillcontinents(color=continets_color)
+        bmap.drawmeridians(np.linspace(min_lon, max_lon, meridians),
+                           labels=mer_labels, fmt='%2.1f')
+        bmap.drawparallels(np.linspace(min_lat, max_lat, parallels),
+                           labels=par_labels, fmt='%2.1f')
+
+        # convert input lat/lon vectors to arrays of vectors with one row
+        # if only one vector was given
+        if len(lon_vec.shape) == 1:
+            lon_vec = [lon_vec]
+            lat_vec = [lat_vec]
+
+        for i in range(len(lon_vec)):
+            # convert lat/lons to map units
+            map_x, map_y = bmap(list(lon_vec[i].flat), list(lat_vec[i].flat))
+
+            # from x/y vectors create a Patch to be added to map
+            boundary = Polygon(zip(map_x, map_y),
+                               alpha=p_alpha, ec=p_line, fc=p_color)
+
+            # add patch to the map
+            plt.gca().add_patch(boundary)
+            plt.gca().set_aspect('auto')
+
+            if labels is not None and labels[i] is not None:
+                plt.text(np.mean(map_x), np.mean(map_y), labels[i],
+                         va='center', ha='right', alpha=0.5, fontsize=10)
+
+        # save figure and close
+        plt.savefig(out_filename, bbox_inches='tight',
+                    dpi=dpi, pad_inches=padding)
+        if pltshow:
+            plt.show()
+        else:
+            plt.close('all')
 
 register_colormaps()
 
