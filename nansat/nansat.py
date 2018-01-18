@@ -199,7 +199,6 @@ class Nansat(Domain):
         expression = band.GetMetadata().get('expression', '')
         # get data
         band_data = band.ReadAsArray()
-
         # TODO: Fail tests with get item
         if band_data is None:
             raise GDALError('Cannot read array from band %s' % str(band_data))
@@ -208,16 +207,17 @@ class Nansat(Domain):
         if expression != '':
             band_data = eval(expression)
 
-        # TODO: move below to _fill_with_nan() method
+        all_float_flag = band_data.dtype.char in np.typecodes['AllFloat']
         # Set invalid and missing data to np.nan (for floats only)
-        if '_FillValue' in band.GetMetadata() and band_data.dtype.char in np.typecodes['AllFloat']:
+        if '_FillValue' in band.GetMetadata() and all_float_flag:
             band_data = self._fill_with_nan(band, band_data)
+
         # replace infs with np.NAN
         if np.size(np.where(np.isinf(band_data))) > 0:
             band_data[np.isinf(band_data)] = np.nan
 
         # erase out-of-swath pixels with np.Nan (if not integer)
-        if self.has_band('swathmask') and band_data.dtype.char in np.typecodes['AllFloat']:
+        if self.has_band('swathmask') and all_float_flag:
             swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
             band_data[swathmask == 0] = np.nan
 
@@ -1013,6 +1013,7 @@ class Nansat(Domain):
 
         return factor
 
+    # TODO: Check how the get_GDALRasterBand method works with new VRT
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
 
