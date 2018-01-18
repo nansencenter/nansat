@@ -273,7 +273,7 @@ class Nansat(Domain):
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):
-        '''Add band from the array to self.vrt
+        """Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
         to self.vrt.band_vrts
@@ -297,7 +297,7 @@ class Nansat(Domain):
         # add two new bands from numpy arrays <a1> and <a2> with metadata in
         # <p1> and <p2>
 
-        '''
+        """
         # replace empty parameters with list of None
         if parameters is None:
             parameters = [None] * len(arrays)
@@ -306,38 +306,40 @@ class Nansat(Domain):
         band_vrts = [VRT.from_array(array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
-
+        # TODO: Move to separate function
         # add the array band into self.vrt and get bandName
-        for bi, bandVRT in enumerate(band_vrts):
+        for bi, band_vrt in enumerate(band_vrts):
             params = parameters[bi]
             if params is None:
                 params = {}
-            bandName = self.vrt._create_band(
-                {'SourceFilename': bandVRT.filename,
+            # TODO: VRD create band should be public
+            band_name = self.vrt._create_band(
+                {'SourceFilename': band_vrt.filename,
                  'SourceBand': 1},
                 params)
-            self.vrt.band_vrts[bandName] = bandVRT
+            self.vrt.band_vrts[band_name] = band_vrt
 
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
-        ''' Make a dictionary with all metadata from all bands
+        """ Make a dictionary with all metadata from all bands
 
         Returns
         --------
         b : dictionary
             key = N, value = dict with all band metadata
 
-        '''
-# TODO: use list comprehension
-        b = {}
-        for iBand in range(self.vrt.dataset.RasterCount):
-            b[iBand + 1] = self.get_metadata(bandID=iBand + 1)
+        """
+        band_metadata = {}
+        for band_num in range(self.vrt.dataset.RasterCount):
+            band_metadata[band_num + 1] = self.get_metadata(bandID=band_num + 1)
 
-        return b
+        return band_metadata
 
+    # TODO: Test has_band
+    # TODO: Discus change of band to band_name
     def has_band(self, band):
-        '''Check if self has band with name <band>
+        """Check if self has band with name <band>
         Parameters
         ----------
             band : str
@@ -347,15 +349,13 @@ class Nansat(Domain):
         -------
             True/False if band exists or not
 
-        '''
-        bandExists = False
-        for b in self.bands():
-            if (self.bands()[b]['name'] == band or
-                 ('standard_name' in self.bands()[b] and
-                  self.bands()[b]['standard_name'] == band)):
-                bandExists = True
-
-        return bandExists
+        """
+        for band_num in self.bands():
+            band_meta = self.bands()[band_num]
+            if band_meta['name'] == band:
+                return True
+            elif 'standard_name' in band_meta and band_meta['standard_name'] == band:
+                return True
 
 # TODO:
 #   move to Exporter.export()
