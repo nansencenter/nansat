@@ -19,7 +19,6 @@ keywordBase = __name__[7:]
 class Mapper(VRT):
     def __init__(self, filename, gdalDataset, gdalMetadata, logLevel=30,
                  **kwargs):
-
         if filename[0:len(keywordBase)] != keywordBase:
             raise WrongMapperError(__file__,
                                    "Not Nora10 data converted from felt to netCDF")
