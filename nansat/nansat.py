@@ -211,14 +211,7 @@ class Nansat(Domain):
         # TODO: move below to _fill_with_nan() method
         # Set invalid and missing data to np.nan (for floats only)
         if '_FillValue' in band.GetMetadata() and band_data.dtype.char in np.typecodes['AllFloat']:
-            fill_value = float(band.GetMetadata()['_FillValue'])
-            band_data[band_data == fill_value] = np.nan
-            # quick hack to avoid problem with wrong _FillValue - see issue
-            # #123
-
-            if fill_value == self.FILL_VALUE:
-                band_data[band_data == self.ALT_FILL_VALUE] = np.nan
-
+            band_data = self._fill_with_nan(band, band_data)
         # replace infs with np.NAN
         if np.size(np.where(np.isinf(band_data))) > 0:
             band_data[np.isinf(band_data)] = np.nan
