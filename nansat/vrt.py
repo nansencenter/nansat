@@ -988,8 +988,7 @@ class VRT(object):
             srcVRT.dataset.SetGeoTransform((0, 1, 0, srcVRT.dataset.RasterYSize, 0, -1))
         # create Warped VRT GDAL Dataset
         self.logger.debug('Run AutoCreateWarpedVRT...')
-        warped_dataset = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None,
-                                             acwvSRS, resample_alg)
+        warped_dataset = gdal.AutoCreateWarpedVRT(srcVRT.dataset, None, acwvSRS, resample_alg)
         # TODO: implement the below option for proper handling of
         # stereo projections
         # warpedVRT = gdal.AutoCreateWarpedVRT(srcVRT.dataset, '',
