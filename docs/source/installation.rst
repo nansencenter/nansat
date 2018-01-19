@@ -78,7 +78,5 @@ TODO: Add instructions about installing from PyPi
 Install from Anaconda
 ---------------------
 
-::
-
-  conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 cfunits python-dateutil pythesint nose
+TODO: Add instructions about installing from Anaconda
 
