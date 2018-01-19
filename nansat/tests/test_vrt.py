@@ -27,7 +27,11 @@ class VRTTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
-
+        self.nsr_wkt =  ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
+                         '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
+                         'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
+                         'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
+                         ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
     def test_init(self, _make_filename_mock):
         vrt = VRT()
@@ -242,10 +246,43 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetGCPs(), ())
 
     def test_update_warped_vrt_xml(self):
-        pass
+        dataset = gdal.Open('NETCDF:"%s":UMass_AES'%self.test_file_arctic)
+        warped_dataset = gdal.AutoCreateWarpedVRT(dataset, None, self.nsr_wkt, 0)
+        warped_vrt = VRT.copy_dataset(warped_dataset)
+        x_size = 100
+        y_size = 200
+        geo_transform = (0.0, 1.0, 0.0, 200.0, 0.0, -1.0)
+        block_size = 64
+        working_data_type = 'Float32'
+        warped_vrt._update_warped_vrt_xml(x_size, y_size, geo_transform, block_size, working_data_type)
+
+        self.assertEqual(warped_vrt.dataset.RasterXSize, x_size)
+        self.assertEqual(warped_vrt.dataset.RasterYSize, y_size)
+        self.assertEqual(warped_vrt.dataset.GetGeoTransform(), geo_transform)
+        self.assertEqual(warped_vrt.dataset.GetRasterBand(1).GetBlockSize(), [block_size, block_size])
+        self.assertIn('<WorkingDataType>Float32</WorkingDataType>', warped_vrt.xml)
+
+    def test_set_fake_gcps_empty(self):
+        ds = gdal.Open('NETCDF:"%s":UMass_AES'%self.test_file_arctic)
+        vrt = VRT.copy_dataset(ds)
+
+        dst_wkt = vrt._set_fake_gcps(self.nsr_wkt, [], 1)
+        self.assertEqual(dst_wkt, self.nsr_wkt)
+        self.assertEqual(len(vrt.dataset.GetGCPs()), 0)
 
     def test_set_fake_gcps(self):
-        pass
+        ds = gdal.Open('NETCDF:"%s":UMass_AES'%self.test_file_arctic)
+        gcps = gdal.Open(self.test_file_gcps).GetGCPs()
+        vrt = VRT.copy_dataset(ds)
+
+        dst_wkt = vrt._set_fake_gcps(self.nsr_wkt, gcps, 1)
+        self.assertEqual(dst_wkt, None)
+        self.assertEqual(len(vrt.dataset.GetGCPs()), len(gcps))
+        self.assertEqual([gcp.GCPPixel for gcp in gcps],
+                         [gcp.GCPX for gcp in vrt.dataset.GetGCPs()])
+        self.assertEqual([gcp.GCPLine for gcp in gcps],
+                         [gcp.GCPY for gcp in vrt.dataset.GetGCPs()])
+
 
 if __name__ == "__main__":
     unittest.main()
