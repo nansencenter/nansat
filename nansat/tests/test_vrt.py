@@ -24,7 +24,8 @@ import nansat_test_data as ntd
 
 class VRTTest(unittest.TestCase):
     def setUp(self):
-        self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
 
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
     def test_init(self, _make_filename_mock):
@@ -60,7 +61,7 @@ class VRTTest(unittest.TestCase):
         self.assertTrue(os.path.exists(vrt.filename))
 
     def test_from_gdal_dataset(self):
-        ds = gdal.Open(self.test_file)
+        ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.from_gdal_dataset(ds)
 
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
@@ -71,7 +72,7 @@ class VRTTest(unittest.TestCase):
         self.assertIn('filename', vrt.dataset.GetMetadata().keys())
 
     def test_from_dataset_params(self):
-        ds = gdal.Open(self.test_file)
+        ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.from_dataset_params(ds.RasterXSize,
                                       ds.RasterYSize,
                                       ds.GetGeoTransform(),
@@ -87,7 +88,7 @@ class VRTTest(unittest.TestCase):
         self.assertIn('filename', vrt.dataset.GetMetadata().keys())
 
     def test_from_array(self):
-        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
 
         self.assertEqual(vrt.dataset.RasterXSize, array.shape[1])
@@ -127,20 +128,20 @@ class VRTTest(unittest.TestCase):
         self.assertIn('filename', vrt2.dataset.GetMetadata().keys())
 
     def test_copy_vrt_with_band(self):
-        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt1 = VRT.from_array(array)
         vrt2 = vrt1.copy()
 
         self.assertEqual(vrt2.dataset.RasterCount, 1)
 
     def test_export(self):
-        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
         vrt.export('temp.vrt.xml')
         self.assertTrue(os.path.exists('temp.vrt.xml'))
 
     def test_create_band(self):
-        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt1 = VRT.from_array(array)
         vrt2 = VRT(x_size=array.shape[1], y_size=array.shape[0])
         self.assertEqual(vrt2.dataset.RasterCount, 0)
@@ -148,7 +149,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt2.dataset.RasterCount, 1)
 
     def test_make_source_bands_xml(self):
-        array = gdal.Open(self.test_file).ReadAsArray()[1, 10:, :]
+        array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt1 = VRT.from_array(array)
         src1 = {'SourceFilename': vrt1.filename}
         src2 = VRT._make_source_bands_xml(src1)
@@ -188,6 +189,55 @@ class VRTTest(unittest.TestCase):
         self.assertIn('LineOffset=0', options)
         self.assertIn('ByteOrder=i', options)
 
+    def test_remove_geotransform(self):
+        ds = gdal.Open('NETCDF:"%s":UMass_AES'%self.test_file_arctic)
+        vrt = VRT.copy_dataset(ds)
+        self.assertTrue('<GeoTransform>' in vrt.xml)
+        vrt._remove_geotransform()
+        self.assertFalse('<GeoTransform>' in vrt.xml)
+
+    def test_set_geotransform_for_resize(self):
+        lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
+        vrt = VRT.from_lonlat(lon, lat)
+        vrt._set_geotransform_for_resize()
+
+        self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
+        self.assertEqual(vrt.dataset.GetGCPs(), ())
+        self.assertEqual(vrt.dataset.GetGeoTransform(), (0.0, 1.0, 0.0, 30, 0.0, -1.0))
+
+    def test_set_gcps_geolocation_geotransform_with_geolocation(self):
+        lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
+        vrt = VRT.from_lonlat(lon, lat)
+        vrt._create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
+        vrt._set_gcps_geolocation_geotransform()
+        self.assertFalse('<GeoTransform>' in vrt.xml)
+        self.assertEqual(vrt.dataset.GetGCPs(), ())
+
+    def test_set_gcps_geolocation_geotransform_with_gcps(self):
+        lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
+        vrt = VRT.from_lonlat(lon, lat)
+        vrt._create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
+        vrt._remove_geolocation()
+        vrt._set_gcps_geolocation_geotransform()
+        self.assertFalse('<GeoTransform>' in vrt.xml)
+        self.assertIsInstance(vrt.dataset.GetGCPs(), (list, tuple))
+        self.assertTrue(len(vrt.dataset.GetGCPs()) > 0)
+        self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
+
+    def test_set_gcps_geolocation_geotransform_with_geotransform(self):
+        ds = gdal.Open('NETCDF:"%s":UMass_AES'%self.test_file_arctic)
+        vrt = VRT.copy_dataset(ds)
+        vrt._set_gcps_geolocation_geotransform()
+        self.assertEqual(vrt.dataset.GetGeoTransform(),
+                        (-1000000.0, 25000.0, 0.0, 5000000.0, 0.0, -25000.0))
+        self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
+        self.assertEqual(vrt.dataset.GetGCPs(), ())
+
+    def test_update_warped_vrt_xml(self):
+        pass
+
+    def test_set_fake_gcps(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()

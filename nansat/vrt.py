@@ -818,11 +818,11 @@ class VRT(object):
             # otherwise fallback to GCPs (remove Geolocation and GeoTransform)
             self.dataset.SetMetadata('', 'GEOLOCATION')
             self._remove_geotransform()
-        elif use_geotransform:
+        else:
             # otherwise fallback to GeoTransform in input VRT (remove Geolocation and GCP)
             self.dataset.SetMetadata('', 'GEOLOCATION')
             self.dataset.SetGCPs([], '')
-
+        self.dataset.FlushCache()
 
     def _update_warped_vrt_xml(self, x_size, y_size, geo_transform, block_size, working_data_type):
         """Update rasterXsize, rasterYsize, geotransform, block_size and working_data_type"""
