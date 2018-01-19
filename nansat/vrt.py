@@ -664,6 +664,35 @@ class VRT(object):
         # overwrite XML file with updated size, geotranform, etc
         self.write_xml(node0.rawxml())
 
+    def _create_band_name(self, dst):
+        """Create band name based on destination band dictionary <dst>"""
+        wkv = {}
+        band_name = dst.get('name', None)
+
+        if band_name is None:
+            try:
+                # get metadata from WKV using PyThesInt
+                wkv = pti.get_wkv_variable(dst.get('wkv', ''))
+            except IndexError:
+                band_name = 'band_'
+            else:
+                band_name = wkv['short_name']
+                if 'suffix' in dst:
+                     band_name += '_' + dst['suffix']
+
+        # create list of available bands (to prevent duplicate names)
+        band_names = [self.dataset.GetRasterBand(i + 1).GetMetadataItem('name')
+                        for i in range(self.dataset.RasterCount)]
+
+        # check if name already exist and add '_NNN'
+        dst_band_name = band_name
+        for n in range(999):
+            if dst_band_name not in band_names:
+                break
+            dst_band_name = '%s_%03d' % (band_name, n)
+
+        return dst_band_name, wkv
+
     def copy(self):
         """Create and return a full copy of a VRT instance"""
         if self.dataset.RasterCount == 0:
@@ -794,64 +823,9 @@ class VRT(object):
             dst = {}
 
         srcs = list(map(VRT._make_source_bands_xml, srcs))
-
         options = VRT._set_add_band_options(srcs, dst)
-
-        # TODO: refactor: check individual dst keys in idividual functions
-
-        # set destination dataType (if not given in input parameters)
-        if 'dataType' not in dst:
-            if (len(srcs) > 1 or float(srcs[0]['ScaleRatio']) != 1.0 or
-                    len(srcs[0]['LUT']) > 0 or 'DataType' not in srcs[0]):
-                # if pixel function
-                # if scaling is applied
-                # if LUT
-                # if source band not available: float32
-                dst['dataType'] = gdal.GDT_Float32
-            else:
-                # otherwise take the DataType from source
-                dst['dataType'] = srcs[0]['DataType']
-
-        # get metadata from WKV using PyThesInt
-        wkv_exists = False
-        if 'wkv' in dst:
-            try:
-                wkv = pti.get_wkv_variable(dst['wkv'])
-            except IndexError:
-                pass
-            else:
-                wkv_exists = True
-
-        # join wkv[short_name] and dst[suffix] if both given
-        if ('name' not in dst and wkv_exists):
-            if 'suffix' in dst:
-                dstSuffix =  '_' + dst['suffix']
-            else:
-                dstSuffix = ''
-            dst['name'] = wkv['short_name'] + dstSuffix
-
-        # create list of available bands (to prevent duplicate names)
-        band_names = []
-        for i in range(self.dataset.RasterCount):
-            band_names.append(self.dataset.GetRasterBand(i + 1).
-                             GetMetadataItem('name'))
-
-        # if name is not given add 'band_00N'
-        if 'name' not in dst:
-            for n in range(999):
-                band_name = 'band_%03d' % n
-                if band_name not in band_names:
-                    dst['name'] = band_name
-                    break
-        # if name already exist add '_00N'
-        elif dst['name'] in band_names:
-            for n in range(999):
-                band_name = dst['name'] + '_%03d' % n
-                if band_name not in band_names:
-                    dst['name'] = band_name
-                    break
-
-        self.logger.debug('dst[name]:%s' % dst['name'])
+        dst['dataType'] = VRT._get_dst_band_data_type(srcs, dst)
+        dst['name'], wkv = self._create_band_name(dst)
 
         # Add Band
         self.dataset.AddBand(int(dst['dataType']), options=options)
@@ -869,8 +843,7 @@ class VRT(object):
             dst_raster_band.SetMetadata(metadataSRC, 'vrt_sources')
 
         # set metadata from WKV
-        if wkv_exists:
-            dst_raster_band = VRT._put_metadata(dst_raster_band, wkv)
+        dst_raster_band = VRT._put_metadata(dst_raster_band, wkv)
 
         # set metadata from provided parameters
         # remove and add params
@@ -1590,3 +1563,18 @@ class VRT(object):
             randomChars = ''.join(choice(allChars) for x in range(10))
             filename = '/vsimem/%s.%s' % (randomChars, extention)
         return filename
+
+    @staticmethod
+    def _get_dst_band_data_type(srcs, dst):
+        """Get destination dataType based on source and destnation band dictionaries"""
+        if 'dataType' in dst:                                               # data type is preset
+            data_type = dst['dataType']
+        elif (len(srcs) > 1 or                                                     # pixel function
+              ('ScaleRatio' in srcs[0] and float(srcs[0]['ScaleRatio']) != 1.0) or # scaling applied
+              ('LUT' in srcs[0] and len(srcs[0]['LUT'])) > 0 or                    # if LUT exists
+              'DataType' not in srcs[0]):               # if source band not available
+            data_type = gdal.GDT_Float32
+        else:
+            # otherwise take the DataType from source
+            data_type = srcs[0]['DataType']
+        return data_type

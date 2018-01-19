@@ -19,6 +19,8 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import gdal
 
+import pythesint as pti
+
 from nansat.vrt import VRT
 import nansat_test_data as ntd
 
@@ -152,7 +154,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(root.keys(), ['rasterXSize', 'rasterYSize'])
         self.assertEqual([e.tag for e in root], ['Metadata', 'VRTRasterBand'])
 
-    def testcreate_band(self):
+    def test_create_band(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt1 = VRT.from_array(array)
         vrt2 = VRT(x_size=array.shape[1], y_size=array.shape[0])
@@ -282,6 +284,25 @@ class VRTTest(unittest.TestCase):
                          [gcp.GCPX for gcp in vrt.dataset.GetGCPs()])
         self.assertEqual([gcp.GCPLine for gcp in gcps],
                          [gcp.GCPY for gcp in vrt.dataset.GetGCPs()])
+
+    def test_get_dst_band_data_type(self):
+        self.assertEqual(VRT._get_dst_band_data_type([], {'dataType': 'Float32'}), 'Float32')
+        self.assertEqual(VRT._get_dst_band_data_type([1,2,3], {}), gdal.GDT_Float32)
+        self.assertEqual(VRT._get_dst_band_data_type([{'ScaleRatio': 2}], {}), gdal.GDT_Float32)
+        self.assertEqual(VRT._get_dst_band_data_type([{'LUT': [1,2,3]}], {}), gdal.GDT_Float32)
+        self.assertEqual(VRT._get_dst_band_data_type([{}], {}), gdal.GDT_Float32)
+        self.assertEqual(VRT._get_dst_band_data_type([{'DataType': 'Float32'}], {}), 'Float32')
+
+    def test_create_band_name(self):
+        wkv = pti.get_wkv_variable('sigma0')
+        ds = gdal.Open('NETCDF:"%s":UMass_AES'%self.test_file_arctic)
+        vrt = VRT.copy_dataset(ds)
+        self.assertEqual(vrt._create_band_name({'name': 'name1'}), ('name1', {}))
+        self.assertEqual(vrt._create_band_name({'wkv': 'sigma0'}), ('sigma0', wkv))
+        self.assertEqual(vrt._create_band_name({'wkv': 'sigma0', 'suffix': 'HH'}),
+                         ('sigma0_HH', wkv))
+        self.assertEqual(vrt._create_band_name({'name': 'UMass_AES'}),
+                         ('UMass_AES_000', {}))
 
 
 if __name__ == "__main__":
