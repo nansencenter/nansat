@@ -191,7 +191,7 @@ class Mapper(OBPGL2BaseClass):
                     bandNo += 1
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set TIME
         startYear = int(gdalMetadata['Start Year'])

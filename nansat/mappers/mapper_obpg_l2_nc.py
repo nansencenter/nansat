@@ -127,7 +127,7 @@ class Mapper(OBPGL2BaseClass):
                      srcRasterXSize=rasterXSize,
                      srcRasterYSize=rasterYSize)
         # add bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # reproject GCPs
         center_lon /= k

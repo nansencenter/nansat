@@ -157,7 +157,7 @@ class Mapper(VRT, Envisat):
         #       same VRT, access time is about twice as large
         incVRT = VRT(array=inc, lat=lat, lon=lon)
         lookVRT = VRT(lat=lat, lon=lon)
-        lookVRT._create_band([{'SourceFilename': look_u_VRT.filename,
+        lookVRT.create_band([{'SourceFilename': look_u_VRT.filename,
                                'SourceBand': 1},
                               {'SourceFilename': look_v_VRT.filename,
                                'SourceBand': 1}],
@@ -233,7 +233,7 @@ class Mapper(VRT, Envisat):
                                 'dataType': 6}})
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add oribit and look information to metadata domain
         # ASAR is always right-looking
@@ -265,7 +265,7 @@ class Mapper(VRT, Envisat):
                    'PixelFunctionType': 'Sigma0HHToSigma0VV',
                    'polarization': 'VV',
                    'suffix': 'VV'}
-            self._create_band(srcFiles, dst)
+            self.create_band(srcFiles, dst)
             self.dataset.FlushCache()
 
         # set time

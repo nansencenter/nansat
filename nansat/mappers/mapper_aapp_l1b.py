@@ -186,7 +186,7 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.band_vrts['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
+        self.band_vrts['RawGeolocVRT'].create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
         self.band_vrts['GeolocVRT'] = VRT(srcRasterXSize=51,
@@ -202,7 +202,7 @@ class Mapper(VRT):
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.band_vrts['GeolocVRT']._create_bands(GeolocMetaDict)
+        self.band_vrts['GeolocVRT'].create_bands(GeolocMetaDict)
 
         GeolocObject = Geolocation(x_vRT=self.band_vrts['GeolocVRT'],
                                     y_vRT=self.band_vrts['GeolocVRT'],
@@ -264,7 +264,7 @@ class Mapper(VRT):
                                     'minmax': ch[bandNo]['minmax'],
                                     'unit': "1"}})
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Adding valid time to dataset
         self.dataset.SetMetadataItem('time_coverage_start', time.isoformat())

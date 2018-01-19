@@ -334,7 +334,7 @@ class Mapper(HDF4Mapper):
             bandDict['src']['ScaleOffset'] = offset
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         productDate = gdalMetadata["RANGEBEGINNINGDATE"]
         productTime = gdalMetadata["RANGEBEGINNINGTIME"]

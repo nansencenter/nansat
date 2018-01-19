@@ -52,7 +52,7 @@ class Mapper(VRT):
             'long_name': 'AMSRE sea ice lead fraction',
         }
 
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
 

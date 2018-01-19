@@ -61,7 +61,7 @@ class Mapper(VRT):
                                    'ScaleOffset': 0},
                            'dst': {}}]
 
-        self.GeolocVRT._create_bands(GeolocMetaDict)
+        self.GeolocVRT.create_bands(GeolocMetaDict)
 
         GeolocObject = Geolocation(x_vrt=self.GeolocVRT,
                                         y_vrt=self.GeolocVRT,
@@ -93,7 +93,7 @@ class Mapper(VRT):
                      'dst': {'name': 'winddirection',
                              'wkv': 'wind_from_direction'}}]
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # This should not be necessary
         # - should be provided by GeolocationArray!

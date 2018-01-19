@@ -148,12 +148,12 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(root.keys(), ['rasterXSize', 'rasterYSize'])
         self.assertEqual([e.tag for e in root], ['Metadata', 'VRTRasterBand'])
 
-    def test_create_band(self):
+    def testcreate_band(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt1 = VRT.from_array(array)
         vrt2 = VRT(x_size=array.shape[1], y_size=array.shape[0])
         self.assertEqual(vrt2.dataset.RasterCount, 0)
-        vrt2._create_band({'SourceFilename': vrt1.filename})
+        vrt2.create_band({'SourceFilename': vrt1.filename})
         self.assertEqual(vrt2.dataset.RasterCount, 1)
 
     def test_make_source_bands_xml(self):
@@ -216,7 +216,7 @@ class VRTTest(unittest.TestCase):
     def test_set_gcps_geolocation_geotransform_with_geolocation(self):
         lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
         vrt = VRT.from_lonlat(lon, lat)
-        vrt._create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
+        vrt.create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
         vrt._set_gcps_geolocation_geotransform()
         self.assertFalse('<GeoTransform>' in vrt.xml)
         self.assertEqual(vrt.dataset.GetGCPs(), ())
@@ -224,7 +224,7 @@ class VRTTest(unittest.TestCase):
     def test_set_gcps_geolocation_geotransform_with_gcps(self):
         lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
         vrt = VRT.from_lonlat(lon, lat)
-        vrt._create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
+        vrt.create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
         vrt._remove_geolocation()
         vrt._set_gcps_geolocation_geotransform()
         self.assertFalse('<GeoTransform>' in vrt.xml)

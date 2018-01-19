@@ -156,7 +156,7 @@ class Mapper(VRT):
                      srcRasterYSize=numberOfLines)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         startYear = int(simGdalMetadata.get('Start Year',

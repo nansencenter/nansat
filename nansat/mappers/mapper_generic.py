@@ -157,7 +157,7 @@ class Mapper(VRT):
         self._init_from_gdal_dataset(firstSubDataset, metadata=gdalMetadata)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         self._create_complex_bands(filenames)
 

@@ -84,7 +84,7 @@ class Mapper(VRT):
                      srcRasterYSize=1120)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Adding valid time to dataset
         self.dataset.SetMetadataItem('time_coverage_start', parse(gdalMetadata['ObservationStartDateTime']).isoformat())

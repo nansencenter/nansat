@@ -85,7 +85,7 @@ class Mapper(vrt.VRT):
                              'dst': {'name': 'mask'}})
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # append fixed projection and geotransform
         self.dataset.SetProjection(NSR().wkt)

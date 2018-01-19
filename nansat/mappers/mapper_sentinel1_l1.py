@@ -230,7 +230,7 @@ class Mapper(VRT):
                 },
             })
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         '''
         Calibration should be performed as
@@ -261,7 +261,7 @@ class Mapper(VRT):
         look_u_VRT = VRT.from_array(look_direction_u)
         look_v_VRT = VRT.from_array(look_direction_v)
         lookVRT = VRT.from_lonlat(longitude, latitude)
-        lookVRT._create_band([{'SourceFilename': look_u_VRT.filename,
+        lookVRT.create_band([{'SourceFilename': look_u_VRT.filename,
                                'SourceBand': 1},
                               {'SourceFilename': look_v_VRT.filename,
                                'SourceBand': 1}],
@@ -360,7 +360,7 @@ class Mapper(VRT):
                          },
                  })
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add incidence angle as band
         name = 'incidence_angle'
@@ -370,7 +370,7 @@ class Mapper(VRT):
                'SourceBand': 1}
         dst = {'wkv': 'angle_of_incidence',
                'name': name}
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
         # Add elevation angle as band
@@ -381,7 +381,7 @@ class Mapper(VRT):
                'SourceBand': 1}
         dst = {'wkv': 'angle_of_elevation',
                'name': name}
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
         # Add sigma0_VV
@@ -404,7 +404,7 @@ class Mapper(VRT):
                    'PixelFunctionType': 'Sentinel1Sigma0HHToSigma0VV',
                    'polarization': 'VV',
                    'suffix': 'VV'}
-            self._create_band(src, dst)
+            self.create_band(src, dst)
             self.dataset.FlushCache()
 
         # set time as acquisition start time

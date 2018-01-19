@@ -124,7 +124,7 @@ class Mapper(VRT):
                 dst = {'dataType': gdal.GDT_Float32,
                        'name': 'RawCounts_%s_real' %
                        gdalMetadata[filenames[i][-7:-4]+'_Polarisation']}
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
                 src = {'SourceFilename': filenames[i],
                        'SourceBand': 2,
@@ -132,7 +132,7 @@ class Mapper(VRT):
                 dst = {'dataType': gdal.GDT_Float32,
                        'name': 'RawCounts_%s_imaginary' %
                        gdalMetadata[filenames[i][-7:-4] + '_Polarisation']}
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
                 self.dataset.FlushCache()
 
@@ -171,7 +171,7 @@ class Mapper(VRT):
                        #'pass': gdalMetadata['']
                        #         - I can't find this in the metadata...
 
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
 
                 self.dataset.FlushCache()

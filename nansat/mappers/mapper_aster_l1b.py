@@ -95,7 +95,7 @@ class Mapper(HDF4Mapper):
             metaEntry['src']['ScaleOffset'] = float(gdalMetadata['OFFSET' + bandNo])
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         datetimeString = self.find_metadata(gdalMetadata, "SETTINGTIMEOFPOINTING")

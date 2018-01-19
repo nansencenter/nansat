@@ -74,7 +74,7 @@ class Mapper(VRT):
         VRT.__init__(self, gdalDataset)
 
         # Create bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set source, start_date, stop_date
         self.dataset.SetMetadataItem('source', 'HIRLAM')

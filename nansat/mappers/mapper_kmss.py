@@ -54,4 +54,4 @@ class Mapper(VRT):
         VRT.__init__(self, gdalDataset)
 
          # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

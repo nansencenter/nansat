@@ -57,7 +57,7 @@ class Mapper(VRT):
         self._create_empty(gdal_dataset, metadata)
 
         # Add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(self._band_list(metadata, *args, **kwargs))
+        self.create_bands(self._band_list(metadata, *args, **kwargs))
 
         # Check size?
         #xsize, ysize = self.ds_size(sub0)

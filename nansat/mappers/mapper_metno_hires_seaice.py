@@ -86,7 +86,7 @@ class Mapper(VRT):
                              'wkv': 'sea_ice_area_fraction'}}]
 
         # Add band
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Set time
         self.logger.info('Valid time: %s', str(validTime))

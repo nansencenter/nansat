@@ -279,4 +279,4 @@ class Mapper(VRT):
                      srcRasterXSize=srcRasterXSize,
                      srcRasterYSize=srcRasterYSize,
                      srcMetadata=srcMetadata)
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

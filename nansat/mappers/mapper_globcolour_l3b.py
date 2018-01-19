@@ -177,7 +177,7 @@ class Mapper(VRT, Globcolour):
         self.dataset.SetMetadataItem('platform', json.dumps(pp))
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # add time
         startDate = datetime.datetime(int(iFileName[4:8]),

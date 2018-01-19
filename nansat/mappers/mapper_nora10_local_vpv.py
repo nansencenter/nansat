@@ -108,7 +108,7 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values
         # to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add time
         self.dataset.SetMetadataItem('time_coverage_start', fileTime.isoformat())

@@ -112,7 +112,7 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.band_vrts['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
+        self.band_vrts['RawGeolocVRT'].create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
         self.band_vrts['GeolocVRT'] = VRT(srcRasterXSize=51,
@@ -128,7 +128,7 @@ class Mapper(VRT):
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.band_vrts['GeolocVRT']._create_bands(GeolocMetaDict)
+        self.band_vrts['GeolocVRT'].create_bands(GeolocMetaDict)
 
         GeolocObject = Geolocation(x_vrt=self.band_vrts['GeolocVRT'],
                                         y_vrt=self.band_vrts['GeolocVRT'],
@@ -229,8 +229,8 @@ class Mapper(VRT):
                          'units': 'kelvin',
                          'minmax': '-3 3'}})
 
-        self.self.band_vrts['RawBandsVRT']._create_bands(RawMetaDict)
-        self._create_bands(metaDict)
+        self.self.band_vrts['RawBandsVRT'].create_bands(RawMetaDict)
+        self.create_bands(metaDict)
 
         globalMetadata = {}
         globalMetadata['satID'] = str(satID)

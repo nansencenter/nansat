@@ -69,7 +69,7 @@ class Mapper(VRT):
             metaDict.append(metaEntry)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         xVRTArray = xDataset.ReadAsArray()
         xVRTArray = gaussian_filter(xVRTArray, 5).astype('float32')

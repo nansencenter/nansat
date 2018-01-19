@@ -187,7 +187,7 @@ class Mapper(VRT):
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
         lookVRT = VRT(lat=lat, lon=lon)
-        lookVRT._create_band(
+        lookVRT.create_band(
             [{'SourceFilename': look_u_VRT.filename, 'SourceBand': 1},
              {'SourceFilename': look_v_VRT.filename, 'SourceBand': 1}],
             {'PixelFunctionType': 'UVToDirectionTo'})
@@ -209,7 +209,7 @@ class Mapper(VRT):
         ###############################
         # Create bands
         ###############################
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         ###################################################
         # Add derived band (incidence angle) calculated
@@ -229,7 +229,7 @@ class Mapper(VRT):
                'dataType': 6,
                'name': 'incidence_angle'}
 
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
         ###################################################################
@@ -250,7 +250,7 @@ class Mapper(VRT):
                    'PixelFunctionType': 'Sigma0HHBetaToSigma0VV',
                    'polarization': 'VV',
                    'suffix': 'VV'}
-            self._create_band(src, dst)
+            self.create_band(src, dst)
             self.dataset.FlushCache()
 
         ############################################
