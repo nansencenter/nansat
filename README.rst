@@ -19,10 +19,20 @@ The main **goal** of Nansat is to facilitate:
 -  easy analysis of geospatial data, and
 -  efficient operational processing.
 
-We appreciate acknowledments of Nansat. Please add "The image analysis
-was performed with the open-source Nansat
-(https://github.com/nansencenter/nansat) python package" (or equivalent)
-if you use Nansat in scientific publications.
+
+You can find a detailed description of Nansat in our `paper
+<https://openresearchsoftware.metajnl.com/articles/10.5334/jors.120/>`_ published in `Journal of
+Open Research Software <https://openresearchsoftware.metajnl.com/>`_ in 2016.
+
+... and you can join the
+`mailing list <https://groups.google.com/forum/#!forum/nansat-dev>`_.
+
+We appreciate acknowledgments of Nansat. Please add a reference to the following paper
+if you use Nansat in scientific publications:
+
+Korosov A.A., Hansen M.W., Dagestad K.-F., Yamakawa A., Vines A., Riechert M., (2016). Nansat: a
+Scientist-Orientated Python Package for Geospatial Data Processing. Journal of Open Research
+Software. 4(1), p.e39. DOI: http://doi.org/10.5334/jors.120
 
 .. END REPETITION =================================
 

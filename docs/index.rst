@@ -33,6 +33,7 @@ Welcome to Nansat's documentation!
    source/installation.rst
    source/tutorials.rst
    source/packages_and_modules.rst
+   source/acknowledgments.rst
 
 
 .. toctree::
