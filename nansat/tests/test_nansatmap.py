@@ -16,9 +16,14 @@ import unittest
 import os
 
 import matplotlib.pyplot as plt
-#from scipy.interpolate import griddata
-
-from nansat import Nansat, Nansatmap
+from nansat import Nansat
+try:
+    from nansat import Nansatmap
+except ImportError:
+    NANSATMAP_EXISTS = False
+else:
+    NANSATMAP_EXISTS = True
+    
 
 import nansat_test_data as ntd
 
@@ -33,6 +38,7 @@ class NansatmapTest(unittest.TestCase):
         if not os.path.exists(self.test_file_stere):
             raise ValueError('No test data available')
 
+    @unittest.skipUnless(NANSATMAP_EXISTS, 'Nansatmap is required')
     def test_create_map(self):
         ''' should simply create a Nansatmap instance '''
         n = Nansat(self.test_file_stere, logLevel=40)
@@ -40,6 +46,7 @@ class NansatmapTest(unittest.TestCase):
 
         self.assertEqual(type(nmap), Nansatmap)
 
+    @unittest.skipUnless(NANSATMAP_EXISTS, 'Nansatmap is required')
     def test_imshow(self):
         ''' Should use Nansatmap.imshow '''
         n = Nansat(self.test_file_stere, logLevel=40)
@@ -51,6 +58,7 @@ class NansatmapTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
+    @unittest.skipUnless(NANSATMAP_EXISTS, 'Nansatmap is required')
     def test_imshow_random(self):
         ''' Should use Nansatmap.imshow '''
         n = Nansat(self.test_file_stere, logLevel=40)
@@ -63,6 +71,7 @@ class NansatmapTest(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
+    @unittest.skipUnless(NANSATMAP_EXISTS, 'Nansatmap is required')
     def test_pcolormesh(self):
         ''' Should use Nansatmap.pcolormesh '''
         n = Nansat(self.test_file_stere, logLevel=40)
