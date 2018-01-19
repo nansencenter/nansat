@@ -67,7 +67,7 @@ class Mapper(vrt.VRT):
             metaDict.append(metaEntry)
 
         # create empty VRT dataset with geolocation only
-        vrt.VRT.__init__(self, subGDALDataset)
+        self._init_from_gdal_dataset(subGDALDataset)
 
         # add mask
         if qualName != '':

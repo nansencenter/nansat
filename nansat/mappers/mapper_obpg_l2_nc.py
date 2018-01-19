@@ -121,11 +121,9 @@ class Mapper(OBPGL2BaseClass):
         time_coverage_end = dsMetadata['time_coverage_end']
 
         # create VRT
-        VRT.__init__(self, srcProjection=NSR().wkt,
-                     srcGCPs=gcps,
-                     srcGCPProjection=NSR().wkt,
-                     srcRasterXSize=rasterXSize,
-                     srcRasterYSize=rasterYSize)
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(rasterXSize, rasterYSize, (0, 1, 0, RasterYSize, 0, -1),
+                                        NSR().wkt, gcps, NSR().wkt)
         # add bands
         self.create_bands(metaDict)
 

@@ -310,6 +310,7 @@ class VRT(object):
             self.dataset - sets size and georeference
 
         """
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
         VRT.__init__(self, x_size, y_size, **kwargs)
         # set dataset (geo-)metadata
         self.dataset.SetProjection(projection)

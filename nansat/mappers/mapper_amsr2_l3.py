@@ -76,12 +76,7 @@ class Mapper(VRT):
                     metaDict.append(metaEntry)
 
         # initiate VRT for the NSIDC 10 km grid
-        VRT.__init__(self,
-                     srcGeoTransform=(-3850000, 10000, 0.0,
-                                      5850000, 0.0, -10000),
-                     srcProjection=NSR(3411).wkt,
-                     srcRasterXSize=760,
-                     srcRasterYSize=1120)
+        self._init_from_dataset_params(760, 1120, (-3850000, 10000, 0.0, 5850000, 0.0, -10000), NSR(3411).wkt)
 
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)

@@ -103,11 +103,9 @@ class Mapper(VRT):
         latlongSRSWKT = latlongSRS.ExportToWkt()
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self,
-                     srcRasterXSize=subDataset.RasterXSize,
-                     srcRasterYSize=subDataset.RasterYSize,
-                     srcGCPs=gcps,
-                     srcGCPProjection=latlongSRSWKT)
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(RasterXSize, RasterYSize, (0,1,0,RasterYSize,0,-1),
+                                        latlongSRSWKT, gcps, latlongSRSWKT)
 
         #print self.filename
         # Read all bands later

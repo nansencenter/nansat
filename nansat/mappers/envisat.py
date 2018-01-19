@@ -413,7 +413,7 @@ class Envisat(object):
                                                  order=1)
 
         # create VRT from the array
-        adsVrt = VRT(array=array)
+        adsVrt = VRT.from_array(array=array)
         # add "name" and "units" to band metadata
         bandMetadata = {"name": adsName, "units": adsParams['units']}
         adsVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)

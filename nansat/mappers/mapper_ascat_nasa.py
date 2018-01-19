@@ -45,8 +45,7 @@ class Mapper(VRT):
 
         # Create geolocation
         subDataset = gdal.Open('NETCDF:"' + filename + '":lat')
-        self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
-                             srcRasterYSize=subDataset.RasterYSize)
+        self.GeolocVRT = VRT(subDataset.RasterXSize, subDataset.RasterYSize)
 
         GeolocMetaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                       '":lon'),
@@ -71,12 +70,11 @@ class Mapper(VRT):
                                         line_step=1, pixel_step=1)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self,
-                     srcRasterXSize=subDataset.RasterXSize,
-                     srcRasterYSize=subDataset.RasterYSize,
-                     gdalDataset=subDataset,
-                     geolocationArray=GeolocObject,
-                     srcProjection=GeolocObject.d['SRS'])
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(subDataset.RasterXSize, subDataset.RasterYSize,
+                                        (0,1,0,subDataset.RasterYSize,0,-1),
+                                        GeolocObject.d['SRS'])
+        self._add_geolocation(GeolocObject)
 
         # Scale and NODATA should ideally be taken directly from raw file
         metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +

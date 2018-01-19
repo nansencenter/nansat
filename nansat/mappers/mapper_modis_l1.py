@@ -42,7 +42,7 @@ class Mapper(HDF4Mapper):
             raise WrongMapperError
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset)
+        self._init_from_gdal_dataset(gdalSubDataset)
 
         subDsString = 'HDF4_EOS:EOS_SWATH:"%s":MODIS_SWATH_Type_L1B:%s'
 

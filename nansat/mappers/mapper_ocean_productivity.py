@@ -107,12 +107,9 @@ class Mapper(VRT):
         numberOfColumns = 4320
         numberOfLines = 2160
         #longitudeStep = float(simGdalMetadata['Longitude Step'])
-        VRT.__init__(self,
-                     srcGeoTransform=(-180.0, longitudeStep, 0.0,
-                                      90.0, 0.0, -longitudeStep),
-                     srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
-                     srcRasterXSize=numberOfColumns,
-                     srcRasterYSize=numberOfLines)
+        self._init_from_dataset_params(numberOfColumns, numberOfLines,
+                                       (-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
+                                       'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
 
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)

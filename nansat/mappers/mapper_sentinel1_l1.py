@@ -509,7 +509,7 @@ class Mapper(VRT):
         ''' Create fake VRT and add metadata only from the manifest.safe '''
         X, Y, lon, lat, inc, ele, numberOfSamples, numberOfLines = self.read_geolocation_lut(annotXML)
 
-        super(Mapper, self).__init__(self, numberOfSamples, numberOfLines)
+        super(Mapper, self).__init__(numberOfSamples, numberOfLines)
         doc = ET.fromstring(manifestXML)
 
         gcps = []

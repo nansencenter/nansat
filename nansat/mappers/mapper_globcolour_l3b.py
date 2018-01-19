@@ -61,7 +61,7 @@ class Mapper(VRT, Globcolour):
             #latlonGrid = np.mgrid[47:39:300j, 25:45:500j].astype('float32')
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
+        self._init_from_lonlat(latlonGrid[1], latlonGrid[0])
 
         # get list of similar (same date) files in the directory
         simFilesMask = os.path.join(iDir, iFileName[0:30] + '*' + mask + '.nc')

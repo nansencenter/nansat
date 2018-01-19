@@ -58,7 +58,7 @@ class Mapper(VRT):
             'NETCDF:"' + filename + '":longitude"').ReadAsArray()
         lat = gdal.Open(
             'NETCDF:"' + filename + '":latitude"').ReadAsArray()
-        VRT.__init__(self, lat=lat, lon=lon)
+        self._init_from_lonlat(lon, lat)
 
         # Add bands with wind components
         metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +

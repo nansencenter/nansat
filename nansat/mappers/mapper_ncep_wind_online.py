@@ -131,7 +131,7 @@ class Mapper(VRT, object):
         # Open downloaded grib file with a(ny) Nansat mapper
         ######################################################
         w = Nansat(outFileName)
-        VRT.__init__(self, vrt_dataset=w.vrt.dataset)
+        self._copy_from_dataset(w.vrt.dataset)
 
         return
 

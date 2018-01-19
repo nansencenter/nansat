@@ -90,7 +90,7 @@ class Mapper(VRT):
         passDirection = rs2_3['passDirection']
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         #define dictionary of metadata and band specific parameters
         pol = []
@@ -181,12 +181,12 @@ class Mapper(VRT):
         # Decompose, to avoid interpolation errors around 0 <-> 360
         look_direction_u = np.sin(np.deg2rad(look_direction))
         look_direction_v = np.cos(np.deg2rad(look_direction))
-        look_u_VRT = VRT(array=look_direction_u, lat=lat, lon=lon)
-        look_v_VRT = VRT(array=look_direction_v, lat=lat, lon=lon)
+        look_u_VRT = VRT.from_array(look_direction_u)
+        look_v_VRT = VRT.from_array(look_direction_v)
 
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
-        lookVRT = VRT(lat=lat, lon=lon)
+        lookVRT = VRT.from_lonlat(lon, lat)
         lookVRT.create_band(
             [{'SourceFilename': look_u_VRT.filename, 'SourceBand': 1},
              {'SourceFilename': look_v_VRT.filename, 'SourceBand': 1}],
