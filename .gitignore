@@ -5,9 +5,14 @@
 .project
 .pydevproject
 test_data/
+test_data/
 build/
 dist/
 nansat.egg-info/
 docs/_build/
 #docs/_static/
 #docs/_templates/
+.project
+.pydevproject
+.idea
+.settings
