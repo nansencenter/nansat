@@ -13,19 +13,12 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
 import unittest
-import warnings
 import os
-import sys
-import glob
-from types import ModuleType, FloatType
-import datetime
 
 import matplotlib.pyplot as plt
-import numpy as np
-from scipy.interpolate import griddata
+#from scipy.interpolate import griddata
 
-from nansat import Nansat, Domain, Nansatmap, NSR
-from nansat.tools import gdal, OptionError
+from nansat import Nansat, Nansatmap
 
 import nansat_test_data as ntd
 
@@ -77,22 +70,6 @@ class NansatmapTest(unittest.TestCase):
         nmap = Nansatmap(n)
         nmap.pcolormesh(b1)
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansatmap_pcolormesh.png')
-        nmap.save(tmpfilename)
-
-        self.assertTrue(os.path.exists(tmpfilename))
-
-    def test_add_labels(self):
-        size, npo = 100, 10
-        xy = np.random.randint(0, size, npo*2).reshape(npo, 2)
-        z = np.random.randint(0, size, npo)
-        xg, yg = np.meshgrid(range(size), range(size))
-        zg = griddata(xy, z, np.dstack([xg, yg]), method='nearest')
-        dstDomain = Domain(NSR().wkt, '-te -10 -10 10 10 -ts 100 100')
-
-        nmap = Nansatmap(dstDomain)
-        nmap.imshow(zg, cmap='random')
-        nmap.add_zone_labels(zg, fontsize=10)
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansatmap_zonelables.png')
         nmap.save(tmpfilename)
 
         self.assertTrue(os.path.exists(tmpfilename))
