@@ -14,6 +14,7 @@ import unittest
 import logging
 import os
 from mock import patch
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import gdal
@@ -135,10 +136,17 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt2.dataset.RasterCount, 1)
 
     def test_export(self):
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'temp.vrt.xml')
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
-        vrt.export('temp.vrt.xml')
-        self.assertTrue(os.path.exists('temp.vrt.xml'))
+        vrt.export(tmpfilename)
+        self.assertTrue(tmpfilename)
+        tree = ET.parse(tmpfilename)
+        root = tree.getroot()
+
+        self.assertEqual(root.tag, 'VRTDataset')
+        self.assertEqual(root.keys(), ['rasterXSize', 'rasterYSize'])
+        self.assertEqual([e.tag for e in root], ['Metadata', 'VRTRasterBand'])
 
     def test_create_band(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]

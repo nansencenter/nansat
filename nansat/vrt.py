@@ -538,9 +538,7 @@ class VRT(object):
 
         options = VRT._set_add_band_options(srcs, dst)
 
-
-# TODO:
-#   check individual dst keys in idividual functions
+        # TODO: refactor: check individual dst keys in idividual functions
 
         # set destination dataType (if not given in input parameters)
         if 'dataType' not in dst:
@@ -674,7 +672,7 @@ class VRT(object):
             self.delete_bands(rm_bands)
 
     def _add_swath_mask_band(self):
-        """ Create a new band where all values = 1
+        """Create a new band where all values = 1
 
         Modifies
         ---------
@@ -693,6 +691,7 @@ class VRT(object):
             })
 
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
+        """Remove unwanted metadata"""
         if not gdal_metadata:
             raise WrongMapperError
 
@@ -729,7 +728,7 @@ class VRT(object):
         Sets GEOLOCATION metadata to ''
 
         """
-        self.geolocation.data = dict()
+        del self.geolocation
 
         # add GEOLOCATION metadata (empty if geolocation is empty)
         self.dataset.SetMetadata('', 'GEOLOCATION')
