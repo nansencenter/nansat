@@ -263,6 +263,21 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(param_err.message,
                              'Expeced parameter is te, lle, ts, tr. (test_param given)')
 
+    def test_add_to_dict(self):
+        input_1 = ['-te', '5', '60', '6', '61']
+        output_1 = {'te': [5., 60., 6., 61]}
+        key_1, extent_1 = Domain._add_to_dict(dict(), input_1)
+        self.assertIsInstance(extent_1, dict)
+        self.assertIsInstance(key_1, str)
+        self.assertEqual(key_1, input_1[0].replace('-', ''))
+        self.assertEqual(len(extent_1), 1)
+        self.assertEqual(extent_1, output_1)
+        input_2 = ['-te', '5', '60', '6', '61']
+        try:
+            key_2, extent_2 = Domain._add_to_dict(dict(), input_2)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, 'Input values must be int or float')
+
     def test_create_extent_dict(self):
         test_data = ('-te 5 60 6 61 -ts 500 500',
                      '-te 5 60 6 61')
