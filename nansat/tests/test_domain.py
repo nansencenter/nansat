@@ -320,6 +320,24 @@ class DomainTest(unittest.TestCase):
                                               '(1 given): <-tr x_resolution y_resolution> or '
                                               '<-ts width height>')
 
+    def test_check_size(self):
+        te_lle_example = '<-te x_min y_min x_max y_max> or <-lle min_lon min_lat max_lon max_lat>'
+        tr_ts_example = '<-tr x_resolution y_resolution> or <-ts width height>'
+        self.assertEqual(Domain._check_size(2, 2, ('-te', '-lle'), te_lle_example), None)
+
+        try:
+            Domain._check_size(1, 2, ('-ts', '-tr'), tr_ts_example)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+                                              '(1 given): <-tr x_resolution y_resolution> or '
+                                              '<-ts width height>')
+        try:
+            Domain._check_size(2, 4, ('-te', '-lle'), te_lle_example)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+                                              '(2 given): <-te x_min y_min x_max y_max> or <-lle'
+                                              ' min_lon min_lat max_lon max_lat>')
+
     def test_create_extent_dict(self):
         test_data = ('-te 5 60 6 61 -ts 500 500',
                      '-te 5 60 6 61')
