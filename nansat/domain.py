@@ -399,7 +399,8 @@ class Domain(object):
             lon_arr, lat_arr = lon_grid[y_grid, x_grid], lat_grid[y_grid, x_grid]
         else:
             # generate lon,lat grids using GDAL Transformer
-            lon_vec, lat_vec = self.transform_points(x_grid.flatten(), y_grid.flatten(), dstSRS=dst_srs)
+            lon_vec, lat_vec = self.transform_points(x_grid.flatten(), y_grid.flatten(),
+                                                     dstSRS=dst_srs)
             lon_arr = lon_vec.reshape(x_grid.shape)
             lat_arr = lat_vec.reshape(x_grid.shape)
 
@@ -469,57 +470,18 @@ class Domain(object):
     def _validate_te_lle(options):
         example = '<-te x_min y_min x_max y_max> or <-lle min_lon min_lat max_lon max_lat>'
         Domain._check_size(len(options), 4, ('-te', '-lle'), example)
-        if options[0] <= options[2] or options[1] <= options[3]:
+        if options[0] >= options[2] or options[1] >= options[3]:
             raise OptionError('Min cannot be bigger than max: %s' % example)
 
     @staticmethod
     def _check_size(params_len, size, names, example):
         if params_len != size:
-            raise OptionError('%s and %s requires exactly 4 parameters (%s given): %s'
-                              % (names[0], names[1], params_len, example))
+            raise OptionError('%s and %s requires exactly %s parameters (%s given): %s'
+                              % (names[0], names[1], size, params_len, example))
 
     @staticmethod
     def _gen_regexp(param_1, param_2, size):
         return '(-%s|-%s)%s\s?' % (param_1, param_2, '(\s+[-+]?\d*[.\d*]*)' * size)
-
-    @staticmethod
-    def _create_extent_dict_beta(extent_str):
-
-        combinations = [('te', 'lle', 4), ('ts', 'tr', 2)]
-        usage_flags = [False, False]
-        extent_dict = {}
-        for combination in combinations:
-            option = re.findall(Domain._gen_regexp(*combination), extent_str)
-            key, extent_dict = Domain._add_to_dict(extent_dict, option)
-            if key is 'te' or key is 'lle':
-                usage_flags[0] = True
-                Domain._validate_te_lle(extent_dict[key])
-            elif key is 'ts' or key is 'tr':
-                usage_flags[1] = True
-                Domain._validate_ts_tr(extent_dict[key])
-
-        if len(extent_dict) != 2:
-            raise OptionError('<extent_dict> must contains exactly 2 parameters '
-                              '("-te" or "-lle") and ("-ts" or "-tr")')
-        if False in usage_flags:
-            OptionError('the combination should be ("-te" or "-lle") and ("-ts" or "-tr")'
-                        '(%s and %s given)' % extent_dict.keys())
-
-        return extent_dict
-
-    # TODO: Document and comment _check_parser_input
-    @staticmethod
-    def _check_extent_input(option_vars, params, size):
-        if option_vars[0] in params:
-            try:
-                # Check type of input values during counting of length
-                if len([float(el) for el in option_vars[1:]]) != size:
-                    raise OptionError('%s requires exactly %s parameters (%s given)'
-                                      % (option_vars[0], size, len(option_vars[1:])))
-            except ValueError:
-                raise OptionError('Input values must be int or float')
-        else:
-            raise OptionError('Expeced parameter is te, lle, ts, tr. (%s given)' % option_vars[0])
 
     @staticmethod
     def _create_extent_dict(extent_str):
@@ -550,21 +512,36 @@ class Domain(object):
         OptionError : occurs when the extent_str is improper
 
         """
-        options = extent_str.strip().split('-')[1:]
 
-        if len(options) != 2:
-            raise OptionError('_create_extentDic requires exactly '
-                              '2 parameters (%s given)' % len(options))
+        combinations = [('te', 'lle', 4), ('ts', 'tr', 2)]
+        extent_dict = {}
+        for combination in combinations:
+            try:
+                option = re.findall(Domain._gen_regexp(*combination), extent_str)[0]
+            except IndexError:
+                raise OptionError('<extent_dict> must contains exactly 2 parameters '
+                                  '("-te" or "-lle") and ("-ts" or "-tr")')
+            key, extent_dict = Domain._add_to_dict(extent_dict, option)
+            if key is 'te' or key is 'lle':
+                Domain._validate_te_lle(extent_dict[key])
+            elif key is 'ts' or key is 'tr':
+                Domain._validate_ts_tr(extent_dict[key])
 
-        options = list(map(lambda opt: opt.split(), options))
-        Domain._check_extent_input(options[0], ['te', 'lle'], 4)
-        Domain._check_extent_input(options[1], ['ts', 'tr'], 2)
+        return extent_dict
 
-        extent = {}
-        for option in options:
-            extent[option[0]] = [float(el) for el in option[1:]]
-
-        return extent
+    # TODO: Document and comment _check_parser_input
+    @staticmethod
+    def _check_extent_input(option_vars, params, size):
+        if option_vars[0] in params:
+            try:
+                # Check type of input values during counting of length
+                if len([float(el) for el in option_vars[1:]]) != size:
+                    raise OptionError('%s requires exactly %s parameters (%s given)'
+                                      % (option_vars[0], size, len(option_vars[1:])))
+            except ValueError:
+                raise OptionError('Input values must be int or float')
+        else:
+            raise OptionError('Expeced parameter is te, lle, ts, tr. (%s given)' % option_vars[0])
 
     def get_border(self, nPoints=10):
         """Generate two vectors with values of lat/lon for the border of domain
@@ -927,16 +904,40 @@ class Domain(object):
             labels to print on top of patches
         """
 
-        warnings.warn('Method "write_map" was moved to nansat.tools like write_domain_map')
+        warnings.warn('Method "write_map" was moved to nansat.tools like write_domain_map and'
+                      'will be removed since Nansat 1.3')
         border = self.get_border()
-        write_domain_map(border, outputFileName, lon_vec=lonVec, lat_vec=latVec, lon_border=lonBorder,
-                         lat_border=latBorder, figure_size=figureSize, dpi=dpi, projection=projection,
-                         resolution=resolution, continets_color=continetsColor, meridians=meridians,
-                         parallels=parallels, p_color=pColor, p_line=pLine, p_alpha=pAlpha,
+        write_domain_map(border, outputFileName, lon_vec=lonVec, lat_vec=latVec,
+                         lon_border=lonBorder, lat_border=latBorder, figure_size=figureSize,
+                         dpi=dpi, projection=projection, resolution=resolution,
+                         continets_color=continetsColor, meridians=meridians, parallels=parallels,
+                         p_color=pColor, p_line=pLine, p_alpha=pAlpha,
                          padding=padding, mer_labels=merLabels, par_labels=parLabels,
                          pltshow=pltshow, labels=labels)
 
-# TODO: rename vrt.reproject_GCPs for disambiguation
+    def reproject_gcps(self, srs_string=''):
+        """Reproject all GCPs to a new spatial reference system
+
+        Necessary before warping an image if the given GCPs
+        are in a coordinate system which has a singularity
+        in (or near) the destination area (e.g. poles for lonlat GCPs)
+
+        Parameters
+        ----------
+        srsString : string
+            SRS given as Proj4 string. If empty '+proj=stere' is used
+
+        Modifies
+        --------
+            Reprojects all GCPs to new SRS and updates GCPProjection
+        """
+        if srs_string == '':
+            lon, lat = self.get_border()
+            srs_string = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs' \
+                         % (np.nanmedian(lat), np.nanmedian(lon))
+
+        self.vrt.reproject_GCPs(srs_string)
+
     def reproject_GCPs(self, srsString=''):
         """Reproject all GCPs to a new spatial reference system
 
@@ -953,9 +954,7 @@ class Domain(object):
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
         """
-        if srsString == '':
-            lon, lat = self.get_border()
-            srsString = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs'\
-                        % (np.nanmedian(lat), np.nanmedian(lon))
+        warnings.warn('Method "reproject_GCPs" was moved to reproject_gcps(self, srs_string="") and'
+                      'will be removed since Nansat 1.3')
 
-        self.vrt.reproject_GCPs(srsString)
+        self.reproject_gcps(srs_string=srsString)
