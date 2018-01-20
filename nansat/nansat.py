@@ -477,19 +477,19 @@ class Nansat(Domain):
                              'SourceFilename': exportVRT.imag[-1].filename,
                              'SourceBand':  1},
                              'dst': bandMetadataI}]
-                exportVRT._create_bands(metaDict)
+                exportVRT.create_bands(metaDict)
             # delete the complex bands
             exportVRT.delete_bands(complexBands)
 
 # TODO: move to Exporter._add_geolocation_bands and DRY X/Y
         # add bands with geolocation to the VRT
         if addGeoloc and hasattr(exportVRT, 'geolocation') and len(exportVRT.geolocation.data) > 0:
-            exportVRT._create_band(
+            exportVRT.create_band(
                 {'SourceFilename': self.vrt.geolocation.data['X_DATASET'],
                  'SourceBand': int(self.vrt.geolocation.data['X_BAND'])},
                 {'wkv': 'longitude',
                  'name': 'GEOLOCATION_X_DATASET'})
-            exportVRT._create_band(
+            exportVRT.create_band(
                 {'SourceFilename': self.vrt.geolocation.data['Y_DATASET'],
                  'SourceBand': int(self.vrt.geolocation.data['Y_BAND'])},
                 {'wkv': 'latitude',
@@ -1180,7 +1180,7 @@ class Nansat(Domain):
                 'wkv': 'swath_binary_mask',
                 'PixelFunctionType': 'OnesPixelFunc',
             }
-            self.vrt._create_band(src=src, dst=dst)
+            self.vrt.create_band(src=src, dst=dst)
             self.vrt.dataset.FlushCache()
 
         # create Warped VRT
@@ -1712,7 +1712,7 @@ class Nansat(Domain):
             self.logger.warning('No mapper fits, returning GDAL bands!')
             tmpVRT = VRT.from_gdal_dataset(gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
-                tmpVRT._create_band({'SourceFilename': self.fileName,
+                tmpVRT.create_band({'SourceFilename': self.fileName,
                                      'SourceBand': iBand + 1})
                 tmpVRT.dataset.FlushCache()
             self.mapper = 'gdal_bands'

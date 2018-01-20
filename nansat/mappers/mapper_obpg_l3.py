@@ -148,15 +148,13 @@ class Mapper(VRT):
                             get('Number of Lines',
                                 simGdalMetadata.get('Number_of_Lines', 1)))
         #longitudeStep = float(simGdalMetadata['Longitude Step'])
-        VRT.__init__(self,
-                     srcGeoTransform=(-180.0, longitudeStep, 0.0,
-                                      90.0, 0.0, -longitudeStep),
-                     srcProjection=NSR().wkt,
-                     srcRasterXSize=numberOfColumns,
-                     srcRasterYSize=numberOfLines)
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(numberOfColumns, numberOfLines,
+                                (-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
+                                NSR().wkt)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         startYear = int(simGdalMetadata.get('Start Year',

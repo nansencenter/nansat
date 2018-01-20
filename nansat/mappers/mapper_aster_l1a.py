@@ -64,10 +64,10 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         gdalSubDataset = gdal.Open(metaDict[0]['src']['SourceFilename'])
-        VRT.__init__(self, gdalSubDataset)
+        self._init_from_gdal_dataset(gdalSubDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # find largest lon/lat subdatasets
         latShape0 = 0

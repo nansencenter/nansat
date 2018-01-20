@@ -170,7 +170,7 @@ class Opendap(VRT):
         metaDict = [self.get_metaitem(filename, dsVarName, dsLayerNo)
                       for dsVarName in dsVarNames]
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         timeResSecs = self.get_time_coverage_resolution()

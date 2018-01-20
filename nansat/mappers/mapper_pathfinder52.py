@@ -67,7 +67,7 @@ class Mapper(vrt.VRT):
             metaDict.append(metaEntry)
 
         # create empty VRT dataset with geolocation only
-        vrt.VRT.__init__(self, subGDALDataset)
+        self._init_from_gdal_dataset(subGDALDataset)
 
         # add mask
         if qualName != '':
@@ -85,7 +85,7 @@ class Mapper(vrt.VRT):
                              'dst': {'name': 'mask'}})
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # append fixed projection and geotransform
         self.dataset.SetProjection(NSR().wkt)

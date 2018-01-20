@@ -222,10 +222,10 @@ class Mapper(VRT):
             metaDict.append({'src': src, 'dst': dst})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         # Create bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # For Meteosat7 ch1 has higher resolution than ch2 and ch3
         # and for MSG, channel 12 (HRV) has

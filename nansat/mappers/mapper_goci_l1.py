@@ -35,10 +35,7 @@ class Mapper(VRT):
         geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
 
         # create empty VRT dataset with georeference only
-        VRT.__init__(self, srcGeoTransform=geoTransform,
-                     srcProjection=projection,
-                     srcRasterXSize=rasterXSize,
-                     srcRasterYSize=rasterYSize)
+        self._init_from_dataset_params(rasterXSize, rasterYSize, geoTransform, projection)
 
         # add bands from subdatasets
         subDatasets = gdalDataset.GetSubDatasets()
@@ -54,4 +51,4 @@ class Mapper(VRT):
             metaDict.append(metaEntry)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

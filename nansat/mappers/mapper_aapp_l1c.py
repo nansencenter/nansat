@@ -112,7 +112,7 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.band_vrts['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
+        self.band_vrts['RawGeolocVRT'].create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
         self.band_vrts['GeolocVRT'] = VRT(srcRasterXSize=51,
@@ -128,7 +128,7 @@ class Mapper(VRT):
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.band_vrts['GeolocVRT']._create_bands(GeolocMetaDict)
+        self.band_vrts['GeolocVRT'].create_bands(GeolocMetaDict)
 
         GeolocObject = Geolocation(x_vrt=self.band_vrts['GeolocVRT'],
                                         y_vrt=self.band_vrts['GeolocVRT'],
@@ -141,20 +141,11 @@ class Mapper(VRT):
         #######################
         # create empty VRT dataset with geolocation only
         # (from Geolocation Array)
-        VRT.__init__(self,
-                     srcRasterXSize=2048,
-                     srcRasterYSize=numCalibratedScanLines,
-                     geolocationArray=GeolocObject,
-                     srcProjection=GeolocObject.d['SRS'])
+        self._init_from_dataset_params(2048, numCalibratedScanLines,
+                                        (0,1,0,numCalibratedScanLines,0,-1),
+                                        GeolocObject.d['SRS'])
+        self._add_geolocation(GeolocObject)
 
-        # Since warping quality is horrible using geolocation arrays
-        # which are much smaller than raster bands (due to a bug in GDAL:
-        # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
-        # are here converted to GCPs. Only a subset of GCPs is added,
-        # significantly increasing speed when using -tps warping
-        reductionFactor = 2
-        self._geolocation_array_to_gcps(1 * reductionFactor,
-                                           40 * reductionFactor)
 
         ##################
         # Create bands
@@ -229,8 +220,8 @@ class Mapper(VRT):
                          'units': 'kelvin',
                          'minmax': '-3 3'}})
 
-        self.self.band_vrts['RawBandsVRT']._create_bands(RawMetaDict)
-        self._create_bands(metaDict)
+        self.self.band_vrts['RawBandsVRT'].create_bands(RawMetaDict)
+        self.create_bands(metaDict)
 
         globalMetadata = {}
         globalMetadata['satID'] = str(satID)

@@ -104,11 +104,11 @@ class Mapper(VRT):
                     'PixelFunctionType': 'UVToDirectionFrom'}})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, lat=lat, lon=lon)
+        self._init_from_lonlat(lon, lat)
 
         # add bands with metadata and corresponding values
         # to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add time
         self.dataset.SetMetadataItem('time_coverage_start', fileTime.isoformat())

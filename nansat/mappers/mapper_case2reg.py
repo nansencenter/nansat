@@ -54,6 +54,6 @@ class Mapper(mg.Mapper):
                     'suffix': str(wavelength),
                     'wavelength': str(wavelength),
                     'PixelFunctionType': 'NormReflectanceToRemSensReflectance'}
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
         self.dataset.FlushCache()

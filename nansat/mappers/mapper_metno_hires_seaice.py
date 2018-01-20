@@ -74,11 +74,7 @@ class Mapper(VRT):
         srcGeotransform = (-1243.008 - 1, 1, 0, -3190.026 - 7, 0, 1)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self,
-                     srcGeoTransform=srcGeotransform,
-                     srcProjection=srcProjection,
-                     srcRasterXSize=3812,
-                     srcRasterYSize=2980)
+        self._init_from_dataset_params(3812, 2980, srcGeotransform, srcProjection)
 
         metaDict = [{'src': {'SourceFilename': filename,
                              'sourceBand': 1},
@@ -86,7 +82,7 @@ class Mapper(VRT):
                              'wkv': 'sea_ice_area_fraction'}}]
 
         # Add band
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Set time
         self.logger.info('Valid time: %s', str(validTime))

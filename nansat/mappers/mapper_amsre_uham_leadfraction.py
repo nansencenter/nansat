@@ -36,12 +36,7 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # initiate VRT for the NSIDC 10 km grid
-        VRT.__init__(self,
-                     srcGeoTransform=(-3850000, 6250, 0.0,
-                                      5850000, 0.0, -6250),
-                     srcProjection=NSR(3411).wkt,
-                     srcRasterXSize=1216,
-                     srcRasterYSize=1792)
+        self._init_from_dataset_params(1216, 1792, (-3850000, 6250, 0.0, 5850000, 0.0, -6250), NSR(3411).wkt)
 
         src = {
             'SourceFilename': 'NETCDF:"%s":lf'%filename,
@@ -52,7 +47,7 @@ class Mapper(VRT):
             'long_name': 'AMSRE sea ice lead fraction',
         }
 
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
 

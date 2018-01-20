@@ -131,10 +131,10 @@ class Mapper(VRT, Envisat):
                              })
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         self._set_envisat_time(gdalMetadata)

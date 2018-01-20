@@ -172,7 +172,7 @@ class Mapper(VRT):
             metaDict.append({'src': src, 'dst': dst})
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         metaDict = []
         for i in range(self.dataset.RasterCount):
@@ -194,7 +194,7 @@ class Mapper(VRT):
                 })
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         self.dataset.SetMetadataItem('time_coverage_start',

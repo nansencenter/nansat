@@ -113,10 +113,10 @@ class Mapper(VRT):
                 gdalDataset4Use = bandDataset
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset4Use)
+        self._init_from_gdal_dataset(gdalDataset4Use)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         if len(mtlFileName) > 0:
             mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0],

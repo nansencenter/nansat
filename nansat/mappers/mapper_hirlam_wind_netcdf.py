@@ -41,7 +41,7 @@ class Mapper(VRT):
         subDataset = gdal.Open('NETCDF:"' + filename + '":x_wind_10m')
         #self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
         #                srcRasterYSize=subDataset.RasterYSize)
-        #self.GeolocVRT._create_bands(GeolocMetaDict)
+        #self.GeolocVRT.create_bands(GeolocMetaDict)
 
         #GeolocObject = GeolocationArray(xVRT=self.GeolocVRT,
         #                                yVRT=self.GeolocVRT,
@@ -58,7 +58,7 @@ class Mapper(VRT):
             'NETCDF:"' + filename + '":longitude"').ReadAsArray()
         lat = gdal.Open(
             'NETCDF:"' + filename + '":latitude"').ReadAsArray()
-        VRT.__init__(self, lat=lat, lon=lon)
+        self._init_from_lonlat(lon, lat)
 
         # Add bands with wind components
         metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
@@ -89,7 +89,7 @@ class Mapper(VRT):
 
         # add bands with metadata and corresponding values
         # to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         validTime = datetime.datetime.utcfromtimestamp(

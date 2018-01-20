@@ -74,7 +74,7 @@ class Mapper(HDF4Mapper):
             raise WrongMapperError
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalSubDataset0)
+        self._init_from_gdal_dataset(gdalSubDataset0)
 
         # add source band, wkv and suffix
         for metaEntry in metaDict:
@@ -95,7 +95,7 @@ class Mapper(HDF4Mapper):
             metaEntry['src']['ScaleOffset'] = float(gdalMetadata['OFFSET' + bandNo])
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         datetimeString = self.find_metadata(gdalMetadata, "SETTINGTIMEOFPOINTING")

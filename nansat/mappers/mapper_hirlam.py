@@ -71,10 +71,10 @@ class Mapper(VRT):
                      }]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         # Create bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set source, start_date, stop_date
         self.dataset.SetMetadataItem('source', 'HIRLAM')

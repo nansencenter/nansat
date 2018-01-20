@@ -103,11 +103,9 @@ class Mapper(VRT):
         latlongSRSWKT = latlongSRS.ExportToWkt()
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self,
-                     srcRasterXSize=subDataset.RasterXSize,
-                     srcRasterYSize=subDataset.RasterYSize,
-                     srcGCPs=gcps,
-                     srcGCPProjection=latlongSRSWKT)
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(RasterXSize, RasterYSize, (0,1,0,RasterYSize,0,-1),
+                                        latlongSRSWKT, gcps, latlongSRSWKT)
 
         #print self.filename
         # Read all bands later
@@ -124,7 +122,7 @@ class Mapper(VRT):
                 dst = {'dataType': gdal.GDT_Float32,
                        'name': 'RawCounts_%s_real' %
                        gdalMetadata[filenames[i][-7:-4]+'_Polarisation']}
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
                 src = {'SourceFilename': filenames[i],
                        'SourceBand': 2,
@@ -132,7 +130,7 @@ class Mapper(VRT):
                 dst = {'dataType': gdal.GDT_Float32,
                        'name': 'RawCounts_%s_imaginary' %
                        gdalMetadata[filenames[i][-7:-4] + '_Polarisation']}
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
                 self.dataset.FlushCache()
 
@@ -171,7 +169,7 @@ class Mapper(VRT):
                        #'pass': gdalMetadata['']
                        #         - I can't find this in the metadata...
 
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
 
                 self.dataset.FlushCache()

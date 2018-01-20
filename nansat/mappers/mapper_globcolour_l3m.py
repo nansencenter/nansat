@@ -113,10 +113,10 @@ class Mapper(VRT, Globcolour):
 
         # create empty VRT dataset with geolocation only
         simGdalDataset.SetProjection('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
-        VRT.__init__(self, simGdalDataset)
+        self._init_from_gdal_dataset(simGdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         startYear = int(gdalMetadata['Start Year'])

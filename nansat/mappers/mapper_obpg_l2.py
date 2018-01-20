@@ -63,13 +63,10 @@ class Mapper(OBPGL2BaseClass):
             geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
 
             # create empty VRT dataset with georeference only
-            VRT.__init__(self, srcGeoTransform=geoTransform,
-                         srcProjection=projection,
-                         srcRasterXSize=rasterXSize,
-                         srcRasterYSize=rasterYSize)
+            self._init_from_dataset_params(rasterXSize, rasterYSize, geoTransform, projection)
         else:
             # create empty VRT dataset with geolocation only
-            VRT.__init__(self, gdalSubDataset)
+            self._init_from_gdal_dataset(gdalSubDataset)
 
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
@@ -191,7 +188,7 @@ class Mapper(OBPGL2BaseClass):
                     bandNo += 1
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set TIME
         startYear = int(gdalMetadata['Start Year'])

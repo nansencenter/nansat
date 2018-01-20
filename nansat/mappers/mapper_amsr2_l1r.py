@@ -111,9 +111,9 @@ class Mapper(VRT):
 
         # create VRT from one of the subdatasets
         gdalSubDataset = gdal.Open(metaEntry['src']['SourceFilename'])
-        VRT.__init__(self, srcRasterXSize=subDatasetWidth, srcRasterYSize=ySize)
+        self._init_from_dataset_params(subDatasetWidth, ySize, (1,0,0,ySize,0,-1), NSR().wkt)
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         self.dataset.SetMetadataItem('time_coverage_start',
                     parse_time(gdalMetadata['ObservationStartDateTime']).isoformat())
