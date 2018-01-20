@@ -280,6 +280,29 @@ class DomainTest(unittest.TestCase):
         except OptionError as opt_err:
             self.assertEqual(opt_err.message, 'Input values must be int or float')
 
+    def test_validate_te_lle(self):
+        input_1 = [5., 60., 6., 61.]
+        input_2 = ([5., 60., 5., 61.],
+                   [5., 60., 4., 61.],
+                   [5., 60., 6., 59.])
+
+        input_3 = [60., 5., 61.]
+        self.assertEqual(Domain._validate_te_lle(input_1), None)
+        for inp in input_2:
+            try:
+                Domain._validate_te_lle(inp)
+            except OptionError as opt_err:
+                self.assertEqual(opt_err.message, 'Min cannot be bigger than max: '
+                                                  '<-te x_min y_min x_max y_max> or '
+                                                  '<-lle min_lon min_lat max_lon max_lat>')
+
+        try:
+            Domain._validate_te_lle(input_3)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+                                              '(3 given): <-te x_min y_min x_max y_max> or <-lle'
+                                              ' min_lon min_lat max_lon max_lat>')
+
     def test_create_extent_dict(self):
         test_data = ('-te 5 60 6 61 -ts 500 500',
                      '-te 5 60 6 61')
