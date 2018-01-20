@@ -338,19 +338,6 @@ class DomainTest(unittest.TestCase):
                                               '(2 given): <-te x_min y_min x_max y_max> or <-lle'
                                               ' min_lon min_lat max_lon max_lat>')
 
-    def test_create_extent_dict(self):
-        test_data = ('-te 5 60 6 61 -ts 500 500',
-                     '-te 5 60 6 61')
-
-        extent_dict = Domain._create_extent_dict(test_data[0])
-        self.assertEqual(extent_dict, {'te': [5.0, 60.0, 6.0, 61.0], 'ts': [500.0, 500.0]})
-
-        try:
-            Domain._create_extent_dict(test_data[0])
-        except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '_create_extentDic requires '
-                                              'exactly 2 parameters (1 given)')
-
     def test_gen_regexp(self):
         test_1 = '(-te|-lle)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?' \
                  '\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)\\s?'
@@ -361,7 +348,7 @@ class DomainTest(unittest.TestCase):
         result_2 = Domain._gen_regexp('ts', 'tr', 2)
         self.assertEqual(result_2, test_2)
 
-    def test_create_extent_dict_beta(self):
+    def test_create_extent_dict(self):
         test = ('-te 5 60 6 61.1 -ts 500 500',
                 '-te -92.08 26.85 -92.00 26.91 -ts 200 200',
                 '-te 5 60 6 61.1',
@@ -369,21 +356,21 @@ class DomainTest(unittest.TestCase):
 
         output_1 = {'te': [5., 60., 6., 61.1], 'ts': [500, 500]}
         output_2 = {'te': [-92.08, 26.85, -92.00, 26.91], 'ts': [200, 200]}
-        result_1 = Domain._create_extent_dict_beta(test[0])
+        result_1 = Domain._create_extent_dict(test[0])
         self.assertIsInstance(result_1, dict)
         self.assertEquals(len(result_1.keys()), 2)
         self.assertEquals(result_1, output_1)
-        result_2 = Domain._create_extent_dict_beta(test[1])
+        result_2 = Domain._create_extent_dict(test[1])
         self.assertEquals(result_2, output_2)
 
         try:
-            test = Domain._create_extent_dict_beta(test[2])
+            test = Domain._create_extent_dict(test[2])
         except OptionError as opt_err:
             self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
 
         try:
-            test = Domain._create_extent_dict_beta(test[3])
+            test = Domain._create_extent_dict(test[3])
         except OptionError as opt_err:
             self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
