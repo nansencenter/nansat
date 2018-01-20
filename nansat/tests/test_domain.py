@@ -264,15 +264,17 @@ class DomainTest(unittest.TestCase):
                              'Expeced parameter is te, lle, ts, tr. (test_param given)')
 
     def test_add_to_dict(self):
-        input_1 = ['-te', '5', '60', '6', '61']
-        output_1 = {'te': [5., 60., 6., 61]}
+        input_1 = ['-te', '5', '60', '6', '61.1']
+        output_1 = {'te': [5., 60., 6., 61.1]}
         key_1, extent_1 = Domain._add_to_dict(dict(), input_1)
         self.assertIsInstance(extent_1, dict)
         self.assertIsInstance(key_1, str)
         self.assertEqual(key_1, input_1[0].replace('-', ''))
         self.assertEqual(len(extent_1), 1)
+        self.assertIsInstance(extent_1.values(), list)
+        map(lambda el: self.assertIsInstance(el, float), *extent_1.values())
         self.assertEqual(extent_1, output_1)
-        input_2 = ['-te', '5', '60', '6', '61']
+        input_2 = ['-te', '5', 'str', '6', '61']
         try:
             key_2, extent_2 = Domain._add_to_dict(dict(), input_2)
         except OptionError as opt_err:
