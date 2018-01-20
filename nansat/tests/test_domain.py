@@ -351,6 +351,16 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(opt_err.message, '_create_extentDic requires '
                                               'exactly 2 parameters (1 given)')
 
+    def test_gen_regexp(self):
+        test_1 = '(-te|-lle)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?' \
+                 '\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)\\s?'
+        result_1 = Domain._gen_regexp('te', 'lle', 4)
+        self.assertIsInstance(result_1, str)
+        self.assertEqual(result_1, test_1)
+        test_2 = '(-ts|-tr)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)\\s?'
+        result_2 = Domain._gen_regexp('ts', 'tr', 2)
+        self.assertEqual(result_2, test_2)
+
     def test_get_min_max_lat_lon(self):
         dom = Domain(4326, "-te 5 60 6 61 -ts 500 500")
         result = dom.get_min_max_lat_lon()
