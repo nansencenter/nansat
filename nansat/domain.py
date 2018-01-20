@@ -529,20 +529,6 @@ class Domain(object):
 
         return extent_dict
 
-    # TODO: Document and comment _check_parser_input
-    @staticmethod
-    def _check_extent_input(option_vars, params, size):
-        if option_vars[0] in params:
-            try:
-                # Check type of input values during counting of length
-                if len([float(el) for el in option_vars[1:]]) != size:
-                    raise OptionError('%s requires exactly %s parameters (%s given)'
-                                      % (option_vars[0], size, len(option_vars[1:])))
-            except ValueError:
-                raise OptionError('Input values must be int or float')
-        else:
-            raise OptionError('Expeced parameter is te, lle, ts, tr. (%s given)' % option_vars[0])
-
     def get_border(self, nPoints=10):
         """Generate two vectors with values of lat/lon for the border of domain
 
