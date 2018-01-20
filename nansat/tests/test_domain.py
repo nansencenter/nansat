@@ -282,10 +282,7 @@ class DomainTest(unittest.TestCase):
 
     def test_validate_te_lle(self):
         input_1 = [5., 60., 6., 61.]
-        input_2 = ([5., 60., 5., 61.],
-                   [5., 60., 4., 61.],
-                   [5., 60., 6., 59.])
-
+        input_2 = ([5., 60., 5., 61.], [5., 60., 4., 61.], [5., 60., 6., 59.])
         input_3 = [60., 5., 61.]
         self.assertEqual(Domain._validate_te_lle(input_1), None)
         for inp in input_2:
@@ -302,6 +299,26 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
                                               '(3 given): <-te x_min y_min x_max y_max> or <-lle'
                                               ' min_lon min_lat max_lon max_lat>')
+
+    def test_validate_ts_tr(self):
+        input_1 = [100, 200]
+        input_2 = ([0, 0], [0, 50], [10, 0], [-1, 10], [10, -100], [-100, -100])
+        input_3 = [10]
+        self.assertEqual(Domain._validate_ts_tr(input_1), None)
+
+        for inp in input_2:
+            try:
+                Domain._validate_ts_tr(inp)
+            except OptionError as opt_err:
+                self.assertEqual(opt_err.message, 'Resolution or width and height must be bigger '
+                                                  'than 0: <-tr x_resolution y_resolution> or '
+                                                  '<-ts width height>')
+        try:
+            Domain._validate_ts_tr(input_3)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+                                              '(1 given): <-tr x_resolution y_resolution> or '
+                                              '<-ts width height>')
 
     def test_create_extent_dict(self):
         test_data = ('-te 5 60 6 61 -ts 500 500',
