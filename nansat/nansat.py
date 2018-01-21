@@ -2230,8 +2230,8 @@ def _import_mappers(logLevel=None):
                     nansatMappers[name] = module.Mapper
 
         # move netcdfcdf mapper to the end
-        if 'mapper_netcdfcf' in nansatMappers:
-            nansatMappers['mapper_netcdfcf'] = nansatMappers.pop('mapper_netcdfcf')
+        if 'mapper_netcdf_cf' in nansatMappers:
+            nansatMappers['mapper_netcdf_cf'] = nansatMappers.pop('mapper_netcdf_cf')
 
         # move generic_mapper to the end
         if 'mapper_generic' in nansatMappers:

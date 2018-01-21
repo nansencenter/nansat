@@ -122,7 +122,7 @@ class Mapper(OBPGL2BaseClass):
 
         # create VRT
         # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
-        self._init_from_dataset_params(rasterXSize, rasterYSize, (0, 1, 0, RasterYSize, 0, -1),
+        self._init_from_dataset_params(rasterXSize, rasterYSize, (0, 1, 0, rasterYSize, 0, -1),
                                         NSR().wkt, gcps, NSR().wkt)
         # add bands
         self.create_bands(metaDict)

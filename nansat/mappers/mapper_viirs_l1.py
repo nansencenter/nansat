@@ -119,5 +119,5 @@ class Mapper(VRT):
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
         # remove geolocation array
-        self._remove_geolocation_array()
+        self._remove_geolocation()
         #"""

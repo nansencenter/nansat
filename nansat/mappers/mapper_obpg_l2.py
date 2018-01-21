@@ -203,7 +203,7 @@ class Mapper(OBPGL2BaseClass):
         self._remove_geotransform()
 
         # add geolocation
-        geoMeta = self.geolocationArray.d
+        geoMeta = self.geolocation.data
         if len(geoMeta) > 0:
             self.dataset.SetMetadata(geoMeta, 'GEOLOCATION')
 
@@ -263,7 +263,7 @@ class Mapper(OBPGL2BaseClass):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
-        self._remove_geolocation_array()
+        self._remove_geolocation()
 
         # reproject GCPs
         center_lon /= k
