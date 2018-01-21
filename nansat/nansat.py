@@ -313,7 +313,7 @@ class Nansat(Domain):
             if params is None:
                 params = {}
             # TODO: VRD create band should be public
-            band_name = self.vrt._create_band(
+            band_name = self.vrt.create_band(
                 {'SourceFilename': band_vrt.filename,
                  'SourceBand': 1},
                 params)
