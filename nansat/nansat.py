@@ -75,6 +75,9 @@ class Nansat(Domain):
     Nansat uses instance of Figure (collection of methods for visualization)
     '''
 
+    FILL_VALUE = 9.96921e+36
+    ALT_FILL_VALUE = -10000.
+
     def __init__(self, fileName='', mapperName='', domain=None,
                  array=None, parameters=None, logLevel=30, **kwargs):
         '''Create Nansat object
@@ -175,7 +178,7 @@ class Nansat(Domain):
         self.logger.debug('Object created from %s ' % self.fileName)
 
     def __getitem__(self, bandID):
-        ''' Returns the band as a NumPy array, by overloading []
+        """ Returns the band as a NumPy array, by overloading []
 
         Parameters
         -----------
@@ -188,62 +191,57 @@ class Nansat(Domain):
         --------
         self.get_GDALRasterBand(bandID).ReadAsArray() : NumPy array
 
-        '''
+        """
+        band_id = bandID
         # get band
-        band = self.get_GDALRasterBand(bandID)
+        band = self.get_GDALRasterBand(band_id)
         # get expression from metadata
         expression = band.GetMetadata().get('expression', '')
         # get data
-        bandData = band.ReadAsArray()
-        if bandData is None:
-            raise GDALError('Cannot read array from band %s' % str(bandID))
+        band_data = band.ReadAsArray()
+        # TODO: Fail tests with get item
+        if band_data is None:
+            raise GDALError('Cannot read array from band %s' % str(band_data))
 
         # execute expression if any
         if expression != '':
-            bandData = eval(expression)
+            band_data = eval(expression)
 
-# TODO: move below to _fill_with_nan() method
+        all_float_flag = band_data.dtype.char in np.typecodes['AllFloat']
         # Set invalid and missing data to np.nan (for floats only)
-        if ('_FillValue' in band.GetMetadata() and
-             bandData.dtype.char in np.typecodes['AllFloat']):
-            fillValue = float(band.GetMetadata()['_FillValue'])
-            bandData[bandData == fillValue] = np.nan
-            # quick hack to avoid problem with wrong _FillValue - see issue
-            # #123
-
-# TODO: use constants
-            if fillValue == 9.96921e+36:
-                altFillValue = -10000.
-                bandData[bandData == altFillValue] = np.nan
+        if '_FillValue' in band.GetMetadata() and all_float_flag:
+            band_data = self._fill_with_nan(band, band_data)
 
         # replace infs with np.NAN
-        if np.size(np.where(np.isinf(bandData))) > 0:
-            bandData[np.isinf(bandData)] = np.nan
+        if np.size(np.where(np.isinf(band_data))) > 0:
+            band_data[np.isinf(band_data)] = np.nan
 
         # erase out-of-swath pixels with np.Nan (if not integer)
-        if (self.has_band('swathmask') and bandData.dtype.char in
-                                            np.typecodes['AllFloat']):
+        if self.has_band('swathmask') and all_float_flag:
             swathmask = self.get_GDALRasterBand('swathmask').ReadAsArray()
-            bandData[swathmask == 0] = np.nan
+            band_data[swathmask == 0] = np.nan
 
-        return bandData
+        return band_data
+
+    # TODO: Test _fill_with_nan
+    def _fill_with_nan(self, band, band_data):
+        fill_value = float(band.GetMetadata()['_FillValue'])
+        band_data[band_data == fill_value] = np.nan
+        # quick hack to avoid problem with wrong _FillValue - see issue
+        # #123
+        if fill_value == self.FILL_VALUE:
+            band_data[band_data == self.ALT_FILL_VALUE] = np.nan
+
+        return band_data
 
     def __repr__(self):
-        '''Creates string with basic info about the Nansat object'''
-# TODO: replace with template
-        outString = '-' * 40 + '\n'
-        outString += self.fileName + '\n'
-        outString += '-' * 40 + '\n'
-        outString += 'Mapper: ' + self.mapper + '\n'
-        outString += '-' * 40 + '\n'
-        outString += self.list_bands(False)
-        outString += '-' * 40 + '\n'
-        outString += Domain.__repr__(self)
-        return outString
+        """Creates string with basic info about the Nansat object"""
+        out_str = '{separator}{filename}{separator}Mapper: {mapper}{bands}{separator}{domain}'
+        return out_str.format(separator=self.OUTPUT_SEPARATOR, filename=self.fileName,
+                              mapper=self.mapper, domain=Domain.__repr__(self))
 
-# TODO: add warning that add_band will be deprecated
     def add_band(self, array, parameters=None, nomem=False):
-        '''Add band from the array to self.vrt
+        """Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
         to self.vrt.band_vrts
@@ -270,11 +268,12 @@ class Nansat(Domain):
         n.add_band(a, p, nomem=True)
         # add new band from an array <a> with metadata <p> but keep it
         # temporarli on disk intead of memory
-        '''
+        """
+        warnings.warn('Method <add_band> will be removed since Nansat v.1.3')
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):
-        '''Add band from the array to self.vrt
+        """Add band from the array to self.vrt
 
         Create VRT object which contains VRT and RAW binary file and append it
         to self.vrt.band_vrts
@@ -298,7 +297,7 @@ class Nansat(Domain):
         # add two new bands from numpy arrays <a1> and <a2> with metadata in
         # <p1> and <p2>
 
-        '''
+        """
         # replace empty parameters with list of None
         if parameters is None:
             parameters = [None] * len(arrays)
@@ -307,38 +306,40 @@ class Nansat(Domain):
         band_vrts = [VRT.from_array(array, nomem=nomem) for array in arrays]
 
         self.vrt = self.vrt.get_super_vrt()
-
+        # TODO: Move to separate function
         # add the array band into self.vrt and get bandName
-        for bi, bandVRT in enumerate(band_vrts):
+        for bi, band_vrt in enumerate(band_vrts):
             params = parameters[bi]
             if params is None:
                 params = {}
-            bandName = self.vrt.create_band(
-                {'SourceFilename': bandVRT.filename,
+            # TODO: VRD create band should be public
+            band_name = self.vrt._create_band(
+                {'SourceFilename': band_vrt.filename,
                  'SourceBand': 1},
                 params)
-            self.vrt.band_vrts[bandName] = bandVRT
+            self.vrt.band_vrts[band_name] = band_vrt
 
         self.vrt.dataset.FlushCache()  # required after adding bands
 
     def bands(self):
-        ''' Make a dictionary with all metadata from all bands
+        """ Make a dictionary with all metadata from all bands
 
         Returns
         --------
         b : dictionary
             key = N, value = dict with all band metadata
 
-        '''
-# TODO: use list comprehension
-        b = {}
-        for iBand in range(self.vrt.dataset.RasterCount):
-            b[iBand + 1] = self.get_metadata(bandID=iBand + 1)
+        """
+        band_metadata = {}
+        for band_num in range(self.vrt.dataset.RasterCount):
+            band_metadata[band_num + 1] = self.get_metadata(bandID=band_num + 1)
 
-        return b
+        return band_metadata
 
+    # TODO: Test has_band
+    # TODO: Discus change of band to band_name
     def has_band(self, band):
-        '''Check if self has band with name <band>
+        """Check if self has band with name <band>
         Parameters
         ----------
             band : str
@@ -348,15 +349,13 @@ class Nansat(Domain):
         -------
             True/False if band exists or not
 
-        '''
-        bandExists = False
-        for b in self.bands():
-            if (self.bands()[b]['name'] == band or
-                 ('standard_name' in self.bands()[b] and
-                  self.bands()[b]['standard_name'] == band)):
-                bandExists = True
-
-        return bandExists
+        """
+        for band_num in self.bands():
+            band_meta = self.bands()[band_num]
+            if band_meta['name'] == band:
+                return True
+            elif 'standard_name' in band_meta and band_meta['standard_name'] == band:
+                return True
 
 # TODO:
 #   move to Exporter.export()
@@ -1007,6 +1006,7 @@ class Nansat(Domain):
 
         return factor
 
+    # TODO: Check how the get_GDALRasterBand method works with new VRT
     def get_GDALRasterBand(self, bandID=1):
         ''' Get a GDALRasterBand of a given Nansat object
 

@@ -23,7 +23,8 @@ from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError, ProjectionError, write_domain_map
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-    
+import re
+
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -67,6 +68,7 @@ class Domain(object):
 
     """
 
+    OUTPUT_SEPARATOR = '-' * 40 + '\n'
     KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
     <kml xmlns="http://www.opengis.net/kml/2.2"
     xmlns:gx="http://www.google.com/kml/ext/2.2"
@@ -206,14 +208,13 @@ class Domain(object):
 
         """
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
-        separator = '-' * 40 + '\n'
 
         out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
-        out_str += separator
+        out_str += self.OUTPUT_SEPARATOR
         corners = self.get_corners()
         out_str += 'Projection:\n'
         out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
-        out_str += separator
+        out_str += self.OUTPUT_SEPARATOR
         out_str += 'Corners (lon, lat):\n'
         out_str += corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
         out_str += corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
@@ -444,6 +445,67 @@ class Domain(object):
         extentDic['te'] = [minX, minY, maxX, maxY]
 
         return extentDic
+
+    @staticmethod
+    def _add_to_dict(extent, option):
+        """Convert options to list of float values and add to <extent> dict"""
+        try:
+            parameters = [float(el.strip()) for el in option[1:]]
+        except ValueError:
+            raise OptionError('Input values must be int or float')
+
+        key = option[0].strip().replace('-', '')
+        extent[key] = parameters
+        return key, extent
+
+    @staticmethod
+    def _validate_ts_tr(options):
+        example = '<-tr x_resolution y_resolution> or <-ts width height>'
+        Domain._check_size(len(options), 2, ('-ts', '-tr'), example)
+        if options[0] <= 0 or options[1] <= 0:
+            raise OptionError('Resolution or width and height must be bigger than 0: %s' % example)
+
+    @staticmethod
+    def _validate_te_lle(options):
+        example = '<-te x_min y_min x_max y_max> or <-lle min_lon min_lat max_lon max_lat>'
+        Domain._check_size(len(options), 4, ('-te', '-lle'), example)
+        if options[0] <= options[2] or options[1] <= options[3]:
+            raise OptionError('Min cannot be bigger than max: %s' % example)
+
+    @staticmethod
+    def _check_size(params_len, size, names, example):
+        if params_len != size:
+            raise OptionError('%s and %s requires exactly 4 parameters (%s given): %s'
+                              % (names[0], names[1], params_len, example))
+
+    @staticmethod
+    def _gen_regexp(param_1, param_2, size):
+        return '(-%s|-%s)%s\s?' % (param_1, param_2, '(\s+[-+]?\d*[.\d*]*)' * size)
+
+    @staticmethod
+    def _create_extent_dict_beta(extent_str):
+
+        combinations = [('te', 'lle', 4), ('ts', 'tr', 2)]
+        usage_flags = [False, False]
+        extent_dict = {}
+        for combination in combinations:
+            option = re.findall(Domain._gen_regexp(*combination), extent_str)
+            key, extent_dict = Domain._add_to_dict(extent_dict, option)
+            if key is 'te' or key is 'lle':
+                usage_flags[0] = True
+                Domain._validate_te_lle(extent_dict[key])
+            elif key is 'ts' or key is 'tr':
+                usage_flags[1] = True
+                Domain._validate_ts_tr(extent_dict[key])
+
+        if len(extent_dict) != 2:
+            raise OptionError('<extent_dict> must contains exactly 2 parameters '
+                              '("-te" or "-lle") and ("-ts" or "-tr")')
+        if False in usage_flags:
+            OptionError('the combination should be ("-te" or "-lle") and ("-ts" or "-tr")'
+                        '(%s and %s given)' % extent_dict.keys())
+
+        return extent_dict
 
     # TODO: Document and comment _check_parser_input
     @staticmethod
