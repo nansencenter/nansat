@@ -48,6 +48,9 @@ class Mapper(VRT, Envisat):
                 self.product[0:9] != "MER_RR__1"):
             raise WrongMapperError
 
+        # create empty VRT dataset with geolocation only
+        self._init_from_gdal_dataset(gdalDataset)
+
         metaDict = [{'src': {'SourceFilename': filename, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '413'}},
@@ -129,9 +132,6 @@ class Mapper(VRT, Envisat):
                                      'units': (adsVRT.dataset.GetRasterBand(1).
                                                GetMetadataItem('units'))}
                              })
-
-        # create empty VRT dataset with geolocation only
-        self._init_from_gdal_dataset(gdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)
