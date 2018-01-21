@@ -30,6 +30,7 @@ class Mapper(Opendap):
     xName = 'xc'
     yName = 'yc'
     t0 = dt.datetime(1978,01,01)
+    srcDSProjection = NSR().wkt
 
     def __init__(self, filename, gdalDataset, gdalMetadata,
                  date=None, ds=None, bands=None, cachedir=None,

@@ -165,7 +165,7 @@ class Opendap(VRT):
         # create VRT with correct lon/lat (geotransform)
         srcRasterXSize, srcRasterYSize = self.get_shape()
         srcGeoTransform = self.get_geotransform()
-        self._init_from_dataset_params(self, srcRasterXSize, srcRasterYSize, srcGeoTransform, srcProjection)
+        self._init_from_dataset_params(srcRasterXSize, srcRasterYSize, srcGeoTransform, self.srcDSProjection)
 
         metaDict = [self.get_metaitem(filename, dsVarName, dsLayerNo)
                       for dsVarName in dsVarNames]
