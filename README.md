@@ -35,12 +35,13 @@ export PATH=$HOME/miniconda/bin/:$PATH
 conda update -q --yes conda
 
 # install all requirements from conda-forge channel
-conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 cfunits python-dateutil pythesint nose
+conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 python-dateutil pythesint
 
 # finally install Nansat
 pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
 
 # run nansat.tests
+conda install -q --yes -c conda-forge nose coveralls mock
 nosetests nansat
 
 # Run all tests including nansat_integration_tests with coverage

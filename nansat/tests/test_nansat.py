@@ -63,13 +63,22 @@ class NansatTest(unittest.TestCase):
 
     def test_open_with_warnings(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        warnings.simplefilter("always", DeprecationWarning)
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", DeprecationWarning)
             n = Nansat(filename=self.test_file_gcps, mapper='generic', log_level=30)
             self.assertEqual(len(w), 0)
-            n = Nansat(fileName=self.test_file_gcps, mapperName='generic', logLevel=30)
+        with warnings.catch_warnings(record=True) as w:
+            n = Nansat(fileName=self.test_file_gcps)#, mapperName='generic', logLevel=30)
+            self.assertEqual(len(w), 1)
+        with warnings.catch_warnings(record=True) as w:
+            n = Nansat(self.test_file_gcps, mapperName='generic')
+            self.assertEqual(len(w), 1)
+        with warnings.catch_warnings(record=True) as w:
+            n = Nansat(self.test_file_gcps, logLevel=30)
+            self.assertEqual(len(w), 1)
+        with warnings.catch_warnings(record=True) as w:
             n = Nansat(domain=d)
-            self.assertEqual(len(w), 4)
+            self.assertEqual(len(w), 1)
 
     def test_get_time_coverage_start_end(self):
         n = Nansat(self.test_file_gcps, log_level=40)
