@@ -2182,7 +2182,7 @@ class Nansat(Domain):
         return extent
 
 
-def _import_mappers(logLevel=None):
+def _import_mappers(log_level=None):
     ''' Import available mappers into a dictionary
 
     Returns
@@ -2192,28 +2192,26 @@ def _import_mappers(logLevel=None):
         value: class Mapper(VRT) from the mapper module
 
     '''
-    logger = add_logger('import_mappers', logLevel=logLevel)
+    logger = add_logger('import_mappers', logLevel=log_level)
     # import built-in mappers
     import nansat.mappers
-    mappersPackages = [nansat.mappers]
+    mapper_packages = [nansat.mappers]
 
-# TODO: add exception
     # import user-defined mappers (if any)
     try:
-        import nansat_mappers
-    except:
+        import nansat_mappers as nansat_mappers_pkg
+    except ImportError:
         pass
     else:
         logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
-        mappersPackages = [nansat_mappers, nansat.mappers]
+        mapper_packages = [nansat_mappers_pkg, nansat.mappers]
 
     # create ordered dict for mappers
-    nansatMappers = OrderedDict()
-
-    for mappersPackage in mappersPackages:
-        logger.debug('From package: %s' % mappersPackage.__path__)
+    nansat_mappers = OrderedDict()
+    for mapper_package in mapper_packages:
+        logger.debug('From package: %s' % mapper_package.__path__)
         # scan through modules and load all modules that contain class Mapper
-        for finder, name, ispkg in (pkgutil.iter_modules(mappersPackage.__path__)):
+        for finder, name, ispkg in (pkgutil.iter_modules(mapper_package.__path__)):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
             # try to import mapper module
@@ -2223,18 +2221,18 @@ def _import_mappers(logLevel=None):
                 # keep ImportError instance instead of the mapper
                 exc_info = sys.exc_info()
                 logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
-                nansatMappers[name] = exc_info
+                nansat_mappers[name] = exc_info
             else:
-                # add the imported mapper to nansatMappers
+                # add the imported mapper to nansat_mappers
                 if hasattr(module, 'Mapper'):
-                    nansatMappers[name] = module.Mapper
+                    nansat_mappers[name] = module.Mapper
 
         # move netcdfcdf mapper to the end
-        if 'mapper_netcdf_cf' in nansatMappers:
-            nansatMappers['mapper_netcdf_cf'] = nansatMappers.pop('mapper_netcdf_cf')
+        if 'mapper_netcdf_cf' in nansat_mappers:
+            nansat_mappers['mapper_netcdf_cf'] = nansat_mappers.pop('mapper_netcdf_cf')
 
         # move generic_mapper to the end
-        if 'mapper_generic' in nansatMappers:
-            nansatMappers['mapper_generic'] = nansatMappers.pop('mapper_generic')
+        if 'mapper_generic' in nansat_mappers:
+            nansat_mappers['mapper_generic'] = nansat_mappers.pop('mapper_generic')
 
-    return nansatMappers
+    return nansat_mappers
