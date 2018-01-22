@@ -32,6 +32,7 @@ from nansat.tools import OptionError, gdal, ogr, ProjectionError
 from nansat.figure import Image
 import sys
 import nansat_test_data as ntd
+from mock import patch, PropertyMock
 
 
 class DomainTest(unittest.TestCase):
@@ -46,6 +47,8 @@ class DomainTest(unittest.TestCase):
         self.EXT_PARIS = "-te 2 48 3 49 -ts 500 500"
         self.SRS_PROJ4 = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
         self.SRS_EPSG = 4326
+        self.NSR_SRS_PROJ4 = NSR(self.SRS_PROJ4)
+        self.NSR_SRS_PROJ4_WKT = NSR(self.SRS_PROJ4).wkt
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
         if (    not os.path.exists(self.test_file_raw_proj)
@@ -59,6 +62,15 @@ class DomainTest(unittest.TestCase):
             Domain(ds=gdal.Open(self.test_file_raw_proj),
                    srs=self.SRS_PROJ4,
                    ext=self.EXT_TEST_FILE_TE_TS)
+
+    def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails(self):
+        @patch('nansat.domain.NSR')
+        @patch('nansat.domain.gdal.AutoCreateWarpedVRT', new_callable=PropertyMock, return_value=None)
+        def test_fail(self, mock_gdal, mock_NSR):
+            mock_NSR().return_value = self.NSR_SRS_PROJ4
+            type(mock_NSR()).wkt = PropertyMock(return_value=self.NSR_SRS_PROJ4_WKT)
+            return Domain(ds=gdal.Open(self.test_file_raw_proj), srs=self.SRS_PROJ4)
+        self.assertRaises(ProjectionError, test_fail, self)
 
     def test_init_from_strings(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
