@@ -238,7 +238,8 @@ class Nansat(Domain):
         """Creates string with basic info about the Nansat object"""
         out_str = '{separator}{filename}{separator}Mapper: {mapper}{bands}{separator}{domain}'
         return out_str.format(separator=self.OUTPUT_SEPARATOR, filename=self.fileName,
-                              mapper=self.mapper, domain=Domain.__repr__(self))
+                              bands=self.list_bands(False), mapper=self.mapper,
+                              domain=Domain.__repr__(self))
 
     def add_band(self, array, parameters=None, nomem=False):
         """Add band from the array to self.vrt

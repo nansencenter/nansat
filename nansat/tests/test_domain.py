@@ -235,46 +235,117 @@ class DomainTest(unittest.TestCase):
         self.assertFalse(Paris.overlaps(Norway))
         self.assertFalse(Paris.contains(Norway))
 
-    def test_check_extent_input(self):
-        test_data = (['te', '25', '70', '35', '72'],
-                     ['ts', '500', '500'],
-                     ['ts', '500'],
-                     ['ts', '500' 'str_test'],
-                     ['test_param', '500', '500'])
-
-        test_func = Domain._check_extent_input
-
-        self.assertEqual(test_func(test_data[0], ['te', 'lle'], 4), None)
-        self.assertEqual(test_func(test_data[1], ['ts', 'tr'], 2), None)
-
+    def test_add_to_dict(self):
+        input_1 = ['-te', '5', '60', '6', '61.1']
+        output_1 = {'te': [5., 60., 6., 61.1]}
+        key_1, extent_1 = Domain._add_to_dict(dict(), input_1)
+        self.assertIsInstance(extent_1, dict)
+        self.assertIsInstance(key_1, str)
+        self.assertEqual(key_1, input_1[0].replace('-', ''))
+        self.assertEqual(len(extent_1), 1)
+        self.assertIsInstance(extent_1.values(), list)
+        map(lambda el: self.assertIsInstance(el, float), *extent_1.values())
+        self.assertEqual(extent_1, output_1)
+        input_2 = ['-te', '5', 'str', '6', '61']
         try:
-            test_func(test_data[2], ['ts', 'tr'], 2)
+            key_2, extent_2 = Domain._add_to_dict(dict(), input_2)
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, 'ts requires exactly 2 parameters (1 given)')
+            self.assertEqual(opt_err.message, 'Input values must be int or float')
+
+    def test_validate_te_lle(self):
+        input_1 = [5., 60., 6., 61.]
+        input_2 = ([5., 60., 5., 61.], [5., 60., 4., 61.], [5., 60., 6., 59.])
+        input_3 = [60., 5., 61.]
+        self.assertEqual(Domain._validate_te_lle(input_1), None)
+        for inp in input_2:
+            try:
+                Domain._validate_te_lle(inp)
+            except OptionError as opt_err:
+                self.assertEqual(opt_err.message, 'Min cannot be bigger than max: '
+                                                  '<-te x_min y_min x_max y_max> or '
+                                                  '<-lle min_lon min_lat max_lon max_lat>')
 
         try:
-            test_func(test_data[3], ['ts', 'tr'], 2)
-        except OptionError as val_err:
-            self.assertEqual(val_err.message, 'Input values must be int or float')
+            Domain._validate_te_lle(input_3)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+                                              '(3 given): <-te x_min y_min x_max y_max> or <-lle'
+                                              ' min_lon min_lat max_lon max_lat>')
+
+    def test_validate_ts_tr(self):
+        input_1 = [100, 200]
+        input_2 = ([0, 0], [0, 50], [10, 0], [-1, 10], [10, -100], [-100, -100])
+        input_3 = [10]
+        self.assertEqual(Domain._validate_ts_tr(input_1), None)
+
+        for inp in input_2:
+            try:
+                Domain._validate_ts_tr(inp)
+            except OptionError as opt_err:
+                self.assertEqual(opt_err.message, 'Resolution or width and height must be bigger '
+                                                  'than 0: <-tr x_resolution y_resolution> or '
+                                                  '<-ts width height>')
+        try:
+            Domain._validate_ts_tr(input_3)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+                                              '(1 given): <-tr x_resolution y_resolution> or '
+                                              '<-ts width height>')
+
+    def test_check_size(self):
+        te_lle_example = '<-te x_min y_min x_max y_max> or <-lle min_lon min_lat max_lon max_lat>'
+        tr_ts_example = '<-tr x_resolution y_resolution> or <-ts width height>'
+        self.assertEqual(Domain._check_size(2, 2, ('-te', '-lle'), te_lle_example), None)
 
         try:
-            test_func(test_data[4], ['ts', 'tr'], 2)
-        except OptionError as param_err:
-            self.assertEqual(param_err.message,
-                             'Expeced parameter is te, lle, ts, tr. (test_param given)')
+            Domain._check_size(1, 2, ('-ts', '-tr'), tr_ts_example)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+                                              '(1 given): <-tr x_resolution y_resolution> or '
+                                              '<-ts width height>')
+        try:
+            Domain._check_size(2, 4, ('-te', '-lle'), te_lle_example)
+        except OptionError as opt_err:
+            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+                                              '(2 given): <-te x_min y_min x_max y_max> or <-lle'
+                                              ' min_lon min_lat max_lon max_lat>')
+
+    def test_gen_regexp(self):
+        test_1 = '(-te|-lle)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?' \
+                 '\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)\\s?'
+        result_1 = Domain._gen_regexp('te', 'lle', 4)
+        self.assertIsInstance(result_1, str)
+        self.assertEqual(result_1, test_1)
+        test_2 = '(-ts|-tr)(\\s+[-+]?\\d*[.\\d*]*)(\\s+[-+]?\\d*[.\\d*]*)\\s?'
+        result_2 = Domain._gen_regexp('ts', 'tr', 2)
+        self.assertEqual(result_2, test_2)
 
     def test_create_extent_dict(self):
-        test_data = ('-te 5 60 6 61 -ts 500 500',
-                     '-te 5 60 6 61')
+        test = ('-te 5 60 6 61.1 -ts 500 500',
+                '-te -92.08 26.85 -92.00 26.91 -ts 200 200',
+                '-te 5 60 6 61.1',
+                '-te 5 60 6 61.1 -te 5 60 6 61.1')
 
-        extent_dict = Domain._create_extent_dict(test_data[0])
-        self.assertEqual(extent_dict, {'te': [5.0, 60.0, 6.0, 61.0], 'ts': [500.0, 500.0]})
+        output_1 = {'te': [5., 60., 6., 61.1], 'ts': [500, 500]}
+        output_2 = {'te': [-92.08, 26.85, -92.00, 26.91], 'ts': [200, 200]}
+        result_1 = Domain._create_extent_dict(test[0])
+        self.assertIsInstance(result_1, dict)
+        self.assertEquals(len(result_1.keys()), 2)
+        self.assertEquals(result_1, output_1)
+        result_2 = Domain._create_extent_dict(test[1])
+        self.assertEquals(result_2, output_2)
 
         try:
-            Domain._create_extent_dict(test_data[0])
+            test = Domain._create_extent_dict(test[2])
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '_create_extentDic requires '
-                                              'exactly 2 parameters (1 given)')
+            self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
+                                               '("-te" or "-lle") and ("-ts" or "-tr")')
+
+        try:
+            test = Domain._create_extent_dict(test[3])
+        except OptionError as opt_err:
+            self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
+                                               '("-te" or "-lle") and ("-ts" or "-tr")')
 
     def test_get_min_max_lat_lon(self):
         dom = Domain(4326, "-te 5 60 6 61 -ts 500 500")
@@ -364,6 +435,30 @@ class DomainTest(unittest.TestCase):
         result = Domain._get_geotransform(input_2)
         self.assertEquals(result, test_2)
 
+    def test_get_border_postgis(self):
+        d = Domain(4326, '-te 25 70 35 72 -ts 500 500')
+        result = d.get_border_postgis()
+        self.assertIsInstance(result, str)
+        self.assertEquals(result, "PolygonFromText('POLYGON((25.0 72.0,26.0 72.0,27.0 72.0,28.0 "
+                                  "72.0,29.0 72.0,30.0 72.0,31.0 72.0,32.0 72.0,33.0 72.0,34.0 "
+                                  "72.0,35.0 72.0,35.0 72.0,35.0 71.8,35.0 71.6,35.0 71.4,35.0 "
+                                  "71.2,35.0 71.0,35.0 70.8,35.0 70.6,35.0 70.4,35.0 70.2,35.0 "
+                                  "70.0,35.0 70.0,34.0 70.0,33.0 70.0,32.0 70.0,31.0 70.0,30.0 "
+                                  "70.0,29.0 70.0,28.0 70.0,27.0 70.0,26.0 70.0,25.0 70.0,25.0 "
+                                  "70.0,25.0 70.2,25.0 70.4,25.0 70.6,25.0 70.8,25.0 71.0,25.0 "
+                                  "71.2,25.0 71.4,25.0 71.6,25.0 71.8,25.0 72.0))')")
+
+    def test_repr(self):
+        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
+        result = dom.__repr__()
+        test = 'Domain:[750 x 500]\n----------------------------------------\nProjection:\nGEOGC' \
+               'S["WGS 84",\n    DATUM["WGS_1984",\n        SPHEROID["WGS 84",6378137,298.257223' \
+               '563]],\n    PRIMEM["Greenwich",0],\n    UNIT["degree",0.0174532925199433]]\n-----' \
+               '-----------------------------------\nCorners (lon, lat):\n\t (  4.50,  61.00)  ' \
+               '(  6.00,  61.00)\n\t (  4.50,  60.00)  (  6.00,  60.00)\n'
+
+        self.assertIsInstance(result, str)
+        self.assertEquals(result, test)
 
 if __name__ == "__main__":
     unittest.main()
