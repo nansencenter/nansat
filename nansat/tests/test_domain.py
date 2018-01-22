@@ -40,20 +40,33 @@ class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
-        self.EXT_TEST_FILE_TE_TS = "-te 25 70 35 72 -ts 500 500"
-        self.EXT_TEST_FILE_LLE_TS = "-lle 25 70 35 72 -ts 500 500"
-        self.EXT_BERGEN = "-te 5 60 6 61 -ts 500 500"
-        self.EXT_WESTCOAST = "-te 1 58 6 64 -ts 500 500"
-        self.EXT_NORWAY = "-te 3 55 30 72 -ts 500 500"
-        self.EXT_PARIS = "-te 2 48 3 49 -ts 500 500"
+        self.EXTENT_TE_TS = "-te 25 70 35 72 -ts 500 500"
+        self.EXTENT_DICT_TE_TS = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
+        self.GEO_TRANSFORM = [25.0, 0.02, 0.0, 72.0, 0.0, -0.004]
+        self.RASTER_X_SIZE = 500
+        self.RASTER_Y_SIZE = 500
+        self.EXTENT_LLE_TS = "-lle 25 70 35 72 -ts 500 500"
+        self.EXTENT_BERGEN = "-te 5 60 6 61 -ts 500 500"
+        self.EXTENT_WESTCOAST = "-te 1 58 6 64 -ts 500 500"
+        self.EXTENT_NORWAY = "-te 3 55 30 72 -ts 500 500"
+        self.EXTENT_PARIS = "-te 2 48 3 49 -ts 500 500"
         self.SRS_PROJ4 = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
         self.SRS_EPSG = 4326
         self.NSR_SRS_PROJ4 = NSR(self.SRS_PROJ4)
         self.NSR_SRS_PROJ4_WKT = NSR(self.SRS_PROJ4).wkt
+        self.NSR_SRS_EPSG = NSR(self.SRS_EPSG)
+        self.NSR_SRS_EPSG_WKT = NSR(self.SRS_EPSG).wkt
         self.GDAL_DATASET = gdal.Open(self.test_file)
         self.VRT_FROM_GDAL_DATASET = VRT.from_gdal_dataset(self.GDAL_DATASET)
         self.GDAL_DATASET_SRS_WRAPPED = gdal.AutoCreateWarpedVRT(self.GDAL_DATASET, None, self.NSR_SRS_PROJ4_WKT)
         self.VRT_FROM_GDAL_DATASET_SRS_WRAPPED = VRT.from_gdal_dataset(self.GDAL_DATASET_SRS_WRAPPED)
+        self.VRT_FROM_DATASET_PARAMS = VRT.from_dataset_params(
+            x_size=self.RASTER_X_SIZE,
+            y_size=self.RASTER_Y_SIZE,
+            geo_transform=self.GEO_TRANSFORM,
+            projection=self.NSR_SRS_EPSG_WKT,
+            gcps=[],
+            gcp_projection='')
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
         if (    not os.path.exists(self.test_file)
@@ -66,7 +79,7 @@ class DomainTest(unittest.TestCase):
         with self.assertRaises(OptionError):
             Domain(ds=self.GDAL_DATASET,
                    srs=self.SRS_PROJ4,
-                   ext=self.EXT_TEST_FILE_TE_TS)
+                   ext=self.EXTENT_TE_TS)
 
     def test_init_from_GDALDataset(self):
         @patch('nansat.domain.VRT')
@@ -89,11 +102,23 @@ class DomainTest(unittest.TestCase):
         @patch('nansat.domain.NSR')
         @patch('nansat.domain.gdal')
         @patch('nansat.domain.VRT')
-        def test_pass(self, mock_gdal, mock_NSR, mock_VRT):
+        def test_pass(self, mock_VRT, mock_gdal, mock_NSR):
             mock_NSR().return_value = self.NSR_SRS_PROJ4
             type(mock_NSR()).wkt = PropertyMock(return_value=self.NSR_SRS_PROJ4_WKT)
             mock_gdal.AutoCreateWarpedVRT.return_value = self.GDAL_DATASET_SRS_WRAPPED
             mock_VRT.from_gdal_dataset.return_value = self.VRT_FROM_GDAL_DATASET_SRS_WRAPPED
+            return Domain(ds=self.GDAL_DATASET, srs=self.SRS_PROJ4)
+        self.assertEqual(type(test_pass(self)), Domain)
+
+    def test_init_from_srs_and_ext_te(self):
+        @patch('nansat.domain.NSR')
+        @patch('nansat.domain.VRT')
+        @patch.object(Domain, '_create_extent_dict', return_value=self.EXTENT_DICT_TE_TS)
+        @patch.object(Domain, '_get_geotransform', return_value=(self.GEO_TRANSFORM, self.RASTER_X_SIZE, self.RASTER_Y_SIZE))
+        def test_pass(self, mock__get_geotransform, mock__create_extent_dict, mock_VRT, mock_NSR):
+            mock_NSR().return_value = self.NSR_SRS_EPSG
+            type(mock_NSR()).wkt = PropertyMock(return_value=self.NSR_SRS_EPSG_WKT)
+            mock_VRT.from_dataset_params.return_value = self.VRT_FROM_DATASET_PARAMS
             return Domain(ds=self.GDAL_DATASET, srs=self.SRS_PROJ4)
         self.assertEqual(type(test_pass(self)), Domain)
 
