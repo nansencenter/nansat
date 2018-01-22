@@ -24,7 +24,7 @@ try:
     from nansat._pixfun import registerPixelFunctions
     registerPixelFunctions()
 except Exception as e:
-    print repr(e)
+    print(e)
     warnings.warn('''Cannot register C pixel functions!
                      Either nansat was not installed using setup.py or
                      pixel functions were not compiled automatically.
