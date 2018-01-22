@@ -503,21 +503,14 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(type(n[1]), np.ndarray)
 
-    @unittest.skip
-    def test_resize_complex_algAverage(self):
+    def test_resize_complex_alg_average(self):
         n = Nansat(self.test_file_complex, log_level=40)
-
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", UserWarning)
             n.resize(0.5, eResampleAlg=-1)
-
             self.assertTrue(len(w) == 1)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
-            self.assertTrue(
-                        'The imaginary parts of complex numbers '
-                        'are lost when resampling by averaging '
-                        in str(w[-1].message)
-                        )
+            self.assertIn('The imaginary parts of complex numbers '
+                            'are lost when resampling by averaging ', str(w[-1].message))
 
     def test_resize_complex_alg0(self):
         n = Nansat(self.test_file_complex, log_level=40)
