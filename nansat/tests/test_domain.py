@@ -435,6 +435,18 @@ class DomainTest(unittest.TestCase):
         result = Domain._get_geotransform(input_2)
         self.assertEquals(result, test_2)
 
+    def test_get_border_postgis(self):
+        d = Domain(4326, '-te 25 70 35 72 -ts 500 500')
+        result = d.get_border_postgis()
+        self.assertIsInstance(result, str)
+        self.assertEquals(result, "PolygonFromText('POLYGON((25.0 72.0,26.0 72.0,27.0 72.0,28.0 "
+                                  "72.0,29.0 72.0,30.0 72.0,31.0 72.0,32.0 72.0,33.0 72.0,34.0 "
+                                  "72.0,35.0 72.0,35.0 72.0,35.0 71.8,35.0 71.6,35.0 71.4,35.0 "
+                                  "71.2,35.0 71.0,35.0 70.8,35.0 70.6,35.0 70.4,35.0 70.2,35.0 "
+                                  "70.0,35.0 70.0,34.0 70.0,33.0 70.0,32.0 70.0,31.0 70.0,30.0 "
+                                  "70.0,29.0 70.0,28.0 70.0,27.0 70.0,26.0 70.0,25.0 70.0,25.0 "
+                                  "70.0,25.0 70.2,25.0 70.4,25.0 70.6,25.0 70.8,25.0 71.0,25.0 "
+                                  "71.2,25.0 71.4,25.0 71.6,25.0 71.8,25.0 72.0))')")
 
 if __name__ == "__main__":
     unittest.main()
