@@ -56,7 +56,20 @@ LONG_DESCRIPTION    = "A scientist friendly Python toolbox for processing 2D sat
 URL                 = "https://github.com/nansencenter/nansat"
 DOWNLOAD_URL        = "https://github.com/nansencenter/nansat"
 LICENSE             = "GNU General Public License"
-CLASSIFIERS         = '***'  # filter(None, CLASSIFIERS.split('\n'))
+CLASSIFIERS         = [
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Intended Audience :: Information Technology',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Atmospheric Science',
+        'Topic :: Scientific/Engineering :: Information Analysis',
+        'Topic :: Utilities'
+    ]
 AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Aleksander Vines, Asuka Yamakawa")
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["Linux", "OS X", "Windows"]
