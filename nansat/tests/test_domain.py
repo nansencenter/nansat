@@ -63,6 +63,10 @@ class DomainTest(unittest.TestCase):
                    srs=self.SRS_PROJ4,
                    ext=self.EXT_TEST_FILE_TE_TS)
 
+    def test_init_from_GDALDataset(self):
+        d = Domain(ds=gdal.Open(self.test_file_raw_proj))
+        self.assertEqual(type(d), Domain)
+
     def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails(self):
         @patch('nansat.domain.NSR')
         @patch('nansat.domain.gdal.AutoCreateWarpedVRT', new_callable=PropertyMock, return_value=None)
