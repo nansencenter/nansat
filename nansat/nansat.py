@@ -154,16 +154,16 @@ class Nansat(Domain):
         if filename == '' and fileName != '':
             warn(self.INIT_FILENAME_WARNING, DeprecationWarning)
             filename = fileName
-        if mapper == '' and mapperName != '':
+        if mapperName != '':
             warn(self.INIT_MAPPER_WARNING, DeprecationWarning)
             mapper = mapperName
+        if logLevel is not None:
+            warn(self.INIT_LOG_WARNING, DeprecationWarning)
+            log_level = logLevel
         if domain is not None or array is not None:
             warn(self.INIT_DOMAIN_WARNING, DeprecationWarning)
             self._init_from_domain(domain, array, parameters)
             return
-        if logLevel is not None:
-            warn(self.INIT_LOG_WARNING, DeprecationWarning)
-            log_level = logLevel
 
         if filename == '':
             raise OptionError('Nansat is called without valid parameters! Use: Nansat(filename)')

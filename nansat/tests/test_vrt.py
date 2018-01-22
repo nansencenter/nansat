@@ -151,7 +151,8 @@ class VRTTest(unittest.TestCase):
         root = tree.getroot()
 
         self.assertEqual(root.tag, 'VRTDataset')
-        self.assertEqual(root.keys(), ['rasterXSize', 'rasterYSize'])
+        self.assertIn('rasterXSize', root.keys())
+        self.assertIn('rasterYSize', root.keys())
         self.assertEqual([e.tag for e in root], ['Metadata', 'VRTRasterBand'])
 
     def test_create_band(self):
