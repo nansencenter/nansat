@@ -52,8 +52,8 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
-    'sphinx.ext.mathjax,
-    'nbsphinx] 
+    'sphinx.ext.mathjax',
+    'nbsphinx'] 
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
