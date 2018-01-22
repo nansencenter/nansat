@@ -30,16 +30,13 @@ from nansat.node import Node
 class Exporter(object):
     """Abstract class for export functions """
 
-# TODO:
-#   move to Exporter.export()
-#   inherit Nansat from Exporter
-    def export(self, fileName, bands=None, rmMetadata=None, addGeoloc=True,
-               addGCPs=True, driver='netCDF', bottomup=False, options=None):
+    def export(self, filename, bands=None, rmMetadata=None, addGeoloc=True,
+               addGCPs=True, driver='netCDF', bottomup=False, options=None, hardcopy=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
         -----------
-        fileName : str
+        filename : str
             output file name
         bands: list (default=None)
             Specify band numbers to export.
@@ -85,205 +82,57 @@ class Exporter(object):
 
         Examples
         --------
-        n.export(netcdfile)
         # export all the bands into a netDCF 3 file
+        >>> n.export(netcdfile)
 
-        n.export(driver='GTiff')
         # export all bands into a GeoTiff
+        >>> n.export(driver='GTiff')
 
         '''
-        if rmMetadata is None:
-            rmMetadata = []
-
-        # temporary VRT for exporting
-        exportVRT = self.vrt.copy()
-        exportVRT.real = []
-        exportVRT.imag = []
-
-# TODO: move to Exporter._delete_bands()
-        # delete unnecessary bands
-        rmBands = []
-        selfBands = self.bands()
-        if bands is not None:
-            for selfBand in selfBands:
-                # if band number or band name is not listed: mark for removal
-                if (selfBand not in bands and
-                      selfBands[selfBand]['name'] not in bands):
-                    rmBands.append(selfBand)
-            # delete bands from VRT
-            exportVRT.delete_bands(rmBands)
-
-# TODO:
-#   move to Exporter._split_complex_band()
-#   DRY: repeat for real and imag
-#   use  .band_vrts instead of .real and .imag
-
-        # Find complex data band
-        complexBands = []
-        node0 = Node.create(exportVRT.xml)
-        for iBand in node0.nodeList('VRTRasterBand'):
-            dataType = iBand.getAttribute('dataType')
-            if dataType[0] == 'C':
-                complexBands.append(int(iBand.getAttribute('band')))
-
-        # if data includes complex data,
-        # create two bands from real and imaginary data arrays
-        if len(complexBands) != 0:
-            for i in complexBands:
-                bandMetadataR = self.get_metadata(bandID=i)
-                bandMetadataR.pop('dataType')
-                if 'PixelFunctionType' in bandMetadataR:
-                    bandMetadataR.pop('PixelFunctionType')
-                # Copy metadata and modify 'name' for real and imag bands
-                bandMetadataI = bandMetadataR.copy()
-                bandMetadataR['name'] = bandMetadataR.pop('name') + '_real'
-                bandMetadataI['name'] = bandMetadataI.pop('name') + '_imag'
-                # Create bands from the real and imaginary numbers
-                exportVRT.real.append(VRT.from_array(self[i].real))
-                exportVRT.imag.append(VRT.from_array(self[i].imag))
-
-                metaDict = [{'src': {
-                             'SourceFilename': exportVRT.real[-1].filename,
-                             'SourceBand':  1},
-                             'dst': bandMetadataR},
-                            {'src': {
-                             'SourceFilename': exportVRT.imag[-1].filename,
-                             'SourceBand':  1},
-                             'dst': bandMetadataI}]
-                exportVRT.create_bands(metaDict)
-            # delete the complex bands
-            exportVRT.delete_bands(complexBands)
-
-# TODO: move to Exporter._add_geolocation_bands and DRY X/Y
-        # add bands with geolocation to the VRT
-        if addGeoloc and hasattr(exportVRT, 'geolocation') and len(exportVRT.geolocation.data) > 0:
-            exportVRT.create_band(
-                {'SourceFilename': self.vrt.geolocation.data['X_DATASET'],
-                 'SourceBand': int(self.vrt.geolocation.data['X_BAND'])},
-                {'wkv': 'longitude',
-                 'name': 'GEOLOCATION_X_DATASET'})
-            exportVRT.create_band(
-                {'SourceFilename': self.vrt.geolocation.data['Y_DATASET'],
-                 'SourceBand': int(self.vrt.geolocation.data['Y_BAND'])},
-                {'wkv': 'latitude',
-                 'name': 'GEOLOCATION_Y_DATASET'})
-
-# TODO: move to Exporter._fix_band_metadata()
-        # manage metadata for each band
-        for iBand in range(exportVRT.dataset.RasterCount):
-            band = exportVRT.dataset.GetRasterBand(iBand + 1)
-            bandMetadata = band.GetMetadata()
-            # set NETCDF_VARNAME
-            try:
-                bandMetadata['NETCDF_VARNAME'] = bandMetadata['name']
-            except:
-                self.logger.warning('Unable to set NETCDF_VARNAME for band %d'
-                                    % (iBand + 1))
-            # remove unwanted metadata from bands
-            for rmMeta in rmMetadata:
-                try:
-                    bandMetadata.pop(rmMeta)
-                except:
-                    self.logger.info('Unable to remove metadata'
-                                     '%s from band %d' % (rmMeta, iBand + 1))
-            band.SetMetadata(bandMetadata)
-# TODO: move to Exporter._fix_global_metadata()
-        # remove unwanted global metadata
-        globMetadata = exportVRT.dataset.GetMetadata()
-        for rmMeta in rmMetadata:
-            try:
-                globMetadata.pop(rmMeta)
-            except:
-                self.logger.info('Global metadata %s not found' % rmMeta)
-        # Apply escaping to metadata strings to preserve special characters (in
-        # XML/HTML format)
-        globMetadata_escaped = {}
-        for key, val in globMetadata.iteritems():
-            # Keys not escaped - this may be changed if needed...
-            globMetadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
-        exportVRT.dataset.SetMetadata(globMetadata_escaped)
-
-# TODO: move to Exporter._hardcopy_bands
-        # if output filename is same as input one...
-        if self.filename == fileName:
-            numOfBands = self.vrt.dataset.RasterCount
-            # create VRT from each band and add it
-            for iBand in range(numOfBands):
-                vrt = VRT.from_array(self[iBand + 1])
-# TODO: replace with add_bands
-                self.add_band(vrt=vrt)
-                metadata = self.get_metadata(bandID=iBand + 1)
-                self.set_metadata(key=metadata,
-                                  bandID=numOfBands + iBand + 1)
-            # remove source bands
-            self.vrt.delete_bands(range(1, numOfBands))
-
-        # get CreateCopy() options
-# TODO: declare export(..., options=list())
-# TODO: move these checks up
         if options is None:
             options = []
         if type(options) == str:
             options = [options]
 
-        # set bottomup option
-        if bottomup:
-            options += ['WRITE_BOTTOMUP=NO']
+        # temporary VRT for exporting
+        export_vrt = self.vrt.copy()
+        export_vrt.leave_few_bands(bands)
+        export_vrt.split_complex_bands()
+        if addGeoloc:
+            export_vrt.create_geolocation_bands()
+        export_vrt.fix_band_metadata(rmMetadata)
+        export_vrt.fix_global_metadata(rmMetadata)
+
+        # if output filename is the same as input one
+        if self.filename == filename or hardcopy:
+            export_vrt.hardcopy_bands()
+
+        if driver == 'GTiff':
+            options, add_gcps = export_vrt.prepare_export_gtiff(options)
         else:
-            options += ['WRITE_BOTTOMUP=YES']
+            options, add_gcps = export_vrt.prepare_export_netcdf(options, bottomup)
 
-# TODO: move to Exporter._prepare_for_gcps()
-        # if GCPs should be added
-        gcps = exportVRT.dataset.GetGCPs()
-        srs = exportVRT.get_projection()
-# TODO: move to ifs
-        addGCPs = addGCPs and driver == 'netCDF' and len(gcps) > 0
-        if addGCPs:
-            #  remove GeoTransform
-            exportVRT._remove_geotransform()
-            exportVRT.dataset.SetMetadataItem(
-                'NANSAT_GCPProjection', srs.replace(',', '|').replace('"', '&'))
-        elif driver == 'GTiff':
-            #  remove GeoTransform
-            exportVRT._remove_geotransform()
-        else:
-            # add projection metadata
-            exportVRT.dataset.SetMetadataItem(
-                'NANSAT_Projection', srs.replace(',', '|').replace('"', '&'))
-
-            # add GeoTransform metadata
-            geoTransformStr = str(
-                    self.vrt.dataset.GetGeoTransform()).replace(',', '|')
-            exportVRT.dataset.SetMetadataItem(
-                    'NANSAT_GeoTransform', geoTransformStr)
-
-        # Create an output file using GDAL
-        self.logger.debug('Exporting to %s using %s and %s...' % (fileName,
-                                                                  driver,
-                                                                  options))
-
-        dataset = gdal.GetDriverByName(driver).CreateCopy(fileName,
-                                                          exportVRT.dataset,
-                                                          options=options)
+        # Create output file using GDAL
+        dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset, options=options)
         dataset = None
         # add GCPs into netCDF file as separate float variables
-        if addGCPs:
-            self._add_gcps(fileName, gcps, bottomup)
+        if add_gcps:
+            self._add_gcps(filename, export_vrt.dataset.GetGCPs(), bottomup)
 
         self.logger.debug('Export - OK!')
 
 # TODO: move to Exporter
-    def _add_gcps(self, fileName, gcps, bottomup):
+    def _add_gcps(self, filename, gcps, bottomup):
         ''' Add 4 variables with gcps to the generated netCDF file '''
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
 
         # check if file exists
-        if not os.path.exists(fileName):
-            self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % fileName)
+        if not os.path.exists(filename):
+            self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % filename)
             return 1
 
         # open output file for adding GCPs
-        ncFile = Dataset(fileName, 'a')
+        ncFile = Dataset(filename, 'a')
 
         # get GCP values into single array from GCPs
         gcpValues = np.zeros((5, len(gcps)))
@@ -305,14 +154,14 @@ class Exporter(object):
         ncFile.close()
 
 # TODO: move to Exporter
-    def export2thredds(self, fileName, bands, metadata=None,
+    def export2thredds(self, filename, bands, metadata=None,
                        maskName=None, rmMetadata=[],
                        time=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
 
         Parameters
         -----------
-        fileName : str
+        filename : str
             output file name
         bands : dict
             {'band_name': {'type'     : '>i1',
@@ -440,7 +289,7 @@ class Exporter(object):
 
         # open files for input and output
         ncI = Dataset(tmpName, 'r')
-        ncO = Dataset(fileName, 'w')
+        ncO = Dataset(filename, 'w')
 
 # TODO: move to Exporter._ctreate_time_dim
         # collect info on dimention names

@@ -275,11 +275,9 @@ class NansatTest(unittest.TestCase):
         b0 = n0['L_469']
 
         n1 = Nansat.from_domain(n0)
-        n1.add_band(b0.astype('complex64'),
-                    parameters={'name': 'L_469'})
+        n1.add_band(b0.astype('complex64'), parameters={'name': 'L_469'})
 
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export_gcps_complex.nc')
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps_complex.nc')
         n1.export(tmpfilename)
 
         ncf = Dataset(tmpfilename)

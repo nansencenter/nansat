@@ -22,12 +22,14 @@ from random import choice
 import warnings
 import pythesint as pti
 
+import osr
+import gdal
 import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
-from nansat.tools import add_logger, gdal, osr, OptionError, numpy_to_gdal_type, gdal_type_to_offset
+from nansat.tools import add_logger, OptionError, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
 
 class VRT(object):
@@ -669,7 +671,7 @@ class VRT(object):
                 # get metadata from WKV using PyThesInt
                 wkv = pti.get_wkv_variable(dst.get('wkv', ''))
             except IndexError:
-                band_name = 'band_'
+                band_name = 'band'
             else:
                 band_name = wkv['short_name']
                 if 'suffix' in dst:
@@ -687,6 +689,135 @@ class VRT(object):
             dst_band_name = '%s_%03d' % (band_name, n)
 
         return dst_band_name, wkv
+
+    def leave_few_bands(self, bands=None):
+        """Leave only given bands in VRT"""
+        if bands is None:
+            return
+
+        rm_bands = []
+        for i in range(1, self.dataset.RasterCount+1):
+            band_name = self.dataset.GetRasterBand(i).GetMetadata().get('name','')
+            if i not in bands and band_name not in bands:
+                rm_bands.append(i)
+        # delete bands from VRT
+        self.delete_bands(rm_bands)
+
+    def _find_complex_band(self):
+        """Find complex data bands"""
+        # find complex bands
+        for i in range(1, self.dataset.RasterCount+1):
+            if self.dataset.GetRasterBand(i).DataType in [8,9,10,11]:
+                return i
+        return None
+
+    def split_complex_bands(self):
+        """Recursevly find complex bands and relace by real and imag components"""
+        rm_metadata= ['dataType', 'PixelFunctionType']
+
+        i = self._find_complex_band()
+        if i is None:
+            return
+
+        band = self.dataset.GetRasterBand(i)
+        band_array = band.ReadAsArray()
+        band_metadata_orig = remove_keys(band.GetMetadata(), rm_metadata)
+        band_name_orig = band_metadata_orig.get('name', 'complex_%003d'%i)
+        # Copy metadata, modify 'name' and create VRTs for real and imag parts of each band
+        band_description = []
+        for part in ['real', 'imag']:
+            band_metadata = band_metadata_orig.copy()
+            band_name = band_name_orig + '_' + part
+            band_metadata['name'] = band_name
+            self.band_vrts[band_name] = VRT.from_array(eval('band_array.' + part))
+            band_description.append({'src': {
+                     'SourceFilename': self.band_vrts[band_name].filename,
+                     'SourceBand':  1},
+                     'dst': band_metadata})
+        # create bands with parts
+        self.create_bands(band_description)
+        # delete the complex band
+        self.delete_band(i)
+        # find and split more complex bands
+        self.split_complex_bands()
+
+    def create_geolocation_bands(self):
+        """Create bands from Geolocation"""
+        if hasattr(self, 'geolocation') and len(self.geolocation.data) > 0:
+            self.create_band(
+                {'SourceFilename': self.geolocation.data['X_DATASET'],
+                 'SourceBand': int(self.geolocation.data['X_BAND'])},
+                {'wkv': 'longitude',
+                 'name': 'longitude'})
+            self.create_band(
+                {'SourceFilename': self.geolocation.data['Y_DATASET'],
+                 'SourceBand': int(self.geolocation.data['Y_BAND'])},
+                {'wkv': 'latitude',
+                 'name': 'latitude'})
+
+    def fix_band_metadata(self, rm_metadata):
+        """Add NETCDF_VARNAME and remove <rm_metadata> in metadata for each band"""
+        for iBand in range(self.dataset.RasterCount):
+            band = self.dataset.GetRasterBand(iBand + 1)
+            metadata = remove_keys(band.GetMetadata(), rm_metadata)
+            if 'name' in metadata:
+                metadata['NETCDF_VARNAME'] = metadata['name']
+            band.SetMetadata(metadata)
+        self.dataset.FlushCache()
+
+    def fix_global_metadata(self, rm_metadata):
+        # remove unwanted global metadata
+        metadata = remove_keys(self.dataset.GetMetadata(), rm_metadata)
+        # Apply escaping to metadata strings to preserve special characters (in XML/HTML format)
+        metadata_escaped = {}
+        for key, val in metadata.iteritems():
+            # Keys not escaped - this may be changed if needed...
+            metadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
+        self.dataset.SetMetadata(metadata_escaped)
+        self.dataset.FlushCache()
+
+    def hardcopy_bands(self):
+        """Make 'hardcopy' of bands: evaluate array from band and put into original band"""
+        bands = range(1, self.dataset.RasterCount+1)
+        for i in bands:
+            self.band_vrts[i] = VRT.from_array(self.dataset.GetRasterBand(i).ReadAsArray())
+
+        node0 = Node.create(self.xml)
+        for i, iNode1 in enumerate(node0.nodeList('VRTRasterBand')):
+            iNode1.node('SourceFilename').value = self.band_vrts[i+1].filename
+            iNode1.node('SourceBand').value = str(1)
+        self.write_xml(node0.rawxml())
+
+    def prepare_export_gtiff(self, options):
+        """Prepare dataset for export using GTiff driver"""
+        if len(self.dataset.GetGCPs()) > 0:
+            self._remove_geotransform()
+        return options, False
+
+    def prepare_export_netcdf(self, options, bottomup):
+        """Prepare dataset for export using netCDF driver"""
+        # set bottomup option
+        if bottomup:
+            options += ['WRITE_BOTTOMUP=NO']
+        else:
+            options += ['WRITE_BOTTOMUP=YES']
+        gcps = self.dataset.GetGCPs()
+        srs = self.get_projection()
+        if len(gcps) > 0:
+            self._remove_geotransform()
+            self.dataset.SetMetadataItem('NANSAT_GCPProjection',
+                                         srs.replace(',', '|').replace('"', '&'))
+            add_gcps = True
+        else:
+            self.dataset.SetMetadataItem('NANSAT_Projection',
+                                          srs.replace(',', '|').replace('"', '&'))
+
+            # add GeoTransform metadata
+            geoTransformStr = str(self.dataset.GetGeoTransform()).replace(',', '|')
+            self.dataset.SetMetadataItem('NANSAT_GeoTransform', geoTransformStr)
+            add_gcps = False
+        return options, add_gcps
+
 
     def copy(self):
         """Create and return a full copy of a VRT instance"""
