@@ -1,0 +1,20 @@
+channels:
+  - conda-forge
+dependencies:
+  - python==2.7
+  - sphinx>=1.4
+  - sphinx-autobuild
+  - sphinx_rtd_theme 
+  - recommonmark
+  - pandoc
+  - nbconvert
+  - ipykernel
+  - gdal
+  - numpy
+  - pillow
+  - netcdf4
+  - cfunits
+  - python-dateutil
+  - pythesint
+  - pip:
+    - nbsphinx

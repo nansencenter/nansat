@@ -8,7 +8,6 @@ fully updated. The most recently updated notebooks should, however, work.
 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: User documentation
+   :maxdepth: 2
 
-   /vagrant/shared/course_vm/nansat-lectures/notebooks/09_Nansat-introduction.ipynb
+   notebooks/nansat-introduction.ipynb
