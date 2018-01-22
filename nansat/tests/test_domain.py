@@ -11,11 +11,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
 import unittest
-import warnings
 import os
-import sys
-import glob
-from types import ModuleType, FloatType
 import numpy as np
 
 try:
