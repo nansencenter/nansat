@@ -52,6 +52,14 @@ class DomainTest(unittest.TestCase):
              or not os.path.exists(self.test_file_projected) ):
             raise ValueError('No test data available')
 
+    def test_dont_init_from_invalid_combination(self):
+        self.assertRaises(OptionError, Domain)
+        self.assertRaises(OptionError, Domain, None)
+        with self.assertRaises(OptionError):
+            Domain(ds=gdal.Open(self.test_file_raw_proj),
+                   srs=self.SRS_PROJ4,
+                   ext=self.EXT_TEST_FILE_TE_TS)
+
     def test_init_from_strings(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-te 25 70 35 72 -ts 2000 2000")
