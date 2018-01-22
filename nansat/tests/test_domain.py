@@ -241,7 +241,7 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(len(extent_1), 1)
         self.assertIsInstance(list(extent_1.values()), list)
 
-        for el in list(extent_1.values()):
+        for el in list(extent_1.values()[0]):
             self.assertIsInstance(el, float)
 
         self.assertEqual(extent_1, output_1)
@@ -249,7 +249,7 @@ class DomainTest(unittest.TestCase):
         try:
             key_2, extent_2 = Domain._add_to_dict(dict(), input_2)
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, 'Input values must be int or float')
+            self.assertEqual(opt_err.args[0], 'Input values must be int or float')
 
     def test_validate_te_lle(self):
         input_1 = [5., 60., 6., 61.]
@@ -260,14 +260,14 @@ class DomainTest(unittest.TestCase):
             try:
                 Domain._validate_te_lle(inp)
             except OptionError as opt_err:
-                self.assertEqual(opt_err.message, 'Min cannot be bigger than max: '
+                self.assertEqual(opt_err.args[0], 'Min cannot be bigger than max: '
                                                   '<-te x_min y_min x_max y_max> or '
                                                   '<-lle min_lon min_lat max_lon max_lat>')
 
         try:
             Domain._validate_te_lle(input_3)
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+            self.assertEqual(opt_err.args[0], '-te and -lle requires exactly 4 parameters '
                                               '(3 given): <-te x_min y_min x_max y_max> or <-lle'
                                               ' min_lon min_lat max_lon max_lat>')
 
@@ -281,13 +281,13 @@ class DomainTest(unittest.TestCase):
             try:
                 Domain._validate_ts_tr(inp)
             except OptionError as opt_err:
-                self.assertEqual(opt_err.message, 'Resolution or width and height must be bigger '
+                self.assertEqual(opt_err.args[0], 'Resolution or width and height must be bigger '
                                                   'than 0: <-tr x_resolution y_resolution> or '
                                                   '<-ts width height>')
         try:
             Domain._validate_ts_tr(input_3)
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+            self.assertEqual(opt_err.args[0], '-ts and -tr requires exactly 2 parameters '
                                               '(1 given): <-tr x_resolution y_resolution> or '
                                               '<-ts width height>')
 
@@ -299,13 +299,13 @@ class DomainTest(unittest.TestCase):
         try:
             Domain._check_size(1, 2, ('-ts', '-tr'), tr_ts_example)
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+            self.assertEqual(opt_err.args[0], '-ts and -tr requires exactly 2 parameters '
                                               '(1 given): <-tr x_resolution y_resolution> or '
                                               '<-ts width height>')
         try:
             Domain._check_size(2, 4, ('-te', '-lle'), te_lle_example)
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+            self.assertEqual(opt_err.args[0], '-te and -lle requires exactly 4 parameters '
                                               '(2 given): <-te x_min y_min x_max y_max> or <-lle'
                                               ' min_lon min_lat max_lon max_lat>')
 
@@ -337,13 +337,13 @@ class DomainTest(unittest.TestCase):
         try:
             test = Domain._create_extent_dict(test[2])
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
+            self.assertEqual(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
 
         try:
             test = Domain._create_extent_dict(test[3])
         except OptionError as opt_err:
-            self.assertEqual(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
+            self.assertEqual(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
 
     def test_get_min_max_lat_lon(self):
