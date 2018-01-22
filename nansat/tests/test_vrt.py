@@ -10,10 +10,17 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
+
 import unittest
+
 import logging
 import os
-from mock import patch
+import sys
+if sys.version_info.major == 2:
+    from mock import patch
+else:
+    from unittest.mock import patch
+
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -22,18 +29,19 @@ import gdal
 import pythesint as pti
 
 from nansat.vrt import VRT
-import nansat_test_data as ntd
+from . import nansat_test_data as ntd
 
 
 class VRTTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
-        self.nsr_wkt =  ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
-                         '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
-                         'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
-                         'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
-                         ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+        self.nsr_wkt = ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
+                        '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
+                        'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
+                        'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
+                        ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
     def test_init(self, _make_filename_mock):
         vrt = VRT()
@@ -76,7 +84,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetProjection(), ds.GetProjection())
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
-        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file_gcps)
@@ -92,7 +100,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetProjection(), ds.GetProjection())
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
-        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
 
     def test_from_array(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
@@ -101,7 +109,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.RasterXSize, array.shape[1])
         self.assertEqual(vrt.dataset.RasterYSize, array.shape[0])
         self.assertEqual(vrt.dataset.RasterCount, 1)
-        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
         self.assertEqual(gdal.Unlink(vrt.filename.replace('.vrt', '.raw')), 0)
 
     def test_from_lonlat(self):
@@ -112,7 +120,7 @@ class VRTTest(unittest.TestCase):
 
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
-        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
         geo_metadata = vrt.dataset.GetMetadata('GEOLOCATION')
         for geo_key in geo_keys:
             self.assertEqual(vrt.geolocation.data[geo_key], geo_metadata[geo_key])
@@ -132,7 +140,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt2.dataset.GetProjection(), vrt1.dataset.GetProjection())
         self.assertEqual(vrt2.dataset.GetGeoTransform(), vrt1.dataset.GetGeoTransform())
         self.assertEqual(vrt2.dataset.GetGCPProjection(), vrt1.dataset.GetGCPProjection())
-        self.assertIn('filename', vrt2.dataset.GetMetadata().keys())
+        self.assertIn('filename', list(vrt2.dataset.GetMetadata().keys()))
 
     def test_copy_vrt_with_band(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
@@ -151,7 +159,7 @@ class VRTTest(unittest.TestCase):
         root = tree.getroot()
 
         self.assertEqual(root.tag, 'VRTDataset')
-        self.assertEqual(root.keys(), ['rasterXSize', 'rasterYSize'])
+        self.assertEqual(list(root.keys()), ['rasterXSize', 'rasterYSize'])
         self.assertEqual([e.tag for e in root], ['Metadata', 'VRTRasterBand'])
 
     def test_create_band(self):
