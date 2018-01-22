@@ -14,10 +14,10 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import division
 
 import warnings
 from xml.etree.ElementTree import ElementTree
-
 import numpy as np
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError, ProjectionError, write_domain_map
@@ -558,7 +558,8 @@ class Domain(object):
 
     @staticmethod
     def _get_row_col_vector(raster_size, n_points):
-        step = max(1, raster_size / n_points)
+        # Int because py3 division returns float
+        step = max(1, int(raster_size / n_points))
         rc_vec = list(range(0, raster_size, step))[0:n_points]
         rc_vec.append(raster_size)
         return rc_vec
