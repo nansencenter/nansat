@@ -54,13 +54,18 @@ class Mapper(VRT):
         accepted_names = [
                 'gmted2010_30.vrt',
                 'gtopo30.vrt',
-                '*.DEM',
-                '*_gmted_mea*.tif',
+                '.*.DEM',
+                '.*_gmted_mea.*.tif',
             ]
 
         correct_mapper = False
         for accepted_name in accepted_names:
-            m = re.search(accepted_name, filename)
+            try:
+                m = re.search(accepted_name, filename)
+            except:
+                import ipdb
+                ipdb.set_trace()
+                print 'error...'
             if m and m.group(0):
                 correct_mapper = True
                 break
