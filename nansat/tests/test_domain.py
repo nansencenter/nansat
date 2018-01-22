@@ -149,6 +149,23 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(test_pass(self)), Domain)
         self.assertEqual(test_pass(self).shape(), self.LAT.shape)
 
+    def test_repr(self):
+        dom = Domain(self.SRS_EPSG, self.EXTENT_TE_TS)
+        result = dom.__repr__()
+        test = ('Domain:[500 x 500]\n'
+                '----------------------------------------\n'
+                'Projection:\nGEOGCS["WGS 84",\n'
+                '    DATUM["WGS_1984",\n'
+                '        SPHEROID["WGS 84",6378137,298.257223563]],\n'
+                '    PRIMEM["Greenwich",0],\n'
+                '    UNIT["degree",0.0174532925199433]]\n'
+                '----------------------------------------\n'
+                'Corners (lon, lat):\n'
+                '\t ( 25.00,  72.00)  ( 35.00,  72.00)\n'
+                '\t ( 25.00,  70.00)  ( 35.00,  70.00)\n' )
+        self.assertIsInstance(result, str)
+        self.assertEquals(result, test)
+
 
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -509,18 +526,6 @@ class DomainTest(unittest.TestCase):
                                   "70.0,29.0 70.0,28.0 70.0,27.0 70.0,26.0 70.0,25.0 70.0,25.0 "
                                   "70.0,25.0 70.2,25.0 70.4,25.0 70.6,25.0 70.8,25.0 71.0,25.0 "
                                   "71.2,25.0 71.4,25.0 71.6,25.0 71.8,25.0 72.0))')")
-
-    def test_repr(self):
-        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
-        result = dom.__repr__()
-        test = 'Domain:[750 x 500]\n----------------------------------------\nProjection:\nGEOGC' \
-               'S["WGS 84",\n    DATUM["WGS_1984",\n        SPHEROID["WGS 84",6378137,298.257223' \
-               '563]],\n    PRIMEM["Greenwich",0],\n    UNIT["degree",0.0174532925199433]]\n-----' \
-               '-----------------------------------\nCorners (lon, lat):\n\t (  4.50,  61.00)  ' \
-               '(  6.00,  61.00)\n\t (  4.50,  60.00)  (  6.00,  60.00)\n'
-
-        self.assertIsInstance(result, str)
-        self.assertEquals(result, test)
 
 if __name__ == "__main__":
     unittest.main()
