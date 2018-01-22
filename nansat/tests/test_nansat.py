@@ -75,17 +75,20 @@ class NansatTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, mapperName='generic')
             self.assertEqual(len(w), 1)
+            self.assertIn('Nansat(mapperName', str(w[0].message))
 
     def test_open_with_loglevel_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, logLevel=30)
             self.assertEqual(len(w), 1)
+            self.assertIn('Nansat(logLevel', str(w[0].message))
 
     def test_open_with_domain_warning(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(domain=d)
             self.assertEqual(len(w), 1)
+            self.assertIn('Nansat(domain', str(w[0].message))
 
     def test_get_time_coverage_start_end(self):
         n = Nansat(self.test_file_gcps, log_level=40)
@@ -168,7 +171,7 @@ class NansatTest(unittest.TestCase):
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
-        n = Nansat(domain=d, log_level=40)
+        n = Nansat.from_domain(d, log_level=40)
         n.add_band(arr, {'name': 'band1'})
 
         self.assertEqual(type(n), Nansat)
@@ -179,7 +182,7 @@ class NansatTest(unittest.TestCase):
     def test_add_band_twice(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
-        n = Nansat(domain=d, log_level=40)
+        n = Nansat.from_domain(d, log_level=40)
         n.add_band(arr, {'name': 'band1'})
         n.add_band(arr, {'name': 'band2'})
 
@@ -195,7 +198,7 @@ class NansatTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
 
-        n = Nansat(domain=d, log_level=40)
+        n = Nansat.from_domain(d, log_level=40)
         n.add_bands([arr, arr],
                     [{'name': 'band1'}, {'name': 'band2'}])
 
@@ -209,7 +212,7 @@ class NansatTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
 
-        n = Nansat(domain=d, log_level=40)
+        n = Nansat.from_domain(d, log_level=40)
         n.add_bands([arr, arr])
 
         self.assertEqual(type(n), Nansat)
@@ -220,8 +223,8 @@ class NansatTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
 
-        n1 = Nansat(domain=d, log_level=40)
-        n2 = Nansat(domain=d, log_level=40)
+        n1 = Nansat.from_domain(d, log_level=40)
+        n2 = Nansat.from_domain(d, log_level=40)
         n1.add_band(arr, {'name': 'band1'})
 
         self.assertEqual(type(n1.vrt.band_vrts), dict)
@@ -245,7 +248,7 @@ class NansatTest(unittest.TestCase):
 
     def test_export_gcps_to_netcdf(self):
         ''' Should export file with GCPs and write correct bands'''
-        n0 = Nansat(self.test_file_gcps, log_level=40, mapperName='generic')
+        n0 = Nansat(self.test_file_gcps, log_level=40, mapper='generic')
         tmpfilename = os.path.join(ntd.tmp_data_path, 'nansat_export_gcps.nc')
         n0.export(tmpfilename)
 
@@ -256,7 +259,7 @@ class NansatTest(unittest.TestCase):
         self.assertTrue('GCPPixel' in ncf.variables)
         self.assertTrue('GCPLine' in ncf.variables)
 
-        n1 = Nansat(tmpfilename, mapperName='generic')
+        n1 = Nansat(tmpfilename, mapper='generic')
         b0 = n0['L_469']
         b1 = n1['L_469']
         np.testing.assert_allclose(b0, b1)
@@ -271,7 +274,7 @@ class NansatTest(unittest.TestCase):
         n0 = Nansat(self.test_file_gcps, log_level=40)
         b0 = n0['L_469']
 
-        n1 = Nansat(domain=n0)
+        n1 = Nansat.from_domain(n0)
         n1.add_band(b0.astype('complex64'),
                     parameters={'name': 'L_469'})
 
@@ -307,7 +310,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export_band.tif')
         n.export(tmpfilename, bands=[1], driver='GTiff')
-        n = Nansat(tmpfilename, mapperName='generic')
+        n = Nansat(tmpfilename, mapper='generic')
 
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
@@ -317,7 +320,7 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export_band.tif')
         n.export(tmpfilename, bands=['L_645'], driver='GTiff')
-        n = Nansat(tmpfilename, mapperName='generic')
+        n = Nansat(tmpfilename, mapper='generic')
 
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
@@ -330,7 +333,7 @@ class NansatTest(unittest.TestCase):
                                    'nansat_reproject_export_band.nc')
         n1.export(tmpfilename, bands=[1])
 
-        n = Nansat(tmpfilename, mapperName='generic')
+        n = Nansat(tmpfilename, mapper='generic')
         self.assertTrue(os.path.exists(tmpfilename))
         self.assertEqual(n.vrt.dataset.RasterCount, 1)
 
@@ -360,8 +363,8 @@ class NansatTest(unittest.TestCase):
         # Test with band numbers
         n.export(tmpfilename, options='WRITE_LONLAT=YES')
         n.export(tmpfilename + '2', options=['WRITE_LONLAT=NO'])
-        nn = Nansat(tmpfilename, mapperName='generic')
-        nn2 = Nansat(tmpfilename + '2', mapperName='generic')
+        nn = Nansat(tmpfilename, mapper='generic')
+        nn2 = Nansat(tmpfilename + '2', mapper='generic')
         self.assertTrue(nn.has_band('lon'))
         self.assertTrue(nn.has_band('lat'))
         self.assertTrue(nn.has_band('Bristol'))
@@ -389,7 +392,7 @@ class NansatTest(unittest.TestCase):
         self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
 
     def test_export2thredds_arctic_long_lat(self):
-        n = Nansat(self.test_file_arctic, mapperName='generic', log_level=40)
+        n = Nansat(self.test_file_arctic, mapper='generic', log_level=40)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds_arctic.nc')
         bands = {
@@ -428,7 +431,7 @@ class NansatTest(unittest.TestCase):
 
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n2 = Nansat(domain=n)
+        n2 = Nansat.from_domain(n)
         n.add_band(np.ones(n2.shape(), np.float32))
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
@@ -438,7 +441,7 @@ class NansatTest(unittest.TestCase):
     def test_export2thredds_longlat_list(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-te 27 70 31 72 -ts 200 200")
-        n = Nansat(domain=d)
+        n = Nansat.from_domain(d)
         n.add_band(np.ones(d.shape(), np.float32),
                    parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
@@ -453,7 +456,7 @@ class NansatTest(unittest.TestCase):
     def test_export2thredds_longlat_dict(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-te 27 70 31 72 -ts 200 200")
-        n = Nansat(domain=d)
+        n = Nansat.from_domain(d)
         n.add_band(np.ones(d.shape(), np.float32),
                    parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
@@ -915,7 +918,7 @@ class NansatTest(unittest.TestCase):
     def test_get_item_inf_expressions(self):
         ''' inf should be replaced with nan '''
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        n = Nansat(domain=d, log_level=40)
+        n = Nansat.from_domain(d, log_level=40)
         arr = np.empty((500, 500))
         n.add_band(arr, {'expression': 'np.array([0,1,2,3,np.inf,5,6,7])'})
         self.assertIsInstance(n[1], np.ndarray)
@@ -924,7 +927,7 @@ class NansatTest(unittest.TestCase):
     def test_repr_basic(self):
         ''' repr should include some basic elements '''
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        n = Nansat(domain=d, log_level=40)
+        n = Nansat.from_domain(d, log_level=40)
         arr = np.empty((500, 500))
         exp = 'np.array([0,1,2,3,np.inf,5,6,7])'
         n.add_band(arr, {'expression': exp})

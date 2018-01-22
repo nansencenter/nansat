@@ -170,7 +170,7 @@ class Nansat(Domain):
 
         self._init_empty(filename, log_level)
         # Create VRT object with mapping of variables
-        self.vrt = self._get_mapper(mapperName, **kwargs)
+        self.vrt = self._get_mapper(mapper, **kwargs)
 
     def __getitem__(self, bandID):
         """ Returns the band as a NumPy array, by overloading []
@@ -322,7 +322,8 @@ class Nansat(Domain):
         # add new band from an array <a> with metadata <p> but keep it
         # temporarli on disk intead of memory
         """
-        warn('Method <add_band> will be removed from Nansat v.1.1', DeprecationWarning)
+        #AK: I don't agree there should be no add_band method.
+        #warn('Method <add_band> will be removed from Nansat v.1.1', DeprecationWarning)
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):
@@ -747,7 +748,7 @@ class Nansat(Domain):
             bands = dict.fromkeys(bands, {})
 
         # Create temporary empty Nansat object with self domain
-        data = Nansat(domain=self)
+        data = Nansat.from_domain(self)
 
         # get mask (if exist)
         if maskName is not None:
