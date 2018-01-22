@@ -21,7 +21,7 @@ import xml.dom.minidom as xdm
 
 
 class Node(object):
-    '''
+    """
     Rapidly assemble XML using minimal coding.
 
     By Bruce Eckel, (c)2006 MindView Inc. www.MindView.net
@@ -67,13 +67,13 @@ class Node(object):
     in the standard Python 2.4 library. However, it can be
     retargeted to use other XML libraries without much effort.
 
-    '''
+    """
 
     def __init__(self, tag, value=None, **attributes):
-        '''Everything is a Node. The XML is maintained as (very efficient)
+        """Everything is a Node. The XML is maintained as (very efficient)
         Python objects until an XML representation is needed.
 
-        '''
+        """
         self.tag = tag.strip()
         self.attributes = attributes
         self.children = []
@@ -82,29 +82,29 @@ class Node(object):
             self.value = self.value.strip()
 
     def getAttribute(self, name):
-        ''' Read XML attribute of this node. '''
+        """ Read XML attribute of this node. """
         return self.attributes[name]
 
     def setAttribute(self, name, item):
-        ''' Modify XML attribute of this node. '''
+        """ Modify XML attribute of this node. """
         self.attributes[name] = item
 
     def delAttribute(self, name):
-        ''' Remove XML attribute with this name. '''
+        """ Remove XML attribute with this name. """
         del self.attributes[name]
 
     def replaceAttribute(self, name, value):
-        ''' replace XML arrtibute of this node. '''
+        """ replace XML arrtibute of this node. """
         del self.attributes[name]
         self.attributes[name] = value
 
     def node(self, tag, elemNum=0):
-        ''' Recursively find the first subnode with this tag.
+        """ Recursively find the first subnode with this tag.
 
         elemNum : int
             if there are several same tag, specify which element to take.
 
-        '''
+        """
         if self.tag == tag:
             return self
         ielm = 0
@@ -313,11 +313,11 @@ class Node(object):
 
     @staticmethod
     def create(dom):
-        '''
+        """
         Create a Node representation, given either
         a string representation of an XML doc, or a dom.
 
-        '''
+        """
         if isinstance(dom, str):
             if os.path.exists(dom):
                 # parse input file
@@ -329,6 +329,9 @@ class Node(object):
                 dom = dom.replace('> ', '>')
                 dom = dom.replace(' <', '<')
                 return Node.create(xdm.parseString(dom))
+
+        # To pass test for python3, decoding of bytes object is requested
+        dom = dom.encoding('UTF-8')
         if dom.nodeType == dom.DOCUMENT_NODE:
             return Node.create(dom.childNodes[0])
         if dom.nodeName == '#text':
