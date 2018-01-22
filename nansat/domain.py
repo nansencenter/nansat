@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+
 import warnings
 from xml.etree.ElementTree import ElementTree
 
@@ -179,7 +179,7 @@ class Domain(object):
             extent_dict = Domain._create_extent_dict(ext)
 
             # convert -lle to -te
-            if 'lle' in extent_dict.keys():
+            if 'lle' in list(extent_dict.keys()):
                 extent_dict = self._convert_extentDic(srs, extent_dict)
 
             # get size/extent from the created extent dictionary
@@ -388,8 +388,8 @@ class Domain(object):
         """
         step_size = stepSize
         dst_srs = dstSRS
-        x_vec = range(0, self.vrt.dataset.RasterXSize, step_size)
-        y_vec = range(0, self.vrt.dataset.RasterYSize, step_size)
+        x_vec = list(range(0, self.vrt.dataset.RasterXSize, step_size))
+        y_vec = list(range(0, self.vrt.dataset.RasterYSize, step_size))
         x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
         if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
@@ -559,7 +559,7 @@ class Domain(object):
     @staticmethod
     def _get_row_col_vector(raster_size, n_points):
         step = max(1, raster_size / n_points)
-        rc_vec = range(0, raster_size, step)[0:n_points]
+        rc_vec = list(range(0, raster_size, step))[0:n_points]
         rc_vec.append(raster_size)
         return rc_vec
 
@@ -717,7 +717,7 @@ class Domain(object):
         width = extent_dict['te'][2] - extent_dict['te'][0]
         height = extent_dict['te'][3] - extent_dict['te'][1]
 
-        if 'tr' in extent_dict.keys():
+        if 'tr' in list(extent_dict.keys()):
             resolution_x, resolution_y, raster_x_size, raster_y_size = \
                 Domain._transform_tr(width, height, extent_dict['tr'])
         else:
