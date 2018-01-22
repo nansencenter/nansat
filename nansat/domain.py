@@ -656,7 +656,7 @@ class Domain(object):
 
         """
         lon_grd, lat_grd = self.get_geolocation_grids()
-        return min(lat_grd[:, 1]), max(lat_grd[:, 1]), min(lon_grd[1, :]), max(lon_grd[1, :])
+        return np.nanmin(lat_grd), np.nanmax(lat_grd), np.nanmin(lon_grd), np.nanmax(lon_grd)
 
     def get_pixelsize_meters(self):
         """Returns the pixelsize (deltaX, deltaY) of the domain

@@ -241,7 +241,7 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(len(extent_1), 1)
         self.assertIsInstance(list(extent_1.values()), list)
 
-        for el in list(extent_1.values()[0]):
+        for el in list(extent_1.values())[0]:
             self.assertIsInstance(el, float)
 
         self.assertEqual(extent_1, output_1)
