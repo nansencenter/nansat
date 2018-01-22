@@ -51,12 +51,35 @@ nansatMappers = None
 
 
 class Nansat(Domain):
-    '''Container for geospatial data, performs all high-level operations
+    """
+    Container for geospatial data. Performs all high-level operations.
 
     n = Nansat(filename) opens the file with satellite or model data for
     reading, adds scientific metadata to bands, and prepares the data for
     further handling.
 
+    Parameters
+    -----------
+    filename : str
+        uri of the input file or OpeNDAP datastream
+    mapper : str
+        name of the mapper from nansat/mappers dir. E.g.
+        'sentinel1_l1', 'asar', 'hirlam', 'meris_l1', 'meris_l2', etc.
+    log_level : int
+        Level of logging. See: http://docs.python.org/howto/logging.html
+    kwargs : additional arguments for mappers
+
+    Examples
+    --------
+    # Open file for reading. Opening is lazy operation - no data is read at this
+    # point, only metadata that describes the dataset and bands
+    >>> n = Nansat(filename)
+
+    # Fetch data from Nansat object from the first band
+    >>> a = n[1]
+
+    Notes
+    -----
     The instance of Nansat class (the object <n>) contains information
     about geographical reference of the data (e.g raster size, pixel
     resolution, type of projection, etc) and about bands with values of
@@ -72,7 +95,9 @@ class Nansat(Domain):
     Nansat inherits from Domain (container of geo-reference information)
     Nansat uses instance of VRT (wraper around GDAL VRT-files)
     Nansat uses instance of Figure (collection of methods for visualization)
-    '''
+
+    """
+
     INIT_FILENAME_WARNING = ('Nansat(fileName=...) will be disabled from Nansat 1.1. '
                              'Use Nansat(filename).')
     INIT_MAPPER_WARNING = ('Nansat(mapperName=...) will be disabled from Nansat 1.1. '
@@ -87,7 +112,21 @@ class Nansat(Domain):
 
     @classmethod
     def from_domain(cls, domain, array=None, parameters=None, log_level=30):
-        """Create Nansat object from input Domain [and array with data]"""
+        """
+        Create Nansat object from input Domain [and array with data]
+
+        Parameters
+        ----------
+        domain : Domain
+            Defines spatial reference system and geographical extent.
+        array : numpy NDarray
+            Data for the first band. Shape must correspond to shape of <domain>
+        parameters : dict
+            Metadata for the first band. May contain 'name', 'wkv' and other keys.
+        log_level : int
+            Level of logging.
+
+        """
         n = cls.__new__(cls)
         n._init_from_domain(domain, array, parameters, log_level)
         return n
@@ -96,65 +135,20 @@ class Nansat(Domain):
                  array=None, parameters=None, log_level=30, logLevel=None, **kwargs):
         """Create Nansat object
 
-        if <fileName> is given:
-            Open GDAL dataset,
-            Read metadata,
-            Generate GDAL VRT file with mapping of variables in memory
-            Create logger
-            Create Nansat object for perfroming high-level operations
-        if <domain> and <array> are given:
-            Create VRT object from data in <array>
-            Add geolocation from <domain>
-
-        Parameters
-        -----------
-        fileName : string
-            location of the file
-        mapperName : string, optional
-            name of the mapper from nansat/mappers dir. E.g.
-            'ASAR', 'hirlam', 'merisL1', 'merisL2', etc.
-        domain : Domain object
-            Geo-reference of a new raster
-        array : numpy array
-            Firts band of a new raster
-        parameters : dictionary
-            Metadata for the 1st band of a new raster,e.g. name, wkv, units,...
-        logLevel : int, optional, default: logging.DEBUG (30)
-            Level of logging. See: http://docs.python.org/howto/logging.html
-        kwargs : additional arguments for mappers
-
-        Creates
+        Modifies
         --------
         self.mapper : str
             name of the used mapper
         self.filename : file name
             set file name given by the argument
-        self.vrt : VRT object
+        self.vrt : VRT
             Wrapper around VRT file and GDAL dataset with satellite raster data
         self.logger : logging.Logger
             logger for output debugging info
-        self.name : string
+        self.name : str
             name of object (for writing KML)
-
-        Examples
-        --------
-        n = Nansat(filename)
-        # opens file for reading. Opening is lazy - no data is read at this
-        # point, only metadata that describes the dataset and bands
-
-        n = Nansat(domain=d)
-        # create an empty Nansat object. <d> is the Domain object which
-        # describes the grid (projection, resolution and extent)
-
-        n = Nansat(domain=d, array=a, parameters=p)
-        # create a Nansat object in memory with one band from input array <a>.
-        # <p> is a dictionary with metadata for the band
-
-        a = n[1]
-        # fetch data from Nansat object from the first band
-
-        a = n['band_name']
-        # fetch data from the band which has name 'band_name'
+        self.path : str
+            path to input file
 
         """
         if filename == '' and fileName != '':
@@ -190,7 +184,12 @@ class Nansat(Domain):
 
         Returns
         --------
-        self.get_GDALRasterBand(bandID).ReadAsArray() : NumPy array
+        a : NumPy array
+
+        Examples
+        --------
+        >>> a = n[1]
+        >>> a = n['some_band_name']
 
         """
         band_id = bandID
@@ -232,7 +231,27 @@ class Nansat(Domain):
                               domain=Domain.__repr__(self))
 
     def _init_empty(self, filename, log_level):
-        """Init empty Nansat object"""
+        """Init empty Nansat object
+
+        Parameters
+        ----------
+        filename : str
+            Name of input file.
+        log_level : int
+            Level of logging verbosity.
+
+        Modifies
+        --------
+            self.logger
+                adds logging.Logger
+            self.filename
+                adds full path to input file
+            self.name
+                adds name of file
+            self.path
+                adds path to file
+
+        """
         # create logger
         self.logger = add_logger('Nansat', log_level)
         # set input file name
@@ -242,7 +261,20 @@ class Nansat(Domain):
         self.path = os.path.dirname(filename)
 
     def _init_from_domain(self, domain, array=None, parameters=None, log_level=30):
-        """Init Nansat object from input Domain and optionally array with band values"""
+        """Init Nansat object from input Domain and optionally array with band values
+
+        Parameters
+        ----------
+        domain : Domain
+            Defines spatial reference system and geographical extent.
+        array : numpy NDarray
+            Data for the first band. Shape must correspond to shape of <domain>
+        parameters : dict
+            Metadata for the first band. May contain 'name', 'wkv' and other keys.
+        log_level : int
+            Level of logging.
+
+        """
         self._init_empty('', log_level)
         self.vrt = VRT.from_gdal_dataset(domain.vrt.dataset)
         self.mapper = ''
