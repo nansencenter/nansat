@@ -11,13 +11,6 @@
 # License:
 #------------------------------------------------------------------------------
 import unittest
-import warnings
-import os
-import sys
-import glob
-from types import ModuleType, FloatType
-import numpy as np
-
 from nansat import NSR
 from nansat.tools import osr, ProjectionError
 
