@@ -70,6 +70,9 @@ class DomainTest(unittest.TestCase):
             projection=self.NSR_SRS_EPSG_WKT,
             gcps=[],
             gcp_projection='')
+        self.LON = np.mgrid[-90:90:0.5, -180:180:0.5][1]
+        self.LAT = np.mgrid[-90:90:0.5, -180:180:0.5][0]
+        self.VRT_FROM_LONLAT = VRT.from_lonlat(self.LON, self.LAT)
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
         if (    not os.path.exists(self.test_file)
@@ -137,6 +140,14 @@ class DomainTest(unittest.TestCase):
             mock_VRT.from_dataset_params.return_value = self.VRT_FROM_DATASET_PARAMS
             return Domain(ds=self.GDAL_DATASET, srs=self.SRS_EPSG)
         self.assertEqual(type(test_pass(self)), Domain)
+
+    def test_init_from_lonlat(self):
+        @patch('nansat.domain.VRT')
+        def test_pass(self, mock_VRT):
+            mock_VRT.from_lonlat.return_value = self.VRT_FROM_LONLAT
+            return Domain(lon=self.LON, lat=self.LAT)
+        self.assertEqual(type(test_pass(self)), Domain)
+        self.assertEqual(test_pass(self).shape(), self.LAT.shape)
 
     def test_init_from_strings(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
