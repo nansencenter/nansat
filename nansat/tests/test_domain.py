@@ -38,6 +38,14 @@ class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file_raw_proj = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
+        self.EXT_TEST_FILE_TE_TS = "-te 25 70 35 72 -ts 500 500"
+        self.EXT_TEST_FILE_LLE_TS = "-lle 25 70 35 72 -ts 500 500"
+        self.EXT_BERGEN = "-te 5 60 6 61 -ts 500 500"
+        self.EXT_WESTCOAST = "-te 1 58 6 64 -ts 500 500"
+        self.EXT_NORWAY = "-te 3 55 30 72 -ts 500 500"
+        self.EXT_PARIS = "-te 2 48 3 49 -ts 500 500"
+        self.SRS_PROJ4 = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
+        self.SRS_EPSG = 4326
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
 
