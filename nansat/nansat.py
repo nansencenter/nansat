@@ -171,6 +171,9 @@ class Nansat(Domain):
             warn(self.INIT_LOG_WARNING, DeprecationWarning)
             log_level = logLevel
 
+        if filename == '':
+            raise OptionError('Nansat is called without valid parameters! Use: Nansat(filename)')
+
         self._init_empty(filename, log_level)
         # Create VRT object with mapping of variables
         self.vrt = self._get_mapper(mapperName, **kwargs)
@@ -1499,7 +1502,7 @@ class Nansat(Domain):
         minmax = band.GetMetadataItem('minmax')
         # Get min and max from band histogram if not given (from wkv)
         if minmax is None:
-            (rmin, rmax) = band.ComputeRasterMinMax(1)
+            (rmin, rmax) = band.ComputeRasterMinMax()
             minmax = str(rmin) + ' ' + str(rmax)
 
         bMin = float(minmax.split(' ')[0])
