@@ -126,7 +126,7 @@ class Mapper(VRT, Globcolour):
                 mask[varPro > 0] = 64
 
                 # add VRT with array with data from projected variable
-                self.band_vrts['mask'].append(VRT(array=mask))
+                self.band_vrts['mask'].append(VRT.from_array(mask))
 
                 # add metadata to the dictionary
                 metaDict.append({
@@ -136,7 +136,7 @@ class Mapper(VRT, Globcolour):
                     'dst': {'name': 'mask'}})
 
             # add VRT with array with data from projected variable
-            self.band_vrts['lonlat'].append(VRT(array=varPro))
+            self.band_vrts['lonlat'].append(VRT.from_array(varPro))
 
             # add metadata to the dictionary
             metaEntry = {

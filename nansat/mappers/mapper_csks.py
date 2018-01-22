@@ -104,7 +104,8 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
-        self._init_from_dataset_params(RasterXSize, RasterYSize, (0,1,0,RasterYSize,0,-1),
+        self._init_from_dataset_params(subDataset.RasterXSize, subDataset.RasterYSize,
+                                        (0,1,0,subDataset.RasterYSize,0,-1),
                                         latlongSRSWKT, gcps, latlongSRSWKT)
 
         #print self.filename

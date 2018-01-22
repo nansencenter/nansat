@@ -25,7 +25,6 @@ class Mapper(Opendap):
     xName = 'lon'
     yName = 'lat'
     timeCalendarStart = '1970-01-01'
-
     srcDSProjection = NSR().wkt
 
     def __init__(self, filename, gdalDataset, gdalMetadata,
