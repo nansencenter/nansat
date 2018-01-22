@@ -27,6 +27,7 @@ else:
     BASEMAP_LIB_EXISTS = True
 
 from nansat.nsr import NSR
+from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.tools import OptionError, gdal, ogr, ProjectionError
 from nansat.figure import Image
@@ -37,7 +38,7 @@ from mock import patch, PropertyMock
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
-        self.test_file_raw_proj = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
         self.EXT_TEST_FILE_TE_TS = "-te 25 70 35 72 -ts 500 500"
         self.EXT_TEST_FILE_LLE_TS = "-lle 25 70 35 72 -ts 500 500"
@@ -49,9 +50,13 @@ class DomainTest(unittest.TestCase):
         self.SRS_EPSG = 4326
         self.NSR_SRS_PROJ4 = NSR(self.SRS_PROJ4)
         self.NSR_SRS_PROJ4_WKT = NSR(self.SRS_PROJ4).wkt
+        self.GDAL_DATASET = gdal.Open(self.test_file)
+        self.VRT_FROM_GDAL_DATASET = VRT.from_gdal_dataset(self.GDAL_DATASET)
+        self.GDAL_DATASET_SRS_WRAPPED = gdal.AutoCreateWarpedVRT(self.GDAL_DATASET, None, self.NSR_SRS_PROJ4_WKT)
+        self.VRT_FROM_GDAL_DATASET_SRS_WRAPPED = VRT.from_gdal_dataset(self.GDAL_DATASET_SRS_WRAPPED)
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
-        if (    not os.path.exists(self.test_file_raw_proj)
+        if (    not os.path.exists(self.test_file)
              or not os.path.exists(self.test_file_projected) ):
             raise ValueError('No test data available')
 
@@ -59,22 +64,38 @@ class DomainTest(unittest.TestCase):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
         with self.assertRaises(OptionError):
-            Domain(ds=gdal.Open(self.test_file_raw_proj),
+            Domain(ds=self.GDAL_DATASET,
                    srs=self.SRS_PROJ4,
                    ext=self.EXT_TEST_FILE_TE_TS)
 
     def test_init_from_GDALDataset(self):
-        d = Domain(ds=gdal.Open(self.test_file_raw_proj))
-        self.assertEqual(type(d), Domain)
+        @patch('nansat.domain.VRT')
+        def test_pass(self, mock_VRT):
+            mock_VRT.from_gdal_dataset.return_value = self.VRT_FROM_GDAL_DATASET
+            return Domain(ds=self.GDAL_DATASET)
+        self.assertEqual(type(test_pass(self)), Domain)
 
     def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails(self):
         @patch('nansat.domain.NSR')
-        @patch('nansat.domain.gdal.AutoCreateWarpedVRT', new_callable=PropertyMock, return_value=None)
+        @patch('nansat.domain.gdal')
         def test_fail(self, mock_gdal, mock_NSR):
             mock_NSR().return_value = self.NSR_SRS_PROJ4
             type(mock_NSR()).wkt = PropertyMock(return_value=self.NSR_SRS_PROJ4_WKT)
-            return Domain(ds=gdal.Open(self.test_file_raw_proj), srs=self.SRS_PROJ4)
+            mock_gdal.AutoCreateWarpedVRT.return_value = None
+            return Domain(ds=self.GDAL_DATASET, srs=self.SRS_PROJ4)
         self.assertRaises(ProjectionError, test_fail, self)
+
+    def test_init_from_GDALDataset_and_srs(self):
+        @patch('nansat.domain.NSR')
+        @patch('nansat.domain.gdal')
+        @patch('nansat.domain.VRT')
+        def test_pass(self, mock_gdal, mock_NSR, mock_VRT):
+            mock_NSR().return_value = self.NSR_SRS_PROJ4
+            type(mock_NSR()).wkt = PropertyMock(return_value=self.NSR_SRS_PROJ4_WKT)
+            mock_gdal.AutoCreateWarpedVRT.return_value = self.GDAL_DATASET_SRS_WRAPPED
+            mock_VRT.from_gdal_dataset.return_value = self.VRT_FROM_GDAL_DATASET_SRS_WRAPPED
+            return Domain(ds=self.GDAL_DATASET, srs=self.SRS_PROJ4)
+        self.assertEqual(type(test_pass(self)), Domain)
 
     def test_init_from_strings(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
@@ -100,7 +121,7 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(d.shape(), lat.shape)
 
     def test_init_from_GDALDataset(self):
-        ds = gdal.Open(self.test_file_raw_proj)
+        ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
 
         self.assertEqual(type(d), Domain)
@@ -109,15 +130,15 @@ class DomainTest(unittest.TestCase):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
         with self.assertRaises(OptionError):
-            Domain(ds=gdal.Open(self.test_file_raw_proj),
+            Domain(ds=gdal.Open(self.test_file),
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    ext="-te 25 70 35 72 -ts 2000 2000")
         with self.assertRaises(ProjectionError):
-            Domain(ds=gdal.Open(self.test_file_raw_proj),
+            Domain(ds=gdal.Open(self.test_file),
                    srs="unmatched srs")
 
     def test_init_use_AutoCreateWarpedVRT_to_determine_bounds(self):
-        d = Domain(ds=gdal.Open(self.test_file_raw_proj),
+        d = Domain(ds=gdal.Open(self.test_file),
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
         self.assertEqual(type(d), Domain)
 
@@ -238,7 +259,7 @@ class DomainTest(unittest.TestCase):
         i.verify()
 
     def test_reproject_GCPs(self):
-        ds = gdal.Open(self.test_file_raw_proj)
+        ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
         d.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
         gcp = d.vrt.dataset.GetGCPs()[0]
@@ -247,7 +268,7 @@ class DomainTest(unittest.TestCase):
         self.assertTrue(gcp.GCPY < -288344)
 
     def test_reproject_GCPs_auto(self):
-        ds = gdal.Open(self.test_file_raw_proj)
+        ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
         d.reproject_GCPs()
         

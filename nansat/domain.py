@@ -24,7 +24,7 @@ from nansat.tools import OptionError, ProjectionError, write_domain_map
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 import re
-
+import ipdb
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -170,6 +170,7 @@ class Domain(object):
             if tmp_vrt is None:
                 raise ProjectionError('Could not warp the given dataset to the given SRS.')
             else:
+                #ipdb.set_trace()
                 self.vrt = VRT.from_gdal_dataset(tmp_vrt)
 
         # If SpatialRef and extent string are given (but not dataset)
