@@ -22,7 +22,7 @@ import sys
 import tempfile
 import datetime
 import pkgutil
-import warnings
+from warnings import warn
 
 import numpy as np
 from numpy import nanmedian
@@ -74,12 +74,20 @@ class Nansat(Domain):
     Nansat uses instance of VRT (wraper around GDAL VRT-files)
     Nansat uses instance of Figure (collection of methods for visualization)
     '''
+    INIT_FILENAME_WARNING = ('Nansat(fileName=...) will be disabled from Nansat 1.1. '
+                             'Use Nansat(filename).')
+    INIT_MAPPER_WARNING = ('Nansat(mapperName=...) will be disabled from Nansat 1.1. '
+                           'Use Nansat(mapper=...)')
+    INIT_DOMAIN_WARNING = ('Nansat(domain=...) will be disabled from Nansat 1.1.'
+                           'Use Nansat.from_domain(domain)')
+    INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled from Nansat 1.1.'
+                        'Use Nansat(log_level)')
 
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
 
-    def __init__(self, fileName='', mapperName='', domain=None,
-                 array=None, parameters=None, logLevel=30, **kwargs):
+    def __init__(self, filename='', fileName='', mapper='', mapperName='', domain=None,
+                 array=None, parameters=None, log_level=30, logLevel=None, **kwargs):
         '''Create Nansat object
 
         if <fileName> is given:
@@ -143,39 +151,31 @@ class Nansat(Domain):
         # fetch data from the band which has name 'band_name'
 
         '''
-        # check the arguments
-        if fileName == '' and domain is None:
-            raise OptionError('Either fileName or domain is required.')
+        if filename == '' and fileName != '':
+            warn(self.INIT_FILENAME_WARNING)#, DeprecationWarning)
+            filename = fileName
+        if mapper == '' and mapperName != '':
+            warn(self.INIT_MAPPER_WARNING, DeprecationWarning)
+            mapper = mapperName
+        if domain is not None or array is not None:
+            warn(self.INIT_DOMAIN_WARNING, DeprecationWarning)
+            self._init_from_domain(domain, array, parameters)
+            return
+        if logLevel is not None:
+            warn(self.INIT_LOG_WARNING, DeprecationWarning)
+            log_level = logLevel
 
         # create logger
-        self.logger = add_logger('Nansat', logLevel)
-
-        # empty dict of VRTs with added bands
-        self.addedBands = {}
+        self.logger = add_logger('Nansat', log_level)
 
         # set input file name
-        self.fileName = fileName
+        self.fileName = filename
         # name, for compatibility with some Domain methods
-        self.name = os.path.basename(fileName)
-        self.path = os.path.dirname(fileName)
+        self.name = os.path.basename(filename)
+        self.path = os.path.dirname(filename)
 
-# TODO: add better comments/elifs like in Domain init on various options of initalization
-
-        # create self.vrt from a file using mapper or...
-        if fileName != '':
-            # Make original VRT object with mapping of variables
-            self.vrt = self._get_mapper(mapperName, **kwargs)
-        # ...create using array, domain, and parameters
-        else:
-            # Set current VRT object
-            self.vrt = VRT.from_gdal_dataset(domain.vrt.dataset)
-            self.domain = domain
-            self.mapper = ''
-            if array is not None:
-                # add a band from array
-                self.add_band(array=array, parameters=parameters)
-
-        self.logger.debug('Object created from %s ' % self.fileName)
+        # Make original VRT object with mapping of variables
+        self.vrt = self._get_mapper(mapperName, **kwargs)
 
     def __getitem__(self, bandID):
         """ Returns the band as a NumPy array, by overloading []
@@ -270,7 +270,7 @@ class Nansat(Domain):
         # add new band from an array <a> with metadata <p> but keep it
         # temporarli on disk intead of memory
         """
-        warnings.warn('Method <add_band> will be removed since Nansat v.1.3')
+        warn('Method <add_band> will be removed from Nansat v.1.1', DeprecationWarning)
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):
