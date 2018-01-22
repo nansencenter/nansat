@@ -86,9 +86,16 @@ class Nansat(Domain):
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
 
+    @classmethod
+    def from_domain(cls, domain, array=None, parameters=None, log_level=30):
+        """Create Nansat object from input Domain [and array with data]"""
+        n = cls.__new__(cls)
+        n._init_from_domain(domain, array, parameters, log_level)
+        return n
+
     def __init__(self, filename='', fileName='', mapper='', mapperName='', domain=None,
                  array=None, parameters=None, log_level=30, logLevel=None, **kwargs):
-        '''Create Nansat object
+        """Create Nansat object
 
         if <fileName> is given:
             Open GDAL dataset,
@@ -121,7 +128,7 @@ class Nansat(Domain):
         --------
         self.mapper : str
             name of the used mapper
-        self.fileName : file name
+        self.filename : file name
             set file name given by the argument
         self.vrt : VRT object
             Wrapper around VRT file and GDAL dataset with satellite raster data
@@ -150,7 +157,7 @@ class Nansat(Domain):
         a = n['band_name']
         # fetch data from the band which has name 'band_name'
 
-        '''
+        """
         if filename == '' and fileName != '':
             warn(self.INIT_FILENAME_WARNING)#, DeprecationWarning)
             filename = fileName
@@ -165,16 +172,8 @@ class Nansat(Domain):
             warn(self.INIT_LOG_WARNING, DeprecationWarning)
             log_level = logLevel
 
-        # create logger
-        self.logger = add_logger('Nansat', log_level)
-
-        # set input file name
-        self.fileName = filename
-        # name, for compatibility with some Domain methods
-        self.name = os.path.basename(filename)
-        self.path = os.path.dirname(filename)
-
-        # Make original VRT object with mapping of variables
+        self._init_empty(filename, log_level)
+        # Create VRT object with mapping of variables
         self.vrt = self._get_mapper(mapperName, **kwargs)
 
     def __getitem__(self, bandID):
@@ -223,6 +222,31 @@ class Nansat(Domain):
 
         return band_data
 
+    def __repr__(self):
+        """Creates string with basic info about the Nansat object"""
+        out_str = '{separator}{filename}{separator}Mapper: {mapper}{bands}{separator}{domain}'
+        return out_str.format(separator=self.OUTPUT_SEPARATOR, filename=self.filename,
+                              bands=self.list_bands(False), mapper=self.mapper,
+                              domain=Domain.__repr__(self))
+
+    def _init_empty(self, filename, log_level):
+        """Init empty Nansat object"""
+        # create logger
+        self.logger = add_logger('Nansat', log_level)
+        # set input file name
+        self.filename = filename
+        # name, for compatibility with some Domain methods
+        self.name = os.path.basename(filename)
+        self.path = os.path.dirname(filename)
+
+    def _init_from_domain(self, domain, array=None, parameters=None, log_level=30):
+        """Init Nansat object from input Domain and optionally array with band values"""
+        self._init_empty('', log_level)
+        self.vrt = VRT.from_gdal_dataset(domain.vrt.dataset)
+        self.mapper = ''
+        if array is not None:
+            self.add_band(array=array, parameters=parameters)
+
     # TODO: Test _fill_with_nan
     def _fill_with_nan(self, band, band_data):
         fill_value = float(band.GetMetadata()['_FillValue'])
@@ -234,12 +258,6 @@ class Nansat(Domain):
 
         return band_data
 
-    def __repr__(self):
-        """Creates string with basic info about the Nansat object"""
-        out_str = '{separator}{filename}{separator}Mapper: {mapper}{bands}{separator}{domain}'
-        return out_str.format(separator=self.OUTPUT_SEPARATOR, filename=self.fileName,
-                              bands=self.list_bands(False), mapper=self.mapper,
-                              domain=Domain.__repr__(self))
 
     def add_band(self, array, parameters=None, nomem=False):
         """Add band from the array to self.vrt
@@ -534,7 +552,7 @@ class Nansat(Domain):
 
 # TODO: move to Exporter._hardcopy_bands
         # if output filename is same as input one...
-        if self.fileName == fileName:
+        if self.filename == fileName:
             numOfBands = self.vrt.dataset.RasterCount
             # create VRT from each band and add it
             for iBand in range(numOfBands):
@@ -1554,8 +1572,7 @@ class Nansat(Domain):
             try:
                 metadata = metadata[key]
             except KeyError:
-                raise OptionError('%s does not have metadata %s' % (
-                                   self.fileName, key))
+                raise OptionError('%s does not have metadata %s' % (self.filename, key))
 
         return metadata
 
@@ -1623,12 +1640,12 @@ class Nansat(Domain):
 
         '''
 # TODO: remove!
-        if os.path.isfile(self.fileName):
+        if os.path.isfile(self.filename):
             # Make sure file exists and can be opened for reading
             # before proceeding
-            test_openable(self.fileName)
+            test_openable(self.filename)
         else:
-            ff = glob.glob(os.path.join(self.fileName, '*.*'))
+            ff = glob.glob(os.path.join(self.filename, '*.*'))
             for f in ff:
                 test_openable(f)
 # TODO: move to init
@@ -1642,11 +1659,11 @@ class Nansat(Domain):
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdalDataset = None
 # TODO: use starts_with
-        if self.fileName[:4] != 'http':
+        if self.filename[:4] != 'http':
             try:
-                gdalDataset = gdal.Open(self.fileName)
+                gdalDataset = gdal.Open(self.filename)
             except RuntimeError:
-                self.logger.error('GDAL could not open ' + self.fileName +
+                self.logger.error('GDAL could not open ' + self.filename +
                                   ', trying to read with Nansat mappers...')
         if gdalDataset is not None:
             # get metadata from the GDAL dataset
@@ -1672,7 +1689,7 @@ class Nansat(Domain):
                 raise errType, err, traceback
 
             # create VRT using the selected mapper
-            tmpVRT = nansatMappers[mapperName](self.fileName,
+            tmpVRT = nansatMappers[mapperName](self.filename,
                                                gdalDataset,
                                                metadata,
                                                **kwargs)
@@ -1697,7 +1714,7 @@ class Nansat(Domain):
 
                 # create a Mapper object and get VRT dataset from it
                 try:
-                    tmpVRT = nansatMappers[iMapper](self.fileName,
+                    tmpVRT = nansatMappers[iMapper](self.filename,
                                                     gdalDataset,
                                                     metadata,
                                                     **kwargs)
@@ -1713,7 +1730,7 @@ class Nansat(Domain):
             self.logger.warning('No mapper fits, returning GDAL bands!')
             tmpVRT = VRT.from_gdal_dataset(gdalDataset)
             for iBand in range(gdalDataset.RasterCount):
-                tmpVRT.create_band({'SourceFilename': self.fileName,
+                tmpVRT.create_band({'SourceFilename': self.filename,
                                      'SourceBand': iBand + 1})
                 tmpVRT.dataset.FlushCache()
             self.mapper = 'gdal_bands'
@@ -1722,10 +1739,10 @@ class Nansat(Domain):
         # if GDAL cannot open the file, and no mappers exist which can make VRT
         if tmpVRT is None and gdalDataset is None:
             # check if given data file exists
-            if not os.path.isfile(self.fileName):
-                raise IOError('%s: File does not exist' % (self.fileName))
+            if not os.path.isfile(self.filename):
+                raise IOError('%s: File does not exist' % (self.filename))
             raise NansatReadError('%s: File cannot be read with NANSAT - '
-                    'consider writing a mapper' % self.fileName)
+                    'consider writing a mapper' % self.filename)
 
         return tmpVRT
 

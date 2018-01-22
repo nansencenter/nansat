@@ -883,15 +883,10 @@ class NansatTest(unittest.TestCase):
     def test_get_item_basic_expressions(self):
         ''' Testing get_item with some basic expressions '''
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        n = Nansat(domain=d, logLevel=40)
-        arr = np.empty((500, 500))
-        n.add_band(arr, {'expression': '1+1'})
-        n.add_band(arr, {'expression': 'np.random.randn(500, 500)'})
-        self.assertIsInstance(n[1], int)
-        self.assertIsInstance(n[2], np.ndarray)
-        self.assertEqual(n[1], 2)
-        self.assertEqual(len(n[2]), 500)
-        self.assertEqual(len(n[2][0]), 500)
+        n = Nansat.from_domain(d, np.empty((500, 500)), {'expression': 'np.ones((500, 500))'})
+        self.assertIsInstance(n[1], np.ndarray)
+        self.assertEqual(n[1].shape, (500, 500))
+        self.assertTrue(np.allclose(n[1], np.ones((500, 500))))
 
     def test_get_item_inf_expressions(self):
         ''' inf should be replaced with nan '''
