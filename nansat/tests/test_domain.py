@@ -448,5 +448,17 @@ class DomainTest(unittest.TestCase):
                                   "70.0,25.0 70.2,25.0 70.4,25.0 70.6,25.0 70.8,25.0 71.0,25.0 "
                                   "71.2,25.0 71.4,25.0 71.6,25.0 71.8,25.0 72.0))')")
 
+    def test_repr(self):
+        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
+        result = dom.__repr__()
+        test = 'Domain:[750 x 500]\n----------------------------------------\nProjection:\nGEOGC' \
+               'S["WGS 84",\n    DATUM["WGS_1984",\n        SPHEROID["WGS 84",6378137,298.257223' \
+               '563]],\n    PRIMEM["Greenwich",0],\n    UNIT["degree",0.0174532925199433]]\n-----' \
+               '-----------------------------------\nCorners (lon, lat):\n\t (  4.50,  61.00)  ' \
+               '(  6.00,  61.00)\n\t (  4.50,  60.00)  (  6.00,  60.00)\n'
+
+        self.assertIsInstance(result, str)
+        self.assertEquals(result, test)
+
 if __name__ == "__main__":
     unittest.main()
