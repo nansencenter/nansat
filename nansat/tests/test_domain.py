@@ -48,8 +48,8 @@ class DomainTest(unittest.TestCase):
         self.SRS_EPSG = 4326
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
-
-        if not os.path.exists(self.test_file):
+        if (    not os.path.exists(self.test_file_raw_proj)
+             or not os.path.exists(self.test_file_projected) ):
             raise ValueError('No test data available')
 
     def test_init_from_strings(self):
@@ -76,7 +76,7 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(d.shape(), lat.shape)
 
     def test_init_from_GDALDataset(self):
-        ds = gdal.Open(self.test_file)
+        ds = gdal.Open(self.test_file_raw_proj)
         d = Domain(ds=ds)
 
         self.assertEqual(type(d), Domain)
@@ -85,15 +85,15 @@ class DomainTest(unittest.TestCase):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
         with self.assertRaises(OptionError):
-            Domain(ds=gdal.Open(self.test_file),
+            Domain(ds=gdal.Open(self.test_file_raw_proj),
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    ext="-te 25 70 35 72 -ts 2000 2000")
         with self.assertRaises(ProjectionError):
-            Domain(ds=gdal.Open(self.test_file),
+            Domain(ds=gdal.Open(self.test_file_raw_proj),
                    srs="unmatched srs")
 
     def test_init_use_AutoCreateWarpedVRT_to_determine_bounds(self):
-        d = Domain(ds=gdal.Open(self.test_file),
+        d = Domain(ds=gdal.Open(self.test_file_raw_proj),
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
         self.assertEqual(type(d), Domain)
 
@@ -214,7 +214,7 @@ class DomainTest(unittest.TestCase):
         i.verify()
 
     def test_reproject_GCPs(self):
-        ds = gdal.Open(self.test_file)
+        ds = gdal.Open(self.test_file_raw_proj)
         d = Domain(ds=ds)
         d.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
         gcp = d.vrt.dataset.GetGCPs()[0]
@@ -223,7 +223,7 @@ class DomainTest(unittest.TestCase):
         self.assertTrue(gcp.GCPY < -288344)
 
     def test_reproject_GCPs_auto(self):
-        ds = gdal.Open(self.test_file)
+        ds = gdal.Open(self.test_file_raw_proj)
         d = Domain(ds=ds)
         d.reproject_GCPs()
         
