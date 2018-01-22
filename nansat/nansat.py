@@ -1065,7 +1065,7 @@ class Nansat(Domain):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if doPrint:
             # print to screeen
-            print outString
+            print(outString)
         else:
             return outString
 
@@ -1512,8 +1512,8 @@ class Nansat(Domain):
             outDataset.GetRasterBand(1).SetColorTable(colorTable)
         except:
             # Happens after reprojection, a possible bug?
-            print 'Could not set color table'
-            print colorTable
+            print('Could not set color table')
+            print(colorTable)
         outDataset = None
         self.vrt.copyproj(fileName)
 
@@ -1669,6 +1669,7 @@ class Nansat(Domain):
             if isinstance(nansatMappers[mapperName], tuple):
                 errType, err, traceback = nansatMappers[mapperName]
                 # self.logger.error(err, exc_info=(errType, err, traceback))
+                # TODO: python 3.6 does not support with syntax
                 raise errType, err, traceback
 
             # create VRT using the selected mapper
