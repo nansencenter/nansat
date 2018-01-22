@@ -532,7 +532,6 @@ class Nansat(Domain):
                     self.logger.info('Unable to remove metadata'
                                      '%s from band %d' % (rmMeta, iBand + 1))
             band.SetMetadata(bandMetadata)
-
 # TODO: move to Exporter._fix_global_metadata()
         # remove unwanted global metadata
         globMetadata = exportVRT.dataset.GetMetadata()

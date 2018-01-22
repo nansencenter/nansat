@@ -249,7 +249,7 @@ class VRT(object):
         self.dataset.FlushCache()
 
     def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
-        """Init VRT from GDAL Dataset with the same size/georeference but wihout bands.
+        """Init VRT from GDAL Dataset with the same size/georeference but wihout bands/metadata.
 
         Parameters
         ----------
@@ -269,9 +269,6 @@ class VRT(object):
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
-        metadata = gdal_dataset.GetMetadata()
-        for key in metadata:
-            self.dataset.SetMetadataItem(key, metadata[key])
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
         self.dataset.SetMetadataItem('filename', self.filename)
 
