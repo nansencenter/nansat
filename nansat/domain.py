@@ -14,15 +14,15 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import division
+from __future__ import division, absolute_import
 
 import warnings
 from xml.etree.ElementTree import ElementTree
 import numpy as np
-from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import OptionError, ProjectionError, write_domain_map
-from nansat.nsr import NSR
-from nansat.vrt import VRT
+from .tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
+from .tools import OptionError, ProjectionError, write_domain_map
+from nansat import NSR
+from .vrt import VRT
 import re
 
 
