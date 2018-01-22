@@ -717,9 +717,6 @@ class Domain(object):
         width = extent_dict['te'][2] - extent_dict['te'][0]
         height = extent_dict['te'][3] - extent_dict['te'][1]
 
-        if width <= 0 or height <= 0:
-            raise OptionError('The extent is illegal "-te xMin yMin xMax yMax"')
-
         if 'tr' in extent_dict.keys():
             resolution_x, resolution_y, raster_x_size, raster_y_size = \
                 Domain._transform_tr(width, height, extent_dict['tr'])
