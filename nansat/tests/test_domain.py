@@ -217,7 +217,7 @@ class DomainTest(unittest.TestCase):
         ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
         d.reproject_GCPs()
-        
+
         gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
         self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),
                         'Stereographic')
@@ -347,13 +347,13 @@ class DomainTest(unittest.TestCase):
             self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
 
-    def test_get_min_max_lat_lon(self):
+    def test_get_min_max_lon_lat(self):
         dom = Domain(4326, "-te 5 60 6 61 -ts 500 500")
-        result = dom.get_min_max_lat_lon()
+        result = dom.get_min_max_lon_lat()
         self.assertIsInstance(result, tuple)
         self.assertLess(result[0], result[1])
         self.assertLess(result[2], result[3])
-        self.assertEqual(dom.get_min_max_lat_lon(), (60.002, 61.0, 5.0, 5.998))
+        self.assertEqual(result, (5.0, 5.998, 60.002, 61.0))
 
     def test_get_row_col_vector(self):
         test_1 = Domain._get_row_col_vector(250, 500)

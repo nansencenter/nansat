@@ -755,7 +755,7 @@ class Nansat(Domain):
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
         # get corners of reprojected data
-        minLat, maxLat, minLon, maxLon = data.get_min_max_lat_lon()
+        minLon, maxLon, minLat, maxLat = data.get_min_max_lon_lat()
 
 # TODO: move to Exporter._set_global_metadata
         # common global attributes:

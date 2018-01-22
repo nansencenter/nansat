@@ -645,17 +645,17 @@ class Domain(object):
         row_vec = [0, self.vrt.dataset.RasterYSize, 0, self.vrt.dataset.RasterYSize]
         return self.transform_points(col_vec, row_vec)
 
-    def get_min_max_lat_lon(self):
-        """Get minimum and maximum lat and long values in the geolocation grid
+    def get_min_max_lon_lat(self):
+        """Get minimum and maximum of longitude and latitude geolocation grids
 
         Returns
         --------
-        minLat, maxLat, minLon, maxLon : float
+        min_lon, max_lon, min_lat, max_lat, : float
             min/max lon/lat values for the Domain
 
         """
         lon_grd, lat_grd = self.get_geolocation_grids()
-        return min(lat_grd[:, 1]), max(lat_grd[:, 1]), min(lon_grd[1, :]), max(lon_grd[1, :])
+        return lon_grd.min(), lon_grd.max(), lat_grd.min(), lat_grd.max(),
 
     def get_pixelsize_meters(self):
         """Returns the pixelsize (deltaX, deltaY) of the domain
