@@ -36,7 +36,8 @@ import nansat_test_data as ntd
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
-        self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_raw_proj = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
 
