@@ -1,4 +1,4 @@
-# Name:    nansat.py
+# Name:    vrt.py
 # Purpose: Container of VRT classes
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
@@ -29,9 +29,6 @@ from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, gdal, osr, OptionError, numpy_to_gdal_type, gdal_type_to_offset
 
-# TODO: Think which variables we should rename
-
-# TODO: Think which conventional names we should use (lon, lat - OK), vrt - ?
 
 class VRT(object):
     """Wrapper around GDAL VRT-file
@@ -1388,9 +1385,6 @@ class VRT(object):
             ds = gdal.Open(src['SourceFilename'])
             src['xSize'] = ds.RasterXSize
             src['ySize'] = ds.RasterYSize
-
-        # TODO:
-        #   write XML from dictionary using a standard method (not a filling a template)
 
         # create XML for each source
         src['XML'] = VRT.COMPLEX_SOURCE_XML.substitute(

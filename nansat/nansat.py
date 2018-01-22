@@ -1,4 +1,3 @@
-# Name:    nansat.py
 # Name:  nansat.py
 # Purpose: Container of Nansat class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
@@ -54,7 +53,7 @@ nansatMappers = None
 class Nansat(Domain):
     '''Container for geospatial data, performs all high-level operations
 
-    n = Nansat(fileName) opens the file with satellite or model data for
+    n = Nansat(filename) opens the file with satellite or model data for
     reading, adds scientific metadata to bands, and prepares the data for
     further handling.
 
@@ -78,9 +77,9 @@ class Nansat(Domain):
                              'Use Nansat(filename).')
     INIT_MAPPER_WARNING = ('Nansat(mapperName=...) will be disabled from Nansat 1.1. '
                            'Use Nansat(mapper=...)')
-    INIT_DOMAIN_WARNING = ('Nansat(domain=...) will be disabled from Nansat 1.1.'
+    INIT_DOMAIN_WARNING = ('Nansat(domain=...) will be disabled from Nansat 1.1. '
                            'Use Nansat.from_domain(domain)')
-    INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled from Nansat 1.1.'
+    INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled from Nansat 1.1. '
                         'Use Nansat(log_level)')
 
     FILL_VALUE = 9.96921e+36
@@ -159,7 +158,7 @@ class Nansat(Domain):
 
         """
         if filename == '' and fileName != '':
-            warn(self.INIT_FILENAME_WARNING)#, DeprecationWarning)
+            warn(self.INIT_FILENAME_WARNING, DeprecationWarning)
             filename = fileName
         if mapper == '' and mapperName != '':
             warn(self.INIT_MAPPER_WARNING, DeprecationWarning)
@@ -2206,9 +2205,9 @@ def _import_mappers(log_level=None):
 
     Returns
     --------
-    nansatMappers : dict
+    nansat_mappers : dict
         key  : mapper name
-        value: class Mapper(VRT) from the mapper module
+        value: class Mapper(VRT) from the mappers module
 
     '''
     logger = add_logger('import_mappers', logLevel=log_level)
