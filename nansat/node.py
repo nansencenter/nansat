@@ -174,11 +174,11 @@ class Node(object):
 
         chn = 0
         for child in children:
-            print child, child.nodeType, chn
+            print(child, child.nodeType, chn)
             if child.nodeType == 1:
-                print child.tagName
+                print(child.tagName)
                 if str(child.tagName) == tagName:
-                    print child.tagName, tagName, 'OK'
+                    print(child.tagName, tagName, 'OK')
                     if chn == n:
                         theChild = child
                     chn += 1
@@ -187,7 +187,7 @@ class Node(object):
                 break
 
             if child.hasChildNodes():
-                print 'has childs'
+                print('has childs')
                 theChild = self.find_dom_child(child, tagName, n)
 
         return theChild
