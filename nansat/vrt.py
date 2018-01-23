@@ -559,7 +559,7 @@ class VRT(object):
         # read XML content from VRT
         tmp_vrt_xml = self.xml
         # find and remove GeoTransform
-        node0 = Node.create(tmp_vrt_xml)
+        node0 = Node.create(tmp_vrt_xml.decode())
         node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
@@ -639,7 +639,7 @@ class VRT(object):
 
     def _update_warped_vrt_xml(self, x_size, y_size, geo_transform, block_size, working_data_type):
         """Update rasterXsize, rasterYsize, geotransform, block_size and working_data_type"""
-        node0 = Node.create(self.xml)
+        node0 = Node.create(self.xml.decode())
         node0.replaceAttribute('rasterXSize', str(x_size))
         node0.replaceAttribute('rasterYSize', str(y_size))
 

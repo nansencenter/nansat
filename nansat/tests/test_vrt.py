@@ -232,7 +232,7 @@ class VRTTest(unittest.TestCase):
         vrt = VRT.from_lonlat(lon, lat)
         vrt.create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
         vrt._set_gcps_geolocation_geotransform()
-        self.assertFalse('<GeoTransform>' in vrt.xml)
+        self.assertFalse(b'<GeoTransform>' in vrt.xml)
         self.assertEqual(vrt.dataset.GetGCPs(), ())
 
     def test_set_gcps_geolocation_geotransform_with_gcps(self):
@@ -241,7 +241,7 @@ class VRTTest(unittest.TestCase):
         vrt.create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
         vrt._remove_geolocation()
         vrt._set_gcps_geolocation_geotransform()
-        self.assertFalse('<GeoTransform>' in vrt.xml)
+        self.assertFalse(b'<GeoTransform>' in vrt.xml)
         self.assertIsInstance(vrt.dataset.GetGCPs(), (list, tuple))
         self.assertTrue(len(vrt.dataset.GetGCPs()) > 0)
         self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
@@ -272,7 +272,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(warped_vrt.dataset.GetGeoTransform(), geo_transform)
         self.assertEqual(warped_vrt.dataset.GetRasterBand(1).GetBlockSize(),
                          [block_size, block_size])
-        self.assertIn('<WorkingDataType>Float32</WorkingDataType>', warped_vrt.xml)
+        self.assertIn(b'<WorkingDataType>Float32</WorkingDataType>', warped_vrt.xml)
 
     def test_set_fake_gcps_empty(self):
         ds = gdal.Open('NETCDF:"%s":UMass_AES' % self.test_file_arctic)
