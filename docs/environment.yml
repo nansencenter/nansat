@@ -1,4 +1,5 @@
 channels:
+  - alevin
   - conda-forge
 dependencies:
   - python==2.7
@@ -9,12 +10,7 @@ dependencies:
   - pandoc
   - nbconvert
   - ipykernel
-  - gdal
-  - numpy
-  - pillow
-  - netcdf4
-  - cfunits
   - python-dateutil
-  - pythesint
+  - nansat
   - pip:
     - nbsphinx
