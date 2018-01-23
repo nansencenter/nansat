@@ -1257,7 +1257,6 @@ class Nansat(Domain, Exporter):
 
         return tmpVRT
 
-# TODO: make public (leave private method and raise warning)
     def get_band_number(self, band_id):
         '''Return absolute band number
 
@@ -1314,7 +1313,7 @@ class Nansat(Domain, Exporter):
 
     def get_transect(self, points, bands,
                         lonlat=True,
-                        smoothRadius=0,
+                        smooth_radius=0,
                         smooth_function=nanmedian,
                         data=None,
                         cornersonly=False):
@@ -1329,7 +1328,7 @@ class Nansat(Domain, Exporter):
         lonlat : bool
             If the points in lat/lon, then True.
             If the points in pixel/line, then False.
-        smoothRadius: int
+        smooth_radius: int
             If smootRadius is greater than 0, smooth every transect
             pixel as the median or mean value in a circule with radius
             equal to the given number.
@@ -1351,46 +1350,19 @@ class Nansat(Domain, Exporter):
             raise OptionError('Input points must be 2xN array with N>0')
 
         # get names of bands
-        bandNames = []
+        band_names = []
         for band in bands:
             try:
                 bandN = self.get_band_number(band)
             except OptionError:
                 self.logger.error('Wrong band name %s' % band)
             else:
-                bandNames.append(self.bands()[bandN]['name'])
+                band_names.append(self.bands()[bandN]['name'])
 
         if data is not None:
-            bandNames.append('input')
+            band_names.append('input')
 
-# TODO: move to _get_pix_lin_vectors
-        # if points in degree, convert them into pix/lin
-        if lonlat:
-            pix, lin = self.transform_points(points[0], points[1], DstToSrc=1)
-        else:
-            pix, lin = points[0], points[1]
-
-        if cornersonly:
-            pixVector, linVector = pix, lin
-        else:
-            # full vectors of pixel coordinates based on coordinates of vertices
-            pixVector, linVector = [pix[0]], [lin[0]]
-            for pn in range(len(pix[1:])):
-                px0, px1 = pix[pn], pix[pn+1]
-                py0, py1 = lin[pn], lin[pn+1]
-                length = np.round(np.hypot(px1-px0, py0-py1))
-                pixVector += list(np.linspace(px0, px1, length+1)[1:])
-                linVector += list(np.linspace(py0, py1, length+1)[1:])
-
-            # remove out of region points
-            pixVector = np.floor(pixVector)
-            linVector = np.floor(linVector)
-            gpi = ((pixVector >= (0 + smoothRadius)) *
-                   (linVector >= (0 + smoothRadius)) *
-                   (pixVector < (self.shape()[1] - smoothRadius)) *
-                   (linVector < (self.shape()[0] - smoothRadius)))
-            pixVector = pixVector[gpi]
-            linVector = linVector[gpi]
+        pixVector, linVector = self._get_pix_lin_vectors(points, lonlat, cornersonly, smooth_radius)
 
         # create output transect
         t = np.recarray((len(pixVector)), dtype=[('pixel', int),
@@ -1401,32 +1373,32 @@ class Nansat(Domain, Exporter):
         # add pixel, line, lon, lat values to output
         t['pixel'] = pixVector
         t['line'] = linVector
-        t['lon'], t['lat'] = self.transform_points(t['pixel'], t['line'],
-                                                   DstToSrc=0)
+        t['lon'], t['lat'] = self.transform_points(t['pixel'], t['line'], DstToSrc=0)
 
-        # mask for extraction within circular area
-        xgrid, ygrid = np.mgrid[0:smoothRadius * 2 + 1, 0:smoothRadius * 2 + 1]
-        distance = ((xgrid - smoothRadius) ** 2 + (ygrid - smoothRadius) ** 2) ** 0.5
-        mask = distance <= smoothRadius
-
-# TODO: remove if
         # get values from bands or input data
-        if len(bandNames) > 0:
-            for bandName in bandNames:
-# TODO: move to _extract_transect_data(self, bandName)
-                if bandName == 'input':
-                    bandArray = data
-                else:
-                    bandArray = self[bandName]
-                # average values from pixel inside a circle
-                bandValues = []
-                for r, c in zip(t['line'], t['pixel']):
-                    subarray = bandArray[r-smoothRadius:r+smoothRadius+1,
-                                         c-smoothRadius:c+smoothRadius+1]
-                    bandValues.append(smooth_function(subarray[mask]))
-                t = append_fields(t, bandName, bandValues).data
+        for band_name in band_names:
+            t = self._extract_transect_data(t, band_name, data, smooth_radius, smooth_function)
 
         return t
+
+    def _extract_transect_data(self, t, band_name, data, smooth_radius, smooth_function):
+        """Extract data along transect from input band"""
+        # mask for extraction within circular area
+        xgrid, ygrid = np.mgrid[0:smooth_radius * 2 + 1, 0:smooth_radius * 2 + 1]
+        distance = ((xgrid - smooth_radius) ** 2 + (ygrid - smooth_radius) ** 2) ** 0.5
+        mask = distance <= smooth_radius
+
+        if band_name == 'input':
+            bandArray = data
+        else:
+            bandArray = self[band_name]
+        # average values from pixel inside a circle
+        bandValues = []
+        for r, c in zip(t['line'], t['pixel']):
+            subarray = bandArray[r-smooth_radius:r+smooth_radius+1,
+                                 c-smooth_radius:c+smooth_radius+1]
+            bandValues.append(smooth_function(subarray[mask]))
+        return append_fields(t, band_name, bandValues).data
 
     def digitize_points(self, band=1, **kwargs):
 
@@ -1708,6 +1680,37 @@ class Nansat(Domain, Exporter):
 
         return extent
 
+    def _get_pix_lin_vectors(self, points, lonlat, cornersonly, smooth_radius):
+        """Get vectors with pixel and line values for input corner points"""
+        # if points in degree, convert them into pix/lin
+        if lonlat:
+            pix, lin = self.transform_points(points[0], points[1], DstToSrc=1)
+        else:
+            pix, lin = points[0], points[1]
+
+        if cornersonly:
+            return pix, lin
+
+        # full vectors of pixel coordinates based on coordinates of vertices
+        pixVector, linVector = [pix[0]], [lin[0]]
+        for pn in range(len(pix[1:])):
+            px0, px1 = pix[pn], pix[pn+1]
+            py0, py1 = lin[pn], lin[pn+1]
+            length = np.round(np.hypot(px1-px0, py0-py1))
+            pixVector += list(np.linspace(px0, px1, length+1)[1:])
+            linVector += list(np.linspace(py0, py1, length+1)[1:])
+
+        # remove out of region points
+        pixVector = np.floor(pixVector)
+        linVector = np.floor(linVector)
+        gpi = ((pixVector >= (0 + smooth_radius)) *
+               (linVector >= (0 + smooth_radius)) *
+               (pixVector < (self.shape()[1] - smooth_radius)) *
+               (linVector < (self.shape()[0] - smooth_radius)))
+
+        return pixVector[gpi], linVector[gpi]
+
+
 
 def _import_mappers(log_level=None):
     ''' Import available mappers into a dictionary
@@ -1763,3 +1766,4 @@ def _import_mappers(log_level=None):
             nansat_mappers['mapper_generic'] = nansat_mappers.pop('mapper_generic')
 
     return nansat_mappers
+
