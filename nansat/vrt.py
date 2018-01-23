@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 import os
 import tempfile
 from string import Template, ascii_uppercase, digits
@@ -239,8 +239,8 @@ class VRT(object):
         """
         # essential attributes
         self.logger = add_logger('Nansat')
-        self.driver = gdal.GetDriverByName('VRT')
-        self.filename = VRT._make_filename(nomem=nomem)
+        self.driver = gdal.GetDriverByName(str('VRT'))
+        self.filename = str(VRT._make_filename(nomem=nomem))
         self.band_vrts = dict()
         self.tps = False
         self.vrt = None
@@ -276,7 +276,7 @@ class VRT(object):
         for key in metadata:
             self.dataset.SetMetadataItem(key, metadata[key])
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
-        self.dataset.SetMetadataItem('filename', self.filename)
+        self.dataset.SetMetadataItem(str('filename'), self.filename)
 
         # write XML file contents
         self.dataset.FlushCache()
@@ -317,7 +317,7 @@ class VRT(object):
         self.dataset.SetGeoTransform(geo_transform)
         if isinstance(gcps, (list, tuple)):
             self.dataset.SetGCPs(gcps, gcp_projection)
-        self.dataset.SetMetadataItem('filename', self.filename)
+        self.dataset.SetMetadataItem(str('filename'), self.filename)
 
         # write file contents
         self.dataset.FlushCache()
@@ -349,7 +349,7 @@ class VRT(object):
         array_type = array.dtype.name
         array_shape = array.shape
         binary_file = self.filename.replace('.vrt', '.raw')
-        ofile = gdal.VSIFOpenL(binary_file, 'wb')
+        ofile = gdal.VSIFOpenL(str(binary_file), str('wb'))
         gdal.VSIFWriteL(array.tostring(), len(array.tostring()), 1, ofile)
         gdal.VSIFCloseL(ofile)
         array = None
@@ -371,7 +371,7 @@ class VRT(object):
 
         # write XML contents to VRT-file
         self.write_xml(contents)
-        self.dataset.SetMetadataItem('filename', self.filename)
+        self.dataset.SetMetadataItem(str('filename'), self.filename)
         self.dataset.FlushCache()
 
     def _init_from_lonlat(self, lon, lat, **kwargs):
@@ -399,7 +399,7 @@ class VRT(object):
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, **kwargs), NSR().wkt)
         self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
-        self.dataset.SetMetadataItem('filename', self.filename)
+        self.dataset.SetMetadataItem(str('filename'), self.filename)
         self.dataset.FlushCache()
 
     def _copy_from_dataset(self, gdal_dataset, **kwargs):
@@ -419,7 +419,7 @@ class VRT(object):
         # set dataset geo-metadata
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset = self.driver.CreateCopy(self.filename, gdal_dataset)
-        self.dataset.SetMetadataItem('filename', self.filename)
+        self.dataset.SetMetadataItem(str('filename'), self.filename)
 
         # write XMl file contents
         self.dataset.FlushCache()
@@ -530,7 +530,7 @@ class VRT(object):
 
         """
         self.geolocation = geolocation
-        self.dataset.SetMetadata(geolocation.data, 'GEOLOCATION')
+        self.dataset.SetMetadata(geolocation.data, str('GEOLOCATION'))
         self.dataset.FlushCache()
 
     def _remove_geolocation(self):
@@ -545,7 +545,7 @@ class VRT(object):
         del self.geolocation
 
         # add GEOLOCATION metadata (empty if geolocation is empty)
-        self.dataset.SetMetadata('', 'GEOLOCATION')
+        self.dataset.SetMetadata(str(''), str('GEOLOCATION'))
         self.dataset.FlushCache()
 
     def _remove_geotransform(self):
@@ -559,7 +559,7 @@ class VRT(object):
         # read XML content from VRT
         tmp_vrt_xml = self.xml
         # find and remove GeoTransform
-        node0 = Node.create(tmp_vrt_xml.decode())
+        node0 = Node.create(str(tmp_vrt_xml.decode()))
         node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
@@ -616,8 +616,8 @@ class VRT(object):
 
     def _set_geotransform_for_resize(self):
         """Prepare VRT.dataset for resizing."""
-        self.dataset.SetMetadata('', 'GEOLOCATION')
-        self.dataset.SetGCPs([], '')
+        self.dataset.SetMetadata(str(''), str('GEOLOCATION'))
+        self.dataset.SetGCPs([], str(''))
         self.dataset.SetGeoTransform((0, 1, 0, self.dataset.RasterYSize, 0, -1))
 
     def _set_gcps_geolocation_geotransform(self):
@@ -625,21 +625,21 @@ class VRT(object):
         # Select if GEOLOCATION, or GCPs, or GeoTransform from the original dataset are used
         if hasattr(self, 'geolocation') and len(self.geolocation.data) > 0:
             # use GEOLOCATION by default (remove GCP and GeoTransform)
-            self.dataset.SetGCPs([], '')
+            self.dataset.SetGCPs([], str(''))
             self._remove_geotransform()
         elif len(self.dataset.GetGCPs()) > 0:
             # otherwise fallback to GCPs (remove Geolocation and GeoTransform)
-            self.dataset.SetMetadata('', 'GEOLOCATION')
+            self.dataset.SetMetadata(str(''), str('GEOLOCATION'))
             self._remove_geotransform()
         else:
             # otherwise fallback to GeoTransform in input VRT (remove Geolocation and GCP)
-            self.dataset.SetMetadata('', 'GEOLOCATION')
-            self.dataset.SetGCPs([], '')
+            self.dataset.SetMetadata(str(''), str('GEOLOCATION'))
+            self.dataset.SetGCPs([], str(''))
         self.dataset.FlushCache()
 
     def _update_warped_vrt_xml(self, x_size, y_size, geo_transform, block_size, working_data_type):
         """Update rasterXsize, rasterYsize, geotransform, block_size and working_data_type"""
-        node0 = Node.create(self.xml.decode())
+        node0 = Node.create(str(self.xml.decode()))
         node0.replaceAttribute('rasterXSize', str(x_size))
         node0.replaceAttribute('rasterYSize', str(y_size))
 
@@ -682,7 +682,7 @@ class VRT(object):
                      band_name += '_' + dst['suffix']
 
         # create list of available bands (to prevent duplicate names)
-        band_names = [self.dataset.GetRasterBand(i + 1).GetMetadataItem('name')
+        band_names = [self.dataset.GetRasterBand(i + 1).GetMetadataItem(str('name'))
                         for i in range(self.dataset.RasterCount)]
 
         # check if name already exist and add '_NNN'
@@ -835,7 +835,8 @@ class VRT(object):
         # Append sources to destination dataset
         if len(srcs) == 1 and srcs[0]['SourceBand'] > 0:
             # only one source
-            dst_raster_band.SetMetadataItem('source_0', str(srcs[0]['XML']), 'new_vrt_sources')
+            dst_raster_band.SetMetadataItem(str('source_0'), str(srcs[0]['XML']),
+                                            str('new_vrt_sources'))
         elif len(srcs) > 1:
             # several sources for PixelFunction
             metadataSRC = {}
@@ -869,8 +870,8 @@ class VRT(object):
             If XML content was written, self.dataset is re-opened
 
         """
-        vsi_file = gdal.VSIFOpenL(self.filename, 'w')
-        gdal.VSIFWriteL(vsi_file_content, len(vsi_file_content), 1, vsi_file)
+        vsi_file = gdal.VSIFOpenL(self.filename, str('w'))
+        gdal.VSIFWriteL(str(vsi_file_content), len(vsi_file_content), 1, vsi_file)
         gdal.VSIFCloseL(vsi_file)
         # re-open self.dataset with new content
         self.dataset = gdal.Open(self.filename)
@@ -1343,7 +1344,7 @@ class VRT(object):
     def read_vsi(filename):
         """Read text from input <filename:str> using VSI and return <content:str>."""
         # open
-        vsi_file = gdal.VSIFOpenL(filename, 'r')
+        vsi_file = gdal.VSIFOpenL(str(filename), str('r'))
         # get file size
         gdal.VSIFSeekL(vsi_file, 0, 2)
         vsi_file_size = gdal.VSIFTellL(vsi_file)

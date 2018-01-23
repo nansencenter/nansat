@@ -15,6 +15,8 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+from __future__ import unicode_literals
+
 import os
 import re
 import xml.dom.minidom as xdm
@@ -328,7 +330,7 @@ class Node(object):
                 dom = re.sub('\s+', ' ', dom)
                 dom = dom.replace('> ', '>')
                 dom = dom.replace(' <', '<')
-                return Node.create(xdm.parseString(dom))
+                return Node.create(xdm.parseString(str(dom)))
 
         # To pass test for python3, decoding of bytes object is requested
         if dom.nodeType == dom.DOCUMENT_NODE:

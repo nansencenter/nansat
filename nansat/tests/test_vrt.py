@@ -11,7 +11,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 import unittest
 
 import logging
@@ -119,7 +119,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
         self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
-        geo_metadata = vrt.dataset.GetMetadata('GEOLOCATION')
+        geo_metadata = vrt.dataset.GetMetadata(str('GEOLOCATION'))
         for geo_key in geo_keys:
             self.assertEqual(vrt.geolocation.data[geo_key], geo_metadata[geo_key])
         self.assertIsInstance(vrt.geolocation.x_vrt, VRT)
@@ -223,14 +223,14 @@ class VRTTest(unittest.TestCase):
         vrt = VRT.from_lonlat(lon, lat)
         vrt._set_geotransform_for_resize()
 
-        self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
+        self.assertEqual(vrt.dataset.GetMetadata(str('GEOLOCATION')), {})
         self.assertEqual(vrt.dataset.GetGCPs(), ())
         self.assertEqual(vrt.dataset.GetGeoTransform(), (0.0, 1.0, 0.0, 30, 0.0, -1.0))
 
     def test_set_gcps_geolocation_geotransform_with_geolocation(self):
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
         vrt = VRT.from_lonlat(lon, lat)
-        vrt.create_band({'SourceFilename': vrt.geolocation.x_vrt.filename})
+        vrt.create_band({str('SourceFilename'): vrt.geolocation.x_vrt.filename})
         vrt._set_gcps_geolocation_geotransform()
         self.assertFalse(b'<GeoTransform>' in vrt.xml)
         self.assertEqual(vrt.dataset.GetGCPs(), ())
@@ -244,7 +244,7 @@ class VRTTest(unittest.TestCase):
         self.assertFalse(b'<GeoTransform>' in vrt.xml)
         self.assertIsInstance(vrt.dataset.GetGCPs(), (list, tuple))
         self.assertTrue(len(vrt.dataset.GetGCPs()) > 0)
-        self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
+        self.assertEqual(vrt.dataset.GetMetadata(str('GEOLOCATION')), {})
 
     def test_set_gcps_geolocation_geotransform_with_geotransform(self):
         ds = gdal.Open('NETCDF:"%s":UMass_AES' % self.test_file_arctic)
@@ -252,12 +252,12 @@ class VRTTest(unittest.TestCase):
         vrt._set_gcps_geolocation_geotransform()
         self.assertEqual(vrt.dataset.GetGeoTransform(),
                          (-1000000.0, 25000.0, 0.0, 5000000.0, 0.0, -25000.0))
-        self.assertEqual(vrt.dataset.GetMetadata('GEOLOCATION'), {})
+        self.assertEqual(vrt.dataset.GetMetadata(str('GEOLOCATION')), {})
         self.assertEqual(vrt.dataset.GetGCPs(), ())
 
     def test_update_warped_vrt_xml(self):
         dataset = gdal.Open('NETCDF:"%s":UMass_AES' % self.test_file_arctic)
-        warped_dataset = gdal.AutoCreateWarpedVRT(dataset, None, self.nsr_wkt, 0)
+        warped_dataset = gdal.AutoCreateWarpedVRT(dataset, None, str(self.nsr_wkt), 0)
         warped_vrt = VRT.copy_dataset(warped_dataset)
         x_size = 100
         y_size = 200
