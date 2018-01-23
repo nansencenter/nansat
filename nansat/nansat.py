@@ -21,7 +21,7 @@ import sys
 import tempfile
 import datetime
 import pkgutil
-from warnings import warn
+import warnings
 
 import numpy as np
 from numpy import nanmedian
@@ -37,7 +37,7 @@ from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, gdal
 from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
-from nansat.tools import parse_time, test_openable
+from nansat.tools import parse_time, test_openable, NansatFutureWarning
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -153,16 +153,16 @@ class Nansat(Domain, Exporter):
 
         """
         if filename == '' and fileName != '':
-            warn(self.INIT_FILENAME_WARNING, DeprecationWarning)
+            warnings.warn(self.INIT_FILENAME_WARNING, NansatFutureWarning)
             filename = fileName
         if mapperName != '':
-            warn(self.INIT_MAPPER_WARNING, DeprecationWarning)
+            warnings.warn(self.INIT_MAPPER_WARNING, NansatFutureWarning)
             mapper = mapperName
         if logLevel is not None:
-            warn(self.INIT_LOG_WARNING, DeprecationWarning)
+            warnings.warn(self.INIT_LOG_WARNING, NansatFutureWarning)
             log_level = logLevel
         if domain is not None or array is not None:
-            warn(self.INIT_DOMAIN_WARNING, DeprecationWarning)
+            warnings.warn(self.INIT_DOMAIN_WARNING, NansatFutureWarning)
             self._init_from_domain(domain, array, parameters)
             return
 
@@ -324,7 +324,7 @@ class Nansat(Domain, Exporter):
         # temporarli on disk intead of memory
         """
         #AK: I don't agree there should be no add_band method.
-        #warn('Method <add_band> will be removed from Nansat v.1.1', DeprecationWarning)
+        #warnings.warn('Method <add_band> will be removed from Nansat v.1.1', DeprecationWarning)
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):

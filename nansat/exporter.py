@@ -16,6 +16,7 @@ from __future__ import absolute_import
 import os
 import tempfile
 import datetime
+import warnings
 
 import gdal
 import numpy as np
@@ -23,15 +24,24 @@ import numpy as np
 from netCDF4 import Dataset
 
 from nansat.vrt import VRT
-from nansat.tools import OptionError, GDALError
+from nansat.tools import OptionError, GDALError, NansatFutureWarning
 from nansat.node import Node
 
 
 class Exporter(object):
     """Abstract class for export functions """
+    EXPORT_FILENAME_WARNING = ('Nansat.export(fileName=...) will be disabled from Nansat 1.1. '
+                               'Use Nansat.export(filename=...).')
+    EXPORT_RM_METADATA_WARNING = ('Nansat.export(rmMetadata=...) will be disabled from Nansat 1.1. '
+                                  'Use Nansat.export(rm_metadata=...).')
+    EXPORT_ADD_GEOLOC_WARNING = ('Nansat.export(addGeoloc=...) will be disabled from Nansat 1.1. '
+                                 'Use Nansat.export(add_geolocation=...).')
+    EXPORT_ADD_GCPS_WARNING = ('Nansat.export(addGCPs=...) has no effect and '
+                               'will be disabled from Nansat 1.1. ')
 
-    def export(self, filename, bands=None, rmMetadata=None, addGeoloc=True,
-               addGCPs=True, driver='netCDF', bottomup=False, options=None, hardcopy=False):
+    def export(self, filename='', fileName='', bands=None, rm_metadata=None, rmMetadata=None,
+               addGeoloc=None, add_geolocation=True,
+               addGCPs=None, driver='netCDF', bottomup=False, options=None, hardcopy=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -41,17 +51,15 @@ class Exporter(object):
         bands: list (default=None)
             Specify band numbers to export.
             If None, all bands are exported.
-        rmMetadata : list
+        rm_metadata : list
             metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
-        addGeoloc : bool
+        add_geoloc : bool
             add geolocation array datasets to exported file?
-        addGCPs : bool
-            add GCPs to exported file?
         driver : str
             Name of GDAL driver (format)
         bottomup : bool
-            False: Default. Write swath-projected data with rows and columns
+            False: Write swath-projected data with rows and columns
                    organized as in the original product.
             True:  Use the default behaviour of GDAL, which is to flip the rows
         options : str or list
@@ -64,7 +72,8 @@ class Exporter(object):
         ---------
         Create a netCDF file
 
-        !! NB
+
+        Notes
         ------
         If number of bands is more than one,
         serial numbers are added at the end of each band name.
@@ -89,6 +98,19 @@ class Exporter(object):
         >>> n.export(driver='GTiff')
 
         '''
+        # trigger Nansat future warnings on deprecated features
+        if fileName != '':
+            warnings.warn(self.EXPORT_FILENAME_WARNING, NansatFutureWarning)
+            filename = fileName
+        if rmMetadata is not None:
+            warnings.warn(self.EXPORT_RM_METADATA_WARNING, NansatFutureWarning)
+            rm_metadata = rmMetadata
+        if addGeoloc is not None:
+            warnings.warn(self.EXPORT_ADD_GEOLOC_WARNING, NansatFutureWarning)
+            add_geolocation = addGeoloc
+        if addGCPs is not None:
+            warnings.warn(self.EXPORT_ADD_GCPS_WARNING, NansatFutureWarning)
+
         if options is None:
             options = []
         if type(options) == str:
@@ -100,8 +122,8 @@ class Exporter(object):
         export_vrt.split_complex_bands()
         if addGeoloc:
             export_vrt.create_geolocation_bands()
-        export_vrt.fix_band_metadata(rmMetadata)
-        export_vrt.fix_global_metadata(rmMetadata)
+        export_vrt.fix_band_metadata(rm_metadata)
+        export_vrt.fix_global_metadata(rm_metadata)
 
         # if output filename is the same as input one
         if self.filename == filename or hardcopy:
@@ -117,19 +139,18 @@ class Exporter(object):
         dataset = None
         # add GCPs into netCDF file as separate float variables
         if add_gcps:
-            self._add_gcps(filename, export_vrt.dataset.GetGCPs(), bottomup)
+            Exporter._add_gcps(filename, export_vrt.dataset.GetGCPs(), bottomup)
 
         self.logger.debug('Export - OK!')
 
-# TODO: move to Exporter
-    def _add_gcps(self, filename, gcps, bottomup):
+    @staticmethod
+    def _add_gcps(filename, gcps, bottomup):
         ''' Add 4 variables with gcps to the generated netCDF file '''
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
 
         # check if file exists
         if not os.path.exists(filename):
-            self.logger.warning('Cannot add GCPs! %s doesn''t exist!' % filename)
-            return 1
+            warnings.warn('Cannot add GCPs! File %s doesn''t exist!' % filename)
 
         # open output file for adding GCPs
         ncFile = Dataset(filename, 'a')

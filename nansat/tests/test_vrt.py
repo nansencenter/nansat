@@ -36,6 +36,7 @@ class VRTTest(unittest.TestCase):
                          'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
                          'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
                          ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
     def test_init(self, _make_filename_mock):
         vrt = VRT()

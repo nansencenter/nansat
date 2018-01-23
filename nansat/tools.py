@@ -147,6 +147,8 @@ class WrongMapperError(Exception):
     '''Error for handling data that does not fit a given mapper'''
     pass
 
+class NansatFutureWarning(Warning):
+    pass
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
