@@ -271,7 +271,7 @@ class Exporter(object):
                 array[mask != 64] = np.nan
 
             # add array to a temporary Nansat object
-            bandMetadata = self.get_metadata(bandID=iband)
+            bandMetadata = self.get_metadata(band_id=iband)
             data.add_band(array=array, parameters=bandMetadata)
         self.logger.debug('Bands for export: %s' % str(dstBands))
 

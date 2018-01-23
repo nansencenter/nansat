@@ -464,7 +464,7 @@ class NansatTest(unittest.TestCase):
 
     def test_get_metadata_bandid(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
-        m = n1.get_metadata(bandID=1)
+        m = n1.get_metadata(band_id=1)
 
         self.assertEqual(type(m), dict)
         self.assertTrue('name' in m)
