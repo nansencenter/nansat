@@ -99,20 +99,22 @@ class Nansat(Domain, Exporter):
 
     """
 
-    INIT_FILENAME_WARNING = ('Nansat(fileName=...) will be disabled from Nansat 1.1. '
+    INIT_FILENAME_WARNING = ('Nansat(fileName=...) will be disabled in Nansat 1.1. '
                              'Use Nansat(filename).')
-    INIT_MAPPER_WARNING = ('Nansat(mapperName=...) will be disabled from Nansat 1.1. '
+    INIT_MAPPER_WARNING = ('Nansat(mapperName=...) will be disabled in Nansat 1.1. '
                            'Use Nansat(mapper=...)')
-    INIT_DOMAIN_WARNING = ('Nansat(domain=...) will be disabled from Nansat 1.1. '
+    INIT_DOMAIN_WARNING = ('Nansat(domain=...) will be disabled in Nansat 1.1. '
                            'Use Nansat.from_domain(domain)')
-    INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled from Nansat 1.1. '
+    INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled in Nansat 1.1. '
                         'Use Nansat(log_level)')
-    INIT_RESAMPLEALG_WARNING = ('Nansat.method(eResampleAlg=...) will be disabled from Nansat 1.1. '
+    INIT_RESAMPLEALG_WARNING = ('Nansat.method(eResampleAlg=...) will be disabled in Nansat 1.1. '
                                 'Use Nansat.method(resample_alg=)')
-    INIT_BANDID_WARNING = ('Nansat.method(bandID=...) will be disabled from Nansat 1.1. '
+    INIT_BANDID_WARNING = ('Nansat.method(bandID=...) will be disabled in Nansat 1.1. '
                            'Use Nansat.method(band_id=...)')
-    INIT_DSTDOMAIN_WARNING = ('Nansat.method(dstDomain=...) will be disabled from Nansat 1.1. '
+    INIT_DSTDOMAIN_WARNING = ('Nansat.method(dstDomain=...) will be disabled in Nansat 1.1. '
                            'Use Nansat.method(dst_domain=...)')
+    INIT_GETBANDNUMBER_WARNING = ('Nansat._get_band_number() will be disabled in Nansat 1.1. '
+                           'Use Nansat.get_band_number()')
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
 
@@ -532,7 +534,7 @@ class Nansat(Domain, Exporter):
             band_id = bandID
 
         # get band number
-        bandNumber = self._get_band_number(band_id)
+        bandNumber = self.get_band_number(band_id)
         # the GDAL RasterBand of the corresponding band is returned
         return self.vrt.dataset.GetRasterBand(bandNumber)
 
@@ -885,9 +887,9 @@ class Nansat(Domain, Exporter):
         # into list of integers
         if isinstance(bands, list):
             for i, band in enumerate(bands):
-                bands[i] = self._get_band_number(band)
+                bands[i] = self.get_band_number(band)
         else:
-            bands = [self._get_band_number(bands)]
+            bands = [self.get_band_number(bands)]
 
         # == create 3D ARRAY ==
         array = None
@@ -996,7 +998,7 @@ class Nansat(Domain, Exporter):
             warnings.warn(self.INIT_BANDID_WARNING, NansatFutureWarning)
             band_id = bandID
 
-        bandNo = self._get_band_number(band_id)
+        bandNo = self.get_band_number(band_id)
         band = self.get_GDALRasterBand(band_id)
         minmax = band.GetMetadataItem('minmax')
         # Get min and max from band histogram if not given (from wkv)
@@ -1104,17 +1106,17 @@ class Nansat(Domain, Exporter):
 
         # set all metadata to the dataset or to the band
         if band_id is None:
-            metaReceiverVRT = self.vrt.dataset
+            metadata_receiver = self.vrt.dataset
         else:
-            bandNumber = self._get_band_number(band_id)
-            metaReceiverVRT = self.vrt.dataset.GetRasterBand(bandNumber)
+            bandNumber = self.get_band_number(band_id)
+            metadata_receiver = self.vrt.dataset.GetRasterBand(bandNumber)
 
         # set metadata from dictionary or from single pair key,value
         if type(key) == dict:
             for k in key:
-                metaReceiverVRT.SetMetadataItem(k, key[k])
+                metadata_receiver.SetMetadataItem(k, key[k])
         else:
-            metaReceiverVRT.SetMetadataItem(key, value)
+            metadata_receiver.SetMetadataItem(key, value)
 
 # TODO: add _get_specific_mapper(mapper_name)
 
@@ -1255,15 +1257,8 @@ class Nansat(Domain, Exporter):
 
         return tmpVRT
 
-# TODO: remove?
-    def _get_pixelValue(self, val, defVal):
-        if val == '':
-            return defVal
-        else:
-            return val
-
 # TODO: make public (leave private method and raise warning)
-    def _get_band_number(self, band_id):
+    def get_band_number(self, band_id):
         '''Return absolute band number
 
         Check if given band_id is valid
@@ -1281,36 +1276,41 @@ class Nansat(Domain, Exporter):
         int : absolute band number
 
         '''
-        bandNumber = 0
+        band_number = 0
         # if band_id is str: create simple dict with seraching criteria
         if type(band_id) == str:
             band_id = {'name': band_id}
 
         # if band_id is dict: search self.bands with seraching criteria
         if type(band_id) == dict:
-            bandsMeta = self.bands()
-            for b in bandsMeta:
-                numCorrectKeys = 0
+            bands_meta = self.bands()
+            for b in bands_meta:
+                num_correct_keys = 0
                 for key in band_id:
-                    if (key in bandsMeta[b] and
-                            band_id[key] == bandsMeta[b][key]):
-                        numCorrectKeys = numCorrectKeys + 1
-                    if numCorrectKeys == len(band_id):
-                        bandNumber = b
+                    if (key in bands_meta[b] and
+                            band_id[key] == bands_meta[b][key]):
+                        num_correct_keys = num_correct_keys + 1
+                    if num_correct_keys == len(band_id):
+                        band_number = b
                         break
 
         # if band_id is int and with bounds: return this number
         if (type(band_id) == int and band_id >= 1 and
                 band_id <= self.vrt.dataset.RasterCount):
-            bandNumber = band_id
+            band_number = band_id
 
-        # if no bandNumber found - raise error
-        if bandNumber == 0:
+        # if no band_number found - raise error
+        if band_number == 0:
             raise OptionError('Cannot find band %s! '
-                              'bandNumber is from 1 to %s'
+                              'band_number is from 1 to %s'
                               % (str(band_id), self.vrt.dataset.RasterCount))
 
-        return bandNumber
+        return band_number
+
+    def _get_band_number(self, bandID):
+        warnings.warn(self.INIT_GETBANDNUMBER_WARNING, NansatFutureWarning)
+        return self.get_band_number(bandID)
+
 
     def get_transect(self, points, bands,
                         lonlat=True,
@@ -1354,7 +1354,7 @@ class Nansat(Domain, Exporter):
         bandNames = []
         for band in bands:
             try:
-                bandN = self._get_band_number(band)
+                bandN = self.get_band_number(band)
             except OptionError:
                 self.logger.error('Wrong band name %s' % band)
             else:
