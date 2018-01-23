@@ -290,19 +290,9 @@ class ExporterTest(unittest.TestCase):
                           ['L_645'])
 
     def test_export2thredds_longlat_list(self):
-        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                   "-te 27 70 31 72 -ts 200 200")
-        n = Nansat.from_domain(d)
-        n.add_band(np.ones(d.shape(), np.float32),
-                   parameters={'name': 'L_469'})
-        n.set_metadata('time_coverage_start', '2016-01-19')
-
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds_longlat.nc')
-        n.export2thredds(tmpfilename, ['L_469'])
-        ncI = Dataset(tmpfilename, 'r')
-        ncIVar = ncI.variables['L_469']
-        self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
+        n = Nansat(self.test_file_gcps, log_level=40)
+        with self.assertRaises(OptionError):
+            n.export2thredds('aa', ['L_469'])
 
     def test_export2thredds_longlat_dict(self):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",

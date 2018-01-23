@@ -44,6 +44,8 @@ class Exporter(object):
                                'Use Nansat.export2thredds(created=...')
     EXPORT_MASKNAME_WARNING = ('Nansat.export2thredds(maskName=...) will be disabled from Nansat 1.1. '
                                'Use Nansat.export2thredds(mask_name=...')
+    DEFAULT_INSTITUTE = 'NERSC'
+    DEFAULT_SOURCE = 'satellite remote sensing'
 
     def export(self, filename='', fileName='', bands=None, rm_metadata=None, rmMetadata=None,
                addGeoloc=None, add_geolocation=True,
@@ -231,6 +233,14 @@ class Exporter(object):
         >>> n.export2thredds(filename, bands)
 
         '''
+        # TODO:
+        # New logics
+        # 1. Get mask
+        # 1. Prepare global metadata
+        # 1. self.export to netCDF with metadata, hardcopy and mask (add mask to vrt.harcopy)
+        # 1. self._collect_band_metadata_from_exported
+        # 1. self._post_proc_for_thredds
+
         if rmMetadata is not None:
             warnings.warn(self.EXPORT_RM_METADATA_WARNING, NansatFutureWarning)
             rm_metadata = rmMetadata
@@ -241,14 +251,10 @@ class Exporter(object):
             warnings.warn(self.EXPORT_MASKNAME_WARNING, NansatFutureWarning)
             mask_name = maskName
 
-        # TODO:
-        # New logics
-        # 1. Get mask
-        # 1. Prepare global metadata
-        # 1. self.export to netCDF with metadata, hardcopy and mask (add mask to vrt.harcopy)
-        # 1. self._collect_band_metadata_from_exported
-        # 1. self._post_proc_for_thredds
-
+        if not isinstance(bands, dict):
+            raise OptionError('<bands> must be dict!')
+        if metadata is None:
+            metadata = {}
         # raise error if self is not projected (has GCPs)
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
@@ -258,8 +264,8 @@ class Exporter(object):
         data._init_from_domain(self)
 
         # get mask (if exist)
-        if maskName is not None:
-            mask = self[maskName]
+        if mask_name is not None:
+            mask = self[mask_name]
 
 # TODO: move to Exporter._hardcopy_bands
         # add required bands to data
@@ -302,30 +308,26 @@ class Exporter(object):
 
 # TODO: move to Exporter._set_global_metadata
         # common global attributes:
-        if createdTime is None:
-            createdTime = (datetime.datetime.utcnow().
-                           strftime('%Y-%m-%d %H:%M:%S UTC'))
+        if created is None:
+            created = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'))
 # TODO: move 'NERSC', etc... to constants
-        globMetadata = {'institution': 'NERSC',
-                        'source': 'satellite remote sensing',
-                        'creation_date': createdTime,
+        global_metadata = {'institution': self.DEFAULT_INSTITUTE,
+                        'source': self.DEFAULT_SOURCE,
+                        'creation_date': created,
                         'northernmost_latitude': np.float(maxLat),
                         'southernmost_latitude': np.float(minLat),
                         'westernmost_longitude': np.float(minLon),
                         'easternmost_longitude': np.float(maxLon),
                         'history': ' '}
-        # join or replace default by custom global metadata
-        if metadata is not None:
-            for metaKey in metadata:
-                globMetadata[metaKey] = metadata[metaKey]
+        global_metadata.update(metadata)
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmp_filename = tempfile.mkstemp(suffix='.nc')
-        data.export(tmp_filename)
+        data.export(tmp_filename, rm_metadata=rm_metadata)
 
-        self._post_proc_thredds(tmp_filename, filename, dstBands)
+        self._post_proc_thredds(tmp_filename, filename, bands, dstBands, time, global_metadata)
 
-    def _post_proc_thredds(self, tmp_filename, out_filename, band_metadata):
+    def _post_proc_thredds(self, tmp_filename, out_filename, bands, band_metadata, time, global_metadata):
         """Post processing of file for THREDDS (add time variable and metadata)"""
         # open files for input and output
         ncI = Dataset(tmp_filename, 'r')
@@ -375,6 +377,8 @@ class Exporter(object):
         ncOVar[:] = days
 
 # TODO: move to Exporter._add_thredds_bands
+        unwanted_metadata = ['dataType', 'SourceFilename', 'SourceBand', '_Unsigned', 'FillValue',
+                                'time', '_FillValue', 'type', 'scale', 'offset']
         # recreate file
         for ncIVarName in ncI.variables:
             ncIVar = ncI.variables[ncIVarName]
@@ -392,7 +396,7 @@ class Exporter(object):
                 # create projection var
                 ncOVar = ncO.createVariable(gridMappingName, ncIVar.dtype.str,
                                             ncIVar.dimensions)
-            elif ncIVar_name in dstBands:
+            elif ncIVar_name in band_metadata:
                 # dont add time-axis to lon/lat grids
                 if ncIVar_name in ['lon', 'lat']:
                     dimensions = ncIVar.dimensions
@@ -402,10 +406,10 @@ class Exporter(object):
                 fill_value = None
                 if '_FillValue' in ncIVar.ncattrs():
                     fill_value = ncIVar._FillValue
-                if '_FillValue' in dstBands[ncIVar_name]:
-                    fill_value = dstBands['_FillValue']
+                if '_FillValue' in band_metadata[ncIVar_name]:
+                    fill_value = band_metadata['_FillValue']
                 ncOVar = ncO.createVariable(ncIVar_name,
-                                            dstBands[ncIVar_name]['type'],
+                                            band_metadata[ncIVar_name]['type'],
                                             dimensions, fill_value=fill_value)
 
             # copy array from input data
@@ -429,27 +433,23 @@ class Exporter(object):
             # copy data from variables in the list
             if (len(ncIVar.dimensions) > 0 and ncIVar_name):
                 # add offset and scale attributes
-                scale = dstBands[ncIVar_name]['scale']
-                offset = dstBands[ncIVar_name]['offset']
+                scale = band_metadata[ncIVar_name]['scale']
+                offset = band_metadata[ncIVar_name]['offset']
                 if not (offset == 0.0 and scale == 1.0):
                     ncOVar.setncattr('add_offset', offset)
                     ncOVar.setncattr('scale_factor', scale)
                     data = (data - offset) / scale
 
-                ncOVar[:] = data.astype(dstBands[ncIVar_name]['type'])
+                ncOVar[:] = data.astype(band_metadata[ncIVar_name]['type'])
                 # copy (some) attributes
                 for inAttrName in ncIVar.ncattrs():
-                    if str(inAttrName) not in rmMetadata + ['dataType',
-                                    'SourceFilename', 'SourceBand', '_Unsigned',
-                                    'FillValue', 'time', '_FillValue']:
+                    if str(inAttrName) not in unwanted_metadata:
                         ncOVar.setncattr(inAttrName, ncIVar.getncattr(inAttrName))
 
                 # add custom attributes from input parameter bands
                 if ncIVar_name in bands:
                     for newAttr in bands[ncIVar_name]:
-                        if newAttr not in rmMetadata + ['type', 'scale',
-                                                        'offset',
-                                                        '_FillValue']:
+                        if newAttr not in unwanted_metadata:
                             ncOVar.setncattr(newAttr, bands[ncIVar_name][newAttr])
                     # add grid_mapping info
                     if gridMappingName is not None:
@@ -461,7 +461,7 @@ class Exporter(object):
                 ncO.setncattr(globAttr, ncI.getncattr(globAttr))
 
         # add common and custom global attributes
-        ncO.setncatts(globMetadata)
+        ncO.setncatts(global_metadata)
 
         # write output file
         ncO.close()
@@ -471,7 +471,7 @@ class Exporter(object):
 
         # Delete the temprary netCDF file
         fid = None
-        os.remove(tmpName)
+        os.remove(tmp_filename)
 
         return 0
 
