@@ -164,24 +164,24 @@ class Mapper(VRT):
 
         for sat in satDict:
             if sat['name'] == satellite:
-                print 'This is ' + satellite
+                print('This is ' + satellite)
                 wavelengths = sat['wavelengths']
                 try:
                     scale = sat['scale']
                     offset = sat['offset']
                 except:
-                    print "No scale and offset found"
+                    print("No scale and offset found")
                     scale = None
                     offset = None
                 try:
                     LUT = sat['LUT']
                 except:
-                    print "No LUT found"
+                    print("No LUT found")
                     LUT = [""]*len(wavelengths)
                 try:
                     NODATA = sat['NODATA']
                 except:
-                    print "No NODATA values found"
+                    print("No NODATA values found")
                     NODATA = [""]*len(wavelengths)
 
         if wavelengths is None:
@@ -208,7 +208,7 @@ class Mapper(VRT):
             try:
                 gdal.Open(bandSource)
             except:
-                print ('Warning: band missing for wavelength ' +
+                print('Warning: band missing for wavelength ' +
                        str(wavelength) + 'nm')
                 continue
             src = {'SourceFilename': bandSource, 'SourceBand': 1,
