@@ -410,7 +410,7 @@ def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_borde
             map_x, map_y = bmap(list(lon_vec[i].flat), list(lat_vec[i].flat))
 
             # from x/y vectors create a Patch to be added to map
-            boundary = Polygon(zip(map_x, map_y),
+            boundary = Polygon(list(zip(map_x, map_y)),
                                alpha=p_alpha, ec=p_line, fc=p_color)
 
             # add patch to the map
