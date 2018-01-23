@@ -111,6 +111,8 @@ class Nansat(Domain, Exporter):
                                 'Use Nansat.method(resample_alg=)')
     INIT_BANDID_WARNING = ('Nansat.method(bandID=...) will be disabled from Nansat 1.1. '
                            'Use Nansat.method(band_id=...)')
+    INIT_DSTDOMAIN_WARNING = ('Nansat.method(dstDomain=...) will be disabled from Nansat 1.1. '
+                           'Use Nansat.method(dst_domain=...)')
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
 
@@ -534,7 +536,7 @@ class Nansat(Domain, Exporter):
         # the GDAL RasterBand of the corresponding band is returned
         return self.vrt.dataset.GetRasterBand(bandNumber)
 
-    def list_bands(self, doPrint=True):
+    def list_bands(self, do_print=True):
         ''' Show band information of the given Nansat object
 
         Show serial number, longName, name and all parameters
@@ -542,8 +544,8 @@ class Nansat(Domain, Exporter):
 
         Parameters
         -----------
-        doPrint : boolean, optional, default=True
-            do print, otherwise it is returned as string
+        do_print : boolean
+            print on screen?
 
         Returns
         --------
@@ -561,35 +563,36 @@ class Nansat(Domain, Exporter):
             # print band metadata
             for i in bands[b]:
                 outString += '  %s: %s\n' % (i, bands[b][i])
-        if doPrint:
+        if do_print:
             # print to screeen
             print(outString)
         else:
             return outString
 
-    def reproject(self, dstDomain, eResampleAlg=0, blockSize=None,
-                  tps=None, skip_gcps=1, addmask=True,
+    def reproject(self, dst_domain=None, dstDomain=None, resample_alg=0, eResampleAlg=None,
+                    block_size=None, tps=None, skip_gcps=1, addmask=True,
                   **kwargs):
-        ''' Change projection of the object based on the given Domain
+        """
+        Change projection of the object based on the given Domain
 
         Create superVRT from self.vrt with AutoCreateWarpedVRT() using
-        projection from the dstDomain.
+        projection from the dst_domain.
         Modify XML content of the warped vrt using the Domain parameters.
         Generate warpedVRT and replace self.vrt with warpedVRT.
-        If current object spans from 0 to 360 and dstDomain is west of 0,
+        If current object spans from 0 to 360 and dst_domain is west of 0,
         the object is shifted by 180 westwards.
 
         Parameters
         -----------
-        dstDomain : domain
+        dst_domain : domain
             destination Domain where projection and resolution are set
-        eResampleAlg : int (GDALResampleAlg)
+        resample_alg : int (GDALResampleAlg)
             0 : NearestNeighbour
             1 : Bilinear
             2 : Cubic,
             3 : CubicSpline
             4 : Lancoz
-        blockSize : int
+        block_size : int
             size of blocks for resampling. Large value decrease speed
             but increase accuracy at the edge
         tps : bool
@@ -602,7 +605,7 @@ class Nansat(Domain, Exporter):
             If this parameter is given, only every [skip_gcp] GCP is used,
             improving calculation time at the cost of accuracy.
             If not given explicitly, 'skip_gcps' is fetched from the
-            metadata of self, or from dstDomain (as set by mapper or user).
+            metadata of self, or from dst_domain (as set by mapper or user).
             [defaults to 1 if not specified, i.e. using all GCPs]
         addmask : bool
             If True, add band 'swathmask'. 1 - valid data, 0 no-data.
@@ -612,41 +615,49 @@ class Nansat(Domain, Exporter):
         ---------
         self.vrt : VRT object with dataset replaced to warpedVRT dataset
 
-        !! NB !!
-        ---------
-        - Integer data is returnd by integer. Round off to decimal place.
-          If you do not want to round off, convert the data types
-          to GDT_Float32, GDT_Float64, or GDT_CFloat32.
+        Notes
+        --------
+        Integer data is returnd by integer. Round off to decimal place.
+        If you do not want to round off, convert the data types to
+        GDT_Float32, GDT_Float64, or GDT_CFloat32.
 
         See Also
         ---------
         http://www.gdal.org/gdalwarp.html
-        '''
+
+        """
+        if dstDomain is not None:
+            warnings.warn(self.INIT_DSTDOMAIN_WARNING, NansatFutureWarning)
+            dst_domain = dstDomain
+        if eResampleAlg is not None:
+            warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
+            resample_alg = eResampleAlg
+
 # TODO: move the check to VRT.get_shifted_vrt
-        # if self spans from 0 to 360 and dstDomain is west of 0:
+        # if self spans from 0 to 360 and dst_domain is west of 0:
         #     shift self westwards by 180 degrees
         # check span
         srcCorners = self.get_corners()
         if round(min(srcCorners[0])) == 0 and round(max(srcCorners[0])) == 360:
             # check intersection of src and dst
-            dstCorners = dstDomain.get_corners()
+            dstCorners = dst_domain.get_corners()
             if min(dstCorners[0]) < 0:
                 # shift
                 self.vrt = self.vrt.get_shifted_vrt(-180)
 
         # get projection of destination dataset
-        dstSRS = dstDomain.vrt.dataset.GetProjection()
+        dstSRS = dst_domain.vrt.dataset.GetProjection()
 
         # get destination GCPs
-        dstGCPs = dstDomain.vrt.dataset.GetGCPs()
+        dstGCPs = dst_domain.vrt.dataset.GetGCPs()
         if len(dstGCPs) > 0:
             # get projection of destination GCPs
-            dstSRS = dstDomain.vrt.dataset.GetGCPProjection()
+            dstSRS = dst_domain.vrt.dataset.GetGCPProjection()
 
-        xSize = dstDomain.vrt.dataset.RasterXSize
-        ySize = dstDomain.vrt.dataset.RasterYSize
+        xSize = dst_domain.vrt.dataset.RasterXSize
+        ySize = dst_domain.vrt.dataset.RasterYSize
 
-        geoTransform = dstDomain.vrt.dataset.GetGeoTransform()
+        geoTransform = dst_domain.vrt.dataset.GetGeoTransform()
 
         # set trigger for using TPS
         if tps is True:
@@ -657,7 +668,7 @@ class Nansat(Domain, Exporter):
         # Reduce number of GCPs for faster reprojection
         # when using TPS (if requested)
         src_skip_gcps = self.vrt.dataset.GetMetadataItem('skip_gcps')
-        dst_skip_gcps = dstDomain.vrt.dataset.GetMetadataItem('skip_gcps')
+        dst_skip_gcps = dst_domain.vrt.dataset.GetMetadataItem('skip_gcps')
         kwargs['skip_gcps'] = skip_gcps  # default (use all GCPs)
         if dst_skip_gcps is not None:  # ...or use setting from dst
             kwargs['skip_gcps'] = int(dst_skip_gcps)
@@ -684,9 +695,9 @@ class Nansat(Domain, Exporter):
 
         # create Warped VRT
         self.vrt = self.vrt.get_warped_vrt(dstSRS, xSize, ySize, geoTransform,
-                                           resample_alg=eResampleAlg,
+                                           resample_alg=resample_alg,
                                            dst_gcps=dstGCPs,
-                                           block_size=blockSize, **kwargs)
+                                           block_size=block_size, **kwargs)
 
         # set global metadata from subVRT
         subMetaData = self.vrt.vrt.dataset.GetMetadata()
@@ -694,7 +705,7 @@ class Nansat(Domain, Exporter):
         self.set_metadata(subMetaData)
 
     def undo(self, steps=1):
-        '''Undo reproject, resize, add_band or crop of Nansat object
+        """Undo reproject, resize, add_band or crop of Nansat object
 
         Restore the self.vrt from self.vrt.vrt
 
@@ -707,12 +718,12 @@ class Nansat(Domain, Exporter):
         --------
         self.vrt
 
-        '''
-
+        """
         self.vrt = self.vrt.get_sub_vrt(steps)
 
-    def watermask(self, mod44path=None, dstDomain=None, **kwargs):
-        ''' Create numpy array with watermask (water=1, land=0)
+    def watermask(self, mod44path=None, dst_domain=None, dstDomain=None, **kwargs):
+        """
+        Create numpy array with watermask (water=1, land=0)
 
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
@@ -735,7 +746,7 @@ class Nansat(Domain, Exporter):
         -----------
         mod44path : string, optional, default=None
             path with MOD44W Products and a VRT file
-        dstDomain : Domain
+        dst_domain : Domain
             destination domain other than self
         tps : Bool
             Use Thin Spline Transformation in reprojection of watermask?
@@ -753,7 +764,11 @@ class Nansat(Domain, Exporter):
         250 meters resolution watermask from MODIS 44W Product:
             http://www.glcf.umd.edu/data/watermask/
 
-        '''
+        """
+        if dstDomain is not None:
+            warnings.warn(self.INIT_DSTDOMAIN_WARNING, NansatFutureWarning)
+            dst_domain = dstDomain
+
 # TODO: move to _check_watermask_data
         mod44DataExist = True
         # check if path is given in input param or in environment
@@ -775,19 +790,19 @@ class Nansat(Domain, Exporter):
         watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W',
                            logLevel=self.logger.level)
         # reproject on self or given Domain
-        if dstDomain is None:
-            dstDomain = self
-        lon, lat = dstDomain.get_border()
+        if dst_domain is None:
+            dst_domain = self
+        lon, lat = dst_domain.get_border()
         watermask.crop_lonlat([lon.min(), lon.max()], [lat.min(), lat.max()])
-        watermask.reproject(dstDomain, addmask=False, **kwargs)
+        watermask.reproject(dst_domain, addmask=False, **kwargs)
 
         return watermask
 
 # TODO:
 #   Move to Figure
 #   Nansat inherits from Figure
-    def write_figure(self, fileName, bands=1, clim=None, addDate=False,
-                     array_modfunc=None, **kwargs):
+    def write_figure(self, filename='', bands=1, clim=None, addDate=False,
+                     array_modfunc=None, fileName='', **kwargs):
         ''' Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -805,7 +820,7 @@ class Nansat(Domain, Exporter):
 
         Parameters
         -----------
-        fileName : string
+        filename : str
             Output file name. if one of extensions 'png', 'PNG', 'tif',
             'TIF', 'bmp', 'BMP', 'jpg', 'JPG', 'jpeg', 'JPEG' is included,
             specified file is created. otherwise, 'png' file is created.
@@ -831,7 +846,7 @@ class Nansat(Domain, Exporter):
 
         Modifies
         ---------
-        if fileName is specified, creates image file
+        if filename is specified, creates image file
 
         Returns
         -------
@@ -851,7 +866,7 @@ class Nansat(Domain, Exporter):
                                 numOfTicks=15)
         # write an image to png with transparent Mask set to color
         transparency=[0,0,0], following PIL alpha mask
-        n.write_figure(fileName='transparent.png', bands=[3],
+        n.write_figure(filename='transparent.png', bands=[3],
                mask_array=wmArray,
                mask_lut={0: [0,0,0]},
                clim=[0,0.15], cmapName='gray', transparency=[0,0,0])
@@ -862,8 +877,9 @@ class Nansat(Domain, Exporter):
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         '''
-        if not isinstance(fileName, (str, unicode)):
-            raise OptionError('Wrong filename type %s ' % type(fileName))
+        if fileName != '':
+            warnings.warn(self.INIT_FILENAME_WARNING, NansatFutureWarning)
+            filename = fileName
 
         # convert <bands> from integer, or string, or list of strings
         # into list of integers
@@ -950,14 +966,14 @@ class Nansat(Domain, Exporter):
         fig.process(cmin=clim[0], cmax=clim[1], caption=caption)
 
         # == finally SAVE to a image file ==
-        fig.save(fileName, **kwargs)
+        fig.save(filename, **kwargs)
         # If tiff image, convert to GeoTiff
-        if fileName[-3:] == 'tif':
-            self.vrt.copyproj(fileName)
+        if filename[-3:] == 'tif':
+            self.vrt.copyproj(filename)
         return fig
 
 #TODO: Move to Figure
-    def write_geotiffimage(self, fileName, band_id=1, bandID=None):
+    def write_geotiffimage(self, filename, band_id=1, bandID=None):
         ''' Writes an 8-bit GeoTiff image for a given band.
 
         The output GeoTiff image is convenient e.g. for display in a GIS tool.
@@ -972,7 +988,7 @@ class Nansat(Domain, Exporter):
 
         Parameters
         -----------
-        fileName : string
+        filename : string
         band_id : integer or string(default = 1)
 
         '''
@@ -1001,7 +1017,7 @@ class Nansat(Domain, Exporter):
                           int(cmap[i, 2]), int(cmap[i, 3]))
             colorTable.SetColorEntry(i, colorEntry)
         # Write Tiff image, with data scaled to values between 0 and 255
-        outDataset = gdal.GetDriverByName('Gtiff').Create(fileName,
+        outDataset = gdal.GetDriverByName('Gtiff').Create(filename,
                                                           band.XSize,
                                                           band.YSize, 1,
                                                           gdal.GDT_Byte,
@@ -1017,7 +1033,7 @@ class Nansat(Domain, Exporter):
             print('Could not set color table')
             print(colorTable)
         outDataset = None
-        self.vrt.copyproj(fileName)
+        self.vrt.copyproj(filename)
 
     @property
     def time_coverage_start(self):

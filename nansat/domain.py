@@ -329,9 +329,9 @@ class Domain(object):
         % (min(lons), min(lats), max(lons), max(lats))
         d = Domain(srs=srsString, ext=extentString) # 3.
         n.reproject(d) # 4.
-        n.write_figure(fileName=figureName, bands=[3], clim=[0,0.15],
+        n.write_figure(filename=figureName, bands=[3], clim=[0,0.15],
                        cmapName='gray', transparency=0) # 5.
-        n.write_kml_image(kmlFileName=oPath + fileName + '.kml',
+        n.write_kml_image(kmlFileName=oPath + filename + '.kml',
                           kmlFigureName=figureName) # 6.
 
         """

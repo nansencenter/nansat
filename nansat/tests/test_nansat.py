@@ -191,15 +191,6 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(hb)
 
-    def test_write_fig_wrong_type_filename(self):
-        n = Nansat(self.test_file_arctic)
-        with self.assertRaises(OptionError):
-            n.write_figure(1.2)
-        with self.assertRaises(OptionError):
-            n.write_figure(['filename'])
-        with self.assertRaises(OptionError):
-            n.write_figure({'name': 'filename'})
-
     def test_write_fig_tif(self):
         n = Nansat(self.test_file_arctic)
         tmpfilename = os.path.join(ntd.tmp_data_path,
