@@ -38,10 +38,12 @@ class Exporter(object):
                                  'Use Nansat.export(add_geolocation=...).')
     EXPORT_ADD_GCPS_WARNING = ('Nansat.export(addGCPs=...) has no effect and '
                                'will be disabled from Nansat 1.1. ')
+    EXPORT_BOTTOMUP_WARNING = ('Nansat.export(bottomup=...) will be disabled from Nansat 1.1. '
+                               'Use Nansat.export(options=[WRITE_BOTTOMUP=NO]')
 
     def export(self, filename='', fileName='', bands=None, rm_metadata=None, rmMetadata=None,
                addGeoloc=None, add_geolocation=True,
-               addGCPs=None, driver='netCDF', bottomup=False, options=None, hardcopy=False):
+               addGCPs=None, driver='netCDF', bottomup=None, options=None, hardcopy=False):
         '''Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -66,20 +68,17 @@ class Exporter(object):
             GDAL export options in format of: 'OPT=VAL', or
             ['OPT1=VAL1', 'OP2='VAL2']
             See also http://www.gdal.org/frmt_netcdf.html
-
+        hardcopy : bool
+            Evaluate all bands just before export?
 
         Modifies
         ---------
         Create a netCDF file
 
-
         Notes
         ------
-        If number of bands is more than one,
-        serial numbers are added at the end of each band name.
-
-        It is possible to fix it by changing
-        line.4605 in GDAL/frmts/netcdf/netcdfdataset.cpp :
+        If number of bands is more than one, serial numbers are added at the end of each band name.
+        It is possible to fix it by changing line.4605 in GDAL/frmts/netcdf/netcdfdataset.cpp :
         'if( nBands > 1 ) sprintf(szBandName,"%s%d",tmpMetadata,iBand);'
         --> 'if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);'
 
@@ -110,6 +109,8 @@ class Exporter(object):
             add_geolocation = addGeoloc
         if addGCPs is not None:
             warnings.warn(self.EXPORT_ADD_GCPS_WARNING, NansatFutureWarning)
+        if isinstance(bottomup, bool):
+            warnings.warn(self.EXPORT_BOTTOMUP_WARNING, NansatFutureWarning)
 
         if options is None:
             options = []
