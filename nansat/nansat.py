@@ -1091,6 +1091,21 @@ class Nansat(Domain, Exporter):
 
 # TODO: add _get_specific_mapper(mapper_name)
 
+    def _get_dataset_metadata(self):
+        # open GDAL dataset. It will be parsed to all mappers for testing
+        gdal_dataset, metadata = None, None
+        if not self.filename.startswith('http'):
+            try:
+                gdal_dataset = gdal.Open(self.filename)
+            except RuntimeError:
+                self.logger.error('GDAL could not open %s, trying to read with Nansat mappers...'
+                                  % self.filename)
+        if gdal_dataset is not None:
+            # get metadata from the GDAL dataset
+            metadata = gdal_dataset.GetMetadata()
+
+        return gdal_dataset, metadata
+
     def _get_mapper(self, mapperName, **kwargs):
         ''' Create VRT file in memory (VSI-file) with variable mapping
 
@@ -1136,22 +1151,7 @@ class Nansat(Domain, Exporter):
         if nansatMappers is None:
             nansatMappers = _import_mappers()
 
-# TODO: move to _get_dataset_metadata
-        # open GDAL dataset. It will be parsed to all mappers for testing
-        gdalDataset = None
-# TODO: use starts_with
-        if self.filename[:4] != 'http':
-            try:
-                gdalDataset = gdal.Open(self.filename)
-            except RuntimeError:
-                self.logger.error('GDAL could not open ' + self.filename +
-                                  ', trying to read with Nansat mappers...')
-        if gdalDataset is not None:
-            # get metadata from the GDAL dataset
-            metadata = gdalDataset.GetMetadata()
-        else:
-            metadata = None
-
+        gdal_dataset, metadata = self._get_dataset_metadata()
         tmpVRT = None
 
 # TODO: move to _get_specific_mapper
