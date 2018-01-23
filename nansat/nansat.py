@@ -107,6 +107,8 @@ class Nansat(Domain, Exporter):
                            'Use Nansat.from_domain(domain)')
     INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled from Nansat 1.1. '
                         'Use Nansat(log_level)')
+    INIT_RESAMPLEALG_WARNING = ('Nansat.method(eResampleAlg=...) will be disabled from Nansat 1.1. '
+                                'Use Nansat.emthod(resample_alg=)')
 
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
@@ -406,7 +408,27 @@ class Nansat(Domain, Exporter):
             elif 'standard_name' in band_meta and band_meta['standard_name'] == band:
                 return True
 
-    def resize(self, factor=1, width=None, height=None, pixelsize=None, eResampleAlg=-1):
+    def _get_resize_shape(self, factor, width, height, dst_pixel_size):
+        """Estimate new shape either from factor or destination width/height or pixel size"""
+        src_shape = np.array(self.shape(), np.float)
+        # estimate factor if either width or height is given and factor is not given
+        if width is not None:
+            factor = width / src_shape[1]
+        if height is not None:
+            factor = height / src_shape[0]
+
+        # estimate factor if pixelsize is given
+        if dst_pixel_size is not None:
+            src_pixel_size = np.array(self.get_pixelsize_meters(), np.float)[::-1]
+            factor = (src_pixel_size / float(dst_pixel_size)).mean()
+
+        factor = float(factor)
+        dst_shape = np.floor(src_shape * factor)
+        self.logger.info('New shape: ({0}, {1})'.format(dst_shape[0], dst_shape[1]))
+        return factor, dst_shape
+
+    def resize(self, factor=None, width=None, height=None, pixelsize=None, resample_alg=-1,
+                        eResampleAlg=None):
         '''Proportional resize of the dataset.
 
         The dataset is resized as (xSize*factor, ySize*factor)
@@ -428,7 +450,7 @@ class Nansat(Domain, Exporter):
             Desired new pixelsize in meters (approximate).
             A factor is calculated from ratio of the
             current pixelsize to the desired pixelsize.
-        eResampleAlg : int (GDALResampleAlg), optional
+        resample_alg : int (GDALResampleAlg), optional
                -1 : Average (default),
                 0 : NearestNeighbour
                 1 : Bilinear,
@@ -443,38 +465,16 @@ class Nansat(Domain, Exporter):
             If GCPs are given in the dataset, they are also overwritten.
 
         '''
-# TODO: move to _get_new_raster_size (DRY x/y)
-        # get current shape
-        rasterYSize = float(self.shape()[0])
-        rasterXSize = float(self.shape()[1])
+        if eResampleAlg is not None:
+            warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
+            resample_alg = eResampleAlg
 
-        # estimate factor if pixelsize is given
-        if pixelsize is not None:
-            deltaX, deltaY = self.get_pixelsize_meters()
-            factorX = deltaX / float(pixelsize)
-            factorY = deltaY / float(pixelsize)
-            factor = (factorX + factorY)/2
-
-        # estimate factor if width or height is given
-        if width is not None:
-            factor = float(width) / rasterXSize
-        if height is not None:
-            factor = float(height) / rasterYSize
-
-        # calculate new size
-        newRasterYSize = np.round(rasterYSize * factor)
-        newRasterXSize = np.round(rasterXSize * factor)
-
-        self.logger.info('New size/factor: (%f, %f)/%f' %
-                         (newRasterXSize, newRasterYSize, factor))
-
-        if eResampleAlg <= 0:
-            self.vrt = self.vrt.get_subsampled_vrt(newRasterXSize,
-                                                   newRasterYSize,
-                                                   eResampleAlg)
+        factor, dst_shape = self._get_resize_shape(factor, width, height, pixelsize)
+        if resample_alg <= 0:
+            self.vrt = self.vrt.get_subsampled_vrt(dst_shape[1], dst_shape[0], resample_alg)
         else:
             # update size and GeoTranform in XML of the warped VRT object
-            self.vrt = self.vrt.get_resized_vrt(newRasterXSize, newRasterYSize, eResampleAlg)
+            self.vrt = self.vrt.get_resized_vrt(dst_shape[1], dst_shape[0], resample_alg)
 
 # TODO: move to _set_new_extent
         # resize gcps

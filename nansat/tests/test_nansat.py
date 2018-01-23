@@ -212,25 +212,25 @@ class NansatTest(unittest.TestCase):
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(pixelsize=500, eResampleAlg=1)
+        n.resize(pixelsize=500, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_factor(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(0.5, eResampleAlg=1)
+        n.resize(0.5, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_width(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(width=100, eResampleAlg=1)
+        n.resize(width=100, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_height(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(height=500, eResampleAlg=1)
+        n.resize(height=500, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
@@ -247,39 +247,39 @@ class NansatTest(unittest.TestCase):
     def test_resize_complex_alg_average(self):
         n = Nansat(self.test_file_complex, log_level=40)
         with warnings.catch_warnings(record=True) as w:
-            n.resize(0.5, eResampleAlg=-1)
-            self.assertTrue(len(w) == 1)
+            n.resize(0.5, resample_alg=-1)
+            self.assertEqual(len(w), 1)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
             self.assertIn('The imaginary parts of complex numbers '
                             'are lost when resampling by averaging ', str(w[-1].message))
 
     def test_resize_complex_alg0(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=0)
+        n.resize(0.5, resample_alg=0)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg1(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=1)
+        n.resize(0.5, resample_alg=1)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg2(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=2)
+        n.resize(0.5, resample_alg=2)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg3(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=3)
+        n.resize(0.5, resample_alg=3)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg4(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=4)
+        n.resize(0.5, resample_alg=4)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
