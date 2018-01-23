@@ -2,6 +2,7 @@
 *.swp
 *.so
 *.o
+*.png
 .project
 .pydevproject
 test_data/
