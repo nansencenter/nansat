@@ -1106,7 +1106,7 @@ class Nansat(Domain, Exporter):
 
         return gdal_dataset, metadata
 
-    def _get_mapper(self, mapperName, **kwargs):
+    def _get_mapper(self, mapperName='', mappername='', **kwargs):
         ''' Create VRT file in memory (VSI-file) with variable mapping
 
         If mapperName is given only this mapper will be used,
@@ -1135,6 +1135,10 @@ class Nansat(Domain, Exporter):
         NansatReadError : occurs if no mapper fits the input file
 
         '''
+        if mappername == '' and mapperName != '':
+            warnings.warn(self.INIT_MAPPER_WARNING, NansatFutureWarning)
+            mappername = mapperName
+
 # TODO: remove!
         if os.path.isfile(self.filename):
             # Make sure file exists and can be opened for reading
@@ -1152,54 +1156,48 @@ class Nansat(Domain, Exporter):
             nansatMappers = _import_mappers()
 
         gdal_dataset, metadata = self._get_dataset_metadata()
-        tmpVRT = None
+        tmp_vrt = None
 
 # TODO: move to _get_specific_mapper
-        if mapperName is not '':
+        if mappername is not '':
             # If a specific mapper is requested, we test only this one.
             # get the module name
-            mapperName = 'mapper_' + mapperName.replace('mapper_', '').replace('.py', '').lower()
+            mappername = 'mapper_' + mappername.replace('mapper_', '').replace('.py', '').lower()
             # check if the mapper is available
-            if mapperName not in nansatMappers:
-                raise OptionError('Mapper ' + mapperName + ' not found')
+            if mappername not in nansatMappers:
+                raise OptionError('Mapper ' + mappername + ' not found')
 
             # check if mapper is importbale or raise an ImportError error
-            if isinstance(nansatMappers[mapperName], tuple):
-                errType, err, traceback = nansatMappers[mapperName]
+            if isinstance(nansatMappers[mappername], tuple):
+                errType, err, traceback = nansatMappers[mappername]
                 # self.logger.error(err, exc_info=(errType, err, traceback))
                 # TODO: python 3.6 does not support with syntax
                 raise errType, err, traceback
 
             # create VRT using the selected mapper
-            tmpVRT = nansatMappers[mapperName](self.filename,
-                                               gdalDataset,
-                                               metadata,
-                                               **kwargs)
-            self.mapper = mapperName.replace('mapper_', '')
+            tmp_vrt = nansatMappers[mappername](self.filename, gdal_dataset, metadata, **kwargs)
+            self.mapper = mappername.replace('mapper_', '')
         else:
             # We test all mappers, import one by one
-            importErrors = []
+            import_errors = []
             for iMapper in nansatMappers:
                 # skip non-importable mappers
                 if isinstance(nansatMappers[iMapper], tuple):
                     # keep errors to show before use of generic mapper
-                    importErrors.append(nansatMappers[iMapper][1])
+                    import_errors.append(nansatMappers[iMapper][1])
                     continue
 
                 self.logger.debug('Trying %s...' % iMapper)
 
                 # show all ImportError warnings before trying generic_mapper
-                if iMapper == 'mapper_generic' and len(importErrors) > 0:
+                if iMapper == 'mapper_generic' and len(import_errors) > 0:
                     self.logger.error('\nWarning! The following mappers failed:')
-                    for ie in importErrors:
-                        self.logger.error(importErrors)
+                    for ie in import_errors:
+                        self.logger.error(import_errors)
 
                 # create a Mapper object and get VRT dataset from it
                 try:
-                    tmpVRT = nansatMappers[iMapper](self.filename,
-                                                    gdalDataset,
-                                                    metadata,
-                                                    **kwargs)
+                    tmp_vrt = nansatMappers[iMapper](self.filename, gdal_dataset, metadata, **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper.replace('mapper_', '')
                     break
@@ -1208,25 +1206,25 @@ class Nansat(Domain, Exporter):
 
 # TODO: Remove. Pure bands should be created by the generic mapper (fix it).
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
-        if tmpVRT is None and gdalDataset is not None:
+        if tmp_vrt is None and gdal_dataset is not None:
             self.logger.warning('No mapper fits, returning GDAL bands!')
-            tmpVRT = VRT.from_gdal_dataset(gdalDataset)
-            for iBand in range(gdalDataset.RasterCount):
-                tmpVRT.create_band({'SourceFilename': self.filename,
+            tmp_vrt = VRT.from_gdal_dataset(gdal_dataset)
+            for iBand in range(gdal_dataset.RasterCount):
+                tmp_vrt.create_band({'SourceFilename': self.filename,
                                      'SourceBand': iBand + 1})
-                tmpVRT.dataset.FlushCache()
+                tmp_vrt.dataset.FlushCache()
             self.mapper = 'gdal_bands'
 
 # TODO: Remove. Test only if tmpVRT is None: rase NansatReadError
         # if GDAL cannot open the file, and no mappers exist which can make VRT
-        if tmpVRT is None and gdalDataset is None:
+        if tmp_vrt is None and gdal_dataset is None:
             # check if given data file exists
             if not os.path.isfile(self.filename):
                 raise IOError('%s: File does not exist' % (self.filename))
             raise NansatReadError('%s: File cannot be read with NANSAT - '
                     'consider writing a mapper' % self.filename)
 
-        return tmpVRT
+        return tmp_vrt
 
 # TODO: remove?
     def _get_pixelValue(self, val, defVal):
