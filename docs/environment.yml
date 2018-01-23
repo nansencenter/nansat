@@ -2,7 +2,6 @@ channels:
   - alevin
   - conda-forge
 dependencies:
-  - python==2.7
   - sphinx>=1.4
   - sphinx-autobuild
   - sphinx_rtd_theme 
