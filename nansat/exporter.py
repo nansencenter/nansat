@@ -13,6 +13,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import print_function, absolute_import, division
+
 import os
 import tempfile
 import datetime
@@ -206,7 +207,7 @@ class Exporter(object):
 
         '''
 
-# TODO: Implement new logics
+# TODO: Refactor: Implement new logics
         # 1. Get mask
         # 1. Prepare global metadata
         # 1. self.export to netCDF with metadata, hardcopy and mask (add mask to vrt.harcopy)
@@ -239,7 +240,6 @@ class Exporter(object):
         if mask_name is not None:
             mask = self[mask_name]
 
-# TODO: move to Exporter._hardcopy_bands
         # add required bands to data
         dstBands = {}
         srcBands = [self.bands()[b]['name'] for b in self.bands()]
@@ -424,16 +424,16 @@ class Exporter(object):
         if created is None:
             created = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'))
         # get corners of reprojected data
-        minLon, maxLon, minLat, maxLat = data.get_min_max_lon_lat()
+        min_lon, max_lon, min_lat, max_lat = data.get_min_max_lon_lat()
 
         global_metadata = {
                     'institution': Exporter.DEFAULT_INSTITUTE,
                     'source': Exporter.DEFAULT_SOURCE,
                     'creation_date': created,
-                    'northernmost_latitude': np.float(maxLat),
-                    'southernmost_latitude': np.float(minLat),
-                    'westernmost_longitude': np.float(minLon),
-                    'easternmost_longitude': np.float(maxLon),
+                    'northernmost_latitude': np.float(max_lat),
+                    'southernmost_latitude': np.float(min_lat),
+                    'westernmost_longitude': np.float(min_lon),
+                    'easternmost_longitude': np.float(max_lon),
                     'history': ' '}
         global_metadata.update(metadata)
 
@@ -442,7 +442,7 @@ class Exporter(object):
     @staticmethod
     def _add_gcps(filename, gcps, bottomup):
         """Add 4 variables with gcps to the generated netCDF file"""
-        gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
+        gcp_variables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
 
         # check if file exists
         if not os.path.exists(filename):
@@ -452,20 +452,20 @@ class Exporter(object):
         ncFile = Dataset(filename, 'a')
 
         # get GCP values into single array from GCPs
-        gcpValues = np.zeros((5, len(gcps)))
+        gcp_values = np.zeros((5, len(gcps)))
         for i, gcp in enumerate(gcps):
-            gcpValues[0, i] = gcp.GCPX
-            gcpValues[1, i] = gcp.GCPY
-            gcpValues[2, i] = gcp.GCPZ
-            gcpValues[3, i] = gcp.GCPPixel
-            gcpValues[4, i] = gcp.GCPLine
+            gcp_values[0, i] = gcp.GCPX
+            gcp_values[1, i] = gcp.GCPY
+            gcp_values[2, i] = gcp.GCPZ
+            gcp_values[3, i] = gcp.GCPPixel
+            gcp_values[4, i] = gcp.GCPLine
 
         # make gcps dimensions
         ncFile.createDimension('gcps', len(gcps))
         # make gcps variables and add data
-        for i, var in enumerate(gcpVariables):
+        for i, var in enumerate(gcp_variables):
             var = ncFile.createVariable(var, 'f4', ('gcps',))
-            var[:] = gcpValues[i]
+            var[:] = gcp_values[i]
 
         # write data, close file
         ncFile.close()
