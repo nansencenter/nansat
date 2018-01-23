@@ -315,16 +315,15 @@ class Nansat(Domain, Exporter):
 
         Examples
         --------
-        n.add_band(a, p)
         # add new band from numpy array <a> with metadata <p> in memory
         # Shape of a should be equal to the shape of <n>
+        >>> n.add_band(a, p)
 
-        n.add_band(a, p, nomem=True)
         # add new band from an array <a> with metadata <p> but keep it
         # temporarli on disk intead of memory
+        >>> n.add_band(a, p, nomem=True)
+
         """
-        #AK: I don't agree there should be no add_band method.
-        #warnings.warn('Method <add_band> will be removed from Nansat v.1.1', DeprecationWarning)
         self.add_bands([array], [parameters], nomem)
 
     def add_bands(self, arrays, parameters=None, nomem=False):
@@ -335,45 +334,41 @@ class Nansat(Domain, Exporter):
 
         Parameters
         -----------
-        array : ndarray or list
-            band data (or data for several bands)
-        parameters : dictionary or list
-            band metadata: wkv, name, etc. (or for several bands)
+        arrays : list of numpy.ndarrays
+            data for several bands
+        parameters : list of dictionaries
+            band destination metadata: wkv, name, etc.
         nomem : boolean, saves the vrt to a tempfile if nomem is True
 
         Modifies
         ---------
         Creates VRT object with VRT-file and RAW-file
-        Adds band to the self.vrt
+        Adds bands to the self.vrt
 
         Examples
         --------
-        n.add_bands([a1, a2], [p1, p2])
         # add two new bands from numpy arrays <a1> and <a2> with metadata in
         # <p1> and <p2>
+        >>> n.add_bands([a1, a2], [p1, p2])
 
         """
-        # replace empty parameters with list of None
+        # replace empty parameters with list of empty dictionaries
         if parameters is None:
-            parameters = [None] * len(arrays)
-
-        # create VRTs from arrays
-        band_vrts = [VRT.from_array(array, nomem=nomem) for array in arrays]
+            parameters = [{}] * len(arrays)
 
         self.vrt = self.vrt.get_super_vrt()
-        # TODO: Move to separate function
-        # add the array band into self.vrt and get bandName
-        for bi, band_vrt in enumerate(band_vrts):
-            params = parameters[bi]
-            if params is None:
-                params = {}
-            band_name = self.vrt.create_band(
-                {'SourceFilename': band_vrt.filename,
-                 'SourceBand': 1},
-                params)
-            self.vrt.band_vrts[band_name] = band_vrt
 
-        self.vrt.dataset.FlushCache()  # required after adding bands
+        # create VRTs from arrays and generate band_metadata
+        band_metadata = []
+        for array, parameter in zip(arrays, parameters):
+            vrt = VRT.from_array(array, nomem=nomem)
+            band_metadata.append({
+                'src': {'SourceFilename': vrt.filename, 'SourceBand': 1},
+                'dst': parameter
+                })
+            self.vrt.band_vrts[vrt.filename] = vrt
+
+        band_name = self.vrt.create_bands(band_metadata)
 
     def bands(self):
         """ Make a dictionary with all metadata from all bands

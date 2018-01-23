@@ -146,9 +146,10 @@ class NansatTest(unittest.TestCase):
         n.add_bands([arr, arr],
                     [{'name': 'band1'}, {'name': 'band2'}])
 
-        self.assertEqual(type(n), Nansat)
-        self.assertEqual(type(n[1]), np.ndarray)
-        self.assertEqual(type(n[2]), np.ndarray)
+        self.assertIsInstance(n, Nansat)
+        self.assertEqual(n.vrt.vrt.vrt, None)
+        self.assertIsInstance(n[1], np.ndarray)
+        self.assertIsInstance(n[2], np.ndarray)
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n.get_metadata('name', 2), 'band2')
 
