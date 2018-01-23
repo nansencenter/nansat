@@ -31,7 +31,7 @@ from numpy.lib.recfunctions import append_fields
 from netCDF4 import Dataset
 
 from nansat.nsr import NSR
-from nansat.domain import Domain
+from nansat import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
@@ -1670,8 +1670,8 @@ class Nansat(Domain):
                 errType, err, traceback = nansatMappers[mapperName]
                 # self.logger.error(err, exc_info=(errType, err, traceback))
                 # TODO: python 3.6 does not support with syntax
-                raise errType, err, traceback
-
+                # raise errType, err, traceback
+                raise EnvironmentError
             # create VRT using the selected mapper
             tmpVRT = nansatMappers[mapperName](self.fileName,
                                                gdalDataset,
