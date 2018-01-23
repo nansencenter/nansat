@@ -40,6 +40,10 @@ class Exporter(object):
                                'will be disabled from Nansat 1.1. ')
     EXPORT_BOTTOMUP_WARNING = ('Nansat.export(bottomup=...) will be disabled from Nansat 1.1. '
                                'Use Nansat.export(options=[WRITE_BOTTOMUP=NO]')
+    EXPORT_CREATED_WARNING = ('Nansat.export2thredds(createdTime=...) will be disabled from Nansat 1.1. '
+                               'Use Nansat.export2thredds(created=...')
+    EXPORT_MASKNAME_WARNING = ('Nansat.export2thredds(maskName=...) will be disabled from Nansat 1.1. '
+                               'Use Nansat.export2thredds(mask_name=...')
 
     def export(self, filename='', fileName='', bands=None, rm_metadata=None, rmMetadata=None,
                addGeoloc=None, add_geolocation=True,
@@ -175,14 +179,13 @@ class Exporter(object):
         # write data, close file
         ncFile.close()
 
-# TODO: move to Exporter
     def export2thredds(self, filename, bands, metadata=None,
-                       maskName=None, rmMetadata=[],
-                       time=None, createdTime=None):
+                        mask_name=None, maskName=None, rm_metadata=None, rmMetadata=None,
+                        time=None, created=None, createdTime=None):
         ''' Export data into a netCDF formatted for THREDDS server
 
         Parameters
-        -----------
+        ----------
         filename : str
             output file name
         bands : dict
@@ -198,50 +201,61 @@ class Exporter(object):
             other entries (e.g. 'units': 'K') set other metadata
         metadata : dict
             Glbal metadata to add
-        maskName: string;
+        mask_name: str
             if data include a mask band: give the mask name.
             Non-masked value is 64.
             if None: no mask is added
-        rmMetadata : list
+        rm_metadata : list
             unwanted metadata names which will be removed
         time : list with datetime objects
             aqcuisition time of original data. That value will be in time dim
-        createdTime : datetime
+        created : datetime
             date of creation. Will be in metadata 'created'
 
-        !! NB
-        ------
+        Note
+        ----
         Nansat object (self) has to be projected (with valid GeoTransform and
         valid Spatial reference information) but not wth GCPs
 
         Examples
         --------
         # create THREDDS formatted netcdf file with all bands and time variable
-        n.export2thredds(filename)
+        >>> n.export2thredds(filename)
 
         # export only the first band and add global metadata
-        n.export2thredds(filename, ['L_469'], {'description': 'example'})
+        >>> n.export2thredds(filename, ['L_469'], {'description': 'example'})
 
         # export several bands and modify type, scale and offset
-        bands = {'L_645' : {'type': '>i2', 'scale': 0.1, 'offset': 0},
-                 'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
-        n.export2thredds(filename, bands)
+        >>> bands = {'L_645' : {'type': '>i2', 'scale': 0.1, 'offset': 0},
+                     'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
+        >>> n.export2thredds(filename, bands)
 
         '''
+        if rmMetadata is not None:
+            warnings.warn(self.EXPORT_RM_METADATA_WARNING, NansatFutureWarning)
+            rm_metadata = rmMetadata
+        if createdTime is not None:
+            warnings.warn(self.EXPORT_CREATED_WARNING, NansatFutureWarning)
+            created = createdTime
+        if maskName is not None:
+            warnings.warn(self.EXPORT_MASKNAME_WARNING, NansatFutureWarning)
+            mask_name = maskName
+
+        # TODO:
+        # New logics
+        # 1. Get mask
+        # 1. Prepare global metadata
+        # 1. self.export to netCDF with metadata, hardcopy and mask (add mask to vrt.harcopy)
+        # 1. self._collect_band_metadata_from_exported
+        # 1. self._post_proc_for_thredds
+
         # raise error if self is not projected (has GCPs)
         if len(self.vrt.dataset.GetGCPs()) > 0:
             raise OptionError('Cannot export dataset with GCPS for THREDDS!')
 
-# TODO: more strict requirements for input param bands
-        # replace bands as list with bands as dict
-        if type(bands) is list:
-            bands = dict.fromkeys(bands, {})
-
         # Create temporary empty Nansat object with self domain
-        #import ipdb; ipdb.set_trace()
         data = self.__class__.__new__(self.__class__)
         data._init_from_domain(self)
-        #data = Nansat.from_domain(self)
 
         # get mask (if exist)
         if maskName is not None:
@@ -306,12 +320,16 @@ class Exporter(object):
                 globMetadata[metaKey] = metadata[metaKey]
 
         # export temporary Nansat object to a temporary netCDF
-        fid, tmpName = tempfile.mkstemp(suffix='.nc')
-        data.export(tmpName)
+        fid, tmp_filename = tempfile.mkstemp(suffix='.nc')
+        data.export(tmp_filename)
 
+        self._post_proc_thredds(tmp_filename, filename, dstBands)
+
+    def _post_proc_thredds(self, tmp_filename, out_filename, band_metadata):
+        """Post processing of file for THREDDS (add time variable and metadata)"""
         # open files for input and output
-        ncI = Dataset(tmpName, 'r')
-        ncO = Dataset(filename, 'w')
+        ncI = Dataset(tmp_filename, 'r')
+        ncO = Dataset(out_filename, 'w')
 
 # TODO: move to Exporter._ctreate_time_dim
         # collect info on dimention names
