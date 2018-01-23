@@ -4,6 +4,7 @@
 # Licence:     This file is part of NANSAT. You can redistribute it or modify
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
+from __future__ import print_function
 import glob
 import os
 import datetime
@@ -72,7 +73,7 @@ class Mapper(VRT, Globcolour):
         self.band_vrts = {'mask': [], 'lonlat': []}
         mask = None
         for simFile in simFiles:
-            print 'sim: ', simFile
+            print_function('sim: ', simFile)
             # copy simFile to a temporary file
             tmpf = tempfile.mkstemp()
             shutil.copyfile(simFile, tmpf[1])

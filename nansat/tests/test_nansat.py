@@ -11,6 +11,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
+from __future__ import unicode_literals, absolute_import
 import unittest
 import warnings
 import os
@@ -33,8 +34,7 @@ from netCDF4 import Dataset
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal, OptionError
 
-import nansat_test_data as ntd
-from __builtin__ import int
+from . import nansat_test_data as ntd
 
 
 class NansatTest(unittest.TestCase):
