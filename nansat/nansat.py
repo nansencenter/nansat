@@ -435,7 +435,7 @@ class Nansat(Domain, Exporter):
                         eResampleAlg=None):
         '''Proportional resize of the dataset.
 
-        The dataset is resized as (xSize*factor, ySize*factor)
+        The dataset is resized as (x_size*factor, y_size*factor)
         If desired width, height or pixelsize is specified,
         the scaling factor is calculated accordingly.
         If GCPs are given in a dataset, they are also rewritten.
@@ -656,8 +656,8 @@ class Nansat(Domain, Exporter):
             # get projection of destination GCPs
             dstSRS = dst_domain.vrt.dataset.GetGCPProjection()
 
-        xSize = dst_domain.vrt.dataset.RasterXSize
-        ySize = dst_domain.vrt.dataset.RasterYSize
+        x_size = dst_domain.vrt.dataset.RasterXSize
+        y_size = dst_domain.vrt.dataset.RasterYSize
 
         geoTransform = dst_domain.vrt.dataset.GetGeoTransform()
 
@@ -696,7 +696,7 @@ class Nansat(Domain, Exporter):
             self.vrt.dataset.FlushCache()
 
         # create Warped VRT
-        self.vrt = self.vrt.get_warped_vrt(dstSRS, xSize, ySize, geoTransform,
+        self.vrt = self.vrt.get_warped_vrt(dstSRS, x_size, y_size, geoTransform,
                                            resample_alg=resample_alg,
                                            dst_gcps=dstGCPs,
                                            block_size=block_size, **kwargs)
@@ -1401,7 +1401,6 @@ class Nansat(Domain, Exporter):
         return append_fields(t, band_name, bandValues).data
 
     def digitize_points(self, band=1, **kwargs):
-
         '''Get coordinates of interactively digitized points
 
         Parameters
@@ -1422,13 +1421,15 @@ class Nansat(Domain, Exporter):
 
         return points
 
-    def crop_interactive(self, band=1,**kwargs):
+    def crop_interactive(self, band=1, maxwidth=1000, **kwargs):
         ''' Interactively select boundary and crop Nansat object
 
         Parameters
         ----------
         band : int or str
             id of the band to show for interactive selection of boundaries
+        maxwidth : int
+            large input data is downscaled to <maxwidth>
         **kwargs : keyword arguments for imshow
 
         Modifies
@@ -1437,11 +1438,11 @@ class Nansat(Domain, Exporter):
             superVRT is created with modified SrcRect and DstRect
         Returns
         -------
-        extent : (xOff, yOff, xSize, ySize)
-            xOff  - X offset in the original dataset
-            yOff  - Y offset in the original dataset
-            xSize - width of the new dataset
-            ySize - height of the new dataset
+        extent : (x_offset, y_offset, x_size, y_size)
+            x_offset  - X offset in the original dataset
+            y_offset  - Y offset in the original dataset
+            x_size - width of the new dataset
+            y_size - height of the new dataset
 
         Examples
         --------
@@ -1450,8 +1451,6 @@ class Nansat(Domain, Exporter):
         extent = n.crop_interactive(band=1,cmap=cm.gray)
 
         '''
-# TODO: move maxwidth to arguments
-        maxwidth = 1000
         resized = False
         if self.shape()[1] > maxwidth:
             factor = self.resize(width=1000)
@@ -1466,60 +1465,79 @@ class Nansat(Domain, Exporter):
               self.undo()
            return
 
-        # TODO: check standards wrt such function. What are the best practices?
-        # TODO: check independent view
-        def get_offset_size(i, points, factor):
-            offset = round(points.min(axis=1)[i] / factor)
-            size = round((points.max(axis=1)[i] - offset) / factor)
-            return offset, size
-        x_offset, x_size = get_offset_size(0, points, factor)
-        y_offset, y_size = get_offset_size(1, points, factor)
-        """
-        xOff = round(points.min(axis=1)[0] / factor)
-        yOff = round(points.min(axis=1)[1] / factor)
-        xSize = round((points.max(axis=1)[0] - xOff) / factor)
-        ySize = round((points.max(axis=1)[1] - yOff) / factor)
-        """
+        x_offset, x_size = Nansat._get_crop_offset_size(0, points, factor)
+        y_offset, y_size = Nansat._get_crop_offset_size(1, points, factor)
 
         if resized:
             self.undo()
 
         return self.crop(x_offset, y_offset, x_size, y_size)
 
+    @staticmethod
+    def _get_crop_offset_size(axis, points, factor):
+        """Get offset and size of cropped image"""
+        offset = round(points.min(axis=1)[axis] / factor)
+        size = round((points.max(axis=1)[axis] - offset) / factor)
+        return offset, size
 
     def crop_lonlat(self, lonlim, latlim):
-# TODO: fix doctring, add lonlim, latlim
-        ''' Crop Nansat object to fit into given longitude/latitude limit
+        """
+        Crop Nansat object to fit into given longitude/latitude limit
+        Parameters
+        ----------
+        lonlim : list of 2 float
+            min/max of longitude
+        latlim : list of 2 float
+            min/max of latitude
+
         Modifies
         --------
         self.vrt : VRT
-            superVRT is created with modified SrcRect and DstRect
+            crops vrt to size that corresponds to lon/lat limits
 
         Returns
         -------
-        extent : (xOff, yOff, xSize, ySize)
-            xOff  - X offset in the original dataset
-            yOff  - Y offset in the original dataset
-            xSize - width of the new dataset
-            ySize - height of the new dataset
+        extent : (x_offset, y_offset, x_size, y_size)
+            x_offset  - X offset in the original dataset
+            y_offset  - Y offset in the original dataset
+            x_size - width of the new dataset
+            y_size - height of the new dataset
 
         Examples
         --------
         # crop a subimage for given lon/lat limits
-        extent = n.crop(lonlim=[-10,10], latlim=[-20,20])
+        >>> extent = n.crop(lonlim=[-10,10], latlim=[-20,20])
 
-        '''
-        crnPix, crnLin = self.transform_points([lonlim[0], lonlim[0], lonlim[1], lonlim[1]],
-                                               [latlim[0], latlim[1], latlim[0], latlim[1]], 1)
-        xOff = round(min(crnPix))
-        yOff = round(min(crnLin))
-        xSize = round(max(crnPix) - min(crnPix))
-        ySize = round(max(crnLin) - min(crnLin))
+        """
+        # lon/lat lists for four corners
+        lon_corners = [lonlim[0], lonlim[0], lonlim[1], lonlim[1]]
+        lat_corners = [latlim[0], latlim[1], latlim[0], latlim[1]]
+        pix_corners, lin_corners = self.transform_points(lon_corners, lat_corners, 1)
 
-        return self.crop(xOff, yOff, xSize, ySize)
+        offset_size = lambda corners: (round(min(corners)), round(max(corners) - min(corners)))
+        x_offset, x_size = offset_size(pix_corners)
+        y_offset, y_size = offset_size(lin_corners)
 
-    def crop(self, xOff, yOff, xSize, ySize):
-        '''Crop Nansat object
+        return self.crop(x_offset, y_offset, x_size, y_size)
+
+    @staticmethod
+    def _fix_crop_offset_size(offset, size, raster_size):
+        """Check and correct default values of invalid offset or size"""
+        # test if crop is totally outside
+        if (offset > raster_size or (offset + size) < 0):
+            raise OptionError('Cropping region is outside the image! offset: %f size: %f'
+                               %(float(offset), float(size)))
+
+        if offset < 0:
+            size += offset
+            offset = 0
+        if (size + offset) > raster_size:
+            size = raster_size - offset
+        return offset, size
+
+    def crop(self, x_offset, y_offset, x_size, y_size):
+        """
+        Crop Nansat object
 
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
         Rectangle (DstRect) tags in the VRT file for each band in order
@@ -1528,156 +1546,51 @@ class Nansat(Domain, Exporter):
 
         Parameters
         ----------
-        xOff : int
+        x_offset : int
             pixel offset of subimage
-        yOff : int
+        y_offset : int
             line offset of subimage
-        xSize : int
+        x_size : int
             width in pixels of subimage
-        ySize : int
+        y_size : int
             height in pizels of subimage
 
         Modifies
         --------
         self.vrt : VRT
             superVRT is created with modified SrcRect and DstRect
+
         Returns
         -------
-        extent : (xOff, yOff, xSize, ySize)
-            xOff  - X offset in the original dataset
-            yOff  - Y offset in the original dataset
-            xSize - width of the new dataset
-            ySize - height of the new dataset
+        extent : (x_offset, y_offset, x_size, y_size)
+            x_offset  - X offset in the original dataset
+            y_offset  - Y offset in the original dataset
+            x_size - width of the new dataset
+            y_size - height of the new dataset
 
         Examples
         --------
-            # crop a subimage of size 100x200 pix from X/Y offset 10, 20 pix
-            extent = n.crop(10, 20, 100, 200)
+        # crop a subimage of size 100x200 pix from X/Y offset 10, 20 pix
+        >>> extent = n.crop(10, 20, 100, 200)
 
-        '''
-# TODO: move to _get_correct_offsets, DRY X/Y
-        RasterXSize = self.vrt.dataset.RasterXSize
-        RasterYSize = self.vrt.dataset.RasterYSize
+        """
+        x_offset, x_size = Nansat._fix_crop_offset_size(x_offset, x_size, self.shape()[1])
+        y_offset, y_size = Nansat._fix_crop_offset_size(y_offset, y_size, self.shape()[0])
 
-        # set xSize/ySize if ommited in the call
-        if xSize is None:
-            xSize = RasterXSize - xOff
-        if ySize is None:
-            ySize = RasterYSize - yOff
+        extent = (int(x_offset), int(y_offset), int(x_size), int(y_size))
+        self.logger.debug('x_offset: %d, y_offset: %d, x_size: %d, y_size: %d' % extent)
 
-        # test if crop is totally outside
-        if (xOff > RasterXSize or (xOff + xSize) < 0 or
-                yOff > RasterYSize or (yOff + ySize) < 0):
-            raise OptionError('''Cropping region is outside the image!
-                               xOff: %.f, yOff: %.f, xSize: %.f, ySize: %.f'''
-                               %(float(xOff),  float(yOff), float(xSize),
-                                  float(ySize)))
-
-        # set default values of invalud xOff/yOff and xSize/ySize
-        if xOff < 0:
-            xSize += xOff
-            xOff = 0
-
-        if yOff < 0:
-            ySize += yOff
-            yOff = 0
-
-        if (xSize + xOff) > RasterXSize:
-            xSize = RasterXSize - xOff
-        if (ySize + yOff) > RasterYSize:
-            ySize = RasterYSize - yOff
-
-        extent = (int(xOff), int(yOff), int(xSize), int(ySize))
-        self.logger.debug('xOff: %d, yOff: %d, xSize: %d, ySize: %d' % extent)
-
-        # test if crop is too large
-        if (xOff == 0 and xSize == RasterXSize and
-                yOff == 0 and ySize == RasterYSize):
-            self.logger.error(('WARNING! Cropping region is'
-                               'larger or equal to image!'))
+        # test if crop is larger or equal to image size
+        if x_offset == y_offset == 0 and (y_size, x_size) == self.shape():
+            self.logger.error(('WARNING! Cropping region is larger or equal to image!'))
             return extent
 
-        # create super VRT and get its XML
+        # create super VRT and change it
         self.vrt = self.vrt.get_super_vrt()
-        xml = self.vrt.xml
-        node0 = Node.create(xml)
-
-# TODO: Move to _make_cropped_node, DRY X/Y
-        # change size
-        node0.node('VRTDataset').replaceAttribute('rasterXSize', str(xSize))
-        node0.node('VRTDataset').replaceAttribute('rasterYSize', str(ySize))
-
-        # replace x/y-Off and x/y-Size
-        #   in <SrcRect> and <DstRect> of each source
-        for iNode1 in node0.nodeList('VRTRasterBand'):
-            iNode2 = iNode1.node('ComplexSource')
-
-            iNode3 = iNode2.node('SrcRect')
-            iNode3.replaceAttribute('xOff', str(xOff))
-            iNode3.replaceAttribute('yOff', str(yOff))
-            iNode3.replaceAttribute('xSize', str(xSize))
-            iNode3.replaceAttribute('ySize', str(ySize))
-
-            iNode3 = iNode2.node('DstRect')
-            iNode3.replaceAttribute('xSize', str(xSize))
-            iNode3.replaceAttribute('ySize', str(ySize))
-
-        # write modified XML
-        xml = node0.rawxml()
-        self.vrt.write_xml(xml)
-
-        # modify GCPs or GeoTranfrom to fit the new shape of image
-        gcps = self.vrt.dataset.GetGCPs()
-        if len(gcps) > 0:
-# TODO: move to _update_cropped_gcps
-            dstGCPs = []
-            i = 0
-            # keep current GCPs
-            for igcp in gcps:
-                if (0 < igcp.GCPPixel - xOff < xSize and 0 < igcp.GCPLine - yOff < ySize):
-                    i += 1
-                    dstGCPs.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
-                                            igcp.GCPPixel - xOff,
-                                            igcp.GCPLine - yOff, '', str(i)))
-            numOfGCPs = i
-
-            if numOfGCPs < 100:
-                # create new 100 GPCs (10 x 10 regular matrix)
-                pixArray = []
-                linArray = []
-                for newPix in np.r_[0:xSize:10j]:
-                    for newLin in np.r_[0:ySize:10j]:
-                        pixArray.append(newPix + xOff)
-                        linArray.append(newLin + yOff)
-
-                lonArray, latArray = self.vrt.transform_points(pixArray,
-                                                               linArray,
-                        dst_srs=NSR(self.vrt.dataset.GetGCPProjection()))
-
-                for i in range(len(lonArray)):
-                    dstGCPs.append(gdal.GCP(lonArray[i], latArray[i], 0,
-                                            pixArray[i] - xOff,
-                                            linArray[i] - yOff,
-                                            '', str(numOfGCPs+i+1)))
-
-            # set new GCPss
-            self.vrt.dataset.SetGCPs(dstGCPs,
-                                     self.vrt.dataset.GetGCPProjection())
-            # remove geotranform which was automatically added
-            self.vrt._remove_geotransform()
-        else:
-            # shift upper left corner coordinates
-            geoTransfrom = self.vrt.dataset.GetGeoTransform()
-            geoTransfrom = map(float, geoTransfrom)
-            geoTransfrom[0] += geoTransfrom[1] * xOff
-            geoTransfrom[3] += geoTransfrom[5] * yOff
-            self.vrt.dataset.SetGeoTransform(geoTransfrom)
-
-        # set global metadata
-        subMetaData = self.vrt.vrt.dataset.GetMetadata()
-        subMetaData.pop('filename')
-        self.set_metadata(subMetaData)
-
+        self.vrt.set_offset_size('x', x_offset, x_size)
+        self.vrt.set_offset_size('y', y_offset, y_size)
+        self.vrt.shift_cropped_gcps(x_offset, x_size, y_offset, y_size)
+        self.vrt.shift_cropped_geo_transform(x_offset, x_size, y_offset, y_size)
         return extent
 
     def _get_pix_lin_vectors(self, points, lonlat, cornersonly, smooth_radius):
