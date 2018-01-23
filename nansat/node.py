@@ -331,7 +331,6 @@ class Node(object):
                 return Node.create(xdm.parseString(dom))
 
         # To pass test for python3, decoding of bytes object is requested
-        dom = dom.encoding('UTF-8')
         if dom.nodeType == dom.DOCUMENT_NODE:
             return Node.create(dom.childNodes[0])
         if dom.nodeName == '#text':
