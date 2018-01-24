@@ -77,116 +77,70 @@ VRT_FROM_LONLAT = VRT.from_lonlat(LON, LAT)
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
-        '''
+        self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_projected = os.path.join(ntd.test_data_path, 'gcps.tif')
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
         if (    not os.path.exists(self.test_file)
              or not os.path.exists(self.test_file_projected) ):
             raise ValueError('No test data available')
-        '''
+
     def test_dont_init_from_invalid_combination(self):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
         with self.assertRaises(OptionError):
-            Domain(ds="GDAL_DATASET",
-                   srs="SPATIAL_REFERENCE",
-                   ext="EXTENT STRING")
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
+                   ext="-te 25 70 35 72 -ts 500 500")
     
-    @patch('nansat.domain.VRT')
-    def test_init_from_GDALDataset(self, mock_VRT):
-        mock_VRT.from_gdal_dataset.return_value = mock_VRT.from_gdal_dataset
-        type(mock_VRT.from_gdal_dataset).dataset = PropertyMock(return_value="vrt.dataset")
-        d = Domain(ds="GDAL_DATASET")
-        self.assertEqual(d.vrt, mock_VRT.from_gdal_dataset)
-        self.assertEqual(d.vrt.dataset, "vrt.dataset")
+    def test_init_from_GDALDataset(self):
+        d = Domain(ds=gdal.Open(self.test_file))
+        self.assertEqual(type(d), Domain)
 
-    @patch('nansat.domain.NSR')
+    def test_init_from_GDALDataset_and_srs(self):
+        d = Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
+        self.assertEqual(type(d), Domain)
+
     @patch('nansat.domain.gdal')
-    def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails(self, mock_gdal, mock_NSR):
-        mock_NSR().return_value = "NSR()"
+    def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails(self, mock_gdal):
         mock_gdal.AutoCreateWarpedVRT.return_value = None
         with self.assertRaises(ProjectionError):
-            Domain(ds="GDAL_DATASET",
-                   srs="SPATIAL_REFERENCE")
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
 
-    @patch('nansat.domain.gdal')
-    def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails2(self, mock_gdal):
-        mock_gdal.AutoCreateWarpedVRT.return_value = None
-        with self.assertRaises(ProjectionError):
-            Domain(ds="GDAL_DATASET",
-                   srs=NSR().wkt)
-
-    @patch('nansat.domain.NSR')
-    @patch('nansat.domain.gdal')
-    @patch('nansat.domain.VRT')
-    def test_init_from_GDALDataset_and_srs(self, mock_VRT, mock_gdal, mock_NSR):
-        mock_NSR().return_value = "NSR()"
-        mock_gdal.AutoCreateWarpedVRT.return_value = "gdal.AutoCreateWarpedVRT()"
-        mock_VRT.from_gdal_dataset.return_value = mock_VRT.from_gdal_dataset
-        type(mock_VRT.from_gdal_dataset).dataset = PropertyMock(return_value="vrt.dataset")
-        d = Domain(ds="GDAL_DATASET)",
-                   srs="SPATIAL_REFERENCE")
-        self.assertEqual(d.vrt, mock_VRT.from_gdal_dataset)
-        self.assertEqual(d.vrt.dataset, "vrt.dataset")
-
-    @patch('nansat.domain.NSR')
-    @patch('nansat.domain.VRT')
     @patch.object(Domain, '_create_extent_dict',
-        return_value={'te': ["MIN_X, MIN_Y, MAX_X, MAX_Y"], 'ts': ["RASTER_X_SIZE, RASTER_Y_SIZE"]})
+        return_value={'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]})
     @patch.object(Domain, '_get_geotransform',
-        return_value=["GEO_TRANSFORM", "RASTER_X_SIZE", "RASTER_Y_SIZE"])
-    def test_init_from_srs_and_ext_te(self, mock__get_geotransform, mock__create_extent_dict,
-                                      mock_VRT, mock_NSR):
-        mock_NSR().return_value = "NSR()"
-        mock_VRT.from_dataset_params.return_value = mock_VRT.from_dataset_params
-        type(mock_VRT.from_dataset_params).dataset = PropertyMock(return_value="vrt.dataset")
-        d = Domain(srs="SPATIAL_REFERENCE",
-                   ext="-te MIN_X MIN_Y MAX_X MAX_Y -ts RASTER_X_SIZE RASTER_Y_SIZE")
-        self.assertEqual(d.vrt, mock_VRT.from_dataset_params)
-        self.assertEqual(d.extent_dict,
-            {'te': ["MIN_X, MIN_Y, MAX_X, MAX_Y"], 'ts': ["RASTER_X_SIZE, RASTER_Y_SIZE"]})
-        self.assertEqual(d.vrt.dataset, "vrt.dataset")
+        return_value=[[25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500])
+    def test_init_from_srs_and_ext_te(self, mock__get_geotransform, mock__create_extent_dict):
+        d = Domain(srs=4326,
+                   ext="-te 25 70 35 72 -ts 500 500")
+        self.assertEqual(type(d), Domain)
 
-    @patch('nansat.domain.NSR')
-    @patch('nansat.domain.VRT')
     @patch.object(Domain, '_create_extent_dict',
-        return_value={'lle': ["MIN_LON, MIN_LAT, MAX_LON, MAX_LAT"],
-                      'ts': ["RASTER_X_SIZE, RASTER_Y_SIZE"]})
+        return_value={'lle': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]})
     @patch.object(Domain, '_convert_extentDic',
-        return_value={'lle': ["MIN_LON, MIN_LAT, MAX_LON, MAX_LAT"],
-                      'te': ["MIN_X, MIN_Y, MAX_X, MAX_Y"],
-                      'ts': ["RASTER_X_SIZE, RASTER_Y_SIZE"]})
+        return_value={'lle': [25.0, 70.0, 35.0, 72.0], 'lle': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]})
     @patch.object(Domain, '_get_geotransform',
-        return_value=([25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500))
-    def test_init_from_srs_and_ext_lle(self, mock__get_geotransform, mock__convert_extentDic,
-                                       mock__create_extent_dict, mock_VRT, mock_NSR):
-        mock_NSR().return_value = "NSR()"
-        mock_VRT.from_dataset_params.return_value = mock_VRT.from_dataset_params
-        type(mock_VRT.from_dataset_params).dataset = PropertyMock(return_value="vrt.dataset")
-        d = Domain(srs="SPATIAL_REFERENCE",
-                   ext="-lle MIN_LON, MIN_LAT, MAX_LON, MAX_LAT -ts RASTER_X_SIZE RASTER_Y_SIZE")
-        self.assertEqual(d.vrt, mock_VRT.from_dataset_params)
-        self.assertEqual(d.extent_dict,
-            {'lle': ["MIN_LON, MIN_LAT, MAX_LON, MAX_LAT"],
-             'te': ["MIN_X, MIN_Y, MAX_X, MAX_Y"],
-             'ts': ["RASTER_X_SIZE, RASTER_Y_SIZE"]})
-        self.assertEqual(d.vrt.dataset, "vrt.dataset")
+        return_value=[[25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500])
+    def test_init_from_srs_and_ext_lle(self, mock__get_geotransform, mock__convert_extentDic, mock__create_extent_dict):
+        d = Domain(srs=4326,
+                   ext="-lle 25 70 35 72 -ts 500 500")
+        self.assertEqual(type(d), Domain)
 
-    @patch('nansat.domain.VRT')
-    def test_init_from_lonlat(self, mock_VRT):
-        mock_VRT.from_lonlat.return_value = mock_VRT.from_lonlat
-        type(mock_VRT.from_lonlat).dataset = PropertyMock(return_value="vrt.dataset")
-        d = Domain(lon="LONS",
-                   lat="LATS")
-        self.assertEqual(d.vrt, mock_VRT.from_lonlat)
-        self.assertEqual(d.vrt.dataset, "vrt.dataset")
-    
-    
-    
-    
+    def test_init_from_lonlat(self):
+        lat, lon = np.mgrid[-90:90:0.5, -180:180:0.5]
+        d = Domain(lon=lon, lat=lat)
+        self.assertEqual(type(d), Domain)
+        self.assertEqual(d.shape(), lat.shape)
+
+
+
+
 
     def test_repr(self):
-        dom = Domain(self.SRS_EPSG, self.EXTENT_TE_TS)
+        dom = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         result = dom.__repr__()
         test = ('Domain:[500 x 500]\n'
                 '----------------------------------------\n'
@@ -209,27 +163,6 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lon), np.ndarray)
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(lat.shape, (500, 500))
-
-    @patch('nansat.domain.Domain.vrt.dataset', new_callable=PropertyMock)
-    def test_get_geolocation_grids(self, mock_Domain):
-        mock_Domain.vrt.dataset.RasterXSize = 500
-        d = Domain(ds='self.GDAL_DATASET')
-        d.get_geolocation_grids()
-        
-        
-        self.assertEqual(d.vrt, mock_VRT)
-        
-        
-        
-        
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        lon, lat = d.get_geolocation_grids()
-
-        self.assertEqual(type(lon), np.ndarray)
-        self.assertEqual(type(lat), np.ndarray)
-        self.assertEqual(lat.shape, (500, 500))
-
-
 
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
