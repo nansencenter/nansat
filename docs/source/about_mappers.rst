@@ -99,6 +99,11 @@ automatically. This is done the following way:
    
 Note that user defined mappers have higher priority than standard mappers.
 
+Required metadata added in the mappers
+--------------------------------------
+
+* TODO: add list of required metadata
+
 Adding mapper tests
 -------------------
 
