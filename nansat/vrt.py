@@ -531,7 +531,7 @@ class VRT(object):
     def _remove_strings_in_metadata_keys(self, gdal_metadata):
         """Remove unwanted metadata"""
         if not gdal_metadata:
-            raise WrongMapperError
+            raise ValueError('gdal_metadata is empty')
 
         for key in gdal_metadata.keys():
             newkey = key.replace('NC_GLOBAL#', '')
@@ -970,7 +970,7 @@ class VRT(object):
         elif type(src) in [list, tuple]:
             srcs = src
         else:
-            raise AttributeError('Wrong src type (%s)! Should be dict or list/tuple of dict'%type(src))
+            raise ValueError('Wrong src type (%s)! Should be dict or list/tuple of dict'%type(src))
 
         # Check if dst is given, or create empty dict
         if dst is None:
@@ -1105,7 +1105,7 @@ class VRT(object):
 
         # check if Warped VRT was created
         if warped_dataset is None:
-            raise AttributeError('Cannot create warpedVRT!')
+            raise NansatGDALError('Cannot create warpedVRT!')
 
         # create VRT object from Warped VRT GDAL Dataset
         warped_vrt = VRT.copy_dataset(warped_dataset)
@@ -1592,7 +1592,7 @@ class VRT(object):
         """
         # check if SourceFilename is given
         if 'SourceFilename' not in src_in:
-            raise AttributeError('SourceFilename not given!')
+            raise KeyError('SourceFilename must be available in dict:src_in')
         # set default values
         src = {'SourceBand': 1,
                'LUT': '',
