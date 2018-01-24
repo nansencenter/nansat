@@ -13,8 +13,10 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import, unicode_literals
-from nansat.tools import ProjectionError
+
 import osr
+
+from nansat.exceptions import NansatProjectionError
 
 class NSR(osr.SpatialReference, object):
     """Nansat Spatial Reference. Overrides constructor of osr.SpatialReference.
@@ -69,17 +71,18 @@ class NSR(osr.SpatialReference, object):
                 # parse as WKT string
                 status = self.ImportFromWkt(str(srs))
             if status > 0:
-                raise ProjectionError('Proj4 or WKT (%s) is wrong' % srs)
+                raise NansatProjectionError('Proj4 or WKT (%s) is wrong' % srs)
+        # TODO: catch long in python 3
         elif isinstance(srs, int):
             # parse as EPSG code
             status = self.ImportFromEPSG(srs)
             if status > 0:
-                raise ProjectionError('EPSG %d is wrong' % srs)
+                raise NansatProjectionError('EPSG %d is wrong' % srs)
         elif type(srs) in [osr.SpatialReference, NSR]:
             # parse from input Spatial Reference
             status = self.ImportFromWkt(srs.ExportToWkt())
             if status > 0:
-                raise ProjectionError('NSR %s is wrong' % srs)
+                raise NansatProjectionError('NSR %s is wrong' % srs)
 
     @property
     def wkt(self):

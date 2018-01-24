@@ -27,14 +27,16 @@ try:
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
-from nansat.tools import gdal, OptionError, NansatFutureWarning
+from nansat.tools import gdal
+
+from nansat.warnings import NansatFutureWarning
 
 import nansat_test_data as ntd
 from __builtin__ import int
@@ -510,7 +512,7 @@ class NansatTest(unittest.TestCase):
     def test_get_metadata_wrong_key(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
 
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             n1.get_metadata('some_crap')
 
     def test_get_metadata_bandid(self):
@@ -534,7 +536,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(m, 'newVal')
 
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_get_transect(self):
         plt.switch_backend('agg')
         n1 = Nansat(self.test_file_gcps, log_level=40)
@@ -569,7 +571,7 @@ class NansatTest(unittest.TestCase):
 
     def test_get_transect_wrong_points(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
-        self.assertRaises(OptionError, n1.get_transect, [1, 1], [1])
+        self.assertRaises(ValueError, n1.get_transect, [1, 1], [1])
 
     def test_get_transect_wrong_band(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
@@ -612,7 +614,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
         for backend in matplotlib.rcsetup.interactive_bk:
@@ -675,7 +677,7 @@ class NansatTest(unittest.TestCase):
 
     def test_crop_outside(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
-        self.assertRaises(OptionError, n1.crop_lonlat, [-10, 10], [-10, 10])
+        self.assertRaises(ValueError, n1.crop_lonlat, [-10, 10], [-10, 10])
 
     def test_watermask(self):
         ''' if watermask data exists: should fetch array with watermask
@@ -695,8 +697,8 @@ class NansatTest(unittest.TestCase):
         self.assertRaises(IOError, n1.watermask)
 
     def test_init_no_arguments(self):
-        ''' No arguments should raise OptionError '''
-        self.assertRaises(OptionError, Nansat)
+        ''' No arguments should raise ValueError '''
+        self.assertRaises(ValueError, Nansat)
 
     def test_get_item_basic_expressions(self):
         ''' Testing get_item with some basic expressions '''
@@ -732,7 +734,6 @@ class NansatTest(unittest.TestCase):
         self.assertIn('72', n_repr)
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
-
 
 if __name__ == "__main__":
     unittest.main()

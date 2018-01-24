@@ -10,7 +10,7 @@ import numpy as np
 
 import nansat.vrt as vrt
 from nansat.nsr import NSR
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 
 class Mapper(vrt.VRT):

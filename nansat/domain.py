@@ -15,17 +15,19 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import warnings
+
+import re
+import numpy as np
 from xml.etree.ElementTree import ElementTree
 
-import numpy as np
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import OptionError, ProjectionError, write_domain_map
-from nansat.tools import NansatFutureWarning
+from nansat.tools import write_domain_map
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-import re
 
+import warnings
+from nansat.exceptions import NansatProjectionError
+from nansat.warnings import NansatFutureWarning
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -150,7 +152,7 @@ class Domain(object):
 
         # If too much information is given raise error
         if ds is not None and srs is not None and ext is not None:
-            raise OptionError('Ambiguous specification of both dataset, srs- and ext-strings.')
+            raise ValueError('Ambiguous specification of both dataset, srs- and ext-strings.')
 
         # choose between input opitons:
         # ds
@@ -169,7 +171,7 @@ class Domain(object):
             srs = NSR(srs)
             tmp_vrt = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
             if tmp_vrt is None:
-                raise ProjectionError('Could not warp the given dataset to the given SRS.')
+                raise NansatProjectionError('Could not warp the given dataset to the given SRS.')
             else:
                 self.vrt = VRT.from_gdal_dataset(tmp_vrt)
 
@@ -194,7 +196,7 @@ class Domain(object):
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
         else:
-            raise OptionError('"dataset" or "srsString and extentString" '
+            raise ValueError('"dataset" or "srsString and extentString" '
                               'or "dataset and srsString" are required')
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
@@ -266,7 +268,7 @@ class Domain(object):
 
         else:
             # otherwise it is potentially error
-            raise OptionError('Either xmlFileName(%s)\
+            raise ValueError('Either xmlFileName(%s)\
              or kmlFileName(%s) are wrong' % (xml_filename, kml_filename))
 
         # get border of each domain and join them to a one string
@@ -346,7 +348,7 @@ class Domain(object):
         </GroundOverlay>'''
         # test input options
         if kml_figurename is None:
-            raise OptionError('kmlFigureName(%s) is not specified' % kmlFigureName)
+            raise ValueError('kmlFigureName(%s) is not specified' % kmlFigureName)
 
         # get corner of the domain and add to KML
         domain_lon, domain_lat = self.get_corners()
@@ -442,7 +444,7 @@ class Domain(object):
         try:
             parameters = [float(el.strip()) for el in option[1:]]
         except ValueError:
-            raise OptionError('Input values must be int or float')
+            raise ValueError('Input values must be int or float')
 
         key = option[0].strip().replace('-', '')
         extent[key] = parameters
@@ -453,19 +455,19 @@ class Domain(object):
         example = '<-tr x_resolution y_resolution> or <-ts width height>'
         Domain._check_size(len(options), 2, ('-ts', '-tr'), example)
         if options[0] <= 0 or options[1] <= 0:
-            raise OptionError('Resolution or width and height must be bigger than 0: %s' % example)
+            raise ValueError('Resolution or width and height must be bigger than 0: %s' % example)
 
     @staticmethod
     def _validate_te_lle(options):
         example = '<-te x_min y_min x_max y_max> or <-lle min_lon min_lat max_lon max_lat>'
         Domain._check_size(len(options), 4, ('-te', '-lle'), example)
         if options[0] >= options[2] or options[1] >= options[3]:
-            raise OptionError('Min cannot be bigger than max: %s' % example)
+            raise ValueError('Min cannot be bigger than max: %s' % example)
 
     @staticmethod
     def _check_size(params_len, size, names, example):
         if params_len != size:
-            raise OptionError('%s and %s requires exactly %s parameters (%s given): %s'
+            raise ValueError('%s and %s requires exactly %s parameters (%s given): %s'
                               % (names[0], names[1], size, params_len, example))
 
     @staticmethod
@@ -498,7 +500,7 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when the extent_str is improper
+        ValueError : occurs when the extent_str is improper
 
         """
 
@@ -508,7 +510,7 @@ class Domain(object):
             try:
                 option = re.findall(Domain._gen_regexp(*combination), extent_str)[0]
             except IndexError:
-                raise OptionError('<extent_dict> must contains exactly 2 parameters '
+                raise ValueError('<extent_dict> must contains exactly 2 parameters '
                                   '("-te" or "-lle") and ("-ts" or "-tr")')
             key, extent_dict = Domain._add_to_dict(extent_dict, option)
             if key is 'te' or key is 'lle':
@@ -691,7 +693,7 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when maxX - minX < 0 or maxY - minY < 0
+        ValueError : occurs when maxX - minX < 0 or maxY - minY < 0
 
         Returns
         --------
@@ -729,7 +731,7 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when the given resolution is larger than width or height.
+        ValueError : occurs when the given resolution is larger than width or height.
 
         Returns
         --------
@@ -739,7 +741,7 @@ class Domain(object):
         resolution_y = -(tr_arr[1])
 
         if width < resolution_x or height < resolution_y:
-            raise OptionError('"-tr" is too large. width is %s, height is %s ' % (width, height))
+            raise ValueError('"-tr" is too large. width is %s, height is %s ' % (width, height))
 
         raster_x_size = width / resolution_x
         raster_y_size = abs(height / resolution_y)

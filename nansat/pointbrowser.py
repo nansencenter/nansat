@@ -22,9 +22,9 @@ try:
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 
 class PointBrowser():
@@ -63,10 +63,10 @@ class PointBrowser():
 
     def __init__(self, data, fmt='x-k', **kwargs):
         """Open figure with imshow and colorbar"""
-        if not MATPLOTLIB_EXISTS:
+        if not MATPLOTLIB_IS_INSTALLED:
             raise ImportError(' Matplotlib is not installed ')
         if not matplotlib.is_interactive():
-            raise ImportError('''
+            raise SystemError('''
         Python is started with -pylab option, transect will not work.
         Please restart python without -pylab.''')
 

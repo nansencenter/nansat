@@ -26,7 +26,7 @@ from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
 from nansat.tools import initial_bearing, gdal, ogr
-from nansat.tools import WrongMapperError, NansatReadError
+from nansat.exceptions import WrongMapperError, NansatReadError
 
 
 class Mapper(VRT):
@@ -69,8 +69,7 @@ class Mapper(VRT):
             productXml = open(productXmlName).read()
 
         if not IMPORT_SCIPY:
-            raise NansatReadError(' Radarsat-2 data cannot be read because scipy is not installed! '
-                                  ' Please do: conda -c conda-forge install scipy ')
+            raise NansatReadError('Radarsat-2 data cannot be read because scipy is not installed')
 
         # parse product.XML
         rs2_0 = Node.create(productXml)

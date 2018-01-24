@@ -10,9 +10,11 @@ import glob
 
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 from nansat.nsr import NSR
+
+from nansat.exceptions import WrongMapperError
 
 class Mapper(VRT):
     ''' Mapper for Level-3 Standard Mapped Image from

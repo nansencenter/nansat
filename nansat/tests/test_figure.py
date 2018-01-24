@@ -20,10 +20,10 @@ import glob
 from types import ModuleType, FloatType
 import datetime
 
+import gdal
 import numpy as np
 
 from nansat import Figure, Nansat, Domain
-from nansat.tools import gdal, OptionError
 
 import nansat_test_data as ntd
 

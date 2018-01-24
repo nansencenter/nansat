@@ -19,13 +19,13 @@ try:
     import matplotlib.pyplot as plt
     plt.switch_backend('qt5agg')
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 
 class PointBrowserTest(unittest.TestCase):
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def setUp(self):
         plt.switch_backend('qt5agg')
         plt.ion()            

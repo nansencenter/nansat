@@ -36,10 +36,12 @@ from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, gdal
-from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
-from nansat.tools import parse_time, test_openable, NansatFutureWarning
+from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
+
+from nansat.warnings import NansatFutureWarning
+from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
 import collections
 if hasattr(collections, 'OrderedDict'):
@@ -178,7 +180,7 @@ class Nansat(Domain, Exporter):
             return
 
         if filename == '':
-            raise OptionError('Nansat is called without valid parameters! Use: Nansat(filename)')
+            raise ValueError('Nansat is called without valid parameters! Use: Nansat(filename)')
 
         self._init_empty(filename, log_level)
         # Create VRT object with mapping of variables
@@ -207,7 +209,7 @@ class Nansat(Domain, Exporter):
         # get data
         band_data = band.ReadAsArray()
         if band_data is None:
-            raise GDALError('Cannot read array from band %s' % str(band_data))
+            raise NansatGDALError('Cannot read array from band %s' % str(band_data))
 
         # execute expression if any
         if expression != '':
@@ -1050,7 +1052,7 @@ class Nansat(Domain, Exporter):
             try:
                 metadata = metadata[key]
             except KeyError:
-                raise OptionError('%s does not have metadata %s' % (self.filename, key))
+                raise ValueError('%s does not have metadata %s' % (self.filename, key))
 
         return metadata
 
@@ -1115,7 +1117,7 @@ class Nansat(Domain, Exporter):
         Raises
         --------
         IOError : occurs if the input file does not exist
-        OptionError : occurs if given mapper cannot open the input file
+        ValueError : occurs if given mapper cannot open the input file
         NansatReadError : occurs if no mapper fits the input file
 
         """
@@ -1155,7 +1157,7 @@ class Nansat(Domain, Exporter):
             mapperName = 'mapper_' + mapperName.replace('mapper_', '').replace('.py', '').lower()
             # check if the mapper is available
             if mapperName not in nansatMappers:
-                raise OptionError('Mapper ' + mapperName + ' not found')
+                raise ValueError('Mapper ' + mapperName + ' not found')
 
             # check if mapper is importbale or raise an ImportError error
             if isinstance(nansatMappers[mapperName], tuple):
@@ -1263,7 +1265,7 @@ class Nansat(Domain, Exporter):
 
         # if no band_number found - raise error
         if band_number == 0:
-            raise OptionError('Cannot find band %s! '
+            raise ValueError('Cannot find band %s! '
                               'band_number is from 1 to %s'
                               % (str(band_id), self.vrt.dataset.RasterCount))
 
@@ -1310,14 +1312,14 @@ class Nansat(Domain, Exporter):
               np.shape(points)[0] != 2 or
               np.shape(points)[1] < 1):
             # points are not 2xN array
-            raise OptionError('Input points must be 2xN array with N>0')
+            raise ValueError('Input points must be 2xN array with N>0')
 
         # get names of bands
         band_names = []
         for band in bands:
             try:
                 bandN = self.get_band_number(band)
-            except OptionError:
+            except ValueError:
                 self.logger.error('Wrong band name %s' % band)
             else:
                 band_names.append(self.bands()[bandN]['name'])
@@ -1486,7 +1488,7 @@ class Nansat(Domain, Exporter):
         """Check and correct default values of invalid offset or size"""
         # test if crop is totally outside
         if (offset > raster_size or (offset + size) < 0):
-            raise OptionError('Cropping region is outside the image! offset: %f size: %f'
+            raise ValueError('Cropping region is outside the image! offset: %f size: %f'
                                %(float(offset), float(size)))
 
         if offset < 0:
@@ -1616,17 +1618,10 @@ def _import_mappers(log_level=None):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
             # try to import mapper module
-            try:
-                module = loader.load_module(name)
-            except ImportError:
-                # keep ImportError instance instead of the mapper
-                exc_info = sys.exc_info()
-                logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
-                nansat_mappers[name] = exc_info
-            else:
-                # add the imported mapper to nansat_mappers
-                if hasattr(module, 'Mapper'):
-                    nansat_mappers[name] = module.Mapper
+            module = loader.load_module(name)
+            # add the imported mapper to nansat_mappers
+            if hasattr(module, 'Mapper'):
+                nansat_mappers[name] = module.Mapper
 
         # move netcdfcdf mapper to the end
         if 'mapper_netcdf_cf' in nansat_mappers:

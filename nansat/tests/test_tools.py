@@ -18,14 +18,14 @@ import datetime
 try:
     from matplotlib.colors import hex2color
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 from nansat.tools import get_random_color, parse_time
 
 class ToolsTest(unittest.TestCase):
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_get_random_color(self):
         ''' Should return HEX code of random color '''
         c0 = get_random_color()

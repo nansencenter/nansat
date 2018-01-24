@@ -18,7 +18,8 @@ else:
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError, NansatReadError
 
 
 class Mapper(VRT):
@@ -36,8 +37,7 @@ class Mapper(VRT):
         ifiles.sort()
 
         if not IMPORT_SCIPY:
-            raise NansatReadError(' VIIRS data cannot be read because scipy is not installed! '
-                                  ' Please do: conda -c conda-forge install scipy ')
+            raise NansatReadError('VIIRS data cannot be read because scipy is not installed')
 
         viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240,
                             1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]

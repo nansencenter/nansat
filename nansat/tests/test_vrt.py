@@ -183,7 +183,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(src2['xSize'], 200)
         self.assertEqual(src2['ySize'], 190)
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(KeyError):
             src2 = VRT._make_source_bands_xml({})
 
     def test_set_add_band_options(self):

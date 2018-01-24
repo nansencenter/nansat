@@ -19,7 +19,8 @@ import os
 import urllib2
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 import mapper_generic as mg
 

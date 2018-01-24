@@ -8,7 +8,7 @@ from dateutil.parser import parse
 import json
 
 from nansat.vrt import VRT
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from envisat import Envisat
 
 import pythesint as pti

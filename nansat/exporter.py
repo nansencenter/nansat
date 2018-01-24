@@ -25,9 +25,10 @@ import numpy as np
 from netCDF4 import Dataset
 
 from nansat.vrt import VRT
-from nansat.tools import OptionError, GDALError, NansatFutureWarning
 from nansat.node import Node
 
+from nansat.warnings import NansatFutureWarning
+from nansat.exceptions import NansatGDALError
 
 class Exporter(object):
     """Abstract class for export functions """
@@ -218,12 +219,12 @@ class Exporter(object):
             mask_name = maskName
 
         if not isinstance(bands, dict):
-            raise OptionError('<bands> must be dict!')
+            raise ValueError('<bands> must be dict!')
         if metadata is None:
             metadata = {}
         # raise error if self is not projected (has GCPs)
         if len(self.vrt.dataset.GetGCPs()) > 0:
-            raise OptionError('Cannot export dataset with GCPS for THREDDS!')
+            raise ValueError('Cannot export dataset with GCPS for THREDDS!')
 
         # Create temporary empty Nansat object with self domain
         data = self.__class__.__new__(self.__class__)
@@ -246,7 +247,7 @@ class Exporter(object):
 
             # catch None band error
             if array is None:
-                raise GDALError('%s is None' % str(iband))
+                raise NansatGDALError('%s is None' % str(iband))
 
             # set type, scale and offset from input data or by default
             dstBands[iband] = {}
