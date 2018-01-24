@@ -32,7 +32,7 @@ else:
 from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
-from nansat.tools import gdal, OptionError
+from nansat.tools import gdal
 
 import nansat_test_data as ntd
 from __builtin__ import int
@@ -350,11 +350,11 @@ class NansatTest(unittest.TestCase):
 
     def test_write_fig_wrong_type_filename(self):
         n = Nansat(self.test_file_arctic)
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             n.write_figure(1.2)
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             n.write_figure(['filename'])
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             n.write_figure({'name': 'filename'})
 
     def test_write_fig_tif(self):
@@ -412,7 +412,7 @@ class NansatTest(unittest.TestCase):
         n.add_band(np.ones(n2.shape(), np.float32))
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        self.assertRaises(OptionError, n2.export2thredds, tmpfilename,
+        self.assertRaises(ValueError, n2.export2thredds, tmpfilename,
                           ['L_645'])
 
     def test_export2thredds_longlat_list(self):
@@ -701,7 +701,7 @@ class NansatTest(unittest.TestCase):
     def test_get_metadata_wrong_key(self):
         n1 = Nansat(self.test_file_stere, logLevel=40)
 
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             n1.get_metadata('some_crap')
 
     def test_get_metadata_bandid(self):
@@ -760,7 +760,7 @@ class NansatTest(unittest.TestCase):
 
     def test_get_transect_wrong_points(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        self.assertRaises(OptionError, n1.get_transect, [1, 1], [1])
+        self.assertRaises(ValueError, n1.get_transect, [1, 1], [1])
 
     def test_get_transect_wrong_band(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
@@ -866,7 +866,7 @@ class NansatTest(unittest.TestCase):
 
     def test_crop_outside(self):
         n1 = Nansat(self.test_file_gcps, logLevel=40)
-        self.assertRaises(OptionError, n1.crop_lonlat, [-10, 10], [-10, 10])
+        self.assertRaises(ValueError, n1.crop_lonlat, [-10, 10], [-10, 10])
 
     def test_watermask(self):
         ''' if watermask data exists: should fetch array with watermask
@@ -886,8 +886,8 @@ class NansatTest(unittest.TestCase):
         self.assertRaises(IOError, n1.watermask)
 
     def test_init_no_arguments(self):
-        ''' No arguments should raise OptionError '''
-        self.assertRaises(OptionError, Nansat)
+        ''' No arguments should raise ValueError '''
+        self.assertRaises(ValueError, Nansat)
 
     def test_get_item_basic_expressions(self):
         ''' Testing get_item with some basic expressions '''
@@ -936,7 +936,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
         n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
         exported = Nansat(self.tmpfilename)
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
 

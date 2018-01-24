@@ -26,7 +26,7 @@ import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
-from nansat.tools import add_logger, gdal, osr, OptionError
+from nansat.tools import add_logger, gdal, osr
 
 
 class GeolocationArray():

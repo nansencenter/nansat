@@ -28,7 +28,8 @@ import json
 import pythesint as pti
 
 from nansat.vrt import VRT
-from nansat.tools import gdal, WrongMapperError, NansatReadError, initial_bearing
+from nansat.tools import gdal, initial_bearing
+from nansat.exceptions import WrongMapperError, NansatReadError
 from nansat.nsr import NSR
 from nansat.node import Node
 
@@ -139,8 +140,7 @@ class Mapper(VRT):
                       'and there might be other issues.')
 
         if not IMPORT_SCIPY:
-            raise NansatReadError(' Sentinel-1 data cannot be read because scipy is not installed! '
-                                  ' Please do: conda -c conda-forge install scipy ')
+            raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
 
         # create empty VRT dataset with geolocation only
         for key in gdalDatasets:

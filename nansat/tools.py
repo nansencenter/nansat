@@ -107,34 +107,6 @@ def register_colormaps():
         cm.register_cmap(name='ak01', data=ak01, lut=256)
 
 
-class OptionError(Exception):
-    '''Error for improper options (arguments) '''
-    pass
-
-
-class ProjectionError(Exception):
-    '''Cannot get the projection'''
-    pass
-
-
-class GDALError(Exception):
-    '''Error from GDAL '''
-    pass
-
-
-class NansatReadError(Exception):
-    '''Exception if a file cannot be read with Nansat'''
-    pass
-
-class GeolocationError(Exception):
-    '''Exception if geolocation is wrong (e.g., all lat/lon values are 0)'''
-    pass
-
-class WrongMapperError(Exception):
-    '''Error for handling data that does not fit a given mapper'''
-    pass
-
-
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)
         to point2 (lon2, lat2)

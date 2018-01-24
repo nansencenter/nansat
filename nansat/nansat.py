@@ -35,10 +35,11 @@ from nansat.domain import Domain
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.tools import add_logger, gdal
-from nansat.tools import OptionError, WrongMapperError, NansatReadError, GDALError
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
+
+from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
 import collections
 if hasattr(collections, 'OrderedDict'):
@@ -141,7 +142,7 @@ class Nansat(Domain):
         '''
         # check the arguments
         if fileName == '' and domain is None:
-            raise OptionError('Either fileName or domain is required.')
+            raise ValueError('Either fileName or domain is required.')
 
         # create logger
         self.logger = add_logger('Nansat', logLevel)
@@ -193,7 +194,7 @@ class Nansat(Domain):
         # get data
         bandData = band.ReadAsArray()
         if bandData is None:
-            raise GDALError('Cannot read array from band %s' % str(bandID))
+            raise NansatGDALError('Cannot read array from band %s' % str(bandID))
 
         # execute expression if any
         if expression != '':
@@ -659,7 +660,7 @@ class Nansat(Domain):
         '''
         # raise error if self is not projected (has GCPs)
         if len(self.vrt.dataset.GetGCPs()) > 0:
-            raise OptionError('Cannot export dataset with GCPS for THREDDS!')
+            raise ValueError('Cannot export dataset with GCPS for THREDDS!')
 
         # replace bands as list with bands as dict
         if type(bands) is list:
@@ -685,7 +686,7 @@ class Nansat(Domain):
 
             # catch None band error
             if array is None:
-                raise GDALError('%s is None' % str(iband))
+                raise NansatGDALError('%s is None' % str(iband))
 
             # set type, scale and offset from input data or by default
             dstBands[iband] = {}
@@ -1351,7 +1352,7 @@ class Nansat(Domain):
 
         '''
         if not isinstance(fileName, (str, unicode)):
-            raise OptionError('Wrong filename type %s ' % type(fileName))
+            raise ValueError('Wrong filename type %s ' % type(fileName))
 
         # convert <bands> from integer, or string, or list of strings
         # into list of integers
@@ -1539,7 +1540,7 @@ class Nansat(Domain):
             try:
                 metadata = metadata[key]
             except KeyError:
-                raise OptionError('%s does not have metadata %s' % (
+                raise ValueError('%s does not have metadata %s' % (
                                    self.fileName, key))
 
         return metadata
@@ -1601,7 +1602,7 @@ class Nansat(Domain):
         Raises
         --------
         IOError : occurs if the input file does not exist
-        OptionError : occurs if given mapper cannot open the input file
+        ValueError : occurs if given mapper cannot open the input file
         NansatReadError : occurs if no mapper fits the input file
 
         '''
@@ -1644,7 +1645,7 @@ class Nansat(Domain):
                                                                     '').lower()
             # check if the mapper is available
             if mapperName not in nansatMappers:
-                raise OptionError('Mapper ' + mapperName + ' not found')
+                raise ValueError('Mapper ' + mapperName + ' not found')
 
             # check if mapper is importbale or raise an ImportError error
             if isinstance(nansatMappers[mapperName], tuple):
@@ -1757,7 +1758,7 @@ class Nansat(Domain):
 
         # if no bandNumber found - raise error
         if bandNumber == 0:
-            raise OptionError('Cannot find band %s! '
+            raise ValueError('Cannot find band %s! '
                               'bandNumber is from 1 to %s'
                               % (str(bandID), self.vrt.dataset.RasterCount))
 
@@ -1799,14 +1800,14 @@ class Nansat(Domain):
               np.shape(points)[0] != 2 or
               np.shape(points)[1] < 1):
             # points are not 2xN array
-            raise OptionError('Input points must be 2xN array with N>0')
+            raise ValueError('Input points must be 2xN array with N>0')
 
         # get names of bands
         bandNames = []
         for band in bands:
             try:
                 bandN = self._get_band_number(band)
-            except OptionError:
+            except ValueError:
                 self.logger.error('Wrong band name %s' % band)
             else:
                 bandNames.append(self.bands()[bandN]['name'])
@@ -2032,7 +2033,7 @@ class Nansat(Domain):
         # test if crop is totally outside
         if (xOff > RasterXSize or (xOff + xSize) < 0 or
                 yOff > RasterYSize or (yOff + ySize) < 0):
-            raise OptionError('''Cropping region is outside the image!
+            raise ValueError('''Cropping region is outside the image!
                                xOff: %.f, yOff: %.f, xSize: %.f, ySize: %.f'''
                                %(float(xOff),  float(yOff), float(xSize),
                                   float(ySize)))

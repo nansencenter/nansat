@@ -13,7 +13,9 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-from nansat.tools import ProjectionError, osr
+
+from nansat.exceptions import NansatProjectionError
+from nansat.tools import osr
 
 
 class NSR(osr.SpatialReference, object):
@@ -72,17 +74,17 @@ class NSR(osr.SpatialReference, object):
                 # parse as WKT string
                 status = self.ImportFromWkt(str(srs))
             if status > 0:
-                raise ProjectionError('Proj4 or WKT (%s) is wrong' % srs)
+                raise NansatProjectionError('Proj4 or WKT (%s) is wrong' % srs)
         elif type(srs) in [long, int]:
             # parse as EPSG code
             status = self.ImportFromEPSG(srs)
             if status > 0:
-                raise ProjectionError('EPSG %d is wrong' % srs)
+                raise NansatProjectionError('EPSG %d is wrong' % srs)
         elif type(srs) in [osr.SpatialReference, NSR]:
             # parse from input Spatial Reference
             status = self.ImportFromWkt(srs.ExportToWkt())
             if status > 0:
-                raise ProjectionError('NSR %s is wrong' % srs)
+                raise NansatProjectionError('NSR %s is wrong' % srs)
 
         # set WKT
         self.wkt = self.ExportToWkt()

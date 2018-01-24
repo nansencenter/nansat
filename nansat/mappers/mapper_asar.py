@@ -22,7 +22,7 @@ from nansat.vrt import VRT
 from envisat import Envisat
 from nansat.domain import Domain
 from nansat.tools import initial_bearing
-from nansat.tools import WrongMapperError, NansatReadError
+from nansat.exceptions import WrongMapperError, NansatReadError
 
 
 class Mapper(VRT, Envisat):
@@ -52,8 +52,7 @@ class Mapper(VRT, Envisat):
             raise WrongMapperError
 
         if not IMPORT_SCIPY:
-            raise NansatReadError(' ASAR data cannot be read because scipy is not installed! '
-                                  ' Please do: conda -c conda-forge install scipy ')
+            raise NansatReadError('ASAR data cannot be read because scipy is not installed')
 
         # get channel string (remove '/', since NetCDF
         # does not support that in metadata)

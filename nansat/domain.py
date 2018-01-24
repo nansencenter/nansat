@@ -31,7 +31,7 @@ else:
     BASEMAP_LIB_EXISTS = True
 
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import OptionError, ProjectionError
+from nansat.exceptions import NansatProjectionError
 from nansat.nsr import NSR
 from nansat.vrt import VRT
     
@@ -120,9 +120,9 @@ class Domain(object):
 
         Raises
         -------
-        ProjectionError : occurs when Projection() is empty
+        NansatProjectionError : occurs when Projection() is empty
             despite it is required for creating extentDic.
-        OptionError : occures when the arguments are not proper.
+        ValueError : occurs when the arguments are incorrect
 
         Modifies
         ---------
@@ -148,7 +148,7 @@ class Domain(object):
 
         # If too much information is given raise error
         if ds is not None and srs is not None and ext is not None:
-            raise OptionError('Ambiguous specification of both '
+            raise ValueError('Ambiguous specification of both '
                               'dataset, srs- and ext-strings.')
 
         # choose between input opitons:
@@ -168,7 +168,7 @@ class Domain(object):
             srs = NSR(srs)
             tmpVRT = gdal.AutoCreateWarpedVRT(ds, None, srs.wkt)
             if tmpVRT is None:
-                raise ProjectionError('Could not warp the given dataset'
+                raise NansatProjectionError('Could not warp the given dataset'
                                       'to the given SRS.')
             else:
                 self.vrt = VRT(gdalDataset=tmpVRT)
@@ -196,7 +196,7 @@ class Domain(object):
             # create self.vrt from given lat/lon
             self.vrt = VRT(lat=lat, lon=lon)
         else:
-            raise OptionError('"dataset" or "srsString and extentString" '
+            raise ValueError('"dataset" or "srsString and extentString" '
                               'or "dataset and srsString" are required')
 
         self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
@@ -273,7 +273,7 @@ class Domain(object):
 
         else:
             # otherwise it is potentially error
-            raise OptionError('Either xmlFileName(%s)\
+            raise ValueError('Either xmlFileName(%s)\
              or kmlFileName(%s) are wrong' % (xmlFileName, kmlFileName))
 
         # open KML, write header
@@ -335,10 +335,10 @@ class Domain(object):
         '''
         # test input options
         if kmlFileName is None:
-            raise OptionError('kmlFileName(%s) is wrong' % (kmlFileName))
+            raise ValueError('kmlFileName(%s) is wrong' % (kmlFileName))
 
         if kmlFigureName is None:
-            raise OptionError('kmlFigureName(%s) is not specified'
+            raise ValueError('kmlFigureName(%s) is not specified'
                               % (kmlFigureName))
 
         # open KML, write header
@@ -477,7 +477,7 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when the extentString is improper
+        ValueError : occurs when the extentString is improper
 
         '''
         extentDic = {}
@@ -490,7 +490,7 @@ class Domain(object):
             elm_str = str(str_tr[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 3 or elms_str[2] == '-':
-                raise OptionError('Domain._create_extentDic():'
+                raise ValueError('Domain._create_extentDic():'
                                   '-tr is used as'
                                   '"-tr xResolution yResolution"')
             # Add the key and value to extentDic
@@ -513,7 +513,7 @@ class Domain(object):
             elm_str = str(str_ts[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 3 or elms_str[2] == '-':
-                raise OptionError('Domain._create_extentDic(): '
+                raise ValueError('Domain._create_extentDic(): '
                                   '"-ts" is used as "-ts width height"')
             # Add the key and value to extentDic
             extentString = extentString.replace(str_ts[0], '')
@@ -536,7 +536,7 @@ class Domain(object):
             elm_str = str(str_te[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 5:
-                raise OptionError('Domain._create_extentDic():'
+                raise ValueError('Domain._create_extentDic():'
                                   '-te is used as "-te xMin yMin xMax yMax"')
             # Add the key and value to extentDic
             extentString = extentString.replace(str_te[0], '')
@@ -559,7 +559,7 @@ class Domain(object):
             elm_str = str(str_lle[0].rstrip())
             elms_str = elm_str.split(None)
             if len(elms_str) != 5:
-                raise OptionError('Domain._create_extentDic():'
+                raise ValueError('Domain._create_extentDic():'
                                   '-lle is used as '
                                   '"-lle minlon minlat maxlon maxlat"')
             # Add the key and value to extentDic
@@ -577,24 +577,24 @@ class Domain(object):
         result = re.search('\S', extentString)
         # if there are unnecessary letters, give an error
         if result is not None:
-            raise OptionError('Domain._create_extentDic():'
+            raise ValueError('Domain._create_extentDic():'
                               'extentString is not redable :',
                               extentString)
 
         # check if one of '-te' and '-lle' is given
         if ('lle' not in extentDic) and ('te' not in extentDic):
-            raise OptionError('Domain._create_extentDic():'
+            raise ValueError('Domain._create_extentDic():'
                               '"-lle" or "-te" is required.')
         elif ('lle' in extentDic) and ('te' in extentDic):
-            raise OptionError('Domain._create_extentDic():'
+            raise ValueError('Domain._create_extentDic():'
                               '"-lle" or "-te" should be chosen.')
 
         # check if one of '-ts' and '-tr' is given
         if ('ts' not in extentDic) and ('tr' not in extentDic):
-            raise OptionError('Domain._create_extentDic():'
+            raise ValueError('Domain._create_extentDic():'
                               '"-ts" or "-tr" is required.')
         elif ('ts' in extentDic) and ('tr' in extentDic):
-            raise OptionError('Domain._create_extentDic():'
+            raise ValueError('Domain._create_extentDic():'
                               '"-ts" or "-tr" should be chosen.')
         return extentDic
 
@@ -835,8 +835,8 @@ class Domain(object):
 
         Raises
         -------
-        OptionError : occurs when maxX - minX < 0 or maxY - minY < 0
-        OptionError : occurs when the given resolution is larger than
+        ValueError : occurs when maxX - minX < 0 or maxY - minY < 0
+        ValueError : occurs when the given resolution is larger than
                      width or height.
 
         Returns
@@ -858,14 +858,14 @@ class Domain(object):
         width = maxX - minX
         height = maxY - minY
         if width <= 0 or height <= 0:
-            raise OptionError('The extent is illegal. '
+            raise ValueError('The extent is illegal. '
                               '"-te xMin yMin xMax yMax" ')
 
         if 'tr' in extentDic.keys():
             resolutionX = extentDic['tr'][0]
             resolutionY = -(extentDic['tr'][1])
             if (width < resolutionX or height < resolutionY):
-                raise OptionError('"-tr" is too large. '
+                raise ValueError('"-tr" is too large. '
                                   'width is %s, height is %s '
                                   % (str(width), str(height)))
             rasterXSize = width / resolutionX
