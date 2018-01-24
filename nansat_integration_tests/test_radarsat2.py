@@ -84,7 +84,7 @@ class TestRadarsat(object):
         sys.stderr.write('\nexport_band:'+rsfile+'\n')
         orig = Nansat(rsfile)
         ncfile = 'test.nc'
-        orig.export(ncfile, bands=[orig._get_band_number('incidence_angle')])
+        orig.export(ncfile, bands=[orig.get_band_number('incidence_angle')])
         copy = Nansat(ncfile)
         inc0 = orig['incidence_angle']
         inc1 = copy['incidence_angle']

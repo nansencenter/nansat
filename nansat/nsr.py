@@ -12,7 +12,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 from nansat.tools import ProjectionError, osr
 # TODO: import osr from osgeo
 
@@ -65,7 +65,7 @@ class NSR(osr.SpatialReference, object):
         if srs is 0:
             # generate default WGS84 SRS
             status = self.ImportFromWkt(osr.SRS_WKT_WGS84)
-        elif type(srs) in [str, unicode]:
+        elif isinstance(srs, str):
             # parse as proj4 string
             status = self.ImportFromProj4(str(srs))
             if status > 0:
@@ -73,7 +73,8 @@ class NSR(osr.SpatialReference, object):
                 status = self.ImportFromWkt(str(srs))
             if status > 0:
                 raise ProjectionError('Proj4 or WKT (%s) is wrong' % srs)
-        elif type(srs) in [long, int]:
+        # TODO: catch long in python 3
+        elif isinstance(srs, int):
             # parse as EPSG code
             status = self.ImportFromEPSG(srs)
             if status > 0:
@@ -84,5 +85,6 @@ class NSR(osr.SpatialReference, object):
             if status > 0:
                 raise ProjectionError('NSR %s is wrong' % srs)
 
-        # set WKT
-        self.wkt = self.ExportToWkt()
+    @property
+    def wkt(self):
+        return self.ExportToWkt()

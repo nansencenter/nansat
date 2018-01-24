@@ -28,36 +28,41 @@ else:
 
 
 class PointBrowser():
-    '''
+    """
     Click on raster images shown by plt.imshow and get the X-Y coordinates.
 
-    '''
+    Parameters
+    ----------
+    data : ndarray
+        image to imshow
+    transect : bool
+        if True, get transects / points
+        if False, get only points
+    **kwargs : dict
+        optional parameters for imshow
+
+    Creates
+    -------
+    self.fig        : pyplot Figure
+    self.data       : ndarray with data
+    self.ax         : axes
+    self.points     : plot with points
+    self.line       : plot with points
+    self.coordinates: container for recorded coordinates
+
+    """
+    # instance attributes
+    fig = None
+    data = None
+    fmt = None
+    text_ax = None
+    ax = None
+    points = None
+    lines = None
+    coordinates = None
+
     def __init__(self, data, fmt='x-k', **kwargs):
-        ''' Open figure with imshow and colorbar
-
-        Parameters
-        -----------
-        data : ndarray
-            image to imshow
-        transect : bool
-            if True, get transects / points
-            if False, get only points
-        **kwargs : dict
-            optional parameters for imshow
-
-        Creates
-        --------
-        self.fig        : pyplot Figure
-        self.data       : ndarray with data
-        self.ax         : axes
-        self.points     : plot with points
-        self.line       : plot with points
-
-        Why are these two not mentioned? These two are the only ones that are
-        used externally...
-        self.coordinates = []
-        self.connect = []
-        '''
+        """Open figure with imshow and colorbar"""
         if not MATPLOTLIB_EXISTS:
             raise ImportError(' Matplotlib is not installed ')
         if not matplotlib.is_interactive():
@@ -80,7 +85,7 @@ class PointBrowser():
         self.coordinates = [[]]
 
     def onclick(self, event):
-        ''' Append onclick event '''
+        """Append onclick event"""
         # ignore click outside image
         if event.xdata is None or event.ydata is None:
             return
