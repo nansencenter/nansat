@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import glob
 import sys
@@ -575,7 +575,7 @@ class Nansat(Domain, Exporter):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if do_print:
             # print to screeen
-            print(outString)
+            print_function(outString)
         else:
             return outString
 
@@ -1042,8 +1042,8 @@ class Nansat(Domain, Exporter):
             outDataset.GetRasterBand(1).SetColorTable(colorTable)
         except:
             # Happens after reprojection, a possible bug?
-            print('Could not set color table')
-            print(colorTable)
+            print_function('Could not set color table')
+            print_function(colorTable)
         outDataset = None
         self.vrt.copyproj(filename)
 
@@ -1211,7 +1211,8 @@ class Nansat(Domain, Exporter):
                 errType, err, traceback = nansatMappers[mappername]
                 # self.logger.error(err, exc_info=(errType, err, traceback))
                 # TODO: python 3.6 does not support with syntax
-                raise errType, err, traceback
+                raise EnvironmentError
+                # raise errType, err, traceback
 
             # create VRT using the selected mapper
             tmp_vrt = nansatMappers[mappername](self.filename, gdal_dataset, metadata, **kwargs)
