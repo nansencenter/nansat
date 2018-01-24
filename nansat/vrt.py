@@ -1,4 +1,4 @@
-# Name:    nansat.py
+# Name:    vrt.py
 # Purpose: Container of VRT classes
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
@@ -22,16 +22,15 @@ from random import choice
 import warnings
 import pythesint as pti
 
+import osr
+import gdal
 import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
-from nansat.tools import add_logger, gdal, osr, OptionError, numpy_to_gdal_type, gdal_type_to_offset
+from nansat.tools import add_logger, OptionError, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
-# TODO: Think which variables we should rename
-
-# TODO: Think which conventional names we should use (lon, lat - OK), vrt - ?
 
 class VRT(object):
     """Wrapper around GDAL VRT-file
@@ -99,8 +98,14 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
+    # instance attributes
     filename = ''
     vrt = None
+    dataset = None
+    logger = None
+    driver = None
+    band_vrts = None
+    tps = None
 
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
@@ -252,7 +257,7 @@ class VRT(object):
         self.dataset.FlushCache()
 
     def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
-        """Init VRT from GDAL Dataset with the same size/georeference but wihout bands.
+        """Init VRT from GDAL Dataset with the same size/georeference but wihout bands/metadata.
 
         Parameters
         ----------
@@ -272,9 +277,6 @@ class VRT(object):
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
-        metadata = gdal_dataset.GetMetadata()
-        for key in metadata:
-            self.dataset.SetMetadataItem(key, metadata[key])
         self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
         self.dataset.SetMetadataItem(str('filename'), self.filename)
 
@@ -675,7 +677,7 @@ class VRT(object):
                 # get metadata from WKV using PyThesInt
                 wkv = pti.get_wkv_variable(dst.get('wkv', ''))
             except IndexError:
-                band_name = 'band_'
+                band_name = 'band'
             else:
                 band_name = wkv['short_name']
                 if 'suffix' in dst:
@@ -693,6 +695,135 @@ class VRT(object):
             dst_band_name = '%s_%03d' % (band_name, n)
 
         return dst_band_name, wkv
+
+    def leave_few_bands(self, bands=None):
+        """Leave only given bands in VRT"""
+        if bands is None:
+            return
+
+        rm_bands = []
+        for i in range(1, self.dataset.RasterCount+1):
+            band_name = self.dataset.GetRasterBand(i).GetMetadata().get('name','')
+            if i not in bands and band_name not in bands:
+                rm_bands.append(i)
+        # delete bands from VRT
+        self.delete_bands(rm_bands)
+
+    def _find_complex_band(self):
+        """Find complex data bands"""
+        # find complex bands
+        for i in range(1, self.dataset.RasterCount+1):
+            if self.dataset.GetRasterBand(i).DataType in [8,9,10,11]:
+                return i
+        return None
+
+    def split_complex_bands(self):
+        """Recursevly find complex bands and relace by real and imag components"""
+        rm_metadata= ['dataType', 'PixelFunctionType']
+
+        i = self._find_complex_band()
+        if i is None:
+            return
+
+        band = self.dataset.GetRasterBand(i)
+        band_array = band.ReadAsArray()
+        band_metadata_orig = remove_keys(band.GetMetadata(), rm_metadata)
+        band_name_orig = band_metadata_orig.get('name', 'complex_%003d'%i)
+        # Copy metadata, modify 'name' and create VRTs for real and imag parts of each band
+        band_description = []
+        for part in ['real', 'imag']:
+            band_metadata = band_metadata_orig.copy()
+            band_name = band_name_orig + '_' + part
+            band_metadata['name'] = band_name
+            self.band_vrts[band_name] = VRT.from_array(eval('band_array.' + part))
+            band_description.append({'src': {
+                     'SourceFilename': self.band_vrts[band_name].filename,
+                     'SourceBand':  1},
+                     'dst': band_metadata})
+        # create bands with parts
+        self.create_bands(band_description)
+        # delete the complex band
+        self.delete_band(i)
+        # find and split more complex bands
+        self.split_complex_bands()
+
+    def create_geolocation_bands(self):
+        """Create bands from Geolocation"""
+        if hasattr(self, 'geolocation') and len(self.geolocation.data) > 0:
+            self.create_band(
+                {'SourceFilename': self.geolocation.data['X_DATASET'],
+                 'SourceBand': int(self.geolocation.data['X_BAND'])},
+                {'wkv': 'longitude',
+                 'name': 'longitude'})
+            self.create_band(
+                {'SourceFilename': self.geolocation.data['Y_DATASET'],
+                 'SourceBand': int(self.geolocation.data['Y_BAND'])},
+                {'wkv': 'latitude',
+                 'name': 'latitude'})
+
+    def fix_band_metadata(self, rm_metadata):
+        """Add NETCDF_VARNAME and remove <rm_metadata> in metadata for each band"""
+        for iBand in range(self.dataset.RasterCount):
+            band = self.dataset.GetRasterBand(iBand + 1)
+            metadata = remove_keys(band.GetMetadata(), rm_metadata)
+            if 'name' in metadata:
+                metadata['NETCDF_VARNAME'] = metadata['name']
+            band.SetMetadata(metadata)
+        self.dataset.FlushCache()
+
+    def fix_global_metadata(self, rm_metadata):
+        # remove unwanted global metadata
+        metadata = remove_keys(self.dataset.GetMetadata(), rm_metadata)
+        # Apply escaping to metadata strings to preserve special characters (in XML/HTML format)
+        metadata_escaped = {}
+        for key, val in metadata.iteritems():
+            # Keys not escaped - this may be changed if needed...
+            metadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
+        self.dataset.SetMetadata(metadata_escaped)
+        self.dataset.FlushCache()
+
+    def hardcopy_bands(self):
+        """Make 'hardcopy' of bands: evaluate array from band and put into original band"""
+        bands = range(1, self.dataset.RasterCount+1)
+        for i in bands:
+            self.band_vrts[i] = VRT.from_array(self.dataset.GetRasterBand(i).ReadAsArray())
+
+        node0 = Node.create(self.xml)
+        for i, iNode1 in enumerate(node0.nodeList('VRTRasterBand')):
+            iNode1.node('SourceFilename').value = self.band_vrts[i+1].filename
+            iNode1.node('SourceBand').value = str(1)
+        self.write_xml(node0.rawxml())
+
+    def prepare_export_gtiff(self, options):
+        """Prepare dataset for export using GTiff driver"""
+        if len(self.dataset.GetGCPs()) > 0:
+            self._remove_geotransform()
+        return options, False
+
+    def prepare_export_netcdf(self, options, bottomup):
+        """Prepare dataset for export using netCDF driver"""
+        # set bottomup option
+        if bottomup:
+            options += ['WRITE_BOTTOMUP=NO']
+        else:
+            options += ['WRITE_BOTTOMUP=YES']
+        gcps = self.dataset.GetGCPs()
+        srs = self.get_projection()
+        if len(gcps) > 0:
+            self._remove_geotransform()
+            self.dataset.SetMetadataItem('NANSAT_GCPProjection',
+                                         srs.replace(',', '|').replace('"', '&'))
+            add_gcps = True
+        else:
+            self.dataset.SetMetadataItem('NANSAT_Projection',
+                                          srs.replace(',', '|').replace('"', '&'))
+
+            # add GeoTransform metadata
+            geoTransformStr = str(self.dataset.GetGeoTransform()).replace(',', '|')
+            self.dataset.SetMetadataItem('NANSAT_GeoTransform', geoTransformStr)
+            add_gcps = False
+        return options, add_gcps
+
 
     def copy(self):
         """Create and return a full copy of a VRT instance"""
@@ -1340,6 +1471,76 @@ class VRT(object):
         # Update dataset
         self.dataset.SetGCPs(dst_gcps, dst_srs.wkt)
 
+    def set_offset_size(self, axis, offset, size):
+        """Set offset and  size in VRT dataset and band attributes"""
+        node0 = Node.create(self.xml)
+
+        # change size
+        node0.node('VRTDataset').replaceAttribute('raster%sSize'%str(axis).upper(), str(size))
+
+        # replace x/y-Off and x/y-Size
+        #   in <SrcRect> and <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            iNode2 = iNode1.node('ComplexSource')
+
+            iNode3 = iNode2.node('SrcRect')
+            iNode3.replaceAttribute('%sOff'%str(axis).lower(), str(offset))
+            iNode3.replaceAttribute('%sSize'%str(axis).lower(), str(size))
+
+            iNode3 = iNode2.node('DstRect')
+            iNode3.replaceAttribute('%sSize'%str(axis).lower(), str(size))
+
+        # write modified XML
+        self.write_xml(node0.rawxml())
+
+    def shift_cropped_gcps(self, x_offset, x_size, y_offset, y_size):
+        """Modify GCPs to fit the size/offset of cropped image"""
+        gcps = self.dataset.GetGCPs()
+        if len(gcps) == 0:
+            return
+
+        dst_gcps = []
+        i = 0
+        # keep current GCPs
+        for igcp in gcps:
+            if (0 < igcp.GCPPixel - x_offset < x_size and 0 < igcp.GCPLine - y_offset < y_size):
+                i += 1
+                dst_gcps.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
+                                        igcp.GCPPixel - x_offset,
+                                        igcp.GCPLine - y_offset, '', str(i)))
+        n_gcps = i
+        if n_gcps < 100:
+            # create new 100 GPCs (10 x 10 regular matrix)
+            pix_array, lin_array = np.mgrid[0:x_size:10j, 0:y_size:10j]
+            pix_array = pix_array.flatten() + x_offset
+            lin_array = lin_array.flatten() + y_offset
+
+            lon_array, lat_array = self.vrt.transform_points(pix_array, lin_array,
+                                                dst_srs=NSR(self.vrt.dataset.GetGCPProjection()))
+
+            for i in range(len(lon_array)):
+                dst_gcps.append(gdal.GCP(lon_array[i], lat_array[i], 0,
+                                        pix_array[i] - x_offset,
+                                        lin_array[i] - y_offset,
+                                        '', str(n_gcps+i+1)))
+
+        # set new GCPss
+        self.dataset.SetGCPs(dst_gcps, self.vrt.dataset.GetGCPProjection())
+        # remove geotranform which was automatically added
+        self._remove_geotransform()
+
+    def shift_cropped_geo_transform(self, x_offset, x_size, y_offset, y_size):
+        """Modify GeoTransform to fit the size/offset of the cropped image"""
+        if len(self.vrt.dataset.GetGCPs()) != 0:
+            return
+        # shift upper left corner coordinates
+        geoTransfrom = self.dataset.GetGeoTransform()
+        geoTransfrom = map(float, geoTransfrom)
+        geoTransfrom[0] += geoTransfrom[1] * x_offset
+        geoTransfrom[3] += geoTransfrom[5] * y_offset
+        self.dataset.SetGeoTransform(geoTransfrom)
+        self.dataset.FlushCache()
+
     @staticmethod
     def read_vsi(filename):
         """Read text from input <filename:str> using VSI and return <content:str>."""
@@ -1390,9 +1591,6 @@ class VRT(object):
             src['xSize'] = ds.RasterXSize
             src['ySize'] = ds.RasterYSize
 
-        # TODO:
-        #   write XML from dictionary using a standard method (not a filling a template)
-
         # create XML for each source
         src['XML'] = VRT.COMPLEX_SOURCE_XML.substitute(
             Dataset=src['SourceFilename'],
@@ -1436,7 +1634,7 @@ class VRT(object):
     def _lonlat2gcps(lon, lat, n_gcps=100, **kwargs):
         """ Create list of GCPs from given grids of latitude and longitude
 
-        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
+        take <n_gcps> regular pixels from inpt <lat> and <lon> grids
         Create GCPs from these pixels
         Create latlong GCPs projection
 
@@ -1446,7 +1644,7 @@ class VRT(object):
             array of latitudes
         lon : Numpy grid
             array of longitudes (should be the same size as lat)
-        numOfGCPs : int, optional, default = 100
+        n_gcps : int, optional, default = 100
             number of GCPs to create
 
         Returns

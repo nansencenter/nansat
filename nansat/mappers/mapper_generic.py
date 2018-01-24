@@ -13,13 +13,6 @@ import datetime
 import numpy as np
 from netCDF4 import Dataset
 
-try:
-    from cfunits import Units
-except:
-    cfunitsInstalled = False
-else:
-    cfunitsInstalled = True
-
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.vrt import VRT
@@ -244,38 +237,28 @@ class Mapper(VRT):
                                         gdalMetadata['time_coverage_end'])
 
         ### GET start time from time variable
-        if (time_coverage_start is None and cfunitsInstalled and
-                 'time#standard_name' in subMetadata and
-                 subMetadata['time#standard_name'] == 'time' and
-                 'time#units' in subMetadata and
-                 'time#calendar' in subMetadata):
+        if (time_coverage_start is None and 'time#standard_name' in subMetadata and
+                 subMetadata['time#standard_name'] == 'time' and 'time#units' in subMetadata):
             # get data from netcdf data
             ncFile = Dataset(inputFileName, 'r')
-            timeLength = ncFile.variables['time'].shape[0]
-            timeValueStart = ncFile.variables['time'][0]
-            timeValueEnd = ncFile.variables['time'][-1]
-            ncFile.close()
-            try:
-                timeDeltaStart = Units.conform(timeValueStart,
-                                  Units(subMetadata['time#units'],
-                                        calendar=subMetadata['time#calendar']),
-                                  Units('days since 1950-01-01'))
-            except ValueError:
-                self.logger.error('calendar units are wrong: %s' %
-                                  subMetadata['time#calendar'])
+            time_var = ncFile.variables['time']
+            t0 = time_var[0]
+            if len(time_var) == 1:
+                t1 = t0 + 1
             else:
-                time_coverage_start = (datetime.datetime(1950,1,1) +
-                                   datetime.timedelta(float(timeDeltaStart)))
+                t1 = time_var[-1]
 
-                if timeLength > 1:
-                    timeDeltaEnd = Units.conform(timeValueStart,
-                                          Units(subMetadata['time#units'],
-                                                calendar=subMetadata['time#calendar']),
-                                          Units('days since 1950-01-01'))
-                else:
-                    timeDeltaEnd = timeDeltaStart + 1
-                time_coverage_end = (datetime.datetime(1950,1,1) +
-                                     datetime.timedelta(float(timeDeltaEnd)))
+            time_units_start = parse(time_var.units, fuzzy=True, ignoretz=True)
+            time_units_to_seconds = {'second' : 1.0,
+                                     'hour' : 60 * 60.0,
+                                     'day' : 24 * 60 * 60.0}
+            for key in time_units_to_seconds:
+                if key in time_var.units:
+                    factor = time_units_to_seconds[key]
+                    break
+
+            time_coverage_start = time_units_start + datetime.timedelta(seconds=t0 * factor)
+            time_coverage_end = time_units_start + datetime.timedelta(seconds=t1 * factor)
 
         ## finally set values of time_coverage start and end if available
         if time_coverage_start is not None:

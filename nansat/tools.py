@@ -43,6 +43,13 @@ except:
     from osgeo import gdal, ogr, osr
 gdal.UseExceptions()
 
+def remove_keys(dict, keys):
+    if keys is None:
+        keys = []
+    for key in keys:
+        dict.pop(key, None)
+    return dict
+
 def register_colormaps():
     ''' Create custom colormaps and register them '''
     obpg = {'red': [(0.00, 0.56, 0.56),
@@ -140,6 +147,8 @@ class WrongMapperError(Exception):
     '''Error for handling data that does not fit a given mapper'''
     pass
 
+class NansatFutureWarning(Warning):
+    pass
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         '''Initial bearing when traversing from point1 (lon1, lat1)

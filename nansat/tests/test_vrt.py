@@ -13,7 +13,6 @@
 
 from __future__ import absolute_import, unicode_literals
 import unittest
-
 import logging
 import os
 import sys
@@ -26,6 +25,8 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import gdal
 import pythesint as pti
+
+from nansat.node import Node
 from nansat.vrt import VRT
 from . import nansat_test_data as ntd
 
@@ -34,6 +35,8 @@ class VRTTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
+        self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
+
         self.nsr_wkt = ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
                         '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
                         'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
@@ -313,6 +316,88 @@ class VRTTest(unittest.TestCase):
                          ('sigma0_HH', wkv))
         self.assertEqual(vrt._create_band_name({'name': 'UMass_AES'}),
                          ('UMass_AES_000', {}))
+
+    def test_leave_few_bands(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        vrt = VRT.copy_dataset(ds)
+        vrt.leave_few_bands([1, 'L_469'])
+        self.assertEqual(vrt.dataset.RasterCount,2)
+        self.assertEqual(vrt.dataset.GetRasterBand(1).GetMetadataItem('name'), 'L_645')
+        self.assertEqual(vrt.dataset.GetRasterBand(2).GetMetadataItem('name'), 'L_469')
+
+    def test_find_complex_band(self):
+        a = np.random.randn(100,100)
+        vrt1 = VRT.from_array(a)
+        vrt2 = VRT.from_array(a.astype(np.complex64))
+
+        vrt3 = VRT.from_gdal_dataset(vrt1.dataset)
+        vrt3.create_bands([{'src':{'SourceFilename': vrt1.filename}},
+                           {'src':{'SourceFilename': vrt2.filename}}])
+
+        self.assertEqual(vrt1._find_complex_band(), None)
+        self.assertEqual(vrt2._find_complex_band(), 1)
+        self.assertEqual(vrt3._find_complex_band(), 2)
+
+    def test_split_complex_bands(self):
+        a = np.random.randn(100,100)
+        vrt1 = VRT.from_array(a.astype(np.complex64))
+        vrt2 = VRT.from_array(a)
+        vrt3 = VRT.from_array(a.astype(np.complex64))
+
+        vrt4 = VRT.from_gdal_dataset(vrt1.dataset)
+        vrt4.create_bands([{'src':{'SourceFilename': vrt1.filename}, 'dst':{'name': 'vrt1'}},
+                           {'src':{'SourceFilename': vrt2.filename}, 'dst':{'name': 'vrt2'}},
+                           {'src':{'SourceFilename': vrt3.filename}, 'dst':{'name': 'vrt3'}},])
+
+        vrt4.split_complex_bands()
+
+        self.assertEqual(vrt4.dataset.RasterCount,5)
+        self.assertEqual(vrt4.dataset.GetRasterBand(1).GetMetadataItem('name'), 'vrt2')
+        self.assertEqual(vrt4.dataset.GetRasterBand(2).GetMetadataItem('name'), 'vrt1_real')
+        self.assertEqual(vrt4.dataset.GetRasterBand(3).GetMetadataItem('name'), 'vrt1_imag')
+        self.assertEqual(vrt4.dataset.GetRasterBand(4).GetMetadataItem('name'), 'vrt3_real')
+        self.assertEqual(vrt4.dataset.GetRasterBand(5).GetMetadataItem('name'), 'vrt3_imag')
+
+    def test_create_geolocation_bands(self):
+        lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
+        vrt = VRT.from_lonlat(lon, lat)
+        vrt.create_geolocation_bands()
+
+        self.assertEqual(vrt.dataset.RasterCount, 2)
+        self.assertEqual(vrt.dataset.GetRasterBand(1).GetMetadataItem('name'), 'longitude')
+        self.assertEqual(vrt.dataset.GetRasterBand(2).GetMetadataItem('name'), 'latitude')
+        self.assertTrue(np.allclose(vrt.dataset.GetRasterBand(1).ReadAsArray(), lon))
+        self.assertTrue(np.allclose(vrt.dataset.GetRasterBand(2).ReadAsArray(), lat))
+
+    def test_fix_band_metadata(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        vrt = VRT.copy_dataset(ds)
+        self.assertIn('standard_name', vrt.dataset.GetRasterBand(1).GetMetadata())
+        self.assertIn('time', vrt.dataset.GetRasterBand(1).GetMetadata())
+        vrt.fix_band_metadata(['standard_name', 'time'])
+        self.assertNotIn('standard_name', vrt.dataset.GetRasterBand(1).GetMetadata())
+        self.assertNotIn('time', vrt.dataset.GetRasterBand(1).GetMetadata())
+
+    def test_fix_global_metadata(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        vrt = VRT.copy_dataset(ds)
+        vrt.dataset.SetMetadataItem('test', '"test"')
+        vrt.fix_global_metadata(['AREA_OR_POINT'])
+        self.assertNotIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
+        self.assertEqual('&quot;test&quot;', vrt.dataset.GetMetadataItem('test'))
+
+    def test_hardcopy_bands(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        vrt = VRT.copy_dataset(ds)
+        vrt.hardcopy_bands()
+
+        #import ipdb; ipdb.set_trace()
+        self.assertTrue(np.allclose(vrt.dataset.ReadAsArray(), ds.ReadAsArray()))
+        band_nodes = Node.create(vrt.xml).nodeList('VRTRasterBand')
+        self.assertEqual(band_nodes[0].node('SourceFilename').value, vrt.band_vrts[1].filename)
+        self.assertEqual(band_nodes[1].node('SourceFilename').value, vrt.band_vrts[2].filename)
+        self.assertEqual(band_nodes[2].node('SourceFilename').value, vrt.band_vrts[3].filename)
+
 
 
 if __name__ == "__main__":

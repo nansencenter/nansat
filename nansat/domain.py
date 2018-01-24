@@ -19,10 +19,10 @@ from __future__ import division, absolute_import
 import warnings
 from xml.etree.ElementTree import ElementTree
 import numpy as np
-from .tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from .tools import OptionError, ProjectionError, write_domain_map
-from nansat import NSR
-from .vrt import VRT
+from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
+from nansat.tools import OptionError, ProjectionError, write_domain_map
+from nansat.nsr import NSR
+from nansat.vrt import VRT
 import re
 
 
@@ -67,6 +67,8 @@ class Domain(object):
     Nansat inherits from Domain and adds bands to self.vrt
 
     """
+    REPROJECT_GCPS_WARNING = ('reproject_GCPs() will be disabled in Nansat 1.1. '
+                             'Use reproject_gcps().')
 
     OUTPUT_SEPARATOR = '-' * 40 + '\n'
     KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -76,6 +78,11 @@ class Domain(object):
     xmlns:atom="http://www.w3.org/2005/Atom">
     {content}
     </kml>'''
+
+    # instance attributes
+    vrt = None
+    logger = None
+    name = None
 
     # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
@@ -189,7 +196,6 @@ class Domain(object):
                                                geo_transform=geo_transform,
                                                projection=srs.wkt,
                                                gcps=[], gcp_projection='')
-            self.extent_dict = extent_dict
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
@@ -329,9 +335,9 @@ class Domain(object):
         % (min(lons), min(lats), max(lons), max(lats))
         d = Domain(srs=srsString, ext=extentString) # 3.
         n.reproject(d) # 4.
-        n.write_figure(fileName=figureName, bands=[3], clim=[0,0.15],
+        n.write_figure(filename=figureName, bands=[3], clim=[0,0.15],
                        cmapName='gray', transparency=0) # 5.
-        n.write_kml_image(kmlFileName=oPath + fileName + '.kml',
+        n.write_kml_image(kmlFileName=oPath + filename + '.kml',
                           kmlFigureName=figureName) # 6.
 
         """
@@ -646,17 +652,17 @@ class Domain(object):
         row_vec = [0, self.vrt.dataset.RasterYSize, 0, self.vrt.dataset.RasterYSize]
         return self.transform_points(col_vec, row_vec)
 
-    def get_min_max_lat_lon(self):
-        """Get minimum and maximum lat and long values in the geolocation grid
+    def get_min_max_lon_lat(self):
+        """Get minimum and maximum of longitude and latitude geolocation grids
 
         Returns
         --------
-        minLat, maxLat, minLon, maxLon : float
+        min_lon, max_lon, min_lat, max_lat, : float
             min/max lon/lat values for the Domain
 
         """
         lon_grd, lat_grd = self.get_geolocation_grids()
-        return np.nanmin(lat_grd), np.nanmax(lat_grd), np.nanmin(lon_grd), np.nanmax(lon_grd)
+        return lon_grd.min(), lon_grd.max(), lat_grd.min(), lat_grd.max(),
 
     def get_pixelsize_meters(self):
         """Returns the pixelsize (deltaX, deltaY) of the domain
@@ -908,7 +914,7 @@ class Domain(object):
 
         Parameters
         ----------
-        srsString : string
+        srs_string : string
             SRS given as Proj4 string. If empty '+proj=stere' is used
 
         Modifies
@@ -919,26 +925,8 @@ class Domain(object):
             lon, lat = self.get_border()
             srs_string = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs' \
                          % (np.nanmedian(lat), np.nanmedian(lon))
-
         self.vrt.reproject_GCPs(srs_string)
 
     def reproject_GCPs(self, srsString=''):
-        """Reproject all GCPs to a new spatial reference system
-
-        Necessary before warping an image if the given GCPs
-        are in a coordinate system which has a singularity
-        in (or near) the destination area (e.g. poles for lonlat GCPs)
-
-        Parameters
-        ----------
-        srsString : string
-            SRS given as Proj4 string. If empty '+proj=stere' is used
-
-        Modifies
-        --------
-            Reprojects all GCPs to new SRS and updates GCPProjection
-        """
-        warnings.warn('Method "reproject_GCPs" was moved to reproject_gcps(self, srs_string="") and'
-                      'will be removed since Nansat 1.3')
-
+        warnings.warn(self.REPROJECT_GCPS_WARNING, NansatFutureWarning)
         self.reproject_gcps(srs_string=srsString)
