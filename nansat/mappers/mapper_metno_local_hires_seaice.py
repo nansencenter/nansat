@@ -14,55 +14,54 @@
 # where netCDF files with ice are stored>
 #
 # The closest available data within +/- 3 days is returned
+from __future__ import print_function, absolute_import, unicode_literals
 import sys
 import os
-import urllib2
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import VRT
+from nansat.tools import gdal, WrongMapperError
 import mapper_generic as mg
 
 
 class Mapper(mg.Mapper):
-    ''' Create VRT with mapping of WKV for Met.no seaice '''
+    """Create VRT with mapping of WKV for Met.no seaice"""
 
     def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
-        ''' Create VRT '''
+        """Create VRT"""
 
         try:
-            iceFolderName = kwargs['iceFolder']
+            ice_folder_name = kwargs['iceFolder']
         except:
             #iceFolderName = '/vol/istjenesten/data/metnoCharts/'
-            iceFolderName = '/vol/data/metnoCharts/'
+            ice_folder_name = '/vol/data/metnoCharts/'
 
-        keywordBase = 'metno_local_hires_seaice'
+        keyword_base = 'metno_local_hires_seaice'
 
-        if filename[0:len(keywordBase)] != keywordBase:
+        if filename[0:len(keyword_base)] != keyword_base:
             raise WrongMapperError
 
-        keywordTime = filename[len(keywordBase)+1:]
-        requestedTime = datetime.strptime(keywordTime, '%Y%m%d')
+        keyword_time = filename[len(keyword_base)+1:]
+        requested_time = datetime.strptime(keyword_time, '%Y%m%d')
         # Search for nearest available file, within the closest 3 days
-        foundDataset = False
-        for deltaDay in [0, -1, 1, -2, 2, -3, 3]:
-            validTime = (requestedTime + timedelta(days=deltaDay) +
-                         timedelta(hours=15))
-            filename = (iceFolderName + 'ice_conc_svalbard_' +
-                        validTime.strftime('%Y%m%d1500.nc'))
+        found_dataset = False
+        for delta_day in [0, -1, 1, -2, 2, -3, 3]:
+            valid_time = (requested_time + timedelta(days=delta_day) +
+                          timedelta(hours=15))
+            filename = (ice_folder_name + 'ice_conc_svalbard_' +
+                        valid_time.strftime('%Y%m%d1500.nc'))
             if os.path.exists(filename):
-                print 'Found file:'
-                print filename
-                gdalDataset = gdal.Open(filename)
-                gdalMetadata = gdalDataset.GetMetadata()
-                mg.Mapper.__init__(self, filename, gdalDataset, gdalMetadata)
-                foundDataset = True
+                print_function('Found file:')
+                print_function(filename)
+                gdal_dataset = gdal.Open(filename)
+                gdal_metadata = gdalDataset.GetMetadata()
+                mg.Mapper.__init__(self, filename, gdal_dataset, gdal_metadata)
+                found_dataset = True
                 # Modify GeoTransform from netCDF file
                 # - otherwise a shift is seen!
                 self.dataset.SetGeoTransform(
                     (-1243508 - 1000, 1000, 0, -210526 - 7000, 0, -1000))
                 break  # Data is found for this day
 
-        if foundDataset is False:
+        if found_dataset is False:
             AttributeError("No local Svalbard-ice files available")
             sys.exit()
