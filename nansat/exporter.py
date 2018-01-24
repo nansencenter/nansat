@@ -207,13 +207,6 @@ class Exporter(object):
 
         '''
 
-# TODO: Refactor: Implement new logics
-        # 1. Get mask
-        # 1. Prepare global metadata
-        # 1. self.export to netCDF with metadata, hardcopy and mask (add mask to vrt.harcopy)
-        # 1. self._collect_band_metadata_from_exported
-        # 1. self._post_proc_for_thredds
-
         if rmMetadata is not None:
             warnings.warn(self.EXPORT_RM_METADATA_WARNING, NansatFutureWarning)
             rm_metadata = rmMetadata
