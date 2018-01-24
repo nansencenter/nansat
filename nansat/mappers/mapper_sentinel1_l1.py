@@ -165,13 +165,11 @@ class Mapper(VRT):
                 numberOfLines) = self.read_geolocation_lut(
                                                 self.annotationXMLDict[key])
 
-                X = np.unique(X)
-                Y = np.unique(Y)
-
-                lon = np.array(lon).reshape(len(Y), len(X))
-                lat = np.array(lat).reshape(len(Y), len(X))
-                inc = np.array(inc).reshape(len(Y), len(X))
-                ele = np.array(ele).reshape(len(Y), len(X))
+                nX, nY = (Y==0).sum(), (X==0).sum()
+                lon = np.array(lon).reshape(nY, nX)
+                lat = np.array(lat).reshape(nY, nX)
+                inc = np.array(inc).reshape(nY, nX)
+                ele = np.array(ele).reshape(nY, nX)
 
                 incVRT = VRT(array=inc, lat=lat, lon=lon)
                 eleVRT = VRT(array=ele, lat=lat, lon=lon)
