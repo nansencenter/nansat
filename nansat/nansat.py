@@ -1670,17 +1670,10 @@ def _import_mappers(log_level=None):
             logger.debug('Loading mapper %s' % name)
             loader = finder.find_module(name)
             # try to import mapper module
-            try:
-                module = loader.load_module(name)
-            except ImportError:
-                # keep ImportError instance instead of the mapper
-                exc_info = sys.exc_info()
-                logger.error('Mapper %s could not be imported' % name, exc_info=exc_info)
-                nansat_mappers[name] = exc_info
-            else:
-                # add the imported mapper to nansat_mappers
-                if hasattr(module, 'Mapper'):
-                    nansat_mappers[name] = module.Mapper
+            module = loader.load_module(name)
+            # add the imported mapper to nansat_mappers
+            if hasattr(module, 'Mapper'):
+                nansat_mappers[name] = module.Mapper
 
         # move netcdfcdf mapper to the end
         if 'mapper_netcdf_cf' in nansat_mappers:
