@@ -156,14 +156,6 @@ nansat\.mappers\.mapper\_generic module
     :undoc-members:
     :show-inheritance:
 
-nansat\.mappers\.mapper\_geostationary module
----------------------------------------------
-
-.. automodule:: nansat.mappers.mapper_geostationary
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.mappers\.mapper\_globcolour\_l3b module
 -----------------------------------------------
 
@@ -184,14 +176,6 @@ nansat\.mappers\.mapper\_goci\_l1 module
 ----------------------------------------
 
 .. automodule:: nansat.mappers.mapper_goci_l1
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-nansat\.mappers\.mapper\_gtopo30 module
----------------------------------------
-
-.. automodule:: nansat.mappers.mapper_gtopo30
     :members:
     :undoc-members:
     :show-inheritance:
@@ -440,6 +424,14 @@ nansat\.mappers\.mapper\_sentinel1\_l2 module
 ---------------------------------------------
 
 .. automodule:: nansat.mappers.mapper_sentinel1_l2
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.mappers\.mapper\_topography module
+------------------------------------------
+
+.. automodule:: nansat.mappers.mapper_topography
     :members:
     :undoc-members:
     :show-inheritance:
