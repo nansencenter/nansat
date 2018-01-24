@@ -18,8 +18,10 @@
 import os
 from dateutil.parser import parse
 
+import gdal
+
 from nansat.vrt import VRT
-from nansat.tools import gdal, WrongMapperError
+from nansat.exceptions import WrongMapperError
 from nansat.nsr import NSR
 
 

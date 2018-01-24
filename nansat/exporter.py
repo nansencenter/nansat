@@ -28,7 +28,7 @@ from nansat.vrt import VRT
 from nansat.node import Node
 
 from nansat.warnings import NansatFutureWarning
-from nansat.exceptions import GDALError
+from nansat.exceptions import NansatGDALError
 
 class Exporter(object):
     """Abstract class for export functions """
@@ -254,7 +254,7 @@ class Exporter(object):
 
             # catch None band error
             if array is None:
-                raise GDALError('%s is None' % str(iband))
+                raise NansatGDALError('%s is None' % str(iband))
 
             # set type, scale and offset from input data or by default
             dstBands[iband] = {}

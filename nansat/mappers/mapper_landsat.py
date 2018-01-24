@@ -13,9 +13,10 @@ import json
 
 import pythesint as pti
 
-from nansat.tools import WrongMapperError, parse_time
-from nansat.tools import gdal, np
+from nansat.tools import gdal, np, parse_time
 from nansat.vrt import VRT
+
+from nansat.exceptions import WrongMapperError
 
 class Mapper(VRT):
     ''' Mapper for LANDSAT5,6,7,8 .tar.gz or tif files'''

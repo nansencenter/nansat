@@ -4,7 +4,7 @@ import json
 import pythesint as pti
 
 from nansat.mappers.mapper_netcdf_cf import Mapper as NetcdfCF
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 class Mapper(NetcdfCF):
 

@@ -311,7 +311,6 @@ class Domain(object):
 
     def write_kml_image(self, kmlFileName, kmlFigureName=None):
         """Create KML file for already projected image
->>>>>>> develop
 
         Write Domain Image into KML-file for GoogleEarth
 
@@ -367,7 +366,6 @@ class Domain(object):
         # TODO: kml_figurename can be not optional
         if kml_figurename is None:
             raise ValueError('kmlFigureName(%s) is not specified' % kmlFigureName)
->>>>>>> develop
 
         # get corner of the domain and add to KML
         # TODO: can we change that to max_min_lat_lon?

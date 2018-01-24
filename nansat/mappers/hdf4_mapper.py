@@ -7,7 +7,8 @@
 from dateutil.parser import parse
 import warnings
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 
 

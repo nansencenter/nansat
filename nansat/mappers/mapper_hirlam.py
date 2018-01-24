@@ -11,7 +11,7 @@ import json
 import numpy
 
 from nansat.vrt import VRT
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 import pythesint as pti
 

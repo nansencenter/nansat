@@ -17,7 +17,7 @@ import pythesint as pti
 from nansat.tools import gdal, ogr
 from nansat.geolocation import Geolocation
 from nansat.vrt import VRT
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 
 class Mapper(VRT):

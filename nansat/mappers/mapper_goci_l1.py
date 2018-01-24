@@ -5,7 +5,8 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 
 

@@ -15,7 +15,7 @@ from dateutil.parser import parse
 import pythesint as pti
 
 from nansat.vrt import VRT
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 
 class Mapper(VRT):

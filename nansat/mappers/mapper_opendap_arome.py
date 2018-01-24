@@ -1,6 +1,6 @@
 from nansat.mappers.mapper_arome import Mapper as MapperArome
 from nansat.mappers.opendap import Opendap
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 class Mapper(Opendap, MapperArome):
 
