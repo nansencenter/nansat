@@ -27,73 +27,134 @@ else:
     BASEMAP_LIB_EXISTS = True
 
 from nansat.nsr import NSR
+from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.tools import OptionError, gdal, ogr, ProjectionError
 from nansat.figure import Image
 import sys
 import nansat_test_data as ntd
+from mock import patch, PropertyMock
+
+'''
+TEST_FILE = os.path.join(ntd.test_data_path, 'gcps.tif')
+TEST_FILE_PROJECTED = os.path.join(ntd.test_data_path, 'stere.tif')
+EXTENT_TE_TS = "-te 25 70 35 72 -ts 500 500"
+EXTENT_DICT_TE_TS = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
+EXTENT_LLE_TS = "-lle 25 70 35 72 -ts 500 500"
+EXTENT_DICT_LLE_TS = {'lle': [25.0, 70.0, 35.0, 72.0],
+    'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
+GEO_TRANSFORM = [25.0, 0.02, 0.0, 72.0, 0.0, -0.004]
+RASTER_X_SIZE = 500
+RASTER_Y_SIZE = 500
+EXTENT_LLE_TS = "-lle 25 70 35 72 -ts 500 500"
+EXTENT_BERGEN = "-te 5 60 6 61 -ts 500 500"
+EXTENT_WESTCOAST = "-te 1 58 6 64 -ts 500 500"
+EXTENT_NORWAY = "-te 3 55 30 72 -ts 500 500"
+EXTENT_PARIS = "-te 2 48 3 49 -ts 500 500"
+SRS_PROJ4 = "+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs"
+SRS_EPSG = 4326
+NSR_SRS_PROJ4 = NSR(SRS_PROJ4)
+NSR_SRS_PROJ4_WKT = NSR(SRS_PROJ4).wkt
+NSR_SRS_EPSG = 'NSR(SRS_EPSG)'
+NSR_SRS_EPSG_WKT = 'NSR(SRS_EPSG).wkt'
+GDAL_DATASET = gdal.Open(test_file)
+VRT_FROM_GDAL_DATASET = 'VRT.from_gdal_dataset(GDAL_DATASET)'
+GDAL_DATASET_SRS_WRAPPED = gdal.AutoCreateWarpedVRT(GDAL_DATASET, None, NSR_SRS_PROJ4_WKT)
+VRT_FROM_GDAL_DATASET_SRS_WRAPPED = VRT.from_gdal_dataset(GDAL_DATASET_SRS_WRAPPED)
+VRT_FROM_DATASET_PARAMS = VRT.from_dataset_params(
+    x_size=RASTER_X_SIZE,
+    y_size=RASTER_Y_SIZE,
+    geo_transform=GEO_TRANSFORM,
+    projection=NSR_SRS_EPSG_WKT,
+    gcps=[],
+    gcp_projection='')
+LON = np.mgrid[-90:90:0.5, -180:180:0.5][1]
+LAT = np.mgrid[-90:90:0.5, -180:180:0.5][0]
+VRT_FROM_LONLAT = VRT.from_lonlat(LON, LAT)
+'''
+
 
 
 class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_projected = os.path.join(ntd.test_data_path, 'gcps.tif')
         if BASEMAP_LIB_EXISTS:
             plt.switch_backend('Agg')
-
-        if not os.path.exists(self.test_file):
+        if (    not os.path.exists(self.test_file)
+             or not os.path.exists(self.test_file_projected) ):
             raise ValueError('No test data available')
 
-    def test_init_from_strings(self):
-        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                   "-te 25 70 35 72 -ts 2000 2000")
-
-        self.assertEqual(type(d), Domain)
-
-    def test_init_from_epsg_and_te_string(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-
-        self.assertEqual(type(d), Domain)
-
-    def test_init_from_epsg_and_lle_string(self):
-        d = Domain(4326, "-lle 25 70 35 72 -ts 500 500")
-
-        self.assertEqual(type(d), Domain)
-
-    def test_init_from_lonlat(self):
-        lat, lon = np.mgrid[-90:90:0.5, -180:180:0.5]
-        d = Domain(lon=lon, lat=lat)
-
-        self.assertEqual(type(d), Domain)
-        self.assertEqual(d.shape(), lat.shape)
-
-    def test_init_from_GDALDataset(self):
-        ds = gdal.Open(self.test_file)
-        d = Domain(ds=ds)
-
-        self.assertEqual(type(d), Domain)
-
-    def test_dont_init_from_invalid(self):
+    def test_dont_init_from_invalid_combination(self):
         self.assertRaises(OptionError, Domain)
         self.assertRaises(OptionError, Domain, None)
         with self.assertRaises(OptionError):
             Domain(ds=gdal.Open(self.test_file),
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                   ext="-te 25 70 35 72 -ts 2000 2000")
-        with self.assertRaises(ProjectionError):
-            Domain(ds=gdal.Open(self.test_file),
-                   srs="unmatched srs")
+                   ext="-te 25 70 35 72 -ts 500 500")
+    
+    def test_init_from_GDALDataset(self):
+        d = Domain(ds=gdal.Open(self.test_file))
+        self.assertEqual(type(d), Domain)
 
-    def test_init_use_AutoCreateWarpedVRT_to_determine_bounds(self):
+    def test_init_from_GDALDataset_and_srs(self):
         d = Domain(ds=gdal.Open(self.test_file),
                    srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
         self.assertEqual(type(d), Domain)
 
-    def test_write_kml(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
-        d.write_kml(kmlFileName=tmpfilename)
+    @patch('nansat.domain.gdal')
+    def test_dont_init_if_gdal_AutoCreateWarpedVRT_fails(self, mock_gdal):
+        mock_gdal.AutoCreateWarpedVRT.return_value = None
+        with self.assertRaises(ProjectionError):
+            Domain(ds=gdal.Open(self.test_file),
+                   srs="+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs")
 
-        self.assertTrue(os.path.exists(tmpfilename))
+    @patch.object(Domain, '_create_extent_dict',
+        return_value={'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]})
+    @patch.object(Domain, '_get_geotransform',
+        return_value=[[25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500])
+    def test_init_from_srs_and_ext_te(self, mock__get_geotransform, mock__create_extent_dict):
+        d = Domain(srs=4326,
+                   ext="-te 25 70 35 72 -ts 500 500")
+        self.assertEqual(type(d), Domain)
+
+    @patch.object(Domain, '_create_extent_dict',
+        return_value={'lle': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]})
+    @patch.object(Domain, '_convert_extentDic',
+        return_value={'lle': [25.0, 70.0, 35.0, 72.0], 'lle': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]})
+    @patch.object(Domain, '_get_geotransform',
+        return_value=[[25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500])
+    def test_init_from_srs_and_ext_lle(self, mock__get_geotransform, mock__convert_extentDic, mock__create_extent_dict):
+        d = Domain(srs=4326,
+                   ext="-lle 25 70 35 72 -ts 500 500")
+        self.assertEqual(type(d), Domain)
+
+    def test_init_from_lonlat(self):
+        lat, lon = np.mgrid[-90:90:0.5, -180:180:0.5]
+        d = Domain(lon=lon, lat=lat)
+        self.assertEqual(type(d), Domain)
+        self.assertEqual(d.shape(), lat.shape)
+
+
+
+
+
+    def test_repr(self):
+        dom = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        result = dom.__repr__()
+        test = ('Domain:[500 x 500]\n'
+                '----------------------------------------\n'
+                'Projection:\nGEOGCS["WGS 84",\n'
+                '    DATUM["WGS_1984",\n'
+                '        SPHEROID["WGS 84",6378137,298.257223563]],\n'
+                '    PRIMEM["Greenwich",0],\n'
+                '    UNIT["degree",0.0174532925199433]]\n'
+                '----------------------------------------\n'
+                'Corners (lon, lat):\n'
+                '\t ( 25.00,  72.00)  ( 35.00,  72.00)\n'
+                '\t ( 25.00,  70.00)  ( 35.00,  70.00)\n' )
+        self.assertIsInstance(result, str)
+        self.assertEquals(result, test)
 
     def test_get_geolocation_grids(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -102,6 +163,13 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lon), np.ndarray)
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(lat.shape, (500, 500))
+
+    def test_write_kml(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
+        d.write_kml(kmlFileName=tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
 
     def test_get_border_wkt(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -447,18 +515,6 @@ class DomainTest(unittest.TestCase):
                                   "70.0,29.0 70.0,28.0 70.0,27.0 70.0,26.0 70.0,25.0 70.0,25.0 "
                                   "70.0,25.0 70.2,25.0 70.4,25.0 70.6,25.0 70.8,25.0 71.0,25.0 "
                                   "71.2,25.0 71.4,25.0 71.6,25.0 71.8,25.0 72.0))')")
-
-    def test_repr(self):
-        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
-        result = dom.__repr__()
-        test = 'Domain:[750 x 500]\n----------------------------------------\nProjection:\nGEOGC' \
-               'S["WGS 84",\n    DATUM["WGS_1984",\n        SPHEROID["WGS 84",6378137,298.257223' \
-               '563]],\n    PRIMEM["Greenwich",0],\n    UNIT["degree",0.0174532925199433]]\n-----' \
-               '-----------------------------------\nCorners (lon, lat):\n\t (  4.50,  61.00)  ' \
-               '(  6.00,  61.00)\n\t (  4.50,  60.00)  (  6.00,  60.00)\n'
-
-        self.assertIsInstance(result, str)
-        self.assertEquals(result, test)
 
 if __name__ == "__main__":
     unittest.main()

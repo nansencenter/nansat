@@ -25,6 +25,7 @@ from nansat.tools import NansatFutureWarning
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 import re
+import ipdb
 
 
 class Domain(object):
@@ -168,6 +169,7 @@ class Domain(object):
         # if only a dataset is given:
         #     copy geo-reference from the dataset
         if ds is not None and srs is None:
+            #ipdb.set_trace()
             self.vrt = VRT.from_gdal_dataset(ds)
 
         # If dataset and srs are given (but not ext):
