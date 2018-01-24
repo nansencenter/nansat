@@ -21,6 +21,7 @@ from xml.etree.ElementTree import ElementTree
 import numpy as np
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.tools import OptionError, ProjectionError, write_domain_map
+from nansat.tools import NansatFutureWarning
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 import re
@@ -67,6 +68,8 @@ class Domain(object):
     Nansat inherits from Domain and adds bands to self.vrt
 
     """
+    REPROJECT_GCPS_WARNING = ('reproject_GCPs() will be disabled in Nansat 1.1. '
+                             'Use reproject_gcps().')
 
     OUTPUT_SEPARATOR = '-' * 40 + '\n'
     KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -907,7 +910,7 @@ class Domain(object):
 
         Parameters
         ----------
-        srsString : string
+        srs_string : string
             SRS given as Proj4 string. If empty '+proj=stere' is used
 
         Modifies
@@ -918,26 +921,8 @@ class Domain(object):
             lon, lat = self.get_border()
             srs_string = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs' \
                          % (np.nanmedian(lat), np.nanmedian(lon))
-
         self.vrt.reproject_GCPs(srs_string)
 
     def reproject_GCPs(self, srsString=''):
-        """Reproject all GCPs to a new spatial reference system
-
-        Necessary before warping an image if the given GCPs
-        are in a coordinate system which has a singularity
-        in (or near) the destination area (e.g. poles for lonlat GCPs)
-
-        Parameters
-        ----------
-        srsString : string
-            SRS given as Proj4 string. If empty '+proj=stere' is used
-
-        Modifies
-        --------
-            Reprojects all GCPs to new SRS and updates GCPProjection
-        """
-        warnings.warn('Method "reproject_GCPs" was moved to reproject_gcps(self, srs_string="") and'
-                      'will be removed since Nansat 1.3')
-
+        warnings.warn(self.REPROJECT_GCPS_WARNING, NansatFutureWarning)
         self.reproject_gcps(srs_string=srsString)

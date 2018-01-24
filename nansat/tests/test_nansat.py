@@ -363,7 +363,7 @@ class NansatTest(unittest.TestCase):
     def test_reproject_gcps_on_repro_gcps(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
         n2 = Nansat(self.test_file_gcps, log_level=40)
-        n2.reproject_GCPs()
+        n2.reproject_gcps()
         n1.reproject(n2)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_reproject_gcps_on_repro_gcps.png')
@@ -573,7 +573,7 @@ class NansatTest(unittest.TestCase):
 
     def test_crop_gcpproj(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
-        n1.reproject_GCPs()
+        n1.reproject_gcps()
         ext = n1.crop(10, 20, 50, 60)
         xmed = abs(np.median(np.array([gcp.GCPX
                                 for gcp in n1.vrt.dataset.GetGCPs()])))
