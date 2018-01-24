@@ -28,6 +28,11 @@ class Geolocation(object):
     Instance of Geolocation is used in VRT and ususaly created in
     a Mapper.
     """
+    # instance attributes
+    data = None
+    x_vrt = None
+    y_vrt = None
+
     def __init__(self, x_vrt, y_vrt,
                  x_band=1, y_band=1, srs=NSR().wkt, line_offset=0, line_step=1,
                  pixel_offset=0, pixel_step=1):

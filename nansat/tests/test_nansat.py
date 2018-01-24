@@ -146,9 +146,10 @@ class NansatTest(unittest.TestCase):
         n.add_bands([arr, arr],
                     [{'name': 'band1'}, {'name': 'band2'}])
 
-        self.assertEqual(type(n), Nansat)
-        self.assertEqual(type(n[1]), np.ndarray)
-        self.assertEqual(type(n[2]), np.ndarray)
+        self.assertIsInstance(n, Nansat)
+        self.assertEqual(n.vrt.vrt.vrt, None)
+        self.assertIsInstance(n[1], np.ndarray)
+        self.assertIsInstance(n[2], np.ndarray)
         self.assertEqual(n.get_metadata('name', 1), 'band1')
         self.assertEqual(n.get_metadata('name', 2), 'band2')
 
@@ -190,15 +191,6 @@ class NansatTest(unittest.TestCase):
 
         self.assertTrue(hb)
 
-    def test_write_fig_wrong_type_filename(self):
-        n = Nansat(self.test_file_arctic)
-        with self.assertRaises(OptionError):
-            n.write_figure(1.2)
-        with self.assertRaises(OptionError):
-            n.write_figure(['filename'])
-        with self.assertRaises(OptionError):
-            n.write_figure({'name': 'filename'})
-
     def test_write_fig_tif(self):
         n = Nansat(self.test_file_arctic)
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -211,25 +203,25 @@ class NansatTest(unittest.TestCase):
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(pixelsize=500, eResampleAlg=1)
+        n.resize(pixelsize=500, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_factor(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(0.5, eResampleAlg=1)
+        n.resize(0.5, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_width(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(width=100, eResampleAlg=1)
+        n.resize(width=100, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
     def test_resize_by_height(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        n.resize(height=500, eResampleAlg=1)
+        n.resize(height=500, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
@@ -246,39 +238,39 @@ class NansatTest(unittest.TestCase):
     def test_resize_complex_alg_average(self):
         n = Nansat(self.test_file_complex, log_level=40)
         with warnings.catch_warnings(record=True) as w:
-            n.resize(0.5, eResampleAlg=-1)
-            self.assertTrue(len(w) == 1)
+            n.resize(0.5, resample_alg=-1)
+            self.assertEqual(len(w), 1)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
             self.assertIn('The imaginary parts of complex numbers '
                             'are lost when resampling by averaging ', str(w[-1].message))
 
     def test_resize_complex_alg0(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=0)
+        n.resize(0.5, resample_alg=0)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg1(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=1)
+        n.resize(0.5, resample_alg=1)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg2(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=2)
+        n.resize(0.5, resample_alg=2)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg3(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=3)
+        n.resize(0.5, resample_alg=3)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
     def test_resize_complex_alg4(self):
         n = Nansat(self.test_file_complex, log_level=40)
-        n.resize(0.5, eResampleAlg=4)
+        n.resize(0.5, resample_alg=4)
 
         self.assertTrue(np.any(n[1].imag != 0))
 
@@ -371,7 +363,7 @@ class NansatTest(unittest.TestCase):
     def test_reproject_gcps_on_repro_gcps(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
         n2 = Nansat(self.test_file_gcps, log_level=40)
-        n2.reproject_GCPs()
+        n2.reproject_gcps()
         n1.reproject(n2)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_reproject_gcps_on_repro_gcps.png')
@@ -463,7 +455,7 @@ class NansatTest(unittest.TestCase):
 
     def test_get_metadata_bandid(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
-        m = n1.get_metadata(bandID=1)
+        m = n1.get_metadata(band_id=1)
 
         self.assertEqual(type(m), dict)
         self.assertTrue('name' in m)
@@ -581,7 +573,7 @@ class NansatTest(unittest.TestCase):
 
     def test_crop_gcpproj(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
-        n1.reproject_GCPs()
+        n1.reproject_gcps()
         ext = n1.crop(10, 20, 50, 60)
         xmed = abs(np.median(np.array([gcp.GCPX
                                 for gcp in n1.vrt.dataset.GetGCPs()])))

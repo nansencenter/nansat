@@ -11,6 +11,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
+from __future__ import print_function, absolute_import, division
 import os
 import json
 import logging
@@ -34,7 +35,7 @@ from netCDF4 import Dataset
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal, OptionError, NansatFutureWarning
 
-import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 from __builtin__ import int
 
 warnings.simplefilter("always", NansatFutureWarning)
@@ -97,8 +98,8 @@ class ExporterTest(unittest.TestCase):
         arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
-        arrWithNaN[n.shape()[0] / 2 - 10:n.shape()[0] / 2 + 10,
-                   n.shape()[1] / 2 - 10:n.shape()[1] / 2 + 10] = np.nan
+        arrWithNaN[int(n.shape()[0] / 2.) - 10:int(n.shape()[0] / 2 + 10),
+                   int(n.shape()[1] / 2.) - 10:int(n.shape()[1] / 2 + 10)] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
@@ -251,8 +252,7 @@ class ExporterTest(unittest.TestCase):
             'Bootstrap': {'type': '>i2'},
             'UMass_AES': {'type': '>i2'},
         }
-        n.export2thredds(tmpfilename, bands,
-                         time=datetime.datetime(2016, 1, 20))
+        n.export2thredds(tmpfilename, bands, time=datetime.datetime(2016, 1, 20))
 
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)

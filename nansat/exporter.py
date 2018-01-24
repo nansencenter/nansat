@@ -12,7 +12,8 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import, division
+
 import os
 import tempfile
 import datetime
@@ -46,6 +47,9 @@ class Exporter(object):
                                'Use Nansat.export2thredds(mask_name=...')
     DEFAULT_INSTITUTE = 'NERSC'
     DEFAULT_SOURCE = 'satellite remote sensing'
+
+    UNWANTED_METADATA = ['dataType', 'SourceFilename', 'SourceBand', '_Unsigned', 'FillValue',
+                                'time', '_FillValue', 'type', 'scale', 'offset']
 
     def export(self, filename='', fileName='', bands=None, rm_metadata=None, rmMetadata=None,
                addGeoloc=None, add_geolocation=True,
@@ -150,37 +154,6 @@ class Exporter(object):
 
         self.logger.debug('Export - OK!')
 
-    @staticmethod
-    def _add_gcps(filename, gcps, bottomup):
-        ''' Add 4 variables with gcps to the generated netCDF file '''
-        gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
-
-        # check if file exists
-        if not os.path.exists(filename):
-            warnings.warn('Cannot add GCPs! File %s doesn''t exist!' % filename)
-
-        # open output file for adding GCPs
-        ncFile = Dataset(filename, 'a')
-
-        # get GCP values into single array from GCPs
-        gcpValues = np.zeros((5, len(gcps)))
-        for i, gcp in enumerate(gcps):
-            gcpValues[0, i] = gcp.GCPX
-            gcpValues[1, i] = gcp.GCPY
-            gcpValues[2, i] = gcp.GCPZ
-            gcpValues[3, i] = gcp.GCPPixel
-            gcpValues[4, i] = gcp.GCPLine
-
-        # make gcps dimentions
-        ncFile.createDimension('gcps', len(gcps))
-        # make gcps variables and add data
-        for i, var in enumerate(gcpVariables):
-            var = ncFile.createVariable(var, 'f4', ('gcps',))
-            var[:] = gcpValues[i]
-
-        # write data, close file
-        ncFile.close()
-
     def export2thredds(self, filename, bands, metadata=None,
                         mask_name=None, maskName=None, rm_metadata=None, rmMetadata=None,
                         time=None, created=None, createdTime=None):
@@ -233,8 +206,8 @@ class Exporter(object):
         >>> n.export2thredds(filename, bands)
 
         '''
-        # TODO:
-        # New logics
+
+# TODO: Refactor: Implement new logics
         # 1. Get mask
         # 1. Prepare global metadata
         # 1. self.export to netCDF with metadata, hardcopy and mask (add mask to vrt.harcopy)
@@ -267,7 +240,6 @@ class Exporter(object):
         if mask_name is not None:
             mask = self[mask_name]
 
-# TODO: move to Exporter._hardcopy_bands
         # add required bands to data
         dstBands = {}
         srcBands = [self.bands()[b]['name'] for b in self.bands()]
@@ -299,175 +271,147 @@ class Exporter(object):
                 array[mask != 64] = np.nan
 
             # add array to a temporary Nansat object
-            bandMetadata = self.get_metadata(bandID=iband)
+            bandMetadata = self.get_metadata(band_id=iband)
             data.add_band(array=array, parameters=bandMetadata)
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
-        # get corners of reprojected data
-        minLon, maxLon, minLat, maxLat = data.get_min_max_lon_lat()
-
-# TODO: move to Exporter._set_global_metadata
-        # common global attributes:
-        if created is None:
-            created = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'))
-# TODO: move 'NERSC', etc... to constants
-        global_metadata = {'institution': self.DEFAULT_INSTITUTE,
-                        'source': self.DEFAULT_SOURCE,
-                        'creation_date': created,
-                        'northernmost_latitude': np.float(maxLat),
-                        'southernmost_latitude': np.float(minLat),
-                        'westernmost_longitude': np.float(minLon),
-                        'easternmost_longitude': np.float(maxLon),
-                        'history': ' '}
-        global_metadata.update(metadata)
+        global_metadata = Exporter._set_global_metadata(created, data, metadata)
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmp_filename = tempfile.mkstemp(suffix='.nc')
         data.export(tmp_filename, rm_metadata=rm_metadata)
+        del data
 
         self._post_proc_thredds(tmp_filename, filename, bands, dstBands, time, global_metadata)
 
-    def _post_proc_thredds(self, tmp_filename, out_filename, bands, band_metadata, time, global_metadata):
-        """Post processing of file for THREDDS (add time variable and metadata)"""
-        # open files for input and output
-        ncI = Dataset(tmp_filename, 'r')
-        ncO = Dataset(out_filename, 'w')
-
-# TODO: move to Exporter._ctreate_time_dim
-        # collect info on dimention names
-        dimNames = []
-        gridMappingName = None
-        for ncIVarName in ncI.variables:
-            ncIVar = ncI.variables[ncIVarName]
-            dimNames += list(ncIVar.dimensions)
-            # get grid_mapping_name
-            if hasattr(ncIVar, 'grid_mapping_name'):
-                gridMappingName = ncIVar.grid_mapping_name
-                gridMappingVarName = ncIVarName
-        dimNames = list(set(dimNames))
-
-        # collect info on dimention shapes
-        dimShapes = {}
-        for dimName in dimNames:
-            dimVar = ncI.variables[dimName]
-            dimShapes[dimName] = dimVar.shape[0]
-
-        # create dimensions
-        for dimName in dimNames:
-            ncO.createDimension(dimName, dimShapes[dimName])
-
-# TODO: move to constantd in Exporter
-        # add time dimention
-        ncO.createDimension('time', 1)
-        ncOVar = ncO.createVariable('time', '>f8',  ('time', ))
-        ncOVar.calendar = 'standard'
-        ncOVar.long_name = 'time'
-        ncOVar.standard_name = 'time'
-        ncOVar.units = 'days since 1900-1-1 0:0:0 +0'
-        ncOVar.axis = 'T'
-
+    def _create_dimensions(self, nc_inp, nc_out, time):
+        """Create space and time dimenstions in the destination file"""
         # get time from Nansat object or from input datetime
         if time is None:
             time = self.time_coverage_start
 
-        # create value of time variable
+        # collect info on dimension names
+        dim_names = []
+        grid_mapping_name = None
+        for inp_var_name in nc_inp.variables:
+            inp_var = nc_inp.variables[inp_var_name]
+            dim_names += list(inp_var.dimensions)
+            # get grid_mapping_name
+            if hasattr(inp_var, 'grid_mapping_name'):
+                grid_mapping_name = inp_var.grid_mapping_name
+                grid_mapping_var_name = inp_var_name
+        dim_names = list(set(dim_names))
+
+        # collect info on dimension shapes
+        dim_shapes = {}
+        for dim_name in dim_names:
+            dim_var = nc_inp.variables[dim_name]
+            dim_shapes[dim_name] = dim_var.shape[0]
+
+        # create dimensions
+        for dim_name in dim_names:
+            nc_out.createDimension(dim_name, dim_shapes[dim_name])
+
+        # add time dimension
+        nc_out.createDimension('time', 1)
+        out_var = nc_out.createVariable('time', '>f8',  ('time', ))
+        out_var.calendar = 'standard'
+        out_var.long_name = 'time'
+        out_var.standard_name = 'time'
+        out_var.units = 'days since 1900-1-1 0:0:0 +0'
+        out_var.axis = 'T'
+        # create value for time variable
         td = time - datetime.datetime(1900, 1, 1)
         days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add date
-        ncOVar[:] = days
+        out_var[:] = days
 
-# TODO: move to Exporter._add_thredds_bands
-        unwanted_metadata = ['dataType', 'SourceFilename', 'SourceBand', '_Unsigned', 'FillValue',
-                                'time', '_FillValue', 'type', 'scale', 'offset']
+        return grid_mapping_name, grid_mapping_var_name
+
+    def _post_proc_thredds(self, tmp_filename, out_filename, bands, band_metadata, time, global_metadata):
+        """Post processing of file for THREDDS (add time variable and metadata)"""
+        # open files for input and output
+        nc_inp = Dataset(tmp_filename, 'r')
+        nc_out = Dataset(out_filename, 'w')
+
+        grid_mapping_name, grid_mapping_var_name = self._create_dimensions(nc_inp, nc_out, time)
+
         # recreate file
-        for ncIVarName in ncI.variables:
-            ncIVar = ncI.variables[ncIVarName]
-            if 'name' in ncIVar.ncattrs():
-                ncIVar_name = ncIVar.getncattr('name')
+        for inp_var_key in nc_inp.variables.keys():
+            inp_var = nc_inp.variables[inp_var_key]
+            if 'name' in inp_var.ncattrs():
+                inp_var_name = inp_var.getncattr('name')
             else:
-                ncIVar_name = None
+                inp_var_name = inp_var.name
+            # create projection var
+            if inp_var_name == grid_mapping_var_name:
+                out_var = Exporter._copy_nc_var(inp_var, nc_out, grid_mapping_name,
+                                                inp_var.dtype.str, inp_var.dimensions)
+                continue
 
-            self.logger.debug('Creating variable: %s' % ncIVarName)
-            if ncIVarName in ['x', 'y', 'lon', 'lat']:
-                # create simple x/y variables
-                ncOVar = ncO.createVariable(ncIVarName, '>f4',
-                                            ncIVar.dimensions)
-            elif ncIVarName == gridMappingVarName:
-                # create projection var
-                ncOVar = ncO.createVariable(gridMappingName, ncIVar.dtype.str,
-                                            ncIVar.dimensions)
-            elif ncIVar_name in band_metadata:
-                # dont add time-axis to lon/lat grids
-                if ncIVar_name in ['lon', 'lat']:
-                    dimensions = ncIVar.dimensions
-                else:
-                    dimensions = ('time', ) + ncIVar.dimensions
-
+            # create simple x/y variables
+            if inp_var_name in ['x', 'y', 'lon', 'lat']:
+                out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
+                                                '>f4', inp_var.dimensions)
+            # create data var
+            elif inp_var_name in band_metadata:
                 fill_value = None
-                if '_FillValue' in ncIVar.ncattrs():
-                    fill_value = ncIVar._FillValue
-                if '_FillValue' in band_metadata[ncIVar_name]:
+                if '_FillValue' in inp_var.ncattrs():
+                    fill_value = inp_var._FillValue
+                if '_FillValue' in band_metadata[inp_var_name]:
                     fill_value = band_metadata['_FillValue']
-                ncOVar = ncO.createVariable(ncIVar_name,
-                                            band_metadata[ncIVar_name]['type'],
-                                            dimensions, fill_value=fill_value)
+                dimensions = ('time', ) + inp_var.dimensions
+                out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
+                                                band_metadata[inp_var_name]['type'],
+                                                dimensions, fill_value=fill_value)
 
             # copy array from input data
-            data = ncIVar[:]
-
-            for ncattr in ncIVar.ncattrs():
-                if ncattr == '_FillValue':
-                    continue
-                ncOVar.setncattr(ncattr, ncIVar.getncattr(ncattr))
+            data = inp_var[:]
 
             # copy rounded data from x/y
-            if ncIVarName in ['x', 'y']:
-                ncOVar[:] = np.floor(data).astype('>f4')
+            if inp_var_name in ['x', 'y']:
+                out_var[:] = np.floor(data).astype('>f4')
                 # add axis=X or axis=Y
-                ncOVar.axis = {'x': 'X', 'y': 'Y'}[ncIVarName]
+                out_var.axis = {'x': 'X', 'y': 'Y'}[inp_var_name]
 
             # copy data from lon/lat
-            if ncIVarName in ['lon', 'lat']:
-                ncOVar[:] = data.astype('>f4')
+            if inp_var_name in ['lon', 'lat']:
+                out_var[:] = data.astype('>f4')
 
             # copy data from variables in the list
-            if (len(ncIVar.dimensions) > 0 and ncIVar_name):
+            if inp_var_name in band_metadata:
                 # add offset and scale attributes
-                scale = band_metadata[ncIVar_name]['scale']
-                offset = band_metadata[ncIVar_name]['offset']
+                scale = band_metadata[inp_var_name]['scale']
+                offset = band_metadata[inp_var_name]['offset']
                 if not (offset == 0.0 and scale == 1.0):
-                    ncOVar.setncattr('add_offset', offset)
-                    ncOVar.setncattr('scale_factor', scale)
+                    out_var.setncattr('add_offset', offset)
+                    out_var.setncattr('scale_factor', scale)
                     data = (data - offset) / scale
 
-                ncOVar[:] = data.astype(band_metadata[ncIVar_name]['type'])
-                # copy (some) attributes
-                for inAttrName in ncIVar.ncattrs():
-                    if str(inAttrName) not in unwanted_metadata:
-                        ncOVar.setncattr(inAttrName, ncIVar.getncattr(inAttrName))
+                out_var[:] = data.astype(band_metadata[inp_var_name]['type'])
 
                 # add custom attributes from input parameter bands
-                if ncIVar_name in bands:
-                    for newAttr in bands[ncIVar_name]:
-                        if newAttr not in unwanted_metadata:
-                            ncOVar.setncattr(newAttr, bands[ncIVar_name][newAttr])
+                if inp_var_name in bands:
+                    for newAttr in bands[inp_var_name]:
+                        if newAttr not in Exporter.UNWANTED_METADATA:
+                            out_var.setncattr(newAttr, bands[inp_var_name][newAttr])
                     # add grid_mapping info
-                    if gridMappingName is not None:
-                        ncOVar.setncattr('grid_mapping', gridMappingName)
+                    if grid_mapping_name is not None:
+                        out_var.setncattr('grid_mapping', grid_mapping_name)
 
         # copy (some) global attributes
-        for globAttr in ncI.ncattrs():
+        for globAttr in nc_inp.ncattrs():
             if not(globAttr.strip().startswith('GDAL')):
-                ncO.setncattr(globAttr, ncI.getncattr(globAttr))
+                nc_out.setncattr(globAttr, nc_inp.getncattr(globAttr))
 
         # add common and custom global attributes
-        ncO.setncatts(global_metadata)
+        nc_out.setncatts(global_metadata)
 
         # write output file
-        ncO.close()
+        nc_out.close()
 
         # close original files
-        ncI.close()
+        nc_inp.close()
 
         # Delete the temprary netCDF file
         fid = None
@@ -475,3 +419,63 @@ class Exporter(object):
 
         return 0
 
+    @staticmethod
+    def _set_global_metadata(created, data, metadata):
+        if created is None:
+            created = (datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'))
+        # get corners of reprojected data
+        min_lon, max_lon, min_lat, max_lat = data.get_min_max_lon_lat()
+
+        global_metadata = {
+                    'institution': Exporter.DEFAULT_INSTITUTE,
+                    'source': Exporter.DEFAULT_SOURCE,
+                    'creation_date': created,
+                    'northernmost_latitude': np.float(max_lat),
+                    'southernmost_latitude': np.float(min_lat),
+                    'westernmost_longitude': np.float(min_lon),
+                    'easternmost_longitude': np.float(max_lon),
+                    'history': ' '}
+        global_metadata.update(metadata)
+
+        return global_metadata
+
+    @staticmethod
+    def _add_gcps(filename, gcps, bottomup):
+        """Add 4 variables with gcps to the generated netCDF file"""
+        gcp_variables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
+
+        # check if file exists
+        if not os.path.exists(filename):
+            warnings.warn('Cannot add GCPs! File %s doesn''t exist!' % filename)
+
+        # open output file for adding GCPs
+        ncFile = Dataset(filename, 'a')
+
+        # get GCP values into single array from GCPs
+        gcp_values = np.zeros((5, len(gcps)))
+        for i, gcp in enumerate(gcps):
+            gcp_values[0, i] = gcp.GCPX
+            gcp_values[1, i] = gcp.GCPY
+            gcp_values[2, i] = gcp.GCPZ
+            gcp_values[3, i] = gcp.GCPPixel
+            gcp_values[4, i] = gcp.GCPLine
+
+        # make gcps dimensions
+        ncFile.createDimension('gcps', len(gcps))
+        # make gcps variables and add data
+        for i, var in enumerate(gcp_variables):
+            var = ncFile.createVariable(var, 'f4', ('gcps',))
+            var[:] = gcp_values[i]
+
+        # write data, close file
+        ncFile.close()
+
+    @staticmethod
+    def _copy_nc_var(inp_var, nc_out, var_name, var_type, dimensions, fill_value=None):
+        """Create new NC variable, set name, type, dimensions and copy attributes"""
+        out_var = nc_out.createVariable(var_name, var_type, dimensions, fill_value=fill_value)
+        for ncattr in inp_var.ncattrs():
+            if str(ncattr) not in Exporter.UNWANTED_METADATA:
+                out_var.setncattr(str(ncattr), inp_var.getncattr(ncattr))
+
+        return out_var

@@ -85,5 +85,6 @@ class NSR(osr.SpatialReference, object):
             if status > 0:
                 raise ProjectionError('NSR %s is wrong' % srs)
 
-        # set WKT
-        self.wkt = self.ExportToWkt()
+    @property
+    def wkt(self):
+        return self.ExportToWkt()

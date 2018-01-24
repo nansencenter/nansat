@@ -207,7 +207,7 @@ class DomainTest(unittest.TestCase):
     def test_reproject_GCPs(self):
         ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
-        d.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
+        d.reproject_gcps('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
         gcp = d.vrt.dataset.GetGCPs()[0]
 
         self.assertTrue(gcp.GCPX > 636161)
@@ -216,7 +216,7 @@ class DomainTest(unittest.TestCase):
     def test_reproject_GCPs_auto(self):
         ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
-        d.reproject_GCPs()
+        d.reproject_gcps()
 
         gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
         self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),

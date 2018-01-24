@@ -98,8 +98,14 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
+    # instance attributes
     filename = ''
     vrt = None
+    dataset = None
+    logger = None
+    driver = None
+    band_vrts = None
+    tps = None
 
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
@@ -1464,6 +1470,76 @@ class VRT(object):
         # Update dataset
         self.dataset.SetGCPs(dst_gcps, dst_srs.wkt)
 
+    def set_offset_size(self, axis, offset, size):
+        """Set offset and  size in VRT dataset and band attributes"""
+        node0 = Node.create(self.xml)
+
+        # change size
+        node0.node('VRTDataset').replaceAttribute('raster%sSize'%str(axis).upper(), str(size))
+
+        # replace x/y-Off and x/y-Size
+        #   in <SrcRect> and <DstRect> of each source
+        for iNode1 in node0.nodeList('VRTRasterBand'):
+            iNode2 = iNode1.node('ComplexSource')
+
+            iNode3 = iNode2.node('SrcRect')
+            iNode3.replaceAttribute('%sOff'%str(axis).lower(), str(offset))
+            iNode3.replaceAttribute('%sSize'%str(axis).lower(), str(size))
+
+            iNode3 = iNode2.node('DstRect')
+            iNode3.replaceAttribute('%sSize'%str(axis).lower(), str(size))
+
+        # write modified XML
+        self.write_xml(node0.rawxml())
+
+    def shift_cropped_gcps(self, x_offset, x_size, y_offset, y_size):
+        """Modify GCPs to fit the size/offset of cropped image"""
+        gcps = self.dataset.GetGCPs()
+        if len(gcps) == 0:
+            return
+
+        dst_gcps = []
+        i = 0
+        # keep current GCPs
+        for igcp in gcps:
+            if (0 < igcp.GCPPixel - x_offset < x_size and 0 < igcp.GCPLine - y_offset < y_size):
+                i += 1
+                dst_gcps.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
+                                        igcp.GCPPixel - x_offset,
+                                        igcp.GCPLine - y_offset, '', str(i)))
+        n_gcps = i
+        if n_gcps < 100:
+            # create new 100 GPCs (10 x 10 regular matrix)
+            pix_array, lin_array = np.mgrid[0:x_size:10j, 0:y_size:10j]
+            pix_array = pix_array.flatten() + x_offset
+            lin_array = lin_array.flatten() + y_offset
+
+            lon_array, lat_array = self.vrt.transform_points(pix_array, lin_array,
+                                                dst_srs=NSR(self.vrt.dataset.GetGCPProjection()))
+
+            for i in range(len(lon_array)):
+                dst_gcps.append(gdal.GCP(lon_array[i], lat_array[i], 0,
+                                        pix_array[i] - x_offset,
+                                        lin_array[i] - y_offset,
+                                        '', str(n_gcps+i+1)))
+
+        # set new GCPss
+        self.dataset.SetGCPs(dst_gcps, self.vrt.dataset.GetGCPProjection())
+        # remove geotranform which was automatically added
+        self._remove_geotransform()
+
+    def shift_cropped_geo_transform(self, x_offset, x_size, y_offset, y_size):
+        """Modify GeoTransform to fit the size/offset of the cropped image"""
+        if len(self.vrt.dataset.GetGCPs()) != 0:
+            return
+        # shift upper left corner coordinates
+        geoTransfrom = self.dataset.GetGeoTransform()
+        geoTransfrom = map(float, geoTransfrom)
+        geoTransfrom[0] += geoTransfrom[1] * x_offset
+        geoTransfrom[3] += geoTransfrom[5] * y_offset
+        self.dataset.SetGeoTransform(geoTransfrom)
+        self.dataset.FlushCache()
+
     @staticmethod
     def read_vsi(filename):
         """Read text from input <filename:str> using VSI and return <content:str>."""
@@ -1557,7 +1633,7 @@ class VRT(object):
     def _lonlat2gcps(lon, lat, n_gcps=100, **kwargs):
         """ Create list of GCPs from given grids of latitude and longitude
 
-        take <numOfGCPs> regular pixels from inpt <lat> and <lon> grids
+        take <n_gcps> regular pixels from inpt <lat> and <lon> grids
         Create GCPs from these pixels
         Create latlong GCPs projection
 
@@ -1567,7 +1643,7 @@ class VRT(object):
             array of latitudes
         lon : Numpy grid
             array of longitudes (should be the same size as lat)
-        numOfGCPs : int, optional, default = 100
+        n_gcps : int, optional, default = 100
             number of GCPs to create
 
         Returns
