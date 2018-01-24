@@ -27,9 +27,9 @@ try:
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 from netCDF4 import Dataset
 
@@ -536,7 +536,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(m, 'newVal')
 
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_get_transect(self):
         plt.switch_backend('agg')
         n1 = Nansat(self.test_file_gcps, log_level=40)
@@ -614,7 +614,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
-    @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
         for backend in matplotlib.rcsetup.interactive_bk:

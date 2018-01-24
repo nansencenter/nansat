@@ -28,12 +28,12 @@ try:
     from mpl_toolkits.basemap import Basemap
     from matplotlib.patches import Polygon
 except ImportError:
-    BASEMAP_LIB_EXISTS = False
-    MATPLOTLIB_EXISTS = False
+    BASEMAP_LIB_IS_INSTALLED = False
+    MATPLOTLIB_IS_INSTALLED = False
 
 else:
-    BASEMAP_LIB_EXISTS = True
-    MATPLOTLIB_EXISTS = True
+    BASEMAP_LIB_IS_INSTALLED = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 import numpy as np
 
@@ -115,7 +115,7 @@ def register_colormaps():
                      (1, 0.5, 0.5,)],
             }
 
-    if MATPLOTLIB_EXISTS:
+    if MATPLOTLIB_IS_INSTALLED:
         cm.register_cmap(name='obpg', data=obpg, lut=256)
         cm.register_cmap(name='ak01', data=ak01, lut=256)
 
@@ -224,8 +224,8 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
         c0 : str
             hexademical representation of the new random color
     '''
-    if not MATPLOTLIB_EXISTS:
-        raise ImportError('Matplotlib does not exist')
+    if not MATPLOTLIB_IS_INSTALLED:
+        raise ImportError('Matplotlib is not installed')
 
     # check inputs
     if c0 is None:
@@ -340,7 +340,7 @@ def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_borde
         labels : list of str
             labels to print on top of patches
         """
-        if not BASEMAP_LIB_EXISTS:
+        if not BASEMAP_LIB_IS_INSTALLED:
             raise ImportError(' Basemap is not installed. Cannot use Domain.write_map. '
                               ' Enable by: conda install -c conda forge basemap ')
 
