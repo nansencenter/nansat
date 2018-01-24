@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, unicode_literals, division
 import os
 import tempfile
 from string import Template, ascii_uppercase, digits
@@ -810,7 +810,7 @@ class VRT(object):
         for i in bands:
             self.band_vrts[i] = VRT.from_array(self.dataset.GetRasterBand(i).ReadAsArray())
 
-        node0 = Node.create(self.xml)
+        node0 = Node.create(str(self.xml.decode()))
         for i, iNode1 in enumerate(node0.nodeList('VRTRasterBand')):
             iNode1.node('SourceFilename').value = self.band_vrts[i+1].filename
             iNode1.node('SourceBand').value = str(1)
@@ -1165,7 +1165,7 @@ class VRT(object):
             band number
 
         """
-        node0 = Node.create(self.xml)
+        node0 = Node.create(str(self.xml.decode()))
         node0.delNode('VRTRasterBand', options={'band': band_num})
         node0.delNode('BandMapping', options={'src': band_num})
         self.write_xml(node0.rawxml())
