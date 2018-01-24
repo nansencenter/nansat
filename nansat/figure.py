@@ -22,9 +22,9 @@ import numpy as np
 try:
     from matplotlib import cm
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOT_LIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOT_LIB_IS_INSTALLED = True
 
 try:
     import Image
@@ -948,7 +948,7 @@ class Figure(object):
         self.palette : numpy array (uint8)
 
         '''
-        if not MATPLOTLIB_EXISTS:
+        if not MATPLOT_LIB_IS_INSTALLED:
             # Make grayscale colormap
             cmap = np.vstack([np.arange(256.),
                               np.arange(256.),

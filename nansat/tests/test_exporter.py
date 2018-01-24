@@ -26,9 +26,9 @@ try:
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
 import gdal
 from netCDF4 import Dataset
