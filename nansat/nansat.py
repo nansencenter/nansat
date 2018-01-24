@@ -735,6 +735,8 @@ class Nansat(Domain, Exporter):
         """
         Create numpy array with watermask (water=1, land=0)
 
+        TODO: cross-check and update docstring and references/links
+
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
 
@@ -982,32 +984,32 @@ class Nansat(Domain, Exporter):
             self.vrt.copyproj(filename)
         return fig
 
+
 #TODO: Move to Figure
     def write_geotiffimage(self, filename, band_id=1, bandID=None):
-        ''' Writes an 8-bit GeoTiff image for a given band.
+        """ Writes an 8-bit GeoTiff image for a given band.
 
-        The output GeoTiff image is convenient e.g. for display in a GIS tool.
-        Colormap is fetched from the metadata item 'colormap'.
-            Fallback colormap is 'gray'.
-        Color limits are fetched from the metadata item 'minmax'.
-            If 'minmax' is not specified, min and max of raster is used.
+        The colormap is fetched from the metadata item 'colormap'. Fallback colormap is 'gray'.
 
-        The method can be replaced by using nansat.write_figure(),
-        however, write_figure uses PIL which does not allow
-        Tiff compression, giving much larger files
+        Color limits are fetched from the metadata item 'minmax'. If 'minmax' is not specified, min
+        and max of the raster data is used.
+
+        The method can be replaced by using nansat.write_figure(). However, write_figure uses PIL,
+        which does not allow Tiff compression. This gives much larger files.
 
         Parameters
         -----------
         filename : string
         band_id : integer or string(default = 1)
 
-        '''
+        """
         if bandID is not None:
             warnings.warn(self.INIT_BANDID_WARNING, NansatFutureWarning)
             band_id = bandID
 
         bandNo = self.get_band_number(band_id)
         band = self.get_GDALRasterBand(band_id)
+
         minmax = band.GetMetadataItem('minmax')
         # Get min and max from band histogram if not given (from wkv)
         if minmax is None:

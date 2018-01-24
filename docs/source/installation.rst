@@ -1,0 +1,82 @@
+Installation
+============
+
+Install Nansat from source
+--------------------------
+
+Get code and dependencies
+
+* Install the `Requirements`_ 
+* `Download the code <https://github.com/nansencenter/nansat/releases>`_
+
+Requirements
+^^^^^^^^^^^^
+
+TODO: update requirements
+
+Nansat depends on the following packages:
+
+* Python 2.6 or higher
+* `Numpy <http://www.numpy.org/>`_
+* `Scipy <http://scipy.org/SciPy>`_
+* `Matplotlib <http://matplotlib.org/>`_
+* `Basemap <http://matplotlib.org/basemap/>`_
+* `Python Imaging Library (PIL) <http://www.pythonware.com/products/pil/>`_
+* `GDAL <http://www.gdal.org>`_
+* `Pillow <https://python-pillow.github.io/>`_
+* `py-thesaurus-interface <https://github.com/nansencenter/nersc-metadata>`_
+
+The most tricky is to install GDAL and Basemap. One can find pre-built binaries
+available for different platforms. However, we recommend to download the source and
+build GDAL on your computer for reading, e.g., NetCDF or HDF5 files. Some hints are
+given on the `GDAL web-site <http://trac.osgeo.org/gdal/wiki/BuildHints>`_.
+
+Another option is to use a virtual machine managed by Virtualbox and provisioned
+using Vagrant and Ansible. We provide 
+`configurations for virtual machines <https://github.com/nansencenter/geo-spaas-vagrant>`_ 
+for learning and development of Nansat. Following a clone of this repository and installation of
+virtualbox and vagrant, a vm used for courses
+can be installed by ``vagrant up course``.
+
+For regular users
+^^^^^^^^^^^^^^^^^
+
+`Install from PyPi`_, `Install from Anaconda`_, or
+git clone the master (most stable but also not fully up-to-date) or develop branch, and do:
+
+::
+
+  python setup.py install
+
+Nansat will then be added to your site-packages and can be used like any regular Python package.
+
+Alternatively:
+
+::
+
+  pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
+
+
+For developers (working directly with the source)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Git clone the develop branch, and do:
+
+::
+
+  python setup.py build_ext --inplace
+
+The pixel functions C module is then compiled but no code is copied to site-packages and no linking
+is performed. Make sure to follow the `Nansat conventions <conventions.html>`_ if you want to
+contribute to Nansat.
+
+Install from PyPi
+-----------------
+
+TODO: Add instructions about installing from PyPi
+
+Install from Anaconda
+---------------------
+
+TODO: Add instructions about installing from Anaconda
+

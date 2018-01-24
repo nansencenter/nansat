@@ -1039,14 +1039,13 @@ CPLErr IntensityInt(void **papoSources, int nSources, void *pData,
 {
     int ii, iLine, iCol;
     int dfPixVal;
+    int nOffset = GDALGetDataTypeSize( eSrcType ) / 8 / 2;
+    void *pReal = papoSources[0];
+    void *pImag = ((GByte *)papoSources[0]) + nOffset;
 
     /* ---- Init ---- */
     if (nSources != 1) return CE_Failure;
 
-        int dfReal, dfImag;
-        int nOffset = GDALGetDataTypeSize( eSrcType ) / 8 / 2;
-        void *pReal = papoSources[0];
-        void *pImag = ((GByte *)papoSources[0]) + nOffset;
 
         // ---- Set pixels ----
 

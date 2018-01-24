@@ -1,0 +1,15 @@
+channels:
+  - alevin
+  - conda-forge
+dependencies:
+  - sphinx>=1.4
+  - sphinx-autobuild
+  - sphinx_rtd_theme 
+  - recommonmark
+  - pandoc
+  - nbconvert
+  - ipykernel
+  - python-dateutil
+  - nansat
+  - pip:
+    - nbsphinx

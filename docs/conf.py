@@ -16,9 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../'))
+import os, sys
+from recommonmark.parser import CommonMarkParser
+
+sys.path.insert(0, os.path.abspath('..'))
 
 ## -- Mock imported packages and modules
 #from mock import Mock as MagicMock
@@ -33,7 +34,8 @@ sys.path.insert(0, os.path.abspath('../'))
 ##MOCK_MODULES = []  
 #sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
-autodoc_mock_imports = ['gdal', 'osr', 'ogr', 'netCDF4', 'numpy', 'scipy']
+autodoc_mock_imports = ['osgeo', 'gdal', 'osr', 'ogr', 'netCDF4', 'numpy', 'scipy', \
+        'dateutil', 'pythesint', 'PIL', 'Pillow', '_pixfun']
 
 # -- General configuration ------------------------------------------------
 
@@ -49,7 +51,9 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'] #'numpydoc']
+    'sphinx.ext.napoleon',
+    'sphinx.ext.mathjax',
+    'nbsphinx'] 
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -57,8 +61,11 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_parsers = {
+        '.md': CommonMarkParser,
+    }
+source_suffix = ['.rst', '.md']
+# source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
@@ -87,7 +94,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'

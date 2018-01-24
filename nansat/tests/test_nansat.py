@@ -18,6 +18,8 @@ from __future__ import unicode_literals, absolute_import
 import unittest
 import warnings
 import datetime
+import json
+import sys
 from xml.sax.saxutils import unescape
 
 import numpy as np
@@ -51,6 +53,12 @@ class NansatTest(unittest.TestCase):
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
+
+    def tearDown(self):
+        try:
+            os.unlink(self.tmpfilename)
+        except OSError:
+            pass
 
     def test_open_gcps(self):
         with warnings.catch_warnings(record=True) as w:
@@ -111,6 +119,58 @@ class NansatTest(unittest.TestCase):
         self.assertIsInstance(n.logger, logging.Logger)
         self.assertEqual(n.name, '')
         self.assertEqual(n.path, '')
+
+    def test_geolocation_of_exportedNC_vs_original(self):
+        ''' Lon/lat in original and exported file should coincide '''
+        orig = Nansat(self.test_file_gcps)
+        orig.export(self.tmpfilename)
+
+        copy = Nansat(self.tmpfilename)
+        lon0, lat0 = orig.get_geolocation_grids()
+        lon1, lat1 = copy.get_geolocation_grids()
+        np.testing.assert_allclose(lon0, lon1)
+        np.testing.assert_allclose(lat0, lat1)
+
+    def test_special_characters_in_exported_metadata(self):
+        orig = Nansat(self.test_file_gcps)
+        orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
+                                         'hei', 'meta2': 'derr'}))
+        orig.export(self.tmpfilename)
+        copy = Nansat(self.tmpfilename)
+        dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
+                                                                   '"'}))
+        self.assertIsInstance(dd, dict)
+
+    def test_time_coverage_metadata_of_exported_equals_original(self):
+        orig = Nansat(self.test_file_gcps)
+        orig.set_metadata('time_coverage_start', '2010-01-02T08:49:02.347809')
+        orig.set_metadata('time_coverage_end', '2010-01-02T08:50:03.599373')
+        orig.export(self.tmpfilename)
+        copy = Nansat(self.tmpfilename)
+
+        self.assertEqual(orig.get_metadata('time_coverage_start'),
+                copy.get_metadata('time_coverage_start'))
+        self.assertEqual(orig.get_metadata('time_coverage_end'),
+                copy.get_metadata('time_coverage_end'))
+
+    def test_export_netcdf(self):
+        ''' Test export and following import of data with bands containing
+        np.nan values
+        '''
+        n = Nansat(self.test_file_gcps)
+        arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
+        n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
+        arrWithNaN = arrNoNaN.copy()
+        arrWithNaN[n.shape()[0] / 2 - 10:n.shape()[0] / 2 + 10,
+                   n.shape()[1] / 2 - 10:n.shape()[1] / 2 + 10] = np.nan
+        n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
+        n.export(self.tmpfilename)
+        exported = Nansat(self.tmpfilename)
+        earrNoNaN = exported['testBandNoNaN']
+        # Use allclose to allow some roundoff errors
+        self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
+        earrWithNaN = exported['testBandWithNaN']
+        np.testing.assert_allclose(arrWithNaN, earrWithNaN)
 
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -555,7 +615,13 @@ class NansatTest(unittest.TestCase):
     @unittest.skipUnless(MATPLOTLIB_EXISTS, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
-        plt.switch_backend('qt5agg')
+        for backend in matplotlib.rcsetup.interactive_bk:
+            # Find a supported interactive backend
+            try:
+                plt.switch_backend(backend)
+                break;
+            except:
+                pass
         plt.ion()
         n1 = Nansat(self.test_file_gcps, log_level=40)
         points = n1.digitize_points(1)
@@ -666,6 +732,7 @@ class NansatTest(unittest.TestCase):
         self.assertIn('72', n_repr)
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
+
 
 if __name__ == "__main__":
     unittest.main()
