@@ -15,7 +15,8 @@ except:
 else:
     IMPORT_SCIPY = True
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
+from nansat.geolocation import Geolocation
 from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 
 
@@ -204,13 +205,13 @@ class Envisat(object):
     lonlatNames = {'ASA_': ['first_line_longs', 'first_line_lats'],
                    'MER_': ['longitude', 'latitude']}
 
-    def setup_ads_parameters(self, fileName, gdalMetadata):
+    def setup_ads_parameters(self, filename, gdalMetadata):
         """Select set of params and read offset of ADS"""
         if not gdalMetadata or not ('MPH_PRODUCT' in gdalMetadata.keys()):
             raise WrongMapperError
 
         self.product = gdalMetadata["MPH_PRODUCT"]
-        self.iFileName = fileName
+        self.iFileName = filename
         self.prodType = gdalMetadata["MPH_PRODUCT"][0:4]
         self.allADSParams = self.allADSParams[self.prodType]
         self.dsOffsetDict = self.read_offset_from_header(
@@ -294,7 +295,7 @@ class Envisat(object):
 
         Parameters
         ----------
-            fileName : string
+            filename : string
             indeces : list
 
         Returns
@@ -412,7 +413,7 @@ class Envisat(object):
                                                  order=1)
 
         # create VRT from the array
-        adsVrt = VRT(array=array)
+        adsVrt = VRT.from_array(array=array)
         # add "name" and "units" to band metadata
         bandMetadata = {"name": adsName, "units": adsParams['units']}
         adsVrt.dataset.GetRasterBand(1).SetMetadata(bandMetadata)
@@ -452,9 +453,7 @@ class Envisat(object):
             # create VRT with array from ADS
             adsVRTs.append(self.create_VRT_from_ADS(adsName, zoomSize))
             # resize the VRT to match <step>
-            adsVRTs[-1] = adsVRTs[-1].get_resized_vrt(XSize/step,
-                                                      YSize/step,
-                                                      **kwargs)
+            adsVRTs[-1] = adsVRTs[-1].get_resized_vrt(XSize/step, YSize/step)
         return adsVRTs
 
     def add_geolocation_from_ads(self, gdalDataset, zoomSize=500, step=1):
@@ -484,12 +483,12 @@ class Envisat(object):
                                    step)
 
         # Add geolocation domain metadata to the dataset
-        self.add_geolocationArray(GeolocationArray(xVRT=xyVRTs[0],
-                                  yVRT=xyVRTs[1],
-                                  xBand=1, yBand=1,
+        self._add_geolocation(Geolocation(x_vrt=xyVRTs[0],
+                                  y_vrt=xyVRTs[1],
+                                  x_band=1, y_band=1,
                                   srs=gdalDataset.GetGCPProjection(),
-                                  lineOffset=0,
-                                  lineStep=step,
-                                  pixelOffset=0,
-                                  pixelStep=step))
+                                  line_offset=0,
+                                  line_step=step,
+                                  pixel_offset=0,
+                                  pixel_step=step))
 

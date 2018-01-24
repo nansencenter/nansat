@@ -32,7 +32,7 @@ downloads = os.path.join(os.path.expanduser('~'), 'ncep_gfs_downloads')
 class Mapper(VRT, object):
     ''' VRT with mapping of WKV for NCEP GFS '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  outFolder=downloads, **kwargs):
         ''' Create NCEP VRT '''
 
@@ -43,10 +43,10 @@ class Mapper(VRT, object):
         # Get time
         ##############
         keywordBase = 'ncep_wind_online'
-        if fileName[0:len(keywordBase)] != keywordBase:
+        if filename[0:len(keywordBase)] != keywordBase:
             raise WrongMapperError
 
-        timestr = fileName[len(keywordBase)+1::]
+        timestr = filename[len(keywordBase)+1::]
         time = datetime.strptime(timestr, '%Y%m%d%H%M')
         print time
 
@@ -102,9 +102,9 @@ class Mapper(VRT, object):
                 baseName = ('gfs_4_' + nearestModelRun.strftime('%Y%m%d_') +
                             nearestModelRun.strftime('%H%M_') +
                             '%.3d' % forecastHour)
-                fileName = baseName + '.grb2'
-                outFileName = os.path.join(outFolder, fileName)
-                print 'Downloading ' + url + fileName
+                filename = baseName + '.grb2'
+                outFileName = os.path.join(outFolder, filename)
+                print 'Downloading ' + url + filename
 
                 # Download subset of grib file
                 mapperDir = os.path.dirname(os.path.abspath(__file__))
@@ -117,11 +117,11 @@ class Mapper(VRT, object):
                 if not os.path.isfile(outFileName):
                     command = (get_inv + ' ' + url + baseName +
                                '.inv | egrep "(:UGRD:10 m |:VGRD:10 m )" | ' +
-                               get_grib + ' ' + url + fileName +
+                               get_grib + ' ' + url + filename +
                                ' ' + outFileName)
                     os.system(command)
                     if os.path.isfile(outFileName):
-                        print 'Downloaded ' + fileName + ' to ' + outFolder
+                        print 'Downloaded ' + filename + ' to ' + outFolder
                 else:
                     print 'Already downloaded %s' % outFileName
                 if not os.path.isfile(outFileName):
@@ -131,7 +131,7 @@ class Mapper(VRT, object):
         # Open downloaded grib file with a(ny) Nansat mapper
         ######################################################
         w = Nansat(outFileName)
-        VRT.__init__(self, vrtDataset=w.vrt.dataset)
+        self._copy_from_dataset(w.vrt.dataset)
 
         return
 

@@ -17,21 +17,21 @@ else:
     IMPORT_SCIPY = True
 
 from nansat.nsr import NSR
-from nansat.vrt import GeolocationArray, VRT
+from nansat.vrt import VRT
 from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
 
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1,
                  lineStep=1, **kwargs):
         ''' Create VIIRS VRT '''
 
-        if not 'GMTCO_npp_' in fileName:
-            raise WrongMapperError(fileName)
-        ifiledir = os.path.split(fileName)[0]
+        if not 'GMTCO_npp_' in filename:
+            raise WrongMapperError(filename)
+        ifiledir = os.path.split(filename)[0]
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()
 
@@ -44,10 +44,10 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         xDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude'
-                          % fileName)
+                          % filename)
         xDatasetBand = 1
         xDataset = gdal.Open(xDatasetSource)
-        VRT.__init__(self, xDataset)
+        self._init_from_gdal_dataset(xDataset)
 
         metaDict = []
         for ifile in ifiles:
@@ -69,23 +69,20 @@ class Mapper(VRT):
             metaDict.append(metaEntry)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         xVRTArray = xDataset.ReadAsArray()
         xVRTArray = gaussian_filter(xVRTArray, 5).astype('float32')
-        xVRT = VRT(array=xVRTArray)
+        xVRT = VRT.from_array(xVRTArray)
 
         yDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Latitude'
-                          % fileName)
+                          % filename)
         yDatasetBand = 1
         yDataset = gdal.Open(yDatasetSource)
         yVRTArray = yDataset.ReadAsArray()
         yVRTArray = gaussian_filter(yVRTArray, 5).astype('float32')
-        yVRT = VRT(array=yVRTArray)
+        yVRT = VRT.from_array(yVRTArray)
 
-        #self.add_geolocationArray(GeolocationArray(xDatasetSource,
-        #                                           yDatasetSource))
-        #"""
         # estimate pixel/line step
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
 
@@ -122,5 +119,5 @@ class Mapper(VRT):
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
         # remove geolocation array
-        self.remove_geolocationArray()
+        self._remove_geolocation()
         #"""

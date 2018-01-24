@@ -40,21 +40,21 @@ class Mapper(VRT):
         if zipfile.is_zipfile(inputFileName):
             # Open zip file using VSI
             fPath, fName = os.path.split(fPathName)
-            fileName = '/vsizip/%s/%s' % (inputFileName, fName)
+            filename = '/vsizip/%s/%s' % (inputFileName, fName)
             if not 'RS' in fName[0:2]:
                 raise WrongMapperError('%s: Provided data is not Radarsat-2'
                         %fName)
-            gdalDataset = gdal.Open(fileName)
+            gdalDataset = gdal.Open(filename)
             gdalMetadata = gdalDataset.GetMetadata()
         else:
-            fileName = inputFileName
+            filename = inputFileName
 
         #if it is not RADARSAT-2, return
         if (not gdalMetadata or
                 not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys()):
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
-            raise WrongMapperError(fileName)
+            raise WrongMapperError(filename)
 
         if zipfile.is_zipfile(inputFileName):
             # Open product.xml to get additional metadata
@@ -63,10 +63,10 @@ class Mapper(VRT):
             productXml = zz.open(productXmlName).read()
         else:
             # product.xml to get additionali metadata
-            productXmlName = os.path.join(fileName,'product.xml')
+            productXmlName = os.path.join(filename,'product.xml')
             if not os.path.isfile(productXmlName):
-                raise WrongMapperError(fileName)
-            productXml = open(productXmlName).read()            
+                raise WrongMapperError(filename)
+            productXml = open(productXmlName).read()
 
         if not IMPORT_SCIPY:
             raise NansatReadError(' Radarsat-2 data cannot be read because scipy is not installed! '
@@ -90,7 +90,7 @@ class Mapper(VRT):
         passDirection = rs2_3['passDirection']
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         #define dictionary of metadata and band specific parameters
         pol = []
@@ -115,7 +115,7 @@ class Mapper(VRT):
                         metaDict.append(
                             {'src': {'SourceFilename':
                                      ('RADARSAT_2_CALIB:SIGMA0:'
-                                      + fileName + '/product.xml'),
+                                      + filename + '/product.xml'),
                                      'SourceBand': i,
                                      'DataType': dtype},
                              'dst': {'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
@@ -129,7 +129,7 @@ class Mapper(VRT):
                     pol.append(polString)
                     metaDict.append(
                         {'src': {'SourceFilename': ('RADARSAT_2_CALIB:SIGMA0:'
-                                                    + fileName
+                                                    + filename
                                                     + '/product.xml'),
                                  'SourceBand': i,
                                  'DataType': dtype},
@@ -181,27 +181,26 @@ class Mapper(VRT):
         # Decompose, to avoid interpolation errors around 0 <-> 360
         look_direction_u = np.sin(np.deg2rad(look_direction))
         look_direction_v = np.cos(np.deg2rad(look_direction))
-        look_u_VRT = VRT(array=look_direction_u, lat=lat, lon=lon)
-        look_v_VRT = VRT(array=look_direction_v, lat=lat, lon=lon)
+        look_u_VRT = VRT.from_array(look_direction_u)
+        look_v_VRT = VRT.from_array(look_direction_v)
 
         # Note: If incidence angle and look direction are stored in
         #       same VRT, access time is about twice as large
-        lookVRT = VRT(lat=lat, lon=lon)
-        lookVRT._create_band(
-            [{'SourceFilename': look_u_VRT.fileName, 'SourceBand': 1},
-             {'SourceFilename': look_v_VRT.fileName, 'SourceBand': 1}],
+        lookVRT = VRT.from_lonlat(lon, lat)
+        lookVRT.create_band(
+            [{'SourceFilename': look_u_VRT.filename, 'SourceBand': 1},
+             {'SourceFilename': look_v_VRT.filename, 'SourceBand': 1}],
             {'PixelFunctionType': 'UVToDirectionTo'})
 
         # Blow up to full size
-        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize,
-                                          gdalDataset.RasterYSize)
+        lookVRT = lookVRT.get_resized_vrt(gdalDataset.RasterXSize, gdalDataset.RasterYSize)
         # Store VRTs so that they are accessible later
-        self.bandVRTs['look_u_VRT'] = look_u_VRT
-        self.bandVRTs['look_v_VRT'] = look_v_VRT
-        self.bandVRTs['lookVRT'] = lookVRT
+        self.band_vrts['look_u_VRT'] = look_u_VRT
+        self.band_vrts['look_v_VRT'] = look_v_VRT
+        self.band_vrts['lookVRT'] = lookVRT
 
         # Add band to full sized VRT
-        lookFileName = self.bandVRTs['lookVRT'].fileName
+        lookFileName = self.band_vrts['lookVRT'].filename
         metaDict.append({'src': {'SourceFilename': lookFileName,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'sensor_azimuth_angle',
@@ -210,7 +209,7 @@ class Mapper(VRT):
         ###############################
         # Create bands
         ###############################
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         ###################################################
         # Add derived band (incidence angle) calculated
@@ -230,7 +229,7 @@ class Mapper(VRT):
                'dataType': 6,
                'name': 'incidence_angle'}
 
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
         ###################################################################
@@ -251,7 +250,7 @@ class Mapper(VRT):
                    'PixelFunctionType': 'Sigma0HHBetaToSigma0VV',
                    'polarization': 'VV',
                    'suffix': 'VV'}
-            self._create_band(src, dst)
+            self.create_band(src, dst)
             self.dataset.FlushCache()
 
         ############################################
@@ -295,7 +294,7 @@ class Mapper(VRT):
                         .node('rasterAttributes')
                         .node('numberOfSamplesPerLine')
                         .value)
-        
+
         VRT.__init__(self, srcRasterXSize=numberOfSamples, srcRasterYSize=numberOfLines)
 
         gcps = []
@@ -306,15 +305,15 @@ class Mapper(VRT):
             lon = float(child.node('geodeticCoordinate').node('longitude').value)
             lat = float(child.node('geodeticCoordinate').node('latitude').value)
             gcps.append(gdal.GCP(lon, lat, 0, pix, lin))
-        
-        self.dataset.SetGCPs(gcps, NSR().wkt)        
+
+        self.dataset.SetGCPs(gcps, NSR().wkt)
 
         dates = map(parse, [child.node('timeStamp').value for child in
                              (productXml.node('sourceAttributes')
                                         .node('orbitAndAttitude')
                                         .node('orbitInformation')
                                         .nodeList('stateVector'))])
-        
+
         self.dataset.SetMetadataItem('time_coverage_start', min(dates).isoformat())
         self.dataset.SetMetadataItem('time_coverage_end', max(dates).isoformat())
         self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('radarsat-2')))

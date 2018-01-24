@@ -12,7 +12,7 @@ import json
 import pythesint as pti
 
 from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import GeolocationArray, VRT
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.mappers.obpg import OBPGL2BaseClass
 
@@ -24,7 +24,7 @@ class Mapper(OBPGL2BaseClass):
     * Test on MODIS Terra
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT=10, **kwargs):
         ''' Create VRT
         Parameters
@@ -63,13 +63,10 @@ class Mapper(OBPGL2BaseClass):
             geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
 
             # create empty VRT dataset with georeference only
-            VRT.__init__(self, srcGeoTransform=geoTransform,
-                         srcProjection=projection,
-                         srcRasterXSize=rasterXSize,
-                         srcRasterYSize=rasterYSize)
+            self._init_from_dataset_params(rasterXSize, rasterYSize, geoTransform, projection)
         else:
             # create empty VRT dataset with geolocation only
-            VRT.__init__(self, gdalSubDataset)
+            self._init_from_gdal_dataset(gdalSubDataset)
 
         # parts of dictionary for all Reflectances
         #dictRrs = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air', 'wavelength': '412'} }
@@ -191,7 +188,7 @@ class Mapper(OBPGL2BaseClass):
                     bandNo += 1
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set TIME
         startYear = int(gdalMetadata['Start Year'])
@@ -206,7 +203,7 @@ class Mapper(OBPGL2BaseClass):
         self._remove_geotransform()
 
         # add geolocation
-        geoMeta = self.geolocationArray.d
+        geoMeta = self.geolocation.data
         if len(geoMeta) > 0:
             self.dataset.SetMetadata(geoMeta, 'GEOLOCATION')
 
@@ -266,7 +263,7 @@ class Mapper(OBPGL2BaseClass):
 
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
-        self.remove_geolocationArray()
+        self._remove_geolocation()
 
         # reproject GCPs
         center_lon /= k
