@@ -256,7 +256,12 @@ class Mapper(VRT):
 
         See
         https://sentinel.esa.int/web/sentinel/sentinel-1-sar-wiki/-/wiki/Sentinel%20One/Application+of+Radiometric+Calibration+LUT
+        
+        The noise correction/subtraction is implemented in an independent package "sentinel1denoised"
+        See
+        https://github.com/nansencenter/sentinel1denoised
         '''
+        
         # Get look direction
         sat_heading = initial_bearing(longitude[:-1, :],
                                       latitude[:-1, :],
