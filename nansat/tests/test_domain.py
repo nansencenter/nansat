@@ -135,11 +135,9 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(d), Domain)
         self.assertEqual(d.shape(), lat.shape)
 
-
-
-
-
-    def test_repr(self):
+    @patch.object(Domain, 'get_corners',
+        return_value=(np.array([ 25.,  25.,  35.,  35.]), np.array([ 72.,  70.,  72.,  70.])))
+    def test_repr(self, mock_get_corners):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         result = d.__repr__()
         test = ('Domain:[500 x 500]\n'
@@ -155,6 +153,22 @@ class DomainTest(unittest.TestCase):
                 '\t ( 25.00,  70.00)  ( 35.00,  70.00)\n' )
         self.assertIsInstance(result, str)
         self.assertEquals(result, test)
+    
+    def test_write_kml(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
+        d.write_kml(kmlFileName=tmpfilename)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     def test_get_geolocation_grids(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -163,13 +177,6 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lon), np.ndarray)
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(lat.shape, (500, 500))
-
-    def test_write_kml(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
-        d.write_kml(kmlFileName=tmpfilename)
-
-        self.assertTrue(os.path.exists(tmpfilename))
 
     def test_get_border_wkt(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
