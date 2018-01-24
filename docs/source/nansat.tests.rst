@@ -20,10 +20,26 @@ nansat\.tests\.test\_domain module
     :undoc-members:
     :show-inheritance:
 
+nansat\.tests\.test\_exporter module
+------------------------------------
+
+.. automodule:: nansat.tests.test_exporter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 nansat\.tests\.test\_figure module
 ----------------------------------
 
 .. automodule:: nansat.tests.test_figure
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.tests\.test\_geolocation module
+---------------------------------------
+
+.. automodule:: nansat.tests.test_geolocation
     :members:
     :undoc-members:
     :show-inheritance:
@@ -72,6 +88,14 @@ nansat\.tests\.test\_tools module
 ---------------------------------
 
 .. automodule:: nansat.tests.test_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.tests\.test\_vrt module
+-------------------------------
+
+.. automodule:: nansat.tests.test_vrt
     :members:
     :undoc-members:
     :show-inheritance:
