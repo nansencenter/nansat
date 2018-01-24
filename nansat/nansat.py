@@ -118,6 +118,14 @@ class Nansat(Domain, Exporter):
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
 
+    # instance attributes
+    logger = None
+    filename = None
+    name = None
+    path = None
+    vrt = None
+    mapper = None
+
     @classmethod
     def from_domain(cls, domain, array=None, parameters=None, log_level=30):
         """

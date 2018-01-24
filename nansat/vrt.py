@@ -98,8 +98,14 @@ class VRT(object):
           </ReprojectionTransformer>
         </ReprojectTransformer> ''')
 
+    # instance attributes
     filename = ''
     vrt = None
+    dataset = None
+    logger = None
+    driver = None
+    band_vrts = None
+    tps = None
 
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):

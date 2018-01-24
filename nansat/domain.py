@@ -80,6 +80,11 @@ class Domain(object):
     {content}
     </kml>'''
 
+    # instance attributes
+    vrt = None
+    logger = None
+    name = None
+
     # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
                  lat=None, name='', logLevel=None):
@@ -192,7 +197,6 @@ class Domain(object):
                                                geo_transform=geo_transform,
                                                projection=srs.wkt,
                                                gcps=[], gcp_projection='')
-            self.extent_dict = extent_dict
         elif lat is not None and lon is not None:
             # create self.vrt from given lat/lon
             self.vrt = VRT.from_lonlat(lon, lat)
