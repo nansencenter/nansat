@@ -20,26 +20,10 @@ nansat\.figure module
     :undoc-members:
     :show-inheritance:
 
-nansat\.mosaic module
----------------------
-
-.. automodule:: nansat.mosaic
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.nansat module
 ---------------------
 
 .. automodule:: nansat.nansat
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-nansat\.nansatmap module
-------------------------
-
-.. automodule:: nansat.nansatmap
     :members:
     :undoc-members:
     :show-inheritance:
