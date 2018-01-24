@@ -70,7 +70,6 @@ class NSR(osr.SpatialReference, object):
                 status = self.ImportFromWkt(str(srs))
             if status > 0:
                 raise ProjectionError('Proj4 or WKT (%s) is wrong' % srs)
-        # TODO: catch long in python 3
         elif isinstance(srs, int):
             # parse as EPSG code
             status = self.ImportFromEPSG(srs)

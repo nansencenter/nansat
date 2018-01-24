@@ -85,7 +85,6 @@ class Domain(object):
     logger = None
     name = None
 
-    # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
                  lat=None, name='', logLevel=None):
         """Create Domain from GDALDataset or string options or lat/lon grids
@@ -227,7 +226,7 @@ class Domain(object):
         out_str += corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
         return out_str
 
-    # TODO: Test write_kml
+
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         """Write KML file with domains
 
@@ -282,7 +281,6 @@ class Domain(object):
             kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
             kml_file.write(self.KML_BASE.format(content=kml_content))
 
-    # TODO: Test _get_border_kml
     def _get_border_kml(self):
         """Generate Placemark entry for KML
 
@@ -360,12 +358,10 @@ class Domain(object):
         \t</LatLonBox>
         </GroundOverlay>'''
         # test input options
-        # TODO: kml_figurename can be not optional
         if kml_figurename is None:
             raise OptionError('kmlFigureName(%s) is not specified' % kmlFigureName)
 
         # get corner of the domain and add to KML
-        # TODO: can we change that to max_min_lat_lon?
         domain_lon, domain_lat = self.get_corners()
         with open(kml_filename, 'wt') as kml_file:
             kml_content = template.format(filename=kml_filename, figurename=kml_figurename,
@@ -439,7 +435,6 @@ class Domain(object):
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
-        # TODO: Make DRY
         x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0], extentDic['lle'][3])
         x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2], extentDic['lle'][3])
         x3, y3, _ = coorTrans.TransformPoint(extentDic['lle'][2], extentDic['lle'][1])
@@ -689,7 +684,6 @@ class Domain(object):
         # Estimate pixel size in center of domain using haversine formula
         center_col = round(self.vrt.dataset.RasterXSize/2)
         center_row = round(self.vrt.dataset.RasterYSize/2)
-        # TODO: Bad names
         lon00, lat00 = self.transform_points([center_col], [center_row])
         lon01, lat01 = self.transform_points([center_col], [center_row + 1])
         lon10, lat10 = self.transform_points([center_col + 1], [center_row])
@@ -757,7 +751,6 @@ class Domain(object):
         resolution_x, resolution_y, raster_x_size, raster_y_size : float
         """
         resolution_x = tr_arr[0]
-        # TODO: Review requested, falsification of negative value in resolution_y
         resolution_y = -(tr_arr[1])
 
         if width < resolution_x or height < resolution_y:

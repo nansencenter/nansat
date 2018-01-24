@@ -214,7 +214,6 @@ class Nansat(Domain, Exporter):
         expression = band.GetMetadata().get('expression', '')
         # get data
         band_data = band.ReadAsArray()
-        # TODO: Fail tests with get item
         if band_data is None:
             raise GDALError('Cannot read array from band %s' % str(band_data))
 
@@ -296,7 +295,6 @@ class Nansat(Domain, Exporter):
         if array is not None:
             self.add_band(array=array, parameters=parameters)
 
-    # TODO: Test _fill_with_nan
     def _fill_with_nan(self, band, band_data):
         fill_value = float(band.GetMetadata()['_FillValue'])
         band_data[band_data == fill_value] = np.nan
@@ -399,8 +397,6 @@ class Nansat(Domain, Exporter):
 
         return band_metadata
 
-    # TODO: Test has_band
-    # TODO: Discus change of band to band_name
     def has_band(self, band):
         """Check if self has band with name <band>
         Parameters
@@ -488,7 +484,6 @@ class Nansat(Domain, Exporter):
             # update size and GeoTranform in XML of the warped VRT object
             self.vrt = self.vrt.get_resized_vrt(dst_shape[1], dst_shape[0], resample_alg)
 
-# TODO: move to _set_new_extent
         # resize gcps
         gcps = self.vrt.vrt.dataset.GetGCPs()
         if len(gcps) > 0:
@@ -513,7 +508,6 @@ class Nansat(Domain, Exporter):
 
         return factor
 
-    # TODO: Check how the get_GDALRasterBand method works with new VRT
     def get_GDALRasterBand(self, band_id=1, bandID=None):
         ''' Get a GDALRasterBand of a given Nansat object
 
@@ -643,7 +637,6 @@ class Nansat(Domain, Exporter):
             warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
             resample_alg = eResampleAlg
 
-# TODO: move the check to VRT.get_shifted_vrt
         # if self spans from 0 to 360 and dst_domain is west of 0:
         #     shift self westwards by 180 degrees
         # check span
@@ -735,7 +728,6 @@ class Nansat(Domain, Exporter):
         """
         Create numpy array with watermask (water=1, land=0)
 
-        TODO: cross-check and update docstring and references/links
 
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
@@ -781,7 +773,6 @@ class Nansat(Domain, Exporter):
             warnings.warn(self.INIT_DSTDOMAIN_WARNING, NansatFutureWarning)
             dst_domain = dstDomain
 
-# TODO: move to _check_watermask_data
         mod44DataExist = True
         # check if path is given in input param or in environment
         if mod44path is None:
@@ -810,9 +801,6 @@ class Nansat(Domain, Exporter):
 
         return watermask
 
-# TODO:
-#   Move to Figure
-#   Nansat inherits from Figure
     def write_figure(self, filename='', bands=1, clim=None, addDate=False,
                      array_modfunc=None, fileName='', **kwargs):
         ''' Save a raster band to a figure in graphical format.
@@ -985,7 +973,6 @@ class Nansat(Domain, Exporter):
         return fig
 
 
-#TODO: Move to Figure
     def write_geotiffimage(self, filename, band_id=1, bandID=None):
         """ Writes an 8-bit GeoTiff image for a given band.
 
