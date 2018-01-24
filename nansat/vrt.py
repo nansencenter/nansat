@@ -798,7 +798,7 @@ class VRT(object):
         metadata = remove_keys(self.dataset.GetMetadata(), rm_metadata)
         # Apply escaping to metadata strings to preserve special characters (in XML/HTML format)
         metadata_escaped = {}
-        for key, val in metadata.iteritems():
+        for key, val in metadata.items():
             # Keys not escaped - this may be changed if needed...
             metadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
         self.dataset.SetMetadata(metadata_escaped)
