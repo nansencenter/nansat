@@ -34,7 +34,6 @@ from nansat.figure import Image
 import sys
 import nansat_test_data as ntd
 from mock import patch, PropertyMock
-import ipdb
 
 '''
 TEST_FILE = os.path.join(ntd.test_data_path, 'gcps.tif')
