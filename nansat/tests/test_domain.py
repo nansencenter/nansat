@@ -140,8 +140,8 @@ class DomainTest(unittest.TestCase):
 
 
     def test_repr(self):
-        dom = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        result = dom.__repr__()
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        result = d.__repr__()
         test = ('Domain:[500 x 500]\n'
                 '----------------------------------------\n'
                 'Projection:\nGEOGCS["WGS 84",\n'
