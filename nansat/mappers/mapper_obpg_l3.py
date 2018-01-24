@@ -4,6 +4,8 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+
+from __future__ import unicode_literals, absolute_import, division, print_function
 import datetime
 import os.path
 import glob
@@ -20,9 +22,12 @@ class Mapper(VRT):
 
     # detect wkv from metadata 'Parameter'
     param2wkv = {'Chlorophyll a concentration': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                 'Diffuse attenuation coefficient': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water',
-                 'Remote sensing reflectance': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                 'CDOM Index': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
+                 'Diffuse attenuation coefficient': 'volume_attenuation_coefficient_of_downwelling_'
+                                                    'radiative_flux_in_sea_water',
+                 'Remote sensing reflectance': 'surface_ratio_of_upwelling_radiance_emerging_from_'
+                                               'sea_water_to_downwelling_radiative_flux_in_air',
+                 'CDOM Index': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_'
+                               'to_dissolved_organic_matter',
                  'Sea Surface Salinity': 'sea_surface_salinity',
                  'Sea Surface Temperature': 'sea_surface_temperature',
                  'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
@@ -78,7 +83,7 @@ class Mapper(VRT):
                 tmpGdalMetadata = tmpGdalDataset.GetMetadata()
                 simParameter = tmpGdalMetadata['Parameter']
             except:
-                print 'No parameter: %s not a supported SMI file' % simFile
+                print_function('No parameter: %s not a supported SMI file')
                 continue
             else:
                 # set params of the similar file
