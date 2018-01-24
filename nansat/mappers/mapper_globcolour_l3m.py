@@ -5,6 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 
+from __future__ import unicode_literals, print_function, division
 import datetime
 import os.path
 import glob
@@ -17,13 +18,13 @@ from nansat.tools import gdal, ogr, WrongMapperError
 
 
 class Mapper(VRT, Globcolour):
-    ''' Mapper for GLOBCOLOR L3M products'''
+    """Mapper for GLOBCOLOR L3M products"""
 
     def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' GLOBCOLOR L3M VRT '''
 
         try:
-            print "=>%s<=" % gdalMetadata['NC_GLOBAL#title']
+            print_function("=>%s<=" % gdalMetadata['NC_GLOBAL#title'])
         except (TypeError, KeyError):
             raise WrongMapperError
 
@@ -33,15 +34,15 @@ class Mapper(VRT, Globcolour):
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
-        print 'idir:', iDir, iFile, iFileName[0:30], iFileExt[0:8]
+        print_function('idir:', iDir, iFile, iFileName[0:30], iFileExt[0:8])
 
         simFilesMask = os.path.join(iDir, iFileName[0:30] + '*.nc')
         simFiles = glob.glob(simFilesMask)
-        print 'simFilesMask, simFiles', simFilesMask, simFiles
+        print_function('simFilesMask, simFiles', simFilesMask, simFiles)
 
         metaDict = []
         for simFile in simFiles:
-            print 'simFile', simFile
+            print_function('simFile', simFile)
             # open file, get metadata and get parameter name
             simSupDataset = gdal.Open(simFile)
             simSubDatasets = simSupDataset.GetSubDatasets()
@@ -54,7 +55,7 @@ class Mapper(VRT, Globcolour):
                     simBandMetadata = simBand.GetMetadata()
                     simVarname = simBandMetadata['NETCDF_VARNAME']
                     # get WKV
-                    print '    simVarname', simVarname
+                    print_function('    simVarname', simVarname)
                     if simVarname in self.varname2wkv:
                         simWKV = self.varname2wkv[simVarname]
                         break
@@ -80,25 +81,28 @@ class Mapper(VRT, Globcolour):
             if simWKV == 'surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water':
                 solarIrradiance = simBandMetadata['solar_irradiance']
                 metaEntry2 = {'src': metaEntry['src']}
-                metaEntry2['dst'] = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_water',
+                metaEntry2['dst'] = {'wkv': 'surface_ratio_of_upwelling_radiance_emerging_from_sea'
+                                            '_water_to_downwelling_radiative_flux_in_water',
                                      'suffix': simWavelength,
                                      'wavelength': simWavelength,
-                                     #'expression': 'self["nLw_%s"] / %s / (0.52 + 1.7 * self["nLw_%s"] / %s)' % (simWavelength, solarIrradiance, simWavelength, solarIrradiance),
+                                     # 'expression': 'self["nLw_%s"] / %s / (0.52 + 1.7 * self["nLw
+                                     # _%s"] / %s)' % (simWavelength, solarIrradiance,
+                                     # simWavelength, solarIrradiance),
                                      'expression': 'self["nLw_%s"] / %s' %
                                      (simWavelength, solarIrradiance)
                                      }
 
-            print '        metaEntry', metaEntry
+            print_function('        metaEntry', metaEntry)
             metaDict.append(metaEntry)
             if metaEntry2 is not None:
-                print '        metaEntry2', metaEntry2
+                print_function('        metaEntry2', metaEntry2)
                 metaDict.append(metaEntry2)
 
-        print 'simSubDatasets', simValidSupDataset.GetSubDatasets()
+        print_function('simSubDatasets', simValidSupDataset.GetSubDatasets())
         for simSubDataset in simValidSupDataset.GetSubDatasets():
-            print 'simSubDataset', simSubDataset
+            print_function('simSubDataset', simSubDataset)
             if '_flags ' in simSubDataset[1]:
-                print '    mask simSubDataset', simSubDataset[1]
+                print_function('    mask simSubDataset', simSubDataset[1])
                 flags = gdal.Open(simSubDataset[0]).ReadAsArray()
                 mask = np.ones(flags.shape) * 64
                 mask[np.bitwise_and(flags, np.power(2, 0)) > 0] = 1
@@ -112,7 +116,11 @@ class Mapper(VRT, Globcolour):
              'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
-        simGdalDataset.SetProjection('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+        simGdalDataset.SetProjection('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,'
+                                     '298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG",'
+                                     '"6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                                     'UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],'
+                                     'AUTHORITY["EPSG","4326"]]')
         self._init_from_gdal_dataset(simGdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
