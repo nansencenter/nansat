@@ -66,7 +66,7 @@ class PointBrowser():
         if not MATPLOTLIB_EXISTS:
             raise ImportError(' Matplotlib is not installed ')
         if not matplotlib.is_interactive():
-            raise ImportError('''
+            raise SystemError('''
         Python is started with -pylab option, transect will not work.
         Please restart python without -pylab.''')
 
