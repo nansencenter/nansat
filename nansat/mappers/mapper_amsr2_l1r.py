@@ -21,7 +21,7 @@ class Mapper(VRT):
 
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_STEP=20, MAX_LAT=90, MIN_LAT=50, resolution='low',
                  **kwargs):
         ''' Create VRT
@@ -30,7 +30,7 @@ class Mapper(VRT):
         GCP_COUNT : int
             number of GCPs along each dimention
         '''
-        ifile = os.path.split(fileName)[1]
+        ifile = os.path.split(filename)[1]
         if not ifile.startswith('GW1AM2_') or not ifile.endswith('.h5'):
             raise WrongMapperError
         try:
@@ -51,8 +51,8 @@ class Mapper(VRT):
             subDatasetWidth = 486
 
         # get GCPs from lon/lat grids
-        latGrid = gdal.Open('HDF5:"%s"://Latitude_of_Observation_Point_for_89A' % fileName).ReadAsArray()
-        lonGrid = gdal.Open('HDF5:"%s"://Longitude_of_Observation_Point_for_89A' % fileName).ReadAsArray()
+        latGrid = gdal.Open('HDF5:"%s"://Latitude_of_Observation_Point_for_89A' % filename).ReadAsArray()
+        lonGrid = gdal.Open('HDF5:"%s"://Longitude_of_Observation_Point_for_89A' % filename).ReadAsArray()
         if subDatasetWidth == 243:
             latGrid = latGrid[:, ::2]
             lonGrid = lonGrid[:, ::2]
@@ -111,9 +111,9 @@ class Mapper(VRT):
 
         # create VRT from one of the subdatasets
         gdalSubDataset = gdal.Open(metaEntry['src']['SourceFilename'])
-        VRT.__init__(self, srcRasterXSize=subDatasetWidth, srcRasterYSize=ySize)
+        self._init_from_dataset_params(subDatasetWidth, ySize, (1,0,0,ySize,0,-1), NSR().wkt)
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         self.dataset.SetMetadataItem('time_coverage_start',
                     parse_time(gdalMetadata['ObservationStartDateTime']).isoformat())

@@ -27,23 +27,23 @@ class Mapper(Opendap):
 
     srcDSProjection = NSR().wkt
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  date=None, ds=None, bands=None, cachedir=None,
                  **kwargs):
         ''' Create NCEP VRT
         Parameters:
-            fileName : URL
+            filename : URL
             date : str
                 2010-05-01
             ds : netCDF.Dataset
                 previously opened dataset
 
         '''
-        self.test_mapper(fileName)
-        fname = os.path.split(fileName)[1]
+        self.test_mapper(filename)
+        fname = os.path.split(filename)[1]
         date = '%s-%s-%sT%s:00Z' % (fname[0:4], fname[4:6], fname[6:8], fname[8:10])
 
-        self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
+        self.create_vrt(filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
         # add instrument and platform
         #instr = pti.get_gcmd_instrument('active remote sensing')

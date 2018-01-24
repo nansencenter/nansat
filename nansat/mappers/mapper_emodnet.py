@@ -11,7 +11,7 @@ from dateutil.parser import parse
 import numpy as np
 
 from nansat.nsr import NSR
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from nansat.node import Node
 from nansat.tools import gdal, ogr, WrongMapperError
 
@@ -58,11 +58,7 @@ class Mapper(VRT):
                         mbNorthLatitude, 0, -Element_y_size]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, srcGeoTransform=geoTransform,
-                           srcMetadata=gdalMetadata,
-                           srcProjection=NSR(mbProj4String).wkt,
-                           srcRasterXSize=Number_columns,
-                           srcRasterYSize=Number_lines)
+        self._init_from_dataset_params(Number_columns, Number_lines, geoTransform, NSR(mbProj4String).wkt, metadata=gdalMetadata)
 
         metaDict = [{'src': {'SourceFilename': dSourceFile,
                              'SourceBand': 1,
@@ -71,4 +67,4 @@ class Mapper(VRT):
                      'dst': {'wkv': 'depth'}}]
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

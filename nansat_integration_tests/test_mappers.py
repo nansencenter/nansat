@@ -103,7 +103,7 @@ class TestAllMappers(object):
         allBandNames = []
         complexBandNames = []
         for iBand in range(n.vrt.dataset.RasterCount):
-            iBandName = n.get_metadata(bandID=iBand + 1)['name']
+            iBandName = n.get_metadata(band=iBand + 1)['name']
             allBandNames.append(iBandName)
             if '_complex' in iBandName:
                 complexBandNames.append(iBandName)

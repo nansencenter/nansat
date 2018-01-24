@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------------
 # Name:		mapper_amsre_UHAM_lead_fraction.py
-# Purpose:      
+# Purpose:
 #
 # Author:       Morten Wergeland Hansen
 # Modified:	Morten Wergeland Hansen
@@ -8,7 +8,7 @@
 # Created:	18.02.2015
 # Last modified:24.02.2015 09:26
 # Copyright:    (c) NERSC
-# License:      
+# License:
 #-------------------------------------------------------------------------------
 import datetime
 from osgeo import gdal, osr
@@ -19,8 +19,8 @@ from nansat.tools import WrongMapperError
 
 class Mapper(VRT):
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
-        
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
+
         title_correct = False
         if not gdalMetadata:
             raise WrongMapperError
@@ -36,15 +36,10 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # initiate VRT for the NSIDC 10 km grid
-        VRT.__init__(self,
-                     srcGeoTransform=(-3850000, 6250, 0.0,
-                                      5850000, 0.0, -6250),
-                     srcProjection=NSR(3411).wkt,
-                     srcRasterXSize=1216,
-                     srcRasterYSize=1792)
+        self._init_from_dataset_params(1216, 1792, (-3850000, 6250, 0.0, 5850000, 0.0, -6250), NSR(3411).wkt)
 
         src = {
-            'SourceFilename': 'NETCDF:"%s":lf'%fileName,
+            'SourceFilename': 'NETCDF:"%s":lf'%filename,
             'SourceBand': 1,
         }
         dst = {
@@ -52,7 +47,7 @@ class Mapper(VRT):
             'long_name': 'AMSRE sea ice lead fraction',
         }
 
-        self._create_band(src, dst)
+        self.create_band(src, dst)
         self.dataset.FlushCache()
 
 

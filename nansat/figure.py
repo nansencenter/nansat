@@ -33,7 +33,7 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from nansat.tools import add_logger, OptionError
+from nansat.tools import add_logger
 
 
 class Figure(object):
@@ -461,7 +461,7 @@ class Figure(object):
                     newTicks.append(tick)
             ticks = newTicks
         else:
-            raise OptionError('Incorrect type of ticks')
+            raise ValueError('Incorrect type of ticks')
 
         return ticks
 
@@ -584,11 +584,11 @@ class Figure(object):
 
         # create a ratio list for each band
         if not (isinstance(ratio, float) or isinstance(ratio, int)):
-            raise OptionError('Incorrect input ratio %s' % str(ratio))
+            raise ValueError('Incorrect input ratio %s' % str(ratio))
 
         # create a ratio list for each band
         if ratio <= 0 or ratio > 1:
-            raise OptionError('Incorrect input ratio %s' % str(ratio))
+            raise ValueError('Incorrect input ratio %s' % str(ratio))
 
         # create a 2D array and set min and max values
         clim = [[0] * self.array.shape[0], [0] * self.array.shape[0]]

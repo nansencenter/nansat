@@ -15,27 +15,28 @@ import json
 import pythesint as pti
 
 from nansat.tools import gdal, ogr
-from nansat.vrt import VRT, GeolocationArray
+from nansat.geolocation import Geolocation
+from nansat.vrt import VRT
 from nansat.tools import WrongMapperError
 
 
 class Mapper(VRT):
     ''' Create VRT with mapping of WKV '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  latlonGrid=None, mask='', **kwargs):
 
         ''' Create VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
         gdalDataset : gdal dataset
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
         # test if input files is ASCAT
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         try:
             assert iFileName[0:6] == 'ascat_' and iFileExt == '.nc'
@@ -43,56 +44,54 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # Create geolocation
-        subDataset = gdal.Open('NETCDF:"' + fileName + '":lat')
-        self.GeolocVRT = VRT(srcRasterXSize=subDataset.RasterXSize,
-                             srcRasterYSize=subDataset.RasterYSize)
+        subDataset = gdal.Open('NETCDF:"' + filename + '":lat')
+        self.GeolocVRT = VRT(subDataset.RasterXSize, subDataset.RasterYSize)
 
-        GeolocMetaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+        GeolocMetaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                       '":lon'),
                                    'SourceBand': 1,
                                    'ScaleRatio': 0.00001,
                                    'ScaleOffset': -360},
                            'dst': {}},
-                          {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                          {'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                       '":lat'),
                                    'SourceBand': 1,
                                    'ScaleRatio': 0.00001,
                                    'ScaleOffset': 0},
                            'dst': {}}]
 
-        self.GeolocVRT._create_bands(GeolocMetaDict)
+        self.GeolocVRT.create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.GeolocVRT,
-                                        yVRT=self.GeolocVRT,
+        GeolocObject = Geolocation(x_vrt=self.GeolocVRT,
+                                        y_vrt=self.GeolocVRT,
                                         # x = lon, y = lat
-                                        xBand=1, yBand=2,
-                                        lineOffset=0, pixelOffset=0,
-                                        lineStep=1, pixelStep=1)
+                                        x_band=1, y_band=2,
+                                        line_offset=0, pixel_offset=0,
+                                        line_step=1, pixel_step=1)
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self,
-                     srcRasterXSize=subDataset.RasterXSize,
-                     srcRasterYSize=subDataset.RasterYSize,
-                     gdalDataset=subDataset,
-                     geolocationArray=GeolocObject,
-                     srcProjection=GeolocObject.d['SRS'])
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(subDataset.RasterXSize, subDataset.RasterYSize,
+                                        (0,1,0,subDataset.RasterYSize,0,-1),
+                                        GeolocObject.d['SRS'])
+        self._add_geolocation(GeolocObject)
 
         # Scale and NODATA should ideally be taken directly from raw file
-        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + fileName +
+        metaDict = [{'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                 '":wind_speed'),
                              'ScaleRatio': 0.01,
                              'NODATA': -32767},
                      'dst': {'name': 'windspeed',
                              'wkv': 'wind_speed'}
                      },
-                    {'src': {'SourceFilename': ('NETCDF:"' + fileName +
+                    {'src': {'SourceFilename': ('NETCDF:"' + filename +
                                                 '":wind_dir'),
                              'ScaleRatio': 0.1,
                              'NODATA': -32767},
                      'dst': {'name': 'winddirection',
                              'wkv': 'wind_from_direction'}}]
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # This should not be necessary
         # - should be provided by GeolocationArray!

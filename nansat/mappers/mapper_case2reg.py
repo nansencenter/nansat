@@ -18,17 +18,17 @@ from nansat.mappers import mapper_generic as mg
 
 class Mapper(mg.Mapper):
     '''Mapping for the BEAM/Visat output of Case2Regional algorithm'''
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  wavelengths=[None, 413, 443, 490, 510, 560, 620, 665,
                               681, 709, 753, None, 778, 864], **kwargs):
 
-        fPathName, fExt = os.path.splitext(fileName)
+        fPathName, fExt = os.path.splitext(filename)
         fPath, fName = os.path.split(fPathName)
         if fExt != '.nc' or 'MER_' not in fName or 'N1_C2IOP' not in fName:
             raise WrongMapperError
 
         # get all metadata using the GENERIC Mapper
-        mg.Mapper.__init__(self, fileName, gdalDataset, gdalMetadata)
+        mg.Mapper.__init__(self, filename, gdalDataset, gdalMetadata)
 
         #add metadata for Rrs bands
         rrsDict = pti.get_wkv_variable('surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air')
@@ -54,6 +54,6 @@ class Mapper(mg.Mapper):
                     'suffix': str(wavelength),
                     'wavelength': str(wavelength),
                     'PixelFunctionType': 'NormReflectanceToRemSensReflectance'}
-                self._create_band(src, dst)
+                self.create_band(src, dst)
 
         self.dataset.FlushCache()

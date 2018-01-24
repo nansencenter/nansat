@@ -20,21 +20,21 @@ from nansat.vrt import VRT
 class Mapper(VRT):
     ''' Mapper for LANDSAT5,6,7,8 .tar.gz or tif files'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                        resolution='low', **kwargs):
         ''' Create LANDSAT VRT from multiple tif files or single tar.gz file'''
         mtlFileName = ''
         bandFileNames = []
         bandSizes = []
         bandDatasets = []
-        fname = os.path.split(fileName)[1]
+        fname = os.path.split(filename)[1]
 
-        if   (fileName.endswith('.tar') or
-              fileName.endswith('.tar.gz') or
-              fileName.endswith('.tgz')):
+        if   (filename.endswith('.tar') or
+              filename.endswith('.tar.gz') or
+              filename.endswith('.tgz')):
             # try to open .tar or .tar.gz or .tgz file with tar
             try:
-                tarFile = tarfile.open(fileName)
+                tarFile = tarfile.open(filename)
             except:
                 raise WrongMapperError
 
@@ -46,7 +46,7 @@ class Mapper(VRT):
                 if   (tarName[0] in ['L', 'M'] and
                       os.path.splitext(tarName)[1] in ['.TIF', '.tif']):
                     # open TIF file from TAR using VSI
-                    sourceFilename = '/vsitar/%s/%s' % (fileName, tarName)
+                    sourceFilename = '/vsitar/%s/%s' % (filename, tarName)
                     gdalDatasetTmp = gdal.Open(sourceFilename)
                     # keep name, GDALDataset and size
                     bandFileNames.append(sourceFilename)
@@ -63,7 +63,7 @@ class Mapper(VRT):
                fname.endswith('._MTL.txt'))):
 
             # try to find TIF/tif files with the same name as input file
-            path, coreName = os.path.split(fileName)
+            path, coreName = os.path.split(filename)
             coreName = os.path.splitext(coreName)[0].split('_')[0]
             coreNameMask = coreName+'*[tT][iI][fF]'
             tifNames = sorted(glob.glob(os.path.join(path, coreNameMask)))
@@ -93,7 +93,7 @@ class Mapper(VRT):
         elif resolution in ['high', 'hi']:
             bandXSise = max(bandSizes)
         else:
-            raise OptionError('Wrong resolution %s for file %s' % (resolution, fileName))
+            raise ValueError('Wrong resolution %s for file %s' % (resolution, filename))
 
         # find bands with appropriate size and put to metaDict
         metaDict = []
@@ -113,16 +113,15 @@ class Mapper(VRT):
                 gdalDataset4Use = bandDataset
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset4Use)
+        self._init_from_gdal_dataset(gdalDataset4Use)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         if len(mtlFileName) > 0:
             mtlFileName = os.path.join(os.path.split(bandFileNames[0])[0],
                                         mtlFileName)
-            mtlFileLines = [line.strip() for line in
-                            self.read_xml(mtlFileName).split('\n')]
+            mtlFileLines = [line.strip() for line in self.read_vsi(mtlFileName).split('\n')]
             dateString = [line.split('=')[1].strip()
                           for line in mtlFileLines
                             if ('DATE_ACQUIRED' in line or

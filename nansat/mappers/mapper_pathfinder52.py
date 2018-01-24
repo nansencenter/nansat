@@ -20,12 +20,12 @@ class Mapper(vrt.VRT):
     * remote files
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, minQual=4,
+    def __init__(self, filename, gdalDataset, gdalMetadata, minQual=4,
                  **kwargs):
         ''' Create VRT '''
 
-        if not 'AVHRR_Pathfinder-PFV5.2' in fileName:
-            raise WrongMapperError(fileName)
+        if not 'AVHRR_Pathfinder-PFV5.2' in filename:
+            raise WrongMapperError(filename)
 
         subDatasets = gdalDataset.GetSubDatasets()
         metaDict = []
@@ -67,7 +67,7 @@ class Mapper(vrt.VRT):
             metaDict.append(metaEntry)
 
         # create empty VRT dataset with geolocation only
-        vrt.VRT.__init__(self, subGDALDataset)
+        self._init_from_gdal_dataset(subGDALDataset)
 
         # add mask
         if qualName != '':
@@ -75,17 +75,17 @@ class Mapper(vrt.VRT):
             qualArray = qualDataset.ReadAsArray()
             qualArray[qualArray < minQual] = 1
             qualArray[qualArray >= minQual] = 128
-            self.bandVRTs = {'maskVRT': vrt.VRT(array=qualArray.astype('int8'))}
+            self.band_vrts = {'maskVRT': vrt.VRT(array=qualArray.astype('int8'))}
             metaDict.append({'src': {'SourceFilename': (self.
-                                                        bandVRTs['maskVRT'].
-                                                        fileName),
+                                                        band_vrts['maskVRT'].
+                                                        filename),
                                      'SourceBand': 1,
                                      'SourceType': 'SimpleSource',
                                      'DataType': 1},
                              'dst': {'name': 'mask'}})
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # append fixed projection and geotransform
         self.dataset.SetProjection(NSR().wkt)

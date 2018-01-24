@@ -14,7 +14,7 @@ import pythesint as pti
 
 import numpy as np
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.tools import gdal, ogr, WrongMapperError
 
@@ -24,7 +24,7 @@ class Mapper(VRT):
 
     freqs = [6, 7, 10, 18, 23, 36, 89]
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' OBPG L3 VRT '''
 
         # test the product
@@ -36,7 +36,7 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # get list of similar (same date, A/D orbit) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileMask = iFile[:30] + '%02d' + iFile[32:]
         simFiles = []
         for freq in self.freqs:
@@ -76,15 +76,10 @@ class Mapper(VRT):
                     metaDict.append(metaEntry)
 
         # initiate VRT for the NSIDC 10 km grid
-        VRT.__init__(self,
-                     srcGeoTransform=(-3850000, 10000, 0.0,
-                                      5850000, 0.0, -10000),
-                     srcProjection=NSR(3411).wkt,
-                     srcRasterXSize=760,
-                     srcRasterYSize=1120)
+        self._init_from_dataset_params(760, 1120, (-3850000, 10000, 0.0, 5850000, 0.0, -10000), NSR(3411).wkt)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Adding valid time to dataset
         self.dataset.SetMetadataItem('time_coverage_start', parse(gdalMetadata['ObservationStartDateTime']).isoformat())

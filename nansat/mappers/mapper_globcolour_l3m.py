@@ -11,7 +11,7 @@ import glob
 
 import numpy as np
 
-from nansat.vrt import VRT, GeolocationArray
+from nansat.vrt import VRT
 from globcolour import Globcolour
 from nansat.tools import gdal, ogr, WrongMapperError
 
@@ -19,7 +19,7 @@ from nansat.tools import gdal, ogr, WrongMapperError
 class Mapper(VRT, Globcolour):
     ''' Mapper for GLOBCOLOR L3M products'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' GLOBCOLOR L3M VRT '''
 
         try:
@@ -31,7 +31,7 @@ class Mapper(VRT, Globcolour):
             raise WrongMapperError
 
         # get list of similar (same date) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         print 'idir:', iDir, iFile, iFileName[0:30], iFileExt[0:8]
 
@@ -104,19 +104,19 @@ class Mapper(VRT, Globcolour):
                 mask[np.bitwise_and(flags, np.power(2, 0)) > 0] = 1
                 mask[np.bitwise_and(flags, np.power(2, 3)) > 0] = 2
 
-        self.bandVRTs = {'maskVRT': VRT(array=mask)}
+        self.band_vrts = {'maskVRT': VRT(array=mask)}
 
         metaDict.append(
-            {'src': {'SourceFilename': self.bandVRTs['maskVRT'].fileName,
+            {'src': {'SourceFilename': self.band_vrts['maskVRT'].filename,
                      'SourceBand': 1},
              'dst': {'name': 'mask'}})
 
         # create empty VRT dataset with geolocation only
         simGdalDataset.SetProjection('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
-        VRT.__init__(self, simGdalDataset)
+        self._init_from_gdal_dataset(simGdalDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         startYear = int(gdalMetadata['Start Year'])

@@ -155,7 +155,7 @@ satDict = [{'name': 'GOES13',
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Geostationary satellite data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         try:
             satellite = gdalDataset.GetDescription().split(",")[2]
@@ -222,10 +222,10 @@ class Mapper(VRT):
             metaDict.append({'src': src, 'dst': dst})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         # Create bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # For Meteosat7 ch1 has higher resolution than ch2 and ch3
         # and for MSG, channel 12 (HRV) has
@@ -235,7 +235,7 @@ class Mapper(VRT):
         # the high res channels
         # are reduced to this size.
         if satellite == 'MET7' or satellite[0:3] == 'MSG':
-            node0 = Node.create(self.read_xml())
+            node0 = Node.create(self.get_vrt_xml())
             bands = node0.nodeList("VRTRasterBand")
             if satellite == 'MET7':
                 if self.dataset.RasterXSize == 5032:  # High res ch1 is opened
