@@ -261,88 +261,6 @@ class NansatTest(unittest.TestCase):
         # present after opening the image
         self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
 
-<<<<<<< HEAD
-    def test_export2thredds_arctic_long_lat(self):
-        n = Nansat(self.test_file_arctic, mapperName='generic', logLevel=40)
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds_arctic.nc')
-        bands = {
-            'Bristol': {'type': '>i2'},
-            'Bootstrap': {'type': '>i2'},
-            'UMass_AES': {'type': '>i2'},
-        }
-        n.export2thredds(tmpfilename, bands, time=datetime.datetime(2016, 1, 20))
-
-        self.assertTrue(os.path.exists(tmpfilename))
-        g = gdal.Open(tmpfilename)
-        metadata = g.GetMetadata_Dict()
-
-        # Test that the long/lat values are set aproximately correct
-        ncg = 'NC_GLOBAL#'
-        if (metadata.get(ncg + 'easternmost_longitude') == None):
-            ncg = ''
-        easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
-        self.assertTrue(float(easternmost_longitude) > 179,
-                        'easternmost_longitude is wrong:' +
-                        easternmost_longitude)
-        westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
-        self.assertTrue(float(westernmost_longitude) < -179,
-                        'westernmost_longitude is wrong:' +
-                        westernmost_longitude)
-        northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
-        self.assertTrue(float(northernmost_latitude) > 89.999,
-                        'northernmost_latitude is wrong:' +
-                        northernmost_latitude)
-        southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
-        self.assertTrue(float(southernmost_latitude) < 54,
-                        'southernmost_latitude is wrong:' +
-                        southernmost_latitude)
-        self.assertTrue(float(southernmost_latitude) > 53,
-                        'southernmost_latitude is wrong:' +
-                        southernmost_latitude)
-
-    def test_dont_export2thredds_gcps(self):
-        n = Nansat(self.test_file_gcps, logLevel=40)
-        n2 = Nansat(domain=n)
-        n.add_band(np.ones(n2.shape(), np.float32))
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds.nc')
-        self.assertRaises(OptionError, n2.export2thredds, tmpfilename,
-                          ['L_645'])
-
-    def test_export2thredds_longlat_list(self):
-        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                   "-te 27 70 31 72 -ts 200 200")
-        n = Nansat(domain=d)
-        n.add_band(np.ones(d.shape(), np.float32),
-                   parameters={'name': 'L_469'})
-        n.set_metadata('time_coverage_start', '2016-01-19')
-
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds_longlat.nc')
-        n.export2thredds(tmpfilename, ['L_469'])
-        ncI = Dataset(tmpfilename, 'r')
-        ncIVar = ncI.variables['L_469']
-        self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
-
-    def test_export2thredds_longlat_dict(self):
-        d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
-                   "-te 27 70 31 72 -ts 200 200")
-        n = Nansat(domain=d)
-        n.add_band(np.ones(d.shape(), np.float32),
-                   parameters={'name': 'L_469'})
-        n.set_metadata('time_coverage_start', '2016-01-19')
-
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'nansat_export2thredds_longlat.nc')
-        n.export2thredds(tmpfilename, {'L_469': {'type': '>i1'}})
-        ncI = Dataset(tmpfilename, 'r')
-        ncIVar = ncI.variables['L_469']
-        self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
-        self.assertEqual(ncIVar[:].dtype, np.int8)
-
-=======
->>>>>>> issue107_refactor
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, log_level=40)
         n.resize(pixelsize=500, resample_alg=1)
@@ -815,31 +733,6 @@ class NansatTest(unittest.TestCase):
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
 
-<<<<<<< HEAD
-    def test_export_netcdf_complex_remove_meta(self):
-        ''' Test export of complex data with pixelfunctions
-        '''
-        n = Nansat(self.test_file_complex)
-        self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
-        n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
-        exported = Nansat(self.tmpfilename)
-        with self.assertRaises(OptionError):
-            exported.get_metadata('PRODUCT_TYPE')
-        self.assertTrue((n[1] == exported[1]).any())
 
-    #def test_projection_of_netcdf_complex(self):
-
-    def test_export_netcdf_arctic(self):
-        ''' Test export of the arctic data without GCPS
-        '''
-        n = Nansat(self.test_file_arctic)
-        n.export(self.tmpfilename)
-        exported = Nansat(self.tmpfilename)
-        self.assertTrue((n[1] == exported[1]).any())
-        self.assertTrue((n[2] == exported[2]).any())
-        self.assertTrue((n[3] == exported[3]).any())
-
-=======
->>>>>>> issue107_refactor
 if __name__ == "__main__":
     unittest.main()
