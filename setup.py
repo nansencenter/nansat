@@ -9,6 +9,7 @@
 # Licence:     <your licence>
 #-----------------------------------------------------------------------------
 
+from __future__ import print_function
 from subprocess import Popen
 import subprocess
 import sys
@@ -128,13 +129,11 @@ try:
         use_gdal_config()
 except Exception as e:
     if os.name == 'nt':
-        print 'WARNING: CONDA_PREFIX could not be found, ' +\
-        'pixel functions will not be available.'
+        print_function('WARNING: CONDA_PREFIX could not be found pixel functions will not be available.')
     else:
-        print 'WARNING: gdal-config could not be called, ' +\
-              'pixel functions will not be available.'
-    print 'Error details follow:'
-    print repr(e)
+        print_function('WARNING: gdal-config could not be called, pixel functions will not be available.')
+    print_function('Error details follow:')
+    print_function(e)
     skip_compile = True
 
 #----------------------------------------------------------------------------#
@@ -255,15 +254,15 @@ try:
 except ext_errors:
     BUILD_EXT_WARNING = ("WARNING: The C extension could not be compiled, "
                          "pixel functions will not be available.")
-    print('*' * 75)
-    print(BUILD_EXT_WARNING)
-    print("Failure information, if any, is above.")
-    print("I'm retrying the build without the C extension now.")
-    print('*' * 75)
+    print_function('*' * 75)
+    print_function(BUILD_EXT_WARNING)
+    print_function("Failure information, if any, is above.")
+    print_function("I'm retrying the build without the C extension now.")
+    print_function('*' * 75)
 
     run_setup(True)
 
-    print('*' * 75)
-    print(BUILD_EXT_WARNING)
-    print("Plain-Python installation succeeded.")
-    print('*' * 75)
+    print_function('*' * 75)
+    print_function(BUILD_EXT_WARNING)
+    print_function("Plain-Python installation succeeded.")
+    print_function('*' * 75)
