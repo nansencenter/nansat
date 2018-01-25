@@ -31,8 +31,8 @@ from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
-from nansat.warnings import NansatFutureWarning
 from nansat.exceptions import NansatProjectionError
+from nansat.warnings import NansatFutureWarning
 
 class VRT(object):
     """Wrapper around GDAL VRT-file
@@ -87,6 +87,22 @@ class VRT(object):
     writes VRT file content to self.filename
 
     """
+    INIT_GDALDATASET_WARNING = ('VRT(gdalDataset=...) will be disabled in Nansat 1.1. '
+                                'Use VRT.from_gdal_dataset(...).')
+    INIT_VRTDATASET_WARNING = ('VRT(vrtDataset=...) will be disabled in Nansat 1.1. '
+                                'Use VRT.copy_dataset(...).')
+    INIT_ARRAY_WARNING = ('VRT(array=...) will be disabled in Nansat 1.1. '
+                          'Use VRT.from_array(...).')
+    INIT_DATASETPARAMS_WARNING = ('VRT(srcGeoTransform, srcProjection, srcRasterXSize, '
+                                  'srcRasterYSize, srcGCPs, srcGCPProjection) '
+                                  'will be disabled in Nansat 1.1. '
+                                  'Use VRT.from_dataset_params(...).')
+    INIT_GEOLOCATIONARRAY_WARNING = ('VRT(geolocationArray=...) will be disabled in Nansat 1.1. '
+                                     'Use vrt._add_geolocation(...).')
+    INIT_LATLON_WARNING = ('VRT(lat=..., lon=...) will be disabled in Nansat 1.1. '
+                           'Use VRT.from_lonlat(...).')
+    INIT_SRCMETADATA_WARNING = ('VRT(srcMetadata=...) will be disabled in Nansat 1.1. '
+                                'Use VRT(metadata=...).')
     COMPLEX_SOURCE_XML = Template('''
             <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
@@ -250,6 +266,12 @@ class VRT(object):
 
     def __init__(self, x_size=1, y_size=1, metadata=None, nomem=False, **kwargs):
         """Init VRT object with all attributes"""
+        if metadata is None:
+            metadata = dict()
+        # init from obsolete params
+        if self._init_from_old_params(metadata=metadata, nomem=nomem, **kwargs):
+            return
+
         # essential attributes
         self.logger = add_logger('Nansat')
         self.driver = gdal.GetDriverByName('VRT')
@@ -260,8 +282,7 @@ class VRT(object):
 
         # create dataset
         self.dataset = self.driver.Create(self.filename, x_size, y_size, bands=0)
-        if isinstance(metadata, dict):
-            self.dataset.SetMetadata(metadata)
+        self.dataset.SetMetadata(metadata)
         self.dataset.FlushCache()
 
     def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
@@ -709,6 +730,75 @@ class VRT(object):
 
         return dst_band_name, wkv
 
+    def _find_complex_band(self):
+        """Find complex data bands"""
+        # find complex bands
+        for i in range(1, self.dataset.RasterCount+1):
+            if self.dataset.GetRasterBand(i).DataType in [8,9,10,11]:
+                return i
+        return None
+
+    def _init_from_old_params(self, **kwargs):
+        """Check obsolete input parameters for backward compatibility"""
+        old_param_names = ['gdalDataset',
+                           'vrtDataset',
+                           'array',
+                           'srcGeoTransform',
+                           'srcProjection',
+                           'srcRasterXSize',
+                           'srcRasterYSize',
+                           'srcGCPs',
+                           'srcGCPProjection',
+                           'lon',
+                           'lat']
+
+        old_params_used = False
+        # run through input params and select the matching one
+        for arg in kwargs:
+            if arg in old_param_names:
+                old_params_used = True
+                break
+        if not old_params_used:
+            return False
+
+        # parameters for self._init_from_dataset_params()
+        dataset_params = (kwargs.get('srcRasterXSize', None),
+                          kwargs.get('srcRasterYSize', None),
+                          kwargs.get('srcGeoTransform', (0,1,0,0,0,-1)),
+                          kwargs.get('srcProjection', ''),
+                          kwargs.get('srcGCPs', list()),
+                          kwargs.get('srcGCPProjection', ''))
+
+        # conversion from old input parameters to warning, new function and new parameters
+        new_warnings_and_funcs = [
+        [self.INIT_GDALDATASET_WARNING, self._init_from_gdal_dataset, (kwargs.get('gdalDataset', None),)],
+        [self.INIT_VRTDATASET_WARNING, self._copy_from_dataset, (kwargs.get('vrtDataset', None),)],
+        [self.INIT_ARRAY_WARNING, self._init_from_array, (kwargs.get('array'),)],
+        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
+        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
+        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
+        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
+        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
+        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
+        [self.INIT_LATLON_WARNING, self._init_from_lonlat, (kwargs.get('lon', None), kwargs.get('lat', None))],
+        [self.INIT_LATLON_WARNING, self._init_from_lonlat, (kwargs.get('lon', None), kwargs.get('lat', None))],
+        ]
+
+        old2new = dict(zip(old_param_names, new_warnings_and_funcs))
+
+        # get metadata
+        metadata = kwargs['metadata']
+        if 'srcMetadata' in kwargs:
+            warnings.warn(self.INIT_SRCMETADATA_WARNING, NansatFutureWarning)
+            metadata.update(kwargs['srcMetadata'])
+
+        # raise warning
+        warnings.warn(old2new[arg][0], NansatFutureWarning)
+        # call function
+        old2new[arg][1](*old2new[arg][2], metadata=metadata, nomem=kwargs['nomem'])
+
+        return old_params_used
+
     def leave_few_bands(self, bands=None):
         """Leave only given bands in VRT"""
         if bands is None:
@@ -721,14 +811,6 @@ class VRT(object):
                 rm_bands.append(i)
         # delete bands from VRT
         self.delete_bands(rm_bands)
-
-    def _find_complex_band(self):
-        """Find complex data bands"""
-        # find complex bands
-        for i in range(1, self.dataset.RasterCount+1):
-            if self.dataset.GetRasterBand(i).DataType in [8,9,10,11]:
-                return i
-        return None
 
     def split_complex_bands(self):
         """Recursevly find complex bands and relace by real and imag components"""
@@ -1404,7 +1486,7 @@ class VRT(object):
 
     def get_projection(self):
         """Get projection from the dataset.
-        
+
         Uses gdal.Dataset.GetProjection() or gdal.Dataset.GetGCPProjection(). If both return an
         empty string, a NansatProjectionError is raised.
 

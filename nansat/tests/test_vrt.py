@@ -15,6 +15,7 @@ import logging
 import os
 from mock import patch, Mock, PropertyMock, MagicMock, DEFAULT
 import xml.etree.ElementTree as ET
+import warnings
 
 import numpy as np
 import gdal
@@ -26,7 +27,7 @@ from nansat.vrt import VRT
 import nansat_test_data as ntd
 
 from nansat.exceptions import NansatProjectionError
-
+from nansat.warnings import NansatFutureWarning
 
 class VRTTest(unittest.TestCase):
     def setUp(self):
@@ -384,7 +385,6 @@ class VRTTest(unittest.TestCase):
         vrt = VRT.copy_dataset(ds)
         vrt.hardcopy_bands()
 
-        #import ipdb; ipdb.set_trace()
         self.assertTrue(np.allclose(vrt.dataset.ReadAsArray(), ds.ReadAsArray()))
         band_nodes = Node.create(vrt.xml).nodeList('VRTRasterBand')
         self.assertEqual(band_nodes[0].node('SourceFilename').value, vrt.band_vrts[1].filename)
@@ -402,6 +402,44 @@ class VRTTest(unittest.TestCase):
         with self.assertRaises(NansatProjectionError):
             proj = vrt.get_projection()
 
+    def test_init_from_old__gdal_dataset(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(gdalDataset=ds)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+
+    def test_init_from_old__vrt_dataset(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(vrtDataset=ds)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+
+    def test_init_from_old__dataset_params(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(srcGeoTransform=(0,1,0,0,0,-1), srcRasterXSize=10, srcRasterYSize=20)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertEqual(vrt.dataset.RasterXSize, 10)
+
+    def test_init_from_old__array(self):
+        a = np.random.randn(100,100)
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(array=a)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertEqual(vrt.dataset.RasterXSize, 100)
+
+    def test_init_from_old__lonlat(self):
+        lon = np.random.randn(100,100)
+        lat = np.random.randn(100,100)
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(lon=lon, lat=lat)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertEqual(vrt.dataset.RasterXSize, 100)
 
 if __name__ == "__main__":
     unittest.main()
