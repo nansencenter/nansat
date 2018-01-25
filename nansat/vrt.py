@@ -31,6 +31,7 @@ from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
+from nansat.warnings import NansatFutureWarning
 from nansat.exceptions import NansatProjectionError
 
 class VRT(object):
@@ -857,6 +858,12 @@ class VRT(object):
         return vrt
 
     @property
+    def fileName(self):
+        warnings.warn('VRT.fileName will be disabled in Nansat 1.1. Use VRT.filename instead.',
+                NansatFutureWarning)
+        return self.filename
+
+    @property
     def xml(self):
         """Read XML content of the VRT-file using VSI
 
@@ -866,6 +873,11 @@ class VRT(object):
         """
         self.dataset.FlushCache()
         return VRT.read_vsi(self.filename)
+
+    def _create_bands(self, metadata_dict):
+        warnings.warn('Method VRT._create_bands() will be disabled in Nansat 1.1. ' \
+                'Use VRT.create_bands() instead.', NansatFutureWarning)
+        self.create_bands(metadata_dict)
 
     def create_bands(self, metadata_dict):
         """ Generic function called from the mappers to create bands
@@ -1595,6 +1607,8 @@ class VRT(object):
 
         # find DataType of source (if not given in src)
         if src['SourceBand'] > 0 and 'DataType' not in src:
+            import ipdb
+            ipdb.set_trace()
             raster_band = gdal.Open(src['SourceFilename']).GetRasterBand(src['SourceBand'])
             src['DataType'] = raster_band.DataType
 

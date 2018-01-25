@@ -41,6 +41,7 @@ from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
 from nansat.warnings import NansatFutureWarning
+from nansat.tools import WrongMapperError as WrongMapperErrorOld
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
 import collections
@@ -1202,7 +1203,7 @@ class Nansat(Domain, Exporter):
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper.replace('mapper_', '')
                     break
-                except WrongMapperError:
+                except (WrongMapperError, WrongMapperErrorOld):
                     pass
 
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
@@ -1609,7 +1610,7 @@ def _import_mappers(log_level=None):
     except ImportError:
         pass
     else:
-        logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
+        logger.info('User defined mappers found in %s' % nansat_mappers_pkg.__path__)
         mapper_packages = [nansat_mappers_pkg, nansat.mappers]
 
     # create ordered dict for mappers
