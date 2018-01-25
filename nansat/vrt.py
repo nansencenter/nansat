@@ -1689,8 +1689,6 @@ class VRT(object):
 
         # find DataType of source (if not given in src)
         if src['SourceBand'] > 0 and 'DataType' not in src:
-            import ipdb
-            ipdb.set_trace()
             raster_band = gdal.Open(src['SourceFilename']).GetRasterBand(src['SourceBand'])
             src['DataType'] = raster_band.DataType
 
