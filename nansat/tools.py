@@ -22,6 +22,8 @@ import logging
 from dateutil.parser import parse
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     from matplotlib import cm
     import matplotlib.pyplot as plt
     from matplotlib.colors import hex2color

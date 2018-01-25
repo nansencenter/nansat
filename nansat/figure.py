@@ -15,11 +15,14 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
+
 import os
 from math import floor, log10
 
 import numpy as np
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     from matplotlib import cm
 except ImportError:
     MATPLOT_LIB_IS_INSTALLED = False

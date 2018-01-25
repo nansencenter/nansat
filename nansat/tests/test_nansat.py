@@ -27,6 +27,8 @@ from mock import patch, PropertyMock
 import numpy as np
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
@@ -66,10 +68,15 @@ class NansatTest(unittest.TestCase):
             pass
 
     def test_open_gcps(self):
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings(record=True) as recorder_warnings:
             n = Nansat(self.test_file_gcps, log_level=40)
 
-        self.assertEqual(len(w), 0)
+        nansat_warning_raised = False
+        for rw in recorder_warnings:
+            if rw.category == NansatFutureWarning:
+                nansat_warning_raised = True
+        self.assertFalse(nansat_warning_raised)
+
         self.assertEqual(type(n), Nansat)
         self.assertEqual(n.vrt.dataset.GetProjection(), '')
         self.assertTrue((n.vrt.dataset.GetGCPProjection().startswith('GEOGCS["WGS 84",')))

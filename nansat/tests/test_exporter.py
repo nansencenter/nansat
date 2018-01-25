@@ -23,6 +23,8 @@ from xml.sax.saxutils import unescape
 import numpy as np
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:

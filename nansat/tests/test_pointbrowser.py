@@ -10,11 +10,14 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
+import os
 import unittest
 import numpy as np
 from nansat.pointbrowser import PointBrowser
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     import matplotlib
     import matplotlib.pyplot as plt
     plt.switch_backend('qt5agg')
@@ -28,7 +31,7 @@ class PointBrowserTest(unittest.TestCase):
     @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def setUp(self):
         plt.switch_backend('qt5agg')
-        plt.ion()            
+        plt.ion()
         data = np.ndarray(shape=(4, 4), dtype=float, order='F')
         self.point = PointBrowser(data)
 

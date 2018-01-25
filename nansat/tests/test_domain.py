@@ -15,6 +15,8 @@ import os
 import numpy as np
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from mpl_toolkits.basemap import Basemap
 except ImportError:
