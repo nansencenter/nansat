@@ -73,6 +73,7 @@ REQS                = [
 #----------------------------------------------------------------------------#
 #                   Prepare compilation of C pixel functions
 #----------------------------------------------------------------------------#
+pixfun_module_name = '_pixfun_py{0}'.format(sys.version_info[0])
 skip_compile = False
 libraries = []
 include_dirs = []
@@ -204,9 +205,9 @@ def run_setup(skip_compile):
     else:
         kw = dict(
             ext_modules = [
-                Extension(NAME + '._pixfun',
-                          [NAME + '/pixelfunctions/pixelfunctions.c',
-                           NAME + '/pixelfunctions/_pixfun.c'],
+                Extension('{0}.{1}'.format(NAME, pixfun_module_name),
+                          ['{0}/pixelfunctions/pixelfunctions.c'.format(NAME),
+                           '{0}/pixelfunctions/{1}.c'.format(NAME, pixfun_module_name)],
                           include_dirs=include_dirs,
                           libraries=libraries,
                           library_dirs=library_dirs,
