@@ -80,20 +80,18 @@ class NansatTest(unittest.TestCase):
     def test_open_with_filename_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(fileName=self.test_file_gcps)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(fileName', str(w[0].message))
+            self.assertEqual(w[0].category, NansatFutureWarning)
 
     def test_open_with_mappername_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, mapperName='generic')
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(mapperName', str(w[0].message))
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertEqual(w[1].category, NansatFutureWarning)
 
     def test_open_with_loglevel_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, logLevel=30)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(logLevel', str(w[0].message))
+            self.assertEqual(w[0].category, NansatFutureWarning)
 
     def test_open_with_domain_warning(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
