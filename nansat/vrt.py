@@ -754,8 +754,8 @@ class VRT(object):
 
         old_params_used = False
         # run through input params and select the matching one
-        for arg in kwargs:
-            if arg in old_param_names:
+        for arg in old_param_names:
+            if arg in kwargs:
                 old_params_used = True
                 break
         if not old_params_used:
