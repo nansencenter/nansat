@@ -1124,9 +1124,9 @@ class Nansat(Domain, Exporter):
         # set metadata from dictionary or from single pair key,value
         if type(key) == dict:
             for k in key:
-                metadata_receiver.SetMetadataItem(k, key[k])
+                metadata_receiver.SetMetadataItem(str(k), str(key[k]))
         else:
-            metadata_receiver.SetMetadataItem(key, value)
+            metadata_receiver.SetMetadataItem(str(key), str(value))
 
 # TODO: add _get_specific_mapper(mapper_name)
 
@@ -1631,7 +1631,6 @@ class Nansat(Domain, Exporter):
                (linVector < (self.shape()[0] - smooth_radius)))
 
         return pixVector[gpi], linVector[gpi]
-
 
 
 def _import_mappers(log_level=None):
