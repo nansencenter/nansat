@@ -18,7 +18,7 @@ import numpy as np
 
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
-import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 
 class GeolocationTest(unittest.TestCase):
     def setUp(self):

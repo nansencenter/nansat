@@ -354,13 +354,13 @@ class Mapper(VRT):
         # These strings are added when datasets are exported in
         # nansat.nansat.Nansat.export...
         rm_strings = ['NC_GLOBAL#', 'NANSAT_', 'GDAL_']
-
+        updated_meta = {}
         for rms in rm_strings:
             for key in meta.keys():
                 newkey = key.replace(rms, '')
-                meta[newkey] = meta.pop(key)
+                updated_meta[newkey] = meta[key]
 
-        return meta
+        return updated_meta
 
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets
