@@ -266,6 +266,8 @@ class VRT(object):
 
     def __init__(self, x_size=1, y_size=1, metadata=None, nomem=False, **kwargs):
         """Init VRT object with all attributes"""
+        if isinstance(x_size, gdal.Dataset):
+            kwargs['gdalDataset'] = x_size
         if metadata is None:
             metadata = dict()
         # init from obsolete params
