@@ -12,10 +12,34 @@ nansat\.domain module
     :undoc-members:
     :show-inheritance:
 
+nansat\.exceptions module
+-------------------------
+
+.. automodule:: nansat.exceptions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.exporter module
+-----------------------
+
+.. automodule:: nansat.exporter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 nansat\.figure module
 ---------------------
 
 .. automodule:: nansat.figure
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.geolocation module
+--------------------------
+
+.. automodule:: nansat.geolocation
     :members:
     :undoc-members:
     :show-inheritance:
@@ -64,6 +88,14 @@ nansat\.vrt module
 ------------------
 
 .. automodule:: nansat.vrt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.warnings module
+-----------------------
+
+.. automodule:: nansat.warnings
     :members:
     :undoc-members:
     :show-inheritance:

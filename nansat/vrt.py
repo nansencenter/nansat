@@ -1402,20 +1402,18 @@ class VRT(object):
         return lon_vector, lat_vector
 
     def get_projection(self):
-        """Get projection from self.dataset
+        """Get projection from the dataset.
+        
+        Uses gdal.Dataset.GetProjection() or gdal.Dataset.GetGCPProjection(). If both return an
+        empty string, a NansatProjectionError is raised.
 
-        Get projection from GetProjection() or GetGCPProjection().
-        If both are empty, raise error
-
-        Return
+        Returns
         -------
         projection : projection or GCPprojection
 
         Raises
         -------
         NansatProjectionError : occurs when the projection is empty.
-
-        TODO: see issue #190 in nansat...
 
         """
         # get projection or GCPProjection
