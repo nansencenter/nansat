@@ -345,10 +345,10 @@ class VRT(object):
         # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
         VRT.__init__(self, x_size, y_size, **kwargs)
         # set dataset (geo-)metadata
-        self.dataset.SetProjection(projection)
+        self.dataset.SetProjection(str(projection))
         self.dataset.SetGeoTransform(geo_transform)
         if isinstance(gcps, (list, tuple)):
-            self.dataset.SetGCPs(gcps, gcp_projection)
+            self.dataset.SetGCPs(gcps, str(gcp_projection))
         self.dataset.SetMetadataItem(str('filename'), self.filename)
 
         # write file contents
@@ -732,7 +732,7 @@ class VRT(object):
         """Find complex data bands"""
         # find complex bands
         for i in range(1, self.dataset.RasterCount+1):
-            if self.dataset.GetRasterBand(i).DataType in [8,9,10,11]:
+            if self.dataset.GetRasterBand(i).DataType in [8, 9, 10, 11]:
                 return i
         return None
 
@@ -762,7 +762,7 @@ class VRT(object):
         # parameters for self._init_from_dataset_params()
         dataset_params = (kwargs.get('srcRasterXSize', None),
                           kwargs.get('srcRasterYSize', None),
-                          kwargs.get('srcGeoTransform', (0,1,0,0,0,-1)),
+                          kwargs.get('srcGeoTransform', (0, 1, 0, 0, 0, -1)),
                           kwargs.get('srcProjection', ''),
                           kwargs.get('srcGCPs', list()),
                           kwargs.get('srcGCPProjection', ''))
@@ -793,7 +793,7 @@ class VRT(object):
         # raise warning
         warnings.warn(old2new[arg][0], NansatFutureWarning)
         # call function
-        old2new[arg][1](*old2new[arg][2], metadata=metadata, nomem=kwargs['nomem'])
+        old2new[arg][1](*old2new[arg][2], metadata=str(metadata), nomem=str(kwargs[str('nomem')]))
 
         return old_params_used
 
@@ -804,7 +804,7 @@ class VRT(object):
 
         rm_bands = []
         for i in range(1, self.dataset.RasterCount+1):
-            band_name = self.dataset.GetRasterBand(i).GetMetadata().get('name','')
+            band_name = self.dataset.GetRasterBand(i).GetMetadata().get('name', '')
             if i not in bands and band_name not in bands:
                 rm_bands.append(i)
         # delete bands from VRT

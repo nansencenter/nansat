@@ -429,7 +429,7 @@ class VRTTest(unittest.TestCase):
     def test_init_from_old__dataset_params(self):
         ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
         with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(srcGeoTransform=(0,1,0,0,0,-1), srcRasterXSize=10, srcRasterYSize=20)
+            vrt = VRT(srcGeoTransform=(0, 1, 0, 0, 0, -1), srcRasterXSize=10, srcRasterYSize=20)
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertEqual(vrt.dataset.RasterXSize, 10)
