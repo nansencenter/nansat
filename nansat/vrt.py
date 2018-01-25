@@ -475,20 +475,20 @@ class VRT(object):
         # loop to find real data band
         for i in range(self.dataset.RasterCount):
             band = self.dataset.GetRasterBand(i + 1)
-            band_name = band.GetMetadataItem('name')
+            band_name = band.GetMetadataItem(str('name'))
             if band_name.endswith('_real'):
                 real_band_no = i
-                real_band_type = band.GetMetadataItem('DataType')
+                real_band_type = band.GetMetadataItem(str('DataType'))
                 complex_band_name = band_name.replace('_real', '')
                 # loop to find imag data band
                 for j in range(self.dataset.RasterCount):
                     band = self.dataset.GetRasterBand(j + 1)
-                    band_name = band.GetMetadataItem('name')
+                    band_name = band.GetMetadataItem(str('name'))
                     # find an imaginary data band corresponding to the real
                     # data band and create complex data band from the bands
                     if band_name == complex_band_name + '_imag':
                         imag_band_no = j
-                        imag_band_type = band.GetMetadataItem('DataType')
+                        imag_band_type = band.GetMetadataItem(str('DataType'))
                         dst = band.GetMetadata()
                         dst['name'] = complex_band_name
                         dst['PixelFunctionType'] = 'ComplexData'
@@ -533,7 +533,7 @@ class VRT(object):
         if not gdal_metadata:
             raise WrongMapperError
 
-        for key in gdal_metadata.keys():
+        for key in list(gdal_metadata.keys()):
             newkey = key.replace('NC_GLOBAL#', '')
             gdal_metadata[newkey] = gdal_metadata.pop(key)
 
@@ -798,7 +798,7 @@ class VRT(object):
         metadata = remove_keys(self.dataset.GetMetadata(), rm_metadata)
         # Apply escaping to metadata strings to preserve special characters (in XML/HTML format)
         metadata_escaped = {}
-        for key, val in metadata.items():
+        for key, val in list(metadata.items()):
             # Keys not escaped - this may be changed if needed...
             metadata_escaped[key] = gdal.EscapeString(val, gdal.CPLES_XML)
         self.dataset.SetMetadata(metadata_escaped)
@@ -830,22 +830,21 @@ class VRT(object):
         else:
             options += ['WRITE_BOTTOMUP=YES']
         gcps = self.dataset.GetGCPs()
-        srs = self.get_projection()
+        srs = str(self.get_projection())
         if len(gcps) > 0:
             self._remove_geotransform()
-            self.dataset.SetMetadataItem('NANSAT_GCPProjection',
-                                         srs.replace(',', '|').replace('"', '&'))
+            self.dataset.SetMetadataItem(str('NANSAT_GCPProjection'),
+                                         str(srs.replace(',', '|').replace('"', '&')))
             add_gcps = True
         else:
-            self.dataset.SetMetadataItem('NANSAT_Projection',
-                                          srs.replace(',', '|').replace('"', '&'))
+            self.dataset.SetMetadataItem(str('NANSAT_Projection'),
+                                         str(srs.replace(',', '|').replace('"', '&')))
 
             # add GeoTransform metadata
-            geoTransformStr = str(self.dataset.GetGeoTransform()).replace(',', '|')
-            self.dataset.SetMetadataItem('NANSAT_GeoTransform', geoTransformStr)
+            geo_transform_str = str(self.dataset.GetGeoTransform()).replace(',', '|')
+            self.dataset.SetMetadataItem(str('NANSAT_GeoTransform'), str(geo_transform_str))
             add_gcps = False
         return options, add_gcps
-
 
     def copy(self):
         """Create and return a full copy of a VRT instance"""
@@ -995,7 +994,7 @@ class VRT(object):
             metadataSRC = {}
             for i, src in enumerate(srcs):
                 metadataSRC['source_%d' % i] = src['XML']
-            dst_raster_band.SetMetadata(metadataSRC, 'vrt_sources')
+            dst_raster_band.SetMetadata(metadataSRC, str('vrt_sources'))
 
         # set metadata from WKV
         dst_raster_band = VRT._put_metadata(dst_raster_band, wkv)
@@ -1122,13 +1121,13 @@ class VRT(object):
         if len(dst_gcps) > 0:
             warped_vrt.dataset.SetGCPs(dst_gcps, dst_srs)
             warped_vrt._remove_geotransform()
-            warped_vrt.dataset.SetProjection('')
+            warped_vrt.dataset.SetProjection(str(''))
 
         # Copy self to warpedVRT
         warped_vrt.vrt = self.copy()
 
         # replace the reference from src_vrt to warped_vrt.vrt
-        node0 = Node.create(str(warped_vrt.xml))
+        node0 = Node.create(str(warped_vrt.xml.decode()))
         node1 = node0.node('GDALWarpOptions')
         node1.node('SourceDataset').value = '/vsimem/' + str(os.path.basename(warped_vrt.vrt.filename))
         warped_vrt.write_xml(node0.rawxml())
@@ -1319,7 +1318,7 @@ class VRT(object):
         subsamp_vrt = self.get_super_vrt()
 
         # Get XML content from VRT-file
-        node0 = Node.create(subsamp_vrt.xml)
+        node0 = Node.create(str(subsamp_vrt.xml.decode()))
 
         # replace rasterXSize in <VRTDataset>
         node0.replaceAttribute('rasterXSize', str(new_raster_x_size))
@@ -1495,7 +1494,7 @@ class VRT(object):
 
     def set_offset_size(self, axis, offset, size):
         """Set offset and  size in VRT dataset and band attributes"""
-        node0 = Node.create(self.xml)
+        node0 = Node.create(str(self.xml.decode()))
 
         # change size
         node0.node('VRTDataset').replaceAttribute('raster%sSize'%str(axis).upper(), str(size))
@@ -1528,8 +1527,8 @@ class VRT(object):
             if (0 < igcp.GCPPixel - x_offset < x_size and 0 < igcp.GCPLine - y_offset < y_size):
                 i += 1
                 dst_gcps.append(gdal.GCP(igcp.GCPX, igcp.GCPY, 0,
-                                        igcp.GCPPixel - x_offset,
-                                        igcp.GCPLine - y_offset, '', str(i)))
+                                         igcp.GCPPixel - x_offset,
+                                         igcp.GCPLine - y_offset, str(''), str(i)))
         n_gcps = i
         if n_gcps < 100:
             # create new 100 GPCs (10 x 10 regular matrix)
@@ -1542,9 +1541,9 @@ class VRT(object):
 
             for i in range(len(lon_array)):
                 dst_gcps.append(gdal.GCP(lon_array[i], lat_array[i], 0,
-                                        pix_array[i] - x_offset,
-                                        lin_array[i] - y_offset,
-                                        '', str(n_gcps+i+1)))
+                                         pix_array[i] - x_offset,
+                                         lin_array[i] - y_offset,
+                                         str(''), str(n_gcps+i+1)))
 
         # set new GCPss
         self.dataset.SetGCPs(dst_gcps, self.vrt.dataset.GetGCPProjection())
@@ -1557,7 +1556,7 @@ class VRT(object):
             return
         # shift upper left corner coordinates
         geoTransfrom = self.dataset.GetGeoTransform()
-        geoTransfrom = map(float, geoTransfrom)
+        geoTransfrom = list(map(float, geoTransfrom))
         geoTransfrom[0] += geoTransfrom[1] * x_offset
         geoTransfrom[3] += geoTransfrom[5] * y_offset
         self.dataset.SetGeoTransform(geoTransfrom)
