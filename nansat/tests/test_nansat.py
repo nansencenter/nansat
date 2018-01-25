@@ -11,10 +11,11 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
+from __future__ import unicode_literals, absolute_import
+
 import os
 import json
 import logging
-from __future__ import unicode_literals, absolute_import
 import unittest
 import warnings
 import datetime
@@ -37,7 +38,7 @@ from netCDF4 import Dataset
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal, OptionError, NansatFutureWarning
 
-from . import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 
 warnings.simplefilter("always", NansatFutureWarning)
 warnings.simplefilter("always", UserWarning)
@@ -133,12 +134,11 @@ class NansatTest(unittest.TestCase):
 
     def test_special_characters_in_exported_metadata(self):
         orig = Nansat(self.test_file_gcps)
-        orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
-                                         'hei', 'meta2': 'derr'}))
+        orig.vrt.dataset.SetMetadataItem(str('jsonstring'), json.dumps({'meta1': 'hei',
+                                                                        'meta2': 'derr'}))
         orig.export(self.tmpfilename)
         copy = Nansat(self.tmpfilename)
-        dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
-                                                                   '"'}))
+        dd = json.loads(unescape(copy.get_metadata(str('jsonstring')), {'&quot;': '"'}))
         self.assertIsInstance(dd, dict)
 
     def test_time_coverage_metadata_of_exported_equals_original(self):
@@ -161,15 +161,15 @@ class NansatTest(unittest.TestCase):
         arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
-        arrWithNaN[n.shape()[0] / 2 - 10:n.shape()[0] / 2 + 10,
-                   n.shape()[1] / 2 - 10:n.shape()[1] / 2 + 10] = np.nan
+        arrWithNaN[int(n.shape()[0] / 2 - 10):int(n.shape()[0] / 2 + 10),
+                   int(n.shape()[1] / 2 - 10):int(n.shape()[1] / 2 + 10)] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
-        earrNoNaN = exported['testBandNoNaN']
+        earrNoNaN = exported[str('testBandNoNaN')]
         # Use allclose to allow some roundoff errors
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
-        earrWithNaN = exported['testBandWithNaN']
+        earrWithNaN = exported[str('testBandWithNaN')]
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
 
     def test_add_band(self):
@@ -540,7 +540,7 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, log_level=40)
         t = n1.get_transect([[28.31299128, 28.93691525],
                              [70.93709219, 70.69646524]],
-                            ['L_645'])
+                            [str('L_645')])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
         plt.plot(t['lat'], t['L_645'], '.-')
@@ -586,7 +586,7 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, log_level=40)
         t = n1.get_transect([[10, 20],
                              [10, 10]],
-                            ['L_645'],
+                             [str('L_645')],
                             lonlat=False)
 
         self.assertTrue('L_645' in t.dtype.fields)
