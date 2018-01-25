@@ -29,7 +29,10 @@ from nansat.tools import gdal, ogr
 from nansat.figure import Image
 import sys
 from nansat.tests import nansat_test_data as ntd
-from mock import patch, PropertyMock
+try:
+    from mock import patch, PropertyMock
+except:
+    from unittest.mock import patch, PropertyMock
 
 from nansat.exceptions import NansatProjectionError
 
@@ -262,7 +265,7 @@ class DomainTest(unittest.TestCase):
         self.assertEquals(result_2, output_2)
         with self.assertRaises(ValueError) as opt_err:
             Domain._create_extent_dict(test[2])
-            self.assertEquals(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters '
+            self.assertEquals(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters ')
         self.assertEqual(result_2, output_2)
 
         try:
@@ -283,20 +286,19 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lon), np.ndarray)
         self.assertIsInstance(result, tuple)
         self.assertEqual(len(result), 2)
-        test_x = [ 25.,  26.,  27.,  28.,  29.,  30.,  31.,  32.,  33.,  34.,  35.,
-                   35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,
-                   35.,  34.,  33.,  32.,  31.,  30.,  29.,  28.,  27.,  26.,  25.,
-                   25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.]
-        test_y = [ 72. ,  72. ,  72. ,  72. ,  72. ,  72. ,  72. ,  72. ,  72. ,
+        test_x = [25., 26., 27., 28., 29., 30., 31., 32., 33., 34., 35.,
+                  35., 35., 35., 35., 35., 35., 35., 35., 35., 35., 35.,
+                  35., 34., 33., 32., 31., 30., 29., 28., 27., 26., 25.,
+                  25., 25., 25., 25., 25., 25., 25., 25., 25., 25., 25.]
+        test_y = [72., 72., 72., 72., 72., 72., 72., 72.,  72.,
                    72. ,  72. ,  72. ,  71.8,  71.6,  71.4,  71.2,  71. ,  70.8,
                    70.6,  70.4,  70.2,  70. ,  70. ,  70. ,  70. ,  70. ,  70. ,
                    70. ,  70. ,  70. ,  70. ,  70. ,  70. ,  70. ,  70.2,  70.4,
-                   70.6,  70.8,  71. ,  71.2,  71.4,  71.6,  71.8,  72. ]
+                   70.6,  70.8,  71. ,  71.2,  71.4,  71.6,  71.8,  72.]
         self.assertEqual(list(lat), test_x)
         self.assertEqual(list(lon), test_y)
 
     def test_compound_row_col_vectors(self):
-        result = Domain._compound_row_col_vectors(30, 40, range(0, 33, 3), range(0, 44, 4))
         result = Domain._compound_row_col_vectors(30, 40, list(range(0, 33, 3)), list(range(0, 44, 4)))
         output_col, output_row = result
         self.assertIsInstance(result, tuple)
@@ -314,10 +316,10 @@ class DomainTest(unittest.TestCase):
     def test_get_row_col_vector(self):
         test_1 = Domain._get_row_col_vector(250, 500)
         self.assertIsInstance(test_1, list)
-        self.assertEqual(test_1, range(251))
+        self.assertEqual(test_1, list(range(251)))
         self.assertEqual(len(test_1), 251)
         test_2 = Domain._get_row_col_vector(500, 10)
-        self.assertEqual(test_2, range(0, 550, 50))
+        self.assertEqual(test_2, list(range(0, 550, 50)))
         self.assertEqual(len(test_2), 10 + 1)
 
     def test_get_border_wkt(self):
@@ -332,16 +334,18 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(geom), ogr.Geometry)
 
     def test_overlaps(self):
-        Bergen = Domain(4326, EXTENT_BERGEN)
-        WestCoast = Domain(4326, EXTENT_WESTCOAST)
-        Norway = Domain(4326, EXTENT_NORWAY)
-        Paris = Domain(4326, EXTENT_PARIS)
+        Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")
+        WestCoast = Domain(4326, "-te 1 58 6 64 -ts 500 500")
+        Norway = Domain(4326, "-te 3 55 30 72 -ts 500 500")
+        Paris = Domain(4326, "-te 2 48 3 49 -ts 500 500")
         self.assertTrue(Bergen.overlaps(Norway))
+        self.assertTrue(Norway.contains(Bergen))
+        self.assertFalse(Bergen.contains(Norway))
         self.assertTrue(Norway.overlaps(WestCoast))
+        self.assertFalse(Norway.contains(WestCoast))
         self.assertFalse(Paris.overlaps(Norway))
+        self.assertFalse(Paris.contains(Norway))
 
-        self.assertEqual(list(lat), test_x)
-        self.assertEqual(list(lon), test_y)
     def test_contains(self):
         Bergen = Domain(4326, EXTENT_BERGEN)
         WestCoast = Domain(4326, EXTENT_WESTCOAST)
