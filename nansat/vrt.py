@@ -651,7 +651,7 @@ class VRT(object):
 
     def _update_warped_vrt_xml(self, x_size, y_size, geo_transform, block_size, working_data_type):
         """Update rasterXsize, rasterYsize, geotransform, block_size and working_data_type"""
-        node0 = Node.create(str(self.xml.decode()))
+        node0 = Node.create(str(self.xml))
         node0.replaceAttribute('rasterXSize', str(x_size))
         node0.replaceAttribute('rasterYSize', str(y_size))
 
@@ -798,7 +798,7 @@ class VRT(object):
         for i in bands:
             self.band_vrts[i] = VRT.from_array(self.dataset.GetRasterBand(i).ReadAsArray())
 
-        node0 = Node.create(str(self.xml.decode()))
+        node0 = Node.create(str(self.xml))
         for i, iNode1 in enumerate(node0.nodeList('VRTRasterBand')):
             iNode1.node('SourceFilename').value = self.band_vrts[i+1].filename
             iNode1.node('SourceBand').value = str(1)
@@ -830,7 +830,7 @@ class VRT(object):
 
             # add GeoTransform metadata
             geo_transform_str = str(self.dataset.GetGeoTransform()).replace(',', '|')
-            self.dataset.SetMetadataItem(str('NANSAT_GeoTransform'), str(geo_transform_str))
+            self.dataset.SetMetadataItem(str('NANSAT_GeoTransform'), geo_transform_str)
             add_gcps = False
         return options, add_gcps
 
@@ -1115,7 +1115,7 @@ class VRT(object):
         warped_vrt.vrt = self.copy()
 
         # replace the reference from src_vrt to warped_vrt.vrt
-        node0 = Node.create(str(warped_vrt.xml.decode()))
+        node0 = Node.create(str(warped_vrt.xml))
         node1 = node0.node('GDALWarpOptions')
         node1.node('SourceDataset').value = '/vsimem/' + str(os.path.basename(warped_vrt.vrt.filename))
         warped_vrt.write_xml(node0.rawxml())
@@ -1306,7 +1306,7 @@ class VRT(object):
         subsamp_vrt = self.get_super_vrt()
 
         # Get XML content from VRT-file
-        node0 = Node.create(str(subsamp_vrt.xml.decode()))
+        node0 = Node.create(str(subsamp_vrt.xml))
 
         # replace rasterXSize in <VRTDataset>
         node0.replaceAttribute('rasterXSize', str(new_raster_x_size))
@@ -1482,7 +1482,7 @@ class VRT(object):
 
     def set_offset_size(self, axis, offset, size):
         """Set offset and  size in VRT dataset and band attributes"""
-        node0 = Node.create(str(self.xml.decode()))
+        node0 = Node.create(str(self.xml))
 
         # change size
         node0.node('VRTDataset').replaceAttribute('raster%sSize'%str(axis).upper(), str(size))
