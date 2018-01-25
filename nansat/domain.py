@@ -40,6 +40,42 @@ class Domain(object):
         coordinates (e.g. a linear relation)
       * type of data projection (e.g. geographical or stereographic)
 
+    Parameters
+    ----------
+    srs : PROJ4 or EPSG or WKT or NSR or osr.SpatialReference()
+        Input parameter for nansat.NSR()
+    ext : string
+        some gdalwarp options + additional options
+        [http://www.gdal.org/gdalwarp.html]
+        Specifies extent, resolution / size
+        Available options: (('-te' or '-lle') and ('-tr' or '-ts'))
+        (e.g. '-lle -10 30 55 60 -ts 1000 1000' or
+        '-te 100 2000 300 10000 -tr 300 200')
+        -tr resolutionx resolutiony
+        -ts sizex sizey
+        -te xmin ymin xmax ymax
+        -lle lonmin latmin lonmax latmax
+    ds : GDAL dataset
+    lat : Numpy array
+        Grid with latitudes
+    lon : Numpy array
+        Grid with longitudes
+    name : string, optional
+        Name to be added to the Domain object
+    logLevel : int, optional
+        level of logging
+
+    Examples
+    --------
+        >>> d = Domain(srs, ext) #size, extent and spatial reference is given by strings
+        >>> d = Domain(ds=GDALDataset) #size, extent copied from input GDAL dataset
+        >>> d = Domain(srs, ds=GDALDataset) # spatial reference is given by srs,
+            but size and extent is determined from input GDAL dataset
+        >>> d = Domain(lon=lonGrid, lat=latGrid) # Size, extent and spatial reference is given
+            by two grids of longitude and latitude
+
+    Notes
+    -----
     The core of Domain is a GDAL Dataset. It has no bands, but only
     georeference information: rasterXsize, rasterYsize, GeoTransform and
     Projection or GCPs, etc. which fully describe dimentions and spatial
@@ -69,9 +105,25 @@ class Domain(object):
     The main attribute of Domain is a VRT object self.vrt.
     Nansat inherits from Domain and adds bands to self.vrt
 
+    Raises
+    -------
+    ProjectionError : occurs when Projection() is empty
+        despite it is required for creating extentDic.
+    OptionError : occures when the arguments are not proper.
+
+    See Also
+    ---------
+    Nansat.reproject()
+    [http://www.gdal.org/gdalwarp.html]
+    [http://trac.osgeo.org/proj/]
+    [http://spatialreference.org/]
+    [http://www.gdal.org/ogr/osr_tutorial.html]
+
     """
     REPROJECT_GCPS_WARNING = ('reproject_GCPs() will be disabled in Nansat 1.1. '
                              'Use reproject_gcps().')
+    WRITE_MAP_WARNING = ('Domain.write_map() will be disabled in Nansat 1.1. '
+                         'Use nansat.write_domain_map().')
 
     OUTPUT_SEPARATOR = '-' * 40 + '\n'
     KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -87,68 +139,9 @@ class Domain(object):
     logger = None
     name = None
 
-    # TODO: logLevel pep8
     def __init__(self, srs=None, ext=None, ds=None, lon=None,
                  lat=None, name='', logLevel=None):
-        """Create Domain from GDALDataset or string options or lat/lon grids
-
-        d = Domain(srs, ext)
-            Size, extent and spatial reference is given by strings
-        d = Domain(ds=GDALDataset):
-            Size, extent and spatial reference is copied from input
-            GDAL dataset
-        d = Domain(srs, ds=GDALDataset):
-            Spatial reference is given by srs, but size and extent is
-            determined
-            from input GDAL dataset
-        d = Domain(lon=lonGrid, lat=latGrid)
-            Size, extent and spatial reference is given by two grids
-
-        Parameters
-        ----------
-        srs : PROJ4 or EPSG or WKT or NSR or osr.SpatialReference()
-            Input parameter for nansat.NSR()
-        ext : string
-            some gdalwarp options + additional options
-            [http://www.gdal.org/gdalwarp.html]
-            Specifies extent, resolution / size
-            Available options: (('-te' or '-lle') and ('-tr' or '-ts'))
-            (e.g. '-lle -10 30 55 60 -ts 1000 1000' or
-            '-te 100 2000 300 10000 -tr 300 200')
-            -tr resolutionx resolutiony
-            -ts sizex sizey
-            -te xmin ymin xmax ymax
-            -lle lonmin latmin lonmax latmax
-        ds : GDAL dataset
-        lat : Numpy array
-            Grid with latitudes
-        lon : Numpy array
-            Grid with longitudes
-        name : string, optional
-            Name to be added to the Domain object
-        logLevel : int, optional
-            level of logging
-
-        Raises
-        -------
-        NansatProjectionError : occurs when Projection() is empty
-            despite it is required for creating extentDic.
-        ValueError : occurs when the arguments are incorrect
-
-        Modifies
-        ---------
-        self.vrt.datasetset : dataset in memory
-            dataset is created based on the input arguments
-
-        See Also
-        ---------
-        Nansat.reproject()
-        [http://www.gdal.org/gdalwarp.html]
-        [http://trac.osgeo.org/proj/]
-        [http://spatialreference.org/]
-        [http://www.gdal.org/ogr/osr_tutorial.html]
-
-        """
+        """Create Domain from GDALDataset or string options or lat/lon grids"""
         # set default attributes
         self.logger = add_logger('Nansat', logLevel)
         self.name = name
@@ -211,9 +204,10 @@ class Domain(object):
     def __repr__(self):
         """Creates string with basic info about the Domain object
 
-        Modifies
+        Returns
         ---------
-        Print size, projection and corner coordinates
+         out_str : str
+            size, projection and corner coordinates
 
         """
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
@@ -229,7 +223,7 @@ class Domain(object):
         out_str += corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
         return out_str
 
-    # TODO: Test write_kml
+
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         """Write KML file with domains
 
@@ -284,13 +278,12 @@ class Domain(object):
             kml_content = template.format(name=self.name, filename=kml_filename, borders=borders)
             kml_file.write(self.KML_BASE.format(content=kml_content))
 
-    # TODO: Test _get_border_kml
     def _get_border_kml(self):
         """Generate Placemark entry for KML
 
         Returns
         --------
-        kmlEntry : String
+        kmlEntry : str
             String with the Placemark entry
 
         """
@@ -315,33 +308,25 @@ class Domain(object):
 
         Parameters
         -----------
-        kmlFileName : string, optional
+        kmlFileName : str
             Name of the KML-file to generate from the current Domain
-        kmlFigureName : string, optional
+        kmlFigureName : str
             Name of the projected image stored in .png format
 
         Examples
         ---------
-        # First of all, reproject an image into Lat/Lon WGS84
-          (Simple Cylindrical) projection
-        # 1. Cancel previous reprojection
-        # 2. Get corners of the image and the pixel resolution
-        # 3. Create Domain with stereographic projection,
-        #    corner coordinates and resolution 1000m
-        # 4. Reproject
-        # 5. Write image
-        # 6. Write KML for the image
-        n.reproject() # 1.
-        lons, lats = n.get_corners() # 2.
-        srsString = '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
-        extentString = '-lle %f %f %f %f -ts 3000 3000'
-        % (min(lons), min(lats), max(lons), max(lats))
-        d = Domain(srs=srsString, ext=extentString) # 3.
-        n.reproject(d) # 4.
-        n.write_figure(filename=figureName, bands=[3], clim=[0,0.15],
-                       cmapName='gray', transparency=0) # 5.
-        n.write_kml_image(kmlFileName=oPath + filename + '.kml',
-                          kmlFigureName=figureName) # 6.
+            >>> n.undo(100) # cancel previous reprojection
+            >>> lons, lats = n.get_corners() # Get corners of the image and the pixel resolution
+            >>> srsString = '+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs'
+            >>> extentString = '-lle %f %f %f %f -ts 3000 3000'
+                % (min(lons), min(lats), max(lons), max(lats))
+            >>> d = Domain(srs=srsString, ext=extentString) # Create Domain with
+                stereographic projection, corner coordinates and resolution 1000m
+            >>> n.reproject(d)
+            >>> n.write_figure(filename=figureName, bands=[3], clim=[0,0.15],
+                                cmapName='gray', transparency=0)
+            >>> n.write_kml_image(kmlFileName=oPath + filename + '.kml',
+                                kmlFigureName=figureName) # 6.
 
         """
 
@@ -362,12 +347,10 @@ class Domain(object):
         \t</LatLonBox>
         </GroundOverlay>'''
         # test input options
-        # TODO: kml_figurename can be not optional
         if kml_figurename is None:
             raise ValueError('kmlFigureName(%s) is not specified' % kmlFigureName)
 
         # get corner of the domain and add to KML
-        # TODO: can we change that to max_min_lat_lon?
         domain_lon, domain_lat = self.get_corners()
         with open(kml_filename, 'wt') as kml_file:
             kml_content = template.format(filename=kml_filename, figurename=kml_figurename,
@@ -441,7 +424,6 @@ class Domain(object):
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
-        # TODO: Make DRY
         x1, y1, _ = coorTrans.TransformPoint(extentDic['lle'][0], extentDic['lle'][3])
         x2, y2, _ = coorTrans.TransformPoint(extentDic['lle'][2], extentDic['lle'][3])
         x3, y3, _ = coorTrans.TransformPoint(extentDic['lle'][2], extentDic['lle'][1])
@@ -674,10 +656,11 @@ class Domain(object):
         For geographic (lon-lat) projections, or domains with no geotransform,
         the haversine formula is used to calculate the pixel size
         in the center of the domain.
+
         Returns
         --------
-        deltaX, deltaY : float
-        pixel size in X and Y directions given in meters
+        delta_x, delta_y : float
+            pixel size in X and Y directions given in meters
         """
 
         srs = osr.SpatialReference(self.vrt.dataset.GetProjection())
@@ -691,7 +674,6 @@ class Domain(object):
         # Estimate pixel size in center of domain using haversine formula
         center_col = round(self.vrt.dataset.RasterXSize/2)
         center_row = round(self.vrt.dataset.RasterYSize/2)
-        # TODO: Bad names
         lon00, lat00 = self.transform_points([center_col], [center_row])
         lon01, lat01 = self.transform_points([center_col], [center_row + 1])
         lon10, lat10 = self.transform_points([center_col + 1], [center_row])
@@ -702,9 +684,7 @@ class Domain(object):
 
     @staticmethod
     def _get_geotransform(extent_dict):
-        """
-        the new coordinates and raster size are calculated based on
-        the given extentDic.
+        """Get the new coordinates and raster size are calculated based on the given extentDic.
 
         Parameters
         -----------
@@ -741,8 +721,7 @@ class Domain(object):
 
     @staticmethod
     def _transform_tr(width, height, tr_arr):
-        """
-        Calculate X and Y resolution and raster sizes from the "-tr" parameter
+        """Calculate X and Y resolution and raster sizes from the "-tr" parameter
 
         Parameters
         -----------
@@ -759,7 +738,6 @@ class Domain(object):
         resolution_x, resolution_y, raster_x_size, raster_y_size : float
         """
         resolution_x = tr_arr[0]
-        # TODO: Review requested, falsification of negative value in resolution_y
         resolution_y = -(tr_arr[1])
 
         if width < resolution_x or height < resolution_y:
@@ -779,7 +757,6 @@ class Domain(object):
         return resolution_x, resolution_y, raster_x_size, raster_y_size
 
     def transform_points(self, colVector, rowVector, DstToSrc=0, dstSRS=NSR()):
-
         """Transform given lists of X,Y coordinates into lon/lat or inverse
 
         Parameters
@@ -843,61 +820,8 @@ class Domain(object):
                   continetsColor='coral', meridians=10, parallels=10, pColor='r', pLine='k',
                   pAlpha=0.5, padding=0., merLabels=[False, False, False, False],
                   parLabels=[False, False, False, False], pltshow=False, labels=None):
-        """Create an image with a map of the domain
-
-        Uses Basemap to create a World Map
-        Adds a semitransparent patch with outline of the Domain
-        Writes to an image file
-
-        Parameters
-        -----------
-        outputFileName : string
-            name of the output file name
-        lonVec : [floats] or [[floats]]
-            longitudes of patches to display
-        latVec : [floats] or [[floats]]
-            latitudes of patches to display
-        lonBorder : float
-            10, horisontal border around patch (degrees of longitude)
-        latBorder : float
-            10, vertical border around patch (degrees of latitude)
-        figureSize : tuple of two integers
-            (6, 6), size of the generated figure in inches
-        dpi: int
-            50, resolution of the output figure (size 6,6 and dpi 50
-            produces 300 x 300 figure)
-        projection : string, one of Basemap projections
-            'cyl', projection of the map
-        resolution : string, resolution of the map
-            'c', crude
-            'l', low
-            'i', intermediate
-            'h', high
-            'f', full
-        continetsColor : string or any matplotlib color representation
-            'coral', color of continets
-        meridians : int
-            10, number of meridians to draw
-        parallels : int
-            10, number of parallels to draw
-        pColor : string or any matplotlib color representation
-            'r', color of the Domain patch
-        pLine : string or any matplotlib color representation
-            'k', color of the Domain outline
-        pAlpha : float 0 - 1
-            0.5, transparency of Domain patch
-        padding : float
-            0., width of white padding around the map
-        merLabels : list of 4 booleans
-            where to put meridian labels, see also Basemap.drawmeridians()
-        parLables : list of 4 booleans
-            where to put parallel labels, see also Basemap.drawparallels()
-        labels : list of str
-            labels to print on top of patches
-        """
-
-        warnings.warn('Method "write_map" was moved to nansat.tools like write_domain_map and'
-                      'will be removed since Nansat 1.3')
+        """Create an image with a map of the domain"""
+        warnings.warn(self.WRITE_MAP_WARNING, NansatFutureWarning)
         border = self.get_border()
         write_domain_map(border, outputFileName, lon_vec=lonVec, lat_vec=latVec,
                          lon_border=lonBorder, lat_border=latBorder, figure_size=figureSize,
@@ -919,7 +843,7 @@ class Domain(object):
         srs_string : string
             SRS given as Proj4 string. If empty '+proj=stere' is used
 
-        Modifies
+        Notes
         --------
             Reprojects all GCPs to new SRS and updates GCPProjection
         """
