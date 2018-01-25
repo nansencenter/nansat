@@ -350,7 +350,7 @@ class DomainTest(unittest.TestCase):
             except ValueError as opt_err:
                 self.assertEqual(opt_err.args[0], 'Min cannot be bigger than max: '
                                                   '<-te x_min y_min x_max y_max> or '
-                                                  '<-lle min_lon min_lat max_lon max_lat>'
+                                                  '<-lle min_lon min_lat max_lon max_lat>')
 
         try:
             Domain._validate_te_lle(input_3)

@@ -17,7 +17,6 @@ import warnings
 import os
 import sys
 import glob
-from types import ModuleType, FloatType
 import datetime
 
 import gdal

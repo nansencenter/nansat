@@ -10,7 +10,7 @@ from datetime import datetime
 from numpy import array, arange
 import warnings
 
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.node import Node
 

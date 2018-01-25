@@ -26,12 +26,13 @@ import warnings
 import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
-
+from nansat.warnings import NansatFutureWarning
 from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.exporter import Exporter
+from nansat.exceptions import WrongMapperError, NansatGDALError
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
@@ -483,7 +484,7 @@ class Nansat(Domain, Exporter):
             geoTransform = list(self.vrt.vrt.dataset.GetGeoTransform())
             geoTransform[1] = float(geoTransform[1])/factor
             geoTransform[5] = float(geoTransform[5])/factor
-            geoTransform = map(float, geoTransform)
+            geoTransform = list(map(float, geoTransform))
             self.vrt.dataset.SetGeoTransform(geoTransform)
 
         # set global metadata
@@ -1186,7 +1187,8 @@ class Nansat(Domain, Exporter):
                 errType, err, traceback = nansatMappers[mappername]
                 # self.logger.error(err, exc_info=(errType, err, traceback))
                 # TODO: python 3.6 does not support with syntax
-                raise errType, err, traceback
+                raise EnvironmentError
+                #raise errType, err, traceback
 
             # create VRT using the selected mapper
             tmp_vrt = nansatMappers[mappername](self.filename, gdal_dataset, metadata, **kwargs)
