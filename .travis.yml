@@ -22,8 +22,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -c conda-forge -n test-environment python=$TRAVIS_PYTHON_VERSION  gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock;
-
+  - conda create -q -c conda-forge -n test-environment python=$TRAVIS_PYTHON_VERSION  gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock urllib3
   - source activate test-environment
   - python setup.py install
 
