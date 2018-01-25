@@ -6,7 +6,6 @@ python:
 sudo: false
 
 install:
-  - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -19,7 +18,6 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock
   # Useful for debugging any issues with conda
   - conda info -a
 
