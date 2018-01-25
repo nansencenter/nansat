@@ -570,9 +570,8 @@ class VRT(object):
 
         """
         # read XML content from VRT
-        tmp_vrt_xml = self.xml
         # find and remove GeoTransform
-        node0 = Node.create(str(tmp_vrt_xml.decode()))
+        node0 = Node.create(self.xml)
         node0.delNode('GeoTransform')
         # Write the modified elemements back into temporary VRT
         self.write_xml(node0.rawxml())
@@ -850,7 +849,7 @@ class VRT(object):
             vrt.vrt = self.vrt.copy()
             # make reference from the new vrt to the copy of vrt.vrt
             new_vrt_xml = vrt.xml.replace(os.path.split(self.vrt.filename)[1],
-                                          os.path.split(vrt.vrt.filename)[1])
+                                            os.path.split(vrt.vrt.filename)[1])
             vrt.write_xml(new_vrt_xml)
         return vrt
 
@@ -1153,7 +1152,7 @@ class VRT(object):
             band number
 
         """
-        node0 = Node.create(str(self.xml.decode()))
+        node0 = Node.create(self.xml)
         node0.delNode('VRTRasterBand', options={'band': band_num})
         node0.delNode('BandMapping', options={'src': band_num})
         self.write_xml(node0.rawxml())
@@ -1564,7 +1563,7 @@ class VRT(object):
         # read
         vsi_file_content = gdal.VSIFReadL(vsi_file_size, 1, vsi_file)
         gdal.VSIFCloseL(vsi_file)
-        return vsi_file_content
+        return str(vsi_file_content.decode())
 
     @staticmethod
     def _make_source_bands_xml(src_in):

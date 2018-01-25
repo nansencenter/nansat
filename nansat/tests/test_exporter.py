@@ -36,7 +36,6 @@ from netCDF4 import Dataset
 from nansat import Nansat, Domain, NSR
 
 from nansat.tests import nansat_test_data as ntd
-from __builtin__ import int
 
 from nansat.warnings import NansatFutureWarning
 
