@@ -80,7 +80,7 @@ VRT_FROM_LONLAT = VRT.from_lonlat(LON, LAT)
 class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
-        self.test_file_projected = os.path.join(ntd.test_data_path, 'gcps.tif')
+        self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
         if BASEMAP_LIB_IS_INSTALLED:
             plt.switch_backend('Agg')
         if (    not os.path.exists(self.test_file)
@@ -137,11 +137,9 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(d), Domain)
         self.assertEqual(d.shape(), lat.shape)
 
-
-
-
-
-    def test_repr(self):
+    @patch.object(Domain, 'get_corners',
+        return_value=(np.array([ 25.,  25.,  35.,  35.]), np.array([ 72.,  70.,  72.,  70.])))
+    def test_repr(self, mock_get_corners):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         result = d.__repr__()
         test = ('Domain:[500 x 500]\n'
@@ -157,21 +155,40 @@ class DomainTest(unittest.TestCase):
                 '\t ( 25.00,  70.00)  ( 35.00,  70.00)\n' )
         self.assertIsInstance(result, str)
         self.assertEquals(result, test)
-
-    def test_get_geolocation_grids(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        lon, lat = d.get_geolocation_grids()
-
-        self.assertEqual(type(lon), np.ndarray)
-        self.assertEqual(type(lat), np.ndarray)
-        self.assertEqual(lat.shape, (500, 500))
-
+    
     def test_write_kml(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
         d.write_kml(kmlFileName=tmpfilename)
-
         self.assertTrue(os.path.exists(tmpfilename))
+    
+    #def test__get_border_kml(self):
+    
+    #def test_write_kml_image(self):
+    
+    ext = "-te 25 70 35 72 -ts 500 500"
+    
+    @patch.object(Domain, 'transform_points',
+        return_value=(np.meshgrid(range(0,500),range(0,500))[0].flatten()*(35-25)/500.+25,
+                      np.meshgrid(range(0,500),range(0,500))[1].flatten()*(70-72)/500.+72))
+    def test_get_geolocation_grids(self, mock_transform_points):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        lon, lat = d.get_geolocation_grids()
+        self.assertEqual(type(lon), np.ndarray)
+        self.assertEqual(type(lat), np.ndarray)
+        self.assertEqual(lat.shape, (500, 500))
+
+    '''
+    def test_get_geolocation_grids(self, mock_transform_points):
+        d = Domain(ds=gdal.Open(test_file_projected))
+        lon, lat = d.get_geolocation_grids()
+        self.assertEqual(type(lon), np.ndarray)
+        self.assertEqual(type(lat), np.ndarray)
+        self.assertEqual(lat.shape, (500, 500))
+    '''
+
+
+
 
     def test_get_border_wkt(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")

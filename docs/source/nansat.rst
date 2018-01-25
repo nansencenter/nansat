@@ -12,6 +12,14 @@ nansat\.domain module
     :undoc-members:
     :show-inheritance:
 
+nansat\.exceptions module
+-------------------------
+
+.. automodule:: nansat.exceptions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 nansat\.exporter module
 -----------------------
 
@@ -80,6 +88,14 @@ nansat\.vrt module
 ------------------
 
 .. automodule:: nansat.vrt
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+nansat\.warnings module
+-----------------------
+
+.. automodule:: nansat.warnings
     :members:
     :undoc-members:
     :show-inheritance:

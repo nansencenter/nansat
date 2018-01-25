@@ -31,6 +31,7 @@ from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
+from nansat.exceptions import NansatProjectionError
 
 class VRT(object):
     """Wrapper around GDAL VRT-file
@@ -1390,10 +1391,10 @@ class VRT(object):
         return lon_vector, lat_vector
 
     def get_projection(self):
-        """Get projection from self.dataset
-
-        Get projection from GetProjection() or GetGCPProjection().
-        If both are empty, raise error
+        """Get projection from the dataset.
+        
+        Uses gdal.Dataset.GetProjection() or gdal.Dataset.GetGCPProjection(). If both return an
+        empty string, a NansatProjectionError is raised.
 
         Returns
         -------
@@ -1401,15 +1402,16 @@ class VRT(object):
 
         Raises
         -------
-            ProjectionError : occurs when the projection is empty.
-
-        TODO: see issue #190 in nansat...
+        NansatProjectionError : occurs when the projection is empty.
 
         """
         # get projection or GCPProjection
         projection = self.dataset.GetProjection()
         if projection == '':
             projection = self.dataset.GetGCPProjection()
+
+        if not projection:
+            raise NansatProjectionError
 
         return projection
 
