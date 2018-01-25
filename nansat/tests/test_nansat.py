@@ -20,6 +20,7 @@ import datetime
 import json
 import sys
 from xml.sax.saxutils import unescape
+from mock import patch, PropertyMock
 
 import numpy as np
 
@@ -37,6 +38,7 @@ from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal
 
 from nansat.warnings import NansatFutureWarning
+from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
 import nansat_test_data as ntd
 from __builtin__ import int
@@ -734,6 +736,14 @@ class NansatTest(unittest.TestCase):
         self.assertIn('72', n_repr)
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
+    '''
+    @patch('nansat.nansat.Nansat.get_GDALRasterBand')
+    def test_getitem(self, mock_Nansat):
+        mock_Nansat.GetMetadata = MagicMock(return_value = {'a':1})
+        mock_Nansat.ReadAsArray.return_value = None
+        Nansat(self.test_file_stere).__getitem__(1)
+    '''
+
 
 if __name__ == "__main__":
     unittest.main()
