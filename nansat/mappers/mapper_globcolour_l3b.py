@@ -18,7 +18,7 @@ from netCDF4 import Dataset
 
 import pythesint as pti
 
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from globcolour import Globcolour
 

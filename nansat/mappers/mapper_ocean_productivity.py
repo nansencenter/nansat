@@ -12,9 +12,10 @@ import glob
 
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 
+from nansat.exceptions import WrongMapperError
 
 class Mapper(VRT):
     ''' Mapper for Ocean Productivity website

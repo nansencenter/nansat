@@ -24,7 +24,9 @@ except ImportError:
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.tools import gdal, WrongMapperError, OptionError
+from nansat.tools import gdal
+
+from nansat.exceptions import WrongMapperError
 
 
 class Opendap(VRT):
@@ -57,9 +59,9 @@ class Opendap(VRT):
             try:
                 ds = Dataset(self.filename)
             except:
-                raise OptionError('Cannot open %s' % self.filename)
+                raise ValueError('Cannot open %s' % self.filename)
         elif type(ds) != Dataset:
-            raise OptionError('Input ds is not netCDF.Dataset!')
+            raise ValueError('Input ds is not netCDF.Dataset!')
 
         return ds
 
@@ -106,7 +108,7 @@ class Opendap(VRT):
             date = np.datetime64(date).astype('M8[s]')
             matchingDateDiff = np.min(np.abs(datetimes - date))
             if matchingDateDiff > datetimeResolution:
-                raise OptionError('Date %s is out of range' % date)
+                raise ValueError('Date %s is out of range' % date)
             layerNumber = np.argmin(np.abs(datetimes - date))
 
         layerDate = datetimes[layerNumber]

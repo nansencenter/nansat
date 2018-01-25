@@ -12,9 +12,10 @@ import numpy as np
 
 import pythesint as pti
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
-from hdf4_mapper import HDF4Mapper
+from nansat.mappers.hdf4_mapper import HDF4Mapper
 
 
 class Mapper(HDF4Mapper):

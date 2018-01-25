@@ -12,7 +12,7 @@ import struct
 import datetime
 import warnings
 
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from nansat.geolocation import Geolocation
 from nansat.vrt import VRT
 

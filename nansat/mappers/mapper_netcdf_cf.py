@@ -13,7 +13,9 @@ from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.nsr import NSR
-from nansat.tools import WrongMapperError, parse_time
+from nansat.tools import parse_time
+
+from nansat.exceptions import WrongMapperError
 
 
 class Mapper(VRT):

@@ -15,7 +15,7 @@ from osgeo import gdal, osr
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 class Mapper(VRT):
 

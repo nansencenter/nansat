@@ -26,17 +26,19 @@ try:
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
-    MATPLOTLIB_EXISTS = False
+    MATPLOTLIB_IS_INSTALLED = False
 else:
-    MATPLOTLIB_EXISTS = True
+    MATPLOTLIB_IS_INSTALLED = True
 
+import gdal
 from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
-from nansat.tools import gdal, OptionError, NansatFutureWarning
 
 from nansat.tests import nansat_test_data as ntd
 from __builtin__ import int
+
+from nansat.warnings import NansatFutureWarning
 
 warnings.simplefilter("always", NansatFutureWarning)
 warnings.simplefilter("always", UserWarning)
@@ -286,12 +288,12 @@ class ExporterTest(unittest.TestCase):
         n.add_band(np.ones(n2.shape(), np.float32))
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        self.assertRaises(OptionError, n2.export2thredds, tmpfilename,
+        self.assertRaises(ValueError, n2.export2thredds, tmpfilename,
                           ['L_645'])
 
     def test_export2thredds_longlat_list(self):
         n = Nansat(self.test_file_gcps, log_level=40)
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             n.export2thredds('aa', ['L_469'])
 
     def test_export2thredds_longlat_dict(self):
@@ -317,7 +319,7 @@ class ExporterTest(unittest.TestCase):
         self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
         n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
         exported = Nansat(self.tmpfilename)
-        with self.assertRaises(OptionError):
+        with self.assertRaises(ValueError):
             exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
         os.unlink(self.tmpfilename)

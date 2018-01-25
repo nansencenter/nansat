@@ -22,7 +22,7 @@ import sys
 from datetime import datetime, timedelta
 
 from nansat.vrt import VRT
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from nansat.nansat import Nansat
 
 # Place to store downloads - this can be changed via the "outFolder" argument

@@ -11,10 +11,12 @@ from dateutil.parser import parse
 import json
 import pythesint as pti
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.mappers.obpg import OBPGL2BaseClass
+
+from nansat.exceptions import WrongMapperError
 
 class Mapper(OBPGL2BaseClass):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG

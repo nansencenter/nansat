@@ -19,7 +19,9 @@ import sys
 import os
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
+from nansat.vrt import VRT
 import mapper_generic as mg
 
 

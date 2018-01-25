@@ -7,9 +7,10 @@
 from datetime import datetime, timedelta
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 
+from nansat.exceptions import WrongMapperError
 
 # Hardcoded for MET file sytem; may be overridden by other user with copy of data
 baseFolder = '/vol/mis/dmf2/midlertidig/hindcast/hildeh/nora10/NetCDF/'

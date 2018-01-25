@@ -332,14 +332,6 @@ nansat\.mappers\.mapper\_ocean\_productivity module
     :undoc-members:
     :show-inheritance:
 
-nansat\.mappers\.mapper\_opendap module
----------------------------------------
-
-.. automodule:: nansat.mappers.mapper_opendap
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 nansat\.mappers\.mapper\_opendap\_arome module
 ----------------------------------------------
 

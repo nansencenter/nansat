@@ -17,8 +17,9 @@ else:
 
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
-from nansat.tools import gdal, ogr, WrongMapperError, NansatReadError
+from nansat.tools import gdal, ogr
 
+from nansat.exceptions import WrongMapperError, NansatReadError
 
 class Envisat(object):
     """Methods/data shared between Envisat mappers
@@ -404,8 +405,7 @@ class Envisat(object):
         array = self.get_array_from_ADS(adsName)
 
         if not IMPORT_SCIPY:
-            raise NansatReadError(' ENVISAT data cannot be read because scipy is not installed! '
-                                  ' Please do: conda -c conda-forge install scipy ')
+            raise NansatReadError('ENVISAT data cannot be read because scipy is not installed...')
 
         # zoom the array
         array = scipy.ndimage.interpolation.zoom(array,
