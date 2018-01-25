@@ -623,8 +623,9 @@ class Nansat(Domain, Exporter):
             warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
             resample_alg = eResampleAlg
 
-        if not self.overlaps(dst_domain):
-            raise ValueError('Source and destination domains do not overlap')
+        # This is time consuming and therefore not done...:
+        #if not self.overlaps(dst_domain):
+        #    raise ValueError('Source and destination domains do not overlap')
 
         # if self spans from 0 to 360 and dst_domain is west of 0:
         #     shift self westwards by 180 degrees
