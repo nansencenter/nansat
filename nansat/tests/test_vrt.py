@@ -13,7 +13,7 @@
 import unittest
 import logging
 import os
-from mock import patch, PropertyMock, MagicMock
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -397,6 +397,36 @@ class VRTTest(unittest.TestCase):
         # str(mock_vrt1) will call mock_vrt1.__repr__ and, hence, VRT.__repr__ which we test
         self.assertEqual(str(mock_vrt1), 'aaa')
         self.assertEqual(str(mock_vrt2), 'bbb=>aaa')
+
+    @patch.multiple(VRT, create_band=DEFAULT, __init__=Mock(return_value=None))
+    def test_add_swath_mask_band(self, create_band):
+        vrt = VRT()
+        vrt.filename = '/temp/filename.vrt'
+        vrt._add_swath_mask_band()
+        self.assertEqual(create_band.call_args, {
+            'src':[{
+                'SourceFilename': '/temp/filename.vrt',
+                'SourceBand':  1,
+                'DataType': 1}],
+            'dst':{
+                'dataType': 1,
+                'wkv': 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            }})
+
+
+    def test_init_from_gdal_dataset(self, _add_geolocation):
+        vrt = VRT()
+        ds = gdal.Open(self.test_file_gcps)
+        vrt._init_from_gdal_dataset(ds)
+
+        self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
+        self.assertEqual(vrt.dataset.RasterYSize, ds.RasterYSize)
+        self.assertEqual(vrt.dataset.GetProjection(), ds.GetProjection())
+        self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
+        self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
+        self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertTrue(_add_geolocation.called_once())
 
 if __name__ == "__main__":
     unittest.main()
