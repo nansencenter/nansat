@@ -13,7 +13,7 @@
 import unittest
 import logging
 import os
-from mock import patch
+from mock import patch, Mock, PropertyMock, MagicMock, DEFAULT
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -24,6 +24,8 @@ import pythesint as pti
 from nansat.node import Node
 from nansat.vrt import VRT
 import nansat_test_data as ntd
+
+from nansat.exceptions import NansatProjectionError
 
 
 class VRTTest(unittest.TestCase):
@@ -389,6 +391,16 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(band_nodes[1].node('SourceFilename').value, vrt.band_vrts[2].filename)
         self.assertEqual(band_nodes[2].node('SourceFilename').value, vrt.band_vrts[3].filename)
 
+    ### Both of these patches work, so we don't need to mock __init__ in this case...
+    #@patch.multiple(VRT, dataset=DEFAULT, __init__ = Mock(return_value=None))
+    @patch.object(VRT, 'dataset')
+    def test_get_projection_raises_NansatProjectionError(self, dataset):
+        dataset.GetProjection.return_value = ''
+        dataset.GetGCPProjection.return_value = ''
+
+        vrt = VRT()
+        with self.assertRaises(NansatProjectionError):
+            proj = vrt.get_projection()
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
+from nansat.exceptions import NansatProjectionError
 
 class VRT(object):
     """
@@ -1412,7 +1413,7 @@ class VRT(object):
 
         Raises
         -------
-        ProjectionError : occurs when the projection is empty.
+        NansatProjectionError : occurs when the projection is empty.
 
         TODO: see issue #190 in nansat...
 
@@ -1421,6 +1422,9 @@ class VRT(object):
         projection = self.dataset.GetProjection()
         if projection == '':
             projection = self.dataset.GetGCPProjection()
+
+        if not projection:
+            raise NansatProjectionError
 
         return projection
 
