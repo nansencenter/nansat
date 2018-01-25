@@ -830,7 +830,7 @@ class VRT(object):
 
             # add GeoTransform metadata
             geo_transform_str = str(self.dataset.GetGeoTransform()).replace(',', '|')
-            self.dataset.SetMetadataItem(str('NANSAT_GeoTransform'), geo_transform_str)
+            self.dataset.SetMetadataItem(str('NANSAT_GeoTransform'), str(geo_transform_str))
             add_gcps = False
         return options, add_gcps
 
