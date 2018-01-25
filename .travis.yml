@@ -23,9 +23,9 @@ install:
 
   # Replace dep1 dep2 ... with your dependencies
     - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock;
+      - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock;
     else
-      - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock urllib3;
+      - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c conda-forge gdal numpy pillow netcdf4 python-dateutil pythesint nose coveralls mock urllib3;
     fi
 
   - source activate test-environment
