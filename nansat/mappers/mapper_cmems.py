@@ -34,9 +34,8 @@ class Mapper(NetcdfCF):
         gdal_metadata = self._remove_strings_in_metadata_keys(args[2])
 
         gcmd_keywords_mapping = get_gcmd_keywords_mapping()
-        for key, val in gcmd_keywords_mapping.iteritems():
-            if (gdal_metadata.has_key('source') and key in
-                    gdal_metadata['source']):
+        for key, val in list(gcmd_keywords_mapping.items()):
+            if 'source' in list(gdal_metadata.keys()) and key in gdal_metadata['source']:
                 instrument = gcmd_keywords_mapping[key]['instrument']
                 platform = gcmd_keywords_mapping[key]['platform']
 

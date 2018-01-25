@@ -24,10 +24,9 @@ class Mapper(VRT):
         title_correct = False
         if not gdalMetadata:
             raise WrongMapperError
-        for key, val in gdalMetadata.iteritems():
+        for key, val in list(gdalMetadata.items()):
             if 'title' in key:
-                if not val == \
-                        'Daily AMSR-E Arctic lead area fraction [in percent]':
+                if not val == 'Daily AMSR-E Arctic lead area fraction [in percent]':
                     raise WrongMapperError
                 else:
                     title_correct = True
@@ -36,10 +35,11 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # initiate VRT for the NSIDC 10 km grid
-        self._init_from_dataset_params(1216, 1792, (-3850000, 6250, 0.0, 5850000, 0.0, -6250), NSR(3411).wkt)
+        self._init_from_dataset_params(1216, 1792, (-3850000, 6250, 0.0, 5850000, 0.0, -6250),
+                                       NSR(3411).wkt)
 
         src = {
-            'SourceFilename': 'NETCDF:"%s":lf'%filename,
+            'SourceFilename': 'NETCDF:"%s":lf' % filename,
             'SourceBand': 1,
         }
         dst = {
