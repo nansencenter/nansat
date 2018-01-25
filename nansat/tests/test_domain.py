@@ -56,7 +56,7 @@ EXTENT_PARIS = "-te 2 48 3 49 -ts 500 500"
 
 
 class DomainTest(unittest.TestCase):
-    
+
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
@@ -141,10 +141,10 @@ class DomainTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_kml.kml')
         d.write_kml(kmlFileName=tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
-    
+
     #def test__get_border_kml(self):
 
-    
+
     #def test_write_kml_image(self):
 
 
@@ -165,9 +165,9 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lon), np.ndarray)
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(lat.shape, (500, 500))
-    
-    
-    
+
+
+
 
     def test_convert_extentDic(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")

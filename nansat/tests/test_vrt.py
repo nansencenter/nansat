@@ -13,7 +13,7 @@
 import unittest
 import logging
 import os
-from mock import patch, Mock, PropertyMock, MagicMock, DEFAULT
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 import xml.etree.ElementTree as ET
 import warnings
 
@@ -41,41 +41,40 @@ class VRTTest(unittest.TestCase):
                          ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
 
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
-    def test_init(self, _make_filename_mock):
-        vrt = VRT()
+    def test_init(self, mock_make_filename):
+        metadata={'key': 'value'}
+        vrt = VRT(metadata=metadata)
 
         self.assertIsInstance(vrt, VRT)
         self.assertEqual(vrt.filename, '/vsimem/filename.vrt')
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
-        self.assertIsInstance(vrt.logger, logging.Logger)
+        self.assertIsInstance(vrt.logger, logging.Logger) # just for testing mocking
         self.assertIsInstance(vrt.driver, gdal.Driver)
         self.assertEqual(vrt.band_vrts, {})
         self.assertEqual(vrt.tps, False)
         self.assertTrue(vrt.vrt is None)
         self.assertTrue(vrt.xml.startswith('<VRTDataset rasterXSize="1" rasterYSize="1"'))
-        _make_filename_mock.called_once()
+        self.assertTrue(mock_make_filename.called_once())
+        self.assertEqual(vrt.dataset.GetMetadata(), metadata)
 
-    def test_del(self):
+    @patch.object(VRT, '_make_filename', return_value='filename.vrt')
+    def test_del(self, mock_make_filename):
         vrt = VRT()
-        self.assertEqual(gdal.Unlink(vrt.filename), 0)
-
-        vrt = VRT()
-        filename_vrt = vrt.filename
         vrt = None
-        self.assertEqual(gdal.Unlink(filename_vrt), -1)
+        self.assertFalse(os.path.exists('filename.vrt'))
 
-    def test_init_metadata(self):
-        vrt1 = VRT(metadata={'aaa': 'bbb'})
-        self.assertEqual(vrt1.dataset.GetMetadata()['aaa'], 'bbb')
-
-    def test_init_nomem(self):
-        vrt = VRT(nomem=True)
-
-        self.assertTrue(os.path.exists(vrt.filename))
-
-    def test_from_gdal_dataset(self):
+    @patch.object(VRT, '_init_from_gdal_dataset')
+    def test_from_gdal_dataset(self, _init_from_gdal_dataset):
         ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.from_gdal_dataset(ds)
+        self.assertIsInstance(vrt, VRT)
+        self.assertTrue(_init_from_gdal_dataset.called_once())
+
+    @patch.object(VRT, '_add_geolocation')
+    def test_init_from_gdal_dataset(self, _add_geolocation):
+        vrt = VRT()
+        ds = gdal.Open(self.test_file_gcps)
+        vrt._init_from_gdal_dataset(ds)
 
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
         self.assertEqual(vrt.dataset.RasterYSize, ds.RasterYSize)
@@ -83,6 +82,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
         self.assertIn('filename', vrt.dataset.GetMetadata().keys())
+        self.assertTrue(_add_geolocation.called_once())
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file_gcps)
@@ -440,6 +440,34 @@ class VRTTest(unittest.TestCase):
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertEqual(vrt.dataset.RasterXSize, 100)
+
+    def test_repr(self):
+        # we mock the entire class [MagicMock(VRT)] and set instance attributes/methods
+        mock_vrt1 = MagicMock(VRT, filename='aaa', vrt=None, __repr__=VRT.__repr__)
+        mock_vrt2 = MagicMock(VRT, filename='bbb', vrt=mock_vrt1, __repr__=VRT.__repr__)
+
+        # str(mock_vrt1) will call mock_vrt1.__repr__ and, hence, VRT.__repr__ which we test
+        self.assertEqual(str(mock_vrt1), 'aaa')
+        self.assertEqual(str(mock_vrt2), 'bbb=>aaa')
+
+    """
+    @patch.multiple(VRT, create_band=DEFAULT, __init__=Mock(return_value=None))
+    def test_add_swath_mask_band(self, create_band):
+        vrt = VRT()
+        vrt.filename = '/temp/filename.vrt'
+        vrt._add_swath_mask_band()
+        import ipdb; ipdb.set_trace()
+        self.assertEqual(create_band.call_args, {
+            'src':[{
+                'SourceFilename': '/temp/filename.vrt',
+                'SourceBand':  1,
+                'DataType': 1}],
+            'dst':{
+                'dataType': 1,
+                'wkv': 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            }})
+    """
 
 if __name__ == "__main__":
     unittest.main()
