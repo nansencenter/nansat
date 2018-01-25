@@ -17,19 +17,23 @@ import logging
 import os
 import sys
 if sys.version_info.major == 2:
-    from mock import patch
+    from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 else:
-    from unittest.mock import patch
+    from unittest.mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 import xml.etree.ElementTree as ET
+import warnings
+
 import numpy as np
 import gdal
 import pythesint as pti
 
 from nansat.node import Node
 from nansat.vrt import VRT
-from . import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 
+from nansat.exceptions import NansatProjectionError
+from nansat.warnings import NansatFutureWarning
 
 class VRTTest(unittest.TestCase):
     def setUp(self):
@@ -44,41 +48,40 @@ class VRTTest(unittest.TestCase):
                         ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
 
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
-    def test_init(self, _make_filename_mock):
-        vrt = VRT()
+    def test_init(self, mock_make_filename):
+        metadata={'key': 'value'}
+        vrt = VRT(metadata=metadata)
 
         self.assertIsInstance(vrt, VRT)
         self.assertEqual(vrt.filename, '/vsimem/filename.vrt')
         self.assertIsInstance(vrt.dataset, gdal.Dataset)
-        self.assertIsInstance(vrt.logger, logging.Logger)
+        self.assertIsInstance(vrt.logger, logging.Logger) # just for testing mocking
         self.assertIsInstance(vrt.driver, gdal.Driver)
         self.assertEqual(vrt.band_vrts, {})
         self.assertEqual(vrt.tps, False)
         self.assertTrue(vrt.vrt is None)
         self.assertTrue(vrt.xml.startswith('<VRTDataset rasterXSize="1" rasterYSize="1"'))
-        _make_filename_mock.called_once()
+        self.assertTrue(mock_make_filename.called_once())
+        self.assertEqual(vrt.dataset.GetMetadata(), metadata)
 
-    def test_del(self):
+    @patch.object(VRT, '_make_filename', return_value='filename.vrt')
+    def test_del(self, mock_make_filename):
         vrt = VRT()
-        self.assertEqual(gdal.Unlink(vrt.filename), 0)
-
-        vrt = VRT()
-        filename_vrt = vrt.filename
         vrt = None
-        self.assertEqual(gdal.Unlink(filename_vrt), -1)
+        self.assertFalse(os.path.exists('filename.vrt'))
 
-    def test_init_metadata(self):
-        vrt1 = VRT(metadata={'aaa': 'bbb'})
-        self.assertEqual(vrt1.dataset.GetMetadata()['aaa'], 'bbb')
-
-    def test_init_nomem(self):
-        vrt = VRT(nomem=True)
-
-        self.assertTrue(os.path.exists(vrt.filename))
-
-    def test_from_gdal_dataset(self):
+    @patch.object(VRT, '_init_from_gdal_dataset')
+    def test_from_gdal_dataset(self, _init_from_gdal_dataset):
         ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.from_gdal_dataset(ds)
+        self.assertIsInstance(vrt, VRT)
+        self.assertTrue(_init_from_gdal_dataset.called_once())
+
+    @patch.object(VRT, '_add_geolocation')
+    def test_init_from_gdal_dataset(self, _add_geolocation):
+        vrt = VRT()
+        ds = gdal.Open(self.test_file_gcps)
+        vrt._init_from_gdal_dataset(ds)
 
         self.assertEqual(vrt.dataset.RasterXSize, ds.RasterXSize)
         self.assertEqual(vrt.dataset.RasterYSize, ds.RasterYSize)
@@ -86,6 +89,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
         self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
+        self.assertTrue(_add_geolocation.called_once())
 
     def test_from_dataset_params(self):
         ds = gdal.Open(self.test_file_gcps)
@@ -391,14 +395,89 @@ class VRTTest(unittest.TestCase):
         vrt = VRT.copy_dataset(ds)
         vrt.hardcopy_bands()
 
-        #import ipdb; ipdb.set_trace()
         self.assertTrue(np.allclose(vrt.dataset.ReadAsArray(), ds.ReadAsArray()))
         band_nodes = Node.create(str(vrt.xml)).nodeList('VRTRasterBand')
         self.assertEqual(band_nodes[0].node('SourceFilename').value, vrt.band_vrts[1].filename)
         self.assertEqual(band_nodes[1].node('SourceFilename').value, vrt.band_vrts[2].filename)
         self.assertEqual(band_nodes[2].node('SourceFilename').value, vrt.band_vrts[3].filename)
 
+    ### Both of these patches work, so we don't need to mock __init__ in this case...
+    #@patch.multiple(VRT, dataset=DEFAULT, __init__ = Mock(return_value=None))
+    @patch.object(VRT, 'dataset')
+    def test_get_projection_raises_NansatProjectionError(self, dataset):
+        dataset.GetProjection.return_value = ''
+        dataset.GetGCPProjection.return_value = ''
 
+        vrt = VRT()
+        with self.assertRaises(NansatProjectionError):
+            proj = vrt.get_projection()
+
+    def test_init_from_old__gdal_dataset(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(gdalDataset=ds)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+
+    def test_init_from_old__vrt_dataset(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(vrtDataset=ds)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+
+    def test_init_from_old__dataset_params(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(srcGeoTransform=(0,1,0,0,0,-1), srcRasterXSize=10, srcRasterYSize=20)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertEqual(vrt.dataset.RasterXSize, 10)
+
+    def test_init_from_old__array(self):
+        a = np.random.randn(100,100)
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(array=a)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertEqual(vrt.dataset.RasterXSize, 100)
+
+    def test_init_from_old__lonlat(self):
+        lon = np.random.randn(100,100)
+        lat = np.random.randn(100,100)
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(lon=lon, lat=lat)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertEqual(vrt.dataset.RasterXSize, 100)
+
+    def test_repr(self):
+        # we mock the entire class [MagicMock(VRT)] and set instance attributes/methods
+        mock_vrt1 = MagicMock(VRT, filename='aaa', vrt=None, __repr__=VRT.__repr__)
+        mock_vrt2 = MagicMock(VRT, filename='bbb', vrt=mock_vrt1, __repr__=VRT.__repr__)
+
+        # str(mock_vrt1) will call mock_vrt1.__repr__ and, hence, VRT.__repr__ which we test
+        self.assertEqual(str(mock_vrt1), 'aaa')
+        self.assertEqual(str(mock_vrt2), 'bbb=>aaa')
+
+    """
+    @patch.multiple(VRT, create_band=DEFAULT, __init__=Mock(return_value=None))
+    def test_add_swath_mask_band(self, create_band):
+        vrt = VRT()
+        vrt.filename = '/temp/filename.vrt'
+        vrt._add_swath_mask_band()
+        import ipdb; ipdb.set_trace()
+        self.assertEqual(create_band.call_args, {
+            'src':[{
+                'SourceFilename': '/temp/filename.vrt',
+                'SourceBand':  1,
+                'DataType': 1}],
+            'dst':{
+                'dataType': 1,
+                'wkv': 'swath_binary_mask',
+                'PixelFunctionType': 'OnesPixelFunc',
+            }})
+    """
 
 if __name__ == "__main__":
     unittest.main()
