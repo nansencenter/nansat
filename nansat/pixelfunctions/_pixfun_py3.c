@@ -44,18 +44,18 @@ PyMODINIT_FUNC init_uniqueCombinations(void)
 }
 */
 
-static struct PyModuleDef _pixfun =
+static struct PyModuleDef _pixfun_py3 =
 {
     PyModuleDef_HEAD_INIT,
-    "_pixfun", /* name of module */
-    "usage: _pixfun.registerPixelFunctions\n", /* module documentation, may be NULL */
+    "_pixfun_py3", /* name of module */
+    "usage: _pixfun_py3.registerPixelFunctions\n", /* module documentation, may be NULL */
     -1,   /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
     module_methods
 };
 
-PyMODINIT_FUNC PyInit__pixfun(void)
+PyMODINIT_FUNC PyInit__pixfun_py3(void)
 {
-    return PyModule_Create(&_pixfun);
+    return PyModule_Create(&_pixfun_py3);
 }
 
 
