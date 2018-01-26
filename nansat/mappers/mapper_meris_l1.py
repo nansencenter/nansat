@@ -1,15 +1,14 @@
 # Name:        nansat_mapper_merisL1
 # Purpose:     Mapping for Meris-L1 data
-# Authors:      Anton Korosov
-# Licence:      This file is part of NANSAT. You can redistribute it or modify
-#               under the terms of GNU General Public License, v.3
-#               http://www.gnu.org/licenses/gpl-3.0.html
-from pytz import UTC
+# Authors:     Anton Korosov
+# Licence:     This file is part of NANSAT. You can redistribute it or modify
+#              under the terms of GNU General Public License, v.3
+#              http://www.gnu.org/licenses/gpl-3.0.html
 from dateutil.parser import parse
 import json
 
 from nansat.vrt import VRT
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from envisat import Envisat
 
 import pythesint as pti
@@ -17,14 +16,14 @@ import pythesint as pti
 class Mapper(VRT, Envisat):
     ''' VRT with mapping of WKV for MERIS Level 1 (FR or RR) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  geolocation=False, zoomSize=500, step=1, **kwargs):
 
         ''' Create MER1 VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
 
         gdalDataset : gdal dataset
 
@@ -43,58 +42,61 @@ class Mapper(VRT, Envisat):
 
         '''
 
-        self.setup_ads_parameters(fileName, gdalMetadata)
+        self.setup_ads_parameters(filename, gdalMetadata)
 
         if (self.product[0:9] != "MER_FRS_1" and
                 self.product[0:9] != "MER_RR__1"):
             raise WrongMapperError
 
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
+        # create empty VRT dataset with geolocation only
+        self._init_from_gdal_dataset(gdalDataset)
+
+        metaDict = [{'src': {'SourceFilename': filename, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '413'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 2},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 2},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '443'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 3},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 3},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '490'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 4},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 4},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '510'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 5},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 5},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '560'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 6},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 6},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '620'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 7},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 7},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '665'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 8},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 8},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '681'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 9},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 9},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '709'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 10},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 10},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '753'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 11},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 11},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '761'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 12},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 12},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '778'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 13},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 13},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '864'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 14},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 14},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '849'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 15},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 15},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '900'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 16,
+                    {'src': {'SourceFilename': filename, 'SourceBand': 16,
                              'DataType': 1},
                      'dst': {'wkv': 'quality_flags', 'suffix': 'l1'}}
                     ]
@@ -114,7 +116,7 @@ class Mapper(VRT, Envisat):
             bandDict['src']['ScaleRatio'] = str(scales[i])
 
         # get list with resized VRTs from ADS
-        self.bandVRTs = {'adsVRTs': self.get_ads_vrts(gdalDataset,
+        self.band_vrts = {'adsVRTs': self.get_ads_vrts(gdalDataset,
                                                      ['sun zenith angles',
                                                       'sun azimuth angles',
                                                       'zonal winds',
@@ -122,8 +124,8 @@ class Mapper(VRT, Envisat):
                                                      zoomSize=zoomSize,
                                                      step=step)}
         # add bands from the ADS VRTs
-        for adsVRT in self.bandVRTs['adsVRTs']:
-            metaDict.append({'src': {'SourceFilename': adsVRT.fileName,
+        for adsVRT in self.band_vrts['adsVRTs']:
+            metaDict.append({'src': {'SourceFilename': adsVRT.filename,
                                      'SourceBand': 1},
                              'dst': {'name': (adsVRT.dataset.GetRasterBand(1).
                                               GetMetadataItem('name')),
@@ -131,11 +133,8 @@ class Mapper(VRT, Envisat):
                                                GetMetadataItem('units'))}
                              })
 
-        # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
-
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         self._set_envisat_time(gdalMetadata)

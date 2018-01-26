@@ -24,7 +24,9 @@ except ImportError:
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.tools import gdal, WrongMapperError, OptionError
+from nansat.tools import gdal
+
+from nansat.exceptions import WrongMapperError
 
 
 class Opendap(VRT):
@@ -40,26 +42,26 @@ class Opendap(VRT):
     ### TODOs:
     # add band metadata
 
-    def test_mapper(self, fileName):
-        ''' Tests if fileName fits mapper. May raise WrongMapperError '''
+    def test_mapper(self, filename):
+        ''' Tests if filename fits mapper. May raise WrongMapperError '''
         baseURLmatch = False
         for baseURL in self.baseURLs:
-            if fileName.startswith(baseURL):
+            if filename.startswith(baseURL):
                 baseURLmatch = True
                 break
         if not baseURLmatch:
-            raise WrongMapperError
+            raise WrongMapperError(filename)
 
 
     def get_dataset(self, ds):
         ''' Open Dataset '''
         if ds is None:
             try:
-                ds = Dataset(self.fileName)
+                ds = Dataset(self.filename)
             except:
-                raise OptionError('Cannot open %s' % self.fileName)
+                raise ValueError('Cannot open %s' % self.filename)
         elif type(ds) != Dataset:
-            raise OptionError('Input ds is not netCDF.Dataset!')
+            raise ValueError('Input ds is not netCDF.Dataset!')
 
         return ds
 
@@ -80,7 +82,7 @@ class Opendap(VRT):
             os.path.isdir(self.cachedir)):
             # do caching
             cachefile = '%s_%s.npz' % (os.path.join(self.cachedir,
-                                       os.path.split(self.fileName)[1]),
+                                       os.path.split(self.filename)[1]),
                                        self.timeVarName)
 
         if os.path.exists(cachefile):
@@ -106,7 +108,7 @@ class Opendap(VRT):
             date = np.datetime64(date).astype('M8[s]')
             matchingDateDiff = np.min(np.abs(datetimes - date))
             if matchingDateDiff > datetimeResolution:
-                raise OptionError('Date %s is out of range' % date)
+                raise ValueError('Date %s is out of range' % date)
             layerNumber = np.argmin(np.abs(datetimes - date))
 
         layerDate = datetimes[layerNumber]
@@ -140,14 +142,14 @@ class Opendap(VRT):
 
         return metaItem
 
-    def create_vrt(self, fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
+    def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         ''' Create VRT '''
         if date is None:
             warnings.warn('''
             Date is not specified! Will return the first layer.
             Please add date="YYYY-MM-DD"''')
 
-        self.fileName = fileName
+        self.filename = filename
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
 
@@ -165,15 +167,12 @@ class Opendap(VRT):
         # create VRT with correct lon/lat (geotransform)
         srcRasterXSize, srcRasterYSize = self.get_shape()
         srcGeoTransform = self.get_geotransform()
-        VRT.__init__(self, srcProjection=self.srcDSProjection,
-                     srcRasterXSize=srcRasterXSize,
-                     srcRasterYSize=srcRasterYSize,
-                     srcGeoTransform=srcGeoTransform)
+        self._init_from_dataset_params(srcRasterXSize, srcRasterYSize, srcGeoTransform, self.srcDSProjection)
 
-        metaDict = [self.get_metaitem(fileName, dsVarName, dsLayerNo)
+        metaDict = [self.get_metaitem(filename, dsVarName, dsLayerNo)
                       for dsVarName in dsVarNames]
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # set time
         timeResSecs = self.get_time_coverage_resolution()

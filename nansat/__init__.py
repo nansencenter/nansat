@@ -18,17 +18,18 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
-# import some libraries for convenience
-from nansat.tools import gdal, ogr
-import numpy as np
-import matplotlib.pyplot as plt
+import importlib
+pixfun_module_name = 'nansat._pixfun_py{0}'.format(sys.version_info[0])
+
+pixfun = importlib.import_module(pixfun_module_name)
+pixfun.registerPixelFunctions()
 
 # check if pixel functions were compiled using setup_tools
 try:
-    from nansat._pixfun import registerPixelFunctions
-    registerPixelFunctions()
-except Exception as e:
-    print repr(e)
+    pixfun = importlib.import_module(pixfun_module_name)
+    pixfun.registerPixelFunctions()
+except ImportError as e:
+    print(e)
     warnings.warn('''Cannot register C pixel functions!
                      Either nansat was not installed using setup.py or
                      pixel functions were not compiled automatically.
@@ -39,30 +40,8 @@ except Exception as e:
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.nansat import Nansat
+from nansat.figure import Figure
 
-__all__ = ['NSR', 'Domain', 'Nansat']
-
-try:
-    from nansat.figure import Figure
-except ImportError:
-    warnings.warn('''Cannot import Figure! Nansat will not make figures!''')
-else:
-    __all__.append('Figure')
-
-try:
-    from nansat.nansatmap import Nansatmap
-except ImportError:
-    warnings.warn('''Cannot import Nansatmap! Nansat will not make maps!''')
-else:
-    __all__.append('Nansatmap')
-
-try:
-    from nansat.mosaic import Mosaic
-except ImportError:
-    warnings.warn('''Cannot import Mosaic! Nansat will not mosaic files!''')
-else:
-    __all__.append('Mosaic')
+__all__ = ['NSR', 'Domain', 'Nansat', 'Figure']
 
 os.environ['LOG_LEVEL'] = '30'
-
-__all__ += ['gdal', 'ogr', 'np', 'plt']

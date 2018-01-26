@@ -12,21 +12,31 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
+from __future__ import absolute_import, unicode_literals
+
 import unittest
 import warnings
 import os
 import sys
 import glob
-from types import ModuleType, FloatType
 import datetime
+if sys.version_info.major == 2:
+    from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+else:
+    from unittest.mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+try:
+    import Image
+    import ImageDraw
+    import ImageFont
+except:
+    from PIL import Image, ImageDraw, ImageFont
 
-import matplotlib.pyplot as plt
+import gdal
 import numpy as np
 
 from nansat import Figure, Nansat, Domain
-from nansat.tools import gdal, OptionError
 
-import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 
 IS_CONDA = 'conda' in os.environ['PATH']
 
@@ -34,8 +44,6 @@ IS_CONDA = 'conda' in os.environ['PATH']
 class FigureTest(unittest.TestCase):
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
-        plt.switch_backend('Agg')
-
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
 
@@ -126,6 +134,25 @@ class FigureTest(unittest.TestCase):
         latTicksIdx = f._get_tick_index_from_grid([71, 71.5], lat, lat.shape[0], 1)
         n.logger.error(str(lonTicksIdx))
         n.logger.error(str(latTicksIdx))
+
+    @patch.object(Figure, '__init__', return_value=None)
+    def test_apply_logarithm(self, mock1):
+        f = Figure()
+        f.array = np.ones((1,2,2))*0.1
+        f.apply_logarithm()
+        self.assertTrue(np.allclose(np.ones((1,2,2))*0.31622777, f.array))
+
+    @patch.object(Figure, '__init__', return_value=None)
+    def test_make_transparent_color(self, mock1):
+        f = Figure()
+
+        img_array = np.array([[1.,2.],[3.,4.]])
+        f.pilImg = Image.fromarray(img_array)
+        f.reprojMask = np.zeros((2,2)) == 1
+        f.transparency = [1,1,1]
+        f._make_transparent_color()
+        self.assertTrue((np.array(f.pilImg)[:,:,3] == np.array([[0,255],[255,255]])).all())
+
 
 if __name__ == "__main__":
     unittest.main()

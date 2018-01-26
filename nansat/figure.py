@@ -15,12 +15,19 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
+
 import os
 from math import floor, log10
 
 import numpy as np
-from matplotlib import cm
-import matplotlib.pyplot as plt
+try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
+    from matplotlib import cm
+except ImportError:
+    MATPLOT_LIB_IS_INSTALLED = False
+else:
+    MATPLOT_LIB_IS_INSTALLED = True
 
 try:
     import Image
@@ -29,7 +36,7 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from nansat.tools import add_logger, OptionError
+from nansat.tools import add_logger
 
 
 class Figure(object):
@@ -93,6 +100,8 @@ class Figure(object):
 
     _cmapName = 'jet'
 
+    # instance attributes
+    array = None
     def __init__(self, nparray, **kwargs):
         ''' Set attributes
 
@@ -136,11 +145,11 @@ class Figure(object):
         legend : boolean, default = False
             if True, information as textString, colorbar, longName and
             units are added in the figure.
-        mask_array : 2D numpy array, int, the shape should be equal
-            array.shape. If given this array is used for masking land,
+        mask_array : 2D numpy array, int, the shape should be equal to
+            array.shape. If given, this array is used for masking land,
             clouds, etc on the output image. Value of the array are
-            indeces. LUT from mask_lut is used for coloring upon this
-            indeces.
+            indices. LUT from mask_lut is used for coloring upon this
+            indices.
         mask_lut : dictionary
             Look-Up-Table with colors for masking land, clouds etc. Used
             tgether with mask_array:
@@ -286,28 +295,28 @@ class Figure(object):
         # modify default parameters
         self._set_defaults(kwargs)
 
-        # get values of free indeces in the palette
-        availIndeces = range(self.numOfColor, 255 - 1)
+        # get values of free indices in the palette
+        availIndices = range(self.numOfColor, 255 - 1)
 
-        # for all lut color indeces
+        # for all lut color indices
         for i, maskValue in enumerate(self.mask_lut):
-            if i < len(availIndeces):
+            if i < len(availIndices):
                 # get color for that index
                 maskColor = self.mask_lut[maskValue]
-                # get indeces for that index
-                maskIndeces = self.mask_array == maskValue
+                # get indices for that index
+                maskIndices = self.mask_array == maskValue
                 # exchange colors
                 if self.array.shape[0] == 1:
                     # in a indexed image
-                    self.array[0][maskIndeces] = availIndeces[i]
+                    self.array[0][maskIndices] = availIndices[i]
                 elif self.array.shape[0] == 3:
                     # in RGB image
                     for c in range(0, 3):
-                        self.array[c][maskIndeces] = maskColor[c]
+                        self.array[c][maskIndices] = maskColor[c]
 
-                # exchage palette
-                self.palette[(availIndeces[i] * 3):
-                             (availIndeces[i] * 3 + 3)] = maskColor
+                # exchange palette
+                self.palette[(availIndices[i] * 3):
+                             (availIndices[i] * 3 + 3)] = maskColor
 
     def add_logo(self, **kwargs):
         '''Insert logo into the PIL image
@@ -402,7 +411,7 @@ class Figure(object):
         latTicks = self._get_auto_ticks(self.latTicks, self.latGrid)
         lonTicks = self._get_auto_ticks(self.lonTicks, self.lonGrid)
 
-        # convert lat/lon grids to indeces
+        # convert lat/lon grids to indices
         latI = np.zeros(self.latGrid.shape, 'int8')
         lonI = np.zeros(self.latGrid.shape, 'int8')
         for latTick in latTicks:
@@ -411,8 +420,17 @@ class Figure(object):
             lonI[self.lonGrid > lonTick] += 1
 
         # find pixels on the grid lines (binarize)
-        latI = np.diff(latI, axis=0)[:, :-1] + np.diff(latI, axis=1)[:-1, :]
-        lonI = np.diff(lonI, axis=0)[:, :-1] + np.diff(lonI, axis=1)[:-1, :]
+        latI = np.sum(np.gradient(latI), axis=0)
+        lonI = np.sum(np.gradient(lonI), axis=0)
+
+        # Set border pixels equal to nearest neighbouring pixels - the error
+        # should be minor (alternatively, they should all be 0) - this and the
+        # two lines above solve VisibleDeprecationWarning in numpy<1.13.0 and
+        # IndexError in numpy>=1.13.0
+        latI[latI.shape[0]-1, :] = latI[latI.shape[0]-2, :]
+        latI[:, latI.shape[0]-1] = latI[:, latI.shape[0]-2]
+        lonI[lonI.shape[0]-1, :] = lonI[lonI.shape[0]-2, :]
+        lonI[:, lonI.shape[0]-1] = lonI[:, lonI.shape[0]-2]
 
         # make grid from both lat and lon
         latI += lonI
@@ -448,7 +466,7 @@ class Figure(object):
                     newTicks.append(tick)
             ticks = newTicks
         else:
-            raise OptionError('Incorrect type of ticks')
+            raise ValueError('Incorrect type of ticks')
 
         return ticks
 
@@ -571,11 +589,11 @@ class Figure(object):
 
         # create a ratio list for each band
         if not (isinstance(ratio, float) or isinstance(ratio, int)):
-            raise OptionError('Incorrect input ratio %s' % str(ratio))
+            raise ValueError('Incorrect input ratio %s' % str(ratio))
 
         # create a ratio list for each band
         if ratio <= 0 or ratio > 1:
-            raise OptionError('Incorrect input ratio %s' % str(ratio))
+            raise ValueError('Incorrect input ratio %s' % str(ratio))
 
         # create a 2D array and set min and max values
         clim = [[0] * self.array.shape[0], [0] * self.array.shape[0]]
@@ -709,7 +727,7 @@ class Figure(object):
                 scaleArray = (np.power(scaleArray, (1.0 / self.gamma)))
             scaleArray = (scaleArray * (self.cmax[0] -
                           self.cmin[0]) + self.cmin[0])
-            scaleArray = map(self._round_number, scaleArray)
+            scaleArray = list(map(self._round_number, scaleArray))
             # draw scales and lines on the legend pilImage
             for iTick in range(self.numOfTicks):
                 coordX = int(scaleLocation[iTick] *
@@ -935,18 +953,25 @@ class Figure(object):
         self.palette : numpy array (uint8)
 
         '''
-        # test if given colormap name is in builtin or added colormaps
-        try:
+        if not MATPLOT_LIB_IS_INSTALLED:
+            # Make grayscale colormap
+            cmap = np.vstack([np.arange(256.),
+                              np.arange(256.),
+                              np.arange(256.),
+                              np.ones(256)*255]).T
+            cmapLUT = cmap[:self.numOfColor, :]
+        else:
+            # test if given colormap name is in builtin or added colormaps
+            try:
+                cmap = cm.get_cmap(self.cmapName)
+            except:
+                self.logger.error('%s is not a valid colormap' % self.cmapName)
+                self.cmapName = self._cmapName
+            # get colormap by name
             cmap = cm.get_cmap(self.cmapName)
-        except:
-            self.logger.error('%s is not a valid colormap' % self.cmapName)
-            self.cmapName = self._cmapName
+            # get colormap look-up
+            cmapLUT = np.uint8(cmap(range(self.numOfColor)) * 255)
 
-        # get colormap by name
-        cmap = cm.get_cmap(self.cmapName)
-
-        # get colormap look-up
-        cmapLUT = np.uint8(cmap(range(self.numOfColor)) * 255)
         # replace all last colors to black and...
         lut = np.zeros((3, 256), 'uint8')
         lut[:, :self.numOfColor] = cmapLUT.T[:3]
@@ -955,29 +980,6 @@ class Figure(object):
 
         # set palette to be used by PIL
         self.palette = lut.T.flatten().astype(np.uint8)
-
-    def _get_histogram(self, iBand):
-        '''Create a subset array and return the histogram.
-
-        Parameters
-        -----------
-        iBand : int
-
-        Returns
-        --------
-        hist : numpy array
-        bins : numpy array
-
-        '''
-        array = self.array[iBand, :, :].flatten()
-        array = array[array > np.nanmin(array)]
-        array = array[array < np.nanmax(array)]
-        step = max(int(round(float(len(array)) /
-                       float(self.subsetArraySize))), 1.0)
-        arraySubset = array[::int(step)]
-        hist, bins, patches = plt.hist(arraySubset, bins=100)
-        plt.close()
-        return hist.astype(float), bins
 
     def _round_number(self, val):
         '''Return writing format for scale on the colorbar

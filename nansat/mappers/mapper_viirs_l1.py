@@ -4,53 +4,63 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from __future__ import absolute_import, unicode_literals, division
+
 import os
 import glob
 from datetime import datetime, timedelta
 from math import ceil
-
-from scipy.ndimage.filters import gaussian_filter
+try:
+    from scipy.ndimage.filters import gaussian_filter
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
 
 from nansat.nsr import NSR
-from nansat.vrt import GeolocationArray, VRT
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.vrt import VRT
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError, NansatReadError
 
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT0=5, GCP_COUNT1=20, pixelStep=1,
                  lineStep=1, **kwargs):
         ''' Create VIIRS VRT '''
 
-        if not 'GMTCO_npp_' in fileName:
-            raise WrongMapperError
-        ifiledir = os.path.split(fileName)[0]
+        if not 'GMTCO_npp_' in filename:
+            raise WrongMapperError(filename)
+        ifiledir = os.path.split(filename)[0]
         ifiles = glob.glob(ifiledir + 'SVM??_npp_d*_obpg_ops.h5')
         ifiles.sort()
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError('VIIRS data cannot be read because scipy is not installed')
 
         viirsWavelengths = [None, 412, 445, 488, 555, 672, 746, 865, 1240,
                             1378, 1610, 2250, 3700, 4050, 8550, 10736, 12013]
 
         # create empty VRT dataset with geolocation only
         xDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Longitude'
-                          % fileName)
+                          % filename)
         xDatasetBand = 1
         xDataset = gdal.Open(xDatasetSource)
-        VRT.__init__(self, xDataset)
+        self._init_from_gdal_dataset(xDataset)
 
         metaDict = []
         for ifile in ifiles:
             ifilename = os.path.split(ifile)[1]
-            print ifilename
+            print(ifilename)
             bNumber = int(ifilename[3:5])
-            print bNumber
+            print(bNumber)
             bWavelength = viirsWavelengths[bNumber]
-            print bWavelength
+            print(bWavelength)
             SourceFilename = ('HDF5:"%s"://All_Data/VIIRS-M%d-SDR_All/Radiance'
                               % (ifile, bNumber))
-            print SourceFilename
+            print(SourceFilename)
             metaEntry = {'src': {'SourceFilename': SourceFilename,
                          'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',
@@ -60,23 +70,20 @@ class Mapper(VRT):
             metaDict.append(metaEntry)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         xVRTArray = xDataset.ReadAsArray()
         xVRTArray = gaussian_filter(xVRTArray, 5).astype('float32')
-        xVRT = VRT(array=xVRTArray)
+        xVRT = VRT.from_array(xVRTArray)
 
         yDatasetSource = ('HDF5:"%s"://All_Data/VIIRS-MOD-GEO-TC_All/Latitude'
-                          % fileName)
+                          % filename)
         yDatasetBand = 1
         yDataset = gdal.Open(yDatasetSource)
         yVRTArray = yDataset.ReadAsArray()
         yVRTArray = gaussian_filter(yVRTArray, 5).astype('float32')
-        yVRT = VRT(array=yVRTArray)
+        yVRT = VRT.from_array(yVRTArray)
 
-        #self.add_geolocationArray(GeolocationArray(xDatasetSource,
-        #                                           yDatasetSource))
-        #"""
         # estimate pixel/line step
         self.logger.debug('pixel/lineStep %f %f' % (pixelStep, lineStep))
 
@@ -113,5 +120,5 @@ class Mapper(VRT):
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
         # remove geolocation array
-        self.remove_geolocationArray()
+        self._remove_geolocation()
         #"""

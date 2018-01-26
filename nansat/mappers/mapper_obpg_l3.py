@@ -4,15 +4,19 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+
+from __future__ import unicode_literals, absolute_import, division, print_function
 import datetime
 import os.path
 import glob
 
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import VRT, GeolocationArray
+from nansat.tools import gdal, ogr
+from nansat.vrt import VRT
 from nansat.nsr import NSR
+
+from nansat.exceptions import WrongMapperError
 
 class Mapper(VRT):
     ''' Mapper for Level-3 Standard Mapped Image from
@@ -20,9 +24,12 @@ class Mapper(VRT):
 
     # detect wkv from metadata 'Parameter'
     param2wkv = {'Chlorophyll a concentration': 'mass_concentration_of_chlorophyll_a_in_sea_water',
-                 'Diffuse attenuation coefficient': 'volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water',
-                 'Remote sensing reflectance': 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air',
-                 'CDOM Index': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter',
+                 'Diffuse attenuation coefficient': 'volume_attenuation_coefficient_of_downwelling_'
+                                                    'radiative_flux_in_sea_water',
+                 'Remote sensing reflectance': 'surface_ratio_of_upwelling_radiance_emerging_from_'
+                                               'sea_water_to_downwelling_radiative_flux_in_air',
+                 'CDOM Index': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_'
+                               'to_dissolved_organic_matter',
                  'Sea Surface Salinity': 'sea_surface_salinity',
                  'Sea Surface Temperature': 'sea_surface_temperature',
                  'Instantaneous Photosynthetically Available Radiation': 'instantaneous_photosynthetically_available_radiation',
@@ -32,7 +39,7 @@ class Mapper(VRT):
                  'Instantaneous Photosynthetically Available Radiation': 'instantaneous_downwelling_photosynthetic_photon_radiance_in_sea_water',
                  }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' OBPG L3 VRT '''
 
         try:
@@ -41,7 +48,7 @@ class Mapper(VRT):
             raise WrongMapperError
 
         # get list of similar (same date) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         simFilesMask = os.path.join(iDir, iFileName)
         simFiles = glob.glob(simFilesMask + iFileExt[0:6] + '*')
@@ -78,7 +85,7 @@ class Mapper(VRT):
                 tmpGdalMetadata = tmpGdalDataset.GetMetadata()
                 simParameter = tmpGdalMetadata['Parameter']
             except:
-                print 'No parameter: %s not a supported SMI file' % simFile
+                print_function('No parameter: %s not a supported SMI file')
                 continue
             else:
                 # set params of the similar file
@@ -126,10 +133,10 @@ class Mapper(VRT):
         a = simGdalDataset.ReadAsArray()
         mask = np.zeros(a.shape, 'uint8') + 64
         mask[a < -32000] = 1
-        self.bandVRTs = {'mask': VRT(array=mask)}
+        self.band_vrts = {'mask': VRT(array=mask)}
 
         metaDict.append(
-            {'src': {'SourceFilename': self.bandVRTs['mask'].fileName,
+            {'src': {'SourceFilename': self.band_vrts['mask'].filename,
                      'SourceBand':  1},
              'dst': {'name': 'mask'}})
 
@@ -148,15 +155,13 @@ class Mapper(VRT):
                             get('Number of Lines',
                                 simGdalMetadata.get('Number_of_Lines', 1)))
         #longitudeStep = float(simGdalMetadata['Longitude Step'])
-        VRT.__init__(self,
-                     srcGeoTransform=(-180.0, longitudeStep, 0.0,
-                                      90.0, 0.0, -longitudeStep),
-                     srcProjection=NSR().wkt,
-                     srcRasterXSize=numberOfColumns,
-                     srcRasterYSize=numberOfLines)
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(numberOfColumns, numberOfLines,
+                                (-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
+                                NSR().wkt)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         startYear = int(simGdalMetadata.get('Start Year',

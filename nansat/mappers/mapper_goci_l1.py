@@ -5,14 +5,15 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for MODIS Level 1 (QKM, HKM, 1KM) '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create MODIS_L1 VRT '''
 
         # raise error in case of not GOCI L1B
@@ -35,10 +36,7 @@ class Mapper(VRT):
         geoTransform = (-1391500.0, 500.0, 0.0, 1349500.0, 0.0, -500.0)
 
         # create empty VRT dataset with georeference only
-        VRT.__init__(self, srcGeoTransform=geoTransform,
-                     srcProjection=projection,
-                     srcRasterXSize=rasterXSize,
-                     srcRasterYSize=rasterYSize)
+        self._init_from_dataset_params(rasterXSize, rasterYSize, geoTransform, projection)
 
         # add bands from subdatasets
         subDatasets = gdalDataset.GetSubDatasets()
@@ -54,4 +52,4 @@ class Mapper(VRT):
             metaDict.append(metaEntry)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

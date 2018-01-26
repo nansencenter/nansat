@@ -7,15 +7,18 @@
 from dateutil.parser import parse
 import warnings
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 
 
 class HDF4Mapper(VRT):
 
     def find_metadata(self, iMetadata, iKey, default=''):
-        ''' Find metadata which has similar key
-        Parameters:
+        """ Find metadata which has similar key
+
+        Parameters
+        ----------
             iMetadata : dict
                 input metadata, usually gdalMetadata
             iKey : str
@@ -23,7 +26,7 @@ class HDF4Mapper(VRT):
             default : str
                 default value
 
-        '''
+        """
         value = default
         for key in iMetadata:
             if iKey in key:

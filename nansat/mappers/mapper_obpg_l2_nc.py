@@ -12,16 +12,18 @@ import numpy as np
 
 import pythesint as pti
 
-from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import GeolocationArray, VRT
+from nansat.tools import gdal, ogr
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.mappers.obpg import OBPGL2BaseClass
+
+from nansat.exceptions import WrongMapperError
 
 class Mapper(OBPGL2BaseClass):
     ''' Mapper for SeaWIFS/MODIS/MERIS/VIIRS L2 data from OBPG in NC4 format
     '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT=10, **kwargs):
         ''' Create VRT
         Parameters
@@ -31,12 +33,12 @@ class Mapper(OBPGL2BaseClass):
         '''
 
         # extension must be .nc
-        if os.path.splitext(fileName)[1] != '.nc':
+        if os.path.splitext(filename)[1] != '.nc':
             raise WrongMapperError
 
         # file must contain navigation_data/longitude
         try:
-            ds = gdal.Open('HDF5:"%s"://navigation_data/longitude' % fileName)
+            ds = gdal.Open('HDF5:"%s"://navigation_data/longitude' % filename)
         except RuntimeError:
             raise WrongMapperError
         else:
@@ -47,7 +49,7 @@ class Mapper(OBPGL2BaseClass):
             raise WrongMapperError
 
         # get geophysical data variables
-        subDatasets = gdal.Open(fileName).GetSubDatasets()
+        subDatasets = gdal.Open(filename).GetSubDatasets()
         metaDict = []
         for subDataset in subDatasets:
             groupName = subDataset[0].split('/')[-2]
@@ -93,8 +95,8 @@ class Mapper(OBPGL2BaseClass):
 
         # make GCPs
         # get lat/lon grids
-        longitude = gdal.Open('HDF5:"%s"://navigation_data/longitude' % fileName).ReadAsArray()
-        latitude = gdal.Open('HDF5:"%s"://navigation_data/latitude' % fileName).ReadAsArray()
+        longitude = gdal.Open('HDF5:"%s"://navigation_data/longitude' % filename).ReadAsArray()
+        latitude = gdal.Open('HDF5:"%s"://navigation_data/latitude' % filename).ReadAsArray()
         rasterYSize, rasterXSize = longitude.shape
 
         step0 = max(1, int(float(latitude.shape[0]) / GCP_COUNT))
@@ -121,13 +123,11 @@ class Mapper(OBPGL2BaseClass):
         time_coverage_end = dsMetadata['time_coverage_end']
 
         # create VRT
-        VRT.__init__(self, srcProjection=NSR().wkt,
-                     srcGCPs=gcps,
-                     srcGCPProjection=NSR().wkt,
-                     srcRasterXSize=rasterXSize,
-                     srcRasterYSize=rasterYSize)
+        # x_size, y_size, geo_transform, projection, gcps=None, gcp_projection='', **kwargs
+        self._init_from_dataset_params(rasterXSize, rasterYSize, (0, 1, 0, rasterYSize, 0, -1),
+                                        NSR().wkt, gcps, NSR().wkt)
         # add bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # reproject GCPs
         center_lon /= k

@@ -19,9 +19,9 @@ static PyMethodDef module_methods[] = {
 };
 
 /* Initialize the module */
-PyMODINIT_FUNC init_pixfun(void)
+PyMODINIT_FUNC init_pixfun_py2(void)
 {
-	PyObject *m = Py_InitModule3("_pixfun", module_methods, module_docstring);
+	PyObject *m = Py_InitModule3("_pixfun_py2", module_methods, module_docstring);
 	if (m == NULL)
 		return;
 }

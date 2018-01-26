@@ -11,8 +11,9 @@ import sys
 import struct
 import datetime
 
-from nansat.tools import WrongMapperError
-from nansat.vrt import VRT, GeolocationArray
+from nansat.exceptions import WrongMapperError
+from nansat.geolocation import Geolocation
+from nansat.vrt import VRT
 
 satIDs = {4: 'NOAA-15', 2: 'NOAA-16', 6: 'NOAA-17', 7: 'NOAA-18', 8: 'NOAA-19',
           11: 'Metop-B (Metop-1)', 12: 'Metop-A (Metop-2)',
@@ -27,13 +28,13 @@ imageOffset = headerLength + 1264
 class Mapper(VRT):
     ''' VRT with mapping of WKV for AVHRR L1B output from AAPP '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         ########################################
         # Read metadata from binary file
         ########################################
         try:
-            fp = open(fileName, 'rb')
+            fp = open(filename, 'rb')
         except IOError:
             raise WrongMapperError
         fp.seek(72)
@@ -169,12 +170,12 @@ class Mapper(VRT):
 
         # Making VRT with raw (unscaled) lon and lat
         # (smaller bands than full dataset)
-        self.bandVRTs = {'RawGeolocVRT': VRT(srcRasterXSize=51,
+        self.band_vrts = {'RawGeolocVRT': VRT(srcRasterXSize=51,
                                             srcRasterYSize=srcRasterYSize)}
         RawGeolocMetaDict = []
         for lonlatNo in range(1, 3):
             RawGeolocMetaDict.append(
-                {'src': {'SourceFilename': fileName,
+                {'src': {'SourceFilename': filename,
                          'SourceBand': 0,
                          'SourceType': "RawRasterBand",
                          'DataType': gdal.GDT_Int32,
@@ -185,49 +186,38 @@ class Mapper(VRT):
                          'ByteOrder': 'LSB'},
                  'dst': {}})
 
-        self.bandVRTs['RawGeolocVRT']._create_bands(RawGeolocMetaDict)
+        self.band_vrts['RawGeolocVRT'].create_bands(RawGeolocMetaDict)
 
         # Make derived GeolocVRT with scaled lon and lat
-        self.bandVRTs['GeolocVRT'] = VRT(srcRasterXSize=51,
+        self.band_vrts['GeolocVRT'] = VRT(srcRasterXSize=51,
                                         srcRasterYSize=srcRasterYSize)
         GeolocMetaDict = []
         for lonlatNo in range(1, 3):
             GeolocMetaDict.append(
-                {'src': {'SourceFilename': (self.bandVRTs['RawGeolocVRT'].
-                                            fileName),
+                {'src': {'SourceFilename': (self.band_vrts['RawGeolocVRT'].
+                                            filename),
                          'SourceBand': lonlatNo,
                          'ScaleRatio': 0.0001,
                          'ScaleOffset': 0,
                          'DataType': gdal.GDT_Int32},
                  'dst': {}})
 
-        self.bandVRTs['GeolocVRT']._create_bands(GeolocMetaDict)
+        self.band_vrts['GeolocVRT'].create_bands(GeolocMetaDict)
 
-        GeolocObject = GeolocationArray(xVRT=self.bandVRTs['GeolocVRT'],
-                                        yVRT=self.bandVRTs['GeolocVRT'],
-                                        xBand=2, yBand=1,  # x = lon, y = lat
-                                        lineOffset=0, pixelOffset=25,
-                                        lineStep=1, pixelStep=40)
+        GeolocObject = Geolocation(x_vRT=self.band_vrts['GeolocVRT'],
+                                    y_vRT=self.band_vrts['GeolocVRT'],
+                                    x_band=2, y_band=1,  # x = lon, y = lat
+                                    line_offset=0, pixel_offset=25,
+                                    line_step=1, pixel_step=40)
 
         #######################
         # Initialize dataset
         #######################
         # create empty VRT dataset with geolocation only
         # (from Geolocation Array)
-        VRT.__init__(self,
-                     srcRasterXSize=2048,
-                     srcRasterYSize=numCalibratedScanLines,
-                     geolocationArray=GeolocObject,
-                     srcProjection=GeolocObject.d['SRS'])
-
-        # Since warping quality is horrible using geolocation arrays
-        # which are much smaller than raster bands (due to a bug in GDAL:
-        # http://trac.osgeo.org/gdal/ticket/4907), the geolocation arrays
-        # are here converted to GCPs. Only a subset of GCPs is added,
-        # significantly increasing speed when using -tps warping
-        reductionFactor = 2
-        self.convert_GeolocationArray2GPCs(1*reductionFactor,
-                                           40*reductionFactor)
+        self._init_from_dataset_params(2048, numCalibratedScanLines,
+                                        (0,1,0,numCalibratedScanLines,0,-1), GeolocObject.d['SRS'])
+        self._add_geolocation(GeolocObject)
 
         ##################
         # Create bands
@@ -248,7 +238,7 @@ class Mapper(VRT):
         ch[5]['minmax'] = '400 1000'
 
         for bandNo in range(1, 6):
-            metaDict.append({'src': {'SourceFilename': fileName,
+            metaDict.append({'src': {'SourceFilename': filename,
                                      'SourceBand': 0,
                                      'SourceType': "RawRasterBand",
                                      'dataType': gdal.GDT_UInt16,
@@ -263,7 +253,7 @@ class Mapper(VRT):
                                     'minmax': ch[bandNo]['minmax'],
                                     'unit': "1"}})
 
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Adding valid time to dataset
         self.dataset.SetMetadataItem('time_coverage_start', time.isoformat())

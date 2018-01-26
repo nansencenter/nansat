@@ -17,28 +17,30 @@ from nansat.mappers.opendap import Opendap
 #https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL-v2.0-MONTHLY
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
-    baseURLs = ['https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL', 'https://www.oceancolour.org/thredds/dodsC/CCI_ALL']
+    baseURLs = ['https://rsg.pml.ac.uk/thredds/dodsC/CCI_ALL',
+                'https://www.oceancolour.org/thredds/dodsC/CCI_ALL',
+                'https://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_esacci/ocean_colour/data/v2-release/geographic/netcdf/'
+                ]
     timeVarName = 'time'
     xName = 'lon'
     yName = 'lat'
     timeCalendarStart = '1970-01-01'
-
     srcDSProjection = NSR().wkt
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  date=None, ds=None, bands=None, cachedir=None,
                  **kwargs):
         ''' Create NCEP VRT
         Parameters:
-            fileName : URL
+            filename : URL
             date : str
                 2010-05-01
             ds : netCDF.Dataset
                 previously opened dataset
 
         '''
-        self.test_mapper(fileName)
-        self.create_vrt(fileName, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
+        self.test_mapper(filename)
+        self.create_vrt(filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
         # add instrument and platform
         mm = pti.get_gcmd_instrument('Passive Remote Sensing')

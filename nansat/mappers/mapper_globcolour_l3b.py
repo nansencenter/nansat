@@ -4,6 +4,7 @@
 # Licence:     This file is part of NANSAT. You can redistribute it or modify
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
+from __future__ import print_function
 import glob
 import os
 import datetime
@@ -12,39 +13,38 @@ import tempfile
 import shutil
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from netCDF4 import Dataset
 
 import pythesint as pti
 
-from nansat.tools import WrongMapperError
-from nansat.vrt import VRT, GeolocationArray
+from nansat.exceptions import WrongMapperError
+from nansat.vrt import VRT
 from globcolour import Globcolour
 
 
 class Mapper(VRT, Globcolour):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, latlonGrid=None,
+    def __init__(self, filename, gdalDataset, gdalMetadata, latlonGrid=None,
                  mask='', **kwargs):
 
         ''' Create MER2 VRT
 
         Parameters
         -----------
-        fileName : string
+        filename : string
         gdalDataset : gdal dataset
         gdalMetadata : gdal metadata
         latlonGrid : numpy 2 layered 2D array with lat/lons of desired grid
         '''
         # test if input files is GLOBCOLOUR L3B
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         #print 'idir:', iDir, iFile, iFileName[0:5], iFileExt[0:8]
         if (iFileName[0:4] != 'L3b_'
             or iFileExt != '.nc'
-            or not os.path.exists(fileName)
+            or not os.path.exists(filename)
             or (gdalDataset is not None
                 and (len(gdalDataset.GetSubDatasets()) > 0
                      or gdalDataset.RasterCount > 0))):
@@ -62,7 +62,7 @@ class Mapper(VRT, Globcolour):
             #latlonGrid = np.mgrid[47:39:300j, 25:45:500j].astype('float32')
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, lon=latlonGrid[1], lat=latlonGrid[0])
+        self._init_from_lonlat(latlonGrid[1], latlonGrid[0])
 
         # get list of similar (same date) files in the directory
         simFilesMask = os.path.join(iDir, iFileName[0:30] + '*' + mask + '.nc')
@@ -70,10 +70,10 @@ class Mapper(VRT, Globcolour):
         simFiles.sort()
 
         metaDict = []
-        self.bandVRTs = {'mask': [], 'lonlat': []}
+        self.band_vrts = {'mask': [], 'lonlat': []}
         mask = None
         for simFile in simFiles:
-            print 'sim: ', simFile
+            print_function('sim: ', simFile)
             # copy simFile to a temporary file
             tmpf = tempfile.mkstemp()
             shutil.copyfile(simFile, tmpf[1])
@@ -119,7 +119,6 @@ class Mapper(VRT, Globcolour):
 
             # convert to latlonGrid
             varPro = varRawPro.flat[iRawPro.flat[:]].reshape(iRawPro.shape)
-            #plt.imshow(varPro);plt.colorbar();plt.show()
 
             # add mask band
             if mask is None:
@@ -128,21 +127,21 @@ class Mapper(VRT, Globcolour):
                 mask[varPro > 0] = 64
 
                 # add VRT with array with data from projected variable
-                self.bandVRTs['mask'].append(VRT(array=mask))
+                self.band_vrts['mask'].append(VRT.from_array(mask))
 
                 # add metadata to the dictionary
                 metaDict.append({
-                    'src': {'SourceFilename': (self.bandVRTs['mask'][-1].
-                                               fileName),
+                    'src': {'SourceFilename': (self.band_vrts['mask'][-1].
+                                               filename),
                             'SourceBand':  1},
                     'dst': {'name': 'mask'}})
 
             # add VRT with array with data from projected variable
-            self.bandVRTs['lonlat'].append(VRT(array=varPro))
+            self.band_vrts['lonlat'].append(VRT.from_array(varPro))
 
             # add metadata to the dictionary
             metaEntry = {
-                'src': {'SourceFilename': self.bandVRTs['lonlat'][-1].fileName,
+                'src': {'SourceFilename': self.band_vrts['lonlat'][-1].filename,
                         'SourceBand':  1},
                 'dst': {'wkv': varWKV, 'original_name': varName}}
 
@@ -179,7 +178,7 @@ class Mapper(VRT, Globcolour):
         self.dataset.SetMetadataItem('platform', json.dumps(pp))
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # add time
         startDate = datetime.datetime(int(iFileName[4:8]),

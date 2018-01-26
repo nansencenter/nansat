@@ -7,7 +7,8 @@
 import os
 from datetime import datetime
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.domain import Domain
 
@@ -15,10 +16,10 @@ from nansat.domain import Domain
 class Mapper(VRT):
     ''' VRT with mapping of WKV for KMSS TOA tiff data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Create VRT '''
-        if (os.path.split(fileName)[1][0:4] != '101_' or
-                os.path.split(fileName)[1][0:4] != '102_'):
+        if (os.path.split(filename)[1][0:4] != '101_' or
+                os.path.split(filename)[1][0:4] != '102_'):
                 raise WrongMapperError
 
         try:
@@ -26,17 +27,17 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-        if (product != 'GeoTIFF' or fileName[-3:] != 'tif' or
+        if (product != 'GeoTIFF' or filename[-3:] != 'tif' or
                 gdalDataset.RasterCount != 3):
             raise WrongMapperError
 
-        metaDict = [{'src': {'SourceFilename': fileName, 'SourceBand': 1},
+        metaDict = [{'src': {'SourceFilename': filename, 'SourceBand': 1},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '555'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 2},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 2},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '655'}},
-                    {'src': {'SourceFilename': fileName, 'SourceBand': 3},
+                    {'src': {'SourceFilename': filename, 'SourceBand': 3},
                      'dst': {'wkv': 'toa_outgoing_spectral_radiance',
                              'wavelength': '800'}}
                     ]
@@ -51,7 +52,7 @@ class Mapper(VRT):
                                            bandDict['dst']['wavelength'])
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
          # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

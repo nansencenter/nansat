@@ -15,7 +15,7 @@ import sys
 import numpy as np
 
 from nansat.nansat import Nansat
-from mapper_test_archive import DataForTestingMappers
+from nansat_integration_tests.mapper_test_archive import DataForTestingMappers
 
 
 class TestRadarsat(object):
@@ -24,7 +24,7 @@ class TestRadarsat(object):
         sys.stderr.write('\ntest_all_rs2_files\n')
         testData = DataForTestingMappers()
         rs2Index = [i for i,
-                    v in enumerate(testData.mapperData) if v[1] == 'radarsat2']
+                    v in enumerate(testData.mapperData) if v['mapperName'] == 'radarsat2']
         for index in rs2Index:
             rsfile = testData.mapperData[index][0]
             # yield self.export2thredds, rsfile
@@ -84,7 +84,7 @@ class TestRadarsat(object):
         sys.stderr.write('\nexport_band:'+rsfile+'\n')
         orig = Nansat(rsfile)
         ncfile = 'test.nc'
-        orig.export(ncfile, bands=[orig._get_band_number('incidence_angle')])
+        orig.export(ncfile, bands=[orig.get_band_number('incidence_angle')])
         copy = Nansat(ncfile)
         inc0 = orig['incidence_angle']
         inc1 = copy['incidence_angle']

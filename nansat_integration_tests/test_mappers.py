@@ -1,17 +1,4 @@
-# ------------------------------------------------------------------------------
-# Name:         test_mappers.py
-# Purpose:      Test all the mappers
-#
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa, Anton Korosov
-# Modified:     Morten Wergeland Hansen, Aleksander Vines
-#
-# Created:      2014-06-18
-# Last modified:2015-12-28 16:00
-# Copyright:    (c) NERSC
-# Licence:      This file is part of NANSAT. You can redistribute it or modify
-#               under the terms of GNU General Public License, v.3
-#               http://www.gnu.org/licenses/gpl-3.0.html
-# ------------------------------------------------------------------------------
+from __future__ import absolute_import, unicode_literals, division
 import unittest
 import sys
 import datetime
@@ -21,7 +8,7 @@ import pythesint as pti
 
 from nansat import Nansat
 from nansat.nansat import _import_mappers
-from mapper_test_archive import DataForTestingMappers, DataForTestingOnlineMappers
+from nansat_integration_tests.mapper_test_archive import DataForTestingMappers, DataForTestingOnlineMappers
 
 
 class TestDataForTestingMappers(unittest.TestCase):
@@ -59,23 +46,25 @@ class TestAllMappers(object):
         if kwargs is None:
             kwargs = {}
 
-        if mapper:
-            n = Nansat(filePath, mapperName=mapper, **kwargs)
-        else:
-            n = Nansat(filePath, **kwargs)
+        try:
+            if mapper:
+                n = Nansat(filePath, mapperName=mapper, **kwargs)
+            else:
+                n = Nansat(filePath, **kwargs)
+        except Exception as e:
+            raise Exception('%s: %s'%(filePath, e.message))
         assert type(n) == Nansat
 
-"""
     def test_mappers_advanced(self):
-        ''' Run similar NansenCloud related tests for all mappers '''
-        for fileName, mapperName in self.testData.mapperData:
-            sys.stderr.write('\nMapper '+mapperName+' -> '+fileName+'\n')
-            n = Nansat(fileName, mapperName=mapperName)
-            yield self.is_correct_mapper, n, mapperName
-            yield self.has_start_time, n
-            yield self.has_end_time, n
-            yield self.has_correct_platform, n
-            yield self.has_correct_instrument, n
+        ''' Run tests to check DIF/GCMD metadata content in all mappers'''
+        for dd in self.testData.mapperData:
+            sys.stderr.write('\nMapper '+dd['mapperName']+' -> '+dd['fileName']+'\n')
+            n = Nansat(dd['fileName'], mapperName=dd['mapperName'])
+            yield self.is_correct_mapper, n, dd['mapperName']
+            yield self.has_metadata_time_coverage_start, n
+            yield self.has_metadata_time_coverage_end, n
+            yield self.has_metadata_platform, n
+            yield self.has_metadata_instrument, n
 
             # Test that SAR objects have sigma0 intensity bands in addition
             # to complex bands
@@ -84,14 +73,14 @@ class TestAllMappers(object):
                     ):
                 yield self.exist_intensity_band, n
 
-    def has_start_time(self, n):
+    def has_metadata_time_coverage_start(self, n):
         ''' Has start time '''
         assert type(n.time_coverage_start) == datetime.datetime
 
-    def has_end_time(self, n):
+    def has_metadata_time_coverage_end(self, n):
         assert type(n.time_coverage_end) == datetime.datetime
 
-    def has_correct_platform(self, n):
+    def has_metadata_platform(self, n):
         meta1 = json.loads(n.get_metadata('platform'))
         meta1ShortName = meta1['Short_Name']
         meta2 = pti.get_gcmd_platform(meta1ShortName)
@@ -99,7 +88,7 @@ class TestAllMappers(object):
         assert type(meta1) == dict
         assert meta1 == meta2
 
-    def has_correct_instrument(self, n):
+    def has_metadata_instrument(self, n):
         meta1 = json.loads(n.get_metadata('instrument'))
         meta1ShortName = meta1['Short_Name']
         meta2 = pti.get_gcmd_instrument(meta1ShortName)
@@ -115,14 +104,13 @@ class TestAllMappers(object):
         allBandNames = []
         complexBandNames = []
         for iBand in range(n.vrt.dataset.RasterCount):
-            iBandName = n.get_metadata(bandID=iBand + 1)['name']
+            iBandName = n.get_metadata(band=iBand + 1)['name']
             allBandNames.append(iBandName)
             if '_complex' in iBandName:
                 complexBandNames.append(iBandName)
 
         for iComplexName in complexBandNames:
             assert iComplexName.replace('_complex', '') in allBandNames
-"""
 
 class TestOnlineMappers(TestAllMappers):
     @classmethod

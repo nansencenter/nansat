@@ -7,9 +7,10 @@
 from datetime import datetime, timedelta
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError
+from nansat.tools import gdal, ogr
 from nansat.vrt import VRT
 
+from nansat.exceptions import WrongMapperError
 
 # Hardcoded for MET file sytem; may be overridden by other user with copy of data
 baseFolder = '/vol/mis/dmf2/midlertidig/hindcast/hildeh/nora10/NetCDF/'
@@ -17,14 +18,13 @@ keywordBase = __name__[7:]
 
 
 class Mapper(VRT):
-    def __init__(self, fileName, gdalDataset, gdalMetadata, logLevel=30,
+    def __init__(self, filename, gdalDataset, gdalMetadata, logLevel=30,
                  **kwargs):
-
-        if fileName[0:len(keywordBase)] != keywordBase:
+        if filename[0:len(keywordBase)] != keywordBase:
             raise WrongMapperError(__file__,
                                    "Not Nora10 data converted from felt to netCDF")
 
-        requestedTime = datetime.strptime(fileName[len(keywordBase)+1:],
+        requestedTime = datetime.strptime(filename[len(keywordBase)+1:],
                                           '%Y%m%d%H%M')
         # For correct rounding
         fileTime = requestedTime + timedelta(minutes=30)
@@ -64,26 +64,26 @@ class Mapper(VRT):
         VRT_u10 = VRT(array=u10, lat=lat, lon=lon)
         VRT_v10 = VRT(array=v10, lat=lat, lon=lon)
 
-        # Store bandVRTs so that they are available after reprojection etc
-        self.bandVRTs = {'u_VRT': VRT_u10,
+        # Store band_vrts so that they are available after reprojection etc
+        self.band_vrts = {'u_VRT': VRT_u10,
                         'v_VRT': VRT_v10}
 
         metaDict = []
-        metaDict.append({'src': {'SourceFilename': VRT_u10.fileName,
+        metaDict.append({'src': {'SourceFilename': VRT_u10.filename,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'eastward_wind',
                                  'name': 'eastward_wind'}})
-        metaDict.append({'src': {'SourceFilename': VRT_v10.fileName,
+        metaDict.append({'src': {'SourceFilename': VRT_v10.filename,
                                  'SourceBand': 1},
                          'dst': {'wkv': 'northward_wind',
                                  'name': 'northward_wind'}})
 
         # Add pixel function with wind speed
         metaDict.append({
-            'src': [{'SourceFilename': self.bandVRTs['u_VRT'].fileName,
+            'src': [{'SourceFilename': self.band_vrts['u_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6},
-                    {'SourceFilename': self.bandVRTs['v_VRT'].fileName,
+                    {'SourceFilename': self.band_vrts['v_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6}],
             'dst': {'wkv': 'wind_speed',
@@ -93,10 +93,10 @@ class Mapper(VRT):
 
         # Add pixel function with wind direction
         metaDict.append({
-            'src': [{'SourceFilename': self.bandVRTs['u_VRT'].fileName,
+            'src': [{'SourceFilename': self.band_vrts['u_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6},
-                    {'SourceFilename': self.bandVRTs['v_VRT'].fileName,
+                    {'SourceFilename': self.band_vrts['v_VRT'].filename,
                      'SourceBand': 1,
                      'DataType': 6}],
             'dst': {'wkv': 'wind_from_direction',
@@ -105,11 +105,11 @@ class Mapper(VRT):
                     'PixelFunctionType': 'UVToDirectionFrom'}})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, lat=lat, lon=lon)
+        self._init_from_lonlat(lon, lat)
 
         # add bands with metadata and corresponding values
         # to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add time
         self.dataset.SetMetadataItem('time_coverage_start', fileTime.isoformat())

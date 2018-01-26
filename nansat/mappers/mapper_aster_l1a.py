@@ -8,15 +8,16 @@ from datetime import datetime, timedelta
 from math import ceil
 from dateutil.parser import parse
 
-from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import GeolocationArray, VRT
+from nansat.tools import gdal, ogr
+from nansat.exceptions import WrongMapperError
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 
 
 class Mapper(VRT):
     ''' Mapper for ASTER L1A VNIR data'''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata,
+    def __init__(self, filename, gdalDataset, gdalMetadata,
                  GCP_COUNT=10,
                  bandNames=['VNIR_Band1', 'VNIR_Band2', 'VNIR_Band3N'],
                  bandWaves=[560, 660, 820], **kwargs):
@@ -39,7 +40,7 @@ class Mapper(VRT):
         '''
         # check if it is ASTER L1A
         try:
-            assert 'AST_L1A_' in fileName
+            assert 'AST_L1A_' in filename
             shortName = gdalMetadata['INSTRUMENTSHORTNAME']
             assert shortName == 'ASTER'
         except:
@@ -52,7 +53,7 @@ class Mapper(VRT):
         bandDatasetMask = 'HDF4_EOS:EOS_SWATH:"%s":%s:ImageData'
         for bandName, bandWave in zip(bandNames, bandWaves):
             metaEntry = {'src': {'SourceFilename': (bandDatasetMask
-                                                    % (fileName, bandName)),
+                                                    % (filename, bandName)),
                                  'SourceBand': 1,
                                  'DataType': 6,
                                  },
@@ -64,10 +65,10 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         gdalSubDataset = gdal.Open(metaDict[0]['src']['SourceFilename'])
-        VRT.__init__(self, gdalSubDataset)
+        self._init_from_gdal_dataset(gdalSubDataset)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # find largest lon/lat subdatasets
         latShape0 = 0

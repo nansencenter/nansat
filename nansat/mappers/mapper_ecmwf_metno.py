@@ -4,7 +4,7 @@ import json
 import pythesint as pti
 
 from nansat.mappers.mapper_netcdf_cf import Mapper as NetcdfCF
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 
 class Mapper(NetcdfCF):
 
@@ -13,9 +13,9 @@ class Mapper(NetcdfCF):
         mm = args[2] # metadata
         if not mm:
             raise WrongMapperError
-        if not mm.has_key('NC_GLOBAL#source'):
+        if 'NC_GLOBAL#source' not in list(mm.keys()):
             raise WrongMapperError
-        if not mm.has_key('NC_GLOBAL#institution'):
+        if 'NC_GLOBAL#institution' not in list(mm.keys()):
             raise WrongMapperError
         if not ('ecmwf' in mm['NC_GLOBAL#source'].lower() and 'met.no' in
                 mm['NC_GLOBAL#institution'].lower()):
@@ -24,9 +24,9 @@ class Mapper(NetcdfCF):
         super(Mapper, self).__init__(*args, **kwargs)
 
         self.dataset.SetMetadataItem('time_coverage_start',
-                (parse(mm['min_time'], ignoretz=True, fuzzy=True).isoformat()))
+                (parse(mm['NC_GLOBAL#min_time'], ignoretz=True, fuzzy=True).isoformat()))
         self.dataset.SetMetadataItem('time_coverage_end',
-                (parse(mm['max_time'], ignoretz=True, fuzzy=True).isoformat()))
+                (parse(mm['NC_GLOBAL#max_time'], ignoretz=True, fuzzy=True).isoformat()))
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords

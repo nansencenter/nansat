@@ -12,9 +12,10 @@ import glob
 
 import numpy as np
 
-from nansat.tools import gdal, ogr, WrongMapperError
-from nansat.vrt import VRT, GeolocationArray
+from nansat.tools import gdal, ogr
+from nansat.vrt import VRT
 
+from nansat.exceptions import WrongMapperError
 
 class Mapper(VRT):
     ''' Mapper for Ocean Productivity website
@@ -33,7 +34,7 @@ class Mapper(VRT):
                  'particle_backscatter_at_443_nm': 'bbp_443'
                  }
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
         ''' Ocean Productivity website VRT '''
 
         try:
@@ -42,9 +43,9 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-        print 'Ocean Productivity website data'
+        print('Ocean Productivity website data')
         # get list of similar (same date) files in the directory
-        iDir, iFile = os.path.split(fileName)
+        iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
         simFilesMask = os.path.join(iDir, '*' + iFileName[4:11] + iFileExt)
         #print 'simFilesMask', simFilesMask
@@ -60,9 +61,9 @@ class Mapper(VRT):
 
             # get metadata, get 'Parameter'
             tmpGdalMetadata = tmpGdalDataset.GetMetadata()
-            iDir, ifileName = os.path.split(tmpSourceFilename)
-            #print 'ifileName',ifileName
-            simParameter = ifileName[0:3]
+            iDir, ifilename = os.path.split(tmpSourceFilename)
+            #print 'ifilename',ifilename
+            simParameter = ifilename[0:3]
 
             # set params of the similar file
             simSourceFilename = tmpSourceFilename
@@ -93,10 +94,10 @@ class Mapper(VRT):
         a = simGdalDataset.ReadAsArray()
         mask = np.zeros(a.shape, 'uint8') + 128
         mask[a < -9990] = 1
-        self.bandVRTs = {'maskVRT': VRT(array=mask)}
+        self.band_vrts = {'maskVRT': VRT(array=mask)}
 
-        metaDict.append({'src': {'SourceFilename': (self.bandVRTs['maskVRT'].
-                                                    fileName),
+        metaDict.append({'src': {'SourceFilename': (self.band_vrts['maskVRT'].
+                                                    filename),
                                  'SourceBand': 1},
                          'dst': {'name': 'mask'}})
 
@@ -107,15 +108,12 @@ class Mapper(VRT):
         numberOfColumns = 4320
         numberOfLines = 2160
         #longitudeStep = float(simGdalMetadata['Longitude Step'])
-        VRT.__init__(self,
-                     srcGeoTransform=(-180.0, longitudeStep, 0.0,
-                                      90.0, 0.0, -longitudeStep),
-                     srcProjection='GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
-                     srcRasterXSize=numberOfColumns,
-                     srcRasterYSize=numberOfLines)
+        self._init_from_dataset_params(numberOfColumns, numberOfLines,
+                                       (-180.0, longitudeStep, 0.0, 90.0, 0.0, -longitudeStep),
+                                       'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # Add valid time
         startYear = int(iFile[4:8])

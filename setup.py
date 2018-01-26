@@ -9,6 +9,7 @@
 # Licence:     <your licence>
 #-----------------------------------------------------------------------------
 
+from __future__ import print_function
 from subprocess import Popen
 import subprocess
 import sys
@@ -22,21 +23,6 @@ try:
     import numpy
 except ImportError:
     raise ImportError(import_error_msg % 'numpy')
-
-try:
-    import scipy
-except ImportError:
-    raise ImportError(import_error_msg % 'scipy')
-
-try:
-    import matplotlib
-except ImportError:
-    raise ImportError(import_error_msg % 'matplotlib')
-
-try:
-    from mpl_toolkits.basemap import Basemap
-except ImportError as e:
-    raise ImportError(import_error_msg % 'basemap')
 
 try:
     from osgeo import gdal, osr, ogr
@@ -82,11 +68,13 @@ REQS                = [
                         "Pillow",
                         "pythesint",
                         "cfunits",
+                        "urllib3",
                     ]
 
 #----------------------------------------------------------------------------#
 #                   Prepare compilation of C pixel functions
 #----------------------------------------------------------------------------#
+pixfun_module_name = '_pixfun_py{0}'.format(sys.version_info[0])
 skip_compile = False
 libraries = []
 include_dirs = []
@@ -143,13 +131,11 @@ try:
         use_gdal_config()
 except Exception as e:
     if os.name == 'nt':
-        print 'WARNING: CONDA_PREFIX could not be found, ' +\
-        'pixel functions will not be available.'
+        print_function('WARNING: CONDA_PREFIX could not be found pixel functions will not be available.')
     else:
-        print 'WARNING: gdal-config could not be called, ' +\
-              'pixel functions will not be available.'
-    print 'Error details follow:'
-    print repr(e)
+        print_function('WARNING: gdal-config could not be called, pixel functions will not be available.')
+    print_function('Error details follow:')
+    print_function(e)
     skip_compile = True
 
 #----------------------------------------------------------------------------#
@@ -220,9 +206,9 @@ def run_setup(skip_compile):
     else:
         kw = dict(
             ext_modules = [
-                Extension(NAME + '._pixfun',
-                          [NAME + '/pixelfunctions/pixelfunctions.c',
-                           NAME + '/pixelfunctions/_pixfun.c'],
+                Extension('{0}.{1}'.format(NAME, pixfun_module_name),
+                          ['{0}/pixelfunctions/pixelfunctions.c'.format(NAME),
+                           '{0}/pixelfunctions/{1}.c'.format(NAME, pixfun_module_name)],
                           include_dirs=include_dirs,
                           libraries=libraries,
                           library_dirs=library_dirs,
@@ -270,15 +256,15 @@ try:
 except ext_errors:
     BUILD_EXT_WARNING = ("WARNING: The C extension could not be compiled, "
                          "pixel functions will not be available.")
-    print('*' * 75)
-    print(BUILD_EXT_WARNING)
-    print("Failure information, if any, is above.")
-    print("I'm retrying the build without the C extension now.")
-    print('*' * 75)
+    print_function('*' * 75)
+    print_function(BUILD_EXT_WARNING)
+    print_function("Failure information, if any, is above.")
+    print_function("I'm retrying the build without the C extension now.")
+    print_function('*' * 75)
 
     run_setup(True)
 
-    print('*' * 75)
-    print(BUILD_EXT_WARNING)
-    print("Plain-Python installation succeeded.")
-    print('*' * 75)
+    print_function('*' * 75)
+    print_function(BUILD_EXT_WARNING)
+    print_function("Plain-Python installation succeeded.")
+    print_function('*' * 75)

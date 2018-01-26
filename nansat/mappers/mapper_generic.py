@@ -13,18 +13,13 @@ import datetime
 import numpy as np
 from netCDF4 import Dataset
 
-try:
-    from cfunits import Units
-except:
-    cfunitsInstalled = False
-else:
-    cfunitsInstalled = True
-
 from nansat.nsr import NSR
-from nansat.vrt import VRT, GeolocationArray
-from nansat.tools import gdal, WrongMapperError, parse_time
+from nansat.geolocation import Geolocation
+from nansat.vrt import VRT
+from nansat.tools import gdal, parse_time
+from nansat.exceptions import WrongMapperError
 
-
+# TODO: remove WrongMapperError
 class Mapper(VRT):
     def __init__(self, inputFileName, gdalDataset, gdalMetadata, logLevel=30,
                  rmMetadatas=['NETCDF_VARNAME', '_Unsigned',
@@ -50,9 +45,9 @@ class Mapper(VRT):
         # Get file names from dataset or subdataset
         subDatasets = gdalDataset.GetSubDatasets()
         if len(subDatasets) == 0:
-            fileNames = [inputFileName]
+            filenames = [inputFileName]
         else:
-            fileNames = [f[0] for f in subDatasets]
+            filenames = [f[0] for f in subDatasets]
 
         # add bands with metadata and corresponding values to the empty VRT
         metaDict = []
@@ -60,8 +55,8 @@ class Mapper(VRT):
         yDatasetSource = ''
         firstXSize = 0
         firstYSize = 0
-        for _, fileName in enumerate(fileNames):
-            subDataset = gdal.Open(fileName)
+        for _, filename in enumerate(filenames):
+            subDataset = gdal.Open(filename)
             # choose the first dataset whith grid
             if (firstXSize == 0 and firstYSize == 0 and
                     subDataset.RasterXSize > 1 and subDataset.RasterYSize > 1):
@@ -76,12 +71,12 @@ class Mapper(VRT):
                     subDataset.RasterYSize == firstYSize):
                 if projection == '':
                     projection = subDataset.GetProjection()
-                if ('GEOLOCATION_X_DATASET' in fileName or
-                        'longitude' in fileName):
-                    xDatasetSource = fileName
-                elif ('GEOLOCATION_Y_DATASET' in fileName or
-                        'latitude' in fileName):
-                    yDatasetSource = fileName
+                if ('GEOLOCATION_X_DATASET' in filename or
+                        'longitude' in filename):
+                    xDatasetSource = filename
+                elif ('GEOLOCATION_Y_DATASET' in filename or
+                        'latitude' in filename):
+                    yDatasetSource = filename
                 else:
                     for iBand in range(subDataset.RasterCount):
                         subBand = subDataset.GetRasterBand(iBand+1)
@@ -92,7 +87,7 @@ class Mapper(VRT):
                         # sourceBands = i*subDataset.RasterCount + iBand + 1
 
                         # generate src metadata
-                        src = {'SourceFilename': fileName,
+                        src = {'SourceFilename': filename,
                                'SourceBand': sourceBands}
                         # set scale ratio and scale offset
                         scaleRatio = bandMetadata.get(
@@ -153,51 +148,12 @@ class Mapper(VRT):
                         metaDict.append({'src': src, 'dst': dst})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, firstSubDataset, srcMetadata=gdalMetadata)
+        self._init_from_gdal_dataset(firstSubDataset, metadata=gdalMetadata)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
-        # Create complex data bands from 'xxx_real' and 'xxx_imag' bands
-        # using pixelfunctions
-        rmBands = []
-        for iBandNo in range(self.dataset.RasterCount):
-            iBand = self.dataset.GetRasterBand(iBandNo + 1)
-            iBandName = iBand.GetMetadataItem('name')
-            # find real data band
-            if iBandName.find("_real") != -1:
-                realBandNo = iBandNo
-                realBand = self.dataset.GetRasterBand(realBandNo + 1)
-                realDtype = realBand.GetMetadataItem('DataType')
-                bandName = iBandName.replace(iBandName.split('_')[-1],
-                                             '')[0:-1]
-                for jBandNo in range(self.dataset.RasterCount):
-                    jBand = self.dataset.GetRasterBand(jBandNo + 1)
-                    jBandName = jBand.GetMetadataItem('name')
-                    # find an imaginary data band corresponding to the real
-                    # data band and create complex data band from the bands
-                    if jBandName.find(bandName+'_imag') != -1:
-                        imagBandNo = jBandNo
-                        imagBand = self.dataset.GetRasterBand(imagBandNo + 1)
-                        imagDtype = imagBand.GetMetadataItem('DataType')
-                        dst = imagBand.GetMetadata()
-                        dst['name'] = bandName
-                        dst['PixelFunctionType'] = 'ComplexData'
-                        dst['dataType'] = 10
-                        src = [{'SourceFilename': fileNames[realBandNo],
-                                'SourceBand':  1,
-                                'DataType': realDtype},
-                               {'SourceFilename': fileNames[imagBandNo],
-                                'SourceBand': 1,
-                                'DataType': imagDtype}]
-                        self._create_band(src, dst)
-                        self.dataset.FlushCache()
-                        rmBands.append(realBandNo + 1)
-                        rmBands.append(imagBandNo + 1)
-
-        # Delete real and imaginary bands
-        if len(rmBands) != 0:
-            self.delete_bands(rmBands)
+        self._create_complex_bands(filenames)
 
         if len(projection) == 0:
             # projection was not set automatically
@@ -231,8 +187,7 @@ class Mapper(VRT):
         if gcps:
             if len(gcpProjection) == 0:
                 # get GCP projection and repare
-                gcpProjection = self.repare_projection(geoMetadata.
-                                                get('GCPProjection', ''))
+                gcpProjection = self.repare_projection(geoMetadata. get('GCPProjection', ''))
             # add GCPs to dataset
             self.dataset.SetGCPs(gcps, gcpProjection)
             self.dataset.SetProjection('')
@@ -240,8 +195,7 @@ class Mapper(VRT):
 
         # Find proper bands and insert GEOLOCATION ARRAY into dataset
         if len(xDatasetSource) > 0 and len(yDatasetSource) > 0:
-            self.add_geolocationArray(GeolocationArray(xDatasetSource,
-                                                       yDatasetSource))
+            self._add_geolocation_array(Geolocation(xDatasetSource, yDatasetSource))
 
         elif not gcps:
             # if no GCPs found and not GEOLOCATION ARRAY set:
@@ -284,38 +238,28 @@ class Mapper(VRT):
                                         gdalMetadata['time_coverage_end'])
 
         ### GET start time from time variable
-        if (time_coverage_start is None and cfunitsInstalled and
-                 'time#standard_name' in subMetadata and
-                 subMetadata['time#standard_name'] == 'time' and
-                 'time#units' in subMetadata and
-                 'time#calendar' in subMetadata):
+        if (time_coverage_start is None and 'time#standard_name' in subMetadata and
+                 subMetadata['time#standard_name'] == 'time' and 'time#units' in subMetadata):
             # get data from netcdf data
             ncFile = Dataset(inputFileName, 'r')
-            timeLength = ncFile.variables['time'].shape[0]
-            timeValueStart = ncFile.variables['time'][0]
-            timeValueEnd = ncFile.variables['time'][-1]
-            ncFile.close()
-            try:
-                timeDeltaStart = Units.conform(timeValueStart,
-                                  Units(subMetadata['time#units'],
-                                        calendar=subMetadata['time#calendar']),
-                                  Units('days since 1950-01-01'))
-            except ValueError:
-                self.logger.error('calendar units are wrong: %s' %
-                                  subMetadata['time#calendar'])
+            time_var = ncFile.variables['time']
+            t0 = time_var[0]
+            if len(time_var) == 1:
+                t1 = t0 + 1
             else:
-                time_coverage_start = (datetime.datetime(1950,1,1) +
-                                   datetime.timedelta(float(timeDeltaStart)))
+                t1 = time_var[-1]
 
-                if timeLength > 1:
-                    timeDeltaEnd = Units.conform(timeValueStart,
-                                          Units(subMetadata['time#units'],
-                                                calendar=subMetadata['time#calendar']),
-                                          Units('days since 1950-01-01'))
-                else:
-                    timeDeltaEnd = timeDeltaStart + 1
-                time_coverage_end = (datetime.datetime(1950,1,1) +
-                                     datetime.timedelta(float(timeDeltaEnd)))
+            time_units_start = parse(time_var.units, fuzzy=True, ignoretz=True)
+            time_units_to_seconds = {'second' : 1.0,
+                                     'hour' : 60 * 60.0,
+                                     'day' : 24 * 60 * 60.0}
+            for key in time_units_to_seconds:
+                if key in time_var.units:
+                    factor = time_units_to_seconds[key]
+                    break
+
+            time_coverage_start = time_units_start + datetime.timedelta(seconds=t0 * factor)
+            time_coverage_end = time_units_start + datetime.timedelta(seconds=t1 * factor)
 
         ## finally set values of time_coverage start and end if available
         if time_coverage_start is not None:
@@ -377,12 +321,12 @@ class Mapper(VRT):
 
         return gcps
 
-    def add_gcps_from_variables(self, fileName):
+    def add_gcps_from_variables(self, filename):
         ''' Get GCPs from GCPPixel, GCPLine, GCPX, GCPY, GCPZ variables '''
         gcpVariables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
         # open input netCDF file for reading GCPs
         try:
-            ncFile = Dataset(fileName, 'r')
+            ncFile = Dataset(filename, 'r')
         except (TypeError, IOError) as e:
             self.logger.info('%s' % e)
             return None

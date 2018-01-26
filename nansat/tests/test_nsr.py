@@ -11,15 +11,10 @@
 # License:
 #------------------------------------------------------------------------------
 import unittest
-import warnings
-import os
-import sys
-import glob
-from types import ModuleType, FloatType
-import numpy as np
-
 from nansat import NSR
-from nansat.tools import osr, ProjectionError
+from nansat.tools import osr
+
+from nansat.exceptions import NansatProjectionError
 
 
 class NSRTest(unittest.TestCase):
@@ -70,5 +65,5 @@ class NSRTest(unittest.TestCase):
         self.assertTrue('longlat' in nsr.ExportToProj4())
 
     def test_dont_init_from_invalid(self):
-        self.assertRaises(ProjectionError, NSR, -10)
-        self.assertRaises(ProjectionError, NSR, 'some crap')
+        self.assertRaises(NansatProjectionError, NSR, -10)
+        self.assertRaises(NansatProjectionError, NSR, 'some crap')

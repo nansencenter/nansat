@@ -12,13 +12,23 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
+import os
 import unittest
 import datetime
 
-from matplotlib.colors import hex2color
+try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
+    from matplotlib.colors import hex2color
+except ImportError:
+    MATPLOTLIB_IS_INSTALLED = False
+else:
+    MATPLOTLIB_IS_INSTALLED = True
+
 from nansat.tools import get_random_color, parse_time
 
 class ToolsTest(unittest.TestCase):
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_get_random_color(self):
         ''' Should return HEX code of random color '''
         c0 = get_random_color()

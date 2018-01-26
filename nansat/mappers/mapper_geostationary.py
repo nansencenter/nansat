@@ -10,7 +10,7 @@ from datetime import datetime
 from numpy import array, arange
 import warnings
 
-from nansat.tools import WrongMapperError
+from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.node import Node
 
@@ -155,7 +155,7 @@ satDict = [{'name': 'GOES13',
 class Mapper(VRT):
     ''' VRT with mapping of WKV for Geostationary satellite data '''
 
-    def __init__(self, fileName, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
 
         try:
             satellite = gdalDataset.GetDescription().split(",")[2]
@@ -164,24 +164,24 @@ class Mapper(VRT):
 
         for sat in satDict:
             if sat['name'] == satellite:
-                print 'This is ' + satellite
+                print('This is ' + satellite)
                 wavelengths = sat['wavelengths']
                 try:
                     scale = sat['scale']
                     offset = sat['offset']
                 except:
-                    print "No scale and offset found"
+                    print("No scale and offset found")
                     scale = None
                     offset = None
                 try:
                     LUT = sat['LUT']
                 except:
-                    print "No LUT found"
+                    print("No LUT found")
                     LUT = [""]*len(wavelengths)
                 try:
                     NODATA = sat['NODATA']
                 except:
-                    print "No NODATA values found"
+                    print("No NODATA values found")
                     NODATA = [""]*len(wavelengths)
 
         if wavelengths is None:
@@ -208,7 +208,7 @@ class Mapper(VRT):
             try:
                 gdal.Open(bandSource)
             except:
-                print ('Warning: band missing for wavelength ' +
+                print('Warning: band missing for wavelength ' +
                        str(wavelength) + 'nm')
                 continue
             src = {'SourceFilename': bandSource, 'SourceBand': 1,
@@ -222,10 +222,10 @@ class Mapper(VRT):
             metaDict.append({'src': src, 'dst': dst})
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset)
 
         # Create bands
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)
 
         # For Meteosat7 ch1 has higher resolution than ch2 and ch3
         # and for MSG, channel 12 (HRV) has
@@ -235,7 +235,7 @@ class Mapper(VRT):
         # the high res channels
         # are reduced to this size.
         if satellite == 'MET7' or satellite[0:3] == 'MSG':
-            node0 = Node.create(self.read_xml())
+            node0 = Node.create(self.get_vrt_xml())
             bands = node0.nodeList("VRTRasterBand")
             if satellite == 'MET7':
                 if self.dataset.RasterXSize == 5032:  # High res ch1 is opened
