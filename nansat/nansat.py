@@ -26,13 +26,11 @@ import warnings
 import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
-from nansat.warnings import NansatFutureWarning
 from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.exporter import Exporter
-from nansat.exceptions import WrongMapperError, NansatGDALError
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
@@ -40,6 +38,11 @@ from nansat.tools import add_logger, gdal
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
+
+from nansat.warnings import NansatFutureWarning
+from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
+
+from nansat.tools import WrongMapperError as WrongMapperErrorOld
 
 import collections
 if hasattr(collections, 'OrderedDict'):
@@ -555,7 +558,7 @@ class Nansat(Domain, Exporter):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if do_print:
             # print to screeen
-            print_function(outString)
+            print(outString)
         else:
             return outString
 
@@ -619,6 +622,10 @@ class Nansat(Domain, Exporter):
         if eResampleAlg is not None:
             warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
             resample_alg = eResampleAlg
+
+        # This is time consuming and therefore not done...:
+        #if not self.overlaps(dst_domain):
+        #    raise ValueError('Source and destination domains do not overlap')
 
         # if self spans from 0 to 360 and dst_domain is west of 0:
         #     shift self westwards by 180 degrees
@@ -1211,7 +1218,7 @@ class Nansat(Domain, Exporter):
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper.replace('mapper_', '')
                     break
-                except WrongMapperError:
+                except (WrongMapperError, WrongMapperErrorOld):
                     pass
 
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
@@ -1617,7 +1624,7 @@ def _import_mappers(log_level=None):
     except ImportError:
         pass
     else:
-        logger.info('User defined mappers found in %s' % nansat_mappers.__path__)
+        logger.info('User defined mappers found in %s' % nansat_mappers_pkg.__path__)
         mapper_packages = [nansat_mappers_pkg, nansat.mappers]
 
     # create ordered dict for mappers

@@ -22,7 +22,7 @@ import datetime
 import json
 import sys
 from xml.sax.saxutils import unescape
-from mock import patch, PropertyMock
+from mock import patch, PropertyMock, MagicMock
 
 import numpy as np
 
@@ -253,10 +253,14 @@ class NansatTest(unittest.TestCase):
         self.assertTrue('name' in bands[1])
         self.assertEqual(bands[1]['name'], 'L_645')
 
-    def test_has_band(self):
+    def test_has_band_if_name_matches(self):
         n = Nansat(self.test_file_gcps, log_level=40)
         hb = n.has_band('L_645')
-
+        self.assertTrue(hb)
+    
+    def test_has_band_if_standard_name_matches(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        hb = n.has_band('surface_upwelling_spectral_radiance_in_air_emerging_from_sea_water')
         self.assertTrue(hb)
 
     def test_write_fig_tif(self):
@@ -268,6 +272,10 @@ class NansatTest(unittest.TestCase):
         # Asserts that the basic georeference (corners in this case) is still
         # present after opening the image
         self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
+
+    def test_resize_eResampleAlg_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        n.resize(pixelsize=500, eResampleAlg=5)
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, log_level=40)
@@ -349,6 +357,20 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(type(b), gdal.Band)
         self.assertEqual(type(arr), np.ndarray)
+    
+    def test_get_GDALRasterBand_if_bandID_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        b = n.get_GDALRasterBand(bandID=1)
+        arr = b.ReadAsArray()
+
+        self.assertEqual(type(b), gdal.Band)
+        self.assertEqual(type(arr), np.ndarray)
+
+    def test_list_bands_true(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        lb = n.list_bands(True)
+
+        self.assertEqual(lb, None)
 
     def test_list_bands_false(self):
         n = Nansat(self.test_file_gcps, log_level=40)
@@ -360,6 +382,67 @@ class NansatTest(unittest.TestCase):
         n = Nansat(self.test_file_gcps, log_level=40)
         d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
         n.reproject(d)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+
+    def test_reproject_domain_if_dstDomain_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(dstDomain=d)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+        
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+
+    def test_reproject_domain_if_eRasampleAlg_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(d,eResampleAlg=0)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+        
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+    
+    @patch.object(Nansat, 'get_corners',
+                  return_value=(np.array([0, 0, 360, 360]), np.array([90,-90, 90, -90])))
+    def test_reproject_domain_if_source_and_destination_domain_span_entire_lons(self, mock_Nansat):
+        n = Nansat(self.test_file_arctic, log_level=40)
+        d = Domain(4326, "-te -180 180 60 90 -ts 500 500")
+        n.reproject(d)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+        
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+    
+    def test_reproject_domain_if_tps_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(d, tps=False)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+    
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(d, tps=True)
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
@@ -510,6 +593,14 @@ class NansatTest(unittest.TestCase):
         n1.write_geotiffimage(tmpfilename)
 
         self.assertTrue(os.path.exists(tmpfilename))
+    
+    def test_write_geotiffimage_if_bandID_is_given(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_write_geotiffimage.tif')
+        n1.write_geotiffimage(tmpfilename, bandID=1)
+
+        self.assertTrue(os.path.exists(tmpfilename))
 
     def test_get_metadata(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
@@ -517,7 +608,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(type(m), dict)
         self.assertTrue('filename' in m)
-
+    
     def test_get_metadata_key(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
         m = n1.get_metadata('filename')
@@ -530,9 +621,16 @@ class NansatTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             n1.get_metadata('some_crap')
 
-    def test_get_metadata_bandid(self):
+    def test_get_metadata_band_id(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
         m = n1.get_metadata(band_id=1)
+
+        self.assertEqual(type(m), dict)
+        self.assertTrue('name' in m)
+    
+    def test_get_metadata_bandID(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        m = n1.get_metadata(bandID=1)
 
         self.assertEqual(type(m), dict)
         self.assertTrue('name' in m)
@@ -544,12 +642,23 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(m, 'newVal')
 
-    def test_set_metadata_bandid(self):
+    def test_set_metadata_band_id(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
-        n1.set_metadata('newKey', 'newVal', 1)
+        n1.set_metadata('newKey', 'newVal', band_id=1)
         m = n1.get_metadata('newKey', 1)
 
         self.assertEqual(m, 'newVal')
+    
+    def test_set_metadata_bandID(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        n1.set_metadata('newKey', 'newVal', bandID=1)
+        m = n1.get_metadata('newKey', 1)
+
+        self.assertEqual(m, 'newVal')
+
+    def test_get_band_number(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        self.assertEqual(n1._get_band_number(1), 1)
 
     @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_get_transect(self):
@@ -653,6 +762,14 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n1.shape(), (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
+    
+        n1 = Nansat(self.test_file_gcps, log_level=40)
+        ext = n1.crop(0, 0, 200, 200)
+
+        self.assertEqual(n1.shape(), (200, 200))
+        self.assertEqual(ext, (0, 0, 200, 200))
+        self.assertEqual(type(n1[1]), np.ndarray)
+
 
     def test_crop_gcpproj(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
@@ -705,10 +822,16 @@ class NansatTest(unittest.TestCase):
             self.assertEqual(wm.shape[0], n1.shape()[0])
             self.assertEqual(wm.shape[1], n1.shape()[1])
 
-    def test_watermask_fail(self):
+    def test_watermask_fail_if_mod44path_is_wrong(self):
         ''' Nansat.watermask should raise an IOError'''
         n1 = Nansat(self.test_file_gcps, log_level=40)
         os.environ['MOD44WPATH'] = '/fakepath'
+        self.assertRaises(IOError, n1.watermask)
+
+    def test_watermask_fail_if_mod44path_not_exist(self):
+        ''' Nansat.watermask should raise an IOError'''
+        n1 = Nansat(self.test_file_gcps, log_level=40)
+        del os.environ['MOD44WPATH']
         self.assertRaises(IOError, n1.watermask)
 
     def test_init_no_arguments(self):
@@ -749,13 +872,13 @@ class NansatTest(unittest.TestCase):
         self.assertIn('72', n_repr)
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
-    '''
-    @patch('nansat.nansat.Nansat.get_GDALRasterBand')
+
+    @patch.object(Nansat, 'get_GDALRasterBand')
     def test_getitem(self, mock_Nansat):
-        mock_Nansat.GetMetadata = MagicMock(return_value = {'a':1})
-        mock_Nansat.ReadAsArray.return_value = None
-        Nansat(self.test_file_stere).__getitem__(1)
-    '''
+        type(mock_Nansat()).GetMetadata = MagicMock(return_value={'a':1})
+        type(mock_Nansat()).ReadAsArray = MagicMock(return_value=None)
+        with self.assertRaises(NansatGDALError):
+            Nansat(self.test_file_stere).__getitem__(1)
 
 
 if __name__ == "__main__":

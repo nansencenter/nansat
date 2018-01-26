@@ -31,10 +31,8 @@ class Mapper(VRT):
     ----------- 
     filename : string 
         The vrt filename, e.g., ``gtopo30.vrt``
-    gdalDataset : osgeo.gdal.Dataset
+    gdal_dataset : osgeo.gdal.Dataset
         The GDAL dataset returned by ``gdal.Open(filename)``
-    gdalMetadata : dict
-        Metadata for the given dataset [returned from ``gdalDataset.GetMetadata()``]
         
     Either the name of a GTOPO30 DEM file or GMTED2010 tif file, or ``<path>/<dem>.vrt``. The latter
     is an aggregation of the DEM-files available from the given DEM. The GTOPO30 vrt does not
@@ -51,7 +49,7 @@ class Mapper(VRT):
 
     """
 
-    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdal_dataset, *args, **kwargs):
 
         bn = os.path.basename(filename)
         accepted_names = [
@@ -63,12 +61,7 @@ class Mapper(VRT):
 
         correct_mapper = False
         for accepted_name in accepted_names:
-            try:
-                m = re.search(accepted_name, filename)
-            except:
-                import ipdb
-                ipdb.set_trace()
-                print_function('error...')
+            m = re.search(accepted_name, filename)
             if m and m.group(0):
                 correct_mapper = True
                 break
@@ -81,7 +74,8 @@ class Mapper(VRT):
                      'dst': {'wkv': 'height_above_reference_ellipsoid'}}]
 
         # create empty VRT dataset with geolocation only
-        VRT.__init__(self, gdalDataset)
+        #self._init_from_gdal_dataset(gdal_dataset)
+        VRT.__init__(self, gdal_dataset)
 
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)

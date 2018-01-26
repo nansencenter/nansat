@@ -32,9 +32,9 @@ from nansat.figure import Image
 import sys
 from nansat.tests import nansat_test_data as ntd
 try:
-    from mock import patch, PropertyMock
+    from mock import patch, Mock, MagicMock, PropertyMock, DEFAULT
 except:
-    from unittest.mock import patch, PropertyMock
+    from unittest.mock import patch, Mock, MagicMock, PropertyMock, DEFAULT
 
 from nansat.exceptions import NansatProjectionError
 
@@ -335,18 +335,27 @@ class DomainTest(unittest.TestCase):
         geom = d.get_border_geometry()
         self.assertEqual(type(geom), ogr.Geometry)
 
-    def test_overlaps(self):
+    def test_overlaps_intersects_and_contains(self):
         Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")
         WestCoast = Domain(4326, "-te 1 58 6 64 -ts 500 500")
         Norway = Domain(4326, "-te 3 55 30 72 -ts 500 500")
         Paris = Domain(4326, "-te 2 48 3 49 -ts 500 500")
-        self.assertTrue(Bergen.overlaps(Norway))
+
+        self.assertFalse(Bergen.overlaps(Norway))
+        self.assertFalse(Norway.overlaps(Bergen))
+        self.assertTrue(Norway.overlaps(WestCoast))
+        self.assertFalse(Paris.overlaps(Norway))
+
+        self.assertTrue(Bergen.intersects(Norway))
+        self.assertTrue(Norway.intersects(Bergen))
+        self.assertTrue(Norway.intersects(WestCoast))
+        self.assertFalse(Paris.intersects(Norway))
+
         self.assertTrue(Norway.contains(Bergen))
         self.assertFalse(Bergen.contains(Norway))
-        self.assertTrue(Norway.overlaps(WestCoast))
-        self.assertFalse(Norway.contains(WestCoast))
-        self.assertFalse(Paris.overlaps(Norway))
+        self.assertFalse(Norway.contains(WestCoast)) # why false?
         self.assertFalse(Paris.contains(Norway))
+
 
     def test_contains(self):
         Bergen = Domain(4326, EXTENT_BERGEN)
@@ -534,6 +543,22 @@ class DomainTest(unittest.TestCase):
 
         self.assertIsInstance(result, str)
         self.assertEqual(result, test)
+
+    @patch.multiple(Domain, get_border_geometry=DEFAULT, __init__ = Mock(return_value=None))
+    def test_intersects(self, get_border_geometry):
+        other_domain = MagicMock()
+        d = Domain()
+        d.intersects(other_domain)
+        d.get_border_geometry.assert_called_once()
+        d.get_border_geometry().Intersects.assert_called_once_with(other_domain.get_border_geometry())
+
+    @patch.multiple(Domain, get_border_geometry=DEFAULT, __init__ = Mock(return_value=None))
+    def test_overlaps(self, get_border_geometry):
+        other_domain = MagicMock()
+        d = Domain()
+        d.overlaps(other_domain)
+        d.get_border_geometry.assert_called_once()
+        d.get_border_geometry().Overlaps.assert_called_once_with(other_domain.get_border_geometry())
 
 if __name__ == "__main__":
     unittest.main()

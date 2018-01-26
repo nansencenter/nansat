@@ -30,6 +30,7 @@ from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
+
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning
 
@@ -265,6 +266,8 @@ class VRT(object):
 
     def __init__(self, x_size=1, y_size=1, metadata=None, nomem=False, **kwargs):
         """Init VRT object with all attributes"""
+        if isinstance(x_size, gdal.Dataset):
+            kwargs['gdalDataset'] = x_size
         if metadata is None:
             metadata = dict()
         # init from obsolete params
@@ -741,8 +744,8 @@ class VRT(object):
 
         old_params_used = False
         # run through input params and select the matching one
-        for arg in kwargs:
-            if arg in old_param_names:
+        for arg in old_param_names:
+            if arg in kwargs:
                 old_params_used = True
                 break
         if not old_params_used:
@@ -927,6 +930,12 @@ class VRT(object):
         return vrt
 
     @property
+    def fileName(self):
+        warnings.warn('VRT.fileName will be disabled in Nansat 1.1. Use VRT.filename instead.',
+                NansatFutureWarning)
+        return self.filename
+
+    @property
     def xml(self):
         """Read XML content of the VRT-file using VSI
 
@@ -936,6 +945,11 @@ class VRT(object):
         """
         self.dataset.FlushCache()
         return VRT.read_vsi(self.filename)
+
+    def _create_bands(self, metadata_dict):
+        warnings.warn('Method VRT._create_bands() will be disabled in Nansat 1.1. ' \
+                'Use VRT.create_bands() instead.', NansatFutureWarning)
+        self.create_bands(metadata_dict)
 
     def create_bands(self, metadata_dict):
         """ Generic function called from the mappers to create bands

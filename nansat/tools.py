@@ -18,6 +18,7 @@ from __future__ import absolute_import
 
 import os
 import warnings
+from nansat.warnings import NansatFutureWarning
 import logging
 from dateutil.parser import parse
 
@@ -44,6 +45,65 @@ try:
 except:
     from osgeo import gdal, ogr, osr
 gdal.UseExceptions()
+
+EXCEPTION_WARNING = (
+                             'Use Nansat(filename).')
+
+class OptionError(Exception):
+
+    warnings.warn( 
+        'nansat.tools.OptionError will be disabled in Nansat 1.1. Use ValueError instead.',
+        NansatFutureWarning)
+
+    pass
+
+class ProjectionError(Exception):
+
+    warnings.warn( 
+            'nansat.tools.ProjectionError will be disabled in Nansat 1.1. Use ' \
+                'nansat.exceptions.NansatProjectionError instead.',
+        NansatFutureWarning)
+
+    pass
+
+
+class GDALError(Exception):
+
+    warnings.warn( 
+            'nansat.tools.GDALError will be disabled in Nansat 1.1. Use ' \
+                'nansat.exceptions.NansatGDALError instead.',
+        NansatFutureWarning)
+
+    pass
+
+
+class NansatReadError(Exception):
+
+    warnings.warn( 
+            'nansat.tools.NansatReadError will be disabled in Nansat 1.1. Use ' \
+                'nansat.exceptions.NansatReadError instead.',
+        NansatFutureWarning)
+
+    pass
+
+class GeolocationError(Exception):
+
+    warnings.warn( 
+            'nansat.tools.GeolocationError will be disabled in Nansat 1.1. Use ' \
+                'nansat.exceptions.NansatGeolocationError instead.',
+        NansatFutureWarning)
+
+    pass
+
+class WrongMapperError(Exception):
+
+    warnings.warn( 
+            'nansat.tools.WrongMapperError will be disabled in Nansat 1.1. Use ' \
+                'nansat.exceptions.WrongMapperError instead.',
+        NansatFutureWarning)
+
+    pass
+
 
 def remove_keys(dict, keys):
     if keys is None:
