@@ -26,13 +26,11 @@ import warnings
 import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
-from nansat.warnings import NansatFutureWarning
 from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.exporter import Exporter
-from nansat.exceptions import WrongMapperError, NansatGDALError
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
@@ -41,13 +39,11 @@ from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
-<<<<<<< HEAD
 from nansat.warnings import NansatFutureWarning
-from nansat.tools import WrongMapperError as WrongMapperErrorOld
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
-=======
->>>>>>> develop
+from nansat.tools import WrongMapperError as WrongMapperErrorOld
+
 import collections
 if hasattr(collections, 'OrderedDict'):
     from collections import OrderedDict
