@@ -13,12 +13,17 @@
 # ------------------------------------------------------------------------------
 from __future__ import print_function, absolute_import, division
 import os
+import sys
 import json
 import logging
 import unittest
 import warnings
 import datetime
 from xml.sax.saxutils import unescape
+if sys.version_info.major == 2:
+    from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+else:
+    from unittest.mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 import numpy as np
 
@@ -312,12 +317,15 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
         self.assertEqual(ncIVar[:].dtype, np.int8)
 
+
     def test_export_netcdf_complex_remove_meta(self):
         ''' Test export of complex data with pixelfunctions
         '''
         n = Nansat(self.test_file_complex)
         self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
-        n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
         exported = Nansat(self.tmpfilename)
         with self.assertRaises(ValueError):
             exported.get_metadata('PRODUCT_TYPE')
@@ -333,6 +341,43 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
+        os.unlink(self.tmpfilename)
+
+    def test_export_netcdf_arctic_hardcopy(self):
+        ''' Test export of the arctic data without GCPS
+        '''
+        n = Nansat(self.test_file_arctic)
+        n.export(self.tmpfilename, hardcopy=True)
+        exported = Nansat(self.tmpfilename)
+        self.assertTrue((n[1] == exported[1]).any())
+        self.assertTrue((n[2] == exported[2]).any())
+        self.assertTrue((n[3] == exported[3]).any())
+        os.unlink(self.tmpfilename)
+
+    @patch('nansat.exporter.VRT._add_geolocation')
+    def test_export_add_geoloc(self, mock_add_geolocation):
+        n = Nansat(self.test_file_arctic)
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            n.export(self.tmpfilename, addGeoloc=True)
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+        self.assertTrue(mock_add_geolocation.called)
+        os.unlink(self.tmpfilename)
+
+    def test_export_add_gcps(self):
+        n = Nansat(self.test_file_arctic)
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            n.export(self.tmpfilename, addGCPs=True, bottomup=True)
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+            self.assertEqual(recorded_warnings[1].category, NansatFutureWarning)
+        os.unlink(self.tmpfilename)
+
+    def test_export2thredds_rmmetadata(self):
+        n = Nansat(self.test_file_arctic, mapper='generic', log_level=40)
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            n.export2thredds(self.tmpfilename, {'Bristol': {'type': '>i2'}},
+                            time=datetime.datetime(2016, 1, 20),
+                            rmMetadata=['description'])
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
         os.unlink(self.tmpfilename)
 
 if __name__ == "__main__":

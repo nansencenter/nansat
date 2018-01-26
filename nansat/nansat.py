@@ -1107,10 +1107,10 @@ class Nansat(Domain, Exporter):
         return gdal_dataset, metadata
 
 
-    def _get_mapper(self, mapperName='', mappername='', **kwargs):
+    def _get_mapper(self, mappername, **kwargs):
         """Create VRT file in memory (VSI-file) with variable mapping
 
-        If mapperName is given only this mapper will be used,
+        If mappername is given only this mapper will be used,
         else loop over all availble mappers in mapperList to get the
         matching one.
         In the loop :
@@ -1122,7 +1122,7 @@ class Nansat(Domain, Exporter):
 
         Parameters
         -----------
-        mapperName : string, optional (e.g. 'ASAR' or 'merisL2')
+        mappername : string, optional (e.g. 'ASAR' or 'merisL2')
 
         Returns
         --------
@@ -1136,11 +1136,6 @@ class Nansat(Domain, Exporter):
         NansatReadError : occurs if no mapper fits the input file
 
         """
-        if mappername == '' and mapperName != '':
-            warnings.warn(self.INIT_MAPPER_WARNING, NansatFutureWarning)
-            mappername = mapperName
-
-# TODO: remove!
         if os.path.isfile(self.filename):
             # Make sure file exists and can be opened for reading
             # before proceeding
@@ -1173,7 +1168,6 @@ class Nansat(Domain, Exporter):
         gdal_dataset, metadata = self._get_dataset_metadata()
         tmp_vrt = None
 
-# TODO: move to _get_specific_mapper
         if mappername is not '':
             # If a specific mapper is requested, we test only this one.
             # get the module name

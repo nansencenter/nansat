@@ -68,11 +68,11 @@ class NansatTest(unittest.TestCase):
             pass
 
     def test_open_gcps(self):
-        with warnings.catch_warnings(record=True) as recorder_warnings:
+        with warnings.catch_warnings(record=True) as recorded_warnings:
             n = Nansat(self.test_file_gcps, log_level=40)
 
         nansat_warning_raised = False
-        for rw in recorder_warnings:
+        for rw in recorded_warnings:
             if rw.category == NansatFutureWarning:
                 nansat_warning_raised = True
         self.assertFalse(nansat_warning_raised)
