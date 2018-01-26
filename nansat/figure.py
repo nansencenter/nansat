@@ -100,6 +100,8 @@ class Figure(object):
 
     _cmapName = 'jet'
 
+    # instance attributes
+    array = None
     def __init__(self, nparray, **kwargs):
         ''' Set attributes
 
