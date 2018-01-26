@@ -386,6 +386,67 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
+    def test_reproject_domain_if_dstDomain_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(dstDomain=d)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+        
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+
+    def test_reproject_domain_if_eRasampleAlg_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(d,eResampleAlg=0)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+        
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+    
+    @patch.object(Nansat, 'get_corners',
+                  return_value=(np.array([0, 0, 360, 360]), np.array([90,-90, 90, -90])))
+    def test_reproject_domain_if_source_and_destination_domain_span_entire_lons(self, mock_Nansat):
+        n = Nansat(self.test_file_arctic, log_level=40)
+        d = Domain(4326, "-te -180 180 60 90 -ts 500 500")
+        n.reproject(d)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+        
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+    
+    def test_reproject_domain_if_tps_is_given(self):
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(d, tps=False)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+    
+        n = Nansat(self.test_file_gcps, log_level=40)
+        d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
+        n.reproject(d, tps=True)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_reproject_domain.png')
+        n.write_figure(tmpfilename, 2, clim='hist')
+
+        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(type(n[1]), np.ndarray)
+        self.assertTrue(n.has_band('swathmask'))
+
     def test_reproject_of_complex(self):
         ''' Should return np.nan in areas out of swath '''
         n = Nansat(self.test_file_complex, log_level=40)
