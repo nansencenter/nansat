@@ -36,7 +36,8 @@ class Mapper(VRT):
             # Probably Nansat generated netcdf of swath data - see issue #192
             raise WrongMapperError
 
-        metadata = self._remove_strings_in_metadata_keys(gdal_metadata)
+        metadata = VRT._remove_strings_in_metadata_keys(gdal_metadata,
+                                                        ['NC_GLOBAL#', 'NANSAT_', 'GDAL_'])
 
         # Set origin metadata (TODO: agree on keyword...)
         origin = ''
@@ -344,23 +345,6 @@ class Mapper(VRT):
         else:
             sub0 = gdal.Open(subfiles[0])
             self._init_from_gdal_dataset(sub0, metadata=gdal_metadata)
-
-    def _remove_strings_in_metadata_keys(self, gdal_metadata):
-        if not gdal_metadata:
-            raise WrongMapperError
-
-        meta = gdal_metadata.copy()
-
-        # These strings are added when datasets are exported in
-        # nansat.nansat.Nansat.export...
-        rm_strings = ['NC_GLOBAL#', 'NANSAT_', 'GDAL_']
-        updated_meta = {}
-        for rms in rm_strings:
-            for key in meta.keys():
-                newkey = key.replace(rms, '')
-                updated_meta[newkey] = meta[key]
-
-        return updated_meta
 
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets

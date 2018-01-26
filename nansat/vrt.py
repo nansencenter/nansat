@@ -539,17 +539,6 @@ class VRT(object):
                 'PixelFunctionType': 'OnesPixelFunc',
             })
 
-    def _remove_strings_in_metadata_keys(self, gdal_metadata):
-        """Remove unwanted metadata"""
-        if not gdal_metadata:
-            raise ValueError('gdal_metadata is empty')
-
-        for key in list(gdal_metadata.keys()):
-            newkey = key.replace('NC_GLOBAL#', '')
-            gdal_metadata[newkey] = gdal_metadata.pop(key)
-
-        return gdal_metadata
-
     def _add_geolocation(self, geolocation):
         """ Add GEOLOCATION to the VRT
 
@@ -1830,3 +1819,16 @@ class VRT(object):
             # otherwise take the DataType from source
             data_type = srcs[0]['DataType']
         return data_type
+
+    @staticmethod
+    def _remove_strings_in_metadata_keys(gdal_metadata, rm_strings):
+        """Remove unwanted metadata"""
+
+        new_meta = {}
+        for key, value in gdal_metadata.items():
+            for rms in rm_strings:
+                if rms in key:
+                    key = key.replace(rms, '')
+            new_meta[key] = value
+
+        return new_meta

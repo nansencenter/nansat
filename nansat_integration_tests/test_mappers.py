@@ -1,3 +1,4 @@
+from __future__ import absolute_import, unicode_literals, division
 import unittest
 import sys
 import datetime
@@ -7,7 +8,7 @@ import pythesint as pti
 
 from nansat import Nansat
 from nansat.nansat import _import_mappers
-from mapper_test_archive import DataForTestingMappers, DataForTestingOnlineMappers
+from nansat_integration_tests.mapper_test_archive import DataForTestingMappers, DataForTestingOnlineMappers
 
 
 class TestDataForTestingMappers(unittest.TestCase):

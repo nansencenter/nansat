@@ -4,6 +4,7 @@ from dateutil.parser import parse
 import json
 import pythesint as pti
 
+from nansat.vrt import VRT
 from nansat.mappers.mapper_netcdf_cf import Mapper as NetcdfCF
 from nansat.exceptions import WrongMapperError
 
@@ -24,14 +25,15 @@ def get_gcmd_keywords_mapping():
             'platform': json.dumps(pti.get_gcmd_platform('models')),
         },
     }
-    return gcmd_keywords_mapping 
+    return gcmd_keywords_mapping
 
 class Mapper(NetcdfCF):
 
     def __init__(self, *args, **kwargs):
 
         filename = args[0]
-        gdal_metadata = self._remove_strings_in_metadata_keys(args[2])
+        gdal_metadata = VRT._remove_strings_in_metadata_keys(args[2],
+                                                            ['NC_GLOBAL#', 'NANSAT_', 'GDAL_'])
 
         gcmd_keywords_mapping = get_gcmd_keywords_mapping()
         for key, val in list(gcmd_keywords_mapping.items()):

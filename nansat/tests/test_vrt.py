@@ -460,24 +460,25 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(str(mock_vrt1), 'aaa')
         self.assertEqual(str(mock_vrt2), 'bbb=>aaa')
 
-    """
     @patch.multiple(VRT, create_band=DEFAULT, __init__=Mock(return_value=None))
     def test_add_swath_mask_band(self, create_band):
         vrt = VRT()
         vrt.filename = '/temp/filename.vrt'
         vrt._add_swath_mask_band()
-        import ipdb; ipdb.set_trace()
-        self.assertEqual(create_band.call_args, {
-            'src':[{
-                'SourceFilename': '/temp/filename.vrt',
+        src = [{'SourceFilename': '/temp/filename.vrt',
                 'SourceBand':  1,
-                'DataType': 1}],
-            'dst':{
-                'dataType': 1,
+                'DataType': 1}]
+        dst ={'dataType': 1,
                 'wkv': 'swath_binary_mask',
-                'PixelFunctionType': 'OnesPixelFunc',
-            }})
-    """
+                'PixelFunctionType': 'OnesPixelFunc'}
+        create_band.assert_called_once_with(src=src, dst=dst)
+
+    def test_remove_strings_in_metadata_keys(self):
+        gdal_metadata = {'aaa': 'bbb', 'NC_GLOBAL#ccc': 'ddd', 'NANSAT_eee': 'fff'}
+        rm_strings = ['NC_GLOBAL#', 'NANSAT_']
+        new_metadata = VRT._remove_strings_in_metadata_keys(gdal_metadata, rm_strings)
+        self.assertEqual(new_metadata, {'aaa': 'bbb', 'ccc': 'ddd', 'eee': 'fff'})
+
 
 if __name__ == "__main__":
     unittest.main()
