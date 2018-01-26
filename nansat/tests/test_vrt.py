@@ -478,6 +478,21 @@ class VRTTest(unittest.TestCase):
         new_metadata = VRT._remove_strings_in_metadata_keys(gdal_metadata, rm_strings)
         self.assertEqual(new_metadata, {'aaa': 'bbb', 'ccc': 'ddd', 'eee': 'fff'})
 
+    def test_super_vrt_of_geolocation_bands(self):
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt1 = VRT.from_lonlat(lon, lat)
+        vrt1.create_geolocation_bands()
+        vrt2 = vrt1.get_super_vrt()
+        self.assertTrue(hasattr(vrt2.vrt, 'vrt'))
+
+    def test_get_shifted_vrt(self):
+        deg = 10
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt1 = VRT.from_lonlat(lon, lat)
+        vrt1.create_geolocation_bands()
+        vrt2 = vrt1.get_shifted_vrt(deg)
+        self.assertEqual(vrt1.dataset.GetGeoTransform()[0]+deg, vrt2.dataset.GetGeoTransform()[0])
+
 
 if __name__ == "__main__":
     unittest.main()
