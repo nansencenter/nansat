@@ -9,20 +9,19 @@ Documentation should follow the `conventions
    Documentation for classes should be given after the class definition, not within the
    ``__init__``-method.
 
-To build documentation locally, the best is to create a virtual environment with only the sphinx
-tools installed. This is done as follows:
+To build documentation locally, the best is to create a virtual environment with the sphinx
+environment installed. This is done as follows:
 
 .. code-block:: bash
 
-   mkvirtualenv nansatdocs
-   workon nansatdocs
-   pip install sphinx sphinx-autobuild sphinx_rtd_theme recommonmark
+   cd docs
+   conda env create -n build_docs --file environment.yml
+   source activate build_docs
 
 Then, the following commands should build the documentation:
 
 .. code-block:: bash
 
-   cd docs
    make clean
    sphinx-apidoc -fo source/ ../nansat
    make html
