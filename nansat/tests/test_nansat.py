@@ -580,6 +580,14 @@ class NansatTest(unittest.TestCase):
         n1.write_geotiffimage(tmpfilename)
 
         self.assertTrue(os.path.exists(tmpfilename))
+    
+    def test_write_geotiffimage_if_bandID_is_given(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_write_geotiffimage.tif')
+        n1.write_geotiffimage(tmpfilename, bandID=1)
+
+        self.assertTrue(os.path.exists(tmpfilename))
 
     def test_get_metadata(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
@@ -587,7 +595,7 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(type(m), dict)
         self.assertTrue('filename' in m)
-
+    
     def test_get_metadata_key(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
         m = n1.get_metadata('filename')
@@ -600,9 +608,16 @@ class NansatTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             n1.get_metadata('some_crap')
 
-    def test_get_metadata_bandid(self):
+    def test_get_metadata_band_id(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
         m = n1.get_metadata(band_id=1)
+
+        self.assertEqual(type(m), dict)
+        self.assertTrue('name' in m)
+    
+    def test_get_metadata_bandID(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        m = n1.get_metadata(bandID=1)
 
         self.assertEqual(type(m), dict)
         self.assertTrue('name' in m)
@@ -614,9 +629,16 @@ class NansatTest(unittest.TestCase):
 
         self.assertEqual(m, 'newVal')
 
-    def test_set_metadata_bandid(self):
+    def test_set_metadata_band_id(self):
         n1 = Nansat(self.test_file_stere, log_level=40)
-        n1.set_metadata('newKey', 'newVal', 1)
+        n1.set_metadata('newKey', 'newVal', band_id=1)
+        m = n1.get_metadata('newKey', 1)
+
+        self.assertEqual(m, 'newVal')
+    
+    def test_set_metadata_bandID(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        n1.set_metadata('newKey', 'newVal', bandID=1)
         m = n1.get_metadata('newKey', 1)
 
         self.assertEqual(m, 'newVal')
@@ -727,6 +749,14 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n1.shape(), (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
+    
+        n1 = Nansat(self.test_file_gcps, log_level=40)
+        ext = n1.crop(0, 0, 200, 200)
+
+        self.assertEqual(n1.shape(), (200, 200))
+        self.assertEqual(ext, (0, 0, 200, 200))
+        self.assertEqual(type(n1[1]), np.ndarray)
+
 
     def test_crop_gcpproj(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
@@ -779,10 +809,16 @@ class NansatTest(unittest.TestCase):
             self.assertEqual(wm.shape[0], n1.shape()[0])
             self.assertEqual(wm.shape[1], n1.shape()[1])
 
-    def test_watermask_fail(self):
+    def test_watermask_fail_if_mod44path_is_wrong(self):
         ''' Nansat.watermask should raise an IOError'''
         n1 = Nansat(self.test_file_gcps, log_level=40)
         os.environ['MOD44WPATH'] = '/fakepath'
+        self.assertRaises(IOError, n1.watermask)
+
+    def test_watermask_fail_if_mod44path_not_exist(self):
+        ''' Nansat.watermask should raise an IOError'''
+        n1 = Nansat(self.test_file_gcps, log_level=40)
+        del os.environ['MOD44WPATH']
         self.assertRaises(IOError, n1.watermask)
 
     def test_init_no_arguments(self):
