@@ -5,7 +5,7 @@ Quickstart
 ----------
 The fastest way to install nansat:
 
-* Install Miniconda
+* Install `Miniconda <https://conda.io/miniconda.html>`_ on your platform of choice.
  * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
    Run this to access the conda installation.
  * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
