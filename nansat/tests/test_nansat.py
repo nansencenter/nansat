@@ -621,7 +621,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED and 'DISPLAY' in os.environ, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
         for backend in matplotlib.rcsetup.interactive_bk:
