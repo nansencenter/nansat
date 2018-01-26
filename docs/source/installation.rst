@@ -1,18 +1,26 @@
 Installation
 ============
 
-Basic Info
+Quickstart
 ----------
+The fastest way to install nansat:
 
-To install Nansat, you also need to install all required libraries of Nansat.
+* Install Miniconda
+ * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
+   Run this to access the conda installation.
+ * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
+   directory as explained by the installer.
 
-This page explains various methods of installing Nansat with dependencies.
+.. code-block:: bash
+   
+   conda create -n nansat -y Python=3.6
+   source activate nansat
+   # On windows you would need to ommit source: *activate nansat*
+   conda install --yes -c conda-forge pythesint scipy=0.18.1 basemap gdal  
+   pip install urllib3 pillow netcdf4 nansat
 
-If you look for the **simplest way to install Nansat**, you should probably skip straight to 
-`Install dependencies from Anaconda`_
-
-Another option is to use our Virtual Machine setup, as described in
-`Use a self-provisioned Virtual Machine`_
+Nansat is now installed. 
+For more details and other methods of installing Nansat, see below.
 
 Requirements
 ------------
@@ -66,7 +74,6 @@ This is the recommended approach for installing dependencies.
  * *conda install --yes -c conda-forge pythesint numpy scipy=0.18.1 matplotlib basemap netcdf4
    gdal pillow urllib3*
 
-If you now are looking for the fastest way to install Nansat, skip to `Install with pip`_
 
 Install Pre-built Binaries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
