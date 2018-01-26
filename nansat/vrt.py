@@ -542,17 +542,6 @@ class VRT(object):
                 'PixelFunctionType': 'OnesPixelFunc',
             })
 
-    def _remove_strings_in_metadata_keys(self, gdal_metadata):
-        """Remove unwanted metadata"""
-        if not gdal_metadata:
-            raise ValueError('gdal_metadata is empty')
-
-        for key in list(gdal_metadata.keys()):
-            newkey = key.replace('NC_GLOBAL#', '')
-            gdal_metadata[newkey] = gdal_metadata.pop(key)
-
-        return gdal_metadata
-
     def _add_geolocation(self, geolocation):
         """ Add GEOLOCATION to the VRT
 
@@ -856,6 +845,7 @@ class VRT(object):
                  'SourceBand': int(self.geolocation.data['Y_BAND'])},
                 {'wkv': 'latitude',
                  'name': 'latitude'})
+        self.dataset.FlushCache()
 
     def fix_band_metadata(self, rm_metadata):
         """Add NETCDF_VARNAME and remove <rm_metadata> in metadata for each band"""
@@ -1286,8 +1276,7 @@ class VRT(object):
 
         """
         # Copy self into self.vrt
-        shift_vrt = VRT.from_gdal_dataset(self.dataset)
-        shift_vrt.vrt = self.copy()
+        shift_vrt = self.get_super_vrt()
 
         if shift_degree < 0:
             shift_degree += 360.0
@@ -1300,12 +1289,6 @@ class VRT(object):
         if new_east_border > 360.0:
             geo_transform[0] -= 360.0
         shift_vrt.dataset.SetGeoTransform(tuple(geo_transform))
-
-        # Add bands to self
-        for i in range(shift_vrt.vrt.dataset.RasterCount):
-            src = {'SourceFilename': shift_vrt.vrt.filename, 'SourceBand': i + 1}
-            dst = shift_vrt.vrt.dataset.GetRasterBand(i+1).GetMetadata()
-            shift_vrt.create_band(src, dst)
 
         # read xml and create the node
         node0 = Node.create(shift_vrt.xml)
@@ -1844,3 +1827,16 @@ class VRT(object):
             # otherwise take the DataType from source
             data_type = srcs[0]['DataType']
         return data_type
+
+    @staticmethod
+    def _remove_strings_in_metadata_keys(gdal_metadata, rm_strings):
+        """Remove unwanted metadata"""
+
+        new_meta = {}
+        for key, value in gdal_metadata.items():
+            for rms in rm_strings:
+                if rms in key:
+                    key = key.replace(rms, '')
+            new_meta[key] = value
+
+        return new_meta

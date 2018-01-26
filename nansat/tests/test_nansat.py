@@ -68,11 +68,11 @@ class NansatTest(unittest.TestCase):
             pass
 
     def test_open_gcps(self):
-        with warnings.catch_warnings(record=True) as recorder_warnings:
+        with warnings.catch_warnings(record=True) as recorded_warnings:
             n = Nansat(self.test_file_gcps, log_level=40)
 
         nansat_warning_raised = False
-        for rw in recorder_warnings:
+        for rw in recorded_warnings:
             if rw.category == NansatFutureWarning:
                 nansat_warning_raised = True
         self.assertFalse(nansat_warning_raised)
@@ -95,7 +95,6 @@ class NansatTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, mapperName='generic')
             self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertEqual(w[1].category, NansatFutureWarning)
 
     def test_open_with_loglevel_warning(self):
         with warnings.catch_warnings(record=True) as w:
@@ -575,6 +574,15 @@ class NansatTest(unittest.TestCase):
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_write_figure_legend.png')
         n1.write_figure(tmpfilename, 3, clim='hist', legend=True)
+
+        self.assertTrue(os.path.exists(tmpfilename))
+
+    def test_write_figure_logo(self):
+        n1 = Nansat(self.test_file_stere, log_level=40)
+        tmpfilename = os.path.join(ntd.tmp_data_path,
+                                   'nansat_write_figure_logo.png')
+        n1.write_figure(tmpfilename, 3, clim='hist',
+                        logoFileName=self.test_file_gcps)
 
         self.assertTrue(os.path.exists(tmpfilename))
 

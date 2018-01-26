@@ -10,7 +10,6 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
-
 from __future__ import absolute_import, unicode_literals
 import unittest
 import logging
@@ -460,24 +459,40 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(str(mock_vrt1), 'aaa')
         self.assertEqual(str(mock_vrt2), 'bbb=>aaa')
 
-    """
     @patch.multiple(VRT, create_band=DEFAULT, __init__=Mock(return_value=None))
     def test_add_swath_mask_band(self, create_band):
         vrt = VRT()
         vrt.filename = '/temp/filename.vrt'
         vrt._add_swath_mask_band()
-        import ipdb; ipdb.set_trace()
-        self.assertEqual(create_band.call_args, {
-            'src':[{
-                'SourceFilename': '/temp/filename.vrt',
+        src = [{'SourceFilename': '/temp/filename.vrt',
                 'SourceBand':  1,
-                'DataType': 1}],
-            'dst':{
-                'dataType': 1,
+                'DataType': 1}]
+        dst ={'dataType': 1,
                 'wkv': 'swath_binary_mask',
-                'PixelFunctionType': 'OnesPixelFunc',
-            }})
-    """
+                'PixelFunctionType': 'OnesPixelFunc'}
+        create_band.assert_called_once_with(src=src, dst=dst)
+
+    def test_remove_strings_in_metadata_keys(self):
+        gdal_metadata = {'aaa': 'bbb', 'NC_GLOBAL#ccc': 'ddd', 'NANSAT_eee': 'fff'}
+        rm_strings = ['NC_GLOBAL#', 'NANSAT_']
+        new_metadata = VRT._remove_strings_in_metadata_keys(gdal_metadata, rm_strings)
+        self.assertEqual(new_metadata, {'aaa': 'bbb', 'ccc': 'ddd', 'eee': 'fff'})
+
+    def test_super_vrt_of_geolocation_bands(self):
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt1 = VRT.from_lonlat(lon, lat)
+        vrt1.create_geolocation_bands()
+        vrt2 = vrt1.get_super_vrt()
+        self.assertTrue(hasattr(vrt2.vrt, 'vrt'))
+
+    def test_get_shifted_vrt(self):
+        deg = 10
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt1 = VRT.from_lonlat(lon, lat)
+        vrt1.create_geolocation_bands()
+        vrt2 = vrt1.get_shifted_vrt(deg)
+        self.assertEqual(vrt1.dataset.GetGeoTransform()[0]+deg, vrt2.dataset.GetGeoTransform()[0])
+
 
 if __name__ == "__main__":
     unittest.main()
