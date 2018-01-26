@@ -28,7 +28,7 @@ else:
 
 
 class PointBrowserTest(unittest.TestCase):
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED and 'DISPLAY' in os.environ, 'Matplotlib is required')
     def setUp(self):
         plt.switch_backend('qt5agg')
         plt.ion()
