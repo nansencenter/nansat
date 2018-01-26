@@ -33,7 +33,7 @@ from nansat.tools import gdal, ogr
 from nansat.figure import Image
 import sys
 import nansat_test_data as ntd
-from mock import patch, PropertyMock
+from mock import patch, Mock, MagicMock, PropertyMock, DEFAULT
 
 from nansat.exceptions import NansatProjectionError
 
@@ -534,6 +534,22 @@ class DomainTest(unittest.TestCase):
                                   "70.0,29.0 70.0,28.0 70.0,27.0 70.0,26.0 70.0,25.0 70.0,25.0 "
                                   "70.0,25.0 70.2,25.0 70.4,25.0 70.6,25.0 70.8,25.0 71.0,25.0 "
                                   "71.2,25.0 71.4,25.0 71.6,25.0 71.8,25.0 72.0))')")
+
+    @patch.multiple(Domain, get_border_geometry=DEFAULT, __init__ = Mock(return_value=None))
+    def test_intersects(self, get_border_geometry):
+        other_domain = MagicMock()
+        d = Domain()
+        d.intersects(other_domain)
+        d.get_border_geometry.assert_called_once()
+        d.get_border_geometry().Intersects.assert_called_once_with(other_domain.get_border_geometry())
+
+    @patch.multiple(Domain, get_border_geometry=DEFAULT, __init__ = Mock(return_value=None))
+    def test_overlaps(self, get_border_geometry):
+        other_domain = MagicMock()
+        d = Domain()
+        d.overlaps(other_domain)
+        d.get_border_geometry.assert_called_once()
+        d.get_border_geometry().Overlaps.assert_called_once_with(other_domain.get_border_geometry())
 
 if __name__ == "__main__":
     unittest.main()

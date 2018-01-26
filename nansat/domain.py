@@ -597,6 +597,18 @@ class Domain(object):
 
         """
 
+        return self.get_border_geometry().Overlaps(anotherDomain.get_border_geometry())
+
+    def intersects(self, anotherDomain):
+        """ Checks if this Domain intersects another Domain
+
+        Returns
+        -------
+        intersects : bool
+            True if Domains intersects, False otherwise
+
+        """
+
         return self.get_border_geometry().Intersects(anotherDomain.get_border_geometry())
 
     def contains(self, anotherDomain):
