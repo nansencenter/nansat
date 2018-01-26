@@ -12,10 +12,13 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
+import os
 import unittest
 import datetime
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     from matplotlib.colors import hex2color
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False

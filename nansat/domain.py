@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+from __future__ import division, absolute_import
 
 import re
 import numpy as np
@@ -28,6 +28,7 @@ from nansat.vrt import VRT
 import warnings
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning
+
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -223,7 +224,6 @@ class Domain(object):
         out_str += corners_temp % (corners[0][1], corners[1][1], corners[0][3], corners[1][3])
         return out_str
 
-
     def write_kml(self, xmlFileName=None, kmlFileName=None):
         """Write KML file with domains
 
@@ -380,8 +380,8 @@ class Domain(object):
         """
         step_size = stepSize
         dst_srs = dstSRS
-        x_vec = range(0, self.vrt.dataset.RasterXSize, step_size)
-        y_vec = range(0, self.vrt.dataset.RasterYSize, step_size)
+        x_vec = list(range(0, self.vrt.dataset.RasterXSize, step_size))
+        y_vec = list(range(0, self.vrt.dataset.RasterYSize, step_size))
         x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
         if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
@@ -549,8 +549,9 @@ class Domain(object):
 
     @staticmethod
     def _get_row_col_vector(raster_size, n_points):
-        step = max(1, raster_size / n_points)
-        rc_vec = range(0, raster_size, step)[0:n_points]
+        # Int because py3 division returns float
+        step = max(1, int(raster_size / n_points))
+        rc_vec = list(range(0, raster_size, step))[0:n_points]
         rc_vec.append(raster_size)
         return rc_vec
 

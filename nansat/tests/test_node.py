@@ -11,9 +11,10 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
+from __future__ import absolute_import
 import unittest
 import os
-import nansat_test_data as ntd
+from . import nansat_test_data as ntd
 from nansat.node import Node
 
 

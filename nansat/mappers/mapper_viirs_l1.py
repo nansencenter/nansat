@@ -4,11 +4,12 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from __future__ import absolute_import, unicode_literals, division
+
 import os
 import glob
 from datetime import datetime, timedelta
 from math import ceil
-
 try:
     from scipy.ndimage.filters import gaussian_filter
 except:
@@ -52,14 +53,14 @@ class Mapper(VRT):
         metaDict = []
         for ifile in ifiles:
             ifilename = os.path.split(ifile)[1]
-            print ifilename
+            print(ifilename)
             bNumber = int(ifilename[3:5])
-            print bNumber
+            print(bNumber)
             bWavelength = viirsWavelengths[bNumber]
-            print bWavelength
+            print(bWavelength)
             SourceFilename = ('HDF5:"%s"://All_Data/VIIRS-M%d-SDR_All/Radiance'
                               % (ifile, bNumber))
-            print SourceFilename
+            print(SourceFilename)
             metaEntry = {'src': {'SourceFilename': SourceFilename,
                          'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',

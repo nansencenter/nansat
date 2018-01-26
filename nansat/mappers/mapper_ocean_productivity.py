@@ -43,7 +43,7 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-        print 'Ocean Productivity website data'
+        print('Ocean Productivity website data')
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)

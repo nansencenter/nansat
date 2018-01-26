@@ -18,13 +18,18 @@ from __future__ import absolute_import
 import os
 import sys
 import warnings
+import importlib
+pixfun_module_name = 'nansat._pixfun_py{0}'.format(sys.version_info[0])
+
+pixfun = importlib.import_module(pixfun_module_name)
+pixfun.registerPixelFunctions()
 
 # check if pixel functions were compiled using setup_tools
 try:
-    from nansat._pixfun import registerPixelFunctions
-    registerPixelFunctions()
-except Exception as e:
-    print repr(e)
+    pixfun = importlib.import_module(pixfun_module_name)
+    pixfun.registerPixelFunctions()
+except ImportError as e:
+    print(e)
     warnings.warn('''Cannot register C pixel functions!
                      Either nansat was not installed using setup.py or
                      pixel functions were not compiled automatically.

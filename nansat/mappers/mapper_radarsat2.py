@@ -4,6 +4,7 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+from __future__ import unicode_literals, division, absolute_import
 import os
 import tarfile
 import zipfile
@@ -50,8 +51,7 @@ class Mapper(VRT):
             filename = inputFileName
 
         #if it is not RADARSAT-2, return
-        if (not gdalMetadata or
-                not 'SATELLITE_IDENTIFIER' in gdalMetadata.keys()):
+        if (not gdalMetadata or not 'SATELLITE_IDENTIFIER' in list(gdalMetadata.keys())):
             raise WrongMapperError(filename)
         elif gdalMetadata['SATELLITE_IDENTIFIER'] != 'RADARSAT-2':
             raise WrongMapperError(filename)
@@ -169,7 +169,7 @@ class Mapper(VRT):
             sat_heading = initial_bearing(lon[:, 1:], lat[:, 1:],
                                           lon[:, :-1], lat[:, :-1]) + 90
         else:
-            print 'Can not decode pass direction: ' + str(passDirection)
+            print('Can not decode pass direction: ' + str(passDirection))
 
         # Calculate SAR look direction
         look_direction = sat_heading + antennaPointing
@@ -307,11 +307,11 @@ class Mapper(VRT):
 
         self.dataset.SetGCPs(gcps, NSR().wkt)
 
-        dates = map(parse, [child.node('timeStamp').value for child in
+        dates = list(map(parse, [child.node('timeStamp').value for child in
                              (productXml.node('sourceAttributes')
                                         .node('orbitAndAttitude')
                                         .node('orbitInformation')
-                                        .nodeList('stateVector'))])
+                                        .nodeList('stateVector'))]))
 
         self.dataset.SetMetadataItem('time_coverage_start', min(dates).isoformat())
         self.dataset.SetMetadataItem('time_coverage_end', max(dates).isoformat())

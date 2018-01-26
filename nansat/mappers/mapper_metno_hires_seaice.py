@@ -17,7 +17,11 @@
 # The latter syntax will construct the URL,
 # and will return the closest available data within +/- 3 days
 import sys
-import urllib2
+try:
+    import urllib3 as urllib
+except:
+    import urllib2 as urllib
+
 from datetime import datetime, timedelta
 
 from nansat.tools import gdal, ogr, osr
@@ -47,7 +51,7 @@ class Mapper(VRT):
                             validTime.strftime(
                                 '%Y/%m/ice_conc_svalbard_%Y%m%d1500.nc'))
                 try:
-                    urllib2.urlopen(filename + '.dds')
+                    urllib.urlopen(filename + '.dds')
                     foundDataset = True
                     # Data is found for this day
                     break

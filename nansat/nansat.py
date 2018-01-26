@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import os
 import glob
 import sys
@@ -26,12 +26,13 @@ import warnings
 import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
-
+from nansat.warnings import NansatFutureWarning
 from netCDF4 import Dataset
 
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.exporter import Exporter
+from nansat.exceptions import WrongMapperError, NansatGDALError
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
@@ -39,9 +40,6 @@ from nansat.tools import add_logger, gdal
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
-
-from nansat.warnings import NansatFutureWarning
-from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
 import collections
 if hasattr(collections, 'OrderedDict'):
@@ -486,7 +484,7 @@ class Nansat(Domain, Exporter):
             geoTransform = list(self.vrt.vrt.dataset.GetGeoTransform())
             geoTransform[1] = float(geoTransform[1])/factor
             geoTransform[5] = float(geoTransform[5])/factor
-            geoTransform = map(float, geoTransform)
+            geoTransform = list(map(float, geoTransform))
             self.vrt.dataset.SetGeoTransform(geoTransform)
 
         # set global metadata
@@ -557,7 +555,7 @@ class Nansat(Domain, Exporter):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if do_print:
             # print to screeen
-            print(outString)
+            print_function(outString)
         else:
             return outString
 
@@ -713,6 +711,7 @@ class Nansat(Domain, Exporter):
         """
         Create numpy array with watermask (water=1, land=0)
 
+        TODO: cross-check and update docstring and references/links
 
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
@@ -1088,11 +1087,27 @@ class Nansat(Domain, Exporter):
         # set metadata from dictionary or from single pair key,value
         if type(key) == dict:
             for k in key:
-                metadata_receiver.SetMetadataItem(k, key[k])
+                metadata_receiver.SetMetadataItem(str(k), str(key[k]))
         else:
-            metadata_receiver.SetMetadataItem(key, value)
+            metadata_receiver.SetMetadataItem(str(key), str(value))
 
-    def _get_mapper(self, mapperName, **kwargs):
+    def _get_dataset_metadata(self):
+        # open GDAL dataset. It will be parsed to all mappers for testing
+        gdal_dataset, metadata = None, None
+        if not self.filename.startswith('http'):
+            try:
+                gdal_dataset = gdal.Open(self.filename)
+            except RuntimeError:
+                self.logger.error('GDAL could not open %s, trying to read with Nansat mappers...'
+                                  % self.filename)
+        if gdal_dataset is not None:
+            # get metadata from the GDAL dataset
+            metadata = gdal_dataset.GetMetadata()
+
+        return gdal_dataset, metadata
+
+
+    def _get_mapper(self, mapperName='', mappername='', **kwargs):
         """Create VRT file in memory (VSI-file) with variable mapping
 
         If mapperName is given only this mapper will be used,
@@ -1121,6 +1136,11 @@ class Nansat(Domain, Exporter):
         NansatReadError : occurs if no mapper fits the input file
 
         """
+        if mappername == '' and mapperName != '':
+            warnings.warn(self.INIT_MAPPER_WARNING, NansatFutureWarning)
+            mappername = mapperName
+
+# TODO: remove!
         if os.path.isfile(self.filename):
             # Make sure file exists and can be opened for reading
             # before proceeding
@@ -1150,52 +1170,50 @@ class Nansat(Domain, Exporter):
             metadata = None
 
         tmpVRT = None
+        gdal_dataset, metadata = self._get_dataset_metadata()
+        tmp_vrt = None
 
-        if mapperName is not '':
+# TODO: move to _get_specific_mapper
+        if mappername is not '':
             # If a specific mapper is requested, we test only this one.
             # get the module name
-            mapperName = 'mapper_' + mapperName.replace('mapper_', '').replace('.py', '').lower()
+            mappername = 'mapper_' + mappername.replace('mapper_', '').replace('.py', '').lower()
             # check if the mapper is available
-            if mapperName not in nansatMappers:
-                raise ValueError('Mapper ' + mapperName + ' not found')
+            if mappername not in nansatMappers:
+                raise ValueError('Mapper ' + mappername + ' not found')
 
             # check if mapper is importbale or raise an ImportError error
-            if isinstance(nansatMappers[mapperName], tuple):
-                errType, err, traceback = nansatMappers[mapperName]
+            if isinstance(nansatMappers[mappername], tuple):
+                errType, err, traceback = nansatMappers[mappername]
                 # self.logger.error(err, exc_info=(errType, err, traceback))
                 # TODO: python 3.6 does not support with syntax
-                raise errType, err, traceback
+                raise EnvironmentError
+                #raise errType, err, traceback
 
             # create VRT using the selected mapper
-            tmpVRT = nansatMappers[mapperName](self.filename,
-                                               gdalDataset,
-                                               metadata,
-                                               **kwargs)
-            self.mapper = mapperName.replace('mapper_', '')
+            tmp_vrt = nansatMappers[mappername](self.filename, gdal_dataset, metadata, **kwargs)
+            self.mapper = mappername.replace('mapper_', '')
         else:
             # We test all mappers, import one by one
-            importErrors = []
+            import_errors = []
             for iMapper in nansatMappers:
                 # skip non-importable mappers
                 if isinstance(nansatMappers[iMapper], tuple):
                     # keep errors to show before use of generic mapper
-                    importErrors.append(nansatMappers[iMapper][1])
+                    import_errors.append(nansatMappers[iMapper][1])
                     continue
 
                 self.logger.debug('Trying %s...' % iMapper)
 
                 # show all ImportError warnings before trying generic_mapper
-                if iMapper == 'mapper_generic' and len(importErrors) > 0:
+                if iMapper == 'mapper_generic' and len(import_errors) > 0:
                     self.logger.error('\nWarning! The following mappers failed:')
-                    for ie in importErrors:
-                        self.logger.error(importErrors)
+                    for ie in import_errors:
+                        self.logger.error(import_errors)
 
                 # create a Mapper object and get VRT dataset from it
                 try:
-                    tmpVRT = nansatMappers[iMapper](self.filename,
-                                                    gdalDataset,
-                                                    metadata,
-                                                    **kwargs)
+                    tmp_vrt = nansatMappers[iMapper](self.filename, gdal_dataset, metadata, **kwargs)
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper.replace('mapper_', '')
                     break
@@ -1203,24 +1221,24 @@ class Nansat(Domain, Exporter):
                     pass
 
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
-        if tmpVRT is None and gdalDataset is not None:
+        if tmp_vrt is None and gdal_dataset is not None:
             self.logger.warning('No mapper fits, returning GDAL bands!')
-            tmpVRT = VRT.from_gdal_dataset(gdalDataset)
-            for iBand in range(gdalDataset.RasterCount):
-                tmpVRT.create_band({'SourceFilename': self.filename,
+            tmp_vrt = VRT.from_gdal_dataset(gdal_dataset)
+            for iBand in range(gdal_dataset.RasterCount):
+                tmp_vrt.create_band({'SourceFilename': self.filename,
                                      'SourceBand': iBand + 1})
-                tmpVRT.dataset.FlushCache()
+                tmp_vrt.dataset.FlushCache()
             self.mapper = 'gdal_bands'
 
         # if GDAL cannot open the file, and no mappers exist which can make VRT
-        if tmpVRT is None and gdalDataset is None:
+        if tmp_vrt is None and gdal_dataset is None:
             # check if given data file exists
             if not os.path.isfile(self.filename):
                 raise IOError('%s: File does not exist' % (self.filename))
             raise NansatReadError('%s: File cannot be read with NANSAT - '
                     'consider writing a mapper' % self.filename)
 
-        return tmpVRT
+        return tmp_vrt
 
     def get_band_number(self, band_id):
         """Return absolute band number
@@ -1584,7 +1602,6 @@ class Nansat(Domain, Exporter):
         return pixVector[gpi], linVector[gpi]
 
 
-
 def _import_mappers(log_level=None):
     """Import available mappers into a dictionary
 
@@ -1632,4 +1649,3 @@ def _import_mappers(log_level=None):
             nansat_mappers['mapper_generic'] = nansat_mappers.pop('mapper_generic')
 
     return nansat_mappers
-

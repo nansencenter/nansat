@@ -11,14 +11,12 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
 import unittest
-import warnings
 import os
-import sys
-import glob
-from types import ModuleType, FloatType
 import numpy as np
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from mpl_toolkits.basemap import Basemap
 except ImportError:
@@ -32,8 +30,11 @@ from nansat.domain import Domain
 from nansat.tools import gdal, ogr
 from nansat.figure import Image
 import sys
-import nansat_test_data as ntd
-from mock import patch, PropertyMock
+from nansat.tests import nansat_test_data as ntd
+try:
+    from mock import patch, PropertyMock
+except:
+    from unittest.mock import patch, PropertyMock
 
 from nansat.exceptions import NansatProjectionError
 
@@ -182,13 +183,16 @@ class DomainTest(unittest.TestCase):
         self.assertIsInstance(key_1, str)
         self.assertEqual(key_1, input_1[0].replace('-', ''))
         self.assertEqual(len(extent_1), 1)
-        self.assertIsInstance(extent_1.values(), list)
-        map(lambda el: self.assertIsInstance(el, float), *extent_1.values())
+        self.assertIsInstance(list(extent_1.values()), list)
+
+        for el in list(extent_1.values())[0]:
+            self.assertIsInstance(el, float)
+
         self.assertEqual(extent_1, output_1)
         input_2 = ['-te', '5', 'str', '6', '61']
         with self.assertRaises(ValueError) as opt_err:
             key_2, extent_2 = Domain._add_to_dict(dict(), input_2)
-            self.assertEqual(opt_err.message, 'Input values must be int or float')
+            self.assertEqual(opt_err.args[0], 'Input values must be int or float')
 
     def test_validate_ts_tr(self):
         input_1 = [100, 200]
@@ -198,12 +202,12 @@ class DomainTest(unittest.TestCase):
         for inp in input_2:
             with self.assertRaises(ValueError) as opt_err:
                 Domain._validate_ts_tr(inp)
-                self.assertEqual(opt_err.message, 'Resolution or width and height must be bigger '
+                self.assertEqual(opt_err.args[0], 'Resolution or width and height must be bigger '
                                                   'than 0: <-tr x_resolution y_resolution> or '
                                                   '<-ts width height>')
         with self.assertRaises(ValueError) as opt_err:
             Domain._validate_ts_tr(input_3)
-            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+            self.assertEqual(opt_err.args[0], '-ts and -tr requires exactly 2 parameters '
                                               '(1 given): <-tr x_resolution y_resolution> or '
                                               '<-ts width height>')
     def test_validate_te_lle(self):
@@ -219,7 +223,7 @@ class DomainTest(unittest.TestCase):
                                                   '<-lle min_lon min_lat max_lon max_lat>')
         with self.assertRaises(ValueError) as opt_err:
             Domain._validate_te_lle(input_3)
-            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+            self.assertEqual(opt_err.args[0], '-te and -lle requires exactly 4 parameters '
                                               '(3 given): <-te x_min y_min x_max y_max> or <-lle'
                                               ' min_lon min_lat max_lon max_lat>')
 
@@ -229,12 +233,12 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(Domain._check_size(2, 2, ('-te', '-lle'), te_lle_example), None)
         with self.assertRaises(ValueError) as opt_err:
             Domain._check_size(1, 2, ('-ts', '-tr'), tr_ts_example)
-            self.assertEqual(opt_err.message, '-ts and -tr requires exactly 2 parameters '
+            self.assertEqual(opt_err.args[0], '-ts and -tr requires exactly 2 parameters '
                                               '(1 given): <-tr x_resolution y_resolution> or '
                                               '<-ts width height>')
         with self.assertRaises(ValueError) as opt_err:
             Domain._check_size(2, 4, ('-te', '-lle'), te_lle_example)
-            self.assertEqual(opt_err.message, '-te and -lle requires exactly 4 parameters '
+            self.assertEqual(opt_err.args[0], '-te and -lle requires exactly 4 parameters '
                                               '(2 given): <-te x_min y_min x_max y_max> or <-lle'
                                               ' min_lon min_lat max_lon max_lat>')
 
@@ -257,17 +261,23 @@ class DomainTest(unittest.TestCase):
         output_2 = {'te': [-92.08, 26.85, -92.00, 26.91], 'ts': [200, 200]}
         result_1 = Domain._create_extent_dict(test[0])
         self.assertIsInstance(result_1, dict)
-        self.assertEquals(len(result_1.keys()), 2)
-        self.assertEquals(result_1, output_1)
+        self.assertEqual(len(list(result_1.keys())), 2)
+        self.assertEqual(result_1, output_1)
         result_2 = Domain._create_extent_dict(test[1])
         self.assertEquals(result_2, output_2)
         with self.assertRaises(ValueError) as opt_err:
             Domain._create_extent_dict(test[2])
-            self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
+            self.assertEquals(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters ')
+        self.assertEqual(result_2, output_2)
+
+        try:
+            test = Domain._create_extent_dict(test[2])
+        except ValueError as opt_err:
+            self.assertEqual(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
         with self.assertRaises(ValueError) as opt_err:
             Domain._create_extent_dict(test[3])
-            self.assertEquals(opt_err.message, '<extent_dict> must contains exactly 2 parameters '
+            self.assertEquals(opt_err.args[0], '<extent_dict> must contains exactly 2 parameters '
                                                '("-te" or "-lle") and ("-ts" or "-tr")')
 
     def test_get_border(self):
@@ -277,41 +287,42 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(type(lon), np.ndarray)
         self.assertIsInstance(result, tuple)
-        self.assertEquals(len(result), 2)
-        test_x = [ 25.,  26.,  27.,  28.,  29.,  30.,  31.,  32.,  33.,  34.,  35.,
-                   35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,  35.,
-                   35.,  34.,  33.,  32.,  31.,  30.,  29.,  28.,  27.,  26.,  25.,
-                   25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.,  25.]
-        test_y = [ 72. ,  72. ,  72. ,  72. ,  72. ,  72. ,  72. ,  72. ,  72. ,
+        self.assertEqual(len(result), 2)
+        test_x = [25., 26., 27., 28., 29., 30., 31., 32., 33., 34., 35.,
+                  35., 35., 35., 35., 35., 35., 35., 35., 35., 35., 35.,
+                  35., 34., 33., 32., 31., 30., 29., 28., 27., 26., 25.,
+                  25., 25., 25., 25., 25., 25., 25., 25., 25., 25., 25.]
+        test_y = [72., 72., 72., 72., 72., 72., 72., 72.,  72.,
                    72. ,  72. ,  72. ,  71.8,  71.6,  71.4,  71.2,  71. ,  70.8,
                    70.6,  70.4,  70.2,  70. ,  70. ,  70. ,  70. ,  70. ,  70. ,
                    70. ,  70. ,  70. ,  70. ,  70. ,  70. ,  70. ,  70.2,  70.4,
-                   70.6,  70.8,  71. ,  71.2,  71.4,  71.6,  71.8,  72. ]
-        self.assertEquals(list(lat), test_x)
-        self.assertEquals(list(lon), test_y)
+                   70.6,  70.8,  71. ,  71.2,  71.4,  71.6,  71.8,  72.]
+        self.assertEqual(list(lat), test_x)
+        self.assertEqual(list(lon), test_y)
 
     def test_compound_row_col_vectors(self):
-        result = Domain._compound_row_col_vectors(30, 40, range(0, 33, 3), range(0, 44, 4))
+        result = Domain._compound_row_col_vectors(30, 40, list(range(0, 33, 3)), list(range(0, 44, 4)))
         output_col, output_row = result
         self.assertIsInstance(result, tuple)
-        self.assertEquals(len(result), 2)
+        self.assertEqual(len(result), 2)
         test_col = [0,  3,  6,  9,  12,  15,  18,  21,  24,  27,  30,  30,  30,  30,  30,  30,
                     30,  30,  30,  30,  30,  30,  30,  27,  24,  21,  18,  15,  12,  9,  6,  3,
                     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0]
         test_row = [0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  4,  8,  12,  16,  20,  24,
                     28,  32,  36,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,
                     40,  36,  32,  28,  24,  20,  16,  12,  8,  4,  0]
-        self.assertEquals(output_col, test_col)
-        self.assertEquals(output_row, test_row)
+
+        self.assertEqual(output_col, test_col)
+        self.assertEqual(output_row, test_row)
 
     def test_get_row_col_vector(self):
         test_1 = Domain._get_row_col_vector(250, 500)
         self.assertIsInstance(test_1, list)
-        self.assertEquals(test_1, range(251))
-        self.assertEquals(len(test_1), 251)
+        self.assertEqual(test_1, list(range(251)))
+        self.assertEqual(len(test_1), 251)
         test_2 = Domain._get_row_col_vector(500, 10)
-        self.assertEquals(test_2, range(0, 550, 50))
-        self.assertEquals(len(test_2), 10 + 1)
+        self.assertEqual(test_2, list(range(0, 550, 50)))
+        self.assertEqual(len(test_2), 10 + 1)
 
     def test_get_border_wkt(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -325,13 +336,17 @@ class DomainTest(unittest.TestCase):
         self.assertEqual(type(geom), ogr.Geometry)
 
     def test_overlaps(self):
-        Bergen = Domain(4326, EXTENT_BERGEN)
-        WestCoast = Domain(4326, EXTENT_WESTCOAST)
-        Norway = Domain(4326, EXTENT_NORWAY)
-        Paris = Domain(4326, EXTENT_PARIS)
+        Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")
+        WestCoast = Domain(4326, "-te 1 58 6 64 -ts 500 500")
+        Norway = Domain(4326, "-te 3 55 30 72 -ts 500 500")
+        Paris = Domain(4326, "-te 2 48 3 49 -ts 500 500")
         self.assertTrue(Bergen.overlaps(Norway))
+        self.assertTrue(Norway.contains(Bergen))
+        self.assertFalse(Bergen.contains(Norway))
         self.assertTrue(Norway.overlaps(WestCoast))
+        self.assertFalse(Norway.contains(WestCoast))
         self.assertFalse(Paris.overlaps(Norway))
+        self.assertFalse(Paris.contains(Norway))
 
     def test_contains(self):
         Bergen = Domain(4326, EXTENT_BERGEN)
@@ -343,6 +358,12 @@ class DomainTest(unittest.TestCase):
         self.assertFalse(Norway.contains(WestCoast))
         self.assertFalse(Paris.contains(Norway))
 
+    def test_transform_ts(self):
+        result = Domain._transform_ts(1.5, 1.0, [750.0, 500.0])
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 4)
+        for el in result:
+            self.assertIsInstance(el, float)
     def test_get_border_postgis(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         result = d.get_border_postgis()
@@ -366,6 +387,9 @@ class DomainTest(unittest.TestCase):
         dom = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         result = dom.get_min_max_lon_lat()
         self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 4)
+        for el in result:
+            self.assertIsInstance(el, float)
         self.assertLess(result[0], result[1])
         self.assertLess(result[2], result[3])
         self.assertEqual(result, (25.0, 34.980000000000004, 70.004000000000005, 72.0))
@@ -379,19 +403,19 @@ class DomainTest(unittest.TestCase):
         x, y = d.get_pixelsize_meters()
         self.assertEqual(int(x), 500)
         self.assertEqual(int(y), 500)
-
     def test_get_geotransform(self):
         input_1 = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
         test_1 = ([25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500)
         result = Domain._get_geotransform(input_1)
         self.assertIsInstance(result, tuple)
-        self.assertEquals(len(result), 3)
+        self.assertEqual(len(result), 3)
         self.assertIsInstance(result[0], list)
-        self.assertEquals(len(result[0]), 6)
-        map(lambda el: self.assertIsInstance(el, float), result[0])
+        self.assertEqual(len(result[0]), 6)
+        for el in result[0]:
+            self.assertIsInstance(el, float)
         self.assertIsInstance(result[1], int)
         self.assertIsInstance(result[2], int)
-        self.assertEquals(result, test_1)
+        self.assertEqual(result, test_1)
 
     def test_transform_tr(self):
         result = Domain._transform_tr(4.0, 1.3, [0.015, 0.005])
@@ -498,6 +522,18 @@ class DomainTest(unittest.TestCase):
         self.assertTrue(gcp.GCPX > 636161)
         self.assertTrue(gcp.GCPY < -288344)
 
+
+    def test_repr(self):
+        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
+        result = dom.__repr__()
+        test = 'Domain:[750 x 500]\n----------------------------------------\nProjection:\nGEOGC' \
+               'S["WGS 84",\n    DATUM["WGS_1984",\n        SPHEROID["WGS 84",6378137,298.257223' \
+               '563]],\n    PRIMEM["Greenwich",0],\n    UNIT["degree",0.0174532925199433]]\n-----' \
+               '-----------------------------------\nCorners (lon, lat):\n\t (  4.50,  61.00)  ' \
+               '(  6.00,  61.00)\n\t (  4.50,  60.00)  (  6.00,  60.00)\n'
+
+        self.assertIsInstance(result, str)
+        self.assertEqual(result, test)
 
 if __name__ == "__main__":
     unittest.main()
