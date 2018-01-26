@@ -49,6 +49,7 @@ Welcome to Nansat's documentation!
 
    source/conventions.rst
    source/about_mappers.rst
+   source/release_nansat.rst
    source/documenting.rst
 
 Indices and tables
