@@ -17,7 +17,6 @@ import warnings
 import os
 import sys
 import glob
-from types import ModuleType, FloatType
 import datetime
 
 import gdal
@@ -25,7 +24,7 @@ import numpy as np
 
 from nansat import Figure, Nansat, Domain
 
-import nansat_test_data as ntd
+from nansat.tests import nansat_test_data as ntd
 
 IS_CONDA = 'conda' in os.environ['PATH']
 

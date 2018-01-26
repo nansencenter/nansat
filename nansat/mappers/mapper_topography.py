@@ -1,5 +1,5 @@
-#-------------------------------------------------------------------------------
-# Name:         mapper_gtopo30.py
+# -------------------------------------------------------------------------------
+# Name:         mapper_topography.py
 # Purpose:      Mapping for the global 30 arc-second elevation
 #
 # Author:       Morten Wergeland Hansen
@@ -11,13 +11,15 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+from __future__ import division, unicode_literals, absolute_import, print_function
 import re
 import os.path
 
 from nansat.vrt import VRT
 
 from nansat.exceptions import WrongMapperError
+
 
 class Mapper(VRT):
 
@@ -76,4 +78,4 @@ class Mapper(VRT):
         VRT.__init__(self, gdal_dataset)
 
         # add bands with metadata and corresponding values to the empty VRT
-        self._create_bands(metaDict)
+        self.create_bands(metaDict)

@@ -84,10 +84,10 @@ class Mapper(VRT):
             endsWith3A = False
 
         if startsWith3A != endsWith3A:
-            print '############################################'
-            print 'WARNING: channel 3 switches '
-            print 'between daytime and nighttime (3A <-> 3B)'
-            print '###########################################'
+            print('############################################')
+            print('WARNING: channel 3 switches ')
+            print('between daytime and nighttime (3A <-> 3B)')
+            print('###########################################')
 
         ###########################
         # Make Geolocation Arrays

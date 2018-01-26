@@ -15,11 +15,14 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
+
 import os
 from math import floor, log10
 
 import numpy as np
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     from matplotlib import cm
 except ImportError:
     MATPLOT_LIB_IS_INSTALLED = False
@@ -722,7 +725,7 @@ class Figure(object):
                 scaleArray = (np.power(scaleArray, (1.0 / self.gamma)))
             scaleArray = (scaleArray * (self.cmax[0] -
                           self.cmin[0]) + self.cmin[0])
-            scaleArray = map(self._round_number, scaleArray)
+            scaleArray = list(map(self._round_number, scaleArray))
             # draw scales and lines on the legend pilImage
             for iTick in range(self.numOfTicks):
                 coordX = int(scaleLocation[iTick] *

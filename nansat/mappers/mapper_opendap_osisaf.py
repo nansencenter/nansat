@@ -21,6 +21,7 @@ from nansat.mappers.opendap import Dataset, Opendap
 # http://thredds.met.no/thredds/dodsC/osisaf/met.no/ice/edge/2016/04/ice_edge_nh_polstere-100_multi_201604241200.nc ice_edge
 # http://thredds.met.no/thredds/dodsC/osisaf_test/met.no/ice/drift_lr/merged/2013/09/ice_drift_nh_polstere-625_multi-oi_201309171200-201309191200.nc dX dY
 
+
 class Mapper(Opendap):
     ''' VRT with mapping of WKV for NCEP GFS '''
     baseURLs = ['http://thredds.met.no/thredds/dodsC/cryoclim/met.no/osisaf-nh',
@@ -29,12 +30,11 @@ class Mapper(Opendap):
     timeVarName = 'time'
     xName = 'xc'
     yName = 'yc'
-    t0 = dt.datetime(1978,01,01)
+    t0 = dt.datetime(1978, 1, 1)
     srcDSProjection = NSR().wkt
 
-    def __init__(self, filename, gdalDataset, gdalMetadata,
-                 date=None, ds=None, bands=None, cachedir=None,
-                 **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, date=None, ds=None, bands=None,
+                 cachedir=None, **kwargs):
         ''' Create NCEP VRT
         Parameters:
             filename : URL
@@ -60,7 +60,6 @@ class Mapper(Opendap):
         ee = pti.get_gcmd_platform('Earth Observation Satellites')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
-
 
     def convert_dstime_datetimes(self, dsTime):
         ''' Convert time variable to np.datetime64 '''

@@ -3,6 +3,7 @@
     Check CF-compliance of your files here:
     http://cfconventions.org/compliance-checker.html
 '''
+
 import warnings, os, datetime
 import numpy as np
 import gdal
@@ -15,6 +16,7 @@ from nansat.nsr import NSR
 from nansat.tools import parse_time
 
 from nansat.exceptions import WrongMapperError
+
 
 class Mapper(VRT):
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
@@ -29,8 +31,8 @@ class Mapper(VRT):
         if not gdal_metadata:
             raise WrongMapperError
 
-        if gdal_metadata.has_key('NC_GLOBAL#GDAL_NANSAT_GCPY_000') or \
-                gdal_metadata.has_key('NC_GLOBAL#GDAL_NANSAT_GCPProjection'):
+        if 'NC_GLOBAL#GDAL_NANSAT_GCPY_000' in list(gdal_metadata.keys()) or \
+                'NC_GLOBAL#GDAL_NANSAT_GCPProjection' in list(gdal_metadata.keys()):
             # Probably Nansat generated netcdf of swath data - see issue #192
             raise WrongMapperError
 
@@ -39,15 +41,15 @@ class Mapper(VRT):
         # Set origin metadata (TODO: agree on keyword...)
         origin = ''
         nans = 'NANSAT'
-        if metadata.has_key('origin'):
+        if 'origin' in list(metadata.keys()):
             origin = metadata['origin'] + ' '
-        for key in metadata.keys():
+        for key in list(metadata.keys()):
             if nans in key:
-                metadata['origin'] =  origin + nans
+                metadata['origin'] = origin + nans
             # else: Nothing needs to be done, origin stays the same...
 
         # Check conventions metadata
-        if not metadata.has_key('Conventions') or not 'CF' in metadata['Conventions']:
+        if 'Conventions' not in list(metadata.keys()) or 'CF' not in metadata['Conventions']:
             raise WrongMapperError
 
         # OBS: at this point, generic mapper fails...
@@ -158,17 +160,20 @@ class Mapper(VRT):
             a dict with key name and value, where the key is, e.g.,
             "standard_name" or "metno_name", etc.
         '''
+
         class ContinueI(Exception):
             pass
+
         class BreakI(Exception):
             pass
+
         metadictlist = []
         ds = Dataset(self.input_filename)
         # Pop netcdf_dim item if the dimension is not in the dimension
         # list of the given dataset
         kpop = []
-        for key, val in netcdf_dim.iteritems():
-            if not key in ds.dimensions.keys():
+        for key, val in list(netcdf_dim.items()):
+            if key not in ds.dimensions.keys():
                 kpop.append(key)
         for key in kpop:
             netcdf_dim.pop(key)
@@ -194,13 +199,13 @@ class Mapper(VRT):
                     continue
                 # Keep only desired slices following "netcdf_dim" dictionary
                 try:
-                    for key, val in netcdf_dim.iteritems():
+                    for key, val in list(netcdf_dim.items()):
                         match = [s for s in band_metadata if key in s]
-                        if key=='time' and type(val)==np.datetime64:
+                        if key == 'time' and type(val) == np.datetime64:
                             # Select band directly from given timestamp, and
                             # break the for loop
-                            band_num = np.argmin(np.abs(self.times() -
-                                val)) + 1 # indexing starts on one, not zero...
+                            band_num = np.argmin(np.abs(self.times() - val)) + 1
+                            # indexing starts on one, not zero...
                             bdict = self._band_dict(fn, band_num, subds)
                             if bdict:
                                 metadictlist.append(bdict)
@@ -250,8 +255,8 @@ class Mapper(VRT):
         if not band_metadata:
             band_metadata = self._clean_band_metadata(band)
 
-        if not band_metadata.has_key('time_iso_8601'):
-            if self._timevarname() in band_metadata.keys():
+        if 'time_iso_8601' not in list(band_metadata.keys()):
+            if self._timevarname() in list(band_metadata.keys()):
                 timecountname = self._timevarname()
             else:
                 timecountname = 'NETCDF_DIM_'+self._timevarname()
@@ -349,13 +354,13 @@ class Mapper(VRT):
         # These strings are added when datasets are exported in
         # nansat.nansat.Nansat.export...
         rm_strings = ['NC_GLOBAL#', 'NANSAT_', 'GDAL_']
-
+        updated_meta = {}
         for rms in rm_strings:
             for key in meta.keys():
                 newkey = key.replace(rms, '')
-                meta[newkey] = meta.pop(key)
+                updated_meta[newkey] = meta[key]
 
-        return meta
+        return updated_meta
 
     def sub_filenames(self, gdal_dataset):
         # Get filenames of subdatasets

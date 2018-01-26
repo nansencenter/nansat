@@ -30,6 +30,7 @@ from nansat.node import Node
 from nansat.warnings import NansatFutureWarning
 from nansat.exceptions import NansatGDALError
 
+
 class Exporter(object):
     """Abstract class for export functions """
     EXPORT_FILENAME_WARNING = ('Nansat.export(fileName=...) will be disabled from Nansat 1.1. '

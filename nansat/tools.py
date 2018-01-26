@@ -23,6 +23,8 @@ import logging
 from dateutil.parser import parse
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     from matplotlib import cm
     import matplotlib.pyplot as plt
     from matplotlib.colors import hex2color
@@ -448,7 +450,7 @@ def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_borde
             map_x, map_y = bmap(list(lon_vec[i].flat), list(lat_vec[i].flat))
 
             # from x/y vectors create a Patch to be added to map
-            boundary = Polygon(zip(map_x, map_y),
+            boundary = Polygon(list(zip(map_x, map_y)),
                                alpha=p_alpha, ec=p_line, fc=p_color)
 
             # add patch to the map

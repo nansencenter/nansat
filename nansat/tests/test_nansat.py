@@ -11,6 +11,8 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 # ------------------------------------------------------------------------------
+from __future__ import unicode_literals, absolute_import
+
 import os
 import json
 import logging
@@ -20,10 +22,13 @@ import datetime
 import json
 import sys
 from xml.sax.saxutils import unescape
+from mock import patch, PropertyMock
 
 import numpy as np
 
 try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
     import matplotlib
     import matplotlib.pyplot as plt
 except ImportError:
@@ -37,9 +42,9 @@ from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal
 
 from nansat.warnings import NansatFutureWarning
+from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 
-import nansat_test_data as ntd
-from __builtin__ import int
+from nansat.tests import nansat_test_data as ntd
 
 warnings.simplefilter("always", NansatFutureWarning)
 warnings.simplefilter("always", UserWarning)
@@ -63,10 +68,15 @@ class NansatTest(unittest.TestCase):
             pass
 
     def test_open_gcps(self):
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings(record=True) as recorder_warnings:
             n = Nansat(self.test_file_gcps, log_level=40)
 
-        self.assertEqual(len(w), 0)
+        nansat_warning_raised = False
+        for rw in recorder_warnings:
+            if rw.category == NansatFutureWarning:
+                nansat_warning_raised = True
+        self.assertFalse(nansat_warning_raised)
+
         self.assertEqual(type(n), Nansat)
         self.assertEqual(n.vrt.dataset.GetProjection(), '')
         self.assertTrue((n.vrt.dataset.GetGCPProjection().startswith('GEOGCS["WGS 84",')))
@@ -79,20 +89,18 @@ class NansatTest(unittest.TestCase):
     def test_open_with_filename_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(fileName=self.test_file_gcps)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(fileName', str(w[0].message))
+            self.assertEqual(w[0].category, NansatFutureWarning)
 
     def test_open_with_mappername_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, mapperName='generic')
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(mapperName', str(w[0].message))
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertEqual(w[1].category, NansatFutureWarning)
 
     def test_open_with_loglevel_warning(self):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, logLevel=30)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(logLevel', str(w[0].message))
+            self.assertEqual(w[0].category, NansatFutureWarning)
 
     def test_open_with_domain_warning(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
@@ -135,12 +143,11 @@ class NansatTest(unittest.TestCase):
 
     def test_special_characters_in_exported_metadata(self):
         orig = Nansat(self.test_file_gcps)
-        orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
-                                         'hei', 'meta2': 'derr'}))
+        orig.vrt.dataset.SetMetadataItem(str('jsonstring'), json.dumps({'meta1': 'hei',
+                                                                        'meta2': 'derr'}))
         orig.export(self.tmpfilename)
         copy = Nansat(self.tmpfilename)
-        dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
-                                                                   '"'}))
+        dd = json.loads(unescape(copy.get_metadata(str('jsonstring')), {'&quot;': '"'}))
         self.assertIsInstance(dd, dict)
 
     def test_time_coverage_metadata_of_exported_equals_original(self):
@@ -163,15 +170,15 @@ class NansatTest(unittest.TestCase):
         arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
-        arrWithNaN[n.shape()[0] / 2 - 10:n.shape()[0] / 2 + 10,
-                   n.shape()[1] / 2 - 10:n.shape()[1] / 2 + 10] = np.nan
+        arrWithNaN[int(n.shape()[0] / 2 - 10):int(n.shape()[0] / 2 + 10),
+                   int(n.shape()[1] / 2 - 10):int(n.shape()[1] / 2 + 10)] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
-        earrNoNaN = exported['testBandNoNaN']
+        earrNoNaN = exported[str('testBandNoNaN')]
         # Use allclose to allow some roundoff errors
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
-        earrWithNaN = exported['testBandWithNaN']
+        earrWithNaN = exported[str('testBandWithNaN')]
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
 
     def test_add_band(self):
@@ -542,7 +549,7 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, log_level=40)
         t = n1.get_transect([[28.31299128, 28.93691525],
                              [70.93709219, 70.69646524]],
-                            ['L_645'])
+                            [str('L_645')])
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'nansat_get_transect.png')
         plt.plot(t['lat'], t['L_645'], '.-')
@@ -588,7 +595,7 @@ class NansatTest(unittest.TestCase):
         n1 = Nansat(self.test_file_gcps, log_level=40)
         t = n1.get_transect([[10, 20],
                              [10, 10]],
-                            ['L_645'],
+                             [str('L_645')],
                             lonlat=False)
 
         self.assertTrue('L_645' in t.dtype.fields)
@@ -614,7 +621,7 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED and 'DISPLAY' in os.environ, 'Matplotlib is required')
     def test_digitize_points(self):
         ''' shall return empty array in non interactive mode '''
         for backend in matplotlib.rcsetup.interactive_bk:
@@ -734,6 +741,14 @@ class NansatTest(unittest.TestCase):
         self.assertIn('72', n_repr)
         self.assertIn('35', n_repr)
         self.assertIn('70', n_repr)
+    '''
+    @patch('nansat.nansat.Nansat.get_GDALRasterBand')
+    def test_getitem(self, mock_Nansat):
+        mock_Nansat.GetMetadata = MagicMock(return_value = {'a':1})
+        mock_Nansat.ReadAsArray.return_value = None
+        Nansat(self.test_file_stere).__getitem__(1)
+    '''
+
 
 if __name__ == "__main__":
     unittest.main()
