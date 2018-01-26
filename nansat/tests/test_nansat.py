@@ -95,7 +95,6 @@ class NansatTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             n = Nansat(self.test_file_gcps, mapperName='generic')
             self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertEqual(w[1].category, NansatFutureWarning)
 
     def test_open_with_loglevel_warning(self):
         with warnings.catch_warnings(record=True) as w:
