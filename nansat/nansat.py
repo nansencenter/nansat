@@ -558,7 +558,7 @@ class Nansat(Domain, Exporter):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if do_print:
             # print to screeen
-            print_function(outString)
+            print(outString)
         else:
             return outString
 
