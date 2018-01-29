@@ -314,12 +314,12 @@ class Mapper(HDF4Mapper):
         for sf in metaDictSF:
             dsName = subDsString % (filename, sf)
             ds = gdal.Open(dsName)
-            rScales[dsName] = map(float,
+            rScales[dsName] = list(map(float,
                                   ds.GetMetadataItem('radiance_scales').
-                                  split(','))
-            rOffsets[dsName] = map(float,
+                                  split(',')))
+            rOffsets[dsName] = list(map(float,
                                    ds.GetMetadataItem('radiance_offsets').
-                                   split(','))
+                                   split(',')))
             self.logger.debug('radiance_scales: %s' % str(rScales))
 
         # add 'band_name' to 'parameters'
