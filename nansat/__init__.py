@@ -36,7 +36,6 @@ except ImportError as e:
                      For development, use "python setup.py build_ext --inplace"
                      to compile pixel functions manually into the source tree.
                      ''')
-
 from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.nansat import Nansat
