@@ -303,9 +303,14 @@ class VRT(object):
         self.dataset - sets size and georeference
 
         """
-
-        # set dataset geo-metadata
-        VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
+        # get metadata from input and gdal_dataset
+        metadata = kwargs.pop('metadata', dict())
+        metadata.update(gdal_dataset.GetMetadata())
+        # set dataset parameters and metadata
+        VRT.__init__(self, gdal_dataset.RasterXSize,
+                           gdal_dataset.RasterYSize,
+                           metadata=metadata,
+                           **kwargs)
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())

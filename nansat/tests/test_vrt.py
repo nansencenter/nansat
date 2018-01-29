@@ -88,6 +88,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
         self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
+        self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
         self.assertTrue(_add_geolocation.called_once())
 
     def test_from_dataset_params(self):
@@ -418,6 +419,8 @@ class VRTTest(unittest.TestCase):
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertTrue(vrt.filename.startswith('/vsimem/'))
+            self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
+            self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
 
     def test_init_from_old__vrt_dataset(self):
         ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
