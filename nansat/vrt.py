@@ -785,7 +785,7 @@ class VRT(object):
         # raise warning
         warnings.warn(old2new[arg][0], NansatFutureWarning)
         # call function
-        old2new[arg][1](*old2new[arg][2], metadata=str(metadata), nomem=str(kwargs[str('nomem')]))
+        old2new[arg][1](*old2new[arg][2], metadata=metadata, nomem=kwargs[str('nomem')])
 
         return old_params_used
 
