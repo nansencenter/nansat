@@ -27,17 +27,17 @@ class Mapper(VRT):
     Mapping for the GTOPO30 (`<https://lta.cr.usgs.gov/GTOPO30>`_) and the GMTED2010
     (`<https://lta.cr.usgs.gov/GMTED2010>`_) global elevation models.
 
-    Parameters: 
-    ----------- 
-    filename : string 
+    Parameters:
+    -----------
+    filename : string
         The vrt filename, e.g., ``gtopo30.vrt``
     gdal_dataset : osgeo.gdal.Dataset
         The GDAL dataset returned by ``gdal.Open(filename)``
-        
+
     Either the name of a GTOPO30 DEM file or GMTED2010 tif file, or ``<path>/<dem>.vrt``. The latter
     is an aggregation of the DEM-files available from the given DEM. The GTOPO30 vrt does not
-    contain the Antarctic, because this is in polarstereographic projection. 
-        
+    contain the Antarctic, because this is in polarstereographic projection.
+
     You can create your own ``gtopo30.vrt`` file with gdal, e.g.:
 
     .. code-block:: bash
@@ -74,8 +74,7 @@ class Mapper(VRT):
                      'dst': {'wkv': 'height_above_reference_ellipsoid'}}]
 
         # create empty VRT dataset with geolocation only
-        #self._init_from_gdal_dataset(gdal_dataset)
-        VRT.__init__(self, gdal_dataset)
+        self._init_from_gdal_dataset(gdal_dataset)
 
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)

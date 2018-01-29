@@ -417,6 +417,7 @@ class VRTTest(unittest.TestCase):
             vrt = VRT(gdalDataset=ds)
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertTrue(vrt.filename.startswith('/vsimem/'))
 
     def test_init_from_old__vrt_dataset(self):
         ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
@@ -424,6 +425,7 @@ class VRTTest(unittest.TestCase):
             vrt = VRT(vrtDataset=ds)
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertTrue(vrt.filename.startswith('/vsimem/'))
 
     def test_init_from_old__dataset_params(self):
         ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
@@ -432,6 +434,7 @@ class VRTTest(unittest.TestCase):
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertEqual(vrt.dataset.RasterXSize, 10)
+            self.assertTrue(vrt.filename.startswith('/vsimem/'))
 
     def test_init_from_old__array(self):
         a = np.random.randn(100,100)
@@ -440,6 +443,7 @@ class VRTTest(unittest.TestCase):
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertEqual(vrt.dataset.RasterXSize, 100)
+            self.assertTrue(vrt.filename.startswith('/vsimem/'))
 
     def test_init_from_old__lonlat(self):
         lon = np.random.randn(100,100)
@@ -449,6 +453,7 @@ class VRTTest(unittest.TestCase):
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertEqual(vrt.dataset.RasterXSize, 100)
+            self.assertTrue(vrt.filename.startswith('/vsimem/'))
 
     def test_repr(self):
         # we mock the entire class [MagicMock(VRT)] and set instance attributes/methods
