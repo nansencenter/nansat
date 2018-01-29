@@ -50,59 +50,51 @@ EXCEPTION_WARNING = (
                              'Use Nansat(filename).')
 
 class OptionError(Exception):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            'nansat.tools.OptionError will be disabled in Nansat 1.1. Use ValueError instead.',
+            NansatFutureWarning)
 
-    warnings.warn( 
-        'nansat.tools.OptionError will be disabled in Nansat 1.1. Use ValueError instead.',
-        NansatFutureWarning)
-
-    pass
 
 class ProjectionError(Exception):
-
-    warnings.warn( 
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
             'nansat.tools.ProjectionError will be disabled in Nansat 1.1. Use ' \
                 'nansat.exceptions.NansatProjectionError instead.',
-        NansatFutureWarning)
-
-    pass
+            NansatFutureWarning)
 
 
 class GDALError(Exception):
-
-    warnings.warn( 
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
             'nansat.tools.GDALError will be disabled in Nansat 1.1. Use ' \
                 'nansat.exceptions.NansatGDALError instead.',
-        NansatFutureWarning)
-
-    pass
+            NansatFutureWarning)
 
 
 class NansatReadError(Exception):
-
-    warnings.warn( 
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
             'nansat.tools.NansatReadError will be disabled in Nansat 1.1. Use ' \
                 'nansat.exceptions.NansatReadError instead.',
         NansatFutureWarning)
 
-    pass
 
 class GeolocationError(Exception):
-
-    warnings.warn( 
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
             'nansat.tools.GeolocationError will be disabled in Nansat 1.1. Use ' \
                 'nansat.exceptions.NansatGeolocationError instead.',
-        NansatFutureWarning)
+            NansatFutureWarning)
 
-    pass
 
 class WrongMapperError(Exception):
-
-    warnings.warn( 
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
             'nansat.tools.WrongMapperError will be disabled in Nansat 1.1. Use ' \
                 'nansat.exceptions.WrongMapperError instead.',
         NansatFutureWarning)
 
-    pass
 
 
 def remove_keys(dict, keys):
