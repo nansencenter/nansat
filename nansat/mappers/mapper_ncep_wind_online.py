@@ -49,7 +49,7 @@ class Mapper(VRT, object):
 
         time_str = filename[len(keyword_base)+1::]
         time = datetime.strptime(time_str, '%Y%m%d%H%M')
-        print_function(time)
+        print(time)
 
         ########################################
         # Find and download online grib file
@@ -86,13 +86,13 @@ class Mapper(VRT, object):
                                     '%.2d' % forecast_hour +
                                     '.10m.uv.grib2'))
         if os.path.exists(out_filename):
-            print_function('NCEP wind is already downloaded: ' + out_filename)
+            print('NCEP wind is already downloaded: ' + out_filename)
         else:
             os.system('curl -so ' + out_filename + ' ' + url)
             if os.path.exists(out_filename):
-                print_function('Downloaded ' + out_filename)
+                print('Downloaded ' + out_filename)
             else:
-                print_function('NRT GRIB file not available: ' + url)
+                print('NRT GRIB file not available: ' + url)
                 #########################################################
                 # If NRT file not available, search in long term archive
                 #########################################################
@@ -103,7 +103,7 @@ class Mapper(VRT, object):
                             '%.3d' % forecast_hour)
                 filename = basename + '.grb2'
                 out_filename = os.path.join(outFolder, filename)
-                print_function('Downloading ' + url + filename)
+                print('Downloading ' + url + filename)
 
                 # Download subset of grib file
                 mapper_dir = os.path.dirname(os.path.abspath(__file__))
@@ -121,9 +121,9 @@ class Mapper(VRT, object):
                                get_grib + ' ' + url + filename + ' ' + out_filename)
                     os.system(command)
                     if os.path.isfile(out_filename):
-                        print_function('Downloaded ' + filename + ' to ' + outFolder)
+                        print('Downloaded ' + filename + ' to ' + outFolder)
                 else:
-                    print_function('Already downloaded %s' % out_filename)
+                    print('Already downloaded %s' % out_filename)
 
                 if not os.path.isfile(out_filename):
                     sys.exit('No NCEP wind files found for requested time')

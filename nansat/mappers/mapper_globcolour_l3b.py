@@ -73,7 +73,7 @@ class Mapper(VRT, Globcolour):
         self.band_vrts = {'mask': [], 'lonlat': []}
         mask = None
         for simFile in simFiles:
-            print_function('sim: ', simFile)
+            print('sim: ', simFile)
             # copy simFile to a temporary file
             tmpf = tempfile.mkstemp()
             shutil.copyfile(simFile, tmpf[1])
