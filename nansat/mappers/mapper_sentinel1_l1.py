@@ -126,7 +126,7 @@ class Mapper(VRT):
                     %mdsDict[key])
 
         # Check metadata to confirm it is Sentinel-1 L1
-        metadata = gdalDatasets[mdsDict.keys()[0]].GetMetadata()
+        metadata = gdalDatasets[list(mdsDict.keys())[0]].GetMetadata()
 
         if not 'TIFFTAG_IMAGEDESCRIPTION' in metadata.keys():
             raise WrongMapperError(filename)
@@ -165,6 +165,7 @@ class Mapper(VRT):
                 numberOfLines) = self.read_geolocation_lut(
                                                 self.annotationXMLDict[key])
 
+                import ipdb; ipdb.set_trace()
                 nX, nY = (Y==0).sum(), (X==0).sum()
                 lon = np.array(lon).reshape(nY, nX)
                 lat = np.array(lat).reshape(nY, nX)
@@ -243,12 +244,12 @@ class Mapper(VRT):
 
         See
         https://sentinel.esa.int/web/sentinel/sentinel-1-sar-wiki/-/wiki/Sentinel%20One/Application+of+Radiometric+Calibration+LUT
-        
+
         The noise correction/subtraction is implemented in an independent package "sentinel1denoised"
         See
         https://github.com/nansencenter/sentinel1denoised
         '''
-        
+
         # Get look direction
         sat_heading = initial_bearing(longitude[:-1, :],
                                       latitude[:-1, :],
@@ -450,12 +451,12 @@ class Mapper(VRT):
             LUTs[LUT] = []
         xLengths = []
         for vec in vecList.children:
-            xVec = map(int, vec['pixel'].split())
+            xVec = list(map(int, vec['pixel'].split()))
             xLengths.append(len(xVec))
             X.append(xVec)
             Y.append(int(vec['line']))
             for LUT in LUT_list:
-                LUTs[LUT].append(map(float, vec[LUT].split()))
+                LUTs[LUT].append(list(map(float, vec[LUT].split())))
 
         # truncate X and LUT to minimum length for all rows
         minLength = np.min(xLengths)
@@ -496,12 +497,12 @@ class Mapper(VRT):
             inc.append(gridPoint['incidenceAngle'])
             ele.append(gridPoint['elevationAngle'])
 
-        X = np.array(map(float, X))
-        Y = np.array(map(float, Y))
-        lon = np.array(map(float, lon))
-        lat = np.array(map(float, lat))
-        inc = np.array(map(float, inc))
-        ele = np.array(map(float, ele))
+        X = np.fromiter(X, float)
+        Y = np.fromiter(Y, float)
+        lon = np.fromiter(lon, float)
+        lat = np.fromiter(lat, float)
+        inc = np.fromiter(inc, float)
+        ele = np.fromiter(ele, float)
 
         numberOfSamples = int(xml.node('imageAnnotation').node('imageInformation').node('numberOfSamples').value)
         numberOfLines = int(xml.node('imageAnnotation').node('imageInformation').node('numberOfLines').value)
