@@ -165,7 +165,6 @@ class Mapper(VRT):
                 numberOfLines) = self.read_geolocation_lut(
                                                 self.annotationXMLDict[key])
 
-                import ipdb; ipdb.set_trace()
                 nX, nY = (Y==0).sum(), (X==0).sum()
                 lon = np.array(lon).reshape(nY, nX)
                 lat = np.array(lat).reshape(nY, nX)
