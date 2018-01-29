@@ -12,9 +12,11 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
+from __future__ import unicode_literals, absolute_import
 import os
 import unittest
 import datetime
+import warnings
 
 try:
     if 'DISPLAY' not in os.environ:
@@ -25,7 +27,14 @@ except ImportError:
 else:
     MATPLOTLIB_IS_INSTALLED = True
 
+from nansat.warnings import NansatFutureWarning
 from nansat.tools import get_random_color, parse_time
+from nansat.tools import (OptionError,
+                            ProjectionError,
+                            GDALError,
+                            NansatReadError,
+                            GeolocationError,
+                            WrongMapperError)
 
 class ToolsTest(unittest.TestCase):
     @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
@@ -48,3 +57,40 @@ class ToolsTest(unittest.TestCase):
         dt = parse_time('2016-01-19Z')
 
         self.assertEqual(type(dt), datetime.datetime)
+
+    def test_OptionError_warning(self):
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            with self.assertRaises(OptionError):
+                raise OptionError
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+
+    def test_ProjectionError_warning(self):
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            with self.assertRaises(ProjectionError):
+                raise ProjectionError
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+
+    def test_GDALError_warning(self):
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            with self.assertRaises(GDALError):
+                raise GDALError
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+
+    def test_NansatReadError_warning(self):
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            with self.assertRaises(NansatReadError):
+                raise NansatReadError
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+
+    def test_GeolocationError_warning(self):
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            with self.assertRaises(GeolocationError):
+                raise GeolocationError
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+
+    def test_WrongMapperError_warning(self):
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            with self.assertRaises(WrongMapperError):
+                raise WrongMapperError
+            self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
+
