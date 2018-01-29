@@ -1503,12 +1503,14 @@ class Nansat(Domain, Exporter):
         return offset, size
 
     @staticmethod
-    def _fix_crop_offset_size(offset, size, raster_size):
+    def _fix_crop_offset_size(offset, size, raster_size, allow_larger=False):
         """Check and correct default values of invalid offset or size"""
         # test if crop is totally outside
         if (offset > raster_size or (offset + size) < 0):
             raise ValueError('Cropping region is outside the image! offset: %f size: %f'
                                %(float(offset), float(size)))
+        if allow_larger:
+            return offset, size
 
         if offset < 0:
             size += offset
@@ -1517,7 +1519,7 @@ class Nansat(Domain, Exporter):
             size = raster_size - offset
         return offset, size
 
-    def crop(self, x_offset, y_offset, x_size, y_size):
+    def crop(self, x_offset, y_offset, x_size, y_size, allow_larger=False):
         """Crop Nansat object
 
         Create superVRT, modify the Source Rectangle (SrcRect) and Destination
@@ -1535,6 +1537,8 @@ class Nansat(Domain, Exporter):
             width in pixels of subimage
         y_size : int
             height in pizels of subimage
+        allow_larger : bool
+            Allow resulting extent to be larger than the original image?
 
         Notes
         --------
@@ -1553,8 +1557,10 @@ class Nansat(Domain, Exporter):
             >>> extent = n.crop(10, 20, 100, 200)
 
         """
-        x_offset, x_size = Nansat._fix_crop_offset_size(x_offset, x_size, self.shape()[1])
-        y_offset, y_size = Nansat._fix_crop_offset_size(y_offset, y_size, self.shape()[0])
+        x_offset, x_size = Nansat._fix_crop_offset_size(x_offset, x_size,
+                                                        self.shape()[1], allow_larger)
+        y_offset, y_size = Nansat._fix_crop_offset_size(y_offset, y_size,
+                                                        self.shape()[0], allow_larger)
 
         extent = (int(x_offset), int(y_offset), int(x_size), int(y_size))
         self.logger.debug('x_offset: %d, y_offset: %d, x_size: %d, y_size: %d' % extent)
@@ -1571,6 +1577,30 @@ class Nansat(Domain, Exporter):
         self.vrt.shift_cropped_gcps(x_offset, x_size, y_offset, y_size)
         self.vrt.shift_cropped_geo_transform(x_offset, x_size, y_offset, y_size)
         return extent
+
+    def extend(self, left=0, right=0, top=0, bottom=0):
+        """Extend domain from four sides
+
+        Parameters
+        ----------
+        left : int
+            number of pixels to add from left side
+        right : int
+            number of pixels to add from right side
+        top : int
+            number of pixels to add from top side
+        bottom : int
+            number of pixels to add from bottom side
+
+        Notes
+        -----
+        Canges self.vrt by adding nexgative offset or setting size to be large that original size.
+
+        """
+        x_offset, y_offset = -left, -top
+        x_size = self.shape()[1] + left + right
+        y_size = self.shape()[0] + top + bottom
+        self.crop(x_offset, y_offset, x_size, y_size, allow_larger=True)
 
     def _get_pix_lin_vectors(self, points, lonlat, cornersonly, smooth_radius):
         """Get vectors with pixel and line values for input corner points"""
