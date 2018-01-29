@@ -85,7 +85,7 @@ class Mapper(VRT):
                 tmpGdalMetadata = tmpGdalDataset.GetMetadata()
                 simParameter = tmpGdalMetadata['Parameter']
             except:
-                print_function('No parameter: %s not a supported SMI file')
+                print('No parameter: %s not a supported SMI file')
                 continue
             else:
                 # set params of the similar file

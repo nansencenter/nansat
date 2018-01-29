@@ -52,8 +52,8 @@ class Mapper(mg.Mapper):
             filename = (ice_folder_name + 'ice_conc_svalbard_' +
                         valid_time.strftime('%Y%m%d1500.nc'))
             if os.path.exists(filename):
-                print_function('Found file:')
-                print_function(filename)
+                print('Found file:')
+                print(filename)
                 gdal_dataset = gdal.Open(filename)
                 gdal_metadata = gdalDataset.GetMetadata()
                 mg.Mapper.__init__(self, filename, gdal_dataset, gdal_metadata)
