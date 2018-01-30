@@ -14,6 +14,17 @@ We adopt the following system for branching and merging:
 6. Commit often.
 7. Branch often. Merge after completion of the task for this branch, then delete the branch.
 8. Branch only from master or from develop.
+9. HOTFIX workflow
+   a) branch from master into hotfixNNN_title (NNN = ticket number);
+   b) update tests, fix the bug, increment micro version. Commit to hotfixNNN_title,
+      push and verify that Travis passes tests;
+   c) merge master into your branch (if there have been commits in master since you branched),
+      push and verify that Travis passes tests;
+   d) merge into master with --ff-only, push and verify that Travis passes tests;
+   e) merge master into develop, push and verify that Travis passes tests;
+   f) delete the hotfix branch;
+
+
 
 General conventions
 -------------------
@@ -51,12 +62,12 @@ Example function with complete Docstring
 
    def some_function(start = 0, stop, step = 1):
        """ Return evenly spaced values within a given interval.
-           
+
        | Values are generated within the half-open interval ''[start, stop)''
          (in other words, the interval including 'start' but excluding 'stop').
        | For integer arguments the function is equivalent to the Python built-in
          'range '_ function, but returns a ndarray rather than a list.
-                                     
+
        Parameters
        ----------
        start : number, optional
@@ -65,7 +76,7 @@ Example function with complete Docstring
            End of interval.  The interval does not include this value.
        step : number, optional
            Spacing between values.  For any output 'out', this is the distance between two adjacent values, ''out[i+1] - out[i]''. The default step size is 1. If 'step' is specified, 'start' must also be given.
-       dtype : dtype 
+       dtype : dtype
            The type of the output array. If 'dtype' is not given, infer the data type from the other input arguments.
 
        Returns
@@ -83,7 +94,7 @@ Example function with complete Docstring
        See Also
        --------
        linspace : Evenly spaced numbers with careful handling of endpoints
-       ogrid: Arrays of evenly spaced numbers in N-dimensions 
+       ogrid: Arrays of evenly spaced numbers in N-dimensions
        mgrid: Grid-shaped arrays of evenly spaced numbers in N-dimensions
 
        Examples
