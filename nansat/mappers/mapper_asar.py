@@ -66,7 +66,7 @@ class Mapper(VRT, Envisat):
                                      'bandNum': 2})
 
         # create empty VRT dataset with geolocation only
-        self._init_from_gdal_dataset(gdalDataset)
+        self._init_from_gdal_dataset(gdalDataset, metadata=gdalMetadata)
 
         # get calibration constant
         gotCalibration = True

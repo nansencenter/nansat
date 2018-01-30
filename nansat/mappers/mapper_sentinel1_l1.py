@@ -144,7 +144,7 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         for key in gdalDatasets:
-            self._init_from_gdal_dataset(gdalDatasets[key])
+            self._init_from_gdal_dataset(gdalDatasets[key], metadata=metadata)
             break
 
         # Read annotation, noise and calibration xml-files

@@ -65,7 +65,7 @@ class Mapper(VRT):
 
         # create empty VRT dataset with geolocation only
         gdalSubDataset = gdal.Open(metaDict[0]['src']['SourceFilename'])
-        self._init_from_gdal_dataset(gdalSubDataset)
+        self._init_from_gdal_dataset(gdalSubDataset, metadata=gdalSubDataset.GetMetadata())
 
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)
