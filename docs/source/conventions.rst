@@ -14,9 +14,17 @@ We adopt the following system for branching and merging:
 6. Commit often.
 7. Branch often. Merge after completion of the task for this branch, then delete the branch.
 8. Branch only from master or from develop.
-9. HOTFIX workflow: branch from master into hotfixNNN_title (NNN = ticket number), update tests,
-   fix the bug, increment micro version, test, merge into master, merge master into develop,
-   delete the hotfix branch.
+9. HOTFIX workflow
+   a) branch from master into hotfixNNN_title (NNN = ticket number);
+   b) update tests, fix the bug, increment micro version. Commit to hotfixNNN_title,
+      push and verify that Travis passes tests;
+   c) merge master into your branch (if there have been commits in master since you branched),
+      push and verify that Travis passes tests;
+   d) merge into master with --ff-only, push and verify that Travis passes tests;
+   e) merge master into develop, push and verify that Travis passes tests;
+   f) delete the hotfix branch;
+
+
 
 General conventions
 -------------------
