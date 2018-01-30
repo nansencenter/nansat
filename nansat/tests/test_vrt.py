@@ -88,7 +88,6 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt.dataset.GetGeoTransform(), ds.GetGeoTransform())
         self.assertEqual(vrt.dataset.GetGCPProjection(), ds.GetGCPProjection())
         self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
-        self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
         self.assertTrue(_add_geolocation.called_once())
 
     def test_from_dataset_params(self):
@@ -500,6 +499,13 @@ class VRTTest(unittest.TestCase):
         vrt1.create_geolocation_bands()
         vrt2 = vrt1.get_shifted_vrt(deg)
         self.assertEqual(vrt1.dataset.GetGeoTransform()[0]+deg, vrt2.dataset.GetGeoTransform()[0])
+
+    def test_get_super_vrt(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        vrt1 = VRT.from_gdal_dataset(ds, metadata=ds.GetMetadata())
+        vrt2 = vrt1.get_super_vrt()
+        self.assertIsInstance(vrt2.vrt, VRT)
+        self.assertTrue(vrt2.dataset.GetMetadataItem('AREA_OR_POINT'), 'Area')
 
 
 if __name__ == "__main__":

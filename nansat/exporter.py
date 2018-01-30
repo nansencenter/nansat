@@ -68,7 +68,7 @@ class Exporter(object):
         rm_metadata : list
             metadata names for removal before export.
             e.g. ['name', 'colormap', 'source', 'sourceBands']
-        add_geoloc : bool
+        add_geolocation : bool
             add geolocation array datasets to exported file?
         driver : str
             Name of GDAL driver (format)
@@ -133,7 +133,7 @@ class Exporter(object):
         export_vrt = self.vrt.copy()
         export_vrt.leave_few_bands(bands)
         export_vrt.split_complex_bands()
-        if addGeoloc:
+        if add_geolocation:
             export_vrt.create_geolocation_bands()
         export_vrt.fix_band_metadata(rm_metadata)
         export_vrt.fix_global_metadata(rm_metadata)

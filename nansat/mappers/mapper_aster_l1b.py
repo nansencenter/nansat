@@ -75,7 +75,7 @@ class Mapper(HDF4Mapper):
             raise WrongMapperError
 
         # create empty VRT dataset with geolocation only
-        self._init_from_gdal_dataset(gdalSubDataset0)
+        self._init_from_gdal_dataset(gdalSubDataset0, metadata=gdalMetadata)
 
         # add source band, wkv and suffix
         for metaEntry in metaDict:

@@ -1100,7 +1100,7 @@ class Nansat(Domain, Exporter):
 
     def _get_dataset_metadata(self):
         # open GDAL dataset. It will be parsed to all mappers for testing
-        gdal_dataset, metadata = None, None
+        gdal_dataset, metadata = None, dict()
         if not self.filename.startswith('http'):
             try:
                 gdal_dataset = gdal.Open(self.filename)
@@ -1133,8 +1133,8 @@ class Nansat(Domain, Exporter):
 
         Returns
         --------
-        tmpVRT : VRT object
-            tmpVRT.dataset is a GDAL VRT dataset
+        tmp_vrt : VRT object
+            tmp_vrt.dataset is a GDAL VRT dataset
 
         Raises
         --------
@@ -1158,20 +1158,6 @@ class Nansat(Domain, Exporter):
             nansatMappers = _import_mappers()
 
         # open GDAL dataset. It will be parsed to all mappers for testing
-        gdalDataset = None
-        if self.filename[:4] != 'http':
-            try:
-                gdalDataset = gdal.Open(self.filename)
-            except RuntimeError:
-                self.logger.error('GDAL could not open ' + self.filename +
-                                  ', trying to read with Nansat mappers...')
-        if gdalDataset is not None:
-            # get metadata from the GDAL dataset
-            metadata = gdalDataset.GetMetadata()
-        else:
-            metadata = None
-
-        tmpVRT = None
         gdal_dataset, metadata = self._get_dataset_metadata()
         tmp_vrt = None
 
@@ -1224,7 +1210,7 @@ class Nansat(Domain, Exporter):
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
         if tmp_vrt is None and gdal_dataset is not None:
             self.logger.warning('No mapper fits, returning GDAL bands!')
-            tmp_vrt = VRT.from_gdal_dataset(gdal_dataset)
+            tmp_vrt = VRT.from_gdal_dataset(gdal_dataset, metadata=metadata)
             for iBand in range(gdal_dataset.RasterCount):
                 tmp_vrt.create_band({'SourceFilename': self.filename,
                                      'SourceBand': iBand + 1})
