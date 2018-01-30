@@ -303,8 +303,11 @@ class VRT(object):
         self.dataset - sets size and georeference
 
         """
-
-        # set dataset geo-metadata
+        # WORKAROUND for not providing metadata explicitly. Should be avoided.
+        # get metadata from input and gdal_dataset
+        # metadata = kwargs.pop('metadata', dict())
+        # metadata.update(gdal_dataset.GetMetadata())
+        # set dataset parameters and metadata
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
@@ -782,6 +785,10 @@ class VRT(object):
             warnings.warn(self.INIT_SRCMETADATA_WARNING, NansatFutureWarning)
             metadata.update(kwargs['srcMetadata'])
 
+        # get metadata also from input gdalDataset
+        if arg == 'gdalDataset':
+            metadata.update(kwargs['gdalDataset'].GetMetadata())
+
         # raise warning
         warnings.warn(old2new[arg][0], NansatFutureWarning)
         # call function
@@ -913,9 +920,9 @@ class VRT(object):
     def copy(self):
         """Create and return a full copy of a VRT instance"""
         if self.dataset.RasterCount == 0:
-            vrt = VRT.from_gdal_dataset(self.dataset)
+            vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
         else:
-            vrt = VRT.copy_dataset(self.dataset)
+            vrt = VRT.copy_dataset(self.dataset, metadata=self.dataset.GetMetadata())
 
         vrt.band_vrts = dict(self.band_vrts)
         vrt.tps = bool(self.tps)
@@ -1364,7 +1371,7 @@ class VRT(object):
 
         """
         # create new vrt that refers to a copy of self
-        super_vrt = VRT.from_gdal_dataset(self.dataset)
+        super_vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
         super_vrt.vrt = self
         super_vrt.tps = self.tps
 
