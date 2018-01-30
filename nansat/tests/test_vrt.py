@@ -505,7 +505,7 @@ class VRTTest(unittest.TestCase):
         vrt1 = VRT.from_gdal_dataset(ds, metadata=ds.GetMetadata())
         vrt2 = vrt1.get_super_vrt()
         self.assertIsInstance(vrt2.vrt, VRT)
-        self.assertTrue(vrt2.dataset.GetMetadataItem('AREA_OR_POINT'), 'Area')
+        self.assertEqual(vrt2.dataset.GetMetadataItem(str('AREA_OR_POINT')), 'Area')
 
 
 if __name__ == "__main__":
