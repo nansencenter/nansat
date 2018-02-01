@@ -8,8 +8,8 @@ We adopt the following system for branching and merging:
 
 1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *bug fix* or *hot fix* branches (see notes on workflow below). Long living.
 2. **develop** branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
-3. **issueNNN-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Merged into develop.
-4. **hotfixNNN_short-heading** - branches that are specific to an issue with a release version (should be branched from master and merged back ASAP)
+3. **issueNNN-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Branched from, and merged back into develop.
+4. **hotfixNNN_short-heading** - branches that are specific to an hotfix issue. Hotfixes are bugfixes on master that can not wait until next release. (should be branched from master and merged back ASAP)
 
 .. note::
 
