@@ -6,24 +6,33 @@ Git branching and merging
 
 We adopt the following system for branching and merging:
 
-1. *master* branch: numbered releases of the code. Never edited. Merged from *develop* and *bug fix branches*. Long living.
-2. *develop* branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
-3. *issuexx-short-heading* - issue specific branches. Main working area. Short living. Merged into develop.
-4. Never edit code in the master or develop branch. Always make a new branch for your edits.
-5. New branch should be very specific to only one problem. It should be really short living.
-6. Commit often.
-7. Branch often. Merge after completion of the task for this branch, then delete the branch.
-8. Branch only from master or from develop.
-9. HOTFIX workflow
-   a) branch from master into hotfixNNN_title (NNN = ticket number);
-   b) update tests, fix the bug, increment micro version. Commit to hotfixNNN_title,
-      push and verify that Travis passes tests;
-   c) merge master into your branch (if there have been commits in master since you branched),
-      push and verify that Travis passes tests;
-   d) merge into master with --ff-only, push and verify that Travis passes tests;
-   e) merge master into develop, push and verify that Travis passes tests;
-   f) delete the hotfix branch;
+1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *bug fix* or *hot fix* branches (see notes on workflow below). Long living.
+2. **develop** branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
+3. **issueNNN-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Merged into develop.
+4. **hotfixNNN_short-heading** - issue specific branches that are quick and easy to fix
 
+(5. **bugfixNNN_short-heading** - issue specific branches related to a bug in master)
+
+.. note::
+
+   1. Never edit code in the master or develop branch. Always make a new branch for your edits.
+   2. A new branch should be very specific to only one problem. It should be short living.
+   3. Commit often.
+   4. Branch often. 
+   5. Branch only from master or from develop.
+   6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
+
+Example workflow for a hotfix (similar workflow for other branches):
+
+1. Branch from master or develop into an issue specific branch (NNN = ticket number);
+  a) Update tests
+  b) Fix the bug
+  c) Increment micro version
+  d) Commit to hotfixNNN_title
+2. Pull and merge master into your branch and push 
+3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
+   branch and assign a reviewer
+4. Let the reviewer check the code, merge, delete the branch and close the issue 
 
 
 General conventions
