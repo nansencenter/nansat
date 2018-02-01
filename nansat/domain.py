@@ -108,7 +108,7 @@ class Domain(object):
 
     Raises
     -------
-    ProjectionError : occurs when Projection() is empty
+    NansatProjectionError : occurs when Projection() is empty
         despite it is required for creating extentDic.
     OptionError : occures when the arguments are not proper.
 
