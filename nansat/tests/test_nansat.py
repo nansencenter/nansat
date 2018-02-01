@@ -897,5 +897,14 @@ class NansatTest(unittest.TestCase):
         n.crop_interactive()
         self.assertEqual(n.shape(), (20, 10))
 
+    def test_extend(self):
+        n = Nansat(self.test_file_arctic, log_level=40)
+        nshape1 = n.shape()
+        n.extend(left=10, right=20, top=30, bottom=40)
+        be = n[1]
+        self.assertEqual(n.shape(), (nshape1[0]+70, nshape1[1]+30))
+        self.assertIsInstance(be, np.ndarray)
+
+
 if __name__ == "__main__":
     unittest.main()
