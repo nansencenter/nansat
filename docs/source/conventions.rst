@@ -9,7 +9,7 @@ We adopt the following system for branching and merging:
 1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *bug fix* or *hot fix* branches (see notes on workflow below). Long living.
 2. **develop** branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
 3. **issueNNN-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Merged into develop.
-4. **hotfixNNN_short-heading** - issue specific branches that are quick and easy to fix
+4. **hotfixNNN_short-heading** - branches that are specific to an issue with a release version (should be branched from master and merged back ASAP)
 
 (5. **bugfixNNN_short-heading** - issue specific branches related to a bug in master)
 
@@ -24,7 +24,7 @@ We adopt the following system for branching and merging:
 
 Example workflow for a hotfix (similar workflow for other branches):
 
-1. Branch from master or develop into an issue specific branch (NNN = ticket number);
+1. Branch from master into the hotfix specific branch (NNN = ticket number);
   a) Update tests
   b) Fix the bug
   c) Increment micro version
@@ -34,6 +34,10 @@ Example workflow for a hotfix (similar workflow for other branches):
    branch and assign a reviewer
 4. Let the reviewer check the code, merge, delete the branch and close the issue 
 
+.. note::
+
+    Some times we are in a hurry and do not have time to wait for a review. The hotfix could then
+    be merged into develop when all tests have passed. 
 
 General conventions
 -------------------
