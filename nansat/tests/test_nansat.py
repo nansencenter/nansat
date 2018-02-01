@@ -422,7 +422,6 @@ class NansatTest(unittest.TestCase):
             fn = n.fileName
             assert len(w) >= 1
             categories = [ww.category for ww in w]
-            # This should fail if the warning is not there
             assert NansatFutureWarning in categories
 
     @patch.object(Nansat, 'get_corners',
