@@ -8,8 +8,8 @@ We adopt the following system for branching and merging:
 
 1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *hot fix* branches (see notes on workflow below). Long living.
 2. **develop** branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
-3. **issue<NNN>-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Branched from, and merged back into develop.
-4. **hotfix<NNN>_short-heading** - branches that are specific to a hotfix issue. Hotfixes are bugfixes on master that can not wait until next release.
+3. **issue<NNN>_<short-heading>** - issue specific branches (NNN = issue number). Main working area. Short living. Branched from, and merged back into develop.
+4. **hotfix<NNN>_<short-heading>** - branches that are specific to a hotfix issue. Hotfixes are bugfixes on master that can not wait until next release.
 
 .. note::
 
@@ -26,7 +26,7 @@ Example workflow for a hotfix (similar workflow for other branches):
   a) Update tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
-  d) Commit to hotfix<NNN>_title
+  d) Commit to hotfix<NNN>_<short-heading>
 2. Pull and merge master into your branch, test, and push 
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    branch and assign a reviewer
