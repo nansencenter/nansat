@@ -6,10 +6,10 @@ Git branching and merging
 
 We adopt the following system for branching and merging:
 
-1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *bug fix* or *hot fix* branches (see notes on workflow below). Long living.
+1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *hot fix* branches (see notes on workflow below). Long living.
 2. **develop** branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
 3. **issueNNN-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Branched from, and merged back into develop.
-4. **hotfixNNN_short-heading** - branches that are specific to an hotfix issue. Hotfixes are bugfixes on master that can not wait until next release. (should be branched from master and merged back ASAP)
+4. **hotfixNNN_short-heading** - branches that are specific to a hotfix issue. Hotfixes are bugfixes on master that can not wait until next release.
 
 .. note::
 
@@ -27,15 +27,30 @@ Example workflow for a hotfix (similar workflow for other branches):
   b) Fix the bug
   c) Increment micro version in ``setup.py``
   d) Commit to hotfixNNN_title
-2. Pull and merge master into your branch and push 
+2. Pull and merge master into your branch, test, and push 
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    branch and assign a reviewer
-4. Let the reviewer check the code, merge, delete the branch and close the issue 
+4. Let the reviewer do the following:
+  a) Check the code
+  b) Request changes or merge pull request into master
+  c) Delete the branch 
+  d) Merge master into develop (again, use pull request, then merge by selecting the rebase option in GitHUB)
+  e) Close the issue 
 
 .. note::
 
-    Some times we are in a hurry and do not have time to wait for a review. The hotfix could then
-    be merged into develop when all tests have passed. 
+    If you work on a project using Nansat, this project should use the master version of Nansat. Two
+    situations may then occur:
+
+    1. You discover a **bug**. This can be solved with a **hotfix**.
+    2. You want to add functionality to Nansat. This is solved by creating an issue in Nansat and a
+       related issue branch. When this is completed and merged into develop, we may have a new
+       release.
+    3. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
+       project. When the mapper is completed, create an issue and an issue-branch in Nansat, and
+       finally submit a pull request with suggestion of a reviewer. You can still use the mapper via
+       your ``nansat_mappers`` package until the new mapper is implemented in a release version of
+       Nansat.
 
 General conventions
 -------------------
