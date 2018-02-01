@@ -22,7 +22,7 @@ import datetime
 import json
 import sys
 from xml.sax.saxutils import unescape
-from mock import patch, PropertyMock, MagicMock
+from mock import patch, PropertyMock, MagicMock, Mock, DEFAULT
 
 import numpy as np
 
@@ -413,6 +413,16 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(n.shape(), (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
+
+    @patch.multiple(Nansat, filename=DEFAULT, __init__ = Mock(return_value=None))
+    def test_property_fileName(self, filename):
+        n = Nansat()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            fn = n.fileName
+            self.assertTrue( len(w) >= 1 )
+            categories = [ww.category for ww in w]
+            self.assertIn(NansatFutureWarning, categories)
 
     @patch.object(Nansat, 'get_corners',
                   return_value=(np.array([0, 0, 360, 360]), np.array([90,-90, 90, -90])))
