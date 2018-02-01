@@ -11,8 +11,6 @@ We adopt the following system for branching and merging:
 3. **issueNNN-short-heading** - issue specific branches (NNN = issue number). Main working area. Short living. Merged into develop.
 4. **hotfixNNN_short-heading** - branches that are specific to an issue with a release version (should be branched from master and merged back ASAP)
 
-(5. **bugfixNNN_short-heading** - issue specific branches related to a bug in master)
-
 .. note::
 
    1. Never edit code in the master or develop branch. Always make a new branch for your edits.
