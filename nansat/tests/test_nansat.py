@@ -420,9 +420,9 @@ class NansatTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             fn = n.fileName
-            assert len(w) >= 1
+            self.assertTrue( len(w) >= 1 )
             categories = [ww.category for ww in w]
-            assert NansatFutureWarning in categories
+            self.assertIn(NansatFutureWarning, categories)
 
     @patch.object(Nansat, 'get_corners',
                   return_value=(np.array([0, 0, 360, 360]), np.array([90,-90, 90, -90])))
