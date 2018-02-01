@@ -1018,6 +1018,14 @@ class Nansat(Domain, Exporter):
         self.vrt.copyproj(filename)
 
     @property
+    def fileName(self):
+        warnings.warn(
+            'nansat.fileName attribute is deprecated in Nansat 1.1. Use ' \
+                'nansat.filename instead.',
+        NansatFutureWarning)
+        return self.filename
+
+    @property
     def time_coverage_start(self):
         return parse_time(self.get_metadata('time_coverage_start'))
 
