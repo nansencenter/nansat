@@ -26,7 +26,7 @@ Example workflow for a hotfix (similar workflow for other branches):
   a) Update tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
-  d) Commit to hotfixNNN_title
+  d) Commit to ``hotfixNNN_title``
 2. Pull and merge master into your branch, test, and push 
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    branch and assign a reviewer
