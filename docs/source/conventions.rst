@@ -6,25 +6,51 @@ Git branching and merging
 
 We adopt the following system for branching and merging:
 
-1. *master* branch: numbered releases of the code. Never edited. Merged from *develop* and *bug fix branches*. Long living.
-2. *develop* branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
-3. *issuexx-short-heading* - issue specific branches. Main working area. Short living. Merged into develop.
-4. Never edit code in the master or develop branch. Always make a new branch for your edits.
-5. New branch should be very specific to only one problem. It should be really short living.
-6. Commit often.
-7. Branch often. Merge after completion of the task for this branch, then delete the branch.
-8. Branch only from master or from develop.
-9. HOTFIX workflow
-   a) branch from master into hotfixNNN_title (NNN = ticket number);
-   b) update tests, fix the bug, increment micro version. Commit to hotfixNNN_title,
-      push and verify that Travis passes tests;
-   c) merge master into your branch (if there have been commits in master since you branched),
-      push and verify that Travis passes tests;
-   d) merge into master with --ff-only, push and verify that Travis passes tests;
-   e) merge master into develop, push and verify that Travis passes tests;
-   f) delete the hotfix branch;
+1. **master** branch: numbered releases of the code. Never edited. Merged from *develop* and *hot fix* branches (see notes on workflow below). Long living.
+2. **develop** branch: rather stable version of code under development. Never edited. Merged from topic specific issue branches. Long living.
+3. **issue<NNN>_<short-heading>** - issue specific branches (NNN = issue number). Main working area. Short living. Branched from, and merged back into develop.
+4. **hotfix<NNN>_<short-heading>** - branches that are specific to a hotfix issue. Hotfixes are bugfixes on master that can not wait until next release.
 
+.. note::
 
+   1. Never edit code in the master or develop branch. Always make a new branch for your edits.
+   2. A new branch should be very specific to only one problem. It should be short living.
+   3. Commit often.
+   4. Branch often. 
+   5. Branch only from master or from develop.
+   6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
+
+Example workflow for a hotfix (similar workflow for other branches):
+
+1. Branch from master into the hotfix specific branch
+  a) Update tests
+  b) Fix the bug
+  c) Increment micro version in ``setup.py``
+  d) Commit to hotfix<NNN>_<short-heading>
+2. Pull and merge master into your branch, test, and push 
+3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
+   branch and assign a reviewer
+4. Let the reviewer do the following:
+  a) Check the code
+  b) Request changes or merge pull request into master
+  c) Delete the branch 
+  d) Merge master into develop (again, use pull request, then merge by selecting the rebase option in GitHUB)
+  e) Close the issue 
+
+.. note::
+
+    If you work on a project using Nansat, this project should use the master version of Nansat. Two
+    situations may then occur:
+
+    1. You discover a **bug**. This can be solved with a **hotfix**.
+    2. You want to add functionality to Nansat. This is solved by creating an issue in Nansat and a
+       related issue branch. When this is completed and merged into develop, we may have a new
+       release.
+    3. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
+       project. When the mapper is completed, create an issue and an issue-branch in Nansat, and
+       finally submit a pull request with suggestion of a reviewer. You can still use the mapper via
+       your ``nansat_mappers`` package until the new mapper is implemented in a release version of
+       Nansat.
 
 General conventions
 -------------------
