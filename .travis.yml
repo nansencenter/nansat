@@ -27,7 +27,7 @@ install:
   - python setup.py install
 
 script:
-  - coverage run --omit=nansat/mappers/*,nansat/tests/* --source=nansat setup.py test
+  - coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test
 
 after_success:
   - coveralls
