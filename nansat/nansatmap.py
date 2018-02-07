@@ -42,7 +42,8 @@ from nansat.nsr import NSR
 from nansat.tools import get_random_color
 from nansat.warnings import NansatFutureWarning
 
-NANSATMAP_WARNING = ('Nansatmap() will be disabled in Nansat 1.1. and moved to a separate package')
+NANSATMAP_WARNING = ('Nansatmap() will be disabled in Nansat 1.1. and moved to a separate package'
+                     'It is not covered by unittests intentionally.')
 warnings.warn(NANSATMAP_WARNING, NansatFutureWarning)
 
 class Nansatmap(Basemap):
