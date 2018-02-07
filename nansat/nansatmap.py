@@ -1,5 +1,5 @@
 # Name:    nansat_map.py
-# Purpose: Container of NansatMap class
+# Purpose: Container of Nansatap class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
@@ -15,18 +15,35 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
-import re
 
-from mpl_toolkits.basemap import Basemap
-import matplotlib as mpl
-from matplotlib import cm
-import matplotlib.pyplot as plt
-from scipy import ndimage
+import os
+import re
+import warnings
+
 import numpy as np
+
+try:
+    if 'DISPLAY' not in os.environ:
+        import matplotlib; matplotlib.use('Agg')
+    from mpl_toolkits.basemap import Basemap
+    import matplotlib as mpl
+    from matplotlib import cm
+    import matplotlib.pyplot as plt
+    from scipy import ndimage
+except ImportError:
+    BASEMAP_LIB_IS_INSTALLED = False
+    MATPLOTLIB_IS_INSTALLED = False
+else:
+    BASEMAP_LIB_IS_INSTALLED = True
+    MATPLOTLIB_IS_INSTALLED = True
+
 
 from nansat.nsr import NSR
 from nansat.tools import get_random_color
+from nansat.warnings import NansatFutureWarning
 
+NANSATMAP_WARNING = ('Nansatmap() will be disabled in Nansat 1.1. and moved to a separate package')
+warnings.warn(NANSATMAP_WARNING, NansatFutureWarning)
 
 class Nansatmap(Basemap):
     '''Perform opeartions with graphical files: create,
@@ -65,6 +82,7 @@ class Nansatmap(Basemap):
     # saving parameters
     DEFAULT_EXTENSION = '.png'
 
+
     def __init__(self, domain, **kwargs):
         ''' Set attributes
         Get proj4 from the given domain and convert the proj4 projection to
@@ -93,6 +111,12 @@ class Nansatmap(Basemap):
         http://matplotlib.org/basemap/api/basemap_api.html
 
         '''
+        if not MATPLOTLIB_IS_INSTALLED:
+            raise ImportError('Matplotlib is not installed')
+        if not BASEMAP_LIB_IS_INSTALLED:
+            raise ImportError('Basemap is not installed')
+        warnings.warn(NANSATMAP_WARNING, NansatFutureWarning)
+
         self.domain = domain
 
         # get proj4
