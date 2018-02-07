@@ -21,9 +21,6 @@ import warnings
 import importlib
 pixfun_module_name = 'nansat._pixfun_py{0}'.format(sys.version_info[0])
 
-pixfun = importlib.import_module(pixfun_module_name)
-pixfun.registerPixelFunctions()
-
 # check if pixel functions were compiled using setup_tools
 try:
     pixfun = importlib.import_module(pixfun_module_name)

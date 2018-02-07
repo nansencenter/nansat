@@ -10,6 +10,6 @@ dependencies:
   - nbconvert
   - ipykernel
   - python-dateutil
-  - nansat
+  - nansat>=1.0.4
   - pip:
     - nbsphinx
