@@ -31,7 +31,7 @@ Nansat requires the following packages:
 * `Numpy <http://www.numpy.org/>`_ >=1.11.3
 * `GDAL <http://www.gdal.org>`_ >=2.2.3
 * `Pillow <https://python-pillow.github.io/>`_ >=4.0.0
-* `netCDF4 https://github.com/Unidata/netcdf4-python`_ >=1.3.1
+* `netCDF4 <https://github.com/Unidata/netcdf4-python>`_ >=1.3.1
 * `py-thesaurus-interface <https://github.com/nansencenter/py-thesaurus-interface>`_ 
 * `cfunits <https://bitbucket.org/cfpython/cfunits-python>`_
 
