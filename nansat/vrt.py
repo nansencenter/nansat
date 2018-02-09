@@ -1372,7 +1372,7 @@ class VRT(object):
         """
         # create new vrt that refers to a copy of self
         super_vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
-        super_vrt.vrt = self
+        super_vrt.vrt = self.copy()
         super_vrt.tps = self.tps
 
         # add bands to the new vrt
