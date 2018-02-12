@@ -50,6 +50,18 @@ class GeolocationTest(unittest.TestCase):
 
     def test_from_dataset(self):
         ds = gdal.Open(self.test_file)
-        ga = Geolocation.from_dataset(ds)
+        g = Geolocation.from_dataset(ds)
+        self.assertIsInstance(g, Geolocation)
 
-        self.assertIsInstance(ga, Geolocation)
+    def test_from_filenames(self):
+        lon, lat = np.meshgrid(np.linspace(0,5,10), np.linspace(10,20,30))
+        x_vrt = VRT.from_array(lon)
+        y_vrt = VRT.from_array(lat)
+        g = Geolocation.from_filenames(x_vrt.filename, y_vrt.filename)
+        self.assertIsInstance(g, Geolocation)
+        self.assertEqual(g.data['X_DATASET'], x_vrt.filename)
+        self.assertEqual(g.data['Y_DATASET'], y_vrt.filename)
+        self.assertEqual(g.data['LINE_OFFSET'], '0')
+        self.assertEqual(g.data['LINE_STEP'], '1')
+        self.assertEqual(g.data['PIXEL_OFFSET'], '0')
+        self.assertEqual(g.data['PIXEL_STEP'], '1')
