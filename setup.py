@@ -63,9 +63,9 @@ AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["Linux", "OS X", "Windows"]
 MAJOR               = 1
 MINOR               = 0
-MICRO               = 8
+MICRO               = 9
 ISRELEASED          = True
-VERSION             = '%d.%d.%ddev' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
                         "pythesint",
