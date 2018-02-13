@@ -69,7 +69,7 @@ class Mapper(VRT):
 
         # Create complex bands from *_real and *_imag bands (the function is in
         # vrt.py)
-        self._create_complex_bands(self.sub_filenames(gdal_dataset))
+        self._create_complex_bands(self.sub_filenames())
 
         # Set GCMD/DIF compatible metadata if available
         self._set_time_coverage_metadata(metadata)
@@ -180,7 +180,7 @@ class Mapper(VRT):
             netcdf_dim.pop(key)
 
         gdal_dataset = gdal.Open(self.input_filename)
-        for fn in self.sub_filenames(gdal_dataset):
+        for fn in self.sub_filenames():
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
                 continue
@@ -325,16 +325,14 @@ class Mapper(VRT):
         return {'src': src, 'dst': dst}
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
-        subfiles = self.sub_filenames_with_projection(gdal_dataset)
+        subfiles = self.sub_filenames_with_projection()
         if not subfiles:
             ''' In this case, gdal cannot find the projection of any
             subdatasets. We therefore assume a regular longitude/latitude grid,
             and set the projection to the Nansat Spatial Reference WKT
             [NSR().wkt], using the first subdataset as source
             '''
-            fn = self.sub_filenames(gdal_dataset)
-            if not fn:
-                raise WrongMapperError
+            fn = self.sub_filenames()
             sub = gdal.Open(fn[0])
             self._init_from_dataset_params(
                     x_size = sub.RasterXSize,
@@ -346,14 +344,18 @@ class Mapper(VRT):
             sub0 = gdal.Open(subfiles[0])
             self._init_from_gdal_dataset(sub0, metadata=gdal_metadata)
 
-    def sub_filenames(self, gdal_dataset):
+    def sub_filenames(self):
         # Get filenames of subdatasets
-        sub_datasets = gdal_dataset.GetSubDatasets()
-        return [f[0] for f in sub_datasets]
+        ds = gdal.Open(self.input_filename)
+        sub_datasets = ds.GetSubDatasets()
+        fn = [f[0] for f in sub_datasets]
+        if not fn:
+            raise WrongMapperError
+        return fn
 
-    def sub_filenames_with_projection(self, gdal_dataset):
+    def sub_filenames_with_projection(self):
         # Get filenames of subdatasets containing projection
-        sub_fnames = self.sub_filenames(gdal_dataset)
+        sub_fnames = self.sub_filenames()
         with_proj = []
         for f in sub_fnames:
             if gdal.Open(f).GetProjection():
