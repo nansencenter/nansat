@@ -15,13 +15,14 @@ from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.tools import parse_time
 
-from nansat.exceptions import WrongMapperError
+from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 
 
 class Mapper(VRT):
+    """
+    """
+
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
-        # test_nansat is failing - this mapper needs more work..
-        # raise WrongMapperError
 
         if not filename.endswith('nc'):
             raise WrongMapperError
@@ -62,14 +63,14 @@ class Mapper(VRT):
         self._create_empty(gdal_dataset, metadata)
 
         # Add bands with metadata and corresponding values to the empty VRT
-        self.create_bands(self._band_list(metadata, *args, **kwargs))
+        self.create_bands(self._band_list(gdal_dataset, metadata, *args, **kwargs))
 
         # Check size?
         #xsize, ysize = self.ds_size(sub0)
 
         # Create complex bands from *_real and *_imag bands (the function is in
         # vrt.py)
-        self._create_complex_bands(self.sub_filenames())
+        self._create_complex_bands(self._get_sub_filenames(gdal_dataset))
 
         # Set GCMD/DIF compatible metadata if available
         self._set_time_coverage_metadata(metadata)
@@ -141,12 +142,14 @@ class Mapper(VRT):
             raise Exception('Check time units..')
         return tt
 
-    def _band_list(self, gdal_metadata, netcdf_dim={}, bands=[]):
+    def _band_list(self, gdal_dataset, gdal_metadata, netcdf_dim={}, bands=[]):
         ''' Create list of dictionaries mapping source and destination metadata
         of bands that should be added to the Nansat object.
 
         Parameters
         ----------
+        gdal_dataset : gdal.Dataset
+            The gdal dataset opened in nansat.py
         gdal_metadata : dict
             Dictionary of global metadata
         netcdf_dim : dict
@@ -179,8 +182,7 @@ class Mapper(VRT):
         for key in kpop:
             netcdf_dim.pop(key)
 
-        gdal_dataset = gdal.Open(self.input_filename)
-        for fn in self.sub_filenames():
+        for fn in self._get_sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
                 continue
@@ -325,42 +327,61 @@ class Mapper(VRT):
         return {'src': src, 'dst': dst}
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
-        subfiles = self.sub_filenames_with_projection()
-        if not subfiles:
-            ''' In this case, gdal cannot find the projection of any
+        #subfiles = self._get_sub_filenames_with_projection(gdal_dataset)
+        try:
+            self._create_empty_from_subdatasets(gdal_dataset, gdal_metadata)
+        except NansatMissingProjectionError:
+            # this happens rarely - a special workaround is done in mapper_quikscat
+            warnings.warn('GDAL cannot determine the dataset projection - using Nansat ' \
+                    'spatial reference WKT, assuming a regular longitude/latitude grid')
+            self._create_empty_with_nansat_spatial_reference_WKT(gdal_dataset, gdal_metadata)
+
+    def _create_empty_from_subdatasets(self, gdal_dataset, metadata):
+        """ Create empty vrt dataset with projection but no bands
+        """
+        no_projection = True
+        # Check if the main gdal dataset has projection
+        if gdal_dataset.GetProjection():
+            sub = gdal_dataset
+            no_projection = False
+        else:
+            # Loop subdatasets and check for projection
+            for fn in self._get_sub_filenames(gdal_dataset):
+                sub = gdal.Open(fn)
+                if sub.GetProjection():
+                    no_projection = False
+                    break
+        if no_projection:
+            raise NansatMissingProjectionError
+        # Initialise VRT with subdataset containing projection
+        self._init_from_gdal_dataset(sub, metadata=metadata)
+
+    def _create_empty_with_nansat_spatial_reference_WKT(self, gdal_dataset, gdal_metadata):
+        """ In this case, gdal cannot find the projection of any
             subdatasets. We therefore assume a regular longitude/latitude grid,
             and set the projection to the Nansat Spatial Reference WKT
             [NSR().wkt], using the first subdataset as source
-            '''
-            fn = self.sub_filenames()
+        """
+        try:
+            xs = gdal_dataset.RasterXSize
+            ys = gdal_dataset.RasterYSize
+            gt = gdal_dataset.GetGeoTransform()
+        except Exception as e:
+            # issue warning to find out if this try-except clause is really needed...
+            warnings.warn('Main GDAL dataset does not contain geotransform or information ' \
+                    'about raster size: %s' %e.message)
+            fn = self._get_sub_filenames(gdal_dataset)
             sub = gdal.Open(fn[0])
-            self._init_from_dataset_params(
-                    x_size = sub.RasterXSize,
-                    y_size = sub.RasterYSize,
-                    geo_transform = sub.GetGeoTransform(),
-                    projection = NSR().wkt,
-                    metadata = gdal_metadata)
-        else:
-            sub0 = gdal.Open(subfiles[0])
-            self._init_from_gdal_dataset(sub0, metadata=gdal_metadata)
-
-    def sub_filenames(self):
-        # Get filenames of subdatasets
-        ds = gdal.Open(self.input_filename)
-        sub_datasets = ds.GetSubDatasets()
-        fn = [f[0] for f in sub_datasets]
-        if not fn:
-            raise WrongMapperError
-        return fn
-
-    def sub_filenames_with_projection(self):
-        # Get filenames of subdatasets containing projection
-        sub_fnames = self.sub_filenames()
-        with_proj = []
-        for f in sub_fnames:
-            if gdal.Open(f).GetProjection():
-                with_proj.append(f)
-        return with_proj
+            xs = sub.RasterXSize
+            ys = sub.RasterYSize
+            gt = sub.GetGeoTransform()
+        self._init_from_dataset_params(
+                x_size = xs,
+                y_size = ys,
+                geo_transform = gt,
+                projection = NSR().wkt,
+                metadata = gdal_metadata
+            )
 
     def _set_time_coverage_metadata(self, gdal_metadata):
         ### GET START TIME from METADATA
