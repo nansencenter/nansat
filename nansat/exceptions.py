@@ -7,24 +7,27 @@
 from __future__ import absolute_import
 
 class NansatProjectionError(Exception):
-    '''Cannot get the projection'''
+    """ Cannot get the projection """
     pass
 
 
 class NansatGDALError(Exception):
-    '''Error from GDAL '''
+    """ Error from GDAL  """
     pass
 
 
 class NansatReadError(Exception):
-    '''Exception if a file cannot be read with Nansat'''
+    """ Exception if a file cannot be read with Nansat """
     pass
 
 class NansatGeolocationError(Exception):
-    '''Exception if geolocation is wrong (e.g., all lat/lon values are 0)'''
+    """ Exception if geolocation is wrong (e.g., all lat/lon values are 0) """
     pass
 
+class NansatMissingProjectionError(Exception):
+    """ Exception raised if no (sub-) dataset has projection """
+
 class WrongMapperError(Exception):
-    '''Error for handling data that does not fit a given mapper'''
+    """ Error for handling data that does not fit a given mapper """
     pass
 
