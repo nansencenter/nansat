@@ -1114,6 +1114,22 @@ class VRT(object):
         """Export VRT file as XML into given <filename>"""
         self.driver.CreateCopy(filename, self.dataset)
 
+    def _get_sub_filenames(self, gdal_dataset):
+        """ Get filenames of subdatasets
+
+        Parameters
+        ----------
+        gdal_dataset : gdal.Dataset
+            Main gdal dataset containing sub-datasets
+
+        Returns
+        -------
+        filenames : list
+           List of filenames of each sub-dataset within the netCDF file
+
+        """
+        return [f[0] for f in gdal_dataset.GetSubDatasets()]
+
     def get_warped_vrt(self, dst_srs, x_size, y_size, geo_transform,
                        resample_alg=0,
                        dst_gcps=[],
