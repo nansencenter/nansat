@@ -362,6 +362,9 @@ class Mapper(VRT):
             and set the projection to the Nansat Spatial Reference WKT
             [NSR().wkt], using the first subdataset as source
         """
+        # NB: if gdal_dataset has subdatasets, gdal_dataset.RasterXSize equals 512,
+        # gdal_dataset.RasterYSize equals 512, gdal_dataset.GetGeoTransform returns
+        # (1,0,0,0,1,0). This is wrong.
         fn = self._get_sub_filenames(gdal_dataset)
         if  len(fn) == 0:
             subdataset = gdal_dataset
