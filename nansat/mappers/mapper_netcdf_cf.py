@@ -194,7 +194,7 @@ class Mapper(VRT):
                 # Keep only desired bands (given in "bands" list)
                 try:
                     if bands:
-                        if not band_metadata.has_key('standard_name'):
+                        if 'standard_name' not in band_metadata.keys():
                             raise ContinueI
                         if not band_metadata['standard_name'] in bands:
                             raise ContinueI
@@ -311,7 +311,7 @@ class Mapper(VRT):
                 bandName = band_metadata.get('dods_variable', '')
 
             # remove digits added by gdal when exporting to netcdf
-            if (len(bandName) > 0 and band_metadata.has_key('origin')
+            if (len(bandName) > 0 and 'origin' in band_metadata.keys()
                     and 'nansat' in band_metadata['origin'].lower()):
                 if bandName[-1:].isdigit():
                     bandName = bandName[:-1]
@@ -362,26 +362,18 @@ class Mapper(VRT):
             and set the projection to the Nansat Spatial Reference WKT
             [NSR().wkt], using the first subdataset as source
         """
-        try:
-            xs = gdal_dataset.RasterXSize
-            ys = gdal_dataset.RasterYSize
-            gt = gdal_dataset.GetGeoTransform()
-        except Exception as e:
-            # issue warning to find out if this try-except clause is really needed...
-            warnings.warn('Main GDAL dataset does not contain geotransform or information ' \
-                    'about raster size: %s' %e.message)
-            fn = self._get_sub_filenames(gdal_dataset)
-            sub = gdal.Open(fn[0])
-            xs = sub.RasterXSize
-            ys = sub.RasterYSize
-            gt = sub.GetGeoTransform()
+        fn = self._get_sub_filenames(gdal_dataset)
+        if  len(fn) == 0:
+            subdataset = gdal_dataset
+        else:
+            subdataset = gdal.Open(fn[0])
+
         self._init_from_dataset_params(
-                x_size = xs,
-                y_size = ys,
-                geo_transform = gt,
-                projection = NSR().wkt,
-                metadata = gdal_metadata
-            )
+                    x_size = subdataset.RasterXSize,
+                    y_size = subdataset.RasterYSize,
+                    geo_transform = subdataset.GetGeoTransform(),
+                    projection = NSR().wkt,
+                    metadata = gdal_metadata)
 
     def _set_time_coverage_metadata(self, gdal_metadata):
         ### GET START TIME from METADATA
