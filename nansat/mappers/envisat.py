@@ -243,8 +243,9 @@ class Envisat(object):
                       'NUM_DSR': 5, 'DSR_SIZE': 6}
 
         # open file and read 150 header lines
-        f = file(self.iFileName, 'rt')
-        headerLines = f.readlines(150)
+        with open(self.iFileName, "rb") as f:
+            headerLines = [f.readline().decode('utf-8') for i in range(150)]
+
         offsetDict = {}
         # create a dictionary with offset, size, number of records,
         # size of records
@@ -257,7 +258,6 @@ class Envisat(object):
                 offsetDict[iKey] = int(headerLines[gridOffset +
                                        textOffset[iKey]].replace(iKey+"=", '').
                                        replace('<bytes>', ''))
-        f.close()
         return offsetDict
 
     def read_binary_line(self, offset, fmtString, length):
@@ -280,7 +280,7 @@ class Envisat(object):
                 the number of elements is length
         """
         # fseek, read all into a list
-        f = file(self.iFileName, 'rb')
+        f = open(self.iFileName, 'rb')
         f.seek(offset, 0)
         binaryValues = []
         for i in range(length):
