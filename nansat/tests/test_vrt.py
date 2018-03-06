@@ -538,6 +538,15 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt2.vrt, VRT)
         self.assertEqual(vrt2.dataset.GetMetadataItem(str('AREA_OR_POINT')), 'Area')
 
+    def test_get_super_vrt_and_copy(self):
+        array = np.zeros((10,10))
+        vrt = VRT.from_array(array)
+        vrt = vrt.get_super_vrt()
+        vrt = vrt.copy()
+        data = vrt.dataset.ReadAsArray()
+
+        self.assertFalse(data is None)
+        self.assertTrue(np.all(data == array))
 
 if __name__ == "__main__":
     unittest.main()
