@@ -923,17 +923,23 @@ class VRT(object):
             vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
         else:
             vrt = VRT.copy_dataset(self.dataset, metadata=self.dataset.GetMetadata())
-            # change internal reference from self to the new vrt
-            vrt_xml = vrt.xml.replace(os.path.basename(self.filename), os.path.basename(vrt.filename))
-            vrt.write_xml(vrt_xml)
+            replace_filenames = [(self.filename, vrt.filename)]
+            # recursive copy of vrt.vrt
+            if self.vrt is not None:
+                vrt.vrt = self.vrt.copy()
+                replace_filenames.append((self.vrt.filename, vrt.vrt.filename))
 
-        # copy VRTs of bands and the thin spline transformation option
-        vrt.band_vrts = dict(self.band_vrts)
+            # change reference from original filenames to the new ones
+            for replace_filename in replace_filenames:
+                vrt_xml = vrt.xml.replace(os.path.basename(replace_filename[0]),
+                                          os.path.basename(replace_filename[1]))
+                vrt.write_xml(vrt_xml)
+
+            # copy VRTs of bands
+            vrt.band_vrts = dict(self.band_vrts)
+        # copy the thin spline transformation option
         vrt.tps = bool(self.tps)
 
-        # recursive copy of vrt.vrt
-        if self.vrt is not None:
-            vrt.vrt = self.vrt.copy()
         return vrt
 
     @property
