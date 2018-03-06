@@ -918,22 +918,22 @@ class VRT(object):
         return options, add_gcps
 
     def copy(self):
-        """Create and return a full copy of a VRT instance"""
+        """Create and return a full copy of a VRT instance with new filenames"""
         if self.dataset.RasterCount == 0:
             vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
         else:
             vrt = VRT.copy_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+            # change internal reference from self to the new vrt
+            vrt_xml = vrt.xml.replace(os.path.basename(self.filename), os.path.basename(vrt.filename))
+            vrt.write_xml(vrt_xml)
 
+        # copy VRTs of bands and the thin spline transformation option
         vrt.band_vrts = dict(self.band_vrts)
         vrt.tps = bool(self.tps)
 
         # recursive copy of vrt.vrt
         if self.vrt is not None:
             vrt.vrt = self.vrt.copy()
-            # make reference from the new vrt to the copy of vrt.vrt
-            new_vrt_xml = vrt.xml.replace(os.path.split(self.vrt.filename)[1],
-                                            os.path.split(vrt.vrt.filename)[1])
-            vrt.write_xml(new_vrt_xml)
         return vrt
 
     @property
