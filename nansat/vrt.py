@@ -1064,8 +1064,6 @@ class VRT(object):
             srcs = [src]
         elif type(src) in [list, tuple]:
             srcs = src
-        else:
-            raise ValueError('Wrong src type (%s)! Should be dict or list/tuple of dict'%type(src))
 
         # Check if dst is given, or create empty dict
         if dst is None:
@@ -1496,12 +1494,7 @@ class VRT(object):
         lonlat = transformer.TransformPoints(dst2src, xy)[0]
 
         # convert return to lon,lat vectors
-        lonlat = np.array(lonlat)
-        if lonlat.shape[0] > 0:
-            lon_vector = lonlat[:, 0]
-            lat_vector = lonlat[:, 1]
-        else:
-            lon_vector, lat_vector = [], []
+        lon_vector, lat_vector, _ = np.array(lonlat).T
 
         return lon_vector, lat_vector
 
