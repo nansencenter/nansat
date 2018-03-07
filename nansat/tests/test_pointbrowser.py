@@ -16,11 +16,10 @@ import numpy as np
 from nansat.pointbrowser import PointBrowser
 
 try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
     import matplotlib
+    if 'DISPLAY' not in os.environ:
+        matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    plt.switch_backend('qt5agg')
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
 else:
@@ -28,17 +27,11 @@ else:
 
 
 class PointBrowserTest(unittest.TestCase):
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED and 'DISPLAY' in os.environ, 'Matplotlib is required')
-    def setUp(self):
-        plt.switch_backend('qt5agg')
-        plt.ion()
-        data = np.ndarray(shape=(4, 4), dtype=float, order='F')
-        self.point = PointBrowser(data)
-
     def test_onclick(self):
+        point_browser = PointBrowser(np.zeros((4, 4)), force_interactive=False)
         event = Event(xdata=0, ydata=0, key=None)
-        self.point.onclick(event)
-        t = self.point._convert_coordinates()[0]
+        point_browser.onclick(event)
+        t = point_browser._convert_coordinates()[0]
         self.assertIsInstance(t, np.ndarray)
         xPoints = t[0]
         self.assertIsInstance(xPoints, np.ndarray)
@@ -48,19 +41,25 @@ class PointBrowserTest(unittest.TestCase):
         self.assertEqual(yPoints[0], event.ydata, "y coordinates is set wrong")
 
     def test_onclick_multilines(self):
+        point_browser = PointBrowser(np.zeros((4, 4)), force_interactive=False)
         events = []
         events.append(Event(xdata=0, ydata=0, key=None))
         events.append(Event(xdata=1, ydata=0, key=None))
         events.append(Event(xdata=2, ydata=2, key='AnyKeyButZorAltZ'))
         events.append(Event(xdata=2, ydata=3, key=None))
         for event in events:
-            self.point.onclick(event)
-        points = self.point._convert_coordinates()
+            point_browser.onclick(event)
+        points = point_browser._convert_coordinates()
         self.assertEqual(len(points), 2, 'There should be two transects')
         self.assertTrue(np.alltrue(points[0] == np.array([[0, 1], [0, 0]])),
                         't1 is not correct')
         self.assertTrue(np.alltrue(points[1] == np.array([[2, 2], [2, 3]])),
                         't2 is not correct')
+
+    @unittest.skipIf('DISPLAY' in os.environ, 'Non-interactive mode is required')
+    def test_fail_non_interactive(self):
+        with self.assertRaises(SystemError):
+            point_browser = PointBrowser(np.zeros((4, 4)))
 
 class Event:
     def __init__(self, **kwds):
