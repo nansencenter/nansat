@@ -75,7 +75,7 @@ The easiest way to install Nansat on a Linux machine is to use
     conda update -q --yes conda
 
     # install all requirements from conda-forge channel
-    conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 cfunits python-dateutil pythesint nose
+    conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 python-dateutil pythesint nose
 
     # finally install Nansat
     pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
