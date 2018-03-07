@@ -449,6 +449,16 @@ class VRTTest(unittest.TestCase):
             self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
             self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
 
+    def test_init_from_old__gdal_dataset2(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        with warnings.catch_warnings(record=True) as w:
+            vrt = VRT(ds)
+            self.assertEqual(w[0].category, NansatFutureWarning)
+            self.assertIsInstance(vrt.dataset, gdal.Dataset)
+            self.assertTrue(vrt.filename.startswith('/vsimem/'))
+            self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
+            self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
+
     def test_init_from_old__vrt_dataset(self):
         ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
         with warnings.catch_warnings(record=True) as w:
@@ -460,11 +470,13 @@ class VRTTest(unittest.TestCase):
     def test_init_from_old__dataset_params(self):
         ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
         with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(srcGeoTransform=(0, 1, 0, 0, 0, -1), srcRasterXSize=10, srcRasterYSize=20)
+            vrt = VRT(srcGeoTransform=(0, 1, 0, 0, 0, -1), srcRasterXSize=10, srcRasterYSize=20,
+                        srcMetadata={'meta_key1': 'meta_value1'})
             self.assertEqual(w[0].category, NansatFutureWarning)
             self.assertIsInstance(vrt.dataset, gdal.Dataset)
             self.assertEqual(vrt.dataset.RasterXSize, 10)
             self.assertTrue(vrt.filename.startswith('/vsimem/'))
+            self.assertIn('meta_key1', vrt.dataset.GetMetadata())
 
     def test_init_from_old__array(self):
         a = np.random.randn(100,100)
@@ -544,6 +556,46 @@ class VRTTest(unittest.TestCase):
 
         self.assertFalse(data is None)
         self.assertTrue(np.all(data == array))
+
+    def test_filename_warning(self):
+        vrt = VRT()
+        with warnings.catch_warnings(record=True) as w:
+            vrt_filename = vrt.fileName
+            self.assertEqual(vrt_filename, vrt.filename)
+
+    def test_get_sub_vrt0(self):
+        vrt1 = VRT()
+        vrt2 = vrt1.get_sub_vrt()
+        self.assertEqual(vrt1, vrt2)
+
+    def test_get_sub_vrt3(self):
+        vrt1 = VRT().get_super_vrt().get_super_vrt().get_super_vrt()
+        vrt2 = vrt1.get_sub_vrt(3)
+        self.assertEqual(vrt2.vrt, None)
+
+    def test_get_sub_vrt_steps_0(self):
+        vrt1 = VRT().get_super_vrt()
+        vrt2 = vrt1.get_sub_vrt(steps=0)
+        self.assertEqual(vrt1, vrt2)
+
+    def test_transform_points(self):
+        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        vrt1 = VRT.from_gdal_dataset(ds, metadata=ds.GetMetadata())
+        vrt1.tps = True
+        lon, lat = vrt1.transform_points([1, 2, 3], [4, 5, 6])
+        self.assertTrue(np.allclose(lon, np.array([28.23549571, 28.24337106, 28.25126129])))
+        self.assertTrue(np.allclose(lat, np.array([71.52509848, 71.51913744, 71.51317568])))
+
+    def test_make_filename(self):
+        filename1 = VRT._make_filename()
+        filename2 = VRT._make_filename(extention='smth')
+        filename3 = VRT._make_filename(nomem=True)
+        self.assertTrue(filename1.startswith('/vsimem/'))
+        self.assertTrue(filename2.startswith('/vsimem/'))
+        self.assertTrue(filename2.endswith('.smth'))
+        self.assertTrue(os.path.exists(filename3))
+
+
 
 if __name__ == "__main__":
     unittest.main()
