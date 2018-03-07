@@ -1599,7 +1599,21 @@ class VRT(object):
         self.dataset.SetGCPs(dst_gcps, dst_srs.wkt)
 
     def set_offset_size(self, axis, offset, size):
-        """Set offset and  size in VRT dataset and band attributes"""
+        """Set offset and  size in VRT dataset and band attributes
+
+        Parameters
+        ----------
+        axis : str
+            name of axis ('x' or 'y')
+        offset : int
+            value of offset to put into VRT
+        size : int
+            value of size to put into VRT
+
+        Notes
+        --------
+        Changes VRT file, sets new offset and size
+        """
         node0 = Node.create(str(self.xml))
 
         # change size
