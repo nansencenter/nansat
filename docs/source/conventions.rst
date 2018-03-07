@@ -36,11 +36,12 @@ Example workflow for a hotfix (similar workflow for other branches):
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    hotfix branch and assign a reviewer
 4. Let the reviewer do the following:
-  a) Check the code
-  b) Request changes or merge the pull request into master using the online tool
-  c) Delete the branch
-  d) Rebase develop on top of master (again: checkout develop; use ``git rebase master``; test; push to GitHUB)
-  e) Close the issue
+  a) Wait for tests on Travis CI to pass
+  b) Check the code
+  c) Request changes or merge the pull request into master using the online tool
+  d) Delete the branch
+  e) Rebase develop on top of master (again: checkout develop; use ``git rebase master``; test; push to GitHUB; check Travis CI status)
+  f) Close the issue
 
 .. note::
 
