@@ -918,23 +918,37 @@ class VRT(object):
         return options, add_gcps
 
     def copy(self):
-        """Create and return a full copy of a VRT instance"""
+        """Create and return a full copy of a VRT instance with new filenames
+
+        If self.dataset has no bands, the copy is created also without bands.
+        If self.dataset has bands, the copy is created from the dataset with all bands.
+        If self has attribute 'vrt' (a sub-VRT object, result of get_super_vrt) it's contents is
+        also copied into sub-VRT of the copy.
+        Other attributes of self, such as tps flag and band_vrts are also copied.
+
+        """
         if self.dataset.RasterCount == 0:
-            vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+            new_vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
         else:
-            vrt = VRT.copy_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+            new_vrt = VRT.copy_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+            replace_filenames = [(self.filename, new_vrt.filename)]
+            if self.vrt is not None:
+                # recursive copy of sub-VRT object
+                new_vrt.vrt = self.vrt.copy()
+                replace_filenames.append((self.vrt.filename, new_vrt.vrt.filename))
 
-        vrt.band_vrts = dict(self.band_vrts)
-        vrt.tps = bool(self.tps)
+            # change reference from original filenames to the new ones
+            for replace_filename in replace_filenames:
+                new_vrt_xml = new_vrt.xml.replace(os.path.basename(replace_filename[0]),
+                                          os.path.basename(replace_filename[1]))
+                new_vrt.write_xml(new_vrt_xml)
 
-        # recursive copy of vrt.vrt
-        if self.vrt is not None:
-            vrt.vrt = self.vrt.copy()
-            # make reference from the new vrt to the copy of vrt.vrt
-            new_vrt_xml = vrt.xml.replace(os.path.split(self.vrt.filename)[1],
-                                            os.path.split(vrt.vrt.filename)[1])
-            vrt.write_xml(new_vrt_xml)
-        return vrt
+            # copy VRTs of bands
+            new_vrt.band_vrts = dict(self.band_vrts)
+        # copy the thin spline transformation option
+        new_vrt.tps = bool(self.tps)
+
+        return new_vrt
 
     @property
     def fileName(self):

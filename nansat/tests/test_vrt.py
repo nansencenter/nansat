@@ -153,6 +153,37 @@ class VRTTest(unittest.TestCase):
 
         self.assertEqual(vrt2.dataset.RasterCount, 1)
 
+    def test_copy_vrt_pixel_func(self):
+        vrt1 = VRT()
+        vrt1_xml = '''
+        <VRTDataset rasterXSize="200" rasterYSize="200">
+            <VRTRasterBand dataType="Byte" band="1">
+                <ComplexSource>
+                    <SourceFilename relativeToVRT="0">%s</SourceFilename>
+                    <SourceBand>1</SourceBand>
+                    <SourceProperties RasterXSize="200" RasterYSize="200" DataType="Byte" BlockXSize="200" BlockYSize="13" />
+                    <SrcRect xOff="0" yOff="0" xSize="200" ySize="200" />
+                    <DstRect xOff="0" yOff="0" xSize="200" ySize="200" />
+                </ComplexSource>
+            </VRTRasterBand>
+            <VRTRasterBand dataType="Float32" band="2" subClass="VRTDerivedRasterBand">
+                <ComplexSource>
+                    <SourceFilename relativeToVRT="0">%s</SourceFilename>
+                    <SourceBand>1</SourceBand>
+                    <SourceProperties RasterXSize="200" RasterYSize="200" DataType="Byte" BlockXSize="128" BlockYSize="128" />
+                    <SrcRect xOff="0" yOff="0" xSize="200" ySize="200" />
+                    <DstRect xOff="0" yOff="0" xSize="200" ySize="200" />
+                </ComplexSource>
+                <PixelFunctionType>sqrt</PixelFunctionType>
+            </VRTRasterBand>
+        </VRTDataset>
+       ''' % (self.test_file_gcps, vrt1.filename)
+        vrt1.write_xml(vrt1_xml)
+        vrt2 = vrt1.copy()
+
+        self.assertFalse(os.path.basename(vrt1.filename) in vrt2.xml)
+
+
     def test_export(self):
         tmpfilename = os.path.join(ntd.tmp_data_path, 'temp.vrt.xml')
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
@@ -507,6 +538,15 @@ class VRTTest(unittest.TestCase):
         self.assertIsInstance(vrt2.vrt, VRT)
         self.assertEqual(vrt2.dataset.GetMetadataItem(str('AREA_OR_POINT')), 'Area')
 
+    def test_get_super_vrt_and_copy(self):
+        array = np.zeros((10,10))
+        vrt = VRT.from_array(array)
+        vrt = vrt.get_super_vrt()
+        vrt = vrt.copy()
+        data = vrt.dataset.ReadAsArray()
+
+        self.assertFalse(data is None)
+        self.assertTrue(np.all(data == array))
 
 if __name__ == "__main__":
     unittest.main()
