@@ -69,8 +69,9 @@ VERSION             = '%d.%d.%ddev' % (MAJOR, MINOR, MICRO) # Remember to remove
 REQS                = [
                         "Pillow",
                         "pythesint",
-                        "cfunits",
                         "urllib3",
+                        "numpy",
+                        "gdal"
                     ]
 
 #----------------------------------------------------------------------------#
