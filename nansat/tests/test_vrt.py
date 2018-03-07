@@ -596,6 +596,5 @@ class VRTTest(unittest.TestCase):
         self.assertTrue(os.path.exists(filename3))
 
 
-
 if __name__ == "__main__":
     unittest.main()
