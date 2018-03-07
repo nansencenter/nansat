@@ -19,9 +19,9 @@ import os
 import numpy as np
 
 try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
     import matplotlib
+    if 'DISPLAY' not in os.environ:
+        matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
@@ -63,11 +63,11 @@ class PointBrowser():
     lines = None
     coordinates = None
 
-    def __init__(self, data, fmt='x-k', **kwargs):
+    def __init__(self, data, fmt='x-k', force_interactive=True, **kwargs):
         """Open figure with imshow and colorbar"""
         if not MATPLOTLIB_IS_INSTALLED:
             raise ImportError(' Matplotlib is not installed ')
-        if not matplotlib.is_interactive():
+        if force_interactive and not matplotlib.is_interactive():
             raise SystemError('''
         Python is started with -pylab option, transect will not work.
         Please restart python without -pylab.''')
