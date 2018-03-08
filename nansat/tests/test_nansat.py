@@ -750,11 +750,11 @@ class NansatTest(unittest.TestCase):
 
     @patch('nansat.nansat.PointBrowser')
     def test_digitize_points(self, mock_PointBrowser):
-        ''' shall create PointBrowser and call PointBrowser.get_points() '''
-        value = 'ponits'
+        """ shall create PointBrowser and call PointBrowser.get_points() """
+        value = 'points'
         mock_PointBrowser().get_points.return_value = value
-        n1 = Nansat(self.test_file_gcps, log_level=40)
-        points = n1.digitize_points(1)
+        n = Nansat(self.test_file_gcps, log_level=40)
+        points = n.digitize_points(1)
         self.assertTrue(mock_PointBrowser.called_once())
         self.assertEqual(points, value)
 
