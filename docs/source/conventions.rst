@@ -16,26 +16,32 @@ We adopt the following system for branching and merging:
    1. Never edit code in the master or develop branch. Always make a new branch for your edits.
    2. A new branch should be very specific to only one problem. It should be short living.
    3. Commit often.
-   4. Branch often. 
+   4. Branch often.
    5. Branch only from master or from develop.
    6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
 
 Example workflow for a hotfix (similar workflow for other branches):
 
-1. Branch from master into the hotfix specific branch
+1. Branch from master into the hotfix specific branch (hotfix<NNN>_<short-heading>)
   a) Update tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
-  d) Commit to hotfix<NNN>_<short-heading>
-2. Pull and merge master into your branch, test, and push 
+  d) Commit to the hotfix branch
+2. Rebase the hotfix branch on top of master
+  a) Checkout the hotfix branch
+  b) Use ``git rebase master``
+  c) Fix conflicts if any
+  d) Test
+  e) Push your hotfix branch to GitHub
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
-   branch and assign a reviewer
+   hotfix branch and assign a reviewer
 4. Let the reviewer do the following:
-  a) Check the code
-  b) Request changes or merge pull request into master
-  c) Delete the branch 
-  d) Merge master into develop (again, use pull request, then merge by selecting the rebase option in GitHUB)
-  e) Close the issue 
+  a) Wait for tests on Travis CI to pass
+  b) Check the code
+  c) Request changes or merge the pull request into master using the online tool
+  d) Delete the branch
+  e) Rebase develop on top of master (again: checkout develop; use ``git rebase master``; test; push to GitHUB; check Travis CI status)
+  f) Close the issue
 
 .. note::
 
