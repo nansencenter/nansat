@@ -19,9 +19,9 @@ import os
 import numpy as np
 
 try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
     import matplotlib
+    if 'DISPLAY' not in os.environ:
+        matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
@@ -40,11 +40,13 @@ class PointBrowser():
     transect : bool
         if True, get transects / points
         if False, get only points
+    force_interactive : bool
+        force PointBrowser to interactive mode? (True for regular use, False for tests)
     **kwargs : dict
         optional parameters for imshow
 
-    Creates
-    -------
+    Note
+    ----
     self.fig        : pyplot Figure
     self.data       : ndarray with data
     self.ax         : axes
@@ -63,11 +65,11 @@ class PointBrowser():
     lines = None
     coordinates = None
 
-    def __init__(self, data, fmt='x-k', **kwargs):
+    def __init__(self, data, fmt='x-k', force_interactive=True, **kwargs):
         """Open figure with imshow and colorbar"""
         if not MATPLOTLIB_IS_INSTALLED:
             raise ImportError(' Matplotlib is not installed ')
-        if not matplotlib.is_interactive():
+        if force_interactive and not matplotlib.is_interactive():
             raise SystemError('''
         Python is started with -pylab option, transect will not work.
         Please restart python without -pylab.''')
@@ -87,7 +89,17 @@ class PointBrowser():
         self.coordinates = [[]]
 
     def onclick(self, event):
-        """Append onclick event"""
+        """ Process mouse onclick event
+        Append coordinates of the click to self.coordinates, add point and 2D line to self.points
+        If click is outside, nothing is done
+        If click with 'z' pressed, nothing is done
+        If click with 'anykey', new line is started
+
+        Parameters
+        ----------
+        event : matplotlib.mouse_event
+
+        """
         # ignore click outside image
         if event.xdata is None or event.ydata is None:
             return
@@ -108,16 +120,19 @@ class PointBrowser():
         self.ax.figure.canvas.draw()
 
     def _convert_coordinates(self):
-        ''' Converts the coordinates array to points array for return in
+        """ Converts the coordinates array to points array for return in
         get_points, so that the internal structure can be tested
 
-        The format of the returned array:
-        [array([[x1,...,xn],[y1,...,yn]]),array([[xn+1,...],[yn+1,...]]),...]
-        Each 'array' element is a numpy.ndarray and represents one transect,
-        where x1,y1 is the first point in the first transect,
-        and xn,yn the last point in the first transect.
-        The inner x/y-arrays are also numpy.ndarrays
-        '''
+        Returns
+        -------
+            list of arrays
+            The format of the returned array:
+            [array([[x1,...,xn],[y1,...,yn]]),array([[xn+1,...],[yn+1,...]]),...]
+            Each 'array' element is a numpy.ndarray and represents one transect,
+            where x1,y1 is the first point in the first transect,
+            and xn,yn the last point in the first transect.
+            The inner x/y-arrays are also numpy.ndarrays
+        """
         return [np.array(p).T for p in self.coordinates if len(p) > 0]
 
     def get_points(self):
