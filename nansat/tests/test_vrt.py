@@ -15,10 +15,7 @@ import unittest
 import logging
 import os
 import sys
-if sys.version_info.major == 2:
-    from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
-else:
-    from unittest.mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 import xml.etree.ElementTree as ET
 import warnings

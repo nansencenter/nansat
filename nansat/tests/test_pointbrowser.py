@@ -12,15 +12,15 @@
 # ------------------------------------------------------------------------------
 import os
 import unittest
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+
 import numpy as np
 from nansat.pointbrowser import PointBrowser
 
 try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
     import matplotlib
     import matplotlib.pyplot as plt
-    plt.switch_backend('qt5agg')
+    plt.switch_backend('Agg')
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
 else:
@@ -28,43 +28,82 @@ else:
 
 
 class PointBrowserTest(unittest.TestCase):
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED and 'DISPLAY' in os.environ, 'Matplotlib is required')
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def setUp(self):
-        plt.switch_backend('qt5agg')
-        plt.ion()
-        data = np.ndarray(shape=(4, 4), dtype=float, order='F')
-        self.point = PointBrowser(data)
+        self.data = np.zeros((4, 4))
+        self.event = MagicMock()
+
+    def test_init(self):
+        """ Create Pointbrowser """
+        pb = PointBrowser(self.data, force_interactive=False)
+        self.assertIsInstance(pb.fig, plt.Figure)
+        self.assertTrue(np.alltrue(pb.data == self.data))
+        self.assertTrue(np.alltrue(pb.ax.get_images()[0].get_array() == self.data))
+        self.assertEqual(pb.fmt, 'x-k')
+        self.assertEqual(pb.points, [])
+        self.assertEqual(pb.coordinates, [[]])
 
     def test_onclick(self):
-        event = Event(xdata=0, ydata=0, key=None)
-        self.point.onclick(event)
-        t = self.point._convert_coordinates()[0]
-        self.assertIsInstance(t, np.ndarray)
-        xPoints = t[0]
-        self.assertIsInstance(xPoints, np.ndarray)
-        yPoints = t[1]
-        self.assertIsInstance(yPoints, np.ndarray)
-        self.assertEqual(xPoints[0], event.xdata, "x coordinates is set wrong")
-        self.assertEqual(yPoints[0], event.ydata, "y coordinates is set wrong")
+        """ Mimic click """
+        self.event = MagicMock()
+        self.event.xdata = 10
+        self.event.ydata = 10
+        self.event.key = None
+        pb = PointBrowser(self.data, force_interactive=False)
 
-    def test_onclick_multilines(self):
-        events = []
-        events.append(Event(xdata=0, ydata=0, key=None))
-        events.append(Event(xdata=1, ydata=0, key=None))
-        events.append(Event(xdata=2, ydata=2, key='AnyKeyButZorAltZ'))
-        events.append(Event(xdata=2, ydata=3, key=None))
-        for event in events:
-            self.point.onclick(event)
-        points = self.point._convert_coordinates()
-        self.assertEqual(len(points), 2, 'There should be two transects')
-        self.assertTrue(np.alltrue(points[0] == np.array([[0, 1], [0, 0]])),
-                        't1 is not correct')
-        self.assertTrue(np.alltrue(points[1] == np.array([[2, 2], [2, 3]])),
-                        't2 is not correct')
+        pb.onclick(self.event)
+        self.assertIsInstance(pb.points[0][0], matplotlib.lines.Line2D)
+        self.assertEqual(pb.coordinates, [[(self.event.xdata, self.event.ydata)]])
 
-class Event:
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
+    def test_onclick_none(self):
+        """ Mimic click outside figure  """
+        self.event.xdata = None
+        self.event.ydata = None
+        self.event.key = None
+        pb = PointBrowser(self.data, force_interactive=False)
+
+        pb.onclick(self.event)
+        self.assertEqual(pb.points, [])
+        self.assertEqual(pb.coordinates, [[]])
+
+    def test_onclick_key_z(self):
+        """ Mimic click with 'z' pressed """
+        self.event.xdata = 10
+        self.event.ydata = 10
+        self.event.key = 'z'
+        pb = PointBrowser(self.data, force_interactive=False)
+
+        pb.onclick(self.event)
+        self.assertEqual(pb.points, [])
+        self.assertEqual(pb.coordinates, [[]])
+
+    def test_onclick_key(self):
+        """ Mimic click with 'anykey' pressed """
+        self.event = MagicMock()
+        self.event.xdata = 10
+        self.event.ydata = 10
+        self.event.key = 'newkey'
+        pb = PointBrowser(self.data, force_interactive=False)
+
+        pb.onclick(self.event)
+        self.assertIsInstance(pb.points[0][0], matplotlib.lines.Line2D)
+        self.assertEqual(pb.coordinates, [[],[(self.event.xdata, self.event.ydata)]])
+
+    def test_convert_coordinates(self):
+        """ Mimic click with 'anykey' pressed """
+        pb = PointBrowser(self.data, force_interactive=False)
+        pb.coordinates = [[[1,2,3],[4,5,6]]]
+        new_coordinates = pb._convert_coordinates()
+        self.assertTrue(np.all(new_coordinates[0] == np.array([[1,2,3], [4,5,6]]).T))
+
+    @patch('nansat.pointbrowser.plt')
+    def test_get_points(self, plt_mock):
+        plt_mock.show.return_value = None
+        pb = PointBrowser(self.data, force_interactive=False)
+        points = pb.get_points()
+        self.assertTrue(pb.fig.canvas.mpl_connect.called)
+        self.assertTrue(plt_mock.show.called)
+        self.assertEqual(points, [])
 
 
 if __name__ == "__main__":
