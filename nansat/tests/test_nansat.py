@@ -748,22 +748,15 @@ class NansatTest(unittest.TestCase):
         self.assertEqual(type(t['lat']), np.ndarray)
         self.assertEqual(type(t['lon']), np.ndarray)
 
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED and 'DISPLAY' in os.environ, 'Matplotlib is required')
-    def test_digitize_points(self):
-        ''' shall return empty array in non interactive mode '''
-        for backend in matplotlib.rcsetup.interactive_bk:
-            # Find a supported interactive backend
-            try:
-                plt.switch_backend(backend)
-                break;
-            except:
-                pass
-        plt.ion()
-        n1 = Nansat(self.test_file_gcps, log_level=40)
-        points = n1.digitize_points(1)
-
-        self.assertEqual(len(points), 0)
-        plt.ioff()
+    @patch('nansat.nansat.PointBrowser')
+    def test_digitize_points(self, mock_PointBrowser):
+        """ shall create PointBrowser and call PointBrowser.get_points() """
+        value = 'points'
+        mock_PointBrowser().get_points.return_value = value
+        n = Nansat(self.test_file_gcps, log_level=40)
+        points = n.digitize_points(1)
+        self.assertTrue(mock_PointBrowser.called_once())
+        self.assertEqual(points, value)
 
     def test_crop(self):
         n1 = Nansat(self.test_file_gcps, log_level=40)
