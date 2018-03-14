@@ -64,9 +64,6 @@ class ExporterTest(unittest.TestCase):
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
 
-    def tearDown(self):
-        os.unlink(self.tmpfilename)
-
     def test_geolocation_of_exportedNC_vs_original(self):
         ''' Lon/lat in original and exported file should coincide '''
         orig = Nansat(self.test_file_gcps)
@@ -269,6 +266,7 @@ class ExporterTest(unittest.TestCase):
         # Test that the long/lat values are set aproximately correct
         ncg = 'NC_GLOBAL#'
         easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
+        sys.stdout.write('easternmost_longitude: ' + str(easternmost_longitude) + ' \n')
         self.assertTrue(float(easternmost_longitude) > 179,
                         'easternmost_longitude is wrong:' +
                         easternmost_longitude)
