@@ -149,7 +149,7 @@ class Exporter(object):
 
         # Create output file using GDAL
         dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset, options=options)
-        dataset = None
+        del dataset
         # add GCPs into netCDF file as separate float variables
         if add_gcps:
             Exporter._add_gcps(filename, export_vrt.dataset.GetGCPs(), bottomup)
