@@ -319,8 +319,6 @@ class ExporterTest(unittest.TestCase):
 
 
     def test_export_netcdf_complex_remove_meta(self):
-        ''' Test export of complex data with pixelfunctions
-        '''
         n = Nansat(self.test_file_complex)
         self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
         with warnings.catch_warnings(record=True) as recorded_warnings:
@@ -332,18 +330,15 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue((n[1] == exported[1]).any())
 
     def test_export_netcdf_arctic(self):
-        ''' Test export of the arctic data without GCPS
-        '''
         n = Nansat(self.test_file_arctic)
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
+        del exported
 
     def test_export_netcdf_arctic_hardcopy(self):
-        ''' Test export of the arctic data without GCPS
-        '''
         n = Nansat(self.test_file_arctic)
         n.export(self.tmpfilename, hardcopy=True)
         exported = Nansat(self.tmpfilename)
