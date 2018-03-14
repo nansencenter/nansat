@@ -274,6 +274,7 @@ class Exporter(object):
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmp_filename = tempfile.mkstemp(suffix='.nc')
+        fid.close()
         data.export(tmp_filename, rm_metadata=rm_metadata)
         del data
 
@@ -409,7 +410,6 @@ class Exporter(object):
         nc_inp.close()
 
         # Delete the temprary netCDF file
-        fid = None
         os.remove(tmp_filename)
 
         return 0
