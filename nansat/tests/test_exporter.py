@@ -15,6 +15,7 @@ from __future__ import print_function, absolute_import, division
 import os
 import sys
 import json
+import time
 import logging
 import unittest
 import warnings
@@ -336,7 +337,7 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
-        del exported
+        time.sleep(1)
 
     def test_export_netcdf_arctic_hardcopy(self):
         n = Nansat(self.test_file_arctic)
