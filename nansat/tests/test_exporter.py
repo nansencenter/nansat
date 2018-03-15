@@ -21,6 +21,7 @@ import unittest
 import warnings
 import datetime
 import tempfile
+from pprint import pprint
 from xml.sax.saxutils import unescape
 if sys.version_info.major == 2:
     from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
@@ -262,29 +263,27 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
         metadata = g.GetMetadata_Dict()
+        pprint(metadata)
 
-        # Test that the long/lat values are set aproximately correct
-        ncg = 'NC_GLOBAL#'
-        easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
-        sys.stdout.write('easternmost_longitude: ' + str(easternmost_longitude) + ' \n')
-        self.assertTrue(float(easternmost_longitude) > 179,
-                        'easternmost_longitude is wrong:' +
-                        easternmost_longitude)
-        westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
-        self.assertTrue(float(westernmost_longitude) < -179,
-                        'westernmost_longitude is wrong:' +
-                        westernmost_longitude)
-        northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
-        self.assertTrue(float(northernmost_latitude) > 89.999,
-                        'northernmost_latitude is wrong:' +
-                        northernmost_latitude)
-        southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
-        self.assertTrue(float(southernmost_latitude) < 54,
-                        'southernmost_latitude is wrong:' +
-                        southernmost_latitude)
-        self.assertTrue(float(southernmost_latitude) > 53,
-                        'southernmost_latitude is wrong:' +
-                        southernmost_latitude)
+        # Test that the long/lat values are set correctly
+		# GDAL behaves differently:
+		# Windows: nc-attributes are accessible without 'NC_GLOBAL#' prefix
+		# Linux: nc-attributes are accessible only with 'NC_GLOBAL#' prefix
+        if 'linux' in sys.platform:
+            nc_prefix = 'NC_GLOBAL#'
+        elif 'win' in sys.platform:
+            nc_prefix = ''
+        
+        test_metadata_keys = ['easternmost_longitude', 'westernmost_longitude', 'northernmost_latitude', 'southernmost_latitude']
+        test_metadata_min = [179, -180, 89.9, 53]
+        test_metadata_max = [180, -179, 90, 54]
+        
+        for i, test_metadata_key in enumerate(test_metadata_keys):
+            medata_value = float(metadata[nc_prefix + test_metadata_key])
+            self.assertTrue(medata_value >= test_metadata_min[i],
+                            '%s is wrong: %f'%(test_metadata_key, medata_value))
+            self.assertTrue(medata_value <= test_metadata_max[i],
+                            '%s is wrong: %f'%(test_metadata_key, medata_value))
 
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, log_level=40)
