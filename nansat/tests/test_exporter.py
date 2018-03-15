@@ -21,7 +21,6 @@ import unittest
 import warnings
 import datetime
 import tempfile
-from pprint import pprint
 from xml.sax.saxutils import unescape
 if sys.version_info.major == 2:
     from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
@@ -263,7 +262,6 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         g = gdal.Open(tmpfilename)
         metadata = g.GetMetadata_Dict()
-        pprint(metadata)
 
         # Test that the long/lat values are set correctly
 		# GDAL behaves differently:
@@ -334,7 +332,6 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
-        time.sleep(1)
 
     def test_export_netcdf_arctic_hardcopy(self):
         n = Nansat(self.test_file_arctic)
