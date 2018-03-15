@@ -1,4 +1,4 @@
-|Build Status| |Coverage Status| |DOI|
+|Build Status| |AppVeyor Status| |Coverage Status| |DOI|
 
 .. NOTE: include statements doesn't work with github README.rst - the first section here is repeated
 .. in docs/source/about.rst as well...
@@ -133,6 +133,8 @@ Development is supported by the Research Council of Norway as a part of
 
 .. |Build Status| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
    :target: https://travis-ci.org/nansencenter/nansat
+.. |AppVeyor Status| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr?svg=true
+   :target https://ci.appveyor.com/project/akorosov/nansat
 .. |Coverage Status| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master
    :target: https://coveralls.io/r/nansencenter/nansat
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg
