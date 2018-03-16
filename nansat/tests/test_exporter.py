@@ -263,19 +263,21 @@ class ExporterTest(unittest.TestCase):
         g = gdal.Open(tmpfilename)
         metadata = g.GetMetadata_Dict()
 
-        # Test that the long/lat values are set correctly
 		# GDAL behaves differently:
 		# Windows: nc-attributes are accessible without 'NC_GLOBAL#' prefix
 		# Linux: nc-attributes are accessible only with 'NC_GLOBAL#' prefix
-        if 'linux' in sys.platform:
-            nc_prefix = 'NC_GLOBAL#'
-        elif 'win' in sys.platform:
+        # OSX: ?
+        # Therefore we have to add NC_GLOBAL# and test if such metadata exists
+        nc_prefix = 'NC_GLOBAL#'
+        if not nc_prefix + 'easternmost_longitude' in metadata:
             nc_prefix = ''
-        
-        test_metadata_keys = ['easternmost_longitude', 'westernmost_longitude', 'northernmost_latitude', 'southernmost_latitude']
+        self.assertIn(nc_prefix + 'easternmost_longitude', metadata)
+
+        # Test that the long/lat values are set correctly
+        test_metadata_keys = ['easternmost_longitude', 'westernmost_longitude',
+                              'northernmost_latitude', 'southernmost_latitude']
         test_metadata_min = [179, -180, 89.9, 53]
         test_metadata_max = [180, -179, 90, 54]
-        
         for i, test_metadata_key in enumerate(test_metadata_keys):
             medata_value = float(metadata[nc_prefix + test_metadata_key])
             self.assertTrue(medata_value >= test_metadata_min[i],
