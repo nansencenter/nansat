@@ -562,6 +562,7 @@ class VRTTest(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             vrt_filename = vrt.fileName
             self.assertEqual(vrt_filename, vrt.filename)
+            self.assertEqual(w[0].category, NansatFutureWarning)
 
     def test_get_sub_vrt0(self):
         vrt1 = VRT()
@@ -585,6 +586,9 @@ class VRTTest(unittest.TestCase):
         lon, lat = vrt1.transform_points([1, 2, 3], [4, 5, 6])
         self.assertTrue(np.allclose(lon, np.array([28.23549571, 28.24337106, 28.25126129])))
         self.assertTrue(np.allclose(lat, np.array([71.52509848, 71.51913744, 71.51317568])))
+        lon, lat = vrt1.transform_points([], [])
+        self.assertTrue(np.allclose(lon, np.array([])))
+        self.assertTrue(np.allclose(lat, np.array([])))
 
     def test_make_filename(self):
         filename1 = VRT._make_filename()

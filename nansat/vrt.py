@@ -1393,9 +1393,19 @@ class VRT(object):
         return self.vrt.get_sub_vrt(steps)
 
     def get_super_vrt(self):
-        """Create vrt with subVRT
+        """Create a new VRT object with a reference to the current object (self)
 
-        copy of self in vrt.vrt and change references from vrt to vrt.vrt
+        Create a new VRT (super_vrt) with exactly the same structure (number of bands, raster size,
+        metadata) as the current object (self). Create a copy of the current object and add it as
+        an attribute of the new object (super_vrt.vrt). Bands in the new object will refer to the
+        same bands in the current object. Recursively copy all vrt attributes of the current
+        object (self.vrt.vrt.vrt...) into the new object (super_vrt.vrt.vrt.vrt.vrt...).
+
+
+        Returns
+        -------
+        super_vrt : VRT
+            a new VRT object with copy of self in super_vrt.vrt
 
         """
         # create new vrt that refers to a copy of self
@@ -1490,11 +1500,15 @@ class VRT(object):
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([col_vector, row_vector]).transpose()
 
-        # transfrom coordinates
+        # transfrom coordinates (TransformPoints returns list of (X, Y, Z) tuples)
         lonlat = transformer.TransformPoints(dst2src, xy)[0]
 
-        # convert return to lon,lat vectors
-        lon_vector, lat_vector, _ = np.array(lonlat).T
+        # convert to Nx3 numpy array (keep second dimention to allow empty inputs)
+        lonlat = np.array(lonlat)
+        lonlat.shape = int(lonlat.size/3), 3
+
+        # convert to vectors with lon,lat values
+        lon_vector, lat_vector, _ = lonlat.T
 
         return lon_vector, lat_vector
 
