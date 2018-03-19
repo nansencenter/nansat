@@ -22,7 +22,7 @@ import datetime
 import json
 import sys
 from xml.sax.saxutils import unescape
-from mock import patch, PropertyMock, MagicMock, Mock, DEFAULT
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 import numpy as np
 

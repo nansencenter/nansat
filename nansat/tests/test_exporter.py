@@ -15,10 +15,12 @@ from __future__ import print_function, absolute_import, division
 import os
 import sys
 import json
+import time
 import logging
 import unittest
 import warnings
 import datetime
+import tempfile
 from xml.sax.saxutils import unescape
 if sys.version_info.major == 2:
     from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
@@ -56,7 +58,8 @@ class ExporterTest(unittest.TestCase):
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
         self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
-        self.tmpfilename = os.path.join(ntd.tmp_data_path, 'test.nc')
+        fd, self.tmpfilename = tempfile.mkstemp(suffix='.nc', dir=ntd.tmp_data_path)
+        os.close(fd)
 
         if not os.path.exists(self.test_file_gcps):
             raise ValueError('No test data available')
@@ -71,7 +74,6 @@ class ExporterTest(unittest.TestCase):
         lon1, lat1 = copy.get_geolocation_grids()
         np.testing.assert_allclose(lon0, lon1)
         np.testing.assert_allclose(lat0, lat1)
-        os.unlink(self.tmpfilename)
 
     def test_special_characters_in_exported_metadata(self):
         orig = Nansat(self.test_file_gcps)
@@ -82,7 +84,6 @@ class ExporterTest(unittest.TestCase):
         dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
                                                                    '"'}))
         self.assertIsInstance(dd, dict)
-        os.unlink(self.tmpfilename)
 
     def test_time_coverage_metadata_of_exported_equals_original(self):
         orig = Nansat(self.test_file_gcps)
@@ -95,8 +96,6 @@ class ExporterTest(unittest.TestCase):
                 copy.get_metadata('time_coverage_start'))
         self.assertEqual(orig.get_metadata('time_coverage_end'),
                 copy.get_metadata('time_coverage_end'))
-
-        os.unlink(self.tmpfilename)
 
     def test_export_netcdf(self):
         ''' Test export and following import of data with bands containing
@@ -116,7 +115,6 @@ class ExporterTest(unittest.TestCase):
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
         earrWithNaN = exported['testBandWithNaN']
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
-        os.unlink(self.tmpfilename)
 
     def test_export_gcps_filename_warning(self):
         ''' Should export file with GCPs and write correct bands'''
@@ -265,27 +263,27 @@ class ExporterTest(unittest.TestCase):
         g = gdal.Open(tmpfilename)
         metadata = g.GetMetadata_Dict()
 
-        # Test that the long/lat values are set aproximately correct
-        ncg = 'NC_GLOBAL#'
-        easternmost_longitude = metadata.get(ncg + 'easternmost_longitude')
-        self.assertTrue(float(easternmost_longitude) > 179,
-                        'easternmost_longitude is wrong:' +
-                        easternmost_longitude)
-        westernmost_longitude = metadata.get(ncg + 'westernmost_longitude')
-        self.assertTrue(float(westernmost_longitude) < -179,
-                        'westernmost_longitude is wrong:' +
-                        westernmost_longitude)
-        northernmost_latitude = metadata.get(ncg + 'northernmost_latitude')
-        self.assertTrue(float(northernmost_latitude) > 89.999,
-                        'northernmost_latitude is wrong:' +
-                        northernmost_latitude)
-        southernmost_latitude = metadata.get(ncg + 'southernmost_latitude')
-        self.assertTrue(float(southernmost_latitude) < 54,
-                        'southernmost_latitude is wrong:' +
-                        southernmost_latitude)
-        self.assertTrue(float(southernmost_latitude) > 53,
-                        'southernmost_latitude is wrong:' +
-                        southernmost_latitude)
+		# GDAL behaves differently:
+		# Windows: nc-attributes are accessible without 'NC_GLOBAL#' prefix
+		# Linux: nc-attributes are accessible only with 'NC_GLOBAL#' prefix
+        # OSX: ?
+        # Therefore we have to add NC_GLOBAL# and test if such metadata exists
+        nc_prefix = 'NC_GLOBAL#'
+        if not nc_prefix + 'easternmost_longitude' in metadata:
+            nc_prefix = ''
+        self.assertIn(nc_prefix + 'easternmost_longitude', metadata)
+
+        # Test that the long/lat values are set correctly
+        test_metadata_keys = ['easternmost_longitude', 'westernmost_longitude',
+                              'northernmost_latitude', 'southernmost_latitude']
+        test_metadata_min = [179, -180, 89.9, 53]
+        test_metadata_max = [180, -179, 90, 54]
+        for i, test_metadata_key in enumerate(test_metadata_keys):
+            medata_value = float(metadata[nc_prefix + test_metadata_key])
+            self.assertTrue(medata_value >= test_metadata_min[i],
+                            '%s is wrong: %f'%(test_metadata_key, medata_value))
+            self.assertTrue(medata_value <= test_metadata_max[i],
+                            '%s is wrong: %f'%(test_metadata_key, medata_value))
 
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, log_level=40)
@@ -319,8 +317,6 @@ class ExporterTest(unittest.TestCase):
 
 
     def test_export_netcdf_complex_remove_meta(self):
-        ''' Test export of complex data with pixelfunctions
-        '''
         n = Nansat(self.test_file_complex)
         self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
         with warnings.catch_warnings(record=True) as recorded_warnings:
@@ -330,29 +326,22 @@ class ExporterTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
-        os.unlink(self.tmpfilename)
 
     def test_export_netcdf_arctic(self):
-        ''' Test export of the arctic data without GCPS
-        '''
         n = Nansat(self.test_file_arctic)
         n.export(self.tmpfilename)
         exported = Nansat(self.tmpfilename)
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
-        os.unlink(self.tmpfilename)
 
     def test_export_netcdf_arctic_hardcopy(self):
-        ''' Test export of the arctic data without GCPS
-        '''
         n = Nansat(self.test_file_arctic)
         n.export(self.tmpfilename, hardcopy=True)
         exported = Nansat(self.tmpfilename)
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
-        os.unlink(self.tmpfilename)
 
     @patch('nansat.exporter.VRT._add_geolocation')
     def test_export_add_geoloc(self, mock_add_geolocation):
@@ -361,7 +350,6 @@ class ExporterTest(unittest.TestCase):
             n.export(self.tmpfilename, addGeoloc=True)
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
         self.assertTrue(mock_add_geolocation.called)
-        os.unlink(self.tmpfilename)
 
     def test_export_add_gcps(self):
         n = Nansat(self.test_file_arctic)
@@ -369,7 +357,6 @@ class ExporterTest(unittest.TestCase):
             n.export(self.tmpfilename, addGCPs=True, bottomup=True)
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
             self.assertEqual(recorded_warnings[1].category, NansatFutureWarning)
-        os.unlink(self.tmpfilename)
 
     def test_export2thredds_rmmetadata(self):
         n = Nansat(self.test_file_arctic, mapper='generic', log_level=40)
@@ -378,7 +365,6 @@ class ExporterTest(unittest.TestCase):
                             time=datetime.datetime(2016, 1, 20),
                             rmMetadata=['description'])
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
-        os.unlink(self.tmpfilename)
 
 if __name__ == "__main__":
     unittest.main()

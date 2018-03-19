@@ -31,10 +31,7 @@ from nansat.tools import gdal, ogr
 from nansat.figure import Image
 import sys
 from nansat.tests import nansat_test_data as ntd
-try:
-    from mock import patch, Mock, MagicMock, PropertyMock, DEFAULT
-except:
-    from unittest.mock import patch, Mock, MagicMock, PropertyMock, DEFAULT
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 from nansat.exceptions import NansatProjectionError
 

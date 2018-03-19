@@ -149,7 +149,7 @@ class Exporter(object):
 
         # Create output file using GDAL
         dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset, options=options)
-        dataset = None
+        del dataset
         # add GCPs into netCDF file as separate float variables
         if add_gcps:
             Exporter._add_gcps(filename, export_vrt.dataset.GetGCPs(), bottomup)
@@ -274,6 +274,7 @@ class Exporter(object):
 
         # export temporary Nansat object to a temporary netCDF
         fid, tmp_filename = tempfile.mkstemp(suffix='.nc')
+        os.close(fid)
         data.export(tmp_filename, rm_metadata=rm_metadata)
         del data
 
@@ -409,7 +410,6 @@ class Exporter(object):
         nc_inp.close()
 
         # Delete the temprary netCDF file
-        fid = None
         os.remove(tmp_filename)
 
         return 0
