@@ -330,17 +330,23 @@ class VRTTest(NansatTestBase):
         self.assertEqual(VRT._get_dst_band_data_type([{}], {}), gdal.GDT_Float32)
         self.assertEqual(VRT._get_dst_band_data_type([{'DataType': 'Float32'}], {}), 'Float32')
 
-    def test_create_band_name(self):
+    def test_create_band_name_no_wkv(self):
+        self.mock_pti['get_wkv_variable'].side_effect = IndexError
+        vrt = VRT()
+        self.assertEqual(vrt._create_band_name({'name': 'name1'}), ('name1', {}))
+
+    def test_create_band_name_wkv(self):
         wkv = dict(short_name='sigma0')
         self.mock_pti['get_wkv_variable'].return_value=wkv
-        ds = gdal.Open('NETCDF:"%s":UMass_AES' % self.test_file_arctic)
-        vrt = VRT.copy_dataset(ds)
-        self.assertEqual(vrt._create_band_name({'name': 'name1'}), ('name1', {}))
+        vrt = VRT()
         self.assertEqual(vrt._create_band_name({'wkv': 'sigma0'}), ('sigma0', wkv))
         self.assertEqual(vrt._create_band_name({'wkv': 'sigma0', 'suffix': 'HH'}),
                          ('sigma0_HH', wkv))
-        self.assertEqual(vrt._create_band_name({'name': 'UMass_AES'}),
-                         ('UMass_AES_000', {}))
+
+    def test_create_band_name_existing_name(self):
+        vrt = VRT.from_array(np.zeros((10,10)))
+        vrt.dataset.GetRasterBand(1).SetMetadata({'name':'band1'})
+        self.assertEqual(vrt._create_band_name({'name': 'band1'}), ('band1_000', {}))
 
     def test_leave_few_bands(self):
         ds = gdal.Open(self.test_file_gcps)
@@ -539,6 +545,19 @@ class VRTTest(NansatTestBase):
         self.assertFalse(data is None)
         self.assertTrue(np.all(data == array))
 
+    def test_property_fileName(self):
+        vrt = VRT()
+        with warnings.catch_warnings(record=True) as w:
+            fn = vrt.fileName
+            self.assertEqual(w[0].category, NansatFutureWarning)
+
+    @patch.object(VRT, 'create_bands')
+    def test_obsolete_create_bands(self, mock_VRT):
+        vrt = VRT()
+        with warnings.catch_warnings(record=True) as w:
+            vrt._create_bands({})
+            self.assertEqual(w[0].category, NansatFutureWarning)
+        self.assertTrue(mock_VRT.create_bands.called_once)
 
 if __name__ == "__main__":
     unittest.main()
