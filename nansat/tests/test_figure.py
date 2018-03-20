@@ -15,7 +15,6 @@
 from __future__ import absolute_import, unicode_literals
 
 import unittest
-import warnings
 import os
 import sys
 import glob
@@ -35,18 +34,12 @@ import gdal
 import numpy as np
 
 from nansat import Figure, Nansat, Domain
-
-from nansat.tests import nansat_test_data as ntd
+from nansat.tests.nansat_test_base import NansatTestBase
 
 IS_CONDA = 'conda' in os.environ['PATH']
 
 
-class FigureTest(unittest.TestCase):
-    def setUp(self):
-        self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
-        if not os.path.exists(self.test_file_gcps):
-            raise ValueError('No test data available')
-
+class FigureTest(NansatTestBase):
     def test_init_array(self):
         f = Figure(np.zeros((10,10)))
 
@@ -54,7 +47,7 @@ class FigureTest(unittest.TestCase):
 
 
     def test_get_auto_ticks_number(self):
-        n = Nansat(self.test_file_gcps)
+        n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         lon, lat = n.get_geolocation_grids()
         f = Figure(lon)
         lonTicks = f._get_auto_ticks(5, lon)
@@ -65,7 +58,7 @@ class FigureTest(unittest.TestCase):
         n.logger.error(str(latTicks))
 
     def test_get_auto_ticks_vector(self):
-        n = Nansat(self.test_file_gcps)
+        n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         lon, lat = n.get_geolocation_grids()
         f = Figure(lon)
         lonTicks = f._get_auto_ticks([28, 29, 30, 100], lon)
@@ -74,8 +67,8 @@ class FigureTest(unittest.TestCase):
 
     def test_add_latlon_grids_auto(self):
         ''' Should create figure with lon/lat gridlines spaced automatically '''
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'figure_latlon_grids_auto.png')
-        n = Nansat(self.test_file_gcps)
+        tmpfilename = os.path.join(self.tmp_data_path, 'figure_latlon_grids_auto.png')
+        n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         b = n[1]
         lon, lat = n.get_geolocation_grids()
 
@@ -88,9 +81,8 @@ class FigureTest(unittest.TestCase):
 
     def test_add_latlon_grids_number(self):
         ''' Should create figure with lon/lat gridlines given manually '''
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'figure_latlon_grids_number.png')
-        n = Nansat(self.test_file_gcps)
+        tmpfilename = os.path.join(self.tmp_data_path, 'figure_latlon_grids_number.png')
+        n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         n.resize(3)
         b = n[1]
         lon, lat = n.get_geolocation_grids()
@@ -107,9 +99,8 @@ class FigureTest(unittest.TestCase):
 
     def test_add_latlon_grids_list(self):
         ''' Should create figure with lon/lat gridlines given manually '''
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'figure_latlon_grids_list.png')
-        n = Nansat(self.test_file_gcps)
+        tmpfilename = os.path.join(self.tmp_data_path, 'figure_latlon_grids_list.png')
+        n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         b = n[1]
         lon, lat = n.get_geolocation_grids()
 
@@ -126,7 +117,7 @@ class FigureTest(unittest.TestCase):
 
     def test_get_tick_index_from_grid(self):
         ''' Should return indeces of pixel closest to ticks '''
-        n = Nansat(self.test_file_gcps)
+        n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         lon, lat = n.get_geolocation_grids()
 
         f = Figure(lon)

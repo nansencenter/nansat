@@ -14,7 +14,6 @@ from __future__ import absolute_import, unicode_literals
 import unittest
 import logging
 import os
-import sys
 from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 import xml.etree.ElementTree as ET
@@ -26,22 +25,17 @@ import pythesint as pti
 
 from nansat.node import Node
 from nansat.vrt import VRT
-from nansat.tests import nansat_test_data as ntd
+from nansat.tests.nansat_test_base import NansatTestBase
 
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning
 
-class VRTTest(unittest.TestCase):
-    def setUp(self):
-        self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
-        self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
-        self.test_file_complex = os.path.join(ntd.test_data_path, 'complex.nc')
-
-        self.nsr_wkt = ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
-                        '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
-                        'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
-                        'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
-                        ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+class VRTTest(NansatTestBase):
+    nsr_wkt = ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
+                '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
+                'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
+                'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
+                ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
 
     @patch.object(VRT, '_make_filename', return_value='/vsimem/filename.vrt')
     def test_init(self, mock_make_filename):
@@ -182,12 +176,11 @@ class VRTTest(unittest.TestCase):
 
 
     def test_export(self):
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'temp.vrt.xml')
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
-        vrt.export(tmpfilename)
-        self.assertTrue(tmpfilename)
-        tree = ET.parse(tmpfilename)
+        vrt.export(self.tmpfilename)
+        self.assertTrue(self.tmpfilename)
+        tree = ET.parse(self.tmpfilename)
         root = tree.getroot()
 
         self.assertEqual(root.tag, 'VRTDataset')
@@ -338,7 +331,8 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(VRT._get_dst_band_data_type([{'DataType': 'Float32'}], {}), 'Float32')
 
     def test_create_band_name(self):
-        wkv = pti.get_wkv_variable('sigma0')
+        wkv = dict(short_name='sigma0')
+        self.mock_pti['get_wkv_variable'].return_value=wkv
         ds = gdal.Open('NETCDF:"%s":UMass_AES' % self.test_file_arctic)
         vrt = VRT.copy_dataset(ds)
         self.assertEqual(vrt._create_band_name({'name': 'name1'}), ('name1', {}))
@@ -349,7 +343,7 @@ class VRTTest(unittest.TestCase):
                          ('UMass_AES_000', {}))
 
     def test_leave_few_bands(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.copy_dataset(ds)
         vrt.leave_few_bands([1, 'L_469'])
         self.assertEqual(vrt.dataset.RasterCount,2)
@@ -401,7 +395,7 @@ class VRTTest(unittest.TestCase):
         self.assertTrue(np.allclose(vrt.dataset.GetRasterBand(2).ReadAsArray(), lat))
 
     def test_fix_band_metadata(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.copy_dataset(ds)
         self.assertIn('standard_name', vrt.dataset.GetRasterBand(1).GetMetadata())
         self.assertIn('time', vrt.dataset.GetRasterBand(1).GetMetadata())
@@ -410,7 +404,7 @@ class VRTTest(unittest.TestCase):
         self.assertNotIn('time', vrt.dataset.GetRasterBand(1).GetMetadata())
 
     def test_fix_global_metadata(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.copy_dataset(ds)
         vrt.dataset.SetMetadataItem(str('test'), str('"test"'))
         vrt.fix_global_metadata(['AREA_OR_POINT'])
@@ -418,7 +412,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual('&quot;test&quot;', vrt.dataset.GetMetadataItem(str('test')))
 
     def test_hardcopy_bands(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         vrt = VRT.copy_dataset(ds)
         vrt.hardcopy_bands()
 
@@ -440,7 +434,7 @@ class VRTTest(unittest.TestCase):
             proj = vrt.get_projection()
 
     def test_init_from_old__gdal_dataset(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         with warnings.catch_warnings(record=True) as w:
             vrt = VRT(gdalDataset=ds)
             self.assertEqual(w[0].category, NansatFutureWarning)
@@ -450,7 +444,7 @@ class VRTTest(unittest.TestCase):
             self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
 
     def test_init_from_old__vrt_dataset(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         with warnings.catch_warnings(record=True) as w:
             vrt = VRT(vrtDataset=ds)
             self.assertEqual(w[0].category, NansatFutureWarning)
@@ -458,7 +452,7 @@ class VRTTest(unittest.TestCase):
             self.assertTrue(vrt.filename.startswith('/vsimem/'))
 
     def test_init_from_old__dataset_params(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         with warnings.catch_warnings(record=True) as w:
             vrt = VRT(srcGeoTransform=(0, 1, 0, 0, 0, -1), srcRasterXSize=10, srcRasterYSize=20)
             self.assertEqual(w[0].category, NansatFutureWarning)
@@ -529,7 +523,7 @@ class VRTTest(unittest.TestCase):
         self.assertEqual(vrt1.dataset.GetGeoTransform()[0]+deg, vrt2.dataset.GetGeoTransform()[0])
 
     def test_get_super_vrt(self):
-        ds = gdal.Open(os.path.join(ntd.test_data_path, 'gcps.tif'))
+        ds = gdal.Open(self.test_file_gcps)
         vrt1 = VRT.from_gdal_dataset(ds, metadata=ds.GetMetadata())
         vrt2 = vrt1.get_super_vrt()
         self.assertIsInstance(vrt2.vrt, VRT)
@@ -544,6 +538,7 @@ class VRTTest(unittest.TestCase):
 
         self.assertFalse(data is None)
         self.assertTrue(np.all(data == array))
+
 
 if __name__ == "__main__":
     unittest.main()
