@@ -19,10 +19,7 @@ import unittest
 import warnings
 import datetime
 from xml.sax.saxutils import unescape
-if sys.version_info.major == 2:
-    from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
-else:
-    from unittest.mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 import numpy as np
 
@@ -48,12 +45,13 @@ warnings.simplefilter("always", UserWarning)
 
 
 class ExporterTest(NansatTestBase):
-    def test_geolocation_of_exportedNC_vs_original(self):
-        ''' Lon/lat in original and exported file should coincide '''
-        orig = Nansat(self.test_file_gcps, mapper=self.default_mapper)
-        orig.export(self.tmpfilename)
 
-        copy = Nansat(self.tmpfilename, mapper=self.default_mapper)
+    def test_geolocation_of_exportedNC_vs_original(self):
+        """ Lon/lat in original and exported file should coincide """
+        orig = Nansat(self.test_file_gcps, mapper=self.default_mapper)
+        orig.export(self.tmp_filename)
+
+        copy = Nansat(self.tmp_filename, mapper=self.default_mapper)
         lon0, lat0 = orig.get_geolocation_grids()
         lon1, lat1 = copy.get_geolocation_grids()
         np.testing.assert_allclose(lon0, lon1)
@@ -63,8 +61,8 @@ class ExporterTest(NansatTestBase):
         orig = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         orig.vrt.dataset.SetMetadataItem('jsonstring', json.dumps({'meta1':
                                          'hei', 'meta2': 'derr'}))
-        orig.export(self.tmpfilename)
-        copy = Nansat(self.tmpfilename, mapper=self.default_mapper)
+        orig.export(self.tmp_filename)
+        copy = Nansat(self.tmp_filename, mapper=self.default_mapper)
         dd = json.loads(unescape(copy.get_metadata('jsonstring'), {'&quot;':
                                                                    '"'}))
         self.assertIsInstance(dd, dict)
@@ -73,8 +71,8 @@ class ExporterTest(NansatTestBase):
         orig = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         orig.set_metadata('time_coverage_start', '2010-01-02T08:49:02.347809')
         orig.set_metadata('time_coverage_end', '2010-01-02T08:50:03.599373')
-        orig.export(self.tmpfilename)
-        copy = Nansat(self.tmpfilename, mapper=self.default_mapper)
+        orig.export(self.tmp_filename)
+        copy = Nansat(self.tmp_filename, mapper=self.default_mapper)
 
         self.assertEqual(orig.get_metadata('time_coverage_start'),
                 copy.get_metadata('time_coverage_start'))
@@ -82,9 +80,7 @@ class ExporterTest(NansatTestBase):
                 copy.get_metadata('time_coverage_end'))
 
     def test_export_netcdf(self):
-        ''' Test export and following import of data with bands containing
-        np.nan values
-        '''
+        """ Test export and following import of data with bands containing np.nan values """
         n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
@@ -92,8 +88,8 @@ class ExporterTest(NansatTestBase):
         arrWithNaN[int(n.shape()[0] / 2.) - 10:int(n.shape()[0] / 2 + 10),
                    int(n.shape()[1] / 2.) - 10:int(n.shape()[1] / 2 + 10)] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
-        n.export(self.tmpfilename)
-        exported = Nansat(self.tmpfilename, mapper=self.default_mapper)
+        n.export(self.tmp_filename)
+        exported = Nansat(self.tmp_filename, mapper=self.default_mapper)
         earrNoNaN = exported['testBandNoNaN']
         # Use allclose to allow some roundoff errors
         self.assertTrue(np.allclose(arrNoNaN, earrNoNaN))
@@ -101,7 +97,7 @@ class ExporterTest(NansatTestBase):
         np.testing.assert_allclose(arrWithNaN, earrWithNaN)
 
     def test_export_gcps_filename_warning(self):
-        ''' Should export file with GCPs and write correct bands'''
+        """ Should export file with GCPs and write correct bands"""
         n0 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         tmpfilename = os.path.join(self.tmp_data_path, 'temp.nc')
         with warnings.catch_warnings(record=True) as w:
@@ -110,7 +106,7 @@ class ExporterTest(NansatTestBase):
             self.assertIn('Nansat.export(fileName', str(w[0].message))
 
     def test_export_gcps_to_netcdf(self):
-        ''' Should export file with GCPs and write correct bands'''
+        """ Should export file with GCPs and write correct bands"""
         n0 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_export_gcps.nc')
         n0.export(tmpfilename)
@@ -133,7 +129,7 @@ class ExporterTest(NansatTestBase):
         np.testing.assert_allclose(lat0, lat1)
 
     def test_export_gcps_complex_to_netcdf(self):
-        ''' Should export file with GCPs and write correct complex bands'''
+        """ Should export file with GCPs and write correct complex bands"""
         n0 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         b0 = n0['L_469']
 
@@ -304,25 +300,25 @@ class ExporterTest(NansatTestBase):
         n = Nansat(self.test_file_complex, mapper=self.default_mapper)
         self.assertEqual(n.get_metadata('PRODUCT_TYPE'), 'SLC')
         with warnings.catch_warnings(record=True) as recorded_warnings:
-            n.export(self.tmpfilename, rmMetadata=['PRODUCT_TYPE'])
+            n.export(self.tmp_filename, rmMetadata=['PRODUCT_TYPE'])
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
-        exported = Nansat(self.tmpfilename, mapper=self.default_mapper)
+        exported = Nansat(self.tmp_filename, mapper=self.default_mapper)
         with self.assertRaises(ValueError):
             exported.get_metadata('PRODUCT_TYPE')
         self.assertTrue((n[1] == exported[1]).any())
 
     def test_export_netcdf_arctic(self):
         n = Nansat(self.test_file_arctic, mapper=self.default_mapper)
-        n.export(self.tmpfilename)
-        exported = Nansat(self.tmpfilename, mapper=self.default_mapper)
+        n.export(self.tmp_filename)
+        exported = Nansat(self.tmp_filename, mapper=self.default_mapper)
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
 
     def test_export_netcdf_arctic_hardcopy(self):
         n = Nansat(self.test_file_arctic, mapper=self.default_mapper)
-        n.export(self.tmpfilename, hardcopy=True)
-        exported = Nansat(self.tmpfilename, mapper=self.default_mapper)
+        n.export(self.tmp_filename, hardcopy=True)
+        exported = Nansat(self.tmp_filename, mapper=self.default_mapper)
         self.assertTrue((n[1] == exported[1]).any())
         self.assertTrue((n[2] == exported[2]).any())
         self.assertTrue((n[3] == exported[3]).any())
@@ -331,21 +327,21 @@ class ExporterTest(NansatTestBase):
     def test_export_add_geoloc(self, mock_add_geolocation):
         n = Nansat(self.test_file_arctic, mapper=self.default_mapper)
         with warnings.catch_warnings(record=True) as recorded_warnings:
-            n.export(self.tmpfilename, addGeoloc=True)
+            n.export(self.tmp_filename, addGeoloc=True)
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
         self.assertTrue(mock_add_geolocation.called)
 
     def test_export_add_gcps(self):
         n = Nansat(self.test_file_arctic, mapper=self.default_mapper)
         with warnings.catch_warnings(record=True) as recorded_warnings:
-            n.export(self.tmpfilename, addGCPs=True, bottomup=True)
+            n.export(self.tmp_filename, addGCPs=True, bottomup=True)
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)
             self.assertEqual(recorded_warnings[1].category, NansatFutureWarning)
 
     def test_export2thredds_rmmetadata(self):
         n = Nansat(self.test_file_arctic, mapper=self.default_mapper, log_level=40)
         with warnings.catch_warnings(record=True) as recorded_warnings:
-            n.export2thredds(self.tmpfilename, {'Bristol': {'type': '>i2'}},
+            n.export2thredds(self.tmp_filename, {'Bristol': {'type': '>i2'}},
                             time=datetime.datetime(2016, 1, 20),
                             rmMetadata=['description'])
             self.assertEqual(recorded_warnings[0].category, NansatFutureWarning)

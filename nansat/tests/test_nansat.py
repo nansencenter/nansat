@@ -42,6 +42,7 @@ warnings.simplefilter("always", UserWarning)
 
 
 class NansatTest(NansatTestBase):
+
     def test_open_gcps(self):
         with warnings.catch_warnings(record=True) as recorded_warnings:
             n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
@@ -382,7 +383,7 @@ class NansatTest(NansatTestBase):
         self.assertTrue(n.has_band('swathmask'))
 
     def test_reproject_of_complex(self):
-        ''' Should return np.nan in areas out of swath '''
+        """ Should return np.nan in areas out of swath """
         n = Nansat(self.test_file_complex, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, '-te -92.08 26.85 -92.00 26.91 -ts 200 200')
         n.reproject(d)
@@ -409,7 +410,7 @@ class NansatTest(NansatTestBase):
         self.assertTrue(b4[300, 300] == 1.)
 
     def test_reproject_no_addmask(self):
-        ''' Should not add swath mask and return 0 in areas out of swath '''
+        """ Should not add swath mask and return 0 in areas out of swath """
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, '-te -92.08 26.85 -92.00 26.91 -ts 200 200')
         n.reproject(d, addmask=False)
@@ -738,19 +739,19 @@ class NansatTest(NansatTestBase):
             self.assertEqual(wm.shape[1], n1.shape()[1])
 
     def test_watermask_fail_if_mod44path_is_wrong(self):
-        ''' Nansat.watermask should raise an IOError'''
+        """ Nansat.watermask should raise an IOError"""
         n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         os.environ['MOD44WPATH'] = '/fakepath'
         self.assertRaises(IOError, n1.watermask)
 
     def test_watermask_fail_if_mod44path_not_exist(self):
-        ''' Nansat.watermask should raise an IOError'''
+        """ Nansat.watermask should raise an IOError"""
         n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         del os.environ['MOD44WPATH']
         self.assertRaises(IOError, n1.watermask)
 
     def test_init_no_arguments(self):
-        ''' No arguments should raise ValueError '''
+        """ No arguments should raise ValueError """
         self.assertRaises(ValueError, Nansat)
 
     def test_get_item_basic_expressions(self):
@@ -820,4 +821,3 @@ class NansatTest(NansatTestBase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -30,6 +30,7 @@ from nansat.tests.nansat_test_base import NansatTestBase
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning
 
+
 class VRTTest(NansatTestBase):
     nsr_wkt = ('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
                 '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
@@ -178,9 +179,9 @@ class VRTTest(NansatTestBase):
     def test_export(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
         vrt = VRT.from_array(array)
-        vrt.export(self.tmpfilename)
-        self.assertTrue(self.tmpfilename)
-        tree = ET.parse(self.tmpfilename)
+        vrt.export(self.tmp_filename)
+        self.assertTrue(self.tmp_filename)
+        tree = ET.parse(self.tmp_filename)
         root = tree.getroot()
 
         self.assertEqual(root.tag, 'VRTDataset')

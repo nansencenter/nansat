@@ -17,14 +17,13 @@ import unittest
 import tempfile
 import pythesint
 
-if sys.version_info.major == 2:
-    from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
-else:
-    from unittest.mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 from nansat.tests import nansat_test_data as ntd
 
+
 class NansatTestBase(unittest.TestCase):
+
     def setUp(self):
         self.test_file_gcps = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_stere = os.path.join(ntd.test_data_path, 'stere.tif')
@@ -32,7 +31,7 @@ class NansatTestBase(unittest.TestCase):
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
         self.tmp_data_path = ntd.tmp_data_path
         self.default_mapper = 'generic'
-        fd, self.tmpfilename = tempfile.mkstemp(suffix='.nc', dir=ntd.tmp_data_path)
+        fd, self.tmp_filename = tempfile.mkstemp(suffix='.nc', dir=ntd.tmp_data_path)
         os.close(fd)
 
         if not os.path.exists(self.test_file_gcps):
@@ -49,6 +48,7 @@ class NansatTestBase(unittest.TestCase):
     def tearDown(self):
         self.patcher.stop()
         try:
-            os.unlink(self.tmpfilename)
+            os.unlink(self.tmp_filename)
         except OSError:
             pass
+
