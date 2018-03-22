@@ -195,11 +195,16 @@ class Mapper(VRT):
             self.band_vrts['LUT_dn_VRT'] = calibration_LUT_VRTs['dn']
 
         for key in self.noiseXMLDict:
-            noise_LUT_VRT = self.get_LUT_VRTs(self.noiseXMLDict[key],
-                                              'noiseVectorList',
-                                              ['noiseLut'])[0]
+            if '<noiseVectorList' in self.noiseXMLDict[key]:
+                noise_list_tag = 'noiseVectorList'
+                noise_lut_tag = 'noiseLut'
+            elif '<noiseRangeVectorList' in self.noiseXMLDict[key]:
+                noise_list_tag = 'noiseRangeVectorList'
+                noise_lut_tag = 'noiseRangeLut'
+            noise_LUT_VRT = self.get_LUT_VRTs(self.noiseXMLDict[key], noise_list_tag, [noise_lut_tag])[0]
             self.band_vrts['LUT_noise_VRT_'+pol[key]] = (
-                noise_LUT_VRT['noiseLut'].get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1))
+                noise_LUT_VRT[noise_lut_tag].get_resized_vrt(self.dataset.RasterXSize,
+                                                               self.dataset.RasterYSize, 1))
 
         metaDict = []
         bandNumberDict = {}
