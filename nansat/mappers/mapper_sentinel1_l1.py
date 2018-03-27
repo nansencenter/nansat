@@ -112,7 +112,7 @@ class Mapper(VRT):
         if manifestonly:
             self.init_from_manifest_only(self.manifestXML,
                                          self.annotationXMLDict[
-                                         self.annotationXMLDict.keys()[0]],
+                                         list(self.annotationXMLDict.keys())[0]],
                                          missionName)
             return
 
