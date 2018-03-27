@@ -24,6 +24,7 @@ import gdal
 import pythesint as pti
 
 from nansat.node import Node
+from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.tests.nansat_test_base import NansatTestBase
 
@@ -559,6 +560,36 @@ class VRTTest(NansatTestBase):
             vrt._create_bands({})
             self.assertEqual(w[0].category, NansatFutureWarning)
         self.assertTrue(mock_VRT.create_bands.called_once)
+
+    def test_transform_coordinates_list(self):
+        src_srs = NSR()
+        dst_srs = NSR('+proj=stere')
+        src_points = ([1,2,3,4],[5,6,7,8])
+        dst_x, dst_y, dst_z = VRT.transform_coordinates(src_srs, src_points, dst_srs)
+        self.assertEqual(dst_x.shape, (4,))
+        self.assertEqual(dst_y.shape, (4,))
+        self.assertEqual(dst_y.shape, (4,))
+
+    def test_transform_coordinates_1d_array(self):
+        src_srs = NSR()
+        dst_srs = NSR('+proj=stere')
+        src_points = (np.array([1,2,3,4]), np.array([5,6,7,8]), np.array([5,6,7,8]))
+        dst_x, dst_y, dst_z = VRT.transform_coordinates(src_srs, src_points, dst_srs)
+        self.assertEqual(dst_x.shape, (4,))
+        self.assertEqual(dst_y.shape, (4,))
+        self.assertEqual(dst_y.shape, (4,))
+
+    def test_transform_coordinates_2d_array(self):
+        src_srs = NSR()
+        dst_srs = NSR('+proj=stere')
+        src_points = (np.array([[1,2,3,4],[1,2,3,4]]),
+                      np.array([[5,6,7,8],[5,6,7,8]]),
+                      np.array([[5,6,7,8],[5,6,7,8]]),)
+        dst_x, dst_y, dst_z = VRT.transform_coordinates(src_srs, src_points, dst_srs)
+        self.assertEqual(dst_x.shape, (2,4))
+        self.assertEqual(dst_y.shape, (2,4))
+        self.assertEqual(dst_y.shape, (2,4))
+
 
 if __name__ == "__main__":
     unittest.main()

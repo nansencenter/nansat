@@ -1454,7 +1454,7 @@ class VRT(object):
 
     def transform_points(self, col_vector, row_vector, dst2src=0,
                          dst_srs=NSR(), dst_ds=None, options=None):
-        """Transform given lists of X,Y coordinates into lat/lon
+        """Transform input pixel/line coordinates into lon/lat (or opposite)
 
         Parameters
         -----------
@@ -1597,6 +1597,36 @@ class VRT(object):
 
         # Update dataset
         self.dataset.SetGCPs(dst_gcps, dst_srs.wkt)
+
+    @staticmethod
+    def transform_coordinates(src_srs, src_points, dst_srs):
+        """ Transform coordinates of points from one spatial reference to another
+
+        Parameters
+        ----------
+        src_srs : nansat.NSR
+            Source spatial reference system
+        src_points : tuple of two or three N-D arrays
+            Coordinates of points in the source spatial reference system. A tuple with (X, Y) or
+            (X, Y, Z) coordinates arrays. Each coordinate Each array can be a list, 1D, 2D, N-D
+            array.
+        dst_srs : nansat.NSR
+            Destination spatial reference
+
+        Returns
+        -------
+        dst_points : tuple of two or three N-D arrays
+            Coordinates of points in the destination spatial reference system. A tuple with (X, Y) or
+            (X, Y, Z) coordinates arrays. Each coordinate Each array can be 1D, 2D, N-D
+            array. Shape of output arrays corrrrespond to shape of inputs.
+
+        """
+        transformer = osr.CoordinateTransformation(src_srs, dst_srs)
+        src_shape = np.array(src_points[0]).shape
+        src_points = list(zip(*[np.array(xyz).flatten() for xyz in src_points]))
+        dst_points = transformer.TransformPoints(src_points)
+        dst_x, dst_y, dst_z = np.array(list(zip(*dst_points)))
+        return dst_x.reshape(src_shape), dst_y.reshape(src_shape), dst_z.reshape(src_shape)
 
     def set_offset_size(self, axis, offset, size):
         """Set offset and  size in VRT dataset and band attributes"""
