@@ -566,6 +566,7 @@ class VRTTest(NansatTestBase):
         dst_srs = NSR(str('+proj=stere'))
         src_points = ([1,2,3,4],[5,6,7,8])
         dst_x, dst_y, dst_z = VRT.transform_coordinates(src_srs, src_points, dst_srs)
+        # check if shape of the result matches the expected shape (list with four points)
         self.assertEqual(dst_x.shape, (4,))
         self.assertEqual(dst_y.shape, (4,))
         self.assertEqual(dst_y.shape, (4,))
@@ -575,6 +576,7 @@ class VRTTest(NansatTestBase):
         dst_srs = NSR(str('+proj=stere'))
         src_points = (np.array([1,2,3,4]), np.array([5,6,7,8]), np.array([5,6,7,8]))
         dst_x, dst_y, dst_z = VRT.transform_coordinates(src_srs, src_points, dst_srs)
+        # check if shape of the result matches the expected shape (list with four points)
         self.assertEqual(dst_x.shape, (4,))
         self.assertEqual(dst_y.shape, (4,))
         self.assertEqual(dst_y.shape, (4,))
@@ -586,6 +588,7 @@ class VRTTest(NansatTestBase):
                       np.array([[5,6,7,8],[5,6,7,8]]),
                       np.array([[5,6,7,8],[5,6,7,8]]),)
         dst_x, dst_y, dst_z = VRT.transform_coordinates(src_srs, src_points, dst_srs)
+        # check if shape of the result matches the expected shape (2x4 array)
         self.assertEqual(dst_x.shape, (2,4))
         self.assertEqual(dst_y.shape, (2,4))
         self.assertEqual(dst_y.shape, (2,4))
