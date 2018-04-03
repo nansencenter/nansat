@@ -45,11 +45,14 @@ class Mapper(VRT):
     gdalDataset : None
     gdalMetadata : None
     fast : bool
-        Init from manifest/annotation only without GCP correction?
+        Flag that triggers faster reading of metadata from Sentinel-1 file.
+        If True, no bands are added to the dataset and georeference is not corrected. 
+        If False, all bands are added and GCPs are corrected if necessary
+        (see Mapper.correct_geolocation_data for details).
 
     Note
     ----
-    Creates self.dataset and populates with S1 bands.
+    Creates self.dataset and populates it with S1 bands (when fast=False).
     """
     def __init__(self, filename, gdalDataset, gdalMetadata, fast=False, **kwargs):
         if kwargs.get('manifestonly', False):
@@ -509,6 +512,12 @@ class Mapper(VRT):
     def correct_geolocation_data(data, max_height=5):
         """ Correct lon/lat values in geolocation data for points high above ground (incorrect)
 
+        Each GCP in Sentinel-1 L1 image (both in the GeoTIF files and Annotation LUT) have five
+        coordinates: X, Y, Z (height), Pixel and Line. On some scenes that cover Greenland (and
+        probably other lands) some GCPs have height above zero even over ocean. This is incorrect,
+        because the radar signal comes actually from the surface and not from a point above the
+        ground as stipulated in such GCPs. This function provides correction of such GCPs.
+        
         First, Lon/Lat are converted to X/Y in meters. Second, Pixel coordinates are approximated
         by 2nd order polynomial of input X,Y,Z. Third, this polynomial is used to calculate new
         Pixel coordinate for ocean surface (Z=0). Fourth, a temporary VRT from original X, Y, Line
@@ -518,9 +527,9 @@ class Mapper(VRT):
         Parameters
         ----------
         data : dict
-            Original geolocation data from read_geolocation_lut()
+            Original geolocation data from Mapper.read_annotation()
         max_height : int
-            Maximum afordable height
+            Maximum afordable height (meters)
 
         Returns
         -------
@@ -572,8 +581,8 @@ class Mapper(VRT):
         Parameters
         ----------
         x, y, z, p, l
-        N-D arrays with vakye of X, Y, Z, Pixel and Line coordinates.
-        X and Y are typically lon, lat.
+        N-D arrays with value of X, Y, Z, Pixel and Line coordinates.
+        X and Y are typically lon, lat, Z - height.
 
         Returns
         -------
@@ -634,11 +643,16 @@ class Mapper(VRT):
 
         Parameters:
         ----------_
-        data : dict with 2D arrays
-        variable_names : list of variable names
-        pol : str (HH, ...)
-        resize : bool (shall VRT be zoomed to full size?)
-        resample_alg : int (how to resample data when resizing)
+        data : dict
+            2D arrays with data from LUT
+        variable_names : list of str
+            variable names that should be converted to VRTs
+        pol : str
+            HH, HV, etc
+        resize : bool
+            Shall VRT be zoomed to full size?
+        resample_alg : int
+            Index of resampling algorithm. See VRT.get_resized_vrt()
 
         Returns:
         --------
