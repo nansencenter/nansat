@@ -696,19 +696,21 @@ class VRT(object):
 
     def _create_band_name(self, dst):
         """Create band name based on destination band dictionary <dst>"""
-        wkv = {}
         band_name = dst.get('name', None)
 
+        # try to get metadata from WKV using PyThesInt if it exists
+        wkv_dst = dst.get('wkv', None)
+        try:
+            wkv_pti = pti.get_wkv_variable(str(wkv_dst))
+        except IndexError:
+            wkv = {}
+        else:
+            wkv = dict(wkv_pti)
+
         if band_name is None:
-            try:
-                # get metadata from WKV using PyThesInt
-                wkv = pti.get_wkv_variable(dst.get('wkv', ''))
-            except IndexError:
-                band_name = 'band'
-            else:
-                band_name = wkv['short_name']
-                if 'suffix' in dst:
-                     band_name += '_' + dst['suffix']
+            band_name = wkv.get('short_name', 'band')
+            if 'suffix' in dst:
+                 band_name += '_' + dst['suffix']
 
         # create list of available bands (to prevent duplicate names)
         band_names = [self.dataset.GetRasterBand(i + 1).GetMetadataItem(str('name'))
