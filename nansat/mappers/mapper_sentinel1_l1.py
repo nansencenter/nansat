@@ -97,7 +97,7 @@ class Mapper(VRT):
             manifest_files = glob.glob('%s/manifest.safe' % filename)
 
         if (not mds_files or not calibration_files or not noise_files or
-            not annotation_files or not manifest_file):
+            not annotation_files or not manifest_files):
             raise WrongMapperError(filename)
 
         # convert list of MDS files into dictionary. Keys - polarizations in upper case.
@@ -494,7 +494,7 @@ class Mapper(VRT):
         # set metadata
         self.dataset.SetMetadataItem('time_coverage_start', manifest_data['time_coverage_start'])
         self.dataset.SetMetadataItem('time_coverage_end', manifest_data['time_coverage_end'])
-        platform_name = manifest_data['platform_familyName'] + manifest_data['platform_number']
+        platform_name = manifest_data['platform_family_name'] + manifest_data['platform_number']
         self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform(platform_name)))
         self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
         self.dataset.SetMetadataItem('Entry Title', platform_name + ' SAR')
@@ -625,7 +625,7 @@ class Mapper(VRT):
                                                    node('safe:acquisitionPeriod')['safe:stopTime']
                                                    )).isoformat()
             if str(nn.getAttribute('ID')) == 'platform':
-                data['platform_familyName'] = str(nn.node('metadataWrap').
+                data['platform_family_name'] = str(nn.node('metadataWrap').
                                                      node('xmlData').
                                                      node('safe:platform')['safe:familyName'])
                 data['platform_number'] = str(nn.node('metadataWrap').
