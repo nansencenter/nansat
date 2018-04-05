@@ -569,7 +569,7 @@ class VRTTest(NansatTestBase):
         # check if shape of the result matches the expected shape (list with four points)
         self.assertEqual(dst_x.shape, (4,))
         self.assertEqual(dst_y.shape, (4,))
-        self.assertEqual(dst_y.shape, (4,))
+        self.assertEqual(dst_z.shape, (4,))
 
     def test_transform_coordinates_1d_array(self):
         src_srs = NSR()
@@ -579,7 +579,7 @@ class VRTTest(NansatTestBase):
         # check if shape of the result matches the expected shape (list with four points)
         self.assertEqual(dst_x.shape, (4,))
         self.assertEqual(dst_y.shape, (4,))
-        self.assertEqual(dst_y.shape, (4,))
+        self.assertEqual(dst_z.shape, (4,))
 
     def test_transform_coordinates_2d_array(self):
         src_srs = NSR()
@@ -591,7 +591,7 @@ class VRTTest(NansatTestBase):
         # check if shape of the result matches the expected shape (2x4 array)
         self.assertEqual(dst_x.shape, (2,4))
         self.assertEqual(dst_y.shape, (2,4))
-        self.assertEqual(dst_y.shape, (2,4))
+        self.assertEqual(dst_z.shape, (2,4))
 
     def test_reproject_gcps(self):
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))

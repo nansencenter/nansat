@@ -46,7 +46,7 @@ class Mapper(VRT):
     gdalMetadata : None
     fast : bool
         Flag that triggers faster reading of metadata from Sentinel-1 file.
-        If True, no bands are added to the dataset and georeference is not corrected. 
+        If True, no bands are added to the dataset and georeference is not corrected.
         If False, all bands are added and GCPs are corrected if necessary
         (see Mapper.correct_geolocation_data for details).
 
@@ -118,11 +118,6 @@ class Mapper(VRT):
         # skip adding bands in the fast mode and RETURN
         if fast:
             return
-
-        warnings.warn('Sentinel-1 level-1 mapper is not yet adapted to '
-                      'complex data. In addition, the band names should be '
-                      'updated for multi-swath data - '
-                      'and there might be other issues.')
 
         # Open data files with GDAL
         gdalDatasets = {}
@@ -517,12 +512,12 @@ class Mapper(VRT):
         probably other lands) some GCPs have height above zero even over ocean. This is incorrect,
         because the radar signal comes actually from the surface and not from a point above the
         ground as stipulated in such GCPs. This function provides correction of such GCPs.
-        
+
         First, Lon/Lat are converted to X/Y in meters. Second, Pixel coordinates are approximated
-        by 2nd order polynomial of input X,Y,Z. Third, this polynomial is used to calculate new
+        by a 2nd order polynomial of input X,Y,Z. Third, this polynomial is used to calculate new
         Pixel coordinate for ocean surface (Z=0). Fourth, a temporary VRT from original X, Y, Line
-        and corrected Z,Pixel coordinates is created. Fifth, temporary VRT is used for converting
-        original Pixel/Line coordinates into correct Lon/Lat
+        and corrected Z,Pixel coordinates is created. Fifth, the temporary VRT is used for
+        converting original Pixel/Line coordinates into correct Lon/Lat
 
         Parameters
         ----------
