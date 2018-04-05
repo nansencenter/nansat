@@ -1,0 +1,15 @@
+---
+channels:
+  - conda-forge
+dependencies:
+  - python=3.6
+  - gdal
+  - numpy
+  - pillow
+  - netcdf4
+  - python-dateutil
+  - nose
+  - coveralls
+  - mock
+  - urllib3
+  - pythesint
