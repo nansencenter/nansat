@@ -718,16 +718,14 @@ class Nansat(Domain, Exporter):
         """
         Create numpy array with watermask (water=1, land=0)
 
-        TODO: cross-check and update docstring and references/links
-
         250 meters resolution watermask from MODIS 44W Product:
         http://www.glcf.umd.edu/data/watermask/
 
         Watermask is stored as tiles in TIF(LZW) format and a VRT file
         All files are stored in one directory.
         A tarball with compressed TIF and VRT files should be additionally
-        downloaded from the Nansat wiki:
-        https://svn.nersc.no/nansat/wiki/Nansat/Data/Watermask
+        downloaded from the Nansat documentation page:
+        http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water
 
         The method :
             Gets the directory either from input parameter or from environment
@@ -739,7 +737,7 @@ class Nansat(Domain, Exporter):
 
         Parameters
         -----------
-        mod44path : string, optional, default=None
+        mod44path : string
             path with MOD44W Products and a VRT file
         dst_domain : Domain
             destination domain other than self
@@ -757,6 +755,7 @@ class Nansat(Domain, Exporter):
         See Also
         ---------
         http://www.glcf.umd.edu/data/watermask/
+        http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water
 
         """
         if dstDomain is not None:
