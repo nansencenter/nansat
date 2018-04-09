@@ -703,8 +703,11 @@ class VRT(object):
         try:
             wkv_pti = pti.get_wkv_variable(str(wkv_dst))
         except IndexError:
+            # IndexError is raised when PyThesInt doesn't find the requested WKV.
+            # In that case and empty dict without any metadata is created
             wkv = {}
         else:
+            # If WKV was found by PyThesInt, a dict with metadata is created
             wkv = dict(wkv_pti)
 
         if band_name is None:
@@ -716,12 +719,12 @@ class VRT(object):
         band_names = [self.dataset.GetRasterBand(i + 1).GetMetadataItem(str('name'))
                         for i in range(self.dataset.RasterCount)]
 
-        # check if name already exist and add '_NNN'
+        # check if name already exist and add '_NNNN'
         dst_band_name = band_name
-        for n in range(999):
+        for n in range(9999):
             if dst_band_name not in band_names:
                 break
-            dst_band_name = '%s_%03d' % (band_name, n)
+            dst_band_name = '%s_%04d' % (band_name, n)
 
         return dst_band_name, wkv
 
