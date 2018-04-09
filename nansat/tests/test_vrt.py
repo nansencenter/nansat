@@ -350,7 +350,7 @@ class VRTTest(NansatTestBase):
         self.mock_pti['get_wkv_variable'].side_effect = IndexError
         vrt = VRT.from_array(np.zeros((10,10)))
         vrt.dataset.GetRasterBand(1).SetMetadata({'name':'band1'})
-        self.assertEqual(vrt._create_band_name({'name': 'band1'}), ('band1_000', {}))
+        self.assertEqual(vrt._create_band_name({'name': 'band1'}), ('band1_0000', {}))
 
     def test_create_band_name_wkv_and_name(self):
         name = 'some_name'
