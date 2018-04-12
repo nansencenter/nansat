@@ -338,17 +338,26 @@ class VRTTest(NansatTestBase):
         self.assertEqual(vrt._create_band_name({'name': 'name1'}), ('name1', {}))
 
     def test_create_band_name_wkv(self):
+        short_name='sigma0'
+        wkv = dict(short_name=short_name)
+        self.mock_pti['get_wkv_variable'].return_value=wkv
+        vrt = VRT()
+        self.assertEqual(vrt._create_band_name({'wkv': short_name}), (short_name, wkv))
+        self.assertEqual(vrt._create_band_name({'wkv': short_name, 'suffix': 'HH'}),
+                         (short_name + '_HH', wkv))
+
+    def test_create_band_name_existing_name(self):
+        self.mock_pti['get_wkv_variable'].side_effect = IndexError
+        vrt = VRT.from_array(np.zeros((10,10)))
+        vrt.dataset.GetRasterBand(1).SetMetadata({'name':'band1'})
+        self.assertEqual(vrt._create_band_name({'name': 'band1'}), ('band1_0000', {}))
+
+    def test_create_band_name_wkv_and_name(self):
+        name = 'some_name'
         wkv = dict(short_name='sigma0')
         self.mock_pti['get_wkv_variable'].return_value=wkv
         vrt = VRT()
-        self.assertEqual(vrt._create_band_name({'wkv': 'sigma0'}), ('sigma0', wkv))
-        self.assertEqual(vrt._create_band_name({'wkv': 'sigma0', 'suffix': 'HH'}),
-                         ('sigma0_HH', wkv))
-
-    def test_create_band_name_existing_name(self):
-        vrt = VRT.from_array(np.zeros((10,10)))
-        vrt.dataset.GetRasterBand(1).SetMetadata({'name':'band1'})
-        self.assertEqual(vrt._create_band_name({'name': 'band1'}), ('band1_000', {}))
+        self.assertEqual(vrt._create_band_name({'wkv': 'sigma0', 'name': name}), (name, wkv))
 
     def test_leave_few_bands(self):
         ds = gdal.Open(self.test_file_gcps)

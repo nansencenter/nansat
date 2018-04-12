@@ -403,7 +403,7 @@ class NansatTest(NansatTestBase):
         b4 = n[4]
 
         self.assertTrue(n.has_band('swathmask')) # the added band
-        self.assertTrue(n.has_band('swathmask_000')) # the actual swathmask
+        self.assertTrue(n.has_band('swathmask_0000')) # the actual swathmask
         self.assertTrue(b1[0, 0] == 0)
         self.assertTrue(b1[300, 300] > 0)
         self.assertTrue(np.isnan(b4[0, 0]))

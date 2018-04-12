@@ -696,30 +696,35 @@ class VRT(object):
 
     def _create_band_name(self, dst):
         """Create band name based on destination band dictionary <dst>"""
-        wkv = {}
         band_name = dst.get('name', None)
 
+        # try to get metadata from WKV using PyThesInt if it exists
+        wkv_dst = dst.get('wkv', None)
+        try:
+            wkv_pti = pti.get_wkv_variable(str(wkv_dst))
+        except IndexError:
+            # IndexError is raised when PyThesInt doesn't find the requested WKV.
+            # In that case and empty dict without any metadata is created
+            wkv = {}
+        else:
+            # If WKV was found by PyThesInt, a dict with metadata is created
+            wkv = dict(wkv_pti)
+
         if band_name is None:
-            try:
-                # get metadata from WKV using PyThesInt
-                wkv = pti.get_wkv_variable(dst.get('wkv', ''))
-            except IndexError:
-                band_name = 'band'
-            else:
-                band_name = wkv['short_name']
-                if 'suffix' in dst:
-                     band_name += '_' + dst['suffix']
+            band_name = wkv.get('short_name', 'band')
+            if 'suffix' in dst:
+                 band_name += '_' + dst['suffix']
 
         # create list of available bands (to prevent duplicate names)
         band_names = [self.dataset.GetRasterBand(i + 1).GetMetadataItem(str('name'))
                         for i in range(self.dataset.RasterCount)]
 
-        # check if name already exist and add '_NNN'
+        # check if name already exist and add '_NNNN'
         dst_band_name = band_name
-        for n in range(999):
+        for n in range(9999):
             if dst_band_name not in band_names:
                 break
-            dst_band_name = '%s_%03d' % (band_name, n)
+            dst_band_name = '%s_%04d' % (band_name, n)
 
         return dst_band_name, wkv
 
