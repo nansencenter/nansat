@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.6
+  - libnetcdf=4.4.1.1
   - gdal
   - numpy
   - pillow
