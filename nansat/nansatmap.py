@@ -257,7 +257,7 @@ class Nansatmap(Basemap):
                                             axis=self.spline_axis)
         else:
             if mode != 'gaussian':
-                print 'apply Gaussian filter in image_process()'
+                print('apply Gaussian filter in image_process()')
             odata = ndimage.gaussian_filter(idata,
                                             sigma=self.gaussian_sigma,
                                             order=self.gaussian_order,
