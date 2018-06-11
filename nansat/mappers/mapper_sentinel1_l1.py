@@ -105,15 +105,15 @@ class Mapper(VRT):
         polarizations = list(mds_files.keys())
 
         # read annotation files
-        annotation_data = self.read_annotation(annotation_files)
+        self.annotation_data = self.read_annotation(annotation_files)
         if not fast and fixgcp:
-            annotation_data = Mapper.correct_geolocation_data(annotation_data)
+            self.correct_geolocation_data()
 
         # read manifest file
         manifest_data = self.read_manifest_data(manifest_files[0])
 
         # very fast constructor without any bands only with some metadata and geolocation
-        self._init_empty(manifest_data, annotation_data)
+        self._init_empty(manifest_data, self.annotation_data)
 
         # skip adding bands in the fast mode and RETURN
         if fast:
@@ -131,7 +131,7 @@ class Mapper(VRT):
         metadata = gdalDatasets[polarizations[0]].GetMetadata()
 
         # create full size VRTs with incidenceAngle and elevationAngle
-        annotation_vrts = self.vrts_from_arrays(annotation_data,
+        annotation_vrts = self.vrts_from_arrays(self.annotation_data,
                                                 ['incidenceAngle', 'elevationAngle'])
         self.band_vrts.update(annotation_vrts)
 
@@ -503,116 +503,26 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('Summary', platform_name + ' SAR data')
         self.dataset.FlushCache()
 
-    @staticmethod
-    def correct_geolocation_data_test(data, max_height=5):
+    def correct_geolocation_data(self):
         """ Correct lon/lat values in geolocation data for points high above ground (incorrect)
 
         Each GCP in Sentinel-1 L1 image (both in the GeoTIF files and Annotation LUT) have five
         coordinates: X, Y, Z (height), Pixel and Line. On some scenes that cover Greenland (and
         probably other lands) some GCPs have height above zero even over ocean. This is incorrect,
         because the radar signal comes actually from the surface and not from a point above the
-        ground as stipulated in such GCPs. This function provides correction of such GCPs.
+        ground as stipulated in such GCPs. Correction of GCPs in this function is equivalelnt to
+        reverse DEM correction of SAR data.
 
-        First, Lon/Lat are converted to X/Y in meters. Second, Pixel coordinates are approximated
-        by a 2nd order polynomial of input X,Y,Z. Third, this polynomial is used to calculate new
-        Pixel coordinate for ocean surface (Z=0). Fourth, a temporary VRT from original X, Y, Line
-        and corrected Z,Pixel coordinates is created. Fifth, the temporary VRT is used for
-        converting original Pixel/Line coordinates into correct Lon/Lat
-
-        Parameters
-        ----------
-        data : dict
-            Original geolocation data from Mapper.read_annotation()
-        max_height : int
-            Maximum afordable height (meters)
-
-        Returns
+        Notes
         -------
-        data : dict
-            Corrected geolocation data with new longitude and latitude
+        Updates 'pixel' and 'height' in self.annotation_data
 
         """
         PIXEL_SIZE = 40. # meters
-        pix_corr = data['height']/np.tan(np.radians(data['incidenceAngle'])) / PIXEL_SIZE
-        data['pixel'] += pix_corr
-        data['height'][:] = 0
-
-        return data
-
-    @staticmethod
-    def correct_geolocation_data(data, max_height=5):
-        """ Correct lon/lat values in geolocation data for points high above ground (incorrect)
-
-        Each GCP in Sentinel-1 L1 image (both in the GeoTIF files and Annotation LUT) have five
-        coordinates: X, Y, Z (height), Pixel and Line. On some scenes that cover Greenland (and
-        probably other lands) some GCPs have height above zero even over ocean. This is incorrect,
-        because the radar signal comes actually from the surface and not from a point above the
-        ground as stipulated in such GCPs. This function provides correction of such GCPs.
-
-        First, Lon/Lat are converted to X/Y in meters. Second, Pixel coordinates are approximated
-        by a 2nd order polynomial of input X,Y,Z. Third, this polynomial is used to calculate new
-        Pixel coordinate for ocean surface (Z=0). Fourth, a temporary VRT from original X, Y, Line
-        and corrected Z,Pixel coordinates is created. Fifth, the temporary VRT is used for
-        converting original Pixel/Line coordinates into correct Lon/Lat
-
-        Parameters
-        ----------
-        data : dict
-            Original geolocation data from Mapper.read_annotation()
-        max_height : int
-            Maximum afordable height (meters)
-
-        Returns
-        -------
-        data : dict
-            Corrected geolocation data with new longitude and latitude
-
-        """
-        # don't correct geolocation data if only few points are affected
-        if (data['height'] > max_height).sum() < 10:
-            return data
-
-        # convert XY from degrees to meters in stereographic projection
-        central_point = int(data['shape'][0]/2), int(data['shape'][1]/2)
-        dst_srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs' % (
-                        data['latitude'][central_point], data['longitude'][central_point])
-        x, y, z = VRT.transform_coordinates(NSR(), (data['longitude'].flat,
-                                                     data['latitude'].flat,
-                                                     data['height'].flat), NSR(dst_srs))
-        # create training data
-        a = np.vstack([np.ones(x.size), x, x**2, y, y**2, x*y, z, z**2, x*z, y*z]).T
-        # calculate polynomial coefficients for values of Pixel (using least squares)
-        b = np.linalg.lstsq(a, data['pixel'].flat)[0]
-        # pixel_test = np.dot(a, b) # for debugging
-        # set height to zero (ocean surface)
-        a[:, 6:] = 0
-        # calculate Pixel at ocean surface
-        pixel_ocean = np.dot(a, b)
-        high_pixels_idx = data['height'] > max_height
-        tmp_pixel = np.array(data['pixel'])
-        tmp_pixel[high_pixels_idx] = pixel_ocean[high_pixels_idx.flat]
-        new_height = np.zeros(data['height'].shape)
-
-        # compare different correction schemes
-        #import matplotlib.pyplot as plt
-        #pix_corr_old = tmp_pixel - data['pixel']
-        #pix_corr_new = data['height']/np.cos(np.radians(data['incidenceAngle']))/40.
-        #plt.subplot(1,2,1); plt.imshow(pix_corr_old); plt.colorbar(shrink=0.5)
-        #plt.subplot(1,2,2); plt.imshow(pix_corr_new); plt.colorbar(shrink=0.5)
-        #plt.show()
-        #import ipdb; ipdb.set_trace()
-
-        # create temporary VRT with correct GCPs for converting original pixel/line into lon/lat
-        tmp_gcps = Mapper.create_gcps(x, y, new_height, tmp_pixel, data['line'])
-        tmp_vrt = VRT(data['x_size'], data['y_size'])
-        tmp_vrt.dataset.SetGCPs(tmp_gcps, NSR(dst_srs).wkt)
-        tmp_vrt.tps = True
-        new_lon, new_lat = tmp_vrt.transform_points(data['pixel'].flatten(), data['line'].flatten())
-
-        data['latitude'] = new_lat.reshape(data['shape'])
-        data['longitude'] = new_lon.reshape(data['shape'])
-        data['height'] = new_height
-        return data
+        pix_corr = (self.annotation_data['height'] /
+                    np.tan(np.radians(self.annotation_data['incidenceAngle'])) / PIXEL_SIZE)
+        self.annotation_data['pixel'] += pix_corr
+        self.annotation_data['height'][:] = 0
 
     @staticmethod
     def create_gcps(x, y, z, p, l):
