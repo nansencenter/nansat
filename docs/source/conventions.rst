@@ -20,7 +20,20 @@ We adopt the following system for branching and merging:
    5. Branch only from master or from develop.
    6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
 
-Workflow for hotfix branches based on master. (Workflow for issue branches based on develop is similar):
+How to report and handle new issues (bugs, improvements, new features, etc.)
+----------------------------------------------------------------------------
+
+If you discover a bug in Nansat or you would like to suggest improvements to Nansat, the following procedure should be followed:
+
+1. Check that noone else has reported the same issue at https://github.com/nansencenter/nansat/issues
+2. If not, add a new issue at https://github.com/nansencenter/nansat/issues
+3. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
+4. Add tests to reproduce the bug or test the new functionality
+5. Write the necessary code
+6. Create pull request for your branch and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
+
+If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master, and the following workflow applies
+(workflow for issue branches based on develop is similar):
 
 1. Branch from master into the hotfix specific branch (hotfix<NNN>_<short-heading>)
   a) Update the tests
