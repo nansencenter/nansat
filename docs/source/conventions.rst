@@ -31,7 +31,8 @@ If you discover a bug in Nansat or you would like to suggest improvements to Nan
 4. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
 5. Add tests to reproduce the bug or test the new functionality
 6. Write the necessary code
-7. Create a pull request for your branch and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
+7. Push new issue branch to your own fork at GitHub
+8. Create a pull request of the issue branch on your fork at GitHub. A member of our team will the review the code, merge, delete the branch, and close the issue (this is easy in github)
 
 If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies
 (workflow for issue branches based on develop is similar):
