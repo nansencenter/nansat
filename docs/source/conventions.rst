@@ -27,12 +27,13 @@ If you discover a bug in Nansat or you would like to suggest improvements to Nan
 
 1. Check that noone else has reported the same issue at https://github.com/nansencenter/nansat/issues
 2. If not, add a new issue at https://github.com/nansencenter/nansat/issues
-3. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
-4. Add tests to reproduce the bug or test the new functionality
-5. Write the necessary code
-6. Create pull request for your branch and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
+3. Fork Nansat and clone your own fork locally
+4. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
+5. Add tests to reproduce the bug or test the new functionality
+6. Write the necessary code
+7. Create a pull request for your branch and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
 
-If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master, and the following workflow applies
+If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies
 (workflow for issue branches based on develop is similar):
 
 1. Branch from master into the hotfix specific branch (hotfix<NNN>_<short-heading>)
