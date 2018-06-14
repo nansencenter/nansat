@@ -25,9 +25,9 @@ How to report and handle new issues (bugs, improvements, new features, etc.)
 
 If you discover a bug in Nansat or you would like to suggest improvements to Nansat, the following procedure should be followed:
 
-1. Check that noone else has reported the same issue at https://github.com/nansencenter/nansat/issues
+1. Check that no one else has reported the same issue at https://github.com/nansencenter/nansat/issues
 2. If not, add a new issue at https://github.com/nansencenter/nansat/issues
-3. Fork Nansat and clone your own fork locally
+3. If Nansat respository is not accessible for writing, fork Nansat and clone your own fork locally
 4. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
 5. Add tests to reproduce the bug or test the new functionality
 6. Write the necessary code
