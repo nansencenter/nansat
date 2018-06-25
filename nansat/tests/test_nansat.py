@@ -819,5 +819,18 @@ class NansatTest(NansatTestBase):
         self.assertEqual(type(n), Nansat)
         self.assertEqual(n.mapper, 'netcdf_cf')
 
+    @patch.multiple(Nansat, vrt=DEFAULT, __init__ = Mock(return_value=None))
+    def test_get_metadata_unescape(self, vrt):
+        meta0 = {"key1": "&quot; AAA &quot; &amp; &gt; &lt;", "key2": "'BBB'"}
+        n = Nansat()
+        vrt.dataset.GetMetadata.return_value = meta0
+
+        meta1 = n.get_metadata()
+        meta2 = n.get_metadata(unescape=False)
+
+        self.assertEqual(meta1, {'key1': '" AAA " & > <', 'key2': "'BBB'"})
+        self.assertEqual(meta2, meta0)
+
+
 if __name__ == "__main__":
     unittest.main()
