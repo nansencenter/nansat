@@ -22,6 +22,7 @@ import tempfile
 import datetime
 import pkgutil
 import warnings
+from xml.sax import saxutils
 
 import numpy as np
 from numpy import nanmedian
@@ -1032,22 +1033,27 @@ class Nansat(Domain, Exporter):
     def time_coverage_end(self):
         return parse_time(self.get_metadata('time_coverage_end'))
 
-    def get_metadata(self, key=None, band_id=None, bandID=None):
+    def get_metadata(self, key=None, band_id=None, bandID=None, unescape=True):
         """Get metadata from self.vrt.dataset
 
         Parameters
         ----------
-        key : string, optional
+        key : str
             name of the metadata key. If not givem all metadata is returned
-        band_id : int or str, optional
+        band_id : int or str
             number or name of band to get metadata from.
             If not given, global metadata is returned
+        unescape : bool
+            Replace '&quot;', '&amp;', '&lt;' and '&gt;' with these symbols " & < > ?
 
         Returns
         --------
         * string with metadata if key is given and found
-        * empty string if key is given and not found
         * dictionary with all metadata if key is not given
+
+        Raises
+        ------
+        ValueError, if key is not found
 
         """
         if bandID is not None:
@@ -1059,6 +1065,11 @@ class Nansat(Domain, Exporter):
             metadata = self.vrt.dataset.GetMetadata()
         else:
             metadata = self.get_GDALRasterBand(band_id).GetMetadata()
+
+        # remove escapes of special characters
+        if unescape:
+            for i in metadata:
+                metadata[i] = saxutils.unescape(metadata[i], {'&quot;': '"'})
 
         # get all metadata or from a key
         if key is not None:
