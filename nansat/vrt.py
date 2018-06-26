@@ -241,7 +241,7 @@ class VRT(object):
 
         """
         vrt = cls.__new__(cls)
-        vrt._init_from_lonlat(lon, lat)
+        vrt._init_from_lonlat(lon, lat, **kwargs)
         return vrt
 
     @classmethod
@@ -412,7 +412,7 @@ class VRT(object):
         self.dataset.SetMetadataItem(str('filename'), self.filename)
         self.dataset.FlushCache()
 
-    def _init_from_lonlat(self, lon, lat, **kwargs):
+    def _init_from_lonlat(self, lon, lat, add_geolocation=True, **kwargs):
         """Init VRT from longitude, latitude arrays
 
         Init VRT with dataset without bands but with GEOLOCATION metadata and Geolocation
@@ -425,6 +425,8 @@ class VRT(object):
             array with longitudes
         lat : numpy.ndarray
             array with latitudes
+        add_geolocation : bool
+            add lon/lat as geolocation arrays?
         **kwargs : dict
             arguments for VRT() and VRT._lonlat2gcps
 
@@ -437,7 +439,8 @@ class VRT(object):
         """
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
         self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, **kwargs), NSR().wkt)
-        self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
+        if add_geolocation:
+            self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
         self.dataset.SetMetadataItem(str('filename'), self.filename)
         self.dataset.FlushCache()
 
