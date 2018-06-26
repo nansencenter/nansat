@@ -64,4 +64,4 @@ all tests on Travi-CI, Appveyor and Coverals. Then execute:
    git push
 
 Information how to use Conda-Smithy can be found at `The tool for managing conda-forge feedstocks
-<https://github.com/conda-forge/conda-smithy`_
+<https://github.com/conda-forge/conda-smithy>`_
