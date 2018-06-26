@@ -31,7 +31,7 @@ class NansatTestBase(unittest.TestCase):
         self.test_file_arctic = os.path.join(ntd.test_data_path, 'arctic.nc')
         self.tmp_data_path = ntd.tmp_data_path
         self.default_mapper = 'generic'
-        fd, self.tmp_filename = tempfile.mkstemp(suffix='.nc', dir=ntd.tmp_data_path)
+        fd, self.tmp_filename = tempfile.mkstemp(suffix='.nc')
         os.close(fd)
 
         if not os.path.exists(self.test_file_gcps):

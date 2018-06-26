@@ -2,9 +2,9 @@
 # Purpose: Container of Nansat class
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov
+#               Dmitry Petrenko, Evgeny Morozov, Artem Moiseev
 # Created:      29.06.2011
-# Copyright:    (c) NERSC 2011 - 2013
+# Copyright:    (c) NERSC 2011 - 2018
 # Licence:
 # This file is part of NANSAT.
 # NANSAT is free software: you can redistribute it and/or modify
@@ -29,12 +29,10 @@ from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
 from netCDF4 import Dataset
 
-from nansat.nsr import NSR
 from nansat.domain import Domain
 from nansat.exporter import Exporter
 from nansat.figure import Figure
 from nansat.vrt import VRT
-from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, gdal
 from nansat.tools import parse_time, test_openable
 from nansat.node import Node

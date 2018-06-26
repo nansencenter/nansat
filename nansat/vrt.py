@@ -1069,8 +1069,6 @@ class VRT(object):
             srcs = [src]
         elif type(src) in [list, tuple]:
             srcs = src
-        else:
-            raise ValueError('Wrong src type (%s)! Should be dict or list/tuple of dict'%type(src))
 
         # Check if dst is given, or create empty dict
         if dst is None:
@@ -1400,9 +1398,19 @@ class VRT(object):
         return self.vrt.get_sub_vrt(steps)
 
     def get_super_vrt(self):
-        """Create vrt with subVRT
+        """Create a new VRT object with a reference to the current object (self)
 
-        copy of self in vrt.vrt and change references from vrt to vrt.vrt
+        Create a new VRT (super_vrt) with exactly the same structure (number of bands, raster size,
+        metadata) as the current object (self). Create a copy of the current object and add it as
+        an attribute of the new object (super_vrt.vrt). Bands in the new object will refer to the
+        same bands in the current object. Recursively copy all vrt attributes of the current
+        object (self.vrt.vrt.vrt...) into the new object (super_vrt.vrt.vrt.vrt.vrt...).
+
+
+        Returns
+        -------
+        super_vrt : VRT
+            a new VRT object with copy of self in super_vrt.vrt
 
         """
         # create new vrt that refers to a copy of self
@@ -1497,16 +1505,15 @@ class VRT(object):
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([col_vector, row_vector]).transpose()
 
-        # transfrom coordinates
+        # transfrom coordinates (TransformPoints returns list of (X, Y, Z) tuples)
         lonlat = transformer.TransformPoints(dst2src, xy)[0]
 
-        # convert return to lon,lat vectors
+        # convert to Nx3 numpy array (keep second dimention to allow empty inputs)
         lonlat = np.array(lonlat)
-        if lonlat.shape[0] > 0:
-            lon_vector = lonlat[:, 0]
-            lat_vector = lonlat[:, 1]
-        else:
-            lon_vector, lat_vector = [], []
+        lonlat.shape = int(lonlat.size/3), 3
+
+        # convert to vectors with lon,lat values
+        lon_vector, lat_vector, _ = lonlat.T
 
         return lon_vector, lat_vector
 
@@ -1632,7 +1639,21 @@ class VRT(object):
         return dst_x.reshape(src_shape), dst_y.reshape(src_shape), dst_z.reshape(src_shape)
 
     def set_offset_size(self, axis, offset, size):
-        """Set offset and  size in VRT dataset and band attributes"""
+        """Set offset and  size in VRT dataset and band attributes
+
+        Parameters
+        ----------
+        axis : str
+            name of axis ('x' or 'y')
+        offset : int
+            value of offset to put into VRT
+        size : int
+            value of size to put into VRT
+
+        Notes
+        --------
+        Changes VRT file, sets new offset and size
+        """
         node0 = Node.create(str(self.xml))
 
         # change size
