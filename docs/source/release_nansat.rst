@@ -26,39 +26,42 @@ Nansat-0.6.17
 
 Write some release notes that describes the changes done in this release.
 
-..
-  TODO: add this when nansat is released on conda-forge
-  Save draft (wait with publishing this release until the tag builds correctly on conda-forge)
 
 Releasing on PiPy
 -----------------
 
-..
-  TODO: add a note on waiting with releasing it on PyPi until the tag is built on conda-forge.
+First, wait until Nansat passes all tests on Travi-CI, Appveyor and Coverals. Then execute:
 
-Packaging documentation is found at `PyPA Packaging and Distributing Projects 
+::
+
+   conda create -n release_nansat -c conda-forge -y python=3.6 pythesint scipy=0.18.1 basemap netcdf4 gdal pillow mock nose urllib3 twine
+   source activate release_nansat
+   python setup.py sdist
+   # Check the dist file that was just created
+   ls dist
+   # Should be a file on this format 'nansat-1.0.20.tar.gz'
+   twine upload dist/nansat-1.0.20.tar.gz
+
+Packaging documentation is found at `PyPA Packaging and Distributing Projects
 <https://packaging.python.org/tutorials/distributing-packages/>`_
 
 To avoid having to enter password when uploading, you can set $HOME/.pypirc as described in the
 above link.
 
-.. code-block:: bash
+Releasing on Anaconda
+---------------------
 
-   conda create -n release_nansat -y python=3.6
-   source activate release_nansat
-   conda install -y -c conda-forge pythesint scipy=0.18.1 basemap netcdf4 gdal pillow
-   pip install mock nose urllib3 twine
-   python setup.py sdist
-   # Check the dist file that was just created
-   ls dist
-   # Should be a file on this format 'nansat-0.6.17.tar.gz'
-   twine upload dist/nansat-0.6.17.tar.gz
+We are releasing Nansat through the conda-forge channel on Anaconda. First, wait until Nansat passes
+all tests on Travi-CI, Appveyor and Coverals. Then execute:
 
-..
-  Releasing on Anaconda
-  ---------------------
-  
-  We will release Nansat through the conda-forge channel on Anaconda. 
-  TODO: Update these instructions when the following pull-request has been merged and a feedstock
-  for Nansat is created.
-  https://github.com/conda-forge/staged-recipes/pull/4818
+::
+
+   # install (or update) conda-smithy
+   conda install -n root -c conda-forge conda-smithy
+   git clone git@github.com:conda-forge/nansat-feedstock.git
+   cd nansat-feedstock
+   conda smithy rerender -c auto
+   git push
+
+Information how to use Conda-Smithy can be found at `The tool for managing conda-forge feedstocks
+<https://github.com/conda-forge/conda-smithy`_
