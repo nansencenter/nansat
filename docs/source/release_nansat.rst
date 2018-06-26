@@ -34,7 +34,7 @@ First, wait until Nansat passes all tests on Travi-CI, Appveyor and Coverals. Th
 
 ::
 
-   conda create -n release_nansat -c conda-forge -y python=3.6 pythesint scipy=0.18.1 basemap netcdf4 gdal pillow mock nose urllib3 twine
+   conda create -n release_nansat -c conda-forge -y python pythesint scipy basemap netcdf4 gdal pillow mock nose urllib3 twine
    source activate release_nansat
    python setup.py sdist
    # Check the dist file that was just created
