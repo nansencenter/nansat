@@ -89,7 +89,7 @@ section or use pre-configure virtual machines as explained on
 Tests
 -----
 
-To modify code in any way, as a developer or just for your project, we encourage you to use the test functions. New fuctions should be accompanied with suitable tests, see Nansat conventions in `Read the Docs`_ .
+To modify code in any way, as a developer or just for your project, we encourage you to use the test functions. New functions should be accompanied with suitable tests, see Nansat conventions in `Read the Docs`_ .
 
 ::
 
