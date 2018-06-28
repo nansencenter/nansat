@@ -74,11 +74,27 @@ The easiest way to install Nansat on a Linux machine is to use
     # update miniconda packages and metadata
     conda update -q --yes conda
 
-    # install all requirements from conda-forge channel
-    conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 python-dateutil pythesint nose
+    # install Nansat and requirements from the conda-forge channel
+    conda create -n py3nansat -c conda-forge nansat
+    
+    # activate the py3nansat environment
+    source activate py3nansat    
 
-    # finally install Nansat
-    pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
+Fore more information see
+`Install-Nansat <https://github.com/nansencenter/nansat/wiki/Install-Nansat>`__
+section or use pre-configure virtual machines as explained on
+`Nansat-lectures <https://github.com/nansencenter/nansat-lectures>`__
+
+
+Tests
+-----
+
+To modify code in any way, as a developer or just for your project, we encourage you to use the test functions. New fuctions should be accompanied with suitable tests, see Nansat conventions in `Read the Docs`_ .
+
+::
+
+    # install testing packages from conda-forge
+    conda install -c conda-forge nose mock
 
     # run nansat.tests
     nosetests nansat
@@ -87,18 +103,19 @@ The easiest way to install Nansat on a Linux machine is to use
     cd <nansat_repository_folder>
     nosetests -w . --with-coverage --cover-package=nansat
 
-Fore more information see
-`Install-Nansat <https://github.com/nansencenter/nansat/wiki/Install-Nansat>`__
-section or use pre-configure virtual machines as explained on
-`Nansat-lectures <https://github.com/nansencenter/nansat-lectures>`__
 
 Usage
 -----
 
-.. code:: python
+::
 
     # download a test file
-    !wget https://github.com/nansencenter/nansat/raw/develop/nansat/tests/data/stere.tif
+    wget https://github.com/nansencenter/nansat/raw/develop/nansat/tests/data/stere.tif
+
+    # start python and work with Nansat
+    python
+
+.. code:: python
 
     # import main file opener
     from nansat import Nansat
