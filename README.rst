@@ -92,7 +92,8 @@ Activate and work in the nansat environment
 
     # create RGB with auto-stretched histogram
     n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
-    
+
+
 Tests
 -----
 
