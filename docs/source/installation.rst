@@ -144,24 +144,28 @@ is performed. Make sure to follow the `Nansat conventions <conventions.html>`_ i
 contribute to Nansat.
 
 In addition to the regular dependencies, developers also need to install nose and mock. This can
-easily be done with *pip install nose mock*.
+easily be done with
+
+::
+
+  pip install nose mock
 
 Use a self-provisioned Virtual Machine
 --------------------------------------
 
-Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>` that brings up and provision a `VirtualBox <https://www.virtualbox.org/>` machine is provided in Nansat repository. To start the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat source code; and start the machine:
-
-download nansat source code
+Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration 
+for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>`_ that brings up and 
+provision a `VirtualBox <https://www.virtualbox.org/>`_ machine is provided in Nansat repository. To start 
+the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat 
+source code; and start the machine:
 
 ::
-
+  
+  # download nansat source code
   git clone https://github.com/nansencenter/nansat.git
   cd nansat
 
-start virtual machine
-
-::
-
+  #start virtual machine
   vagrant up
 
 That's it! The virtual machine will be started and all software will be installed automatically. To start using Nansat you need to log in to the virtual machine and start Python from the conda environment:
