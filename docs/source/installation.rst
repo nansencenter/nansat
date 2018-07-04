@@ -9,7 +9,7 @@ The fastest way to install nansat:
 
 .. code-block:: bash
 
-	conda create -n nansat -c conda-forge
+	conda create -n nansat -c conda-forge nansat
 	source activate nansat
 
 Nansat is now installed.
