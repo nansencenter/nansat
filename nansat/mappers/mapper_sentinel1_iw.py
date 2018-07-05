@@ -12,18 +12,18 @@
 import os
 import re
 
-from nansat import Nansat, Domain
-from nansat.vrt import VRT
+from nansat import Domain
 from nansat.exceptions import WrongMapperError
+from nansat.mappers.mapper_generic import Mapper as GenericMapper
 
 
-class Mapper(VRT):
+class Mapper(GenericMapper):
 
-    def __init__(self, filename, *args, **kwargs):
+    def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
         Mapper.check_input(filename)
-        n = Nansat(filename)
-        dom = Mapper.generate_domain(n)
-        n.vrt.dataset.SetGCPs(dom.vrt.dataset.GetGCPs(), dom.vrt.dataset.GetProjection())
+        GenericMapper.__init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs)
+        dom = self.generate_domain()
+        self.dataset.SetGCPs(dom.vrt.dataset.GetGCPs(), dom.vrt.dataset.GetProjection())
 
     @staticmethod
     def parse_filename(filename):
@@ -40,9 +40,8 @@ class Mapper(VRT):
         elif not re.fullmatch(r'S1._IW_RVL.*', filename_base):
             raise WrongMapperError()
 
-    @staticmethod
-    def generate_domain(n):
-        lon = n['rvlLon']
-        lat = n['rvlLat']
+    def generate_domain(self):
+        lon = self.dataset.GetRasterBand(1).ReadAsArray()
+        lat = self.dataset.GetRasterBand(2).ReadAsArray()
         dom = Domain(lon=lon, lat=lat)
         return dom
