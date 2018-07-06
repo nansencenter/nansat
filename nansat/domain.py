@@ -588,6 +588,16 @@ class Domain(object):
 
         return ogr.CreateGeometryFromWkt(self.get_border_wkt(*args, **kwargs))
 
+    def get_border_geojson(self, *args, **kwargs):
+        """Create border of the Polygon in GeoJson format
+
+        Returns
+        -------
+        str, the Polygon border in GeoJson format
+
+        """
+        return ogr.CreateGeometryFromWkt(self.get_border_wkt(*args, **kwargs)).ExportToJson()
+
     def overlaps(self, anotherDomain):
         """ Checks if this Domain overlaps another Domain
 
