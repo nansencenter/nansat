@@ -332,6 +332,24 @@ class DomainTest(unittest.TestCase):
         geom = d.get_border_geometry()
         self.assertEqual(type(geom), ogr.Geometry)
 
+    def test_border_geojson(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        expected_geojson = '{ "type": "Polygon", "coordinates": [ [ [ 25.0, 72.0 ],' \
+                           ' [ 26.0, 72.0 ], [ 27.0, 72.0 ], [ 28.0, 72.0 ], [ 29.0, 72.0 ], ' \
+                           '[ 30.0, 72.0 ], [ 31.0, 72.0 ], [ 32.0, 72.0 ], [ 33.0, 72.0 ],' \
+                           ' [ 34.0, 72.0 ], [ 35.0, 72.0 ], [ 35.0, 72.0 ], [ 35.0, 71.8 ], ' \
+                           '[ 35.0, 71.6 ], [ 35.0, 71.4 ], [ 35.0, 71.2 ], [ 35.0, 71.0 ],' \
+                           ' [ 35.0, 70.8 ], [ 35.0, 70.6 ], [ 35.0, 70.4 ], [ 35.0, 70.2 ], ' \
+                           '[ 35.0, 70.0 ], [ 35.0, 70.0 ], [ 34.0, 70.0 ], [ 33.0, 70.0 ], ' \
+                           '[ 32.0, 70.0 ], [ 31.0, 70.0 ], [ 30.0, 70.0 ], [ 29.0, 70.0 ], ' \
+                           '[ 28.0, 70.0 ], [ 27.0, 70.0 ], [ 26.0, 70.0 ], [ 25.0, 70.0 ], ' \
+                           '[ 25.0, 70.0 ], [ 25.0, 70.2 ], [ 25.0, 70.4 ], [ 25.0, 70.6 ],' \
+                           ' [ 25.0, 70.8 ], [ 25.0, 71.0 ], [ 25.0, 71.2 ], [ 25.0, 71.4 ], ' \
+                           '[ 25.0, 71.6 ], [ 25.0, 71.8 ], [ 25.0, 72.0 ] ] ] }'
+        border_geojson = d.get_border_geojson()
+        self.assertIsInstance(border_geojson, str)
+        self.assertEqual(border_geojson, expected_geojson)
+
     def test_overlaps_intersects_and_contains(self):
         Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")
         WestCoast = Domain(4326, "-te 1 58 6 64 -ts 500 500")
