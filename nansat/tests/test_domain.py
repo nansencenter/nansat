@@ -14,27 +14,15 @@ import unittest
 import os
 import numpy as np
 
-try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap
-except ImportError:
-    BASEMAP_LIB_IS_INSTALLED = False
-else:
-    BASEMAP_LIB_IS_INSTALLED = True
-
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.tools import gdal, ogr
-from nansat.figure import Image
 import sys
 from nansat.tests import nansat_test_data as ntd
 from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 from nansat.exceptions import NansatProjectionError
-
 
 EXTENT_TE_TS = "-te 25 70 35 72 -ts 500 500"
 EXTENT_DICT_TE_TS = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
@@ -58,10 +46,7 @@ class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
-        if BASEMAP_LIB_IS_INSTALLED:
-            plt.switch_backend('Agg')
-        if (    not os.path.exists(self.test_file)
-             or not os.path.exists(self.test_file_projected) ):
+        if not os.path.exists(self.test_file) or not os.path.exists(self.test_file_projected):
             raise ValueError('No test data available')
 
     def test_dont_init_from_invalid_combination(self):
