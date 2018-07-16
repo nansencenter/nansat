@@ -19,15 +19,21 @@ import datetime
 import warnings
 
 try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
     from matplotlib.colors import hex2color
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
 else:
     MATPLOTLIB_IS_INSTALLED = True
 
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError:
+    BASEMAP_LIB_IS_INSTALLED = False
+else:
+    BASEMAP_LIB_IS_INSTALLED = True
 
+from nansat.figure import Image
 from nansat.domain import Domain
 from nansat.tools import get_random_color, parse_time, write_domain_map
 from nansat.tests import nansat_test_data as ntd
@@ -56,6 +62,7 @@ class ToolsTest(unittest.TestCase):
 
     @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
     def test_write_domain_map(self):
+        plt.switch_backend('Agg')
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         border = d.get_border()
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
@@ -67,6 +74,7 @@ class ToolsTest(unittest.TestCase):
 
     @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
     def test_write_domain_map_dpi100(self):
+        plt.switch_backend('Agg')
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         border = d.get_border()
         tmpfilename = os.path.join(ntd.tmp_data_path,
@@ -79,13 +87,14 @@ class ToolsTest(unittest.TestCase):
 
     @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
     def test_write_domain_map_labels(self):
+        plt.switch_backend('Agg')
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         border = d.get_border()
         tmpfilename = os.path.join(ntd.tmp_data_path,
                                    'domain_write_map_labels.png')
-        write_domain_map(border, tmpfilename
-                    merLabels=[False, False, False, True],
-                    parLabels=[True, False, False, False])
+        write_domain_map(border, tmpfilename,
+                    mer_labels=[False, False, False, True],
+                    par_labels=[True, False, False, False])
         self.assertTrue(os.path.exists(tmpfilename))
         i = Image.open(tmpfilename)
         i.verify()
