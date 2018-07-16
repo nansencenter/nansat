@@ -27,36 +27,20 @@ from netCDF4 import Dataset
 from nansat.vrt import VRT
 from nansat.node import Node
 
-from nansat.warnings import NansatFutureWarning
 from nansat.exceptions import NansatGDALError
 
 
 class Exporter(object):
     """Abstract class for export functions """
-    EXPORT_FILENAME_WARNING = ('Nansat.export(fileName=...) will be disabled from Nansat 1.1. '
-                               'Use Nansat.export(filename=...).')
-    EXPORT_RM_METADATA_WARNING = ('Nansat.export(rmMetadata=...) will be disabled from Nansat 1.1. '
-                                  'Use Nansat.export(rm_metadata=...).')
-    EXPORT_ADD_GEOLOC_WARNING = ('Nansat.export(addGeoloc=...) will be disabled from Nansat 1.1. '
-                                 'Use Nansat.export(add_geolocation=...).')
-    EXPORT_ADD_GCPS_WARNING = ('Nansat.export(addGCPs=...) has no effect and '
-                               'will be disabled from Nansat 1.1. ')
-    EXPORT_BOTTOMUP_WARNING = ('Nansat.export(bottomup=...) will be disabled from Nansat 1.1. '
-                               'Use Nansat.export(options=[WRITE_BOTTOMUP=NO]')
-    EXPORT_CREATED_WARNING = ('Nansat.export2thredds(createdTime=...) will be disabled from Nansat 1.1. '
-                               'Use Nansat.export2thredds(created=...')
-    EXPORT_MASKNAME_WARNING = ('Nansat.export2thredds(maskName=...) will be disabled from Nansat 1.1. '
-                               'Use Nansat.export2thredds(mask_name=...')
     DEFAULT_INSTITUTE = 'NERSC'
     DEFAULT_SOURCE = 'satellite remote sensing'
 
     UNWANTED_METADATA = ['dataType', 'SourceFilename', 'SourceBand', '_Unsigned', 'FillValue',
                                 'time', '_FillValue', 'type', 'scale', 'offset']
 
-    def export(self, filename='', fileName='', bands=None, rm_metadata=None, rmMetadata=None,
-               addGeoloc=None, add_geolocation=True,
-               addGCPs=None, driver='netCDF', bottomup=None, options=None, hardcopy=False):
-        '''Export Nansat object into netCDF or GTiff file
+    def export(self, filename='', bands=None, rm_metadata=None, add_geolocation=True,
+               driver='netCDF', options=None, hardcopy=False):
+        """Export Nansat object into netCDF or GTiff file
 
         Parameters
         -----------
@@ -72,10 +56,6 @@ class Exporter(object):
             add geolocation array datasets to exported file?
         driver : str
             Name of GDAL driver (format)
-        bottomup : bool
-            False: Write swath-projected data with rows and columns
-                   organized as in the original product.
-            True:  Use the default behaviour of GDAL, which is to flip the rows
         options : str or list
             GDAL export options in format of: 'OPT=VAL', or
             ['OPT1=VAL1', 'OP2='VAL2']
@@ -108,22 +88,7 @@ class Exporter(object):
         # export all bands into a GeoTiff
         >>> n.export(driver='GTiff')
 
-        '''
-        # trigger Nansat future warnings on deprecated features
-        if fileName != '':
-            warnings.warn(self.EXPORT_FILENAME_WARNING, NansatFutureWarning)
-            filename = fileName
-        if rmMetadata is not None:
-            warnings.warn(self.EXPORT_RM_METADATA_WARNING, NansatFutureWarning)
-            rm_metadata = rmMetadata
-        if addGeoloc is not None:
-            warnings.warn(self.EXPORT_ADD_GEOLOC_WARNING, NansatFutureWarning)
-            add_geolocation = addGeoloc
-        if addGCPs is not None:
-            warnings.warn(self.EXPORT_ADD_GCPS_WARNING, NansatFutureWarning)
-        if isinstance(bottomup, bool):
-            warnings.warn(self.EXPORT_BOTTOMUP_WARNING, NansatFutureWarning)
-
+        """
         if options is None:
             options = []
         if type(options) == str:
@@ -143,23 +108,22 @@ class Exporter(object):
             export_vrt.hardcopy_bands()
 
         if driver == 'GTiff':
-            options, add_gcps = export_vrt.prepare_export_gtiff(options)
+            add_gcps = export_vrt.prepare_export_gtiff()
         else:
-            options, add_gcps = export_vrt.prepare_export_netcdf(options, bottomup)
+            add_gcps = export_vrt.prepare_export_netcdf()
 
         # Create output file using GDAL
         dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset, options=options)
         del dataset
         # add GCPs into netCDF file as separate float variables
         if add_gcps:
-            Exporter._add_gcps(filename, export_vrt.dataset.GetGCPs(), bottomup)
+            Exporter._add_gcps(filename, export_vrt.dataset.GetGCPs())
 
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, filename, bands, metadata=None,
-                        mask_name=None, maskName=None, rm_metadata=None, rmMetadata=None,
-                        time=None, created=None, createdTime=None):
-        ''' Export data into a netCDF formatted for THREDDS server
+    def export2thredds(self, filename, bands, metadata=None, mask_name=None, rm_metadata=None,
+                       time=None, created=None):
+        """ Export data into a netCDF formatted for THREDDS server
 
         Parameters
         ----------
@@ -207,18 +171,8 @@ class Exporter(object):
                      'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
         >>> n.export2thredds(filename, bands)
 
-        '''
 
-        if rmMetadata is not None:
-            warnings.warn(self.EXPORT_RM_METADATA_WARNING, NansatFutureWarning)
-            rm_metadata = rmMetadata
-        if createdTime is not None:
-            warnings.warn(self.EXPORT_CREATED_WARNING, NansatFutureWarning)
-            created = createdTime
-        if maskName is not None:
-            warnings.warn(self.EXPORT_MASKNAME_WARNING, NansatFutureWarning)
-            mask_name = maskName
-
+        """
         if not isinstance(bands, dict):
             raise ValueError('<bands> must be dict!')
         if metadata is None:
@@ -262,7 +216,7 @@ class Exporter(object):
                                             dtype=dstBands[iband]['type'])[0]
 
             # mask values with np.nan
-            if maskName is not None and iband != maskName:
+            if mask_name is not None and iband != mask_name:
                 array[mask != 64] = np.nan
 
             # add array to a temporary Nansat object
@@ -435,7 +389,7 @@ class Exporter(object):
         return global_metadata
 
     @staticmethod
-    def _add_gcps(filename, gcps, bottomup):
+    def _add_gcps(filename, gcps):
         """Add 4 variables with gcps to the generated netCDF file"""
         gcp_variables = ['GCPX', 'GCPY', 'GCPZ', 'GCPPixel', 'GCPLine', ]
 

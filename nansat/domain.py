@@ -21,13 +21,11 @@ import numpy as np
 from xml.etree.ElementTree import ElementTree
 
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
-from nansat.tools import write_domain_map
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 
 import warnings
 from nansat.exceptions import NansatProjectionError
-from nansat.warnings import NansatFutureWarning
 
 
 class Domain(object):
@@ -121,10 +119,6 @@ class Domain(object):
     [http://www.gdal.org/ogr/osr_tutorial.html]
 
     """
-    REPROJECT_GCPS_WARNING = ('reproject_GCPs() will be disabled in Nansat 1.1. '
-                             'Use reproject_gcps().')
-    WRITE_MAP_WARNING = ('Domain.write_map() will be disabled in Nansat 1.1. '
-                         'Use nansat.write_domain_map().')
 
     OUTPUT_SEPARATOR = '-' * 40 + '\n'
     KML_BASE = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -838,22 +832,6 @@ class Domain(object):
         """
         return self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
 
-    def write_map(self, outputFileName, lonVec=None, latVec=None, lonBorder=10., latBorder=10.,
-                  figureSize=(6, 6), dpi=50, projection='cyl', resolution='c',
-                  continetsColor='coral', meridians=10, parallels=10, pColor='r', pLine='k',
-                  pAlpha=0.5, padding=0., merLabels=[False, False, False, False],
-                  parLabels=[False, False, False, False], pltshow=False, labels=None):
-        """Create an image with a map of the domain"""
-        warnings.warn(self.WRITE_MAP_WARNING, NansatFutureWarning)
-        border = self.get_border()
-        write_domain_map(border, outputFileName, lon_vec=lonVec, lat_vec=latVec,
-                         lon_border=lonBorder, lat_border=latBorder, figure_size=figureSize,
-                         dpi=dpi, projection=projection, resolution=resolution,
-                         continets_color=continetsColor, meridians=meridians, parallels=parallels,
-                         p_color=pColor, p_line=pLine, p_alpha=pAlpha,
-                         padding=padding, mer_labels=merLabels, par_labels=parLabels,
-                         pltshow=pltshow, labels=labels)
-
     def reproject_gcps(self, srs_string=''):
         """Reproject all GCPs to a new spatial reference system
 
@@ -875,7 +853,3 @@ class Domain(object):
             srs_string = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs' \
                          % (np.nanmedian(lat), np.nanmedian(lon))
         self.vrt.reproject_GCPs(srs_string)
-
-    def reproject_GCPs(self, srsString=''):
-        warnings.warn(self.REPROJECT_GCPS_WARNING, NansatFutureWarning)
-        self.reproject_gcps(srs_string=srsString)

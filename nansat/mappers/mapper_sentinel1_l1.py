@@ -29,7 +29,6 @@ import pythesint as pti
 
 from nansat.vrt import VRT
 from nansat.tools import gdal, initial_bearing
-from nansat.warnings import NansatFutureWarning
 from nansat.exceptions import WrongMapperError, NansatReadError
 from nansat.nsr import NSR
 from nansat.node import Node
@@ -55,10 +54,6 @@ class Mapper(VRT):
     Creates self.dataset and populates it with S1 bands (when fast=False).
     """
     def __init__(self, filename, gdalDataset, gdalMetadata, fast=False, fixgcp=True, **kwargs):
-        if kwargs.get('manifestonly', False):
-            fast = True
-            NansatFutureWarning('manifestonly option will be deprecated. Use: fast=True')
-
         if not os.path.split(filename.rstrip('/'))[1][:3] in ['S1A', 'S1B']:
             raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
 
