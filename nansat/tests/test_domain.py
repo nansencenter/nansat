@@ -489,39 +489,6 @@ class DomainTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         self.assertEqual(d.shape(), (500, 500))
 
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_map(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
-        d.write_map(tmpfilename)
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-        self.assertEqual(i.info['dpi'], (50, 50))
-
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_map_dpi100(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'domain_write_map_dpi100.png')
-        d.write_map(tmpfilename, dpi=100)
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-        self.assertEqual(i.info['dpi'], (100, 100))
-
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_map_labels(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'domain_write_map_labels.png')
-        d.write_map(tmpfilename,
-                    merLabels=[False, False, False, True],
-                    parLabels=[True, False, False, False])
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-
     def test_reproject_gcps(self):
         ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
@@ -537,15 +504,6 @@ class DomainTest(unittest.TestCase):
         gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
         self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),
                         'Stereographic')
-
-    def test_reproject_GCPs(self):
-        ds = gdal.Open(self.test_file)
-        d = Domain(ds=ds)
-        d.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
-        gcp = d.vrt.dataset.GetGCPs()[0]
-        self.assertTrue(gcp.GCPX > 636161)
-        self.assertTrue(gcp.GCPY < -288344)
-
 
     def test_repr(self):
         dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
