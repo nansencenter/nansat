@@ -50,55 +50,33 @@ You will find information about contributing to Nansat at `Read the Docs`_.
 
 .. _Read the Docs: http://nansat.readthedocs.io/
 
-
 Installation
 ------------
 
-The easiest way to install Nansat on a Linux machine is to use
-`anaconda <http://docs.continuum.io/anaconda/index>`__
+The easiest way to install Nansat on any platform is to use Anaconda_ (`download installer <https://conda.io/miniconda.html>`_).
+
+.. _Anaconda: http://docs.continuum.io/anaconda/index
 
 ::
 
-    # download the latest version of miniconda
-    wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+    # install Nansat and requirements from the conda-forge channel
+    conda create -n py3nansat -c conda-forge nansat
 
-    # make it executable
-    chmod +x miniconda.sh
+Activate and work in the nansat environment
+-------------------------------------------
 
-    # install miniconda virtual environment
-    ./miniconda.sh -b -f -p $HOME/miniconda
-
-    # activate the miniconda environment
-    export PATH=$HOME/miniconda/bin/:$PATH
-
-    # update miniconda packages and metadata
-    conda update -q --yes conda
-
-    # install all requirements from conda-forge channel
-    conda install -q --yes -c conda-forge gdal numpy pillow netcdf4 cfunits python-dateutil pythesint nose
-
-    # finally install Nansat
-    pip install https://github.com/nansencenter/nansat/archive/master.tar.gz
-
-    # run nansat.tests
-    nosetests nansat
-
-    # Run all tests including nansat_integration_tests with coverage
-    cd <nansat_repository_folder>
-    nosetests -w . --with-coverage --cover-package=nansat
-
-Fore more information see
-`Install-Nansat <https://github.com/nansencenter/nansat/wiki/Install-Nansat>`__
-section or use pre-configure virtual machines as explained on
-`Nansat-lectures <https://github.com/nansencenter/nansat-lectures>`__
-
-Usage
------
-
-.. code:: python
+::
 
     # download a test file
-    !wget https://github.com/nansencenter/nansat/raw/develop/nansat/tests/data/stere.tif
+    wget https://github.com/nansencenter/nansat/raw/develop/nansat/tests/data/stere.tif
+
+    # activate the py3nansat environment
+    source activate py3nansat
+
+    # start python and work with Nansat
+    python
+
+.. code:: python
 
     # import main file opener
     from nansat import Nansat
@@ -115,10 +93,28 @@ Usage
     # create RGB with auto-stretched histogram
     n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
 
-Fore more information see
-`Tutorial <https://github.com/nansencenter/nansat/wiki/Tutorial>`__ or
-notebooks for `Nansat
+
+Tests
+-----
+
+Nansat is outfitted with unittests, which you can use to ensure that all functionality works on your platform.
+
+::
+
+    # install testing packages from conda-forge
+    conda install -c conda-forge nose mock
+
+    # run nansat.tests
+    nosetests nansat
+
+    # Run all tests including nansat_integration_tests with coverage
+    cd <nansat_repository_folder>
+    nosetests -w . --with-coverage --cover-package=nansat    
+
+Fore more information see `Read the Docs`_ or notebooks for `Nansat
 lectures <https://github.com/nansencenter/nansat-lectures/tree/master/notebooks>`__
+
+.. _Read the Docs: http://nansat.readthedocs.io/
 
 License
 -------

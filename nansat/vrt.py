@@ -32,7 +32,6 @@ from nansat.geolocation import Geolocation
 from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
 from nansat.exceptions import NansatProjectionError
-from nansat.warnings import NansatFutureWarning
 
 class VRT(object):
     """Wrapper around GDAL VRT-file
@@ -87,22 +86,6 @@ class VRT(object):
     writes VRT file content to self.filename
 
     """
-    INIT_GDALDATASET_WARNING = ('VRT(gdalDataset=...) will be disabled in Nansat 1.1. '
-                                'Use VRT.from_gdal_dataset(...).')
-    INIT_VRTDATASET_WARNING = ('VRT(vrtDataset=...) will be disabled in Nansat 1.1. '
-                                'Use VRT.copy_dataset(...).')
-    INIT_ARRAY_WARNING = ('VRT(array=...) will be disabled in Nansat 1.1. '
-                          'Use VRT.from_array(...).')
-    INIT_DATASETPARAMS_WARNING = ('VRT(srcGeoTransform, srcProjection, srcRasterXSize, '
-                                  'srcRasterYSize, srcGCPs, srcGCPProjection) '
-                                  'will be disabled in Nansat 1.1. '
-                                  'Use VRT.from_dataset_params(...).')
-    INIT_GEOLOCATIONARRAY_WARNING = ('VRT(geolocationArray=...) will be disabled in Nansat 1.1. '
-                                     'Use vrt._add_geolocation(...).')
-    INIT_LATLON_WARNING = ('VRT(lat=..., lon=...) will be disabled in Nansat 1.1. '
-                           'Use VRT.from_lonlat(...).')
-    INIT_SRCMETADATA_WARNING = ('VRT(srcMetadata=...) will be disabled in Nansat 1.1. '
-                                'Use VRT(metadata=...).')
     COMPLEX_SOURCE_XML = Template('''
             <$SourceType>
                 <SourceFilename relativeToVRT="0">$Dataset</SourceFilename>
@@ -266,13 +249,8 @@ class VRT(object):
 
     def __init__(self, x_size=1, y_size=1, metadata=None, nomem=False, **kwargs):
         """Init VRT object with all attributes"""
-        if isinstance(x_size, gdal.Dataset):
-            kwargs['gdalDataset'] = x_size
         if metadata is None:
             metadata = dict()
-        # init from obsolete params
-        if self._init_from_old_params(metadata=metadata, nomem=nomem, **kwargs):
-            return
 
         # essential attributes
         self.logger = add_logger('Nansat')
@@ -736,71 +714,6 @@ class VRT(object):
                 return i
         return None
 
-    def _init_from_old_params(self, **kwargs):
-        """Check obsolete input parameters for backward compatibility"""
-        old_param_names = ['gdalDataset',
-                           'vrtDataset',
-                           'array',
-                           'srcGeoTransform',
-                           'srcProjection',
-                           'srcRasterXSize',
-                           'srcRasterYSize',
-                           'srcGCPs',
-                           'srcGCPProjection',
-                           'lon',
-                           'lat']
-
-        old_params_used = False
-        # run through input params and select the matching one
-        for arg in old_param_names:
-            if arg in kwargs:
-                old_params_used = True
-                break
-        if not old_params_used:
-            return False
-
-        # parameters for self._init_from_dataset_params()
-        dataset_params = (kwargs.get('srcRasterXSize', None),
-                          kwargs.get('srcRasterYSize', None),
-                          kwargs.get('srcGeoTransform', (0, 1, 0, 0, 0, -1)),
-                          kwargs.get('srcProjection', ''),
-                          kwargs.get('srcGCPs', list()),
-                          kwargs.get('srcGCPProjection', ''))
-
-        # conversion from old input parameters to warning, new function and new parameters
-        new_warnings_and_funcs = [
-        [self.INIT_GDALDATASET_WARNING, self._init_from_gdal_dataset, (kwargs.get('gdalDataset', None),)],
-        [self.INIT_VRTDATASET_WARNING, self._copy_from_dataset, (kwargs.get('vrtDataset', None),)],
-        [self.INIT_ARRAY_WARNING, self._init_from_array, (kwargs.get('array'),)],
-        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
-        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
-        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
-        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
-        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
-        [self.INIT_DATASETPARAMS_WARNING, self._init_from_dataset_params, dataset_params],
-        [self.INIT_LATLON_WARNING, self._init_from_lonlat, (kwargs.get('lon', None), kwargs.get('lat', None))],
-        [self.INIT_LATLON_WARNING, self._init_from_lonlat, (kwargs.get('lon', None), kwargs.get('lat', None))],
-        ]
-
-        old2new = dict(zip(old_param_names, new_warnings_and_funcs))
-
-        # get metadata
-        metadata = kwargs['metadata']
-        if 'srcMetadata' in kwargs:
-            warnings.warn(self.INIT_SRCMETADATA_WARNING, NansatFutureWarning)
-            metadata.update(kwargs['srcMetadata'])
-
-        # get metadata also from input gdalDataset
-        if arg == 'gdalDataset':
-            metadata.update(kwargs['gdalDataset'].GetMetadata())
-
-        # raise warning
-        warnings.warn(old2new[arg][0], NansatFutureWarning)
-        # call function
-        old2new[arg][1](*old2new[arg][2], metadata=metadata, nomem=kwargs[str('nomem')])
-
-        return old_params_used
-
     def leave_few_bands(self, bands=None):
         """Leave only given bands in VRT"""
         if bands is None:
@@ -892,19 +805,14 @@ class VRT(object):
             iNode1.node('SourceBand').value = str(1)
         self.write_xml(node0.rawxml())
 
-    def prepare_export_gtiff(self, options):
+    def prepare_export_gtiff(self):
         """Prepare dataset for export using GTiff driver"""
         if len(self.dataset.GetGCPs()) > 0:
             self._remove_geotransform()
-        return options, False
+        return False
 
-    def prepare_export_netcdf(self, options, bottomup):
+    def prepare_export_netcdf(self):
         """Prepare dataset for export using netCDF driver"""
-        # set bottomup option
-        if bottomup:
-            options += ['WRITE_BOTTOMUP=NO']
-        else:
-            options += ['WRITE_BOTTOMUP=YES']
         gcps = self.dataset.GetGCPs()
         srs = str(self.get_projection())
         if len(gcps) > 0:
@@ -920,7 +828,7 @@ class VRT(object):
             geo_transform_str = str(self.dataset.GetGeoTransform()).replace(',', '|')
             self.dataset.SetMetadataItem(str('NANSAT_GeoTransform'), str(geo_transform_str))
             add_gcps = False
-        return options, add_gcps
+        return add_gcps
 
     def copy(self):
         """Create and return a full copy of a VRT instance with new filenames
@@ -956,12 +864,6 @@ class VRT(object):
         return new_vrt
 
     @property
-    def fileName(self):
-        warnings.warn('VRT.fileName will be disabled in Nansat 1.1. Use VRT.filename instead.',
-                NansatFutureWarning)
-        return self.filename
-
-    @property
     def xml(self):
         """Read XML content of the VRT-file using VSI
 
@@ -971,11 +873,6 @@ class VRT(object):
         """
         self.dataset.FlushCache()
         return VRT.read_vsi(self.filename)
-
-    def _create_bands(self, metadata_dict):
-        warnings.warn('Method VRT._create_bands() will be disabled in Nansat 1.1. ' \
-                'Use VRT.create_bands() instead.', NansatFutureWarning)
-        self.create_bands(metadata_dict)
 
     def create_bands(self, metadata_dict):
         """ Generic function called from the mappers to create bands
@@ -1069,8 +966,6 @@ class VRT(object):
             srcs = [src]
         elif type(src) in [list, tuple]:
             srcs = src
-        else:
-            raise ValueError('Wrong src type (%s)! Should be dict or list/tuple of dict'%type(src))
 
         # Check if dst is given, or create empty dict
         if dst is None:
@@ -1400,9 +1295,19 @@ class VRT(object):
         return self.vrt.get_sub_vrt(steps)
 
     def get_super_vrt(self):
-        """Create vrt with subVRT
+        """Create a new VRT object with a reference to the current object (self)
 
-        copy of self in vrt.vrt and change references from vrt to vrt.vrt
+        Create a new VRT (super_vrt) with exactly the same structure (number of bands, raster size,
+        metadata) as the current object (self). Create a copy of the current object and add it as
+        an attribute of the new object (super_vrt.vrt). Bands in the new object will refer to the
+        same bands in the current object. Recursively copy all vrt attributes of the current
+        object (self.vrt.vrt.vrt...) into the new object (super_vrt.vrt.vrt.vrt.vrt...).
+
+
+        Returns
+        -------
+        super_vrt : VRT
+            a new VRT object with copy of self in super_vrt.vrt
 
         """
         # create new vrt that refers to a copy of self
@@ -1497,16 +1402,15 @@ class VRT(object):
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([col_vector, row_vector]).transpose()
 
-        # transfrom coordinates
+        # transfrom coordinates (TransformPoints returns list of (X, Y, Z) tuples)
         lonlat = transformer.TransformPoints(dst2src, xy)[0]
 
-        # convert return to lon,lat vectors
+        # convert to Nx3 numpy array (keep second dimention to allow empty inputs)
         lonlat = np.array(lonlat)
-        if lonlat.shape[0] > 0:
-            lon_vector = lonlat[:, 0]
-            lat_vector = lonlat[:, 1]
-        else:
-            lon_vector, lat_vector = [], []
+        lonlat.shape = int(lonlat.size/3), 3
+
+        # convert to vectors with lon,lat values
+        lon_vector, lat_vector, _ = lonlat.T
 
         return lon_vector, lat_vector
 
@@ -1632,7 +1536,21 @@ class VRT(object):
         return dst_x.reshape(src_shape), dst_y.reshape(src_shape), dst_z.reshape(src_shape)
 
     def set_offset_size(self, axis, offset, size):
-        """Set offset and  size in VRT dataset and band attributes"""
+        """Set offset and  size in VRT dataset and band attributes
+
+        Parameters
+        ----------
+        axis : str
+            name of axis ('x' or 'y')
+        offset : int
+            value of offset to put into VRT
+        size : int
+            value of size to put into VRT
+
+        Notes
+        --------
+        Changes VRT file, sets new offset and size
+        """
         node0 = Node.create(str(self.xml))
 
         # change size

@@ -169,31 +169,6 @@ class Node(object):
         for i in sorted(ideleted, reverse=True):
             self.children.pop(i)
 
-    def find_dom_child(self, dom, tagName, n=0):
-        '''Recoursively find child of the dom'''
-        children = dom.childNodes
-        theChild = None
-
-        chn = 0
-        for child in children:
-            print(child, child.nodeType, chn)
-            if child.nodeType == 1:
-                print(child.tagName)
-                if str(child.tagName) == tagName:
-                    print(child.tagName, tagName, 'OK')
-                    if chn == n:
-                        theChild = child
-                    chn += 1
-
-            if theChild is not None:
-                break
-
-            if child.hasChildNodes():
-                print('has childs')
-                theChild = self.find_dom_child(child, tagName, n)
-
-        return theChild
-
     def nodeList(self, tag):
         '''
         Produce a list of subnodes with the same tag.

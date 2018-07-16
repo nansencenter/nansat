@@ -6,20 +6,13 @@ Quickstart
 The fastest way to install nansat:
 
 * Install `Miniconda <https://conda.io/miniconda.html>`_ on your platform of choice.
- * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
-   Run this to access the conda installation.
- * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
-   directory as explained by the installer.
 
 .. code-block:: bash
-   
-   conda create -n nansat -y Python=3.6
-   source activate nansat
-   # On windows you would need to ommit source: *activate nansat*
-   conda install --yes -c conda-forge pythesint scipy=0.18.1 basemap gdal  
-   pip install urllib3 pillow netcdf4 nansat
 
-Nansat is now installed. 
+	conda create -n nansat -c conda-forge nansat
+	source activate nansat
+
+Nansat is now installed.
 For more details and other methods of installing Nansat, see below.
 
 Requirements
@@ -32,8 +25,7 @@ Nansat requires the following packages:
 * `GDAL <http://www.gdal.org>`_ >=2.2.3
 * `Pillow <https://python-pillow.github.io/>`_ >=4.0.0
 * `netCDF4 <https://github.com/Unidata/netcdf4-python>`_ >=1.3.1
-* `py-thesaurus-interface <https://github.com/nansencenter/py-thesaurus-interface>`_ 
-* `cfunits <https://bitbucket.org/cfpython/cfunits-python>`_
+* `py-thesaurus-interface <https://github.com/nansencenter/py-thesaurus-interface>`_
 
 The following packages are optional:
 
@@ -89,7 +81,7 @@ following procedure can be used to install dependencies with *apt* and *pip*.
    virtualenv --no-site-packages nansat_env
    source ~/nansat_env/bin/activate
    export PYTHONPATH=/usr/lib/python2.7/dist-packages/
-   pip install pythesint pillow cfunits netcdf4 urllib3
+   pip install pythesint pillow netcdf4 urllib3
 
 Compile and Build Yourself
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,13 +144,35 @@ is performed. Make sure to follow the `Nansat conventions <conventions.html>`_ i
 contribute to Nansat.
 
 In addition to the regular dependencies, developers also need to install nose and mock. This can
-easily be done with *pip install nose mock*.
+easily be done with
+
+::
+
+  pip install nose mock
 
 Use a self-provisioned Virtual Machine
 --------------------------------------
 
-Another option is to use a virtual machine managed by Virtualbox and provisioned using Vagrant and
-Ansible. We provide `configurations for virtual machines
-<https://github.com/nansencenter/geo-spaas-vagrant>`_ for learning and development of Nansat.
-Following a clone of this repository and installation of virtualbox and vagrant, a vm used for
-courses can be installed by ``vagrant up course``.
+Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration 
+for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>`_ that brings up and 
+provision a `VirtualBox <https://www.virtualbox.org/>`_ machine is provided in Nansat repository. To start 
+the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat 
+source code; and start the machine:
+
+::
+  
+  # download nansat source code
+  git clone https://github.com/nansencenter/nansat.git
+  cd nansat
+
+  #start virtual machine
+  vagrant up
+
+That's it! The virtual machine will be started and all software will be installed automatically. To start using Nansat you need to log in to the virtual machine and start Python from the conda environment:
+
+::
+
+  vagrant ssh
+  source activate py3nansat
+  python
+
