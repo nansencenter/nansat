@@ -852,4 +852,4 @@ class Domain(object):
             lon, lat = self.get_border()
             srs_string = '+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=%f +lon_0=%f +no_defs' \
                          % (np.nanmedian(lat), np.nanmedian(lon))
-        self.vrt.reproject_GCPs(srs_string)
+        self.vrt.reproject_gcps(srs_string)
