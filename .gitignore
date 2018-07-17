@@ -18,3 +18,4 @@ docs/_build/
 .pydevproject
 .idea
 .settings
+.vagrant
