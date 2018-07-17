@@ -1473,7 +1473,7 @@ class VRT(object):
 
         return warped_vrt
 
-    def reproject_GCPs(self, dst_srs):
+    def reproject_gcps(self, dst_srs):
         """Reproject all GCPs to a new spatial reference system
 
         Necessary before warping an image if the given GCPs

@@ -122,7 +122,7 @@ class Mapper(VRT):
                     parse_time(gdalMetadata['ObservationEndDateTime']).isoformat())
         # append GCPs and lat/lon projection to the vsiDataset
         self.dataset.SetGCPs(gcps, NSR().wkt)
-        self.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=90 +lon_0=0 +no_defs')
+        self.reproject_gcps('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=90 +lon_0=0 +no_defs')
         self.tps = True
 
         mm = pti.get_gcmd_instrument('AMSR2')

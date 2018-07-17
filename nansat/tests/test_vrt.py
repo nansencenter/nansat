@@ -579,7 +579,7 @@ class VRTTest(NansatTestBase):
     def test_reproject_gcps(self):
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
         vrt1 = VRT.from_lonlat(lon, lat)
-        vrt1.reproject_GCPs(str('+proj=stere'))
+        vrt1.reproject_gcps(str('+proj=stere'))
         self.assertIn('Stereographic', vrt1.dataset.GetGCPProjection())
         self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPX, 0)
         self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPY, 2217341.7476875726)
