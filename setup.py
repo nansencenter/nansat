@@ -49,7 +49,7 @@ MAJOR               = 1
 MINOR               = 1
 MICRO               = 0
 ISRELEASED          = True
-VERSION             = '%d.%d.%ddev' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
                         "pythesint",
