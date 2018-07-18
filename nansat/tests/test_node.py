@@ -23,10 +23,14 @@ class NodeTest(unittest.TestCase):
         tag = 'Root'
         value = '   Value   '
         anAttr = 'elValue'
+        new_value = 'New Value'
         node = Node(tag, value=value, anAttr=anAttr)
         self.assertEqual(node.tag, tag)
         self.assertDictEqual(node.attributes, {'anAttr': anAttr})
         self.assertEqual(node.value, value.strip())
+        self.assertEqual(node[tag], value.strip())
+        node[tag] = new_value
+        self.assertEqual(node.value, new_value)
 
     def test_getAttributeList(self):
         tag = 'Root'
@@ -145,3 +149,12 @@ class NodeTest(unittest.TestCase):
         root += firstLevel3
         self.assertEqual(root.node(firstLevelTag,0), firstLevel)
         self.assertEqual(root.node(firstLevelTag,1), firstLevel2)
+
+    def test_str(self):
+        tag = 'Root'
+        value = 'Value'
+        node = Node(tag, value=value)
+        self.assertEqual(str(node), '%s\n    value: [%s]' % (tag, value))
+
+if __name__ == "__main__":
+    unittest.main()

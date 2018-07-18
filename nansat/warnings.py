@@ -1,5 +1,5 @@
 # Name:         warnings.py
-# Purpose:      Definitions of nansat exceptions
+# Purpose:      Definitions of nansat warnings
 # Authors:      Morten W. Hansen
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3

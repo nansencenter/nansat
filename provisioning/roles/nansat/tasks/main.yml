@@ -1,0 +1,11 @@
+---
+- name: nansat | Add PYTHONPATH to bashrc
+  lineinfile: dest="/home/vagrant/.bashrc" line="export PYTHONPATH=/vagrant"
+
+- name: nansat | Compile pixel functions
+  shell: 'python setup.py build_ext --inplace'
+  args:
+    chdir: '/vagrant'
+
+- name: nansat | Run nosetests
+  shell: 'nosetests nansat'

@@ -18,22 +18,6 @@ import os
 
 import_error_msg = "Nansat requires %s, which should be installed separately"
 
-# Check if required packages are installed
-try:
-    import numpy
-except ImportError:
-    raise ImportError(import_error_msg % 'numpy')
-
-try:
-    from osgeo import gdal, osr, ogr
-except ImportError:
-    try:
-        import gdal
-        import osr
-        import ogr
-    except ImportError:
-        raise ImportError(import_error_msg % 'gdal')
-
 NAME                = 'nansat'
 MAINTAINER          = "Nansat Developers"
 MAINTAINER_EMAIL    = "nansat-dev@googlegroups.com"
@@ -62,15 +46,16 @@ AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Al
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["Linux", "OS X", "Windows"]
 MAJOR               = 1
-MINOR               = 0
-MICRO               = 21
+MINOR               = 1
+MICRO               = 0
 ISRELEASED          = True
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
+VERSION             = '%d.%d.%ddev' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [
                         "Pillow",
                         "pythesint",
-                        "cfunits",
                         "urllib3",
+                        "numpy",
+                        "gdal"
                     ]
 
 #----------------------------------------------------------------------------#

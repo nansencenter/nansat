@@ -1,0 +1,24 @@
+---
+- hosts: nansat
+  vars:
+    project_home:   '/vagrant'
+    env_name:       'py3nansat'
+    conda_dir:      '/home/vagrant/anaconda'
+
+  roles:
+    - role: andrewrothstein.miniconda
+      miniconda_escalate: no
+      miniconda_parent_dir: '{{ conda_dir | dirname }}'
+      miniconda_make_sys_default: yes
+
+    - role: andrewrothstein.conda-env
+      conda_env_name: '{{ env_name }}'
+      conda_env_environment: conda_env_requirements.yml
+      conda_env_conda_dir: '{{ conda_dir }}'
+      conda_env_escalate: no
+
+    - nansat
+
+  environment:
+    PYTHONPATH: "/vagrant"
+    PATH: "{{ conda_dir }}/envs/{{ env_name }}/bin:{{ ansible_env.PATH }}"
