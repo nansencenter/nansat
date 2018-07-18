@@ -34,7 +34,7 @@ install:
     - cmd: conda.exe config --add channels conda-forge
 
     # Configure the VM.
-    - cmd: conda.exe install -n root --quiet --yes libnetcdf=4.4.1.1 gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
+    - cmd: conda.exe install -n root --quiet --yes gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
     - cmd: python.exe setup.py install
 
 # Skip .NET project specific build phase.

@@ -112,7 +112,7 @@ class VRTTest(NansatTestBase):
         geo_keys = ['LINE_OFFSET', 'LINE_STEP', 'PIXEL_OFFSET', 'PIXEL_STEP', 'SRS',
                     'X_BAND', 'X_DATASET', 'Y_BAND', 'Y_DATASET']
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
-        vrt = VRT.from_lonlat(lon, lat)
+        vrt = VRT.from_lonlat(lon, lat, n_gcps=25)
 
         self.assertEqual(vrt.dataset.RasterXSize, 10)
         self.assertEqual(vrt.dataset.RasterYSize, 30)
@@ -124,6 +124,14 @@ class VRTTest(NansatTestBase):
         self.assertIsInstance(vrt.geolocation.y_vrt, VRT)
         self.assertEqual(vrt.geolocation.x_vrt.filename, geo_metadata['X_DATASET'])
         self.assertEqual(vrt.geolocation.y_vrt.filename, geo_metadata['Y_DATASET'])
+        self.assertEqual(len(vrt.dataset.GetGCPs()), 25)
+
+    def test_from_lonlat_no_geolocation(self):
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt = VRT.from_lonlat(lon, lat, add_geolocation=False)
+
+        geo_metadata = vrt.dataset.GetMetadata(str('GEOLOCATION'))
+        self.assertEqual(geo_metadata, {})
 
     def test_copy_empty_vrt(self):
         vrt1 = VRT()
