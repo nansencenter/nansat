@@ -24,6 +24,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "provisioning/site.yml"
     ansible.galaxy_role_file = 'provisioning/galaxy_requirements.yml'
+    ansible.galaxy_command = 'ansible-galaxy install --role-file=%{role_file} --roles-path=%{roles_path} --force -c'
   end
 
 end
