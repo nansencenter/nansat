@@ -29,7 +29,6 @@ from nansat.vrt import VRT
 from nansat.tests.nansat_test_base import NansatTestBase
 
 from nansat.exceptions import NansatProjectionError
-from nansat.warnings import NansatFutureWarning
 
 
 class VRTTest(NansatTestBase):
@@ -458,52 +457,6 @@ class VRTTest(NansatTestBase):
         with self.assertRaises(NansatProjectionError):
             proj = vrt.get_projection()
 
-    def test_init_from_old__gdal_dataset(self):
-        ds = gdal.Open(self.test_file_gcps)
-        with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(gdalDataset=ds)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertIsInstance(vrt.dataset, gdal.Dataset)
-            self.assertTrue(vrt.filename.startswith('/vsimem/'))
-            self.assertIn('filename', list(vrt.dataset.GetMetadata().keys()))
-            self.assertIn('AREA_OR_POINT', vrt.dataset.GetMetadata())
-
-    def test_init_from_old__vrt_dataset(self):
-        ds = gdal.Open(self.test_file_gcps)
-        with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(vrtDataset=ds)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertIsInstance(vrt.dataset, gdal.Dataset)
-            self.assertTrue(vrt.filename.startswith('/vsimem/'))
-
-    def test_init_from_old__dataset_params(self):
-        ds = gdal.Open(self.test_file_gcps)
-        with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(srcGeoTransform=(0, 1, 0, 0, 0, -1), srcRasterXSize=10, srcRasterYSize=20)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertIsInstance(vrt.dataset, gdal.Dataset)
-            self.assertEqual(vrt.dataset.RasterXSize, 10)
-            self.assertTrue(vrt.filename.startswith('/vsimem/'))
-
-    def test_init_from_old__array(self):
-        a = np.random.randn(100,100)
-        with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(array=a)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertIsInstance(vrt.dataset, gdal.Dataset)
-            self.assertEqual(vrt.dataset.RasterXSize, 100)
-            self.assertTrue(vrt.filename.startswith('/vsimem/'))
-
-    def test_init_from_old__lonlat(self):
-        lon = np.random.randn(100,100)
-        lat = np.random.randn(100,100)
-        with warnings.catch_warnings(record=True) as w:
-            vrt = VRT(lon=lon, lat=lat)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-            self.assertIsInstance(vrt.dataset, gdal.Dataset)
-            self.assertEqual(vrt.dataset.RasterXSize, 100)
-            self.assertTrue(vrt.filename.startswith('/vsimem/'))
-
     def test_repr(self):
         # we mock the entire class [MagicMock(VRT)] and set instance attributes/methods
         mock_vrt1 = MagicMock(VRT, filename='aaa', vrt=None, __repr__=VRT.__repr__)
@@ -564,19 +517,40 @@ class VRTTest(NansatTestBase):
         self.assertFalse(data is None)
         self.assertTrue(np.all(data == array))
 
-    def test_property_fileName(self):
-        vrt = VRT()
-        with warnings.catch_warnings(record=True) as w:
-            fn = vrt.fileName
-            self.assertEqual(w[0].category, NansatFutureWarning)
+    def test_get_sub_vrt0(self):
+        vrt1 = VRT()
+        vrt2 = vrt1.get_sub_vrt()
+        self.assertEqual(vrt1, vrt2)
 
-    @patch.object(VRT, 'create_bands')
-    def test_obsolete_create_bands(self, mock_VRT):
-        vrt = VRT()
-        with warnings.catch_warnings(record=True) as w:
-            vrt._create_bands({})
-            self.assertEqual(w[0].category, NansatFutureWarning)
-        self.assertTrue(mock_VRT.create_bands.called_once)
+    def test_get_sub_vrt3(self):
+        vrt1 = VRT().get_super_vrt().get_super_vrt().get_super_vrt()
+        vrt2 = vrt1.get_sub_vrt(3)
+        self.assertEqual(vrt2.vrt, None)
+
+    def test_get_sub_vrt_steps_0(self):
+        vrt1 = VRT().get_super_vrt()
+        vrt2 = vrt1.get_sub_vrt(steps=0)
+        self.assertEqual(vrt1, vrt2)
+
+    def test_transform_points(self):
+        ds = gdal.Open(self.test_file_gcps)
+        vrt1 = VRT.from_gdal_dataset(ds, metadata=ds.GetMetadata())
+        vrt1.tps = True
+        lon, lat = vrt1.transform_points([1, 2, 3], [4, 5, 6])
+        self.assertTrue(np.allclose(lon, np.array([28.23549571, 28.24337106, 28.25126129])))
+        self.assertTrue(np.allclose(lat, np.array([71.52509848, 71.51913744, 71.51317568])))
+        lon, lat = vrt1.transform_points([], [])
+        self.assertTrue(np.allclose(lon, np.array([])))
+        self.assertTrue(np.allclose(lat, np.array([])))
+
+    def test_make_filename(self):
+        filename1 = VRT._make_filename()
+        filename2 = VRT._make_filename(extention='smth')
+        filename3 = VRT._make_filename(nomem=True)
+        self.assertTrue(filename1.startswith('/vsimem/'))
+        self.assertTrue(filename2.startswith('/vsimem/'))
+        self.assertTrue(filename2.endswith('.smth'))
+        self.assertTrue(os.path.exists(filename3))
 
     def test_transform_coordinates_list(self):
         src_srs = NSR()
@@ -613,13 +587,12 @@ class VRTTest(NansatTestBase):
     def test_reproject_gcps(self):
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
         vrt1 = VRT.from_lonlat(lon, lat)
-        vrt1.reproject_GCPs(str('+proj=stere'))
+        vrt1.reproject_gcps(str('+proj=stere'))
         self.assertIn('Stereographic', vrt1.dataset.GetGCPProjection())
         self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPX, 0)
         self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPY, 2217341.7476875726)
         self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPX, 1082008.9593705384)
         self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPY, 4320951.334629638)
-
 
 if __name__ == "__main__":
     unittest.main()

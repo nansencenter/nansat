@@ -33,25 +33,17 @@ else:
 
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal
-from nansat.warnings import NansatFutureWarning
+
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 from nansat.tests.nansat_test_base import NansatTestBase
 
-warnings.simplefilter("always", NansatFutureWarning)
 warnings.simplefilter("always", UserWarning)
 
 
 class NansatTest(NansatTestBase):
 
     def test_open_gcps(self):
-        with warnings.catch_warnings(record=True) as recorded_warnings:
-            n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
-
-        nansat_warning_raised = False
-        for rw in recorded_warnings:
-            if rw.category == NansatFutureWarning:
-                nansat_warning_raised = True
-        self.assertFalse(nansat_warning_raised)
+        n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
 
         self.assertEqual(type(n), Nansat)
         self.assertEqual(n.vrt.dataset.GetProjection(), '')
@@ -61,28 +53,6 @@ class NansatTest(NansatTestBase):
         self.assertIsInstance(n.logger, logging.Logger)
         self.assertEqual(n.name, os.path.split(self.test_file_gcps)[1])
         self.assertEqual(n.path, os.path.split(self.test_file_gcps)[0])
-
-    def test_open_with_filename_warning(self):
-        with warnings.catch_warnings(record=True) as w:
-            n = Nansat(fileName=self.test_file_gcps, mapperName=self.default_mapper)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-
-    def test_open_with_mappername_warning(self):
-        with warnings.catch_warnings(record=True) as w:
-            n = Nansat(self.test_file_gcps, mapperName=self.default_mapper)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-
-    def test_open_with_loglevel_warning(self):
-        with warnings.catch_warnings(record=True) as w:
-            n = Nansat(self.test_file_gcps, logLevel=30, mapperName=self.default_mapper)
-            self.assertEqual(w[0].category, NansatFutureWarning)
-
-    def test_open_with_domain_warning(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        with warnings.catch_warnings(record=True) as w:
-            n = Nansat(domain=d)
-            self.assertEqual(len(w), 1)
-            self.assertIn('Nansat(domain', str(w[0].message))
 
     def test_get_time_coverage_start_end(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
@@ -189,18 +159,14 @@ class NansatTest(NansatTestBase):
         self.assertTrue(hb)
 
     def test_write_fig_tif(self):
-        n = Nansat(self.test_file_arctic, mapperName=self.default_mapper)
+        n = Nansat(self.test_file_arctic, mapper=self.default_mapper)
         tmpfilename = os.path.join(self.tmp_data_path,
                                    'nansat_write_fig_tif.tif')
         n.write_figure(tmpfilename)
-        nn = Nansat(tmpfilename, mapperName=self.default_mapper)
+        nn = Nansat(tmpfilename, mapper=self.default_mapper)
         # Asserts that the basic georeference (corners in this case) is still
         # present after opening the image
         self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
-
-    def test_resize_eResampleAlg_is_given(self):
-        n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
-        n.resize(pixelsize=500, eResampleAlg=5)
 
     def test_resize_by_pixelsize(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
@@ -283,9 +249,9 @@ class NansatTest(NansatTestBase):
         self.assertEqual(type(b), gdal.Band)
         self.assertEqual(type(arr), np.ndarray)
 
-    def test_get_GDALRasterBand_if_bandID_is_given(self):
+    def test_get_GDALRasterBand_if_band_id_is_given(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
-        b = n.get_GDALRasterBand(bandID=1)
+        b = n.get_GDALRasterBand(band_id=1)
         arr = b.ReadAsArray()
 
         self.assertEqual(type(b), gdal.Band)
@@ -314,10 +280,10 @@ class NansatTest(NansatTestBase):
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
-    def test_reproject_domain_if_dstDomain_is_given(self):
+    def test_reproject_domain_if_dst_domain_is_given(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
-        n.reproject(dstDomain=d)
+        n.reproject(dst_domain=d)
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
@@ -325,26 +291,16 @@ class NansatTest(NansatTestBase):
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
-    def test_reproject_domain_if_eRasampleAlg_is_given(self):
+    def test_reproject_domain_if_resample_alg_is_given(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
-        n.reproject(d,eResampleAlg=0)
+        n.reproject(d, resample_alg=0)
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
         self.assertEqual(n.shape(), (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
-
-    @patch.multiple(Nansat, filename=DEFAULT, __init__ = Mock(return_value=None))
-    def test_property_fileName(self, filename):
-        n = Nansat()
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            fn = n.fileName
-            self.assertTrue( len(w) >= 1 )
-            categories = [ww.category for ww in w]
-            self.assertIn(NansatFutureWarning, categories)
 
     @patch.object(Nansat, 'get_corners',
                   return_value=(np.array([0, 0, 360, 360]), np.array([90,-90, 90, -90])))
@@ -519,10 +475,10 @@ class NansatTest(NansatTestBase):
 
         self.assertTrue(os.path.exists(tmpfilename))
 
-    def test_write_geotiffimage_if_bandID_is_given(self):
+    def test_write_geotiffimage_if_band_id_is_given(self):
         n1 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_write_geotiffimage.tif')
-        n1.write_geotiffimage(tmpfilename, bandID=1)
+        n1.write_geotiffimage(tmpfilename, band_id=1)
 
         self.assertTrue(os.path.exists(tmpfilename))
 
@@ -552,9 +508,9 @@ class NansatTest(NansatTestBase):
         self.assertEqual(type(m), dict)
         self.assertTrue('name' in m)
 
-    def test_get_metadata_bandID(self):
+    def test_get_metadata_band_id(self):
         n1 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
-        m = n1.get_metadata(bandID=1)
+        m = n1.get_metadata(band_id=1)
 
         self.assertEqual(type(m), dict)
         self.assertTrue('name' in m)
@@ -573,16 +529,16 @@ class NansatTest(NansatTestBase):
 
         self.assertEqual(m, 'newVal')
 
-    def test_set_metadata_bandID(self):
+    def test_set_metadata_band_id(self):
         n1 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
-        n1.set_metadata('newKey', 'newVal', bandID=1)
+        n1.set_metadata('newKey', 'newVal', band_id=1)
         m = n1.get_metadata('newKey', 1)
 
         self.assertEqual(m, 'newVal')
 
     def test_get_band_number(self):
         n1 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
-        self.assertEqual(n1._get_band_number(1), 1)
+        self.assertEqual(n1.get_band_number(1), 1)
 
     @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
     def test_get_transect(self):
@@ -797,7 +753,7 @@ class NansatTest(NansatTestBase):
         type(mock_Nansat()).GetMetadata = MagicMock(return_value={'a':1})
         type(mock_Nansat()).ReadAsArray = MagicMock(return_value=None)
         with self.assertRaises(NansatGDALError):
-            Nansat(self.test_file_stere, mapperName=self.default_mapper).__getitem__(1)
+            Nansat(self.test_file_stere, mapper=self.default_mapper).__getitem__(1)
 
     @patch.object(Nansat, 'digitize_points')
     def test_crop_interactive(self, mock_digitize_points):

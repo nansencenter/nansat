@@ -16,26 +16,47 @@ We adopt the following system for branching and merging:
    1. Never edit code in the master or develop branch. Always make a new branch for your edits.
    2. A new branch should be very specific to only one problem. It should be short living.
    3. Commit often.
-   4. Branch often. 
+   4. Branch often.
    5. Branch only from master or from develop.
    6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
 
-Example workflow for a hotfix (similar workflow for other branches):
+How to report and handle new issues (bugs, improvements, new features, etc.)
+----------------------------------------------------------------------------
 
-1. Branch from master into the hotfix specific branch
-  a) Update tests
+If you discover a bug in Nansat or you would like to suggest improvements to Nansat, the following procedure should be followed:
+
+1. Check that no one else has reported the same issue at https://github.com/nansencenter/nansat/issues
+2. If not, add a new issue at https://github.com/nansencenter/nansat/issues
+3. If Nansat respository is not accessible for writing, fork Nansat and clone your own fork locally
+4. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
+5. Add tests to reproduce the bug or test the new functionality
+6. Write the necessary code
+7. Push new issue branch to your own fork at GitHub
+8. Create a pull request of the issue branch on your fork at GitHub. A member of our team will the review the code, merge, delete the branch, and close the issue (this is easy in github)
+
+If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies
+(workflow for issue branches based on develop is similar):
+
+1. Branch from master into the hotfix specific branch (hotfix<NNN>_<short-heading>)
+  a) Update the tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
-  d) Commit to hotfix<NNN>_<short-heading>
-2. Pull and merge master into your branch, test, and push 
+  d) Commit to the hotfix branch
+2. If needed rebase the hotfix branch on top of master:
+  a) Checkout the hotfix branch
+  b) Use ``git rebase master``
+  c) Fix conflicts if any
+  d) Test the code
+  e) Push your hotfix branch to GitHub. Note: You have to use 'git push -f' in order to rewrite the history on github. Rebase will not cause problems if only one person works with the hotfix branch.
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
-   branch and assign a reviewer
+   hotfix branch and assign a reviewer
 4. Let the reviewer do the following:
-  a) Check the code
-  b) Request changes or merge pull request into master
-  c) Delete the branch 
-  d) Merge master into develop (again, use pull request, then merge by selecting the rebase option in GitHUB)
-  e) Close the issue 
+  a) Wait for tests on Travis CI to pass
+  b) Check the code
+  c) Request changes or merge the pull request into master using 'Rebase and Merge' button in the online tool.
+  d) Delete the branch
+  e) Merge master into develop (``git checkout develop``; ``git merge master``; test the code; push to GitHUB; check Travis CI status)
+  f) Close the related issue
 
 .. note::
 
