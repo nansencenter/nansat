@@ -38,10 +38,7 @@ from nansat.tools import parse_time, test_openable
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
-from nansat.warnings import NansatFutureWarning
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
-
-from nansat.tools import WrongMapperError as WrongMapperErrorOld
 
 import collections
 if hasattr(collections, 'OrderedDict'):
@@ -98,22 +95,6 @@ class Nansat(Domain, Exporter):
 
     """
 
-    INIT_FILENAME_WARNING = ('Nansat(fileName=...) will be disabled in Nansat 1.1. '
-                             'Use Nansat(filename).')
-    INIT_MAPPER_WARNING = ('Nansat(mapperName=...) will be disabled in Nansat 1.1. '
-                           'Use Nansat(mapper=...)')
-    INIT_DOMAIN_WARNING = ('Nansat(domain=...) will be disabled in Nansat 1.1. '
-                           'Use Nansat.from_domain(domain)')
-    INIT_LOG_WARNING = ('Nansat(logLevel=...) will be disabled in Nansat 1.1. '
-                        'Use Nansat(log_level)')
-    INIT_RESAMPLEALG_WARNING = ('Nansat.method(eResampleAlg=...) will be disabled in Nansat 1.1. '
-                                'Use Nansat.method(resample_alg=)')
-    INIT_BANDID_WARNING = ('Nansat.method(bandID=...) will be disabled in Nansat 1.1. '
-                           'Use Nansat.method(band_id=...)')
-    INIT_DSTDOMAIN_WARNING = ('Nansat.method(dstDomain=...) will be disabled in Nansat 1.1. '
-                           'Use Nansat.method(dst_domain=...)')
-    INIT_GETBANDNUMBER_WARNING = ('Nansat._get_band_number() will be disabled in Nansat 1.1. '
-                           'Use Nansat.get_band_number()')
     FILL_VALUE = 9.96921e+36
     ALT_FILL_VALUE = -10000.
 
@@ -145,8 +126,7 @@ class Nansat(Domain, Exporter):
         n._init_from_domain(domain, array, parameters, log_level)
         return n
 
-    def __init__(self, filename='', fileName='', mapper='', mapperName='', domain=None,
-                 array=None, parameters=None, log_level=30, logLevel=None, **kwargs):
+    def __init__(self, filename='', mapper='', log_level=30, **kwargs):
         """Create Nansat object
 
         Notes
@@ -165,20 +145,6 @@ class Nansat(Domain, Exporter):
             path to input file
 
         """
-        if filename == '' and fileName != '':
-            warnings.warn(self.INIT_FILENAME_WARNING, NansatFutureWarning)
-            filename = fileName
-        if mapperName != '':
-            warnings.warn(self.INIT_MAPPER_WARNING, NansatFutureWarning)
-            mapper = mapperName
-        if logLevel is not None:
-            warnings.warn(self.INIT_LOG_WARNING, NansatFutureWarning)
-            log_level = logLevel
-        if domain is not None or array is not None:
-            warnings.warn(self.INIT_DOMAIN_WARNING, NansatFutureWarning)
-            self._init_from_domain(domain, array, parameters)
-            return
-
         if filename == '':
             raise ValueError('Nansat is called without valid parameters! Use: Nansat(filename)')
 
@@ -423,8 +389,7 @@ class Nansat(Domain, Exporter):
         self.logger.info('New shape: ({0}, {1})'.format(dst_shape[0], dst_shape[1]))
         return factor, dst_shape
 
-    def resize(self, factor=None, width=None, height=None, pixelsize=None, resample_alg=-1,
-                        eResampleAlg=None):
+    def resize(self, factor=None, width=None, height=None, pixelsize=None, resample_alg=-1):
         """Proportional resize of the dataset.
 
         The dataset is resized as (x_size*factor, y_size*factor)
@@ -461,10 +426,6 @@ class Nansat(Domain, Exporter):
             If GCPs are given in the dataset, they are also overwritten.
 
         """
-        if eResampleAlg is not None:
-            warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
-            resample_alg = eResampleAlg
-
         factor, dst_shape = self._get_resize_shape(factor, width, height, pixelsize)
         if resample_alg <= 0:
             self.vrt = self.vrt.get_subsampled_vrt(dst_shape[1], dst_shape[0], resample_alg)
@@ -496,7 +457,7 @@ class Nansat(Domain, Exporter):
 
         return factor
 
-    def get_GDALRasterBand(self, band_id=1, bandID=None):
+    def get_GDALRasterBand(self, band_id=1):
         """Get a GDALRasterBand of a given Nansat object
 
         If str is given find corresponding band number
@@ -519,10 +480,6 @@ class Nansat(Domain, Exporter):
             >>> b = n.get_GDALRasterBand('sigma0')
 
         """
-        if bandID is not None:
-            warnings.warn(self.INIT_BANDID_WARNING, NansatFutureWarning)
-            band_id = bandID
-
         # get band number
         bandNumber = self.get_band_number(band_id)
         # the GDAL RasterBand of the corresponding band is returned
@@ -561,8 +518,8 @@ class Nansat(Domain, Exporter):
         else:
             return outString
 
-    def reproject(self, dst_domain=None, dstDomain=None, resample_alg=0, eResampleAlg=None,
-                    block_size=None, tps=None, skip_gcps=1, addmask=True,
+    def reproject(self, dst_domain=None, resample_alg=0,
+                  block_size=None, tps=None, skip_gcps=1, addmask=True,
                   **kwargs):
         """
         Change projection of the object based on the given Domain
@@ -615,13 +572,6 @@ class Nansat(Domain, Exporter):
         http://www.gdal.org/gdalwarp.html
 
         """
-        if dstDomain is not None:
-            warnings.warn(self.INIT_DSTDOMAIN_WARNING, NansatFutureWarning)
-            dst_domain = dstDomain
-        if eResampleAlg is not None:
-            warnings.warn(self.INIT_RESAMPLEALG_WARNING, NansatFutureWarning)
-            resample_alg = eResampleAlg
-
         # This is time consuming and therefore not done...:
         #if not self.overlaps(dst_domain):
         #    raise ValueError('Source and destination domains do not overlap')
@@ -713,7 +663,7 @@ class Nansat(Domain, Exporter):
         """
         self.vrt = self.vrt.get_sub_vrt(steps)
 
-    def watermask(self, mod44path=None, dst_domain=None, dstDomain=None, **kwargs):
+    def watermask(self, mod44path=None, dst_domain=None, **kwargs):
         """
         Create numpy array with watermask (water=1, land=0)
 
@@ -757,10 +707,6 @@ class Nansat(Domain, Exporter):
         http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water
 
         """
-        if dstDomain is not None:
-            warnings.warn(self.INIT_DSTDOMAIN_WARNING, NansatFutureWarning)
-            dst_domain = dstDomain
-
         mod44DataExist = True
         # check if path is given in input param or in environment
         if mod44path is None:
@@ -778,8 +724,8 @@ class Nansat(Domain, Exporter):
                     'documentation to get it (the path is % s)' % mod44path)
 
         # MOD44W data does exist: open the VRT file in Nansat
-        watermask = Nansat(mod44path + '/MOD44W.vrt', mapperName='MOD44W',
-                           logLevel=self.logger.level)
+        watermask = Nansat(mod44path + '/MOD44W.vrt', mapper='MOD44W',
+                           log_level=self.logger.level)
         # reproject on self or given Domain
         if dst_domain is None:
             dst_domain = self
@@ -790,7 +736,7 @@ class Nansat(Domain, Exporter):
         return watermask
 
     def write_figure(self, filename='', bands=1, clim=None, addDate=False,
-                     array_modfunc=None, fileName='', **kwargs):
+                     array_modfunc=None, **kwargs):
         """Save a raster band to a figure in graphical format.
 
         Get numpy array from the band(s) and band information specified
@@ -858,10 +804,6 @@ class Nansat(Domain, Exporter):
         http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
         """
-        if fileName != '':
-            warnings.warn(self.INIT_FILENAME_WARNING, NansatFutureWarning)
-            filename = fileName
-
         # convert <bands> from integer, or string, or list of strings
         # into list of integers
         if isinstance(bands, list):
@@ -954,7 +896,7 @@ class Nansat(Domain, Exporter):
         return fig
 
 
-    def write_geotiffimage(self, filename, band_id=1, bandID=None):
+    def write_geotiffimage(self, filename, band_id=1):
         """Writes an 8-bit GeoTiff image for a given band.
 
         The colormap is fetched from the metadata item 'colormap'. Fallback colormap is 'gray'.
@@ -971,10 +913,6 @@ class Nansat(Domain, Exporter):
         band_id : int or str
 
         """
-        if bandID is not None:
-            warnings.warn(self.INIT_BANDID_WARNING, NansatFutureWarning)
-            band_id = bandID
-
         bandNo = self.get_band_number(band_id)
         band = self.get_GDALRasterBand(band_id)
 
@@ -1016,14 +954,6 @@ class Nansat(Domain, Exporter):
         self.vrt.copyproj(filename)
 
     @property
-    def fileName(self):
-        warnings.warn(
-            'nansat.fileName attribute is deprecated in Nansat 1.1. Use ' \
-                'nansat.filename instead.',
-        NansatFutureWarning)
-        return self.filename
-
-    @property
     def time_coverage_start(self):
         return parse_time(self.get_metadata('time_coverage_start'))
 
@@ -1031,7 +961,7 @@ class Nansat(Domain, Exporter):
     def time_coverage_end(self):
         return parse_time(self.get_metadata('time_coverage_end'))
 
-    def get_metadata(self, key=None, band_id=None, bandID=None, unescape=True):
+    def get_metadata(self, key=None, band_id=None, unescape=True):
         """Get metadata from self.vrt.dataset
 
         Parameters
@@ -1054,10 +984,6 @@ class Nansat(Domain, Exporter):
         ValueError, if key is not found
 
         """
-        if bandID is not None:
-            warnings.warn(self.INIT_BANDID_WARNING, NansatFutureWarning)
-            band_id = bandID
-
         # get all metadata from dataset or from band
         if band_id is None:
             metadata = self.vrt.dataset.GetMetadata()
@@ -1078,7 +1004,7 @@ class Nansat(Domain, Exporter):
 
         return metadata
 
-    def set_metadata(self, key='', value='', band_id=None, bandID=None):
+    def set_metadata(self, key='', value='', band_id=None):
         """Set metadata to self.vrt.dataset
 
         Parameters
@@ -1096,10 +1022,6 @@ class Nansat(Domain, Exporter):
         self.vrt.dataset : sets metadata in GDAL current dataset
 
         """
-        if bandID is not None:
-            warnings.warn(self.INIT_BANDID_WARNING, NansatFutureWarning)
-            band_id = bandID
-
         # set all metadata to the dataset or to the band
         if band_id is None:
             metadata_receiver = self.vrt.dataset
@@ -1220,7 +1142,7 @@ class Nansat(Domain, Exporter):
                     self.logger.info('Mapper %s - success!' % iMapper)
                     self.mapper = iMapper.replace('mapper_', '')
                     break
-                except (WrongMapperError, WrongMapperErrorOld):
+                except WrongMapperError:
                     pass
 
         # if no mapper fits, make simple copy of the input DS into a VSI/VRT
@@ -1291,11 +1213,6 @@ class Nansat(Domain, Exporter):
                               % (str(band_id), self.vrt.dataset.RasterCount))
 
         return band_number
-
-    def _get_band_number(self, bandID):
-        warnings.warn(self.INIT_GETBANDNUMBER_WARNING, NansatFutureWarning)
-        return self.get_band_number(bandID)
-
 
     def get_transect(self, points, bands,
                         lonlat=True,

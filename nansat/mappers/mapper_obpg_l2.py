@@ -271,7 +271,7 @@ class Mapper(OBPGL2BaseClass):
         center_lon /= k
         center_lat /= k
         srs = '+proj=stere +datum=WGS84 +ellps=WGS84 +lon_0=%f +lat_0=%f +no_defs' % (center_lon, center_lat)
-        self.reproject_GCPs(srs)
+        self.reproject_gcps(srs)
 
         # use TPS for reprojection
         self.tps = True
