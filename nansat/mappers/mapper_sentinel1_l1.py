@@ -492,10 +492,10 @@ class Mapper(VRT):
         platform_name = manifest_data['platform_family_name'] + manifest_data['platform_number']
         self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform(platform_name)))
         self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
-        self.dataset.SetMetadataItem('Entry Title', platform_name + ' SAR')
-        self.dataset.SetMetadataItem('Data Center', 'ESA/EO')
-        self.dataset.SetMetadataItem('ISO Topic Category', 'Oceans')
-        self.dataset.SetMetadataItem('Summary', platform_name + ' SAR data')
+        self.dataset.SetMetadataItem('entry_title', platform_name + ' SAR')
+        self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('ESA/EO')))
+        self.dataset.SetMetadataItem('iso_topic_category', json.dumps(pti.get_iso19115_topic_category('Oceans')))
+        self.dataset.SetMetadataItem('summary', platform_name + ' SAR data')
         self.dataset.FlushCache()
 
     def correct_geolocation_data(self):
