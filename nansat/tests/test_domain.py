@@ -14,27 +14,15 @@ import unittest
 import os
 import numpy as np
 
-try:
-    if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.basemap import Basemap
-except ImportError:
-    BASEMAP_LIB_IS_INSTALLED = False
-else:
-    BASEMAP_LIB_IS_INSTALLED = True
-
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.tools import gdal, ogr
-from nansat.figure import Image
 import sys
 from nansat.tests import nansat_test_data as ntd
 from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 from nansat.exceptions import NansatProjectionError
-
 
 EXTENT_TE_TS = "-te 25 70 35 72 -ts 500 500"
 EXTENT_DICT_TE_TS = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
@@ -58,10 +46,7 @@ class DomainTest(unittest.TestCase):
     def setUp(self):
         self.test_file = os.path.join(ntd.test_data_path, 'gcps.tif')
         self.test_file_projected = os.path.join(ntd.test_data_path, 'stere.tif')
-        if BASEMAP_LIB_IS_INSTALLED:
-            plt.switch_backend('Agg')
-        if (    not os.path.exists(self.test_file)
-             or not os.path.exists(self.test_file_projected) ):
+        if not os.path.exists(self.test_file) or not os.path.exists(self.test_file_projected):
             raise ValueError('No test data available')
 
     def test_dont_init_from_invalid_combination(self):
@@ -332,6 +317,24 @@ class DomainTest(unittest.TestCase):
         geom = d.get_border_geometry()
         self.assertEqual(type(geom), ogr.Geometry)
 
+    def test_border_geojson(self):
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        expected_geojson = '{ "type": "Polygon", "coordinates": [ [ [ 25.0, 72.0 ],' \
+                           ' [ 26.0, 72.0 ], [ 27.0, 72.0 ], [ 28.0, 72.0 ], [ 29.0, 72.0 ], ' \
+                           '[ 30.0, 72.0 ], [ 31.0, 72.0 ], [ 32.0, 72.0 ], [ 33.0, 72.0 ],' \
+                           ' [ 34.0, 72.0 ], [ 35.0, 72.0 ], [ 35.0, 72.0 ], [ 35.0, 71.8 ], ' \
+                           '[ 35.0, 71.6 ], [ 35.0, 71.4 ], [ 35.0, 71.2 ], [ 35.0, 71.0 ],' \
+                           ' [ 35.0, 70.8 ], [ 35.0, 70.6 ], [ 35.0, 70.4 ], [ 35.0, 70.2 ], ' \
+                           '[ 35.0, 70.0 ], [ 35.0, 70.0 ], [ 34.0, 70.0 ], [ 33.0, 70.0 ], ' \
+                           '[ 32.0, 70.0 ], [ 31.0, 70.0 ], [ 30.0, 70.0 ], [ 29.0, 70.0 ], ' \
+                           '[ 28.0, 70.0 ], [ 27.0, 70.0 ], [ 26.0, 70.0 ], [ 25.0, 70.0 ], ' \
+                           '[ 25.0, 70.0 ], [ 25.0, 70.2 ], [ 25.0, 70.4 ], [ 25.0, 70.6 ],' \
+                           ' [ 25.0, 70.8 ], [ 25.0, 71.0 ], [ 25.0, 71.2 ], [ 25.0, 71.4 ], ' \
+                           '[ 25.0, 71.6 ], [ 25.0, 71.8 ], [ 25.0, 72.0 ] ] ] }'
+        border_geojson = d.get_border_geojson()
+        self.assertIsInstance(border_geojson, str)
+        self.assertEqual(border_geojson, expected_geojson)
+
     def test_overlaps_intersects_and_contains(self):
         Bergen = Domain(4326, "-te 5 60 6 61 -ts 500 500")
         WestCoast = Domain(4326, "-te 1 58 6 64 -ts 500 500")
@@ -471,39 +474,6 @@ class DomainTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         self.assertEqual(d.shape(), (500, 500))
 
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_map(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
-        d.write_map(tmpfilename)
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-        self.assertEqual(i.info['dpi'], (50, 50))
-
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_map_dpi100(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'domain_write_map_dpi100.png')
-        d.write_map(tmpfilename, dpi=100)
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-        self.assertEqual(i.info['dpi'], (100, 100))
-
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_map_labels(self):
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'domain_write_map_labels.png')
-        d.write_map(tmpfilename,
-                    merLabels=[False, False, False, True],
-                    parLabels=[True, False, False, False])
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-
     def test_reproject_gcps(self):
         ds = gdal.Open(self.test_file)
         d = Domain(ds=ds)
@@ -519,15 +489,6 @@ class DomainTest(unittest.TestCase):
         gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
         self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),
                         'Stereographic')
-
-    def test_reproject_GCPs(self):
-        ds = gdal.Open(self.test_file)
-        d = Domain(ds=ds)
-        d.reproject_GCPs('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs')
-        gcp = d.vrt.dataset.GetGCPs()[0]
-        self.assertTrue(gcp.GCPX > 636161)
-        self.assertTrue(gcp.GCPY < -288344)
-
 
     def test_repr(self):
         dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
