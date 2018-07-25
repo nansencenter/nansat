@@ -350,20 +350,20 @@ class NansatTest(NansatTestBase):
         self.assertTrue(np.isfinite(b[100, 100]))
 
     def test_add_band_and_reproject(self):
-        """ Should add band and swath mask and return 0 in areas out of swath """
+        """ Should add band and swath mask and return np.nan in areas out of swath """
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
-        n.add_band(np.ones(n.shape()))
+        n.add_band(np.ones(n.shape(), np.uint8))
         n.reproject(d)
-        b1 = n[1]
-        b4 = n[4]
+        b4 = n[4] # added, reprojected band
+        b5 = n[5] # swathmask
 
         self.assertTrue(n.has_band('swathmask')) # the added band
         self.assertTrue(n.has_band('swathmask_0000')) # the actual swathmask
-        self.assertTrue(b1[0, 0] == 0)
-        self.assertTrue(b1[300, 300] > 0)
-        self.assertTrue(np.isnan(b4[0, 0]))
-        self.assertTrue(b4[300, 300] == 1.)
+        self.assertTrue(b4[0, 0]==0)
+        self.assertTrue(b4[300, 300] == 1)
+        self.assertTrue(b5[0, 0]==0)
+        self.assertTrue(b5[300, 300] == 1)
 
     def test_reproject_no_addmask(self):
         """ Should not add swath mask and return 0 in areas out of swath """
