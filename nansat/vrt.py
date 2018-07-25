@@ -449,8 +449,12 @@ class VRT(object):
     def __del__(self):
         """Destructor deletes VRT and RAW files"""
         self.dataset = None
-        gdal.Unlink(self.filename)
-        gdal.Unlink(self.filename.replace('vrt', 'raw'))
+
+        if gdal.VSIStatL(self.filename) is not None:
+            gdal.Unlink(self.filename)
+
+        if gdal.VSIStatL(self.filename.replace('vrt', 'raw')) is not None:
+            gdal.Unlink(self.filename.replace('vrt', 'raw'))
 
     def __repr__(self):
         str_out = os.path.split(self.filename)[1]

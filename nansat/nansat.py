@@ -1,8 +1,8 @@
 # Name:  nansat.py
 # Purpose: Container of Nansat class
-# Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
-#               Morten W. Hansen, Alexander Myasoyedov,
-#               Dmitry Petrenko, Evgeny Morozov, Artem Moiseev
+# Authors:      Anton Korosov, Knut-Frode Dagestad, Morten W. Hansen, Artem Moiseev,
+#               Asuka Yamakawa, Alexander Myasoyedov,
+#               Dmitry Petrenko, Evgeny Morozov
 # Created:      29.06.2011
 # Copyright:    (c) NERSC 2011 - 2018
 # Licence:
