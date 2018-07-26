@@ -65,9 +65,9 @@ If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix i
     If you work on a project using Nansat, this project should use the master version of Nansat. Different
     situations may then occur:
 
-    1. You discover a **bug** that is easy to fix, this should be solved with a **hotfix** branched from master.
-    2. You discover a **bug** that is difficult to fix, this should be solved with an **issue** branched from develop.
-    3. You want to add **functionality** to Nansat. This is solved by creating an **issue** branched from develop. When this is completed and merged back into develop, we may have a new release.
+    1. You discover a **bug** that is easy to fix. This should be solved in a **hotfix** branch originating from master.
+    2. You discover a **bug** that is difficult to fix. This should be solved in an **issue** branch originating from develop.
+    3. You want to add **functionality** to Nansat. This should be solved in an **issue** branch originating from develop. When this is completed and merged back into develop, we may have a new release.
     4. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
        project. When the mapper is completed, create an issue and an issue-branch in Nansat, and
        finally submit a pull request with suggestion of a reviewer. You can still use the mapper via
