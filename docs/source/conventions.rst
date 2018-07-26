@@ -20,24 +20,26 @@ We adopt the following system for branching and merging:
    5. Branch only from master or from develop.
    6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
 
-How to report and handle new issues (bugs, improvements, new features, etc.)
-----------------------------------------------------------------------------
+How to report and handle new issues
+-----------------------------------
 
-If you discover a bug in Nansat or you would like to suggest improvements to Nansat, the following procedure should be followed:
+If you discover a bug in Nansat or you would like to suggest improvements or new features to Nansat, the following procedure should be followed:
 
 1. Check that no one else has reported the same issue at https://github.com/nansencenter/nansat/issues
 2. If not, add a new issue at https://github.com/nansencenter/nansat/issues
-3. If Nansat respository is not accessible for writing, fork Nansat and clone your own fork locally
+3. If Nansat respository is not accessible for writing (non team members), fork Nansat and clone your own fork locally
 4. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
 5. Add tests to reproduce the bug or test the new functionality
 6. Write the necessary code
-7. Push new issue branch to your own fork at GitHub
+7. Push the new issue branch to your own fork at GitHub
 8. Create a pull request of the issue branch on your fork at GitHub. A member of our team will the review the code, merge, delete the branch, and close the issue (this is easy in github)
 
-If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies
-(workflow for issue branches based on develop is similar):
+How to report and handle a hotfix
+---------------------------------
 
-1. Branch from master into the hotfix specific branch (hotfix<NNN>_<short-heading>)
+If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies:
+
+1. Branch from master into the hotfix specific branch (**hotfix<NNN>_<short-heading>**)
   a) Update the tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
@@ -60,14 +62,15 @@ If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix i
 
 .. note::
 
-    If you work on a project using Nansat, this project should use the master version of Nansat. Two
+    If you work on a project using Nansat, this project should use the master version of Nansat. Different
     situations may then occur:
 
-    1. You discover a **bug**. This can be solved with a **hotfix**.
-    2. You want to add functionality to Nansat. This is solved by creating an issue in Nansat and a
+    1. You discover a **bug** that is easy to fix, this should be solved with a **hotfix** branched from master.
+    2. You discover a **bug** that is difficult to fix, this should be solved with an **issue** branched from develop.
+    3. You want to add **functionality** to Nansat. This is solved by creating an **issue** in Nansat and a
        related issue branch. When this is completed and merged into develop, we may have a new
        release.
-    3. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
+    4. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
        project. When the mapper is completed, create an issue and an issue-branch in Nansat, and
        finally submit a pull request with suggestion of a reviewer. You can still use the mapper via
        your ``nansat_mappers`` package until the new mapper is implemented in a release version of

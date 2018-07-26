@@ -29,7 +29,7 @@ Nansat requires the following packages:
 
 The following packages are optional:
 
-* `Scipy <http://scipy.org/SciPy>`_ 0.18.1
+* `Scipy <http://scipy.org/>`_ 0.18.1
  * Some mappers will not work without scipy. E.g. *sentinel1_l1*
 * `Matplotlib <http://matplotlib.org/>`_ >=2.1.1
  * matplotlib is required for Nansat methods *digitize_points()* and *crop_interactive()*
