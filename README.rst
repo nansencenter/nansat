@@ -134,12 +134,12 @@ Acknowledgments
 Development is supported by the Research Council of Norway as a part of
 `NORMAP <https://normap.nersc.no/>`__ project (grant no. 195397/V30).
 
-.. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=issue341_scatterometer_mappers
+.. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
    :target: https://travis-ci.org/nansencenter/nansat/branches
-.. |AppVeyor Status Master| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/issue341_scatterometer_mappers
-   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/issue341_scatterometer_mappers
-.. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=issue130
-   :target: https://coveralls.io/github/nansencenter/nansat?branch=issue130
+.. |AppVeyor Status Master| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/master?svg=true
+   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/master
+.. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master&service=github
+   :target: https://coveralls.io/github/nansencenter/nansat?branch=master
 
 .. |Build Status Develop| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=develop
    :target: https://travis-ci.org/nansencenter/nansat/branches
