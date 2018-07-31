@@ -1,7 +1,10 @@
-Branch  | Travis CI  | AppVeyor Status | Code Coverage | Zenodo DOI |
-------- | ---------- | --------------- | ------------- | ---------- |
-Master	| |Build Status Master| | |AppVeyor Status Master| | |Coverage Status Master| | |DOI| | 
-Develop | |Build Status Develop| | |AppVeyor Status Develop| | |Coverage Status Develop| | |
++---------+------------------------+---------------------------+---------------------------+------------+
+| Branch  | Travis CI              | AppVeyor Status           | Code Coverage             | Zenodo DOI |
++---------+------------------------+---------------------------+---------------------------+------------+
+| Master  | |Build Status Master|  | |AppVeyor Status Master|  | |Coverage Status Master|  | |DOI|      |
++---------+------------------------+---------------------------+---------------------------+------------+ 
+| Develop | |Build Status Develop| | |AppVeyor Status Develop| | |Coverage Status Develop| |            |
++---------+------------------------+---------------------------+---------------------------+------------+
 
 .. NOTE: include statements doesn't work with github README.rst - the first section here is repeated
 .. in docs/source/about.rst as well...
@@ -131,17 +134,18 @@ Development is supported by the Research Council of Norway as a part of
 `NORMAP <https://normap.nersc.no/>`__ project (grant no. 195397/V30).
 
 .. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
-   :target: https://travis-ci.org/nansencenter/nansat
+   :target: https://travis-ci.org/nansencenter/nansat?branch=master
 .. |AppVeyor Status Master| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/master?svg=true
    :target: https://ci.appveyor.com/project/akorosov/nansat/branch/master
 .. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master&service=github
-   :target: https://coveralls.io/r/nansencenter/nansat
+   :target: https://coveralls.io/github/nansencenter/nansat?branch=master
 
 .. |Build Status Develop| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=develop
-   :target: https://travis-ci.org/nansencenter/nansat
+   :target: https://travis-ci.org/nansencenter/nansat?branch=develop
 .. |AppVeyor Status Develop| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/develop?svg=true
    :target: https://ci.appveyor.com/project/akorosov/nansat/branch/develop
 .. |Coverage Status Develop| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=develop&service=github
-   :target: https://coveralls.io/r/nansencenter/nansat
+   :target: https://coveralls.io/github/nansencenter/nansat?branch=develop
+
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg
    :target: https://doi.org/10.5281/zenodo.59998
