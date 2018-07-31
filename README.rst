@@ -6,6 +6,7 @@
 | Develop | |Build Status Develop| | |AppVeyor Status Develop| | |Coverage Status Develop| |            |
 +---------+------------------------+---------------------------+---------------------------+------------+
 
+
 .. NOTE: include statements doesn't work with github README.rst - the first section here is repeated
 .. in docs/source/about.rst as well...
 
@@ -133,15 +134,15 @@ Acknowledgments
 Development is supported by the Research Council of Norway as a part of
 `NORMAP <https://normap.nersc.no/>`__ project (grant no. 195397/V30).
 
-.. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
-   :target: https://travis-ci.org/nansencenter/nansat?branch=master
-.. |AppVeyor Status Master| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/master
-.. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master&service=github
-   :target: https://coveralls.io/github/nansencenter/nansat?branch=master
+.. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=issue341_scatterometer_mappers
+   :target: https://travis-ci.org/nansencenter/nansat/branches
+.. |AppVeyor Status Master| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/issue341_scatterometer_mappers
+   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/issue341_scatterometer_mappers
+.. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=issue130
+   :target: https://coveralls.io/github/nansencenter/nansat?branch=issue130
 
 .. |Build Status Develop| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=develop
-   :target: https://travis-ci.org/nansencenter/nansat?branch=develop
+   :target: https://travis-ci.org/nansencenter/nansat/branches
 .. |AppVeyor Status Develop| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/develop?svg=true
    :target: https://ci.appveyor.com/project/akorosov/nansat/branch/develop
 .. |Coverage Status Develop| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=develop&service=github
