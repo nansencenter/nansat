@@ -518,5 +518,13 @@ class DomainTest(unittest.TestCase):
         d.get_border_geometry.assert_called_once()
         d.get_border_geometry().Overlaps.assert_called_once_with(other_domain.get_border_geometry())
 
+    def test_get_border_dateline(self):
+        dom = Domain('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=0 +lon_0=-179 +no_defs',
+                     '-te -1000000 -1000 1000000 1000 -ts 10 10')
+        brd = dom.get_border()
+        self.assertTrue(np.all(brd[0] > 0))
+        brd = dom.get_border(fix_lon=False)
+        self.assertTrue(brd[0].min() < 0)
+
 if __name__ == "__main__":
     unittest.main()
