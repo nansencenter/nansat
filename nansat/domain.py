@@ -514,13 +514,15 @@ class Domain(object):
 
         return extent_dict
 
-    def get_border(self, nPoints=10):
+    def get_border(self, nPoints=10, fix_lon=True, **kwargs):
         """Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
         -----------
         nPoints : int, optional
             Number of points on each border
+        fix_lon : bool
+            Convert longitudes to positive numbers when Domain crosses dateline?
 
         Returns
         --------
@@ -533,7 +535,13 @@ class Domain(object):
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
         col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
-        return self.transform_points(col_vec, row_vec)
+        lon, lat = self.transform_points(col_vec, row_vec)
+
+        crosses_dateline = np.diff(lon).max() > 260
+        if crosses_dateline and fix_lon:
+            lon[lon < 0] += 360
+
+        return lon, lat
 
     @staticmethod
     def _compound_row_col_vectors(x_size, y_size, x_vec, y_vec):
@@ -628,7 +636,7 @@ class Domain(object):
 
         return self.get_border_geometry().Contains(anotherDomain.get_border_geometry())
 
-    def get_border_postgis(self):
+    def get_border_postgis(self, **kwargs):
         """ Get PostGIS formatted string of the border Polygon
 
         Returns
@@ -637,7 +645,7 @@ class Domain(object):
 
         """
 
-        return "PolygonFromText('%s')" % self.get_border_wkt()
+        return "PolygonFromText('%s')" % self.get_border_wkt(**kwargs)
 
     def get_corners(self):
         """Get coordinates of corners of the Domain
