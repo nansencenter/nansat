@@ -537,7 +537,7 @@ class Domain(object):
         col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
         lon, lat = self.transform_points(col_vec, row_vec)
 
-        crosses_dateline = np.diff(lon).max() > 260
+        crosses_dateline = np.diff(lon).max() > 360
         if crosses_dateline and fix_lon:
             lon[lon < 0] += 360
 
