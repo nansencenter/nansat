@@ -142,7 +142,7 @@ class Mapper(VRT):
             raise Exception('Check time units..')
         return tt
 
-    def _band_list(self, gdal_dataset, gdal_metadata, netcdf_dim={}, bands=[]):
+    def _band_list(self, gdal_dataset, gdal_metadata, netcdf_dim={}, bands=[], *args, **kwargs):
         ''' Create list of dictionaries mapping source and destination metadata
         of bands that should be added to the Nansat object.
 
