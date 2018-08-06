@@ -19,12 +19,11 @@ class Mapper(ScatterometryMapper):
 
     def __init__(self, filename, gdal_dataset, metadata, quartile=0, *args, **kwargs):
 
-        if not metadata.has_key('NC_GLOBAL#source') \
-                or not metadata['NC_GLOBAL#source'].lower() == 'quikscat':
+        if metadata.get('NC_GLOBAL#source', '') != 'quikscat':
             raise WrongMapperError
 
         super(Mapper, self).__init__(filename, gdal_dataset, metadata, *args, **kwargs)
-        
+
         band_lat = self.dataset.GetRasterBand(self._latitude_band_number(gdal_dataset))
         # Check that it is actually latitudes
         if not band_lat.GetMetadata()['standard_name'] == 'latitude':
