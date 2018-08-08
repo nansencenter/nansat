@@ -2,7 +2,7 @@
 # Name:         test_nansat.py
 # Purpose:      Test the nansat module
 #
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
+# Author:       Morten Wergeland Hansen, Anton Korosov, Asuka Yamakawa
 # Modified: Morten Wergeland Hansen
 #
 # Created:  18.06.2014
@@ -45,6 +45,13 @@ class NSRTest(unittest.TestCase):
 
     def test_init_from_proj4(self):
         nsr = NSR('+proj=longlat')
+
+        self.assertEqual(type(nsr), NSR)
+        self.assertEqual(nsr.Validate(), 0)
+        self.assertTrue('longlat' in nsr.ExportToProj4())
+
+    def test_init_from_proj4(self):
+        nsr = NSR(u'+proj=longlat')
 
         self.assertEqual(type(nsr), NSR)
         self.assertEqual(nsr.Validate(), 0)

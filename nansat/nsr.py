@@ -13,7 +13,7 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import, unicode_literals
-
+import sys
 import osr
 
 from nansat.exceptions import NansatProjectionError
@@ -56,6 +56,10 @@ class NSR(osr.SpatialReference, object):
     """
     def __init__(self, srs=0):
         """Create Spatial Reference System from input parameter"""
+        if sys.version_info.major == 2:
+            str_types = (str, unicode)
+        else:
+            str_types = str
         # create SRS
         osr.SpatialReference.__init__(self)
 
@@ -64,7 +68,7 @@ class NSR(osr.SpatialReference, object):
         if srs is 0:
             # generate default WGS84 SRS
             status = self.ImportFromWkt(osr.SRS_WKT_WGS84)
-        elif isinstance(srs, str):
+        elif isinstance(srs, str_types):
             # parse as proj4 string
             status = self.ImportFromProj4(str(srs))
             if status > 0:
