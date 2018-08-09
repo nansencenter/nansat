@@ -50,7 +50,7 @@ class NSRTest(unittest.TestCase):
         self.assertEqual(nsr.Validate(), 0)
         self.assertTrue('longlat' in nsr.ExportToProj4())
 
-    def test_init_from_proj4(self):
+    def test_init_from_proj4_unicode(self):
         nsr = NSR(u'+proj=longlat')
 
         self.assertEqual(type(nsr), NSR)
