@@ -75,6 +75,14 @@ class NansatTest(NansatTestBase):
         self.assertEqual(n.name, '')
         self.assertEqual(n.path, '')
 
+    def test_from_domain_nansat(self):
+        n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
+        n2 = Nansat.from_domain(n1, n1[1])
+
+        self.assertEqual(type(n2), Nansat)
+        self.assertEqual(len(n2.bands()), 1)
+        self.assertEqual(type(n2[1]), np.ndarray)
+
     def test_add_band(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         arr = np.random.randn(500, 500)
@@ -742,7 +750,7 @@ class NansatTest(NansatTestBase):
         self.assertIn('SourceFilename', n_repr)
         self.assertIn('/vsimem/', n_repr)
         self.assertIn('500 x 500', n_repr)
-        self.assertIn('Projection:', n_repr)
+        self.assertIn('Projection(dataset):', n_repr)
         self.assertIn('25', n_repr)
         self.assertIn('72', n_repr)
         self.assertIn('35', n_repr)
@@ -788,21 +796,22 @@ class NansatTest(NansatTestBase):
         self.assertEqual(meta2, meta0)
 
     def test_reproject_pure_geolocation(self):
-        n1 = Nansat(self.test_file_gcps)
-        lon, lat = n1.get_geolocation_grids()
-        d1 = Domain(lon=lon, lat=lat)
-        # remove GCPs and keep only geolocation
-        d1.vrt.dataset.SetGCPs([], NSR().wkt)
-        n2 = Nansat.from_domain(d1, n1[1])
-        import ipdb; ipdb.set_trace()
-        n2.get_corners()
+        n0 = Nansat(self.test_file_gcps)
+        b0 = n0[1]
+        lon0, lat0 = n0.get_geolocation_grids()
+        d1 = Domain.from_lonlat(lon=lon0, lat=lat0)
+        d2 = Domain.from_lonlat(lon=lon0, lat=lat0, add_gcps=False)
+        d3 = Domain(NSR().wkt, '-te 27 70 31 72 -ts 500 500')
 
-        d2 = Domain(NSR().wkt, '-te 27 70 31 72 -ts 100 100')
-        n2.reproject(d2)
+        n1 = Nansat.from_domain(d1, b0)
+        n2 = Nansat.from_domain(d2, b0)
 
-        b21 = n2[1]
+        n1.reproject(d3)
+        n2.reproject(d3)
 
-
+        b1 = n1[1]
+        b2 = n2[1]
+        self.assertTrue(np.allclose(b1,b2))
 
 if __name__ == "__main__":
     unittest.main()

@@ -125,6 +125,7 @@ class VRT(object):
     driver = None
     band_vrts = None
     tps = None
+    geolocation = None
 
     @classmethod
     def from_gdal_dataset(cls, gdal_dataset, **kwargs):
@@ -202,12 +203,12 @@ class VRT(object):
         return vrt
 
     @classmethod
-    def from_lonlat(cls, lon, lat, **kwargs):
+    def from_lonlat(cls, lon, lat, add_gcps=True, **kwargs):
         """Create VRT from longitude, latitude arrays
 
         Create VRT with dataset without bands but with GEOLOCATION metadata and Geolocation
         object. Geolocation contains 2 2D arrays with lon/lat values given at regular pixel/line
-        steps.
+        steps. GCPs can bee created from lon/lat arrays and added to the dataset
 
         Parameters
         ----------
@@ -215,6 +216,8 @@ class VRT(object):
             array with longitudes
         lat : numpy.ndarray
             array with latitudes
+        add_gcps : bool
+            Create GCPs from lon/lat arrays and add to dataset
         **kwargs : dict
             arguments for VRT()
 
@@ -224,7 +227,7 @@ class VRT(object):
 
         """
         vrt = cls.__new__(cls)
-        vrt._init_from_lonlat(lon, lat, **kwargs)
+        vrt._init_from_lonlat(lon, lat, add_gcps, **kwargs)
         return vrt
 
     @classmethod
@@ -265,13 +268,15 @@ class VRT(object):
         self.dataset.SetMetadata(metadata)
         self.dataset.FlushCache()
 
-    def _init_from_gdal_dataset(self, gdal_dataset, **kwargs):
+    def _init_from_gdal_dataset(self, gdal_dataset, geolocation=None, **kwargs):
         """Init VRT from GDAL Dataset with the same size/georeference but wihout bands/metadata.
 
         Parameters
         ----------
         gdal_dataset : gdal.Dataset
             input GDAL dataset
+        geolocation : geolocation.Geolocation
+            optional Geolocation arrays
         **kwargs : dict
             arguments for VRT()
 
@@ -290,7 +295,9 @@ class VRT(object):
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
         self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
-        self._add_geolocation(Geolocation.from_dataset(gdal_dataset))
+        if geolocation is None:
+            geolocation = Geolocation.from_dataset(gdal_dataset)
+        self._add_geolocation(geolocation)
         self.dataset.SetMetadataItem(str('filename'), self.filename)
 
         # write XML file contents
@@ -390,12 +397,12 @@ class VRT(object):
         self.dataset.SetMetadataItem(str('filename'), self.filename)
         self.dataset.FlushCache()
 
-    def _init_from_lonlat(self, lon, lat, add_geolocation=True, **kwargs):
+    def _init_from_lonlat(self, lon, lat, add_gcps=True, **kwargs):
         """Init VRT from longitude, latitude arrays
 
         Init VRT with dataset without bands but with GEOLOCATION metadata and Geolocation
         object. Geolocation contains 2 2D arrays with lon/lat values given at regular pixel/line
-        steps.
+        steps. GCPs can be created from lon/lat values and added to the dataset.
 
         Parameters
         ----------
@@ -403,8 +410,8 @@ class VRT(object):
             array with longitudes
         lat : numpy.ndarray
             array with latitudes
-        add_geolocation : bool
-            add lon/lat as geolocation arrays?
+        add_gcps : bool
+            Add GCPs to dataset
         **kwargs : dict
             arguments for VRT() and VRT._lonlat2gcps
 
@@ -416,13 +423,13 @@ class VRT(object):
 
         """
         VRT.__init__(self, lon.shape[1], lon.shape[0], **kwargs)
-        self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, **kwargs), NSR().wkt)
-        if add_geolocation:
-            self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
+        if add_gcps:
+            self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, **kwargs), NSR().wkt)
+        self._add_geolocation(Geolocation(VRT.from_array(lon), VRT.from_array(lat)))
         self.dataset.SetMetadataItem(str('filename'), self.filename)
         self.dataset.FlushCache()
 
-    def _copy_from_dataset(self, gdal_dataset, **kwargs):
+    def _copy_from_dataset(self, gdal_dataset, geolocation=None, **kwargs):
         """Init VRT with bands and georefernce as a full copy of input GDAL Dataset
 
         Parameters
@@ -442,7 +449,9 @@ class VRT(object):
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset = self.driver.CreateCopy(self.filename, gdal_dataset)
         self.dataset.SetMetadataItem(str('filename'), self.filename)
-
+        if geolocation is None:
+            geolocation = Geolocation.from_dataset(gdal_dataset)
+        self._add_geolocation(geolocation)
         # write XMl file contents
         self.dataset.FlushCache()
 
@@ -544,6 +553,8 @@ class VRT(object):
         Sets GEOLOCATION metadata
 
         """
+        if geolocation is None:
+            return
         self.geolocation = geolocation
         self.dataset.SetMetadata(geolocation.data, str('GEOLOCATION'))
         self.dataset.FlushCache()
@@ -557,7 +568,7 @@ class VRT(object):
         Sets GEOLOCATION metadata to ''
 
         """
-        del self.geolocation
+        self.geolocation = None
 
         # add GEOLOCATION metadata (empty if geolocation is empty)
         self.dataset.SetMetadata(str(''), str('GEOLOCATION'))
@@ -609,7 +620,7 @@ class VRT(object):
             return dst_srs
         # create transformer. converts lat/lon to pixel/line of SRC image
         src_transformer = gdal.Transformer(self.dataset, None,
-                                          ['SRC_SRS=' + self.get_projection(),
+                                          ['SRC_SRS=' + self.get_projection()[0],
                                            'DST_SRS=' + NSR(dst_srs).wkt])
 
         # create 'fake' GCPs
@@ -637,7 +648,7 @@ class VRT(object):
     def _set_gcps_geolocation_geotransform(self):
         """Prepare VRT.dataset for warping."""
         # Select if GEOLOCATION, or GCPs, or GeoTransform from the original dataset are used
-        if hasattr(self, 'geolocation') and len(self.geolocation.data) > 0:
+        if self.geolocation is not None and len(self.geolocation.data) > 0:
             # use GEOLOCATION by default (remove GCP and GeoTransform)
             self.dataset.SetGCPs([], str(''))
             self._remove_geotransform()
@@ -766,7 +777,7 @@ class VRT(object):
 
     def create_geolocation_bands(self):
         """Create bands from Geolocation"""
-        if hasattr(self, 'geolocation') and len(self.geolocation.data) > 0:
+        if self.geolocation is not None and len(self.geolocation.data) > 0:
             self.create_band(
                 {'SourceFilename': self.geolocation.data['X_DATASET'],
                  'SourceBand': int(self.geolocation.data['X_BAND'])},
@@ -821,7 +832,7 @@ class VRT(object):
     def prepare_export_netcdf(self):
         """Prepare dataset for export using netCDF driver"""
         gcps = self.dataset.GetGCPs()
-        srs = str(self.get_projection())
+        srs = str(self.get_projection()[0])
         if len(gcps) > 0:
             self._remove_geotransform()
             self.dataset.SetMetadataItem(str('NANSAT_GCPProjection'),
@@ -848,9 +859,11 @@ class VRT(object):
 
         """
         if self.dataset.RasterCount == 0:
-            new_vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+            new_vrt = VRT.from_gdal_dataset(self.dataset, geolocation=self.geolocation,
+                                                          metadata=self.dataset.GetMetadata())
         else:
-            new_vrt = VRT.copy_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+            new_vrt = VRT.copy_dataset(self.dataset, geolocation=self.geolocation,
+                                                     metadata=self.dataset.GetMetadata())
             replace_filenames = [(self.filename, new_vrt.filename)]
             if self.vrt is not None:
                 # recursive copy of sub-VRT object
@@ -1318,7 +1331,8 @@ class VRT(object):
 
         """
         # create new vrt that refers to a copy of self
-        super_vrt = VRT.from_gdal_dataset(self.dataset, metadata=self.dataset.GetMetadata())
+        super_vrt = VRT.from_gdal_dataset(self.dataset, geolocation=self.geolocation,
+                                                        metadata=self.dataset.GetMetadata())
         super_vrt.vrt = self.copy()
         super_vrt.tps = self.tps
 
@@ -1393,8 +1407,8 @@ class VRT(object):
             X and Y coordinates in degree of lat/lon
 
         """
-        # get source SRS (either Projection or GCPProjection)
-        src_wkt = self.get_projection()
+        # get source SRS (either Projection or GCPProjection or Metadata(GEOLOCATION)[SRS])
+        src_wkt = self.get_projection()[0]
 
         # prepare options
         if options is None:
@@ -1422,29 +1436,35 @@ class VRT(object):
         return lon_vector, lat_vector
 
     def get_projection(self):
-        """Get projection from the dataset.
+        """Get projection (spatial reference system) of the dataset
 
-        Uses gdal.Dataset.GetProjection() or gdal.Dataset.GetGCPProjection(). If both return an
-        empty string, a NansatProjectionError is raised.
+        Uses dataset.GetProjection() or dataset.GetGCPProjection()
+        or dataset.GetMetadata('GEOLOCATION')['SRS']
 
         Returns
         -------
-        projection : projection or GCPprojection
+        projection : projection WKT
+        source : str ['gcps' or 'dataset' or 'geolocation']
 
         Raises
         -------
         NansatProjectionError : occurs when the projection is empty.
 
         """
-        # get projection or GCPProjection
         projection = self.dataset.GetProjection()
-        if projection == '':
-            projection = self.dataset.GetGCPProjection()
+        if projection != '':
+            return projection, 'dataset'
 
-        if not projection:
-            raise NansatProjectionError
+        projection = self.dataset.GetGCPProjection()
+        if projection != '':
+            return projection, 'gcps'
 
-        return projection
+        projection = self.dataset.GetMetadata('GEOLOCATION').get('SRS', '')
+        if projection != '':
+            return projection, 'geolocation'
+
+        raise NansatProjectionError
+
 
     def get_resized_vrt(self, x_size, y_size, resample_alg=1):
 

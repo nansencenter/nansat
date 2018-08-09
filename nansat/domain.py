@@ -17,16 +17,16 @@
 from __future__ import division, absolute_import
 
 import re
-import numpy as np
+import warnings
 from xml.etree.ElementTree import ElementTree
+
+import numpy as np
 
 from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-
-import warnings
 from nansat.exceptions import NansatProjectionError
-
+from nansat.warnings import NansatFutureWarning
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -55,14 +55,6 @@ class Domain(object):
         -te xmin ymin xmax ymax
         -lle lonmin latmin lonmax latmax
     ds : GDAL dataset
-    lat : Numpy array
-        Grid with latitudes
-    lon : Numpy array
-        Grid with longitudes
-    name : string, optional
-        Name to be added to the Domain object
-    logLevel : int, optional
-        level of logging
 
     Examples
     --------
@@ -70,8 +62,6 @@ class Domain(object):
         >>> d = Domain(ds=GDALDataset) #size, extent copied from input GDAL dataset
         >>> d = Domain(srs, ds=GDALDataset) # spatial reference is given by srs,
             but size and extent is determined from input GDAL dataset
-        >>> d = Domain(lon=lonGrid, lat=latGrid) # Size, extent and spatial reference is given
-            by two grids of longitude and latitude
 
     Notes
     -----
@@ -134,17 +124,8 @@ class Domain(object):
     logger = None
     name = None
 
-    def __init__(self, srs=None, ext=None, ds=None, lon=None,
-                 lat=None, name='', logLevel=None):
+    def __init__(self, srs=None, ext=None, ds=None, **kwargs):
         """Create Domain from GDALDataset or string options or lat/lon grids"""
-        # set default attributes
-        self.logger = add_logger('Nansat', logLevel)
-        self.name = name
-
-        self.logger.debug('ds: %s' % str(ds))
-        self.logger.debug('srs: %s' % srs)
-        self.logger.debug('ext: %s' % ext)
-
         # If too much information is given raise error
         if ds is not None and srs is not None and ext is not None:
             raise ValueError('Ambiguous specification of both dataset, srs- and ext-strings.')
@@ -153,7 +134,6 @@ class Domain(object):
         # ds
         # ds and srs
         # srs and ext
-        # lon and lat
 
         # if only a dataset is given:
         #     copy geo-reference from the dataset
@@ -187,14 +167,42 @@ class Domain(object):
                                                geo_transform=geo_transform,
                                                projection=srs.wkt,
                                                gcps=[], gcp_projection='')
-        elif lat is not None and lon is not None:
+        elif 'lat' in kwargs and 'lon' in kwargs:
+            warnings.warn('Domain(lon=lon, lat=lat) will be deprectaed!'
+                          'Use Domain.from_lonlat()', NansatFutureWarning)
             # create self.vrt from given lat/lon
-            self.vrt = VRT.from_lonlat(lon, lat)
+            self.vrt = VRT.from_lonlat(kwargs['lon'], kwargs['lat'])
         else:
             raise ValueError('"dataset" or "srsString and extentString" '
                               'or "dataset and srsString" are required')
 
-        self.logger.debug('vrt.dataset: %s' % str(self.vrt.dataset))
+    @classmethod
+    def from_lonlat(cls, lon, lat, add_gcps=True):
+        """Create Domain object from input longitudes, latitudes arrays
+
+        Parameters
+        ----------
+        lon : numpy.ndarray
+            longitudes
+        lat : numpy.ndarray
+            latitudes
+        add_gcps : bool
+            Add GCPs from lon/lat arrays.
+
+        Returns
+        -------
+            d : Domain
+
+        Examples
+        --------
+            >>> lon, lat = np.meshgrid(range(10), range(10))
+            >>> d1 = Domain.from_lonlat(lon, lat)
+            >>> d2 = Domain.from_lonlat(lon, lat, add_gcps=False) # add only geolocation arrays
+
+        """
+        d = cls.__new__(cls)
+        d.vrt = VRT.from_lonlat(lon, lat, add_gcps)
+        return d
 
     def __repr__(self):
         """Creates string with basic info about the Domain object
@@ -206,12 +214,12 @@ class Domain(object):
 
         """
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
-
+        wkt, src = self.vrt.get_projection()
         out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
         out_str += self.OUTPUT_SEPARATOR
         corners = self.get_corners()
-        out_str += 'Projection:\n'
-        out_str += (NSR(self.vrt.get_projection()).ExportToPrettyWkt(1) + '\n')
+        out_str += 'Projection(%s):\n' % src
+        out_str += (NSR(wkt).ExportToPrettyWkt(1) + '\n')
         out_str += self.OUTPUT_SEPARATOR
         out_str += 'Corners (lon, lat):\n'
         out_str += corners_temp % (corners[0][0], corners[1][0], corners[0][2], corners[1][2])
@@ -378,7 +386,7 @@ class Domain(object):
         y_vec = list(range(0, self.vrt.dataset.RasterYSize, step_size))
         x_grid, y_grid = np.meshgrid(x_vec, y_vec)
 
-        if hasattr(self.vrt, 'geolocation') and len(self.vrt.geolocation.data) > 0:
+        if self.vrt.geolocation is not None and len(self.vrt.geolocation.data) > 0:
             # if the vrt dataset has geolocationArray
             # read lon,lat grids from geolocationArray
             lon_grid, lat_grid = self.vrt.geolocation.get_geolocation_grids()
