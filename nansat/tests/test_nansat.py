@@ -787,6 +787,22 @@ class NansatTest(NansatTestBase):
         self.assertEqual(meta1, {'key1': '" AAA " & > <', 'key2': "'BBB'"})
         self.assertEqual(meta2, meta0)
 
+    def test_reproject_pure_geolocation(self):
+        n1 = Nansat(self.test_file_gcps)
+        lon, lat = n1.get_geolocation_grids()
+        d1 = Domain(lon=lon, lat=lat)
+        # remove GCPs and keep only geolocation
+        d1.vrt.dataset.SetGCPs([], NSR().wkt)
+        n2 = Nansat.from_domain(d1, n1[1])
+        import ipdb; ipdb.set_trace()
+        n2.get_corners()
+
+        d2 = Domain(NSR().wkt, '-te 27 70 31 72 -ts 100 100')
+        n2.reproject(d2)
+
+        b21 = n2[1]
+
+
 
 if __name__ == "__main__":
     unittest.main()
