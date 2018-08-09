@@ -1453,15 +1453,15 @@ class VRT(object):
         """
         projection = self.dataset.GetProjection()
         if projection != '':
-            return projection, 'dataset'
+            return projection, str('dataset')
 
         projection = self.dataset.GetGCPProjection()
         if projection != '':
-            return projection, 'gcps'
+            return projection, str('gcps')
 
-        projection = self.dataset.GetMetadata('GEOLOCATION').get('SRS', '')
+        projection = self.dataset.GetMetadata(str('GEOLOCATION')).get(str('SRS'), '')
         if projection != '':
-            return projection, 'geolocation'
+            return projection, str('geolocation')
 
         raise NansatProjectionError
 
