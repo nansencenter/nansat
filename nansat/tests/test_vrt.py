@@ -126,12 +126,10 @@ class VRTTest(NansatTestBase):
         self.assertEqual(vrt.geolocation.y_vrt.filename, geo_metadata['Y_DATASET'])
         self.assertEqual(len(vrt.dataset.GetGCPs()), 25)
 
-    def test_from_lonlat_no_geolocation(self):
+    def test_from_lonlat_no_gcps(self):
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
-        vrt = VRT.from_lonlat(lon, lat, add_geolocation=False)
-
-        geo_metadata = vrt.dataset.GetMetadata(str('GEOLOCATION'))
-        self.assertEqual(geo_metadata, {})
+        vrt = VRT.from_lonlat(lon, lat, add_gcps=False)
+        self.assertEqual(len(vrt.dataset.GetGCPs()), 0)
 
     def test_copy_empty_vrt(self):
         vrt1 = VRT()
@@ -183,6 +181,14 @@ class VRTTest(NansatTestBase):
 
         self.assertFalse(os.path.basename(vrt1.filename) in vrt2.xml)
 
+    def test_copy_geolocation(self):
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt1 = VRT.from_lonlat(lon, lat)
+
+        vrt2 = vrt1.copy()
+        vrt1 = None
+        self.assertTrue(vrt2.geolocation.x_vrt is not None)
+        self.assertTrue(vrt2.geolocation.y_vrt is not None)
 
     def test_export(self):
         array = gdal.Open(self.test_file_gcps).ReadAsArray()[1, 10:, :]
@@ -446,12 +452,44 @@ class VRTTest(NansatTestBase):
         self.assertEqual(band_nodes[1].node('SourceFilename').value, vrt.band_vrts[2].filename)
         self.assertEqual(band_nodes[2].node('SourceFilename').value, vrt.band_vrts[3].filename)
 
-    ### Both of these patches work, so we don't need to mock __init__ in this case...
-    #@patch.multiple(VRT, dataset=DEFAULT, __init__ = Mock(return_value=None))
-    @patch.object(VRT, 'dataset')
+    @patch.multiple(VRT, dataset=DEFAULT, __init__=Mock(return_value=None))
+    def test_get_projection_dataset(self, dataset):
+        proj = 'SOME_PROJECTION'
+        dataset.GetProjection.return_value = proj
+        dataset.GetGCPProjection.return_value = ''
+        dataset.GetMetadata.return_value = {}
+
+        vrt = VRT()
+        proj_src = vrt.get_projection()
+        self.assertEqual(proj_src, (proj, 'dataset'))
+
+    @patch.multiple(VRT, dataset=DEFAULT, __init__=Mock(return_value=None))
+    def test_get_projection_gcps(self, dataset):
+        proj = 'SOME_PROJECTION'
+        dataset.GetProjection.return_value = ''
+        dataset.GetGCPProjection.return_value = proj
+        dataset.GetMetadata.return_value = {}
+
+        vrt = VRT()
+        proj_src = vrt.get_projection()
+        self.assertEqual(proj_src, (proj, 'gcps'))
+
+    @patch.multiple(VRT, dataset=DEFAULT, __init__=Mock(return_value=None))
+    def test_get_projection_geolocation(self, dataset):
+        proj = 'SOME_PROJECTION'
+        dataset.GetProjection.return_value = ''
+        dataset.GetGCPProjection.return_value = ''
+        dataset.GetMetadata.return_value = {'SRS': proj}
+
+        vrt = VRT()
+        proj_src = vrt.get_projection()
+        self.assertEqual(proj_src, (proj, 'geolocation'))
+
+    @patch.multiple(VRT, dataset=DEFAULT, __init__=Mock(return_value=None))
     def test_get_projection_raises_NansatProjectionError(self, dataset):
         dataset.GetProjection.return_value = ''
         dataset.GetGCPProjection.return_value = ''
+        dataset.GetMetadata.return_value = {}
 
         vrt = VRT()
         with self.assertRaises(NansatProjectionError):
@@ -506,6 +544,14 @@ class VRTTest(NansatTestBase):
         vrt2 = vrt1.get_super_vrt()
         self.assertIsInstance(vrt2.vrt, VRT)
         self.assertEqual(vrt2.dataset.GetMetadataItem(str('AREA_OR_POINT')), 'Area')
+
+    def test_get_super_vrt_geolocation(self):
+        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
+        vrt1 = VRT.from_lonlat(lon, lat)
+        vrt2 = vrt1.get_super_vrt()
+        vrt1 = None
+        self.assertTrue(vrt2.geolocation.x_vrt is not None)
+        self.assertTrue(vrt2.geolocation.y_vrt is not None)
 
     def test_get_super_vrt_and_copy(self):
         array = np.zeros((10,10))
