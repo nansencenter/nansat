@@ -78,7 +78,7 @@ class Opendap(VRT):
     def get_dataset_time(self):
         ''' Load data from time variable '''
         cachefile = ''
-        if (type(self.cachedir) in [str, unicode] and
+        if (type(self.cachedir) in [str] and
             os.path.isdir(self.cachedir)):
             # do caching
             cachefile = '%s_%s.npz' % (os.path.join(self.cachedir,
@@ -115,69 +115,81 @@ class Opendap(VRT):
 
         return layerNumber, layerDate
 
-    def get_metaitem(self, url, varName, layerNo):
-        ''' Set metadata for creating band VRT '''
+    def get_metaitem(self, url, var_name, var_dimensions):
+        """Set metadata for creating band VRT"""
+        # assemble dimensions string
+        dims = ''.join(['[%s]' % dim for dim in var_dimensions])
+        meta_item = {
+            'src': {'SourceFilename': '{url}?{var}.{var}{shape}'.format(url=url,
+                                                                        var=var_name,
+                                                                        shape=dims),
+                    'SourceBand': 1},
+            'dst': {'name': var_name,
+                    'dataType': 6}
+        }
 
-        metaItem = {'src': {
-                        'SourceFilename': '%s?%s.%s[%d][y][x]' % (url, varName, varName, layerNo),
-                        'SourceBand': 1,
-                            },
-                    'dst': {
-                        'name': varName,
-                        'dataType': 6,
-                            }
-                    }
-
-        for attr in self.ds.variables[varName].ncattrs():
+        for attr in self.ds.variables[var_name].ncattrs():
             attrKey = attr.encode('ascii', 'ignore')
-            attrVal = self.ds.variables[varName].getncattr(attr)
-            if type(attrVal) in [str, unicode]:
+            attrVal = self.ds.variables[var_name].getncattr(attr)
+            if type(attrVal) in [str]:
                 attrVal = attrVal.encode('ascii', 'ignore')
             if attrKey in ['scale', 'scale_factor']:
-                metaItem['src']['ScaleRatio'] = attrVal
+                meta_item['src']['ScaleRatio'] = attrVal
             elif attrKey in ['offset', 'add_offset']:
-                metaItem['src']['ScaleOffset'] = attrVal
+                meta_item['src']['ScaleOffset'] = attrVal
             else:
-                metaItem['dst'][attrKey] = str(attrVal)
+                meta_item['dst'][attrKey] = str(attrVal)
 
-        return metaItem
+        return meta_item
 
     def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
-        ''' Create VRT '''
+        """Create VRT"""
         if date is None:
-            warnings.warn('''
-            Date is not specified! Will return the first layer.
-            Please add date="YYYY-MM-DD"''')
+            warnings.warn('Date is not specified! Will return the first layer. '
+                          'Please add date="YYYY-MM-DD"')
 
         self.filename = filename
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
 
-        dsTime = self.get_dataset_time()
-
-        dsDatetimes = self.convert_dstime_datetimes(dsTime)
-
-        dsLayerNo, dsLayerDate = self.get_layer_datetime(date, dsDatetimes)
+        ds_time = self.get_dataset_time()
+        ds_times = self.convert_dstime_datetimes(ds_time)
+        layer_time_id, layer_date = self.get_layer_datetime(date, ds_times)
 
         if bands is None:
-            dsVarNames = self.get_geospatial_variable_names()
+            var_names = self.get_geospatial_variable_names()
         else:
-            dsVarNames = bands
+            var_names = bands
 
         # create VRT with correct lon/lat (geotransform)
-        srcRasterXSize, srcRasterYSize = self.get_shape()
-        srcGeoTransform = self.get_geotransform()
-        self._init_from_dataset_params(srcRasterXSize, srcRasterYSize, srcGeoTransform, self.srcDSProjection)
+        raster_x, raster_y = self.get_shape()
+        geotransform = self.get_geotransform()
+        self._init_from_dataset_params(int(raster_x), int(raster_y),
+                                       geotransform, self.srcDSProjection)
 
-        metaDict = [self.get_metaitem(filename, dsVarName, dsLayerNo)
-                      for dsVarName in dsVarNames]
+        meta_dict = []
+        for var_name in var_names:
+            # Get list of dimensions for a variable
+            var_dimensions = list(self.ds.variables[var_name].dimensions)
+            # get variable specific dimensions
+            spec_dimension = list(filter(lambda dim_name: dim_name not in ['time', 'y', 'x'],
+                                         var_dimensions))[0]
 
-        self.create_bands(metaDict)
+            var_dimensions[var_dimensions.index('time')] = layer_time_id
+            if spec_dimension:
+                for i in range(self.ds.dimensions[spec_dimension].size):
+                    var_dimensions_copy = var_dimensions.copy()
+                    var_dimensions_copy[var_dimensions_copy.index(spec_dimension)] = i
+                    meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions_copy))
+            else:
+                meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions))
+
+        self.create_bands(meta_dict)
 
         # set time
         timeResSecs = self.get_time_coverage_resolution()
-        self.dataset.SetMetadataItem('time_coverage_start', str(dsLayerDate))
-        self.dataset.SetMetadataItem('time_coverage_end', str(dsLayerDate + timeResSecs))
+        self.dataset.SetMetadataItem('time_coverage_start', str(layer_date))
+        self.dataset.SetMetadataItem('time_coverage_end', str(layer_date + timeResSecs))
 
     def get_time_coverage_resolution(self):
         ''' Try to fecth time_coverage_resolution and convert to seconds '''
