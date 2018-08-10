@@ -7,11 +7,8 @@
 
 # http://cfconventions.org/wkt-proj-4.html
 
-from __future__ import unicode_literals
+from __future__ import unicode_literals, absolute_import, print_function
 import os
-import datetime
-from dateutil.parser import parse
-from time import sleep as time_sleep
 import warnings
 import numpy as np
 
@@ -23,9 +20,7 @@ except ImportError:
          You cannot access OC CCI data but
          Nansat will work.''')
 
-from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.tools import gdal
 
 from nansat.exceptions import WrongMapperError
 import sys
@@ -38,7 +33,7 @@ else:
 
 
 class Opendap(VRT):
-    ''' Methods for all OpenDAP mappers '''
+    """Methods for all OpenDAP mappers"""
 
     P2S = {
         'H': 60*60,
@@ -47,22 +42,37 @@ class Opendap(VRT):
         'Y': 31536000,
         }
 
-    ### TODOs:
-    # add band metadata
+    # TODO:add band metadata
 
     def test_mapper(self, filename):
-        ''' Tests if filename fits mapper. May raise WrongMapperError '''
-        baseURLmatch = False
-        for baseURL in self.baseURLs:
-            if filename.startswith(baseURL):
-                baseURLmatch = True
+        """Tests if filename fits mapper. May raise WrongMapperError
+
+            Parameters
+            ----------
+                filename: str
+                    absolute url of input file
+
+            Raises
+            ------
+                WrongMapperError: if input url does not match with list of
+                    urls for a mapper
+        """
+        base_url_match = False
+        # TODO: baseURLs var name should be changed here and in all mappers
+        for base_url in self.baseURLs:
+            if filename.startswith(base_url):
+                base_url_match = True
                 break
-        if not baseURLmatch:
+        if not base_url_match:
             raise WrongMapperError(filename)
 
-
     def get_dataset(self, ds):
-        ''' Open Dataset '''
+        """Open Dataset
+
+           Parameters
+           ----------
+                ds: str or netCDF4.Dataset
+        """
         if ds is None:
             try:
                 ds = Dataset(self.filename)
@@ -74,14 +84,16 @@ class Opendap(VRT):
         return ds
 
     def get_geospatial_variable_names(self):
-        ''' Get names of variables with both spatial dimentions'''
-        dsNames = []
-        for var in self.ds.variables:
-            if     (self.xName in self.ds.variables[var].dimensions and
-                    self.yName in self.ds.variables[var].dimensions):
-                dsNames.append(var)
+        """Get names of variables with both spatial dimensions"""
+        ds_names = []
 
-        return dsNames
+        for var in self.ds.variables:
+            var_dimensions = self.ds.variables[var].dimensions
+            # TODO: xName and yName var names should be changed here and in all mappers
+            if self.xName in var_dimensions and self.yName in var_dimensions:
+                ds_names.append(var)
+
+        return ds_names
 
     def get_dataset_time(self):
         """Load data from time variable"""
@@ -93,37 +105,53 @@ class Opendap(VRT):
                                        self.timeVarName)
 
         if os.path.exists(cachefile):
-            dsTime = np.load(cachefile)[self.timeVarName]
+            ds_time = np.load(cachefile)[self.timeVarName]
         else:
             warnings.warn('Time consuming loading time from OpenDAP...')
-            dsTime = self.ds.variables[self.timeVarName][:]
+            ds_time = self.ds.variables[self.timeVarName][:]
             warnings.warn('Loading time - OK!')
 
         if os.path.exists(cachefile):
-            np.savez(cachefile, **{self.timeVarName: dsTime})
+            np.savez(cachefile, **{self.timeVarName: ds_time})
 
-        return dsTime
+        return ds_time
 
     def get_layer_datetime(self, date, datetimes):
-        ''' Get datetime of the matching layer and layer number '''
+        """ Get datetime of the matching layer and layer number"""
 
         if len(datetimes) == 1 or date is None:
-            layerNumber = 0
+            layer_num = 0
         else:
             # find closest layer
-            datetimeResolution = np.abs(datetimes[0] - datetimes[1])
+            datetime_resolution = np.abs(datetimes[0] - datetimes[1])
             date = np.datetime64(date).astype('M8[s]')
-            matchingDateDiff = np.min(np.abs(datetimes - date))
-            if matchingDateDiff > datetimeResolution:
+            matching_date_diff = np.min(np.abs(datetimes - date))
+            if matching_date_diff > datetime_resolution:
                 raise ValueError('Date %s is out of range' % date)
-            layerNumber = np.argmin(np.abs(datetimes - date))
+            layer_num = np.argmin(np.abs(datetimes - date))
 
-        layerDate = datetimes[layerNumber]
+        layer_date = datetimes[layer_num]
 
-        return layerNumber, layerDate
+        return layer_num, layer_date
 
     def get_metaitem(self, url, var_name, var_dimensions):
-        """Set metadata for creating band VRT"""
+        """Set metadata for creating band VRT
+
+           Parameters
+           ----------
+                url: str,
+                    absolute url of an input file
+                var_name: str,
+                    name of a variable/band from netCDF file
+                var_dimensions: iterable
+                    iterable array with dimensions of the variable
+
+            Returns
+            -------
+                meta_item: dict
+                    dictionary with src and dst parameters for creating a gdal band
+        """
+
         # assemble dimensions string
         dims = ''.join(['[%s]' % dim for dim in var_dimensions])
         meta_item = {
@@ -136,21 +164,33 @@ class Opendap(VRT):
         }
 
         for attr in self.ds.variables[var_name].ncattrs():
-            attrKey = attr.encode('ascii', 'ignore')
-            attrVal = self.ds.variables[var_name].getncattr(attr)
-            if type(attrVal) in str_types:
-                attrVal = attrVal.encode('ascii', 'ignore')
-            if attrKey in ['scale', 'scale_factor']:
-                meta_item['src']['ScaleRatio'] = attrVal
-            elif attrKey in ['offset', 'add_offset']:
-                meta_item['src']['ScaleOffset'] = attrVal
+            attr_key = attr.encode('ascii', 'ignore')
+            attr_val = self.ds.variables[var_name].getncattr(attr)
+            if type(attr_val) in str_types:
+                attr_val = attr_val.encode('ascii', 'ignore')
+            if attr_key in ['scale', 'scale_factor']:
+                meta_item['src']['ScaleRatio'] = attr_val
+            elif attr_key in ['offset', 'add_offset']:
+                meta_item['src']['ScaleOffset'] = attr_val
             else:
-                meta_item['dst'][attrKey] = str(attrVal)
+                meta_item['dst'][attr_key] = str(attr_val)
 
         return meta_item
 
     def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
-        """Create VRT"""
+        """ Create VRT
+
+            Parameters
+            ----------
+                filename: str,
+                    absolute url of an input file
+                date: str,
+                    date in format YYYY-MM-DD
+                ds: netDCF.Dataset
+                bands: list
+                    list of src bands
+                cachedir: str
+        """
         if date is None:
             warnings.warn('Date is not specified! Will return the first layer. '
                           'Please add date="YYYY-MM-DD"')
@@ -194,31 +234,29 @@ class Opendap(VRT):
         self.create_bands(meta_dict)
 
         # set time
-        timeResSecs = self.get_time_coverage_resolution()
+        time_res_sec = self.get_time_coverage_resolution()
         self.dataset.SetMetadataItem('time_coverage_start', str(layer_date))
-        self.dataset.SetMetadataItem('time_coverage_end', str(layer_date + timeResSecs))
+        self.dataset.SetMetadataItem('time_coverage_end', str(layer_date + time_res_sec))
 
     def get_time_coverage_resolution(self):
-        ''' Try to fecth time_coverage_resolution and convert to seconds '''
-        timeResSecs = 0
+        """Try to fecth time_coverage_resolution and convert to seconds"""
+        time_res_sec = 0
         if 'time_coverage_resolution' in self.ds.ncattrs():
             time_res = self.ds.time_coverage_resolution
             try:
-                timeResSecs = int(time_res[1]) * self.P2S[time_res[2].upper()]
+                time_res_sec = int(time_res[1]) * self.P2S[time_res[2].upper()]
             except:
                 warnings.warn('Cannot get time_coverage_resolution')
 
-        return timeResSecs
+        return time_res_sec
 
     def get_shape(self):
-        ''' Get srcRasterXSize and srcRasterYSize from OpenDAP '''
-        return (self.ds.variables[self.xName].size,
-                self.ds.variables[self.yName].size)
-
+        """Get srcRasterXSize and srcRasterYSize from OpenDAP"""
+        return self.ds.variables[self.xName].size, self.ds.variables[self.yName].size
 
     def get_geotransform(self):
-        ''' Get first two values of X,Y variables and create geoTranform '''
+        """Get first two values of X,Y variables and create geoTranform"""
 
         xx = self.ds.variables[self.xName][0:2]
         yy = self.ds.variables[self.yName][0:2]
-        return (xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0])
+        return xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0]
