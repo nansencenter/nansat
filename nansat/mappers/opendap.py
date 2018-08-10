@@ -7,6 +7,7 @@
 
 # http://cfconventions.org/wkt-proj-4.html
 
+from __future__ import unicode_literals
 import os
 import datetime
 from dateutil.parser import parse
@@ -27,6 +28,13 @@ from nansat.vrt import VRT
 from nansat.tools import gdal
 
 from nansat.exceptions import WrongMapperError
+import sys
+
+
+if sys.version_info.major == 2:
+    str_types = [str, unicode]
+else:
+    str_types = [str]
 
 
 class Opendap(VRT):
@@ -76,10 +84,9 @@ class Opendap(VRT):
         return dsNames
 
     def get_dataset_time(self):
-        ''' Load data from time variable '''
+        """Load data from time variable"""
         cachefile = ''
-        if (type(self.cachedir) in [str] and
-            os.path.isdir(self.cachedir)):
+        if type(self.cachedir) in str_types and os.path.isdir(self.cachedir):
             # do caching
             cachefile = '%s_%s.npz' % (os.path.join(self.cachedir,
                                        os.path.split(self.filename)[1]),
@@ -131,7 +138,7 @@ class Opendap(VRT):
         for attr in self.ds.variables[var_name].ncattrs():
             attrKey = attr.encode('ascii', 'ignore')
             attrVal = self.ds.variables[var_name].getncattr(attr)
-            if type(attrVal) in [str]:
+            if type(attrVal) in str_types:
                 attrVal = attrVal.encode('ascii', 'ignore')
             if attrKey in ['scale', 'scale_factor']:
                 meta_item['src']['ScaleRatio'] = attrVal
