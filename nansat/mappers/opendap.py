@@ -219,10 +219,7 @@ class Opendap(VRT):
             # Get list of dimensions for a variable
             var_dimensions = list(self.ds.variables[var_name].dimensions)
             # get variable specific dimensions
-            spec_dimensions = list(filter(
-                lambda dim_name: dim_name not in [self.timeVarName, self.yName, self.xName],
-                var_dimensions))
-
+            spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
             # Replace <time> dimension by index of requested time slice
             var_dimensions[var_dimensions.index(self.timeVarName)] = layer_time_id
             var_dimensions[var_dimensions.index(self.yName)] = 'y'
@@ -243,6 +240,11 @@ class Opendap(VRT):
         time_res_sec = self.get_time_coverage_resolution()
         self.dataset.SetMetadataItem('time_coverage_start', str(layer_date))
         self.dataset.SetMetadataItem('time_coverage_end', str(layer_date + time_res_sec))
+
+    def _filter_dimensions(self, dim_name):
+        """Check if an input name is in a list of standard names"""
+        if dim_name not in [self.timeVarName, self.yName, self.xName]:
+            return True
 
     def get_time_coverage_resolution(self):
         """Try to fecth time_coverage_resolution and convert to seconds"""
