@@ -195,6 +195,7 @@ class Opendap(VRT):
             warnings.warn('Date is not specified! Will return the first layer. '
                           'Please add date="YYYY-MM-DD"')
 
+        # TODO: <self.filename> will be changed to vrt filename after init vrt
         self.filename = filename
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
@@ -213,27 +214,9 @@ class Opendap(VRT):
         geotransform = self.get_geotransform()
         self._init_from_dataset_params(int(raster_x), int(raster_y),
                                        geotransform, self.srcDSProjection)
-
-        meta_dict = []
-        for var_name in var_names:
-            # Get list of dimensions for a variable
-            var_dimensions = list(self.ds.variables[var_name].dimensions)
-            # get variable specific dimensions
-            spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
-            # Replace <time> dimension by index of requested time slice
-            var_dimensions[var_dimensions.index(self.timeVarName)] = layer_time_id
-            var_dimensions[var_dimensions.index(self.yName)] = 'y'
-            var_dimensions[var_dimensions.index(self.xName)] = 'x'
-
-            if spec_dimensions:
-                # Handle only one (first in the list) additional dimension
-                for i in range(self.ds.dimensions[spec_dimensions[0]].size):
-                    var_dimensions_copy = var_dimensions.copy()
-                    var_dimensions_copy[var_dimensions_copy.index(spec_dimensions[0])] = i
-                    meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions_copy))
-            else:
-                meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions))
+        meta_dict = self.create_metadict(filename, var_names, layer_time_id)
         print(meta_dict)
+
         self.create_bands(meta_dict)
 
         # set time
@@ -245,6 +228,28 @@ class Opendap(VRT):
         """Check if an input name is in a list of standard names"""
         if dim_name not in [self.timeVarName, self.yName, self.xName]:
             return True
+
+    def create_metadict(self, filename, var_names, time_id):
+        meta_dict = []
+        for var_name in var_names:
+            # Get list of dimensions for a variable
+            var_dimensions = list(self.ds.variables[var_name].dimensions)
+            # get variable specific dimensions
+            spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
+            # Replace <time> dimension by index of requested time slice
+            var_dimensions[var_dimensions.index(self.timeVarName)] = time_id
+            var_dimensions[var_dimensions.index(self.yName)] = 'y'
+            var_dimensions[var_dimensions.index(self.xName)] = 'x'
+
+            if spec_dimensions:
+                dim = spec_dimensions[0]
+                # Handle only one (first in the list) additional dimension
+                for i in range(self.ds.dimensions[dim].size):
+                    var_dimensions_copy = np.where(var_dimensions == dim, i, var_dimensions)
+                    meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions_copy))
+            else:
+                meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions))
+        return meta_dict
 
     def get_time_coverage_resolution(self):
         """Try to fecth time_coverage_resolution and convert to seconds"""
