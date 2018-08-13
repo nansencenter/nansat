@@ -182,14 +182,14 @@ class Opendap(VRT):
 
             Parameters
             ----------
-                filename: str,
-                    absolute url of an input file
-                date: str,
-                    date in format YYYY-MM-DD
-                ds: netDCF.Dataset
-                bands: list
-                    list of src bands
-                cachedir: str
+            filename: str,
+                absolute url of an input file
+            date: str,
+                date in format YYYY-MM-DD
+            ds: netDCF.Dataset
+            bands: list
+                list of src bands
+            cachedir: str
         """
         if date is None:
             warnings.warn('Date is not specified! Will return the first layer. '
@@ -230,6 +230,22 @@ class Opendap(VRT):
             return True
 
     def create_metadict(self, filename, var_names, time_id):
+        """ Create list which contains a dictionary with metadata for each single band
+
+            Parameters
+            ----------
+            filename: str,
+                full path to the file
+            var_names: iterable,
+                iterable object (list) with required band names (str)
+            time_id: int,
+                index of required slice in time dimension
+
+            Returns
+            -------
+            meta_dict: list
+                list which contains a dictionary with metadata for each <var_name>
+        """
         meta_dict = []
         for var_name in var_names:
             # Get list of dimensions for a variable
@@ -238,12 +254,15 @@ class Opendap(VRT):
             spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
             # Replace <time> dimension by index of requested time slice
             var_dimensions[var_dimensions.index(self.timeVarName)] = time_id
+            # Replace mapper specific spatial dimension names
             var_dimensions[var_dimensions.index(self.yName)] = 'y'
             var_dimensions[var_dimensions.index(self.xName)] = 'x'
 
+            # If variable specific dimensions in addition to time, x and, y
             if spec_dimensions:
-                dim = spec_dimensions[0]
                 # Handle only one (first in the list) additional dimension
+                dim = spec_dimensions[0]
+                # Add each slice in "fourth" dimension as separate band, i.e [time][i=1,..,n][y][x]
                 for i in range(self.ds.dimensions[dim].size):
                     var_dimensions_copy = np.where(var_dimensions == dim, i, var_dimensions)
                     meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions_copy))
