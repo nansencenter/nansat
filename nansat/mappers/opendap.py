@@ -92,7 +92,6 @@ class Opendap(VRT):
             # TODO: xName and yName var names should be changed here and in all mappers
             if self.xName in var_dimensions and self.yName in var_dimensions:
                 ds_names.append(var)
-
         return ds_names
 
     def get_dataset_time(self):
@@ -208,14 +207,12 @@ class Opendap(VRT):
             var_names = self.get_geospatial_variable_names()
         else:
             var_names = bands
-
         # create VRT with correct lon/lat (geotransform)
         raster_x, raster_y = self.get_shape()
         geotransform = self.get_geotransform()
         self._init_from_dataset_params(int(raster_x), int(raster_y),
                                        geotransform, self.srcDSProjection)
         meta_dict = self.create_metadict(filename, var_names, layer_time_id)
-        print(meta_dict)
 
         self.create_bands(meta_dict)
 
@@ -248,26 +245,32 @@ class Opendap(VRT):
         """
         meta_dict = []
         for var_name in var_names:
-            # Get list of dimensions for a variable
+            # Get a list of variable dimensions
             var_dimensions = list(self.ds.variables[var_name].dimensions)
-            # get variable specific dimensions
+            # Get variable specific dimensions
             spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
             # Replace <time> dimension by index of requested time slice
-            var_dimensions[var_dimensions.index(self.timeVarName)] = time_id
+            # Some variables (such as lat and lon) described only by two dimensions (x, y)
+            try:
+                var_dimensions[var_dimensions.index(self.timeVarName)] = time_id
+            # If <time> is not in dimensions then ValueError will be raised
+            except ValueError:
+                pass
             # Replace mapper specific spatial dimension names
             var_dimensions[var_dimensions.index(self.yName)] = 'y'
             var_dimensions[var_dimensions.index(self.xName)] = 'x'
-
-            # If variable specific dimensions in addition to time, x and, y
+            # If variable has specific dimensions except time, x, and y
             if spec_dimensions:
-                # Handle only one (first in the list) additional dimension
+                # Handle only one (first in the list) additional dimension except time, x, and y
                 dim = spec_dimensions[0]
                 # Add each slice in "fourth" dimension as separate band, i.e [time][i=1,..,n][y][x]
                 for i in range(self.ds.dimensions[dim].size):
-                    var_dimensions_copy = np.where(var_dimensions == dim, i, var_dimensions)
+                    var_dimensions_copy = np.where(np.array(var_dimensions) == dim,
+                                                   i, var_dimensions)
                     meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions_copy))
             else:
                 meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions))
+
         return meta_dict
 
     def get_time_coverage_resolution(self):
