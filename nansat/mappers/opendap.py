@@ -1,6 +1,6 @@
 # Name:         opendap.py
 # Purpose:      Abstract class Opendap is extended by some mappers
-# Author:       Anton Korosov
+# Author:       Anton Korosov, Artem Moiseev
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
@@ -219,18 +219,24 @@ class Opendap(VRT):
             # Get list of dimensions for a variable
             var_dimensions = list(self.ds.variables[var_name].dimensions)
             # get variable specific dimensions
-            spec_dimension = list(filter(lambda dim_name: dim_name not in ['time', 'y', 'x'],
-                                         var_dimensions))[0]
+            spec_dimensions = list(filter(
+                lambda dim_name: dim_name not in [self.timeVarName, self.yName, self.xName],
+                var_dimensions))
 
-            var_dimensions[var_dimensions.index('time')] = layer_time_id
-            if spec_dimension:
-                for i in range(self.ds.dimensions[spec_dimension].size):
+            # Replace <time> dimension by index of requested time slice
+            var_dimensions[var_dimensions.index(self.timeVarName)] = layer_time_id
+            var_dimensions[var_dimensions.index(self.yName)] = 'y'
+            var_dimensions[var_dimensions.index(self.xName)] = 'x'
+
+            if spec_dimensions:
+                # Handle only one (first in the list) additional dimension
+                for i in range(self.ds.dimensions[spec_dimensions[0]].size):
                     var_dimensions_copy = var_dimensions.copy()
-                    var_dimensions_copy[var_dimensions_copy.index(spec_dimension)] = i
+                    var_dimensions_copy[var_dimensions_copy.index(spec_dimensions[0])] = i
                     meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions_copy))
             else:
                 meta_dict.append(self.get_metaitem(filename, var_name, var_dimensions))
-
+        print(meta_dict)
         self.create_bands(meta_dict)
 
         # set time
