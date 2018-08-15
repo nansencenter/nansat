@@ -1,3 +1,17 @@
+# coding=utf-8
+#------------------------------------------------------------------------------
+# Name:         test_mapper_opendap.py
+# Purpose:      Test the Opendap class
+#
+# Author:       Artem Moiseev
+#
+# Created:      15.08.2018
+# Copyright:    (c) NERSC
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+#------------------------------------------------------------------------------
+
 import unittest
 from netCDF4 import Dataset
 import tempfile
