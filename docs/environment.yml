@@ -2,6 +2,7 @@ channels:
   - alevin
   - conda-forge
 dependencies:
+  - conda=2
   - sphinx>=1.4
   - sphinx-autobuild
   - sphinx_rtd_theme 
@@ -11,5 +12,7 @@ dependencies:
   - ipykernel
   - python-dateutil
   - nansat>=1.0.4
+  - mock
+  - notebook
   - pip:
     - nbsphinx

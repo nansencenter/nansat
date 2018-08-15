@@ -135,6 +135,7 @@ class Exporter(object):
                            'offset'   : 1000,
                            'metaKey1' : 'meta value 1',
                            'metaKey2' : 'meta value 2'}}
+
             dictionary sets parameters for band creation
             'type' - string representation of data type in the output band
             'scale' - sets scale_factor and applies scaling
@@ -167,8 +168,10 @@ class Exporter(object):
         >>> n.export2thredds(filename, ['L_469'], {'description': 'example'})
 
         # export several bands and modify type, scale and offset
+
         >>> bands = {'L_645' : {'type': '>i2', 'scale': 0.1, 'offset': 0},
                      'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
+
         >>> n.export2thredds(filename, bands)
 
 
