@@ -40,19 +40,25 @@ How to report and handle a hotfix
 If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies:
 
 1. Branch from master into the hotfix specific branch (**hotfix<NNN>_<short-heading>**)
+
   a) Update the tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
   d) Commit to the hotfix branch
+
 2. If needed rebase the hotfix branch on top of master:
+
   a) Checkout the hotfix branch
   b) Use ``git rebase master``
   c) Fix conflicts if any
   d) Test the code
   e) Push your hotfix branch to GitHub. Note: You have to use 'git push -f' in order to rewrite the history on github. Rebase will not cause problems if only one person works with the hotfix branch.
+
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    hotfix branch and assign a reviewer
+
 4. Let the reviewer do the following:
+
   a) Wait for tests on Travis CI to pass
   b) Check the code
   c) Request changes or merge the pull request into master using 'Rebase and Merge' button in the online tool.
