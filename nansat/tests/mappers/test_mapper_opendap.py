@@ -15,25 +15,29 @@ class OpenDAPTests(unittest.TestCase):
         ds = Dataset(ds_file.name, 'w')
         lat_sz = 30
         lon_sz = 20
+        values = np.random.random_sample((lat_sz, lon_sz))
+
+        # Set dimensions
         ds.createDimension('lat', lat_sz)
         ds.createDimension('lon', lon_sz)
         ds.createDimension('time', 3)
-        var1 = ds.createVariable('var1', 'i4', ('time', 'lon', 'lat'))
-        var1.setncattr('offset', 'offset_value')
-        var1.setncattr('add_offset', 'add_offset_value')
-
-        var2 = ds.createVariable('var2', 'i4', ('time'))
-
-        var3 = ds.createVariable('var3', 'i4', ('lon', 'lat'))
-        var3.setncattr('scale', 'scale_value')
-        var3.setncattr('scale_factor', 'scale_factor_value')
-        var3.setncattr('useless_attr', 'useless_value')
-
-        var4 = ds.createVariable('lat', 'i4', ('lat'))
-        var4[:] = np.linspace(0, 60, lat_sz)
-        var5 = ds.createVariable('lon', 'i4', ('lon'))
-        var5[:] = np.linspace(0, 20, lon_sz)
-
+        ds.createDimension('depth', 10)
+        # Set variables
+        # 1d "dimensional" variables i.e lats, times, etc.
+        times = ds.createVariable('var2', 'i4', ('time'))
+        lats = ds.createVariable('lat', 'i4', ('lat'))
+        lats[:] = np.linspace(0, 60, lat_sz)
+        lons = ds.createVariable('lon', 'i4', ('lon'))
+        lons[:] = np.linspace(0, 20, lon_sz)
+        # Spatial variables 2d, 3d, and 4d
+        var2d = ds.createVariable('var2d', 'i4', ('lat', 'lon'))
+        var2d.setncattr('scale', 'scale_value')
+        var2d.setncattr('scale_factor', 'scale_factor_value')
+        var2d.setncattr('useless_attr', 'useless_value')
+        var3d = ds.createVariable('var3d', 'i4', ('time', 'lat', 'lon'))
+        var3d.setncattr('offset', 'offset_value')
+        var3d.setncattr('add_offset', 'add_offset_value')
+        var4d = ds.createVariable('var4d', 'f4', ('time', 'depth', 'lat', 'lon'))
         self.ds = ds
 
     def test_test_mapper(self):
@@ -68,9 +72,10 @@ class OpenDAPTests(unittest.TestCase):
         od.yName = 'lat'
         od.ds = self.ds
         ds_vars = od.get_geospatial_variable_names()
-        self.assertEqual(len(ds_vars), 2)
-        self.assertIn('var1', ds_vars)
-        self.assertIn('var3', ds_vars)
+        self.assertEqual(len(ds_vars), 3)
+        self.assertIn('var2d', ds_vars)
+        self.assertIn('var3d', ds_vars)
+        self.assertIn('var4d', ds_vars)
 
     def test_get_dataset_time(self):
         pass
@@ -98,7 +103,7 @@ class OpenDAPTests(unittest.TestCase):
         dims1 = (0, 'y', 'x')
         od = Opendap()
         od.ds = self.ds
-        res1 = od.get_metaitem(url, 'var1', dims1)
+        res1 = od.get_metaitem(url, 'var3d', dims1)
 
         self.assertIn((b'offset', "b'offset_value'"), res1['dst'].items())
         self.assertIn((b'add_offset', "b'add_offset_value'"), res1['dst'].items())
@@ -107,10 +112,10 @@ class OpenDAPTests(unittest.TestCase):
         self.assertIn('dst', res1.keys())
         self.assertIn('src', res1.keys())
         self.assertEqual(res1['src']['SourceFilename'],
-                         'https://file-url.nc?var1.var1[%s][%s][%s]' %
+                         'https://file-url.nc?var3d.var3d[%s][%s][%s]' %
                          (dims1[0], dims1[1], dims1[2]))
 
-        res2 = od.get_metaitem(url, 'var3', dims1)
+        res2 = od.get_metaitem(url, 'var2d', dims1)
         self.assertIn((b'scale', "b'scale_value'"), res2['dst'].items())
         self.assertIn((b'scale_factor', "b'scale_factor_value'"), res2['dst'].items())
         self.assertIn((b'useless_attr', "b'useless_value'"), res2['dst'].items())
@@ -131,10 +136,30 @@ class OpenDAPTests(unittest.TestCase):
         self.assertEqual(len(res2), 0)
 
     def test_create_metadict(self):
-        pass
+        od = Opendap()
+        od.ds = self.ds
+        od.timeVarName = 'time'
+        od.yName = 'lat'
+        od.xName = 'lon'
+        res1 = od.create_metadict('test.nc', ['var4d'], 0)
+        self.assertIsInstance(res1, list)
+        self.assertEqual(len(res1), 10)
+
+        for i in range(len(res1)):
+            source_filename = res1[i]['src']['SourceFilename'][19:31]
+            self.assertEqual(source_filename, '[0][%s][y][x]' % i)
+
+        res2 = od.create_metadict('test.nc', ['var2d', 'var3d'], 0)
+        self.assertEqual(len(res2), 2)
+        self.assertEqual(res2[0]['src']['SourceFilename'][19:25], '[y][x]')
+        self.assertEqual(res2[1]['src']['SourceFilename'][19:28], '[0][y][x]')
 
     def test_get_time_coverage_resolution(self):
-        pass
+        od = Opendap()
+        od.ds = self.ds
+        res = od.get_time_coverage_resolution()
+        self.assertIsInstance(res, int)
+        self.assertEqual(res, 0)
 
     def test_get_shape(self):
         od = Opendap()
