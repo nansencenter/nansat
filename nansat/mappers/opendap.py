@@ -115,9 +115,9 @@ class Opendap(VRT):
 
         return ds_time
 
-    def get_layer_datetime(self, date, datetimes):
+    @staticmethod
+    def get_layer_datetime(date, datetimes):
         """ Get datetime of the matching layer and layer number"""
-
         if len(datetimes) == 1 or date is None:
             layer_num = 0
         else:
@@ -163,18 +163,40 @@ class Opendap(VRT):
         }
 
         for attr in self.ds.variables[var_name].ncattrs():
-            attr_key = attr.encode('ascii', 'ignore')
+            attr_key = Opendap._fix_encoding(attr)
             attr_val = self.ds.variables[var_name].getncattr(attr)
             if type(attr_val) in str_types:
-                attr_val = attr_val.encode('ascii', 'ignore')
+                attr_val = Opendap._fix_encoding(attr_val)
             if attr_key in ['scale', 'scale_factor']:
                 meta_item['src']['ScaleRatio'] = attr_val
             elif attr_key in ['offset', 'add_offset']:
                 meta_item['src']['ScaleOffset'] = attr_val
             else:
-                meta_item['dst'][attr_key] = str(attr_val)
+                meta_item['dst'][attr_key] = attr_val
 
         return meta_item
+
+    @staticmethod
+    def _fix_encoding(var):
+        """ Strip input string from non unicode symbols
+
+            Parameters
+            ----------
+            var: str
+                input string which can contain non unicode symbols
+
+            Returns
+            -------
+                str, only unicode symbols
+
+            Examples
+            --------
+                >>> Opendap._fix_encoding('åsnes')
+                'snes
+                >>> Opendap._fix_encoding('asnes')
+                'asnes'
+        """
+        return str(var.encode('ascii', 'ignore').decode())
 
     def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         """ Create VRT
@@ -201,7 +223,7 @@ class Opendap(VRT):
 
         ds_time = self.get_dataset_time()
         ds_times = self.convert_dstime_datetimes(ds_time)
-        layer_time_id, layer_date = self.get_layer_datetime(date, ds_times)
+        layer_time_id, layer_date = Opendap.get_layer_datetime(date, ds_times)
 
         if bands is None:
             var_names = self.get_geospatial_variable_names()
@@ -278,9 +300,10 @@ class Opendap(VRT):
         time_res_sec = 0
         if 'time_coverage_resolution' in self.ds.ncattrs():
             time_res = self.ds.time_coverage_resolution
+            # Try to extract time resolution from the attr (ISO 8601 standard)
             try:
                 time_res_sec = int(time_res[1]) * self.P2S[time_res[2].upper()]
-            except:
+            except ValueError:
                 warnings.warn('Cannot get time_coverage_resolution')
 
         return time_res_sec
