@@ -33,6 +33,7 @@ class Domain(object):
 
     A Domain object describes all attributes of geographical
     reference of a raster:
+
       * width and height (number of pixels)
       * pixel size (e.g. in decimal degrees or in meters)
       * relation between pixel/line coordinates and geographical
@@ -71,21 +72,26 @@ class Domain(object):
     reference of the grid.
 
     There are three ways to store geo-reference in a GDAL dataset:
+
       * Using GeoTransfrom to define linear relationship between raster
         pixel/line and geographical X/Y coordinates
       * Using GCPs (set of Ground Control Points) to define non-linear
         relationship between pixel/line and X/Y
       * Using Geolocation Array - full grids of X/Y coordinates for
         each pixel of a raster
+
     The relation between X/Y coordinates of the raster and latitude/longitude
     coordinates is defined by projection type and projection parameters.
     These pieces of information are therefore stored in Domain:
+
       * Type and parameters of projection +
+
         * GeoTransform, or
         * GCPs, or
         * GeolocationArrays
 
     Domain has methods for basic operations with georeference information:
+
       * creating georeference from input options;
       * fetching corner, border or full grids of X/Y coordinates;
       * making map of the georeferenced grid in a PNG or KML file;
