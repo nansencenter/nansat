@@ -250,7 +250,7 @@ class Nansat(Domain, Exporter):
 
         """
         self._init_empty('', log_level)
-        self.vrt = VRT.from_gdal_dataset(domain.vrt.dataset)
+        self.vrt = VRT.from_gdal_dataset(domain.vrt.dataset, geolocation=domain.vrt.geolocation)
         self.mapper = ''
         if array is not None:
             self.add_band(array=array, parameters=parameters)
