@@ -1,3 +1,4 @@
+# coding=utf-8
 # Name:         opendap.py
 # Purpose:      Abstract class Opendap is extended by some mappers
 # Author:       Anton Korosov, Artem Moiseev
