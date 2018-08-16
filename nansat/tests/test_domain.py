@@ -10,19 +10,24 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
-import unittest
 import os
+import sys
+import warnings
+import unittest
+
 import numpy as np
+from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.tools import gdal, ogr
-import sys
 from nansat.tests import nansat_test_data as ntd
-from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
-
 from nansat.exceptions import NansatProjectionError
+from nansat.warnings import NansatFutureWarning
+
+warnings.simplefilter("always", NansatFutureWarning)
+warnings.simplefilter("always", UserWarning)
 
 EXTENT_TE_TS = "-te 25 70 35 72 -ts 500 500"
 EXTENT_DICT_TE_TS = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
@@ -94,11 +99,33 @@ class DomainTest(unittest.TestCase):
                    ext="-lle 25 70 35 72 -ts 500 500")
         self.assertEqual(type(d), Domain)
 
-    def test_init_from_lonlat(self):
+    def test_init_lonlat(self):
         lat, lon = np.mgrid[-90:90:0.5, -180:180:0.5]
-        d = Domain(lon=lon, lat=lat)
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            d = Domain(lon=lon, lat=lat)
+
+        nansat_warning_raised = False
+        for rw in recorded_warnings:
+            if rw.category == NansatFutureWarning:
+                nansat_warning_raised = True
+        self.assertTrue(nansat_warning_raised)
+
         self.assertEqual(type(d), Domain)
         self.assertEqual(d.shape(), lat.shape)
+
+    def test_init_from_lonlat(self):
+        lat, lon = np.mgrid[-10:10:0.5, -20:20:2]
+        d = Domain.from_lonlat(lon=lon, lat=lat)
+        self.assertEqual(type(d), Domain)
+        self.assertEqual(d.shape(), lat.shape)
+        self.assertEqual(len(d.vrt.dataset.GetGCPs()), 100)
+
+    def test_init_from_lonlat_no_gcps(self):
+        lat, lon = np.mgrid[-10:10:0.5, -20:20:2]
+        d = Domain.from_lonlat(lon=lon, lat=lat, add_gcps=False)
+        self.assertEqual(type(d), Domain)
+        self.assertEqual(d.shape(), lat.shape)
+        self.assertEqual(len(d.vrt.dataset.GetGCPs()), 0)
 
     @patch.object(Domain, 'get_corners',
         return_value=(np.array([ 25.,  25.,  35.,  35.]), np.array([ 72.,  70.,  72.,  70.])))
@@ -107,7 +134,7 @@ class DomainTest(unittest.TestCase):
         result = d.__repr__()
         test = ('Domain:[500 x 500]\n'
                 '----------------------------------------\n'
-                'Projection:\nGEOGCS["WGS 84",\n'
+                'Projection(dataset):\nGEOGCS["WGS 84",\n'
                 '    DATUM["WGS_1984",\n'
                 '        SPHEROID["WGS 84",6378137,298.257223563]],\n'
                 '    PRIMEM["Greenwich",0],\n'
@@ -367,12 +394,6 @@ class DomainTest(unittest.TestCase):
         self.assertFalse(Norway.contains(WestCoast))
         self.assertFalse(Paris.contains(Norway))
 
-    def test_transform_ts(self):
-        result = Domain._transform_ts(1.5, 1.0, [750.0, 500.0])
-        self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 4)
-        for el in result:
-            self.assertIsInstance(el, float)
     def test_get_border_postgis(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         result = d.get_border_postgis()
@@ -412,6 +433,7 @@ class DomainTest(unittest.TestCase):
         x, y = d.get_pixelsize_meters()
         self.assertEqual(int(x), 500)
         self.assertEqual(int(y), 500)
+
     def test_get_geotransform(self):
         input_1 = {'te': [25.0, 70.0, 35.0, 72.0], 'ts': [500.0, 500.0]}
         test_1 = ([25.0, 0.02, 0.0, 72.0, 0.0, -0.004], 500, 500)
@@ -436,7 +458,7 @@ class DomainTest(unittest.TestCase):
             self.assertEqual(param_err.message,
                              '"-tr" is too large. width is 4.0, height is 1.3 ')
 
-    def test_transform_ts(self):
+    def test_transform_ts2(self):
         result = Domain._transform_ts(1.5, 1.0, [750.0, 500.0])
         self.assertIsInstance(result, tuple)
         self.assertEquals(len(result), 4)
@@ -489,18 +511,6 @@ class DomainTest(unittest.TestCase):
         gcpproj = NSR(d.vrt.dataset.GetGCPProjection())
         self.assertEqual(gcpproj.GetAttrValue('PROJECTION'),
                         'Stereographic')
-
-    def test_repr(self):
-        dom = Domain(4326, "-te 4.5 60 6 61 -ts 750 500")
-        result = dom.__repr__()
-        test = 'Domain:[750 x 500]\n----------------------------------------\nProjection:\nGEOGC' \
-               'S["WGS 84",\n    DATUM["WGS_1984",\n        SPHEROID["WGS 84",6378137,298.257223' \
-               '563]],\n    PRIMEM["Greenwich",0],\n    UNIT["degree",0.0174532925199433]]\n-----' \
-               '-----------------------------------\nCorners (lon, lat):\n\t (  4.50,  61.00)  ' \
-               '(  6.00,  61.00)\n\t (  4.50,  60.00)  (  6.00,  60.00)\n'
-
-        self.assertIsInstance(result, str)
-        self.assertEqual(result, test)
 
     @patch.multiple(Domain, get_border_geometry=DEFAULT, __init__ = Mock(return_value=None))
     def test_intersects(self, get_border_geometry):
