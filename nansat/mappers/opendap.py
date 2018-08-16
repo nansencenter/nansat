@@ -191,7 +191,7 @@ class Opendap(VRT):
 
             Examples
             --------
-                >>> Opendap._fix_encoding('åsnes')
+                >>> Opendap._fix_encoding(u'åsnes')
                 'snes
                 >>> Opendap._fix_encoding('asnes')
                 'asnes'
