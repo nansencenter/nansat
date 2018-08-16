@@ -137,7 +137,7 @@ class OpenDAPTests(unittest.TestCase):
             self.od.ds.variables['var3d'].delncattr(test_case['key'])
 
     def test_fix_encoding(self):
-        self.assertEqual(Opendap._fix_encoding('åsnes'), 'snes')
+        self.assertEqual(Opendap._fix_encoding(u'åsnes'), 'snes')
         self.assertEqual(Opendap._fix_encoding('asnes'), 'asnes')
 
     def test_filter_dimensions(self):
