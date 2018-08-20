@@ -8,7 +8,7 @@
 
 # http://cfconventions.org/wkt-proj-4.html
 
-from __future__ import unicode_literals, absolute_import, print_function
+from __future__ import absolute_import, print_function
 import os
 import warnings
 import numpy as np
