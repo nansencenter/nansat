@@ -45,8 +45,8 @@ class Mapper(Opendap, MapperArome):
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
         self.dataset.SetMetadataItem('Data Center', 'NO/MET')
-        self.dataset.SetMetadataItem('Entry Title', ds.getncattr('title'))
-        self.dataset.SetMetadataItem('summary', ds.getncattr('summary'))
+        self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
+        self.dataset.SetMetadataItem('summary', str(ds.getncattr('summary')))
 
     @staticmethod
     def get_date(filename):
