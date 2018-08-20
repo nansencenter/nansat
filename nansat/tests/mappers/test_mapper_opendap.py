@@ -26,8 +26,8 @@ import warnings
 class OpenDAPTests(unittest.TestCase):
 
     def setUp(self):
-        ds_file = tempfile.NamedTemporaryFile(suffix='.nc', mode='w')
-        ds = Dataset(ds_file.name, 'w')
+        _, tmp_filename = tempfile.mkstemp(suffix='.nc')
+        ds = Dataset(tmp_filename, 'w')
         lat_sz = 30
         lon_sz = 20
         values = np.random.random_sample((lat_sz, lon_sz))
