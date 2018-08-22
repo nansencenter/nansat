@@ -1,5 +1,5 @@
 ---
-- hosts: nansat
+- hosts: localhost
   vars:
     project_home:   '/vagrant'
     env_name:       'py3nansat'
