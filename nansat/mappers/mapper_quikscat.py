@@ -19,7 +19,7 @@ class Mapper(ScatterometryMapper):
 
     def __init__(self, filename, gdal_dataset, metadata, quartile=0, *args, **kwargs):
 
-        if metadata.get('NC_GLOBAL#source', '') != 'quikscat':
+        if not 'quikscat' in metadata.get('NC_GLOBAL#source', '').lower():
             raise WrongMapperError
 
         super(Mapper, self).__init__(filename, gdal_dataset, metadata, *args, **kwargs)
