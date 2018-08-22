@@ -23,7 +23,7 @@ class Mapper(ScatterometryMapper):
         if not 'ascat' in metadata.get('NC_GLOBAL#source', '').lower():
             raise WrongMapperError
 
-        super(Mapper, self).__init__(filename, gdal_dataset, metadata, *args, **kwargs)
+        super(Mapper, self).__init__(filename, gdal_dataset, metadata, quartile=quartile, *args, **kwargs)
 
         band_lat = self.dataset.GetRasterBand(self._latitude_band_number(gdal_dataset))
         # Check that it is actually latitudes
@@ -52,8 +52,10 @@ class Mapper(ScatterometryMapper):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(ii))
         self.dataset.SetMetadataItem('platform', json.dumps(pp))
-        self.dataset.SetMetadataItem('Data Center', json.dumps(provider))
-        self.dataset.SetMetadataItem('Entry Title', metadata['NC_GLOBAL#title'])
+        self.dataset.SetMetadataItem('data_center', json.dumps(provider))
+        self.dataset.SetMetadataItem('entry_title', metadata['NC_GLOBAL#title'])
+        self.dataset.SetMetadataItem('ISO_topic_category',
+                json.dumps(pti.get_iso19115_topic_category('Oceans')))
 
     def times(self):
         """ Get times from time variable
