@@ -65,7 +65,12 @@ class Mapper(NetcdfCF):
             )
 
     def _latitude_band_number(self, gdal_dataset):
-        return [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lat' in ll][0] + 1
+        band_index = [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lat' in ll]
+        if band_index:
+            lat_band_num = band_index[0] + 1
+        else:
+            raise WrongMapperError
+        return lat_band_num
 
     def _longitude_band_number(self, gdal_dataset):
         return [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lon' in ll][0] + 1
