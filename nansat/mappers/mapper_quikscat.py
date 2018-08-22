@@ -45,9 +45,6 @@ class Mapper(ScatterometryMapper):
         mm = pti.get_gcmd_instrument('seawinds')
         ee = pti.get_gcmd_platform('quikscat')
 
-        # TODO: Validate that the found instrument and platform are indeed what
-        # we want....
-
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
