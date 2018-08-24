@@ -40,13 +40,133 @@ from nansat.tools import add_logger
 
 
 class Figure(object):
-    '''Perform opeartions with graphical files: create, append legend, save.
+    """Perform operations with graphical files: create, append legend, save.
 
-    Figure instance is created in the Nansat.write_figure method
+    Figure instance is created in the Nansat.write_figure method.
     The methods below are applied consequently in order to generate a figure
     from one or three bands, estimate min/max, apply logarithmic scaling,
     convert to uint8, append legend, save to a file
-    '''
+
+    **Modifies:** self.sizeX, self.sizeY (int), width and height of the image
+
+    **Modifies:** self.pilImg (PIL image), figure
+
+    **Modifies:** self.pilImgLegend (PIL image)
+
+    Note
+    ----
+    If pilImgLegend is None, legend is not added to the figure.
+    If it is replaced, pilImgLegend includes text string, color-bar,
+    longName and units.
+
+    Parameters
+    -----------
+    array : numpy array (2D or 3D)
+        dataset from Nansat
+
+    cmin : number (int ot float) or [number, number, number]
+        0, minimum value of varibale in the matrix to be shown
+    cmax : number (int ot float) or [number, number, number]
+        1, minimum value of varibale in the matrix to be shown
+    gamma : float, >0
+        2, coefficient for tone curve udjustment
+    subsetArraySize : int
+        100000, size of the subset array which is used to get histogram
+    numOfColor : int
+        250, number of colors for use of the palette.
+        254th is black and 255th is white.
+    cmapName : string
+        'jet', name of Matplotlib colormaps
+        see --> http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+    ratio : float, [0 1]
+        1.0, ratio of pixels which are used to write the figure
+    numOfTicks : int
+        5, number of ticks on a colorbar
+    titleString : string
+        '', title of legend (1st line)
+    caption : string
+        '', caption of the legend (2nd line, e.g. long name and units)
+    fontRatio : positive float
+        1, factor for changing the fontSize.
+    fontSize : int
+        12, size of the font of title, caption and ticks.
+        If not given, fontSize is calculated using fontRatio:
+        fontSize = height / 45 * fontRatio.
+        fontSize has priority over fontRatio
+    logarithm : boolean, defult = False
+        If True, tone curve is used to convert pixel values.
+        If False, linear.
+    legend : boolean, default = False
+        if True, information as textString, colorbar, longName and
+        units are added in the figure.
+    mask_array : 2D numpy array, int, the shape should be equal to
+        array.shape. If given, this array is used for masking land,
+        clouds, etc on the output image. Value of the array are
+        indices. LUT from mask_lut is used for coloring upon this
+        indices.
+    mask_lut : dictionary
+        Look-Up-Table with colors for masking land, clouds etc. Used
+        tgether with mask_array:
+        {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
+        index
+
+            - 0 - will have black color
+            - 1 - dark gray
+            - 2 - light gray
+            - 3 - blue
+
+    logoFileName : string
+        name of the file with logo
+    logoLocation : list of two int, default = [0,0]
+        X and Y offset of the image
+        If positive - offset is from left, upper edge
+        If Negative - from right, lower edge
+        Offset is calculated from the entire image legend inclusive
+    logoSize : list of two int
+        desired X,Y size of logo. If None - original size is used
+    latGrid : numpy array
+        full size array with latitudes. For adding lat/lon grid lines
+    lonGrid : numpy array
+        full size array with longitudes. For adding lat/lon grid lines
+    nGridLines : int
+        number of lat/lon grid lines to show
+    latlonLabels : int
+        number of lat/lon labels to show along each side.
+    transparency : int
+        transparency of the image background(mask), set for PIL alpha
+        mask in Figure.save()
+    default : None
+
+    Other parameters
+    ----------------
+    LEGEND_HEIGHT : float, [0 1]
+        0.1, legend height relative to image height
+    CBAR_HEIGHTMIN : int
+        5, minimum colorbar height, pixels
+    CBAR_HEIGHT : float, [0 1]
+        0.15,  colorbar height relative to image height
+    CBAR_WIDTH : float [0 1]
+        0.8, colorbar width  relative to legend width
+    CBAR_LOCATION_X : float [0 1]
+        0.1, colorbar offset X  relative to legend width
+    CBAR_LOCATION_Y : float [0 1]
+        0.5,  colorbar offset Y  relative to legend height
+    CBTICK_LOC_ADJUST_X : int
+        5,  colorbar tick label offset X, pixels
+    CBTICK_LOC_ADJUST_Y : int
+        3,  colorbar tick label offset Y, pixels
+    CAPTION_LOCATION_X : float, [0 1]
+        0.1, caption offset X relative to legend width
+    CAPTION_LOCATION_Y : float, [0 1]
+        0.1, caption offset Y relative to legend height
+    TITLE_LOCATION_X : float, [0 1]
+        0.1, title offset X relative to legend width
+    TITLE_LOCATION_Y :
+        0.3, title  offset Y relative to legend height
+    DEFAULT_EXTENSION : string
+        '.png'
+
+    """
 
     # default values of ALL params of Figure
     cmin = [0.]
@@ -103,125 +223,20 @@ class Figure(object):
     # instance attributes
     array = None
     def __init__(self, nparray, **kwargs):
-        ''' Set attributes
+        """ Set attributes
+
+        See class Figure(object) for information about:
+
+        Modifies
+        --------
 
         Parameters
-        -----------
-        array : numpy array (2D or 3D)
-            dataset from Nansat
-
-        cmin : number (int ot float) or [number, number, number]
-            0, minimum value of varibale in the matrix to be shown
-        cmax : number (int ot float) or [number, number, number]
-            1, minimum value of varibale in the matrix to be shown
-        gamma : float, >0
-            2, coefficient for tone curve udjustment
-        subsetArraySize : int
-            100000, size of the subset array which is used to get histogram
-        numOfColor : int
-            250, number of colors for use of the palette.
-            254th is black and 255th is white.
-        cmapName : string
-            'jet', name of Matplotlib colormaps
-            see --> http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-        ratio : float, [0 1]
-            1.0, ratio of pixels which are used to write the figure
-        numOfTicks : int
-            5, number of ticks on a colorbar
-        titleString : string
-            '', title of legend (1st line)
-        caption : string
-            '', caption of the legend (2nd line, e.g. long name and units)
-        fontRatio : positive float
-            1, factor for changing the fontSize.
-        fontSize : int
-            12, size of the font of title, caption and ticks.
-            If not given, fontSize is calculated using fontRatio:
-            fontSize = height / 45 * fontRatio.
-            fontSize has priority over fontRatio
-        logarithm : boolean, defult = False
-            If True, tone curve is used to convert pixel values.
-            If False, linear.
-        legend : boolean, default = False
-            if True, information as textString, colorbar, longName and
-            units are added in the figure.
-        mask_array : 2D numpy array, int, the shape should be equal to
-            array.shape. If given, this array is used for masking land,
-            clouds, etc on the output image. Value of the array are
-            indices. LUT from mask_lut is used for coloring upon this
-            indices.
-        mask_lut : dictionary
-            Look-Up-Table with colors for masking land, clouds etc. Used
-            tgether with mask_array:
-            {0, [0,0,0], 1, [100,100,100], 2: [150,150,150], 3: [0,0,255]}
-            index 0 - will have black color
-                  1 - dark gray
-                  2 - light gray
-                  3 - blue
-        logoFileName : string
-            name of the file with logo
-        logoLocation : list of two int, default = [0,0]
-            X and Y offset of the image
-            If positive - offset is from left, upper edge
-            If Negative - from right, lower edge
-            Offset is calculated from the entire image legend inclusive
-        logoSize : list of two int
-            desired X,Y size of logo. If None - original size is used
-        latGrid : numpy array
-            full size array with latitudes. For adding lat/lon grid lines
-        lonGrid : numpy array
-            full size array with longitudes. For adding lat/lon grid lines
-        nGridLines : int
-            number of lat/lon grid lines to show
-        latlonLabels : int
-            number of lat/lon labels to show along each side.
-        transparency : int
-            transparency of the image background(mask), set for PIL alpha
-            mask in Figure.save()
-        default : None
+        ----------
 
         Advanced parameters
         --------------------
-        LEGEND_HEIGHT : float, [0 1]
-            0.1, legend height relative to image height
-        CBAR_HEIGHTMIN : int
-            5, minimum colorbar height, pixels
-        CBAR_HEIGHT : float, [0 1]
-            0.15,  colorbar height relative to image height
-        CBAR_WIDTH : float [0 1]
-            0.8, colorbar width  relative to legend width
-        CBAR_LOCATION_X : float [0 1]
-            0.1, colorbar offset X  relative to legend width
-        CBAR_LOCATION_Y : float [0 1]
-            0.5,  colorbar offset Y  relative to legend height
-        CBTICK_LOC_ADJUST_X : int
-            5,  colorbar tick label offset X, pixels
-        CBTICK_LOC_ADJUST_Y : int
-            3,  colorbar tick label offset Y, pixels
-        CAPTION_LOCATION_X : float, [0 1]
-            0.1, caption offset X relative to legend width
-        CAPTION_LOCATION_Y : float, [0 1]
-            0.1, caption offset Y relative to legend height
-        TITLE_LOCATION_X : float, [0 1]
-            0.1, title offset X relative to legend width
-        TITLE_LOCATION_Y :
-            0.3, title  offset Y relative to legend height
-        DEFAULT_EXTENSION : string
-            '.png'
-        --------------------------------------------------
 
-        Modifies
-        ---------
-        self.sizeX, self.sizeY : int
-            width and height of the image
-        self.pilImg : PIL image
-            figure
-        self.pilImgLegend : PIL image
-            if pilImgLegend is None, legend is not added to the figure
-            if it is replaced, pilImgLegend includes text string, color-bar,
-            longName and units.
-
-        '''
+        """
         # make a copy of nparray (otherwise a new reference to the same data is
         # created and the original input data is destroyed at process())
         array = np.array(nparray)
@@ -247,20 +262,19 @@ class Figure(object):
                                          'fonts/DejaVuSans.ttf')
 
     def apply_logarithm(self, **kwargs):
-        '''Apply a tone curve to the array
+        """Apply a tone curve to the array
 
         After the normalization of the values from 0 to 1, logarithm is applied
         Then the values are converted to the normal scale.
 
+        **Modifies:** self.array (numpy array)
+
         Parameters
         -----------
-        Any of Figure__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        ---------
-        self.array : numpy array
-
-        '''
+        """
         # modify default parameters
         self._set_defaults(kwargs)
 
@@ -274,24 +288,25 @@ class Figure(object):
                 self.cmin[iBand])
 
     def apply_mask(self, **kwargs):
-        '''Apply mask for coloring land, clouds, etc
+        """Apply mask for coloring land, clouds, etc
 
-        If mask_array and mask_lut are provided as input parameters
+        If mask_array and mask_lut are provided as input parameters.
         The pixels in self.array which have index equal to mask_lut kay
-        in mask_array will have color equal to mask_lut value
+        in mask_array will have color equal to mask_lut value.
 
+        Note
+        ----
         apply_mask should be called only after convert_palettesize
         (i.e. to uint8 data)
 
+         **Modifies:** self.array (numpy array)
+
         Parameters
         -----------
-        Any of Figure__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        ---------
-        self.array : numpy array
-
-        '''
+        """
         # modify default parameters
         self._set_defaults(kwargs)
 
@@ -319,22 +334,21 @@ class Figure(object):
                              (availIndices[i] * 3 + 3)] = maskColor
 
     def add_logo(self, **kwargs):
-        '''Insert logo into the PIL image
+        """Insert logo into the PIL image
 
-        Read logo from file as PIL
-        Resize to the given size
-        Pan using the given location
-        Paste into pilImg
+        Read logo from file as PIL.
+        Resize to the given size.
+        Pan using the given location.
+        Paste into pilImg.
+
+        **Modifies:** self.pilImg (PIL image)
 
         Parameters
         ----------
-        Any of Figure__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        ---------
-        self.pilImg
-
-        '''
+        """
         # set/get default parameters
         self._set_defaults(kwargs)
         logoFileName = self.logoFileName
@@ -373,17 +387,20 @@ class Figure(object):
         self.pilImg.paste(logoImg, tuple(box))
 
     def add_latlon_grids(self, **kwargs):
-        '''Add lat/lon grid lines into the PIL image
+        """Add lat/lon grid lines into the PIL image
 
-        Compute step of the grid
-        Make matrices with binarized lat/lon
-        Find edge (make line)
-        Convert to mask
+        Compute step of the grid.
+        Make matrices with binarized lat/lon.
+        Find edge (make line).
+        Convert to mask.
         Add mask to PIL
+
+        **Modifies:** self.pilImg (PIL image), added lat/lon grid lines
 
         Parameters
         ----------
-        Any of Figure__init__() parameters:
+        optional : optional
+            any of Figure parameters
         latGrid : numpy array
             array with values of latitudes
         lonGrid : numpy array
@@ -395,11 +412,7 @@ class Figure(object):
             number of lines to draw
             or locations of gridlines
 
-        Modifies
-        ---------
-        self.pilImg
-
-        '''
+        """
         # modify default values
         self._set_defaults(kwargs)
 
@@ -440,7 +453,7 @@ class Figure(object):
         self.apply_mask(mask_array=latI, mask_lut={1: [255, 255, 255]})
 
     def _get_auto_ticks(self, ticks, grid):
-        ''' Automatically create a list of lon or lat ticks from number of list
+        """Automatically create a list of lon or lat ticks from number of list
 
         Parameters
         ----------
@@ -453,7 +466,7 @@ class Figure(object):
             ticks : list
                 location of ticks
 
-        '''
+        """
         gridMin = grid.min()
         gridMax = grid.max()
 
@@ -471,15 +484,18 @@ class Figure(object):
         return ticks
 
     def add_latlon_labels(self, **kwargs):
-        '''Add lat/lon labels along upper and left side
+        """Add lat/lon labels along upper and left side
 
-        Compute step of lables
+        Compute step of lables.
         Get lat/lon for these labels from latGrid, lonGrid
-        Print lables to PIL in white
+        Print lables to PIL in white.
+
+        **Modifies:** self.pilImg (PIL image), added lat/lon labels
 
         Parameters
         ----------
-        Any of Figure__init__() parameters:
+        optional : optional
+            Any of Figure parameters
         latGrid : numpy array
             array with values of latitudes
         lonGrid : numpy array
@@ -491,11 +507,7 @@ class Figure(object):
             number of lines to draw
             or locations of gridlines
 
-        Modifies
-        ---------
-        self.pilImg
-
-        '''
+        """
         # modify default values
         self._set_defaults(kwargs)
 
@@ -531,25 +543,25 @@ class Figure(object):
                       fill=255, font=font)
 
     def _get_tick_index_from_grid(self, ticks, grid, rows, cols):
-        ''' Get index of pixels from lon/lat grids closest given ticks
+        """Get index of pixels from lon/lat grids closest given ticks
 
         Parameters
         ----------
-            ticks : int or list
-                number or location of ticks
-            grid : ndarray
-                grid with lon or lat
-            rows : int
-                from which rows to return pixels
-            cols : int
-                from which cols to return pixels
+        ticks : int or list
+            number or location of ticks
+        grid : ndarray
+            grid with lon or lat
+        rows : int
+            from which rows to return pixels
+        cols : int
+            from which cols to return pixels
 
         Returns
         -------
-            ticks : list
-                index of ticks
-        '''
+        ticks : list
+            index of ticks
 
+        """
         newTicksIdx = []
         for tick in ticks:
             diff = np.abs(grid[:rows, :cols] - tick).flatten()
@@ -559,7 +571,7 @@ class Figure(object):
         return newTicksIdx
 
     def clim_from_histogram(self, **kwargs):
-        '''Estimate min and max pixel values from histogram
+        """Estimate min and max pixel values from histogram
 
         if ratio=1.0, simply the minimum and maximum values are returned.
         if 0 < ratio < 1.0, get the histogram of the pixel values.
@@ -568,14 +580,15 @@ class Figure(object):
 
         Parameters
         -----------
-        Any of Figure.__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
         Returns
         --------
         clim : numpy array 2D ((3x2) or (1x2))
             minimum and maximum pixel values for each band
 
-        '''
+        """
         # modify default values
         self._set_defaults(kwargs)
         ratio = self.ratio
@@ -617,21 +630,22 @@ class Figure(object):
         return clim
 
     def clip(self, **kwargs):
-        '''Convert self.array to values between cmin and cmax
+        """Convert self.array to values between cmin and cmax
 
         if pixel value < cmin, replaced to cmin.
+
         if pixel value > cmax, replaced to cmax.
+
+        **Modifies:** self.array (numpy array)
+
+        **Modifies:** self.cmin, self.cmax : allowed min/max values
 
         Parameters
         -----------
-        Any of Figure.__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        ---------
-        self.array : numpy array
-        self.cmin, self.cmax : allowed min/max values
-
-        '''
+        """
         # modify default parameters
         self._set_defaults(kwargs)
 
@@ -648,18 +662,16 @@ class Figure(object):
                                               clipMin, clipMax)
 
     def convert_palettesize(self, **kwargs):
-        '''Convert self.array to palette color size in uint8
+        """Convert self.array to palette color size in uint8
+
+        **Modifies:** self.array (numpy array), =>uint8
 
         Parameters
         -----------
+        optional : optional
+            Any of Figure parameters
 
-        Any of Figure.__init__() parameters
-
-        Modifies
-        ---------
-        self.array : numpy array (=>uint8)
-
-        '''
+        """
         # modify default values
         self._set_defaults(kwargs)
 
@@ -673,19 +685,18 @@ class Figure(object):
         self.array = self.array.astype(np.uint8)
 
     def create_legend(self, **kwargs):
-        ''' self.legend is replaced from None to PIL image
+        """self.legend is replaced from None to PIL image
 
         PIL image includes colorbar, caption, and titleString.
 
+        **Modifies:** self.legend (PIL image)
+
         Parameters
         -----------
-        Any of Figure.__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        ---------
-        self.legend : PIL image
-
-        '''
+        """
         # modify default parameters
         self._set_defaults(kwargs)
 
@@ -767,26 +778,26 @@ class Figure(object):
                 textHeight += text[1]
 
     def create_pilImage(self, **kwargs):
-        ''' self.create_pilImage is replaced from None to PIL image
+        """self.create_pilImage is replaced from None to PIL image
 
         If three images are given, create a image with RGB mode.
-            if self.pilImgLegend is not None, it is pasted.
+        if self.pilImgLegend is not None, it is pasted.
+
         If one image is given, create a image with P(palette) mode.
-            if self.pilImgLegend is not None,
-            self.array is extended before create the pilImag and
-            then paste pilImgLegend onto it.
+        if self.pilImgLegend is not None,
+        self.array is extended before create the pilImag and
+        then paste pilImgLegend onto it.
+
+        **Modifies:** self.pilImg (PIL image), PIL image with / without the legend
+
+        **Modifies:** self.array (replace to None)
 
         Parameters
         -----------
-        Any of Figure.__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        ---------
-        self.pilImg : PIL image
-            PIL image with / without the legend
-        self.array : replace to None
-
-        '''
+        """
         # modify default parameters
         self._set_defaults(kwargs)
 
@@ -812,7 +823,7 @@ class Figure(object):
             self.pilImg.paste(self.pilImgLegend, (0, self.height))
 
     def process(self, **kwargs):
-        '''Do all common operations for preparation of a figure for saving
+        """Do all common operations for preparation of a figure for saving
 
         #. Modify default values of parameters by the provided ones (if any)
         #. Clip to min/max
@@ -824,19 +835,22 @@ class Figure(object):
         #. Create PIL image
         #. Add logo if required
 
+        **Modifies:** self.d
+
+        **Modifies:** self.array
+
+        **Modifies:** self.palette
+
+        **Modifies:** self.pilImgLegend
+
+        **Modifies:** self.pilImg
+
         Parameters
         -----------
-        Any of Figure.__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        --------
-        self.d
-        self.array
-        self.palette
-        self.pilImgLegend
-        self.pilImg
-
-        '''
+        """
         # modify default parameters
         self._set_defaults(kwargs)
 
@@ -883,15 +897,12 @@ class Figure(object):
             self.add_logo()
 
     def _make_transparent_color(self):
-        ''' makes colors specified by self.transparency
+        """makes colors specified by self.transparency
         and self.reprojMask (if the image is reprojected) transparent
 
-        Modifies
-        --------
-        self.pilImg : PIL image
-            Adds transparency to PIL image
+        **Modifies:** self.pilImg (PIL image), Adds transparency to PIL image
 
-        '''
+        """
         self.pilImg = self.pilImg.convert('RGBA')
         datas = self.pilImg.getdata()
         newData = list()
@@ -912,21 +923,20 @@ class Figure(object):
         self.pilImg = Image.fromarray(np.uint8(img))
 
     def save(self, fileName, **kwargs):
-        ''' Save self.pilImg to a physical file
+        """Save self.pilImg to a physical file
 
-        If given extension is JPG, convert the image mode from Palette to RGB
+        If given extension is JPG, convert the image mode from Palette to RGB.
+
+        **Modifies:** self.pilImg (None)
 
         Parameters
         ----------
         fileName : string
             name of outputfile
-        Any of Figure.__init__() parameters
+        optional : optional
+            Any of Figure parameters
 
-        Modifies
-        --------
-        self.pilImg : None
-
-        '''
+        """
         # modify default values
         self._set_defaults(kwargs)
 
@@ -942,17 +952,15 @@ class Figure(object):
         self.pilImg.save(fileName)
 
     def _create_palette(self):
-        '''Create a palette based on Matplotlib colormap name
+        """Create a palette based on Matplotlib colormap name
 
         default number of color palette is 250.
         it means 6 colors are possible to use for other purposes.
         the last palette (255) is white and the second last (254) is black.
 
-        Modifies
-        --------
-        self.palette : numpy array (uint8)
+        **Modifies:** self.palette (numpy array) (uint8)
 
-        '''
+        """
         if not MATPLOT_LIB_IS_INSTALLED:
             # Make grayscale colormap
             cmap = np.vstack([np.arange(256.),
@@ -982,7 +990,7 @@ class Figure(object):
         self.palette = lut.T.flatten().astype(np.uint8)
 
     def _round_number(self, val):
-        '''Return writing format for scale on the colorbar
+        """Return writing format for scale on the colorbar
 
         Parameters
         ----------
@@ -990,9 +998,9 @@ class Figure(object):
 
         Returns
         --------
-        string
+        colorbar format : str
 
-        '''
+        """
         frmts = {-2: '%.2f', -1: '%.1f', 0: '%.2f',
                  1: '%.1f', 2: '%d', 3: '%d'}
         if val == 0:
@@ -1007,9 +1015,9 @@ class Figure(object):
         return str(frmt % val)
 
     def _set_defaults(self, idict):
-        '''Check input params and set defaut values
+        """Check input params and set default values
 
-        Look throught default parameters (self.d) and given parameters (dict)
+        Look through default parameters (self.d) and given parameters (dict)
         and paste value from input if the key matches
 
         Parameters
@@ -1018,10 +1026,10 @@ class Figure(object):
             parameter names and values
 
         Modifies
-        ---------
+        --------
             default self attributes
 
-        '''
+        """
         for key in idict:
             if hasattr(self, key):
                 if key in ['cmin', 'cmax'] and type(idict[key]) != list:

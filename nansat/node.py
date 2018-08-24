@@ -103,6 +103,8 @@ class Node(object):
     def node(self, tag, elemNum=0):
         """ Recursively find the first subnode with this tag.
 
+        Parameters
+        ----------
         elemNum : int
             if there are several same tag, specify which element to take.
 
@@ -121,6 +123,8 @@ class Node(object):
     def replaceNode(self, tag, elemNum=0, newNode=None):
         ''' Find the first subnode with this tag and replace with given node.
 
+        Parameters
+        ----------
         tag : str
             node tag
         elemNum : int
@@ -144,6 +148,8 @@ class Node(object):
         Recursively find nodes containing subnodes with this tag and remove
         subnodes
 
+        Parameters
+        ----------
         options : dictionary
             if there are several tags, specify a node by their attributes.
 
@@ -172,7 +178,9 @@ class Node(object):
     def nodeList(self, tag):
         '''
         Produce a list of subnodes with the same tag.
-        Note:
+
+        Note
+        ----
         It only makes sense to do this for the immediate
         children of a node. If you went another level down,
         the results would be ambiguous, so the user must

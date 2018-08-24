@@ -1517,8 +1517,9 @@ class VRT(object):
             Destiination SRS given as any NSR input parameter
 
         Notes
-        --------
+        -----
         Reprojects all GCPs to new SRS and updates GCPProjection
+
         """
         # transform coordinates of original GCPs
         dst_srs = NSR(dst_srs)
@@ -1579,8 +1580,9 @@ class VRT(object):
             value of size to put into VRT
 
         Notes
-        --------
+        -----
         Changes VRT file, sets new offset and size
+
         """
         node0 = Node.create(str(self.xml))
 
