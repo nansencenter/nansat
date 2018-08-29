@@ -602,7 +602,7 @@ class Domain(object):
 
         Returns
         -------
-        OGR Geometry : type Polygon
+        OGR Geometry : Polygon
 
         """
 

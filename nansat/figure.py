@@ -294,12 +294,12 @@ class Figure(object):
         The pixels in self.array which have index equal to mask_lut kay
         in mask_array will have color equal to mask_lut value.
 
+        **Modifies:** self.array (numpy array)
+
         Note
         ----
         apply_mask should be called only after convert_palettesize
         (i.e. to uint8 data)
-
-         **Modifies:** self.array (numpy array)
 
         Parameters
         -----------
@@ -664,7 +664,7 @@ class Figure(object):
     def convert_palettesize(self, **kwargs):
         """Convert self.array to palette color size in uint8
 
-        **Modifies:** self.array (numpy array), =>uint8
+        **Modifies:** self.array (numpy array)
 
         Parameters
         -----------
