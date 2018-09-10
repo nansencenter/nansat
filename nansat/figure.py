@@ -267,11 +267,11 @@ class Figure(object):
         After the normalization of the values from 0 to 1, logarithm is applied
         Then the values are converted to the normal scale.
 
-        **Modifies:** self.array (numpy array)
+        **Modifies**: self.array (numpy array)
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -291,7 +291,7 @@ class Figure(object):
         """Apply mask for coloring land, clouds, etc
 
         If mask_array and mask_lut are provided as input parameters.
-        The pixels in self.array which have index equal to mask_lut kay
+        The pixels in self.array which have index equal to mask_lut key
         in mask_array will have color equal to mask_lut value.
 
         **Modifies:** self.array (numpy array)
@@ -303,7 +303,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -345,7 +345,7 @@ class Figure(object):
 
         Parameters
         ----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -399,8 +399,7 @@ class Figure(object):
 
         Parameters
         ----------
-        optional : optional
-            any of Figure parameters
+
         latGrid : numpy array
             array with values of latitudes
         lonGrid : numpy array
@@ -411,6 +410,8 @@ class Figure(object):
         latTicks : int or list
             number of lines to draw
             or locations of gridlines
+        **kwargs : dict
+            any of Figure parameters
 
         """
         # modify default values
@@ -494,8 +495,6 @@ class Figure(object):
 
         Parameters
         ----------
-        optional : optional
-            Any of Figure parameters
         latGrid : numpy array
             array with values of latitudes
         lonGrid : numpy array
@@ -506,6 +505,8 @@ class Figure(object):
         latTicks : int or list
             number of lines to draw
             or locations of gridlines
+        **kwargs : dict
+            Any of Figure parameters
 
         """
         # modify default values
@@ -580,7 +581,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         Returns
@@ -642,7 +643,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -668,7 +669,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -693,7 +694,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -794,7 +795,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -847,7 +848,7 @@ class Figure(object):
 
         Parameters
         -----------
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """
@@ -933,7 +934,7 @@ class Figure(object):
         ----------
         fileName : string
             name of outputfile
-        optional : optional
+        **kwargs : dict
             Any of Figure parameters
 
         """

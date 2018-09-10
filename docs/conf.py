@@ -147,7 +147,7 @@ html_sidebars = {
 # (value 'bysource'). The default is alphabetical.
 #
 # Note that for source order, the module must be a Python module with the source code available.
-# autodoc_member_order = 'bysource'
+autodoc_member_order = 'bysource'
 
 # -- Options for HTMLHelp output ------------------------------------------
 
