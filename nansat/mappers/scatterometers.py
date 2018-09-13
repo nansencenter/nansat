@@ -51,7 +51,7 @@ class Mapper(NetcdfCF):
             )
 
         # Set projection to wkt
-        self.dataset.SetProjection(NSR().wkt)
+        #self.dataset.SetProjection(NSR().wkt)
 
     def set_gcps(self, lon, lat, gdal_dataset):
         """ Set gcps """
@@ -70,10 +70,27 @@ class Mapper(NetcdfCF):
             lat_band_num = band_index[0] + 1
         else:
             raise WrongMapperError
+        # Check that it is actually latitudes
+        lat = gdal.Open(
+                self._get_sub_filenames(gdal_dataset)[band_index[0]]
+            )
+        if not lat.GetRasterBand(1).GetMetadata()['long_name'] == 'latitude':
+            raise ValueError('Cannot find latitude band')
         return lat_band_num
 
     def _longitude_band_number(self, gdal_dataset):
-        return [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lon' in ll][0] + 1
+        band_index = [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lon' in ll]
+        if band_index:
+            lon_band_num = band_index[0] + 1
+        else:
+            raise WrongMapperError
+        # Check that it is actually longitudes
+        lon = gdal.Open(
+                self._get_sub_filenames(gdal_dataset)[band_index[0]]
+            )
+        if not lon.GetRasterBand(1).GetMetadata()['long_name'] == 'longitude':
+            raise ValueError('Cannot find longitude band')
+        return lon_band_num
 
     @staticmethod
     def shift_longitudes(lon):

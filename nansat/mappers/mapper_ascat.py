@@ -25,18 +25,8 @@ class Mapper(ScatterometryMapper):
 
         super(Mapper, self).__init__(filename, gdal_dataset, metadata, quartile=quartile, *args, **kwargs)
 
-        band_lat = self.dataset.GetRasterBand(self._latitude_band_number(gdal_dataset))
-        # Check that it is actually latitudes
-        if not band_lat.GetMetadata()['long_name'] == 'latitude':
-            raise ValueError('Cannot find latitude band')
-        lat = band_lat.ReadAsArray()
-
-        band_lon = self.dataset.GetRasterBand(self._longitude_band_number(gdal_dataset))
-        # Check that it is actually longitudes
-        if not band_lon.GetMetadata()['long_name'] == 'longitude':
-            raise ValueError('Cannot find longitude band')
-        lon = band_lon.ReadAsArray()
-
+        lat = self.dataset.GetRasterBand(self._latitude_band_number(gdal_dataset)).ReadAsArray()
+        lon = self.dataset.GetRasterBand(self._longitude_band_number(gdal_dataset)).ReadAsArray()
         lon = ScatterometryMapper.shift_longitudes(lon)
         self.set_gcps(lon, lat, gdal_dataset)
 
