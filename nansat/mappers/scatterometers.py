@@ -64,33 +64,28 @@ class Mapper(NetcdfCF):
                 Geolocation(self.band_vrts['new_lon_VRT'], self, x_band=1, y_band=self._latitude_band_number(gdal_dataset))
             )
 
-    def _latitude_band_number(self, gdal_dataset):
-        band_index = [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lat' in ll]
+    def _geoloc_band_number(self, gdal_dataset, sub_filename_index, long_name):
+        """ Return the band number associated to a specific geolocation sub-file and long_name
+        """
+        band_index = [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if
+                ':'+sub_filename_index in ll]
         if band_index:
-            lat_band_num = band_index[0] + 1
+            band_num = band_index[0] + 1
         else:
             raise WrongMapperError
         # Check that it is actually latitudes
-        lat = gdal.Open(
+        band = gdal.Open(
                 self._get_sub_filenames(gdal_dataset)[band_index[0]]
             )
-        if not lat.GetRasterBand(1).GetMetadata()['long_name'] == 'latitude':
-            raise ValueError('Cannot find latitude band')
-        return lat_band_num
+        if not band.GetRasterBand(1).GetMetadata()['long_name'] == long_name:
+            raise ValueError('Cannot find %s band'%long_name)
+        return band_num
+
+    def _latitude_band_number(self, gdal_dataset):
+        return self._geoloc_band_number(gdal_dataset, 'lat', 'latitude')
 
     def _longitude_band_number(self, gdal_dataset):
-        band_index = [ii for ii, ll in enumerate(self._get_sub_filenames(gdal_dataset)) if ':lon' in ll]
-        if band_index:
-            lon_band_num = band_index[0] + 1
-        else:
-            raise WrongMapperError
-        # Check that it is actually longitudes
-        lon = gdal.Open(
-                self._get_sub_filenames(gdal_dataset)[band_index[0]]
-            )
-        if not lon.GetRasterBand(1).GetMetadata()['long_name'] == 'longitude':
-            raise ValueError('Cannot find longitude band')
-        return lon_band_num
+        return self._geoloc_band_number(gdal_dataset, 'lon', 'longitude')
 
     @staticmethod
     def shift_longitudes(lon):
