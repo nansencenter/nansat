@@ -18,7 +18,7 @@ class Mapper(NetcdfCF):
     def __init__(self, filename, gdal_dataset, metadata, quartile=0, *args, **kwargs):
 
         super(Mapper, self).__init__(filename, gdal_dataset, metadata, *args, **kwargs)
-        
+
         intervals = [0,1,2,3]
         if not quartile in intervals:
             raise ValueError('quartile must be one of [0,1,2,3]')
@@ -31,7 +31,8 @@ class Mapper(NetcdfCF):
 
         # Create band of times
         # TODO: resolve nansat issue #263 (https://github.com/nansencenter/nansat/issues/263)
-        tt = self.times()[y_offset : y_offset + y_size]
+        #import ipdb; ipdb.set_trace()
+        tt = self.times()[int(y_offset) : int(y_offset + y_size)]
         self.dataset.SetMetadataItem('time_coverage_start', tt[0].astype(datetime).isoformat())
         self.dataset.SetMetadataItem('time_coverage_end', tt[-1].astype(datetime).isoformat())
         time_stamps = (tt - tt[0]) / np.timedelta64(1, 's')
@@ -44,8 +45,8 @@ class Mapper(NetcdfCF):
                     'SourceBand': 1,
                 },
                 dst = {
-                    'name': 'timestamp', 
-                    'time_coverage_start': tt[0].astype(datetime).isoformat(), 
+                    'name': 'timestamp',
+                    'time_coverage_start': tt[0].astype(datetime).isoformat(),
                     'units': 'seconds since time_coverage_start',
                 }
             )
@@ -56,7 +57,6 @@ class Mapper(NetcdfCF):
     def set_gcps(self, lon, lat, gdal_dataset):
         """ Set gcps """
         self.band_vrts['new_lon_VRT'] = VRT.from_array(lon)
-        self.dataset.SetProjection(NSR().wkt)
         self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, n_gcps=400), NSR().wkt)
 
         # Add geolocation from correct longitudes and latitudes
@@ -94,7 +94,7 @@ class Mapper(NetcdfCF):
 
     @staticmethod
     def shift_longitudes(lon):
-        """ Apply correction of longitudes (they are defined on 0:360 degrees but also contain 
+        """ Apply correction of longitudes (they are defined on 0:360 degrees but also contain
         egative values)
 
         TODO: consider making this core to nansat - different ways of defining longitudes (-180:180
