@@ -142,7 +142,7 @@ class Mapper(VRT):
             raise Exception('Check time units..')
         return tt
 
-    def _band_list(self, gdal_dataset, gdal_metadata, netcdf_dim={}, bands=[], *args, **kwargs):
+    def _band_list(self, gdal_dataset, gdal_metadata, netcdf_dim={}, bands=[]):
         ''' Create list of dictionaries mapping source and destination metadata
         of bands that should be added to the Nansat object.
 
@@ -250,8 +250,8 @@ class Mapper(VRT):
             try:
                 band = subds.GetRasterBand(band_num)
             except RuntimeError as e:
-                if 'illegal band' in str(e).lower():
-                    warnings.warn('Skipping band due to GDAL error: %s' %str(e))
+                if 'illegal band' in e.message.lower():
+                    warnings.warn('Skipping band due to GDAL error: %s' %e.message)
                     return {}
                 else:
                     raise
@@ -272,7 +272,7 @@ class Mapper(VRT):
                 # Then we don't need time for this band...
                 warnings.warn(
                         '%s: %s - %s Continuing without time metadata for band %s'
-                        %(e.__repr__().split('(')[0], str(e), e.__doc__,
+                        %(e.__repr__().split('(')[0], e.message, e.__doc__,
                             band_metadata['NETCDF_VARNAME']))
 
         # Generate source metadata
