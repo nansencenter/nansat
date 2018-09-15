@@ -122,5 +122,10 @@ class DataForTestingOnlineMappers(object):
         'mapperName' : 'opendap_siwtacsst',
         'bands': ['analysed_sst'],
         'date': '2012-08-08'
+        },{
+        'fileName' : 'https://thredds.met.no/thredds/dodsC/aromearcticarchive/2017/10/30/arome_arctic_full_2_5km_20171030T21Z.nc',
+        'mapperName' : 'opendap_arome',
+        'bands': ['x_wind_10m', 'y_wind_10m'],
+        'date': '2017-10-30'
         }
         ]
