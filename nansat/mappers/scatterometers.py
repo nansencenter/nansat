@@ -29,6 +29,9 @@ class Mapper(NetcdfCF):
         # Crop
         self.set_offset_size('y', y_offset, y_size)
 
+        # Add quartile to metadata
+        self.dataset.SetMetadataItem('quartile', str(quartile))
+
         # Create band of times
         # TODO: resolve nansat issue #263 (https://github.com/nansencenter/nansat/issues/263)
         #import ipdb; ipdb.set_trace()
