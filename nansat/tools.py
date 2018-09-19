@@ -22,19 +22,24 @@ import logging
 from dateutil.parser import parse
 
 try:
+    import matplotlib
     if 'DISPLAY' not in os.environ:
-        import matplotlib; matplotlib.use('Agg')
-    from matplotlib import cm
+        matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from matplotlib.colors import hex2color
-    from mpl_toolkits.basemap import Basemap
+    from matplotlib import cm
     from matplotlib.patches import Polygon
 except ImportError:
-    BASEMAP_LIB_IS_INSTALLED = False
     MATPLOTLIB_IS_INSTALLED = False
 else:
-    BASEMAP_LIB_IS_INSTALLED = True
     MATPLOTLIB_IS_INSTALLED = True
+
+try:
+    from mpl_toolkits.basemap import Basemap
+except ImportError:
+    BASEMAP_LIB_IS_INSTALLED = False
+else:
+    BASEMAP_LIB_IS_INSTALLED = True
 
 import numpy as np
 

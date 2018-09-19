@@ -1,4 +1,4 @@
-.idea/
+gidea/
 *.pyc
 *.swp
 *.so
@@ -19,3 +19,4 @@ docs/_build/
 .idea
 .settings
 .vagrant
+provisioning/roles/andrewrothstein*
