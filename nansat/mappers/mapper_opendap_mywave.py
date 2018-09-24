@@ -1,3 +1,10 @@
+# Name:         mapper_opendap_mywave.py
+# Purpose:      Nansat mapping for MyWaveWAV data provided by MET.NO
+# Author:       Artem Moiseev
+# Licence:      This file is part of NANSAT. You can redistribute it or modify
+#               under the terms of GNU General Public License, v.3
+#               http://www.gnu.org/licenses/gpl-3.0.html
+
 from nansat.mappers.opendap import Opendap
 from nansat.exceptions import WrongMapperError
 from nansat.nsr import NSR
