@@ -2,9 +2,12 @@ from nansat.mappers.opendap import Opendap
 from nansat.exceptions import WrongMapperError
 from nansat.nsr import NSR
 from netCDF4 import Dataset
+from datetime import datetime
 import numpy as np
 import json
 import pythesint as pti
+import os
+
 
 
 class Mapper(Opendap):
@@ -21,7 +24,7 @@ class Mapper(Opendap):
         self.test_mapper(filename)
         timestamp = date if date else self.get_date(filename)
         ds = Dataset(filename)
-        proj4_str = Mapper.assemble_proj4_str(ds.variables['projection_3'])
+        proj4_str = self.assemble_proj4_str(ds.variables['projection_3'])
         try:
             self.srcDSProjection = NSR(proj4_str)
         except KeyError:
@@ -43,6 +46,30 @@ class Mapper(Opendap):
         ds_proj = proj4_pattern % (ds_proj_var.grid_north_pole_longitude - 180,
                                    ds_proj_var.grid_north_pole_latitude)
         return ds_proj
+
+    @staticmethod
+    def get_date(filename):
+        """Extract date and time parameters from filename and return
+        it as a formatted string
+
+        Parameters
+        ----------
+
+        filename: str
+            nn
+
+        Returns
+        -------
+            str, YYYY-mm-ddThh:MMZ
+
+        Examples
+        --------
+            >>> Mapper.get_date('/path/to/MyWave_wam4_WAVE_20171029T18Z.nc')
+            '2017-10-29T18:00Z'
+        """
+        _, filename = os.path.split(filename)
+        t = datetime.strptime(filename.split('_')[-1], '%Y%m%dT%HZ.nc')
+        return datetime.strftime(t, '%Y-%m-%dT%H:%MZ')
 
     def convert_dstime_datetimes(self, ds_time):
         """Convert time variable to np.datetime64"""
