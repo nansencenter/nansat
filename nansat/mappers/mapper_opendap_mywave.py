@@ -3,6 +3,8 @@ from nansat.exceptions import WrongMapperError
 from nansat.nsr import NSR
 from netCDF4 import Dataset
 import numpy as np
+import json
+import pythesint as pti
 
 
 class Mapper(Opendap):
@@ -26,6 +28,12 @@ class Mapper(Opendap):
             raise WrongMapperError
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
+        mm = pti.get_gcmd_instrument('Computer')
+        ee = pti.get_gcmd_platform('MODELS')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+        self.dataset.SetMetadataItem('Data Center', 'NO/MET')
+        self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
 
     @staticmethod
     def assemble_proj4_str(ds_proj_var):
