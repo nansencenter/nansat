@@ -9,7 +9,6 @@ import pythesint as pti
 import os
 
 
-
 class Mapper(Opendap):
 
     baseURLs = ['http://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive']
@@ -24,9 +23,9 @@ class Mapper(Opendap):
         self.test_mapper(filename)
         timestamp = date if date else self.get_date(filename)
         ds = Dataset(filename)
-        proj4_str = self.assemble_proj4_str(ds.variables['projection_3'])
         try:
-            self.srcDSProjection = NSR(proj4_str)
+            self.srcDSProjection = NSR(ds.variables['projection_3'].proj4 +
+                                       ' +to_meter=0.0174532925199 +wktext')
         except KeyError:
             raise WrongMapperError
 
@@ -37,15 +36,6 @@ class Mapper(Opendap):
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
         self.dataset.SetMetadataItem('Data Center', 'NO/MET')
         self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
-
-    @staticmethod
-    def assemble_proj4_str(ds_proj_var):
-        """ Generate a GDAL accepted proj4 string """
-        proj4_pattern = "+proj=ob_tran +o_proj=longlat +lon_0=%s +o_lat_p=%s +a=6367470 " \
-                        "+b=6367470 +to_meter=0.0174532925199 +wktext"
-        ds_proj = proj4_pattern % (ds_proj_var.grid_north_pole_longitude - 180,
-                                   ds_proj_var.grid_north_pole_latitude)
-        return ds_proj
 
     @staticmethod
     def get_date(filename):
