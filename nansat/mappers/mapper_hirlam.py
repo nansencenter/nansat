@@ -92,4 +92,5 @@ class Mapper(VRT):
 
         mm = pti.get_gcmd_instrument('computer')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
-        self.dataset.SetMetadataItem('platform', 'HIgh Resolution Limited Area Model')
+        ee = pti.get_gcmd_platform('merged analysis')
+        self.dataset.SetMetadataItem('platform', json.dump(ee))
