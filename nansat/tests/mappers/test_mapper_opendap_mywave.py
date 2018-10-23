@@ -11,4 +11,4 @@ class MyWaveOpenDAPTests(unittest.TestCase):
     def test_get_date(self):
         res = Mapper.get_date(self.src)
         self.assertIsInstance(res, str)
-        self.assertEqual(res, '2017-10-29T18:00Z')
+        self.assertEqual(res, '2017-10-29T18:00:00Z')

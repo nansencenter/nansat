@@ -50,26 +50,25 @@ class Mapper(Opendap):
     @staticmethod
     def get_date(filename):
         """Extract date and time parameters from filename and return
-        it as a formatted string
+        it as a formatted (isoformat) string
 
         Parameters
         ----------
 
         filename: str
-            nn
 
         Returns
         -------
-            str, YYYY-mm-ddThh:MMZ
+            str, YYYY-mm-ddThh:MM:00Z
 
         Examples
         --------
             >>> Mapper.get_date('/path/to/MyWave_wam4_WAVE_20171029T18Z.nc')
-            '2017-10-29T18:00Z'
+            '2017-10-29T18:00:00Z'
         """
         _, filename = os.path.split(filename)
         t = datetime.strptime(filename.split('_')[-1], '%Y%m%dT%HZ.nc')
-        return datetime.strftime(t, '%Y-%m-%dT%H:%MZ')
+        return datetime.strftime(t, '%Y-%m-%dT%H:%M:00Z')
 
     def convert_dstime_datetimes(self, ds_time):
         """Convert time variable to np.datetime64"""
