@@ -37,12 +37,15 @@ class Mapper(Opendap):
             raise WrongMapperError
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
-        mm = pti.get_gcmd_instrument('Computer')
-        ee = pti.get_gcmd_platform('MODELS')
-        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
-        self.dataset.SetMetadataItem('platform', json.dumps(ee))
-        self.dataset.SetMetadataItem('Data Center', 'NO/MET')
+
+        self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('Computer')))
+        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('MODELS')))
+        self.dataset.SetMetadataItem('Data Center', json.dumps(pti.get_gcmd_provider('NO/MET')))
         self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
+        self.dataset.SetMetadataItem('Entry Title',
+                                     json.dumps(pti.get_iso19115_topic_category('Oceans')))
+        self.dataset.SetMetadataItem('gcmd_location',
+                                     json.dumps(pti.get_gcmd_location('sea surface')))
 
     @staticmethod
     def get_date(filename):
