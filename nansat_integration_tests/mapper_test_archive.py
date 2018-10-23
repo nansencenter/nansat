@@ -127,5 +127,10 @@ class DataForTestingOnlineMappers(object):
         'mapperName' : 'opendap_arome',
         'bands': ['x_wind_10m', 'y_wind_10m'],
         'date': '2017-10-30'
+        },{
+        'fileName' : 'https://podaac-opendap.jpl.nasa.gov/opendap/allData/ghrsst/data/L4/GLOB/UKMO/OSTIA/2016/006/20160106-UKMO-L4HRfnd-GLOB-v01-fv02-OSTIA.nc.bz2',
+        'mapperName' : 'opendap_ostia',
+        'bands': ['analysed_sst', 'mask'],
+        'date': '2016-01-06'
         }
         ]
