@@ -415,7 +415,7 @@ class Nansat(Domain, Exporter):
             current pixelsize to the desired pixelsize.
         resample_alg : int (GDALResampleAlg), optional
 
-            - 1 : Average (default),
+            - -1 : Average (default),
             - 0 : NearestNeighbour
             - 1 : Bilinear,
             - 2 : Cubic,
