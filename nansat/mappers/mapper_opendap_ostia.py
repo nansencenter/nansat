@@ -35,11 +35,16 @@ class Mapper(Opendap):
         timestamp = date if date else self.get_date(filename)
         ds = Dataset(filename)
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
-        self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
-        self.dataset.SetMetadataItem('Data Center', json.dumps(pti.get_gcmd_provider('UK/MOD/MET')))
+        self.dataset.SetMetadataItem('entry_title', str(ds.getncattr('title')))
+        self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('UK/MOD/MET')))
+        self.dataset.SetMetadataItem('ISO_topic_category',
+                pti.get_iso19115_topic_category('oceans')['iso_topic_category'])
+        self.dataset.SetMetadataItem('gcmd_location', json.dumps(pti.get_gcmd_location('sea surface')))
 
-        # self.dataset.SetMetadataItem('instrument', ...
-        # self.dataset.SetMetadataItem('platform', ...
+        mm = pti.get_gcmd_instrument('amsr-e')
+        ee = pti.get_gcmd_platform('aqua')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
     @staticmethod
     def get_date(filename):
