@@ -132,5 +132,10 @@ class DataForTestingOnlineMappers(object):
         'mapperName' : 'opendap_ostia',
         'bands': ['analysed_sst', 'mask'],
         'date': '2016-01-06'
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/2017/10/29/MyWave_wam4_WAVE_20171029T18Z.nc',
+        'mapperName' : 'opendap_mywave4km',
+        'bands': ['hs'],
+        'date': '2017-10-29T18:00Z'
         }
         ]
