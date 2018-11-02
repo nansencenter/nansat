@@ -233,8 +233,19 @@ class Opendap(VRT):
         # create VRT with correct lon/lat (geotransform)
         raster_x, raster_y = self.get_shape()
         geotransform = self.get_geotransform()
-        self._init_from_dataset_params(int(raster_x), int(raster_y),
+        try:
+            self._init_from_dataset_params(int(raster_x), int(raster_y),
                                        geotransform, self.srcDSProjection)
+        except TypeError:
+            import ipdb
+            ipdb.set_trace()
+            self._init_from_dataset_params(int(raster_x), int(raster_y), (1,0,0,ySize,0,-1),
+                    self.srcDSProjection)
+            # append GCPs and lat/lon projection to the vsiDataset
+            self.dataset.SetGCPs(gcps, NSR().wkt)
+            self.reproject_gcps('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=90 +lon_0=0 +no_defs')
+            self.tps = True
+
         meta_dict = self.create_metadict(filename, var_names, layer_time_id)
 
         self.create_bands(meta_dict)

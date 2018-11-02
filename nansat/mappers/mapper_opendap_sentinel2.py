@@ -62,11 +62,9 @@ class Mapper(Opendap):
             str, YYYY-mm-ddThh:MMZ
 
         """
-        import ipdb
-        ipdb.set_trace()
         _, filename = os.path.split(filename)
-        t = datetime.strptime(filename.split('-')[0], '%Y%m%d')
-        return datetime.strftime(t, '%Y-%m-%dT%H:%M:00Z')
+        t = datetime.strptime(filename.split('_')[2], '%Y%m%dT%H%M%S')
+        return datetime.strftime(t, '%Y-%m-%dT%H:%M:%SZ')
 
     def convert_dstime_datetimes(self, ds_time):
         """Convert time variable to np.datetime64"""
