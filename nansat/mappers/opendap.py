@@ -22,7 +22,7 @@ except ImportError:
          Nansat will work.''')
 
 from nansat.vrt import VRT
-
+from nansat.nsr import NSR
 from nansat.exceptions import WrongMapperError
 import sys
 
@@ -221,6 +221,9 @@ class Opendap(VRT):
         self.filename = filename
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
+
+        if 'projection' in self.ds.variables:
+            self.srcDSProjection = NSR(srs=self.ds.variables['projection'].proj4_string).wkt
 
         ds_time = self.get_dataset_time()
         ds_times = self.convert_dstime_datetimes(ds_time)

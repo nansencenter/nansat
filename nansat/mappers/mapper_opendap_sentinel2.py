@@ -30,7 +30,6 @@ class Mapper(Opendap):
     xName = 'x'
     yName = 'y'
     timeCalendarStart = '1981-01-01'
-    srcDSProjection = NSR().wkt
     GCP_STEP=100
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, date=None,
@@ -38,40 +37,6 @@ class Mapper(Opendap):
 
         self.test_mapper(filename)
         timestamp = date if date else self.get_date(filename)
-
-        if date is None:
-            warnings.warn('Date is not specified! Will return the first layer. '
-                          'Please add date="YYYY-MM-DD"')
-
-        # TODO: <self.filename> will be changed to vrt filename after init vrt
-        self.filename = filename
-        self.cachedir = cachedir
-        self.ds = self.get_dataset(ds)
-
-        ds_time = self.get_dataset_time()
-        ds_times = self.convert_dstime_datetimes(ds_time)
-        layer_time_id, layer_date = Opendap.get_layer_datetime(date, ds_times)
-
-        if bands is None:
-            var_names = self.get_geospatial_variable_names()
-        else:
-            var_names = bands
-        # create VRT with correct lon/lat (geotransform)
-        raster_x, raster_y = self.get_shape()
-    
-        import ipdb
-        ipdb.set_trace()
-
-        self._init_from_lonlat(self.ds.variables['lon'], self.ds.variables['lat'], add_gcps=True, **kwargs)
-
-        meta_dict = self.create_metadict(filename, var_names, layer_time_id)
-
-        self.create_bands(meta_dict)
-
-        # set time
-        time_res_sec = self.get_time_coverage_resolution()
-        self.dataset.SetMetadataItem('time_coverage_start', str(layer_date))
-        self.dataset.SetMetadataItem('time_coverage_end', str(layer_date + time_res_sec))
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
