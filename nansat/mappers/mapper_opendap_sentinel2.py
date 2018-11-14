@@ -22,7 +22,7 @@ from nansat.nsr import NSR
 class Mapper(Opendap):
 
     baseURLs = [
-            'http://nbstds.met.no/thredds/dodsC/NBS/S1B',
+            'http://nbstds.met.no/thredds/dodsC/NBS/S2A',
             'http://nbstds.met.no/thredds/dodsC/NBS/S2B',
     ]
 
