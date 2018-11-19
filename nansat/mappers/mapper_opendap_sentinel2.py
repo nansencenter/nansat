@@ -77,37 +77,3 @@ class Mapper(Opendap):
               + np.timedelta64(int(sec), 's').astype('m8[s]')) for sec in ds_time]).astype('M8[s]')
         return ds_datetimes
 
-    def get_gcps(self):
-
-        lon_grid = self.ds.variables['lon']
-        lat_grid = self.ds.variables['lat']
-
-        dx = .5
-        dy = .5
-        gcps = []
-        k = 0
-        maxY = 0
-        minY = lat_grid.shape[0]
-        for i0 in range(0, lat_grid.shape[0], self.GCP_STEP):
-            for i1 in range(0, lat_grid.shape[1], self.GCP_STEP):
-                # create GCP with X,Y,pixel,line from lat/lon matrices
-                lon = float(lon_grid[i0, i1])
-                lat = float(lat_grid[i0, i1])
-                #if (lon >= -180 and
-                #    lon <= 180 and
-                #    lat >= MIN_LAT and
-                #    lat <= MAX_LAT):
-                gcp = gdal.GCP(lon, lat, 0, i1 + dx, i0 + dy)
-                gcps.append(gcp)
-                k += 1
-                maxY = max(maxY, i0)
-                minY = min(minY, i0)
-        yOff = minY
-        ySize = maxY - minY
-
-        # remove Y-offset from gcps
-        for gcp in gcps:
-            gcp.GCPLine -= yOff
-
-        return gcps
-
