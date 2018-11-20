@@ -233,6 +233,7 @@ class Opendap(VRT):
             var_names = self.get_geospatial_variable_names()
         else:
             var_names = bands
+
         # create VRT with correct lon/lat (geotransform)
         raster_x, raster_y = self.get_shape()
         geotransform = self.get_geotransform()
@@ -240,6 +241,8 @@ class Opendap(VRT):
                                        geotransform, self.srcDSProjection)
         meta_dict = self.create_metadict(filename, var_names, layer_time_id)
 
+        import ipdb
+        ipdb.set_trace()
         self.create_bands(meta_dict)
 
         # set time
@@ -314,7 +317,11 @@ class Opendap(VRT):
 
     def get_shape(self):
         """Get srcRasterXSize and srcRasterYSize from OpenDAP"""
-        return self.ds.variables[self.xName].size, self.ds.variables[self.yName].size
+        try:
+            sx, sy = self.ds.variables[self.xName].size, self.ds.variables[self.yName].size
+        except KeyError:
+            sx, sy = self.ds.dimensions[self.xName].size, self.ds.dimensions[self.yName].size
+        return sx, sy
 
     def get_geotransform(self):
         """Get first two values of X,Y variables and create geoTranform"""

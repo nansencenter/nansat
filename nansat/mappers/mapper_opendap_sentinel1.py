@@ -26,12 +26,11 @@ class Mapper(Opendap):
             'http://nbstds.met.no/thredds/dodsC/NBS/S1B',
     ]
 
-    pass
-
     timeVarName = 'time'
     xName = 'x'
     yName = 'y'
     timeCalendarStart = '1981-01-01'
+    srcDSProjection = NSR().wkt
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, date=None,
                  ds=None, bands=None, cachedir=None, *args, **kwargs):
@@ -40,6 +39,8 @@ class Mapper(Opendap):
         timestamp = date if date else self.get_date(filename)
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
+
+        self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, **kwargs), NSR().wkt)
 
     #    self.dataset.SetMetadataItem('entry_title', str(self.ds.getncattr('product_id')))
     #    self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
@@ -112,4 +113,9 @@ class Mapper(Opendap):
 
         return gcps
 
+    def get_geotransform(self):
+        """ Return fake and temporary geotransform """
+        xx = self.ds.variables['lon'][0:100:50, 0].data
+        yy = self.ds.variables['lat'][0, 0:100:50].data
+        return xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0]
 
