@@ -16,6 +16,7 @@ import gdal
 import pythesint as pti
 
 from nansat.mappers.opendap import Opendap
+from nansat.vrt import VRT
 from nansat.nsr import NSR
 
 
@@ -40,17 +41,19 @@ class Mapper(Opendap):
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
-        self.dataset.SetGCPs(VRT._lonlat2gcps(lon, lat, **kwargs), NSR().wkt)
+        self._remove_geotransform()
+        self._remove_geolocation()
+        self.dataset.SetGCPs(self.get_gcps(), NSR().wkt)
 
-    #    self.dataset.SetMetadataItem('entry_title', str(self.ds.getncattr('product_id')))
-    #    self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
-    #    self.dataset.SetMetadataItem('ISO_topic_category',
-    #            pti.get_iso19115_topic_category('Imagery/Base Maps/Earth Cover')['iso_topic_category'])
+        self.dataset.SetMetadataItem('entry_title', filename)
+        self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
+        self.dataset.SetMetadataItem('ISO_topic_category',
+                pti.get_iso19115_topic_category('Imagery/Base Maps/Earth Cover')['iso_topic_category'])
 
-    #    mm = pti.get_gcmd_instrument('multi-spectral')
-    #    ee = pti.get_gcmd_platform('sentinel-2')
-    #    self.dataset.SetMetadataItem('instrument', json.dumps(mm))
-    #    self.dataset.SetMetadataItem('platform', json.dumps(ee))
+        mm = pti.get_gcmd_instrument('sar')
+        ee = pti.get_gcmd_platform('sentinel-1')
+        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
+        self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
     @staticmethod
     def get_date(filename):
@@ -81,40 +84,23 @@ class Mapper(Opendap):
 
     def get_gcps(self):
 
-        lon_grid = self.ds.variables['GCP_longitude_'+self.ds.polarisation[:2]]
-        lat_grid = self.ds.variables['GCP_longitude_'+self.ds.polarisation[:2]]
+        lon = self.ds.variables['GCP_longitude_'+self.ds.polarisation[:2]]
+        lat = self.ds.variables['GCP_latitude_'+self.ds.polarisation[:2]]
+        line = self.ds.variables['GCP_line_'+self.ds.polarisation[:2]]
+        pixel = self.ds.variables['GCP_pixel_'+self.ds.polarisation[:2]]
 
-        dx = .5
-        dy = .5
         gcps = []
-        k = 0
-        maxY = 0
-        minY = lat_grid.shape[0]
-        for i0 in range(0, lat_grid.shape[0], self.GCP_STEP):
-            for i1 in range(0, lat_grid.shape[1], self.GCP_STEP):
-                # create GCP with X,Y,pixel,line from lat/lon matrices
-                lon = float(lon_grid[i0, i1])
-                lat = float(lat_grid[i0, i1])
-                #if (lon >= -180 and
-                #    lon <= 180 and
-                #    lat >= MIN_LAT and
-                #    lat <= MAX_LAT):
-                gcp = gdal.GCP(lon, lat, 0, i1 + dx, i0 + dy)
-                gcps.append(gcp)
-                k += 1
-                maxY = max(maxY, i0)
-                minY = min(minY, i0)
-        yOff = minY
-        ySize = maxY - minY
-
-        # remove Y-offset from gcps
-        for gcp in gcps:
-            gcp.GCPLine -= yOff
+        for i0 in range(0, self.ds.dimensions['gcp_index'].size):
+            gcp = gdal.GCP(float(lon[i0].data), float(lat[i0].data), 0, float(pixel[i0].data),
+                    float(line[i0].data))
+            gcps.append(gcp)
 
         return gcps
 
     def get_geotransform(self):
-        """ Return fake and temporary geotransform """
+        """ Return fake and temporary geotransform. This will be replaced by gcps at the end of
+        __init__ 
+        """
         xx = self.ds.variables['lon'][0:100:50, 0].data
         yy = self.ds.variables['lat'][0, 0:100:50].data
         return xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0]

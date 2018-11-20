@@ -21,6 +21,8 @@ except ImportError:
          You cannot access OC CCI data but
          Nansat will work.''')
 
+from osgeo import gdal
+
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.exceptions import WrongMapperError
@@ -154,10 +156,21 @@ class Opendap(VRT):
 
         # assemble dimensions string
         dims = ''.join(['[%s]' % dim for dim in var_dimensions])
+        sfname = '{url}?{var}.{var}{shape}'.format(url=url, var=var_name, shape=dims)
+        # For Sentinel-1, the source filename is not at the same format. Simple solution is to check
+        # if this is correct witha try-except but that may be too time consuming. Expecting
+        # discussion...
+        try:
+            ds = gdal.Open(sfname)
+        except RuntimeError:
+            sfname = '{url}?{var}{shape}'.format(url=url, var=var_name, shape=dims)
+        try:
+            ds = gdal.Open(sfname)
+        except RuntimeError:
+            raise
+
         meta_item = {
-            'src': {'SourceFilename': '{url}?{var}.{var}{shape}'.format(url=url,
-                                                                        var=var_name,
-                                                                        shape=dims),
+            'src': {'SourceFilename': sfname,
                     'SourceBand': 1},
             'dst': {'name': var_name,
                     'dataType': 6}
@@ -241,8 +254,6 @@ class Opendap(VRT):
                                        geotransform, self.srcDSProjection)
         meta_dict = self.create_metadict(filename, var_names, layer_time_id)
 
-        import ipdb
-        ipdb.set_trace()
         self.create_bands(meta_dict)
 
         # set time
