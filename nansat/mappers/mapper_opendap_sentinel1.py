@@ -51,7 +51,10 @@ class Mapper(Opendap):
                 pti.get_iso19115_topic_category('Imagery/Base Maps/Earth Cover')['iso_topic_category'])
 
         mm = pti.get_gcmd_instrument('sar')
-        ee = pti.get_gcmd_platform('sentinel-1')
+        if self.ds.MISSION_ID=='S1A':
+            ee = pti.get_gcmd_platform('sentinel-1a')
+        else:
+            ee = pti.get_gcmd_platform('sentinel-1b')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
