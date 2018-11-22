@@ -1,5 +1,6 @@
 # Name:         mapper_arome.py
-# Purpose:      Nansat mapping for AROME-Arctic data provided by MET.NO
+# Purpose:      Nansat mapping for AROME-Arctic and MEPS (MetCoOp Ensemble
+#               Prediction System) data provided by MET.NO
 # Author:       Artem Moiseev
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
@@ -20,7 +21,10 @@ import json
 class Mapper(Opendap, MapperArome):
 
     baseURLs = ['http://thredds.met.no/thredds/catalog/arome25/catalog.html',
-                'https://thredds.met.no/thredds/dodsC/aromearcticarchive']
+                'https://thredds.met.no/thredds/dodsC/aromearcticarchive',
+                'http://thredds.met.no/thredds/dodsC/aromearcticarchive',
+                'https://thredds.met.no/thredds/dodsC/meps25epsarchive',
+                'http://thredds.met.no/thredds/dodsC/meps25epsarchive']
     timeVarName = 'time'
     xName = 'x'
     yName = 'y'
