@@ -43,6 +43,7 @@ class Mapper(Opendap):
 
         self._remove_geotransform()
         self._remove_geolocation()
+        self.dataset.SetProjection('')
         self.dataset.SetGCPs(self.get_gcps(), NSR().wkt)
 
         self.dataset.SetMetadataItem('entry_title', filename)
