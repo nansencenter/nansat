@@ -137,5 +137,10 @@ class DataForTestingOnlineMappers(object):
         'mapperName' : 'opendap_mywave4km',
         'bands': ['hs'],
         'date': '2017-10-29T18:00Z'
+        },{
+        'fileName': 'http://thredds.met.no/thredds/dodsC/fou-hi/norkyst800m-1h/NorKyst-800m_ZDEPTHS_his.an.2017110100.nc',
+        'mapperName': 'opendap_norkyst800',
+        'bands': ['u', 'v'],
+        'date': '2017-11-01T01:00Z'
         }
         ]
