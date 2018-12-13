@@ -33,6 +33,7 @@ class Mapper(Opendap):
 
         timestamp = date if date else self.get_date(filename)
         self.srcDSProjection = '+proj=stere +lat_0=90 +lon_0=70 +lat_ts=60 +units=m +a=6.371e+06 +b=6371200 +no_defs'
+        self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
         self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('Computer')))
         self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('MODELS')))
         self.dataset.SetMetadataItem('iso_category', json.dumps(pti.get_iso19115_topic_category('Oceans')))
@@ -61,7 +62,7 @@ class Mapper(Opendap):
             '2018-11-01T00:00Z'
         """
         _, filename = os.path.split(filename)
-        t = datetime.strptime(filename.split('.')[-2], '%Y%m%dT%H')
+        t = datetime.strptime(filename.split('.')[-2], '%Y%m%d%H')
         return datetime.strftime(t, '%Y-%m-%dT%H:%MZ')
 
     def convert_dstime_datetimes(self, ds_time):
