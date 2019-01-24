@@ -34,7 +34,7 @@ install:
     - cmd: conda.exe config --add channels conda-forge
 
     # Configure the VM.
-    - cmd: conda.exe install -n root --quiet --yes gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
+    - cmd: conda.exe install -n root --quiet --yes libgdal=2.2.4=vc9_5 pyproj=1.9.5.1=py27_0 gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
     - cmd: python.exe setup.py install
 
 # Skip .NET project specific build phase.
