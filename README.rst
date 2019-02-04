@@ -2,7 +2,7 @@
 | Branch  | Travis CI              | AppVeyor Status           | Code Coverage             | Zenodo DOI |
 +---------+------------------------+---------------------------+---------------------------+------------+
 | Master  | |Build Status Master|  | |AppVeyor Status Master|  | |Coverage Status Master|  | |DOI|      |
-+---------+------------------------+---------------------------+---------------------------+------------+ 
++---------+------------------------+---------------------------+---------------------------+------------+
 | Develop | |Build Status Develop| | |AppVeyor Status Develop| | |Coverage Status Develop| |            |
 +---------+------------------------+---------------------------+---------------------------+------------+
 
@@ -69,6 +69,12 @@ The easiest way to install Nansat on any platform is to use Anaconda_ (`download
     # install Nansat and requirements from the conda-forge channel
     conda create -n py3nansat -c conda-forge nansat
 
+Another option is to use Docker containers (`read about Docker <https://docs.docker.com/>`_).:
+
+::
+
+    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
+
 Activate and work in the nansat environment
 -------------------------------------------
 
@@ -116,7 +122,7 @@ Nansat is outfitted with unittests, which you can use to ensure that all functio
 
     # Run all tests including nansat_integration_tests with coverage
     cd <nansat_repository_folder>
-    nosetests -w . --with-coverage --cover-package=nansat    
+    nosetests -w . --with-coverage --cover-package=nansat
 
 Fore more information see `Read the Docs`_ or notebooks for `Nansat
 lectures <https://github.com/nansencenter/nansat-lectures/tree/master/notebooks>`__

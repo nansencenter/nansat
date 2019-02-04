@@ -1,10 +1,46 @@
-FROM ubuntu:bionic
-RUN apt-get update && apt-get install -y \
-    ansible \
-&& rm -rf /var/lib/apt/lists/*
+FROM continuumio/miniconda3 as conda
+LABEL maintainer="Anton Korosov <anton.korosov@nersc.no>"
+LABEL purpose="Python libs for developing and running Nansat"
 
-COPY provisioning /provisioning
-RUN ansible-galaxy install --role-file=/provisioning/galaxy_requirements.yml \
-                           --roles-path=/provisioning/roles/ \
-                           --force -c
-RUN ansible-playbook /provisioning/site.yml
+RUN conda config --add channels conda-forge \
+&&  conda update -y conda \
+&&  conda install -y \
+    ipython \
+    gdal \
+    mock \
+    netcdf4 \
+    nose \
+    numpy \
+    pillow \
+    python-dateutil \
+    scipy \
+    urllib3 \
+&&  conda clean -a -y \
+&&  rm /opt/conda/pkgs/* -rf \
+&&  pip install pythesint \
+&&  python -c 'import pythesint; pythesint.update_all_vocabularies()'
+
+ENV PYTHONUNBUFFERED=1
+
+
+FROM nansat:conda as dev
+LABEL purpose="Python libs + gcc for developing Nansat"
+
+RUN apt-get update \
+&&  apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc
+
+# compile Nansat inplace and install (link)
+COPY . /tmp
+WORKDIR /tmp
+RUN python setup.py build_ext --inplace \
+&&  cp -r nansat /opt/ \
+&&  ln -s /opt/nansat /opt/conda/lib/python3.7/site-packages/
+WORKDIR /src
+
+# create image for production without GCC
+FROM nansat:conda as latest
+LABEL purpose="Python libs + Nansat"
+COPY --from=dev /opt/nansat /opt/conda/lib/python3.7/site-packages/nansat
+WORKDIR /src
