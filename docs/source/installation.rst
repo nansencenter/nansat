@@ -9,8 +9,8 @@ The fastest way to install nansat:
 
 .. code-block:: bash
 
-	conda create -n nansat -c conda-forge nansat
-	source activate nansat
+    conda create -n nansat -c conda-forge nansat
+    source activate nansat
 
 Nansat is now installed.
 For more details and other methods of installing Nansat, see below.
@@ -30,11 +30,16 @@ Nansat requires the following packages:
 The following packages are optional:
 
 * `Scipy <http://scipy.org/>`_ 0.18.1
- * Some mappers will not work without scipy. E.g. *sentinel1_l1*
+
+  * Some mappers will not work without scipy. E.g. *sentinel1_l1*
+
 * `Matplotlib <http://matplotlib.org/>`_ >=2.1.1
- * matplotlib is required for Nansat methods *digitize_points()* and *crop_interactive()*
+
+  * matplotlib is required for Nansat methods *digitize_points()* and *crop_interactive()*
+
 * `Basemap <http://matplotlib.org/basemap/>`_ >=1.0.8
- * basemap is required in *write_domain_map()*
+
+  * basemap is required in *write_domain_map()*
 
 The most tricky to compile yourself is GDAL and Basemap. But one can find pre-built binaries
 available for different platforms. We recommend to install all dependencies with Conda, from the
@@ -53,19 +58,27 @@ Install dependencies from Anaconda
 This is the recommended approach for installing dependencies.
 
 * Download `Miniconda <https://conda.io/miniconda.html>`_ for your platform of choice.
-* Install Miniconda
- * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
-   Run this to access the conda installation.
- * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
-   directory as explained by the installer.
-* Run the following three commands:
- * *conda create -n nansat Python=3.6*
-  * Or use Python version 3.5 or 2.7 if you need those versions.
- * *source activate nansat*
-  * On windows you would ommit 'source' and just run *'activate nansat'*
- * *conda install --yes -c conda-forge pythesint numpy scipy=0.18.1 matplotlib basemap netcdf4
-   gdal pillow urllib3*
 
+* Install Miniconda
+
+  * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
+    Run this to access the conda installation.
+
+  * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
+    directory as explained by the installer.
+
+* Run the following three commands:
+
+  * *conda create -n nansat Python=3.6*
+
+    * Or use Python version 3.5 or 2.7 if you need those versions.
+
+  * *source activate nansat*
+
+    * On windows you would ommit 'source' and just run *'activate nansat'*
+
+  * *conda install --yes -c conda-forge pythesint numpy scipy=0.18.1 matplotlib basemap netcdf4 gdal
+    pillow urllib3*
 
 Install Pre-built Binaries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

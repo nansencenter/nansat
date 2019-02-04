@@ -126,7 +126,7 @@ def register_colormaps():
         cm.register_cmap(name='ak01', data=ak01, lut=256)
 
 def initial_bearing(lon1, lat1, lon2, lat2):
-        '''Initial bearing when traversing from point1 (lon1, lat1)
+        """Initial bearing when traversing from point1 (lon1, lat1)
         to point2 (lon2, lat2)
 
         See http://www.movable-type.co.uk/scripts/latlong.html
@@ -144,7 +144,7 @@ def initial_bearing(lon1, lat1, lon2, lat2):
             The initial bearing (azimuth direction) when heading out
             from the start point towards the end point along a great circle.
 
-        '''
+        """
         rlon1 = np.radians(lon1)
         rlat1 = np.radians(lat1)
         rlon2 = np.radians(lon2)
@@ -173,7 +173,7 @@ def haversine(lon1, lat1, lon2, lat2):
 
 
 def add_logger(logName='', logLevel=None):
-    ''' Creates and returns logger with default formatting for Nansat
+    """ Creates and returns logger with default formatting for Nansat
 
     Parameters
     -----------
@@ -186,9 +186,9 @@ def add_logger(logName='', logLevel=None):
 
     See also
     --------
-    http://docs.python.org/howto/logging.html
+    `<http://docs.python.org/howto/logging.html>`_
 
-    '''
+    """
     if logLevel is not None:
         os.environ['LOG_LEVEL'] = str(logLevel)
     # create (or take already existing) logger
@@ -216,7 +216,7 @@ def add_logger(logName='', logLevel=None):
 
 
 def get_random_color(c0=None, minDist=100, low=0, high=255):
-    ''' Create random color which is far enough from the input color
+    """Create random color which is far enough from the input color
 
     Parameters
     ----------
@@ -229,7 +229,7 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
     -------
         c0 : str
             hexademical representation of the new random color
-    '''
+    """
     if not MATPLOTLIB_IS_INSTALLED:
         raise ImportError('Matplotlib is not installed')
 
@@ -345,6 +345,7 @@ def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_borde
             where to put parallel labels, see also Basemap.drawparallels()
         labels : list of str
             labels to print on top of patches
+
         """
         if not BASEMAP_LIB_IS_INSTALLED:
             raise ImportError(' Basemap is not installed. Cannot use Domain.write_map. '

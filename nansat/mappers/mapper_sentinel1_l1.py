@@ -413,13 +413,13 @@ class Mapper(VRT):
     def read_annotation(self, annotation_files):
         """ Read lon, lat, etc from annotation XML
 
-        Parameters:
-        ----------_
+        Parameters
+        ----------
         annotation_files : list
             strings with names of annotation files
 
-        Returns:
-        --------
+        Returns
+        -------
         data : dict
             geolocation data from the XML as 2D np.arrays. Keys:
                 pixel, line, longitude, latitude, height, incidenceAngle, elevationAngle: 2D arrays
@@ -542,13 +542,13 @@ class Mapper(VRT):
     def read_manifest_data(self, input_file):
         """ Read information (time_coverage_start, etc) manifest XML
 
-        Parameters:
-        ----------_
+        Parameters
+        ----------
         input_file : str
             name of manifest file
 
-        Returns:
-        --------
+        Returns
+        -------
         data : dict
             manifest data. Keys:
                 time_coverage_start
@@ -586,8 +586,8 @@ class Mapper(VRT):
     def vrts_from_arrays(self, data, variable_names, pol='', resize=True, resample_alg=2):
         """ Convert input dict with arrays into dict with VRTs
 
-        Parameters:
-        ----------_
+        Parameters
+        ----------
         data : dict
             2D arrays with data from LUT
         variable_names : list of str
@@ -599,8 +599,8 @@ class Mapper(VRT):
         resample_alg : int
             Index of resampling algorithm. See VRT.get_resized_vrt()
 
-        Returns:
-        --------
+        Returns
+        -------
         vrts : dict with (resized) VRTs
 
         """

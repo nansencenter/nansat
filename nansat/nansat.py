@@ -401,8 +401,10 @@ class Nansat(Domain, Exporter):
         -----------
         factor : float, optional, default=1
             Scaling factor for width and height
-            > 1 means increasing domain size
-            < 1 means decreasing domain size
+
+            - > 1 means increasing domain size
+            - < 1 means decreasing domain size
+
         width : int, optional
             Desired new width in pixels
         height : int, optional
@@ -412,12 +414,13 @@ class Nansat(Domain, Exporter):
             A factor is calculated from ratio of the
             current pixelsize to the desired pixelsize.
         resample_alg : int (GDALResampleAlg), optional
-               -1 : Average (default),
-                0 : NearestNeighbour
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
+
+            - -1 : Average (default),
+            - 0 : NearestNeighbour
+            - 1 : Bilinear,
+            - 2 : Cubic,
+            - 3 : CubicSpline,
+            - 4 : Lancoz
 
         Notes
         -----
@@ -467,8 +470,8 @@ class Nansat(Domain, Exporter):
         Parameters
         -----------
         band_id : int or str
-            if int - a band number of the band to fetch
-            if str band_id = {'name': band_id}
+            - if int - a band number of the band to fetch
+            - if str band_id = {'name': band_id}
 
         Returns
         --------
@@ -536,11 +539,13 @@ class Nansat(Domain, Exporter):
         dst_domain : domain
             destination Domain where projection and resolution are set
         resample_alg : int (GDALResampleAlg)
-            0 : NearestNeighbour
-            1 : Bilinear
-            2 : Cubic,
-            3 : CubicSpline
-            4 : Lancoz
+
+            - 0 : NearestNeighbour
+            - 1 : Bilinear
+            - 2 : Cubic,
+            - 3 : CubicSpline
+            - 4 : Lancoz
+
         block_size : int
             size of blocks for resampling. Large value decrease speed
             but increase accuracy at the edge
@@ -569,7 +574,7 @@ class Nansat(Domain, Exporter):
 
         See Also
         ---------
-        http://www.gdal.org/gdalwarp.html
+        `<http://www.gdal.org/gdalwarp.html>`_
 
         """
         # This is time consuming and therefore not done...:
@@ -703,8 +708,9 @@ class Nansat(Domain, Exporter):
 
         See Also
         ---------
-        http://www.glcf.umd.edu/data/watermask/
-        http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water
+        `<http://www.glcf.umd.edu/data/watermask/>`_
+
+        `<http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water>`_
 
         """
         mod44DataExist = True
@@ -784,7 +790,8 @@ class Nansat(Domain, Exporter):
 
         Returns
         -------
-        Figure object
+        Figure : Figure object
+            filename extension define format (default format is png)
 
         Example
         --------
@@ -801,7 +808,8 @@ class Nansat(Domain, Exporter):
         See also
         --------
         Figure()
-        http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+
+        `<http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
 
         """
         # convert <bands> from integer, or string, or list of strings
@@ -976,8 +984,10 @@ class Nansat(Domain, Exporter):
 
         Returns
         --------
-        * string with metadata if key is given and found
-        * dictionary with all metadata if key is not given
+        metadata : str
+            string with metadata if key is given and found
+        metadata : dict
+            dictionary with all metadata if key is not given
 
         Raises
         ------
@@ -1175,13 +1185,13 @@ class Nansat(Domain, Exporter):
         Parameters
         ----------
         band_id : int or str or dict
-            if int : checks if such band exists and returns band_id
-            if str : finds band with coresponding name
-            if dict : finds first band with given metadata
+            - if int : checks if such band exists and returns band_id
+            - if str : finds band with coresponding name
+            - if dict : finds first band with given metadata
 
         Returns
         --------
-        int : absolute band number
+        absolute band number : int
 
         """
         band_number = 0
