@@ -158,10 +158,11 @@ class DomainTest(unittest.TestCase):
     #def test_write_kml_image(self):
 
 
-    @patch.object(Domain, 'transform_points',
-        return_value=(np.meshgrid(range(0,500),range(0,500))[0].flatten()*(35-25)/500.+25,
-                      np.meshgrid(range(0,500),range(0,500))[1].flatten()*(70-72)/500.+72))
+    @patch.object(Domain, 'transform_points')
     def test_get_geolocation_grids_from_GDAL_transformer(self, mock_transform_points):
+        mock_transform_points.return_value=(
+                      np.meshgrid(range(0,500),range(0,500))[0].flatten()*(35-25)/500.+25,
+                      np.meshgrid(range(0,500),range(0,500))[1].flatten()*(70-72)/500.+72)
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         lon, lat = d.get_geolocation_grids()
         self.assertEqual(type(lon), np.ndarray)

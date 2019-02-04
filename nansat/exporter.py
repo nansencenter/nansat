@@ -63,9 +63,9 @@ class Exporter(object):
         hardcopy : bool
             Evaluate all bands just before export?
 
-        Modifies
-        ---------
-        Create a netCDF file
+        Returns
+        -------
+        filename : netCDF or GTiff
 
         Notes
         ------
@@ -83,9 +83,11 @@ class Exporter(object):
         Examples
         --------
         # export all the bands into a netDCF 3 file
+
         >>> n.export(netcdfile)
 
         # export all bands into a GeoTiff
+
         >>> n.export(driver='GTiff')
 
         """
@@ -135,11 +137,14 @@ class Exporter(object):
                            'offset'   : 1000,
                            'metaKey1' : 'meta value 1',
                            'metaKey2' : 'meta value 2'}}
+
             dictionary sets parameters for band creation
-            'type' - string representation of data type in the output band
-            'scale' - sets scale_factor and applies scaling
-            'offset' - sets 'scale_offset and applies offsetting
-            other entries (e.g. 'units': 'K') set other metadata
+
+            - 'type' - string representation of data type in the output band
+            - 'scale' - sets scale_factor and applies scaling
+            - 'offset' - sets 'scale_offset and applies offsetting
+            - other entries (e.g. 'units': 'K') set other metadata
+
         metadata : dict
             Glbal metadata to add
         mask_name: str
@@ -161,14 +166,18 @@ class Exporter(object):
         Examples
         --------
         # create THREDDS formatted netcdf file with all bands and time variable
+
         >>> n.export2thredds(filename)
 
         # export only the first band and add global metadata
+
         >>> n.export2thredds(filename, ['L_469'], {'description': 'example'})
 
         # export several bands and modify type, scale and offset
+
         >>> bands = {'L_645' : {'type': '>i2', 'scale': 0.1, 'offset': 0},
                      'L_555' : {'type': '>i2', 'scale': 0.1, 'offset': 0}}
+
         >>> n.export2thredds(filename, bands)
 
 
