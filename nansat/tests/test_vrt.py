@@ -532,9 +532,8 @@ class VRTTest(NansatTestBase):
 
     def test_get_shifted_vrt(self):
         deg = 10
-        lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
-        vrt1 = VRT.from_lonlat(lon, lat)
-        vrt1.create_geolocation_bands()
+        vrt1 = VRT.from_array(np.zeros((100,100)))
+        vrt1.dataset.SetProjection(NSR().wkt)
         vrt2 = vrt1.get_shifted_vrt(deg)
         self.assertEqual(vrt1.dataset.GetGeoTransform()[0]+deg, vrt2.dataset.GetGeoTransform()[0])
 
@@ -633,12 +632,12 @@ class VRTTest(NansatTestBase):
     def test_reproject_gcps(self):
         lon, lat = np.meshgrid(np.linspace(0, 5, 10), np.linspace(10, 20, 30))
         vrt1 = VRT.from_lonlat(lon, lat)
-        vrt1.reproject_gcps(str('+proj=stere'))
-        self.assertIn('Stereographic', vrt1.dataset.GetGCPProjection())
+        vrt1.reproject_gcps(str('+proj=cea'))
+        self.assertIn('Cylindrical_Equal_Area', vrt1.dataset.GetGCPProjection())
         self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPX, 0)
-        self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPY, 2217341.7476875726)
-        self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPX, 1082008.9593705384)
-        self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPY, 4320951.334629638)
+        self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPY, 1100285.5701634109)
+        self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPX, 556597.4539663679)
+        self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPY, 2096056.5506871857)
 
 if __name__ == "__main__":
     unittest.main()

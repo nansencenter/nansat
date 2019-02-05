@@ -576,7 +576,7 @@ class Nansat(Domain, Exporter):
         #if not self.overlaps(dst_domain):
         #    raise ValueError('Source and destination domains do not overlap')
 
-        # if self spans from 0 to 360 and dst_domain is west of 0:
+        # if self spans from 0 to 360 AND dst_domain is west of 0:
         #     shift self westwards by 180 degrees
         # check span
         srcCorners = self.get_corners()
