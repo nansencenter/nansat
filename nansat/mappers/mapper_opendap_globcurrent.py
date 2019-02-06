@@ -5,6 +5,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import os
+import warnings
 
 from dateutil.parser import parse
 import json
@@ -48,21 +49,19 @@ class Mapper(Opendap):
         # add instrument and platform
         pi = []
         if 'jason-1' in self.ds.sensor.lower():
-                pi.append([pti.get_gcmd_platform('jason-1'), pti.get_gcmd_instrument('poseidon-2')])
+            pi.append([pti.get_gcmd_platform('jason-1'), pti.get_gcmd_instrument('poseidon-2')])
         if 'envisat' in self.ds.sensor.lower():
-                pi.append([pti.get_gcmd_platform('envisat'), pti.get_gcmd_instrument('ra-2')]
+            pi.append([pti.get_gcmd_platform('envisat'), pti.get_gcmd_instrument('ra-1')])
         if 'jason-2' in self.ds.sensor.lower():
-                pi.append([pti.get_gcmd_platform('ostm/jason-2'), pti.get_gcmd_instrument('poseidon-3')]
+            pi.append([pti.get_gcmd_platform('ostm/jason-2'),
+                pti.get_gcmd_instrument('poseidon-3')])
 
-        self.dataset.SetMetadataItem('platform/instrument', json.dumps(pi))
+        if pi:
+            self.dataset.SetMetadataItem('platform/instrument', json.dumps(pi))
+        else:
+            warnings.warn('Could not provide source metadata - please check and submit a git ' \
+                    'issue if necessary')
 
-        #instr = pti.get_gcmd_instrument('active remote sensing')
-        #pltfr = pti.get_gcmd_platform('Earth Observation Satellites')
-        pltfr = pti.get_gcmd_platform('JASON-1')
-        instr = pti.get_gcmd_instrument('JASON-2 RADAR ALTIMETER')
-
-        self.dataset.SetMetadataItem('instrument',  json.dumps(instr))
-        self.dataset.SetMetadataItem('platform',    json.dumps(pltfr))
         self.dataset.SetMetadataItem('Data Center', 'FR/IFREMER/CERSAT')
         self.dataset.SetMetadataItem('Entry Title', 'GLOBCURRENT')
 
