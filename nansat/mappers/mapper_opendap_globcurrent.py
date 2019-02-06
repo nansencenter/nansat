@@ -46,6 +46,16 @@ class Mapper(Opendap):
         self.create_vrt(filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir)
 
         # add instrument and platform
+        pi = []
+        if 'jason-1' in self.ds.sensor.lower():
+                pi.append([pti.get_gcmd_platform('jason-1'), pti.get_gcmd_instrument('poseidon-2')])
+        if 'envisat' in self.ds.sensor.lower():
+                pi.append([pti.get_gcmd_platform('envisat'), pti.get_gcmd_instrument('ra-2')]
+        if 'jason-2' in self.ds.sensor.lower():
+                pi.append([pti.get_gcmd_platform('ostm/jason-2'), pti.get_gcmd_instrument('poseidon-3')]
+
+        self.dataset.SetMetadataItem('platform/instrument', json.dumps(pi))
+
         #instr = pti.get_gcmd_instrument('active remote sensing')
         #pltfr = pti.get_gcmd_platform('Earth Observation Satellites')
         pltfr = pti.get_gcmd_platform('JASON-1')
