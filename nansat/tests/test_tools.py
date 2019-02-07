@@ -66,7 +66,7 @@ class ToolsTest(unittest.TestCase):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         border = d.get_border()
         tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
-        write_domain_map(border, tmpfilename)
+        write_domain_map(border, tmpfilename, labels=['Patch1'])
         self.assertTrue(os.path.exists(tmpfilename))
         i = Image.open(tmpfilename)
         i.verify()

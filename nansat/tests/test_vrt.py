@@ -531,8 +531,8 @@ class VRTTest(NansatTestBase):
         self.assertTrue(hasattr(vrt2.vrt, 'vrt'))
 
     def test_get_shifted_vrt(self):
-        deg = 10
-        vrt1 = VRT.from_array(np.zeros((100,100)))
+        deg = -10
+        vrt1 = VRT.from_array(np.zeros((180,360)))
         vrt1.dataset.SetProjection(NSR().wkt)
         vrt2 = vrt1.get_shifted_vrt(deg)
         self.assertEqual(vrt1.dataset.GetGeoTransform()[0]+deg, vrt2.dataset.GetGeoTransform()[0])

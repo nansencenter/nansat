@@ -281,14 +281,6 @@ def parse_time(time_string):
     return time_value
 
 
-def test_openable(fname):
-    try:
-        f = open(fname, 'r')
-    except IOError:
-        raise
-    f.close()
-
-
 def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_border=10.,
                      lat_border=10.,figure_size=(6, 6), dpi=50, projection='cyl', resolution='c',
                      continets_color='coral',meridians=10, parallels=10, p_color='r', p_line='k',

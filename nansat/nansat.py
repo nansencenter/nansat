@@ -34,7 +34,7 @@ from nansat.exporter import Exporter
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.tools import add_logger, gdal
-from nansat.tools import parse_time, test_openable
+from nansat.tools import parse_time
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -1082,13 +1082,11 @@ class Nansat(Domain, Exporter):
 
         """
         if os.path.isfile(self.filename):
-            # Make sure file exists and can be opened for reading
-            # before proceeding
-            test_openable(self.filename)
+            # Make sure file exists and can be opened for reading before proceeding
+            assert os.access(self.filename, os.R_OK)
         else:
-            ff = glob.glob(os.path.join(self.filename, '*.*'))
-            for f in ff:
-                test_openable(f)
+            for f in glob.glob(os.path.join(self.filename, '*.*')):
+                assert os.access(f, os.R_OK)
         # lazy import of nansat mappers
         # if nansat mappers were not imported yet
         global nansatMappers
