@@ -1235,6 +1235,11 @@ class VRT(object):
         # Copy self into self.vrt
         shift_vrt = self.get_super_vrt()
 
+        # cancel shift if not longlat projection
+        projection = self.get_projection()
+        if projection[1] != 'dataset' or 'AUTHORITY["EPSG","4326"]]' not in projection[0]:
+            return shift_vrt
+
         if shift_degree < 0:
             shift_degree += 360.0
 

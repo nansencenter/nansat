@@ -1,4 +1,4 @@
-|Build Status| |AppVeyor Status| |Coverage Status| |DOI|
+|Build Status| |Coverage Status| |DOI|
 
 .. NOTE: include statements doesn't work with github README.rst - the first section here is repeated
 .. in docs/source/about.rst as well...
@@ -109,7 +109,7 @@ Nansat is outfitted with unittests, which you can use to ensure that all functio
 
     # Run all tests including nansat_integration_tests with coverage
     cd <nansat_repository_folder>
-    nosetests -w . --with-coverage --cover-package=nansat    
+    nosetests -w . --with-coverage --cover-package=nansat
 
 Fore more information see `Read the Docs`_ or notebooks for `Nansat
 lectures <https://github.com/nansencenter/nansat-lectures/tree/master/notebooks>`__
@@ -129,8 +129,6 @@ Development is supported by the Research Council of Norway as a part of
 
 .. |Build Status| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
    :target: https://travis-ci.org/nansencenter/nansat
-.. |AppVeyor Status| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/master
 .. |Coverage Status| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master
    :target: https://coveralls.io/r/nansencenter/nansat
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg
