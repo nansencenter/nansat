@@ -8,7 +8,7 @@ DGID=${2-"1000"}
 docker build . -t nansat:conda --target conda
 
 # build container with Python libraries and gcc
-docker build . -t nansat:dev --target dev --build-arg DUID=$DUID --build-arg DGID=$DGID
+docker build . -t nansat:dev --target dev
 
 # compile Nansat in current host directory
 docker run --rm -it -v `pwd`:/src nansat:dev python setup.py build_ext --inplace
@@ -19,8 +19,8 @@ docker rm nansat 2> /dev/null
 docker create -it --name=nansat \
     -v `pwd`:/src \
     -v `pwd`/nansat:/opt/nansat \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
     --security-opt seccomp=unconfined \
-    --net=host \
     --env=DISPLAY \
     nansat:dev
 
