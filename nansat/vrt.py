@@ -902,8 +902,8 @@ class VRT(object):
         ----------
         metadata_dict : list of dict with params of input bands and generated bands.
             Each dict has:
-                'src' : dictionary with parameters of the sources:
-                'dst' : dictionary with parameters of the generated bands
+            'src' : dictionary with parameters of the sources:
+            'dst' : dictionary with parameters of the generated bands
 
         Notes
         ---------
@@ -932,34 +932,35 @@ class VRT(object):
 
         Parameters
         ----------
-        src : dict with parameters of sources:
-            SourceFilename
-            SourceBand
-            ScaleRatio
-            ScaleOffset
-            NODATA
-            LUT
-            SourceType
-            DataType
-            ImageOffset (RawVRT)
-            PixelOffset (RawVRT)
-            LineOffset (RawVRT)
-            ByteOrder (RawVRT)
-            xSize
+        src : dict with parameters of sources
+            SourceFilename,
+            SourceBand,
+            ScaleRatio,
+            ScaleOffset,
+            NODATA,
+            LUT,
+            SourceType,
+            DataType,
+            ImageOffset (RawVRT),
+            PixelOffset (RawVRT),
+            LineOffset (RawVRT),
+            ByteOrder (RawVRT),
+            xSize,
             ySize
         dst : dict with parameters of the created band
-            name
-            dataType
-            wkv
-            suffix
-            AnyOtherMetadata
-            PixelFunctionType: - band will be a pixel function defined by the
-                                 corresponding name/value.
-                                 In this case src may be list of
-                                 dicts with parameters for each source.
-                               - in case the dst band has a different datatype
-                                 than the source band it is important to add a
-                                 SourceTransferType parameter in dst
+            name,
+            dataType,
+            wkv,
+            suffix,
+            AnyOtherMetadata,
+            PixelFunctionType (
+            1) band will be a pixel function defined by the
+            corresponding name/value.
+            In this case src may be list of
+            dicts with parameters for each source.
+            2) in case the dst band has a different datatype
+            than the source band it is important to add a
+            SourceTransferType parameter in dst),
             SourceTransferType
 
         Returns
@@ -968,16 +969,19 @@ class VRT(object):
 
         Examples
         --------
-        vrt.create_band({'SourceFilename': filename, 'SourceBand': 1})
-        vrt.create_band({'SourceFilename': filename, 'SourceBand': 2,
-                          'ScaleRatio': 0.0001},
-                         {'name': 'LAT', 'wkv': 'latitude'})
-        vrt.create_band({'SourceFilename': filename, 'SourceBand': 2},
-                         {'suffix': '670',
-                          'wkv': 'brightness_temperature'})
-        vrt.create_band([{'SourceFilename': filename, 'SourceBand': 1},
-                          {'SourceFilename': filename, 'SourceBand': 1}],
-                         {'PixelFunctionType': 'NameOfPixelFunction'})
+        >>> vrt.create_band({'SourceFilename': filename, 'SourceBand': 1})
+
+        >>> vrt.create_band({'SourceFilename': filename, 'SourceBand': 2,
+                             'ScaleRatio': 0.0001},
+                            {'name': 'LAT', 'wkv': 'latitude'})
+
+        >>> vrt.create_band({'SourceFilename': filename, 'SourceBand': 2},
+                            {'suffix': '670',
+                             'wkv': 'brightness_temperature'})
+
+        >>> vrt.create_band([{'SourceFilename': filename, 'SourceBand': 1},
+                             {'SourceFilename': filename, 'SourceBand': 1}],
+                             {'PixelFunctionType': 'NameOfPixelFunction'})
 
         """
         self.logger.debug('INPUTS: %s, %s " ' % (str(src), str(dst)))
@@ -1033,7 +1037,7 @@ class VRT(object):
             XML Content of the VSI file to write
 
         Notes
-        ---------
+        -----
         self.dataset
             If XML content was written, self.dataset is re-opened
 
@@ -1518,8 +1522,9 @@ class VRT(object):
             Destiination SRS given as any NSR input parameter
 
         Notes
-        --------
+        -----
         Reprojects all GCPs to new SRS and updates GCPProjection
+
         """
         # transform coordinates of original GCPs
         dst_srs = NSR(dst_srs)
@@ -1580,8 +1585,9 @@ class VRT(object):
             value of size to put into VRT
 
         Notes
-        --------
+        -----
         Changes VRT file, sets new offset and size
+
         """
         node0 = Node.create(str(self.xml))
 

@@ -20,37 +20,45 @@ We adopt the following system for branching and merging:
    5. Branch only from master or from develop.
    6. Create pull requests for your branches and **always** assign a reviewer to merge, delete the branch, and close the issue (this is easy in github)
 
-How to report and handle new issues (bugs, improvements, new features, etc.)
-----------------------------------------------------------------------------
+How to report and handle new issues
+-----------------------------------
 
-If you discover a bug in Nansat or you would like to suggest improvements to Nansat, the following procedure should be followed:
+If you discover a bug in Nansat or you would like to suggest improvements or new features to Nansat, the following procedure should be followed:
 
 1. Check that no one else has reported the same issue at https://github.com/nansencenter/nansat/issues
 2. If not, add a new issue at https://github.com/nansencenter/nansat/issues
-3. If Nansat respository is not accessible for writing, fork Nansat and clone your own fork locally
+3. If Nansat respository is not accessible for writing (non team members), fork Nansat and clone your own fork locally
 4. Create an issue branch on your local system named **issue<NNN>_<short-heading>** where NNN is the issue number from GitHub. This will be the main (short living) working area. The issue branch should originate from develop.
 5. Add tests to reproduce the bug or test the new functionality
 6. Write the necessary code
-7. Push new issue branch to your own fork at GitHub
+7. Push the new issue branch to your own fork at GitHub
 8. Create a pull request of the issue branch on your fork at GitHub. A member of our team will the review the code, merge, delete the branch, and close the issue (this is easy in github)
 
-If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies
-(workflow for issue branches based on develop is similar):
+How to report and handle a hotfix
+---------------------------------
 
-1. Branch from master into the hotfix specific branch (hotfix<NNN>_<short-heading>)
+If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies:
+
+1. Branch from master into the hotfix specific branch (**hotfix<NNN>_<short-heading>**)
+
   a) Update the tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
   d) Commit to the hotfix branch
+
 2. If needed rebase the hotfix branch on top of master:
+
   a) Checkout the hotfix branch
   b) Use ``git rebase master``
   c) Fix conflicts if any
   d) Test the code
   e) Push your hotfix branch to GitHub. Note: You have to use 'git push -f' in order to rewrite the history on github. Rebase will not cause problems if only one person works with the hotfix branch.
+
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    hotfix branch and assign a reviewer
+
 4. Let the reviewer do the following:
+
   a) Wait for tests on Travis CI to pass
   b) Check the code
   c) Request changes or merge the pull request into master using 'Rebase and Merge' button in the online tool.
@@ -60,14 +68,13 @@ If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix i
 
 .. note::
 
-    If you work on a project using Nansat, this project should use the master version of Nansat. Two
+    If you work on a project using Nansat, this project should use the master version of Nansat. Different
     situations may then occur:
 
-    1. You discover a **bug**. This can be solved with a **hotfix**.
-    2. You want to add functionality to Nansat. This is solved by creating an issue in Nansat and a
-       related issue branch. When this is completed and merged into develop, we may have a new
-       release.
-    3. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
+    1. You discover a **bug** that is easy to fix. This should be solved in a **hotfix** branch originating from master.
+    2. You discover a **bug** that is difficult to fix. This should be solved in an **issue** branch originating from develop.
+    3. You want to add **functionality** to Nansat. This should be solved in an **issue** branch originating from develop. When this is completed and merged back into develop, we may have a new release.
+    4. You want to add a mapper. This can be done by adding a package ``nansat_mappers`` to your
        project. When the mapper is completed, create an issue and an issue-branch in Nansat, and
        finally submit a pull request with suggestion of a reviewer. You can still use the mapper via
        your ``nansat_mappers`` package until the new mapper is implemented in a release version of
@@ -98,9 +105,12 @@ General conventions
    # Additional mapper/format specific links and information
 
 * Docstrings should follow the `Numpy style
-  <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt#docstring-standard>`_
-* Available headers are 'Parameters', 'Returns','Other parameters', 'Modifies', 'Crates', 'Raises',
-  'See also', 'Notes', 'References' and 'Examples'
+  <https://numpydoc.readthedocs.io/en/latest/>`_
+  , with an extensive example file here `example.py
+  <https://numpydoc.readthedocs.io/en/latest/example.html#example>`_
+* Valid headers for functions and classes are, in the following order, 'Parameters', 'Attributes' (only class),
+  'Returns' (only function), 'Yields', 'Other parameters', 'Raises', 'Warns', 'Warnings',
+  'See also', 'Notes', 'References' and 'Examples'.
 
 Example function with complete Docstring
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,10 +120,11 @@ Example function with complete Docstring
    def some_function(start = 0, stop, step = 1):
        """ Return evenly spaced values within a given interval.
 
-       | Values are generated within the half-open interval ''[start, stop)''
-         (in other words, the interval including 'start' but excluding 'stop').
-       | For integer arguments the function is equivalent to the Python built-in
-         'range '_ function, but returns a ndarray rather than a list.
+       Values are generated within the half-open interval ''[start, stop)''
+       (in other words, the interval including 'start' but excluding 'stop').
+
+       For integer arguments the function is equivalent to the Python built-in
+       'range '_ function, but returns a ndarray rather than a list.
 
        Parameters
        ----------
@@ -133,11 +144,6 @@ Example function with complete Docstring
 
            For floating point arguments, the length of the result is ''ceil((stop - start)/step)''. Because of floating point overflow, this rule may result in the last element of 'out' being greater than 'stop'.
 
-       Modifies
-       --------
-       self.vrt : VRT
-           Dataset RasterXSize and RasterYSaize are changed in the the current VRT dataset
-
        See Also
        --------
        linspace : Evenly spaced numbers with careful handling of endpoints
@@ -148,6 +154,7 @@ Example function with complete Docstring
        --------
        >>> np.arange(3)
        array([0, 1, 2])
+
        """
 
 Naming conventions

@@ -1,4 +1,10 @@
-|Build Status| |Coverage Status| |DOI|
++---------+------------------------+---------------------------+------------+
+| Branch  | Travis CI              | Code Coverage             | Zenodo DOI |
++---------+------------------------+---------------------------+------------+
+| Master  | |Build Status Master|  | |Coverage Status Master|  | |DOI|      |
++---------+------------------------+---------------------------+------------+
+| Develop | |Build Status Develop| | |Coverage Status Develop| |            |
++---------+------------------------+---------------------------+------------+
 
 .. NOTE: include statements doesn't work with github README.rst - the first section here is repeated
 .. in docs/source/about.rst as well...
@@ -61,6 +67,12 @@ The easiest way to install Nansat on any platform is to use Anaconda_ (`download
 
     # install Nansat and requirements from the conda-forge channel
     conda create -n py3nansat -c conda-forge nansat
+
+Another option is to use Docker containers (`read about Docker <https://docs.docker.com/>`_).:
+
+::
+
+    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
 
 Activate and work in the nansat environment
 -------------------------------------------
@@ -127,9 +139,13 @@ Acknowledgments
 Development is supported by the Research Council of Norway as a part of
 `NORMAP <https://normap.nersc.no/>`__ project (grant no. 195397/V30).
 
-.. |Build Status| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
-   :target: https://travis-ci.org/nansencenter/nansat
-.. |Coverage Status| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master
-   :target: https://coveralls.io/r/nansencenter/nansat
+.. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
+   :target: https://travis-ci.org/nansencenter/nansat/branches
+.. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master&service=github
+   :target: https://coveralls.io/github/nansencenter/nansat?branch=master
+.. |Build Status Develop| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=develop
+   :target: https://travis-ci.org/nansencenter/nansat/branches
+.. |Coverage Status Develop| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=develop&service=github
+   :target: https://coveralls.io/github/nansencenter/nansat?branch=develop
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg
    :target: https://doi.org/10.5281/zenodo.59998

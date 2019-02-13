@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from nansat.tools import gdal, ogr
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
-import mapper_generic as mg
+import nansat.mappers.mapper_generic as mg
 
 
 class Mapper(mg.Mapper):

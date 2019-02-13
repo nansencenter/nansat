@@ -122,5 +122,24 @@ class DataForTestingOnlineMappers(object):
         'mapperName' : 'opendap_siwtacsst',
         'bands': ['analysed_sst'],
         'date': '2012-08-08'
+        },{
+        'fileName' : 'https://thredds.met.no/thredds/dodsC/aromearcticarchive/2017/10/30/arome_arctic_full_2_5km_20171030T21Z.nc',
+        'mapperName' : 'opendap_arome',
+        'bands': ['x_wind_10m', 'y_wind_10m'],
+        'date': '2017-10-30'
+        },{'fileName' : 'http://thredds.met.no/thredds/dodsC/meps25epsarchive/2017/10/26/meps_mbr1_pp_2_5km_20171026T06Z.nc',
+        'mapperName' : 'opendap_arome',
+        'bands': ['x_wind_10m', 'y_wind_10m'],
+        'date': '2017-10-26T07:00'
+        },{
+        'fileName' : 'https://podaac-opendap.jpl.nasa.gov/opendap/allData/ghrsst/data/L4/GLOB/UKMO/OSTIA/2016/006/20160106-UKMO-L4HRfnd-GLOB-v01-fv02-OSTIA.nc.bz2',
+        'mapperName' : 'opendap_ostia',
+        'bands': ['analysed_sst', 'mask'],
+        'date': '2016-01-06'
+        },{
+        'fileName' : 'http://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive/2017/10/29/MyWave_wam4_WAVE_20171029T18Z.nc',
+        'mapperName' : 'opendap_mywave4km',
+        'bands': ['hs'],
+        'date': '2017-10-29T18:00Z'
         }
         ]
