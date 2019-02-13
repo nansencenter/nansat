@@ -1,9 +1,4 @@
 #!/bin/bash
-
-# get UID and GID from input (for linux users only)
-DUID=${1-"1000"}
-DGID=${2-"1000"}
-
 # build container only with Python libraries in conda
 docker build . -t nansat:conda --target conda
 
