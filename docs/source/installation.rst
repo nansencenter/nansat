@@ -166,14 +166,14 @@ easily be done with
 Use a self-provisioned Virtual Machine
 --------------------------------------
 
-Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration 
-for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>`_ that brings up and 
-provision a `VirtualBox <https://www.virtualbox.org/>`_ machine is provided in Nansat repository. To start 
-the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat 
+Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration
+for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>`_ that brings up and
+provision a `VirtualBox <https://www.virtualbox.org/>`_ machine is provided in Nansat repository. To start
+the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat
 source code; and start the machine:
 
 ::
-  
+
   # download nansat source code
   git clone https://github.com/nansencenter/nansat.git
   cd nansat
@@ -189,3 +189,28 @@ That's it! The virtual machine will be started and all software will be installe
   source activate py3nansat
   python
 
+Use Docker
+----------
+Docker is a platform for developers and sysadmins to develop, deploy, and run applications with
+containers (`Get started with Docker <https://docs.docker.com/get-started/>`_). We have developed
+an image that containes compiled Nansat an a number of Python libraries needed for development
+and running of Nansat. A user can start using the production version of Nansat Docker image:
+
+::
+
+    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
+
+This will mound directory /path/to/data on your host to the directory /data in the container
+and launch IPython where Nansat is available.
+
+For developing Nansat a developer needs access to the code both from the container (to run it)
+and from the host (to edit it). For this purpose a developer should clone Nansat repository and
+run the script *build_containr.sh* from the root. The script will build the image with Python
+libraries installed using Anaconda, compile the Nansat code inplace and create a container for
+running Nansat. You can then start container:
+
+::
+
+    docker start -i nansat
+    # and run nosetests:
+    (base) root@d1625f2ce873:~# nosetests nansat

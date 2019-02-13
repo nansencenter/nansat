@@ -68,6 +68,12 @@ The easiest way to install Nansat on any platform is to use Anaconda_ (`download
     # install Nansat and requirements from the conda-forge channel
     conda create -n py3nansat -c conda-forge nansat
 
+Another option is to use Docker containers (`read about Docker <https://docs.docker.com/>`_).:
+
+::
+
+    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
+
 Activate and work in the nansat environment
 -------------------------------------------
 
