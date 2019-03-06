@@ -28,6 +28,7 @@ import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
 from netCDF4 import Dataset
+from matplotlib import cm
 
 from nansat.domain import Domain
 from nansat.exporter import Exporter
@@ -933,10 +934,15 @@ class Nansat(Domain, Exporter):
         bMin = float(minmax.split(' ')[0])
         bMax = float(minmax.split(' ')[1])
         # Make colormap from WKV information
-        cmap = np.vstack([np.arange(256.),
-                          np.arange(256.),
-                          np.arange(256.),
-                          np.ones(256)*255]).T
+        try:
+            colormap = band.GetMetadataItem('colormap')
+            cmap = cm.get_cmap(colormap, 256)
+            cmap = cmap(np.arange(256)) * 255
+        except:
+            cmap = np.vstack([np.arange(256.),
+                              np.arange(256.),
+                              np.arange(256.),
+                              np.ones(256)*255]).T
         colorTable = gdal.ColorTable()
         for i in range(cmap.shape[0]):
             colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
