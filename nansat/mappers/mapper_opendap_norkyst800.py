@@ -12,6 +12,7 @@ import pythesint as pti
 import numpy as np
 from datetime import datetime
 from nansat.mappers.opendap import Opendap
+from nansat.nsr import NSR
 from netCDF4 import Dataset
 
 
@@ -30,13 +31,15 @@ class Mapper(Opendap):
 
         self.test_mapper(filename)
         ds = Dataset(filename)
+        scale_factor = (np.sin(0.9330127018922193) + 1) / 2
 
         timestamp = date if date else self.get_date(filename)
-        self.srcDSProjection = '+proj=stere +lat_0=90 +lon_0=70 +lat_ts=60 +units=m +a=6.371e+06 +b=6371200 +no_defs'
+        self.srcDSProjection = NSR('+proj=stere +lat_0=90 +lat_ts=60 +lon_0=70 +a=6371000 +b=6371000 +units=m +no_defs')
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
         self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('Computer')))
         self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform('MODELS')))
-        self.dataset.SetMetadataItem('iso_category', json.dumps(pti.get_iso19115_topic_category('Oceans')))
+        self.dataset.SetMetadataItem('iso_category',
+                                     json.dumps(pti.get_iso19115_topic_category('Oceans')))
         self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
         self.dataset.SetMetadataItem('gcmd_location',
                                      json.dumps(pti.get_gcmd_location('NORTH ATLANTIC OCEAN')))
