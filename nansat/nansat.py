@@ -28,7 +28,13 @@ import numpy as np
 from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
 from netCDF4 import Dataset
-from matplotlib import cm
+
+try:
+    from matplotlib import cm
+except ImportError:
+    MATPLOTLIB_IS_INSTALLED = False
+else:
+    MATPLOTLIB_IS_INSTALLED = True
 
 from nansat.domain import Domain
 from nansat.exporter import Exporter
@@ -939,6 +945,9 @@ class Nansat(Domain, Exporter):
             cmap = cm.get_cmap(colormap, 256)
             cmap = cmap(np.arange(256)) * 255
         except:
+            if not MATPLOTLIB_IS_INSTALLED:
+                self.logger.debug('Geotiff is only available in gray '
+                                  'since matplotlib is not installed.')
             cmap = np.vstack([np.arange(256.),
                               np.arange(256.),
                               np.arange(256.),
