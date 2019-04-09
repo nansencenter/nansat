@@ -9,8 +9,12 @@ The fastest way to install nansat:
 
 .. code-block:: bash
 
-    conda create -n nansat -c conda-forge nansat
+    # create environment with key requirements
+    conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
+    # activate environment
     source activate nansat
+    # install nansat
+    pip instal nansat
 
 Nansat is now installed.
 For more details and other methods of installing Nansat, see below.
@@ -163,6 +167,7 @@ easily be done with
 
   pip install nose mock
 
+
 Use a self-provisioned Virtual Machine
 --------------------------------------
 
@@ -189,6 +194,7 @@ That's it! The virtual machine will be started and all software will be installe
   source activate py3nansat
   python
 
+
 Use Docker
 ----------
 Docker is a platform for developers and sysadmins to develop, deploy, and run applications with
@@ -203,11 +209,29 @@ and running of Nansat. A user can start using the production version of Nansat D
 This will mound directory /path/to/data on your host to the directory /data in the container
 and launch IPython where Nansat is available.
 
-For developing Nansat a developer needs access to the code both from the container (to run it)
-and from the host (to edit it). For this purpose a developer should clone Nansat repository and
-run the script *build_containr.sh* from the root. The script will build the image with Python
-libraries installed using Anaconda, compile the Nansat code inplace and create a container for
-running Nansat. You can then start container:
+For developing Nansat you needs access to the code both from the container (to run it)
+and from the host (to edit it). For this purpose you should clone Nansat repository and
+do the following steps:
+1. Build pixelfunctions inplace
+
+::
+
+    docker run --rm -it -v `pwd`:/src nansat python setup.py build_ext --inplace
+
+2. Run container with mounting of the current directory into /src. In this case Python
+will use Nansat from /src/nansat (the directory shared between host and container):
+
+::
+
+    # launch Python with Nansat in container
+    docker run --rm -it -v `pwd`:/src nansat python
+
+    # ...or run nosetests
+    docker run --rm -it -v `pwd`:/src nansat nosetests nansat
+
+Alternatively you can run the script *build_containr.sh*. The script will build the image with
+Python libraries from Anaconda, compile the Nansat code inplace and create a
+container for running Nansat. You can then start container:
 
 ::
 

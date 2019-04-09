@@ -59,34 +59,36 @@ You will find information about contributing to Nansat at `Read the Docs`_.
 Installation
 ------------
 
-The easiest way to install Nansat on any platform is to use Anaconda_ (`download installer <https://conda.io/miniconda.html>`_).
+An easy way to install Nansat requirements on any platform is to use Anaconda_ (`download installer <https://conda.io/miniconda.html>`_).
 
 .. _Anaconda: http://docs.continuum.io/anaconda/index
 
 ::
 
-    # install Nansat and requirements from the conda-forge channel
-    conda create -n py3nansat -c conda-forge nansat
+    # create environment with key requirements
+    conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
+    # activate environment
+    source activate nansat
+    # install nansat
+    pip instal nansat
+    # launch python
+    python
 
 Another option is to use Docker containers (`read about Docker <https://docs.docker.com/>`_).:
 
 ::
 
+    # download image with everything pre-installed and launch ipython
     docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
 
-Activate and work in the nansat environment
--------------------------------------------
+
+Example
+-------
 
 ::
 
     # download a test file
     wget https://github.com/nansencenter/nansat/raw/develop/nansat/tests/data/stere.tif
-
-    # activate the py3nansat environment
-    source activate py3nansat
-
-    # start python and work with Nansat
-    python
 
 .. code:: python
 
@@ -98,9 +100,6 @@ Activate and work in the nansat environment
 
     # see file content
     print n
-
-    # view file footpring
-    n.write_map('stere.footpring.png')
 
     # create RGB with auto-stretched histogram
     n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
