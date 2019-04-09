@@ -14,4 +14,3 @@ docker create -it --name=nansat \
     --security-opt seccomp=unconfined \
     --env=DISPLAY \
     nansat
-
