@@ -12,7 +12,7 @@ The fastest way to install nansat:
     # create environment with key requirements
     conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
     # activate environment
-    source activate nansat
+    source activate py3nansat
     # install nansat
     pip instal nansat
 
