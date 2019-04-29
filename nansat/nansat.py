@@ -388,7 +388,7 @@ class Nansat(Domain, Exporter):
 
         # estimate factor if pixelsize is given
         if dst_pixel_size is not None:
-            src_pixel_size = np.array(self.get_pixelsize_meters(), np.float)[::-1]
+            src_pixel_size = np.array(self.get_pixel_size_meters(), np.float)[::-1]
             factor = (src_pixel_size / float(dst_pixel_size)).mean()
 
         factor = float(factor)

@@ -691,7 +691,7 @@ class Domain(object):
         lon_grd, lat_grd = self.get_geolocation_grids()
         return lon_grd.min(), lon_grd.max(), lat_grd.min(), lat_grd.max(),
 
-    def get_pixelsize_meters(self):
+    def get_pixel_size_meters(self):
         """Returns the pixelsize (deltaX, deltaY) of the domain
 
         For projected domains, the exact result which is constant
