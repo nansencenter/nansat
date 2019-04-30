@@ -386,9 +386,9 @@ class Nansat(Domain, Exporter):
         if height is not None:
             factor = height / src_shape[0]
 
-        # estimate factor if pixelsize is given
+        # estimate factor if pixel size is given
         if dst_pixel_size is not None:
-            src_pixel_size = np.array(self.get_pixelsize_meters(), np.float)[::-1]
+            src_pixel_size = np.array(self.get_pixel_size(), np.float)[::-1]
             factor = (src_pixel_size / float(dst_pixel_size)).mean()
 
         factor = float(factor)
@@ -976,6 +976,9 @@ class Nansat(Domain, Exporter):
         outDataset = None
         self.vrt.copyproj(filename)
 
+    @property
+    def get_pixel_size(self):
+        return pixel_size(self.get_metadata('pixel_size'))
     @property
     def time_coverage_start(self):
         return parse_time(self.get_metadata('time_coverage_start'))
