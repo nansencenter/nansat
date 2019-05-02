@@ -532,12 +532,12 @@ class Domain(object):
 
         return extent_dict
 
-    def get_border(self, nPoints=10, fix_lon=True, **kwargs):
+    def get_border(self, n_points=10, fix_lon=True, **kwargs):
         """Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
         -----------
-        nPoints : int, optional
+        n_points : int, optional
             Number of points on each border
         fix_lon : bool
             Convert longitudes to positive numbers when Domain crosses dateline?
