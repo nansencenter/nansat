@@ -292,7 +292,7 @@ class DomainTest(unittest.TestCase):
 
     def test_get_border(self):
         dom = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        result = dom.get_border(nPoints=10)
+        result = dom.get_border(n_points=10)
         lat, lon = result
         self.assertEqual(type(lat), np.ndarray)
         self.assertEqual(type(lon), np.ndarray)
