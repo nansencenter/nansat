@@ -532,12 +532,12 @@ class Domain(object):
 
         return extent_dict
 
-    def get_border(self, nPoints=10, fix_lon=True, **kwargs):
+    def get_border(self, n_points=10, fix_lon=True, **kwargs):
         """Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
         -----------
-        nPoints : int, optional
+        n_points : int, optional
             Number of points on each border
         fix_lon : bool
             Convert longitudes to positive numbers when Domain crosses dateline?
@@ -548,7 +548,7 @@ class Domain(object):
             vectors with lon/lat values for each point at the border
 
         """
-        n_points = nPoints
+        n_points = n_points
         x_size, y_size = self.shape()[::-1]
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
@@ -587,7 +587,7 @@ class Domain(object):
         lon_vec, lat_vec = self.get_border(*args, **kwargs)
 
         ''' The following causes erratic geometry when using
-        WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
+        WKTReader().read(n.get_border_wkt(n_points=1000)) - only commented out
         now since this may cause other problems...
         '''
         warnings.warn("> 180 deg correction to longitudes - disabled..")
