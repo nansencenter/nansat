@@ -425,13 +425,13 @@ class DomainTest(unittest.TestCase):
         self.assertLess(result[2], result[3])
         self.assertEqual(result, (25.0, 34.980000000000004, 70.004000000000005, 72.0))
 
-    def test_get_pixelsize_meters(self):
+    def test_get_pixel_size_meters(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        x, y = d.get_pixelsize_meters()
+        x, y = d.get_pixel_size_meters()
         self.assertEqual(int(x), 444)
         self.assertEqual(int(y), 723)
         d = Domain(ds=gdal.Open(self.test_file_projected))
-        x, y = d.get_pixelsize_meters()
+        x, y = d.get_pixel_size_meters()
         self.assertEqual(int(x), 500)
         self.assertEqual(int(y), 500)
 

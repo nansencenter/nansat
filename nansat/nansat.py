@@ -386,9 +386,9 @@ class Nansat(Domain, Exporter):
         if height is not None:
             factor = height / src_shape[0]
 
-        # estimate factor if pixelsize is given
+        # estimate factor if pixel size is given
         if dst_pixel_size is not None:
-            src_pixel_size = np.array(self.get_pixelsize_meters(), np.float)[::-1]
+            src_pixel_size = np.array(self.get_pixel_size_meters(), np.float)[::-1]
             factor = (src_pixel_size / float(dst_pixel_size)).mean()
 
         factor = float(factor)
@@ -396,11 +396,11 @@ class Nansat(Domain, Exporter):
         self.logger.info('New shape: ({0}, {1})'.format(dst_shape[0], dst_shape[1]))
         return factor, dst_shape
 
-    def resize(self, factor=None, width=None, height=None, pixelsize=None, resample_alg=-1):
+    def resize(self, factor=None, width=None, height=None, pixel_size=None, resample_alg=-1):
         """Proportional resize of the dataset.
 
         The dataset is resized as (x_size*factor, y_size*factor)
-        If desired width, height or pixelsize is specified,
+        If desired width, height or pixel size is specified,
         the scaling factor is calculated accordingly.
         If GCPs are given in a dataset, they are also rewritten.
 
@@ -416,10 +416,10 @@ class Nansat(Domain, Exporter):
             Desired new width in pixels
         height : int, optional
             Desired new height in pixels
-        pixelsize : float, optional
-            Desired new pixelsize in meters (approximate).
+        pixel size : float, optional
+            Desired new pixel size in meters (approximate).
             A factor is calculated from ratio of the
-            current pixelsize to the desired pixelsize.
+            current pixel size to the desired pixel size.
         resample_alg : int (GDALResampleAlg), optional
 
             - -1 : Average (default),
@@ -436,7 +436,7 @@ class Nansat(Domain, Exporter):
             If GCPs are given in the dataset, they are also overwritten.
 
         """
-        factor, dst_shape = self._get_resize_shape(factor, width, height, pixelsize)
+        factor, dst_shape = self._get_resize_shape(factor, width, height, pixel_size)
         if resample_alg <= 0:
             self.vrt = self.vrt.get_subsampled_vrt(dst_shape[1], dst_shape[0], resample_alg)
         else:
@@ -975,6 +975,10 @@ class Nansat(Domain, Exporter):
             print(colorTable)
         outDataset = None
         self.vrt.copyproj(filename)
+
+    @property
+    def get_pixel_size(self):
+        return pixel_size(self.get_metadata('pixel_size'))
 
     @property
     def time_coverage_start(self):
