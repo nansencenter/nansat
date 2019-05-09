@@ -16,7 +16,7 @@ install:
   - source activate test-environment
   - python setup.py install
   - conda update --all
-  - conda update "poppler<0.62"
+  - conda install poppler==0.61
   - echo $PROJ_LIB
   - ls $PROJ_LIB
 
