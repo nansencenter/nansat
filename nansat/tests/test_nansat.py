@@ -176,9 +176,9 @@ class NansatTest(NansatTestBase):
         # present after opening the image
         self.assertTrue(np.allclose(n.get_corners(), nn.get_corners()))
 
-    def test_resize_by_pixelsize(self):
+    def test_resize_by_pixel_size(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
-        n.resize(pixelsize=500, resample_alg=1)
+        n.resize(pixel_size=500, resample_alg=1)
 
         self.assertEqual(type(n[1]), np.ndarray)
 
