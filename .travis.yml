@@ -12,7 +12,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -c conda-forge -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
+  - conda create -q -c conda-forge -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap "poppler<0.62"
   - source activate test-environment
   - python setup.py install
   - conda update --all
