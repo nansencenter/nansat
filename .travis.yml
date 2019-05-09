@@ -15,7 +15,7 @@ install:
   - conda create -q -c conda-forge -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
   - source activate test-environment
   - python setup.py install
-  - echo $PROJ_LIB
+  - ls $PROJ_LIB
 
 script:
   - coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test
