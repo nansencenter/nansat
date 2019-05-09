@@ -548,7 +548,6 @@ class Domain(object):
             vectors with lon/lat values for each point at the border
 
         """
-        n_points = n_points
         x_size, y_size = self.shape()[::-1]
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
