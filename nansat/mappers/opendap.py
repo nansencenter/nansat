@@ -237,6 +237,8 @@ class Opendap(VRT):
 
         if 'projection' in self.ds.variables:
             self.srcDSProjection = NSR(srs=self.ds.variables['projection'].proj4_string).wkt
+        elif 'UTM_projection' in self.ds.variables:
+            self.srcDSProjection = NSR(srs=self.ds.variables['UTM_projection'].proj4_string).wkt
 
         ds_time = self.get_dataset_time()
         ds_times = self.convert_dstime_datetimes(ds_time)
