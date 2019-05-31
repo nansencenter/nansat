@@ -12,9 +12,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -c conda-forge -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION gdal numpy pillow netcdf4 python-dateutil nose coveralls mock urllib3 basemap
   - source activate test-environment
   - python setup.py install
+  
 
 script:
   - coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test

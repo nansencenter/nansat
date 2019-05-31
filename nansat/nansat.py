@@ -29,12 +29,19 @@ from numpy import nanmedian
 from numpy.lib.recfunctions import append_fields
 from netCDF4 import Dataset
 
+try:
+    from matplotlib import cm
+except ImportError:
+    MATPLOTLIB_IS_INSTALLED = False
+else:
+    MATPLOTLIB_IS_INSTALLED = True
+
 from nansat.domain import Domain
 from nansat.exporter import Exporter
 from nansat.figure import Figure
 from nansat.vrt import VRT
 from nansat.tools import add_logger, gdal
-from nansat.tools import parse_time, test_openable
+from nansat.tools import parse_time
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -401,8 +408,10 @@ class Nansat(Domain, Exporter):
         -----------
         factor : float, optional, default=1
             Scaling factor for width and height
-            > 1 means increasing domain size
-            < 1 means decreasing domain size
+
+            - > 1 means increasing domain size
+            - < 1 means decreasing domain size
+
         width : int, optional
             Desired new width in pixels
         height : int, optional
@@ -412,12 +421,13 @@ class Nansat(Domain, Exporter):
             A factor is calculated from ratio of the
             current pixelsize to the desired pixelsize.
         resample_alg : int (GDALResampleAlg), optional
-               -1 : Average (default),
-                0 : NearestNeighbour
-                1 : Bilinear,
-                2 : Cubic,
-                3 : CubicSpline,
-                4 : Lancoz
+
+            - -1 : Average (default),
+            - 0 : NearestNeighbour
+            - 1 : Bilinear,
+            - 2 : Cubic,
+            - 3 : CubicSpline,
+            - 4 : Lancoz
 
         Notes
         -----
@@ -467,8 +477,8 @@ class Nansat(Domain, Exporter):
         Parameters
         -----------
         band_id : int or str
-            if int - a band number of the band to fetch
-            if str band_id = {'name': band_id}
+            - if int - a band number of the band to fetch
+            - if str band_id = {'name': band_id}
 
         Returns
         --------
@@ -536,11 +546,13 @@ class Nansat(Domain, Exporter):
         dst_domain : domain
             destination Domain where projection and resolution are set
         resample_alg : int (GDALResampleAlg)
-            0 : NearestNeighbour
-            1 : Bilinear
-            2 : Cubic,
-            3 : CubicSpline
-            4 : Lancoz
+
+            - 0 : NearestNeighbour
+            - 1 : Bilinear
+            - 2 : Cubic,
+            - 3 : CubicSpline
+            - 4 : Lancoz
+
         block_size : int
             size of blocks for resampling. Large value decrease speed
             but increase accuracy at the edge
@@ -569,14 +581,14 @@ class Nansat(Domain, Exporter):
 
         See Also
         ---------
-        http://www.gdal.org/gdalwarp.html
+        `<http://www.gdal.org/gdalwarp.html>`_
 
         """
         # This is time consuming and therefore not done...:
         #if not self.overlaps(dst_domain):
         #    raise ValueError('Source and destination domains do not overlap')
 
-        # if self spans from 0 to 360 and dst_domain is west of 0:
+        # if self spans from 0 to 360 AND dst_domain is west of 0:
         #     shift self westwards by 180 degrees
         # check span
         srcCorners = self.get_corners()
@@ -703,8 +715,9 @@ class Nansat(Domain, Exporter):
 
         See Also
         ---------
-        http://www.glcf.umd.edu/data/watermask/
-        http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water
+        `<http://www.glcf.umd.edu/data/watermask/>`_
+
+        `<http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water>`_
 
         """
         mod44DataExist = True
@@ -784,7 +797,8 @@ class Nansat(Domain, Exporter):
 
         Returns
         -------
-        Figure object
+        Figure : Figure object
+            filename extension define format (default format is png)
 
         Example
         --------
@@ -801,7 +815,8 @@ class Nansat(Domain, Exporter):
         See also
         --------
         Figure()
-        http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+
+        `<http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps>`_
 
         """
         # convert <bands> from integer, or string, or list of strings
@@ -925,10 +940,18 @@ class Nansat(Domain, Exporter):
         bMin = float(minmax.split(' ')[0])
         bMax = float(minmax.split(' ')[1])
         # Make colormap from WKV information
-        cmap = np.vstack([np.arange(256.),
-                          np.arange(256.),
-                          np.arange(256.),
-                          np.ones(256)*255]).T
+        try:
+            colormap = band.GetMetadataItem('colormap')
+            cmap = cm.get_cmap(colormap, 256)
+            cmap = cmap(np.arange(256)) * 255
+        except:
+            if not MATPLOTLIB_IS_INSTALLED:
+                self.logger.debug('Geotiff is only available in gray '
+                                  'since matplotlib is not installed.')
+            cmap = np.vstack([np.arange(256.),
+                              np.arange(256.),
+                              np.arange(256.),
+                              np.ones(256)*255]).T
         colorTable = gdal.ColorTable()
         for i in range(cmap.shape[0]):
             colorEntry = (int(cmap[i, 0]), int(cmap[i, 1]),
@@ -976,8 +999,10 @@ class Nansat(Domain, Exporter):
 
         Returns
         --------
-        * string with metadata if key is given and found
-        * dictionary with all metadata if key is not given
+        metadata : str
+            string with metadata if key is given and found
+        metadata : dict
+            dictionary with all metadata if key is not given
 
         Raises
         ------
@@ -1082,13 +1107,11 @@ class Nansat(Domain, Exporter):
 
         """
         if os.path.isfile(self.filename):
-            # Make sure file exists and can be opened for reading
-            # before proceeding
-            test_openable(self.filename)
+            # Make sure file exists and can be opened for reading before proceeding
+            assert os.access(self.filename, os.R_OK)
         else:
-            ff = glob.glob(os.path.join(self.filename, '*.*'))
-            for f in ff:
-                test_openable(f)
+            for f in glob.glob(os.path.join(self.filename, '*.*')):
+                assert os.access(f, os.R_OK)
         # lazy import of nansat mappers
         # if nansat mappers were not imported yet
         global nansatMappers
@@ -1175,13 +1198,13 @@ class Nansat(Domain, Exporter):
         Parameters
         ----------
         band_id : int or str or dict
-            if int : checks if such band exists and returns band_id
-            if str : finds band with coresponding name
-            if dict : finds first band with given metadata
+            - if int : checks if such band exists and returns band_id
+            - if str : finds band with coresponding name
+            - if dict : finds first band with given metadata
 
         Returns
         --------
-        int : absolute band number
+        absolute band number : int
 
         """
         band_number = 0

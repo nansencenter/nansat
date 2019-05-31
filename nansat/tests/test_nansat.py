@@ -316,7 +316,7 @@ class NansatTest(NansatTestBase):
         n = Nansat(self.test_file_arctic, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, "-te -180 180 60 90 -ts 500 500")
         n.reproject(d)
-        tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain.png')
+        tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain_span_entire_lons.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
         self.assertEqual(n.shape(), (500, 500))
@@ -464,7 +464,7 @@ class NansatTest(NansatTestBase):
     def test_write_figure_legend(self):
         n1 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_write_figure_legend.png')
-        n1.write_figure(tmpfilename, 3, clim='hist', legend=True)
+        n1.write_figure(tmpfilename, 3, clim='hist', legend=True, titleString="Title String")
 
         self.assertTrue(os.path.exists(tmpfilename))
 

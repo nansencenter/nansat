@@ -65,3 +65,24 @@ all tests on Travi-CI, Appveyor and Coverals. Then execute:
 
 Information how to use Conda-Smithy can be found at `The tool for managing conda-forge feedstocks
 <https://github.com/conda-forge/conda-smithy>`_
+
+
+Releasing on Docker
+-------------------
+To build an image with stable version of Nansat you need to build the image and push it to Docker Hub:
+
+::
+    # build the base image with conda
+    docker build . -t nansat:conda --target conda
+    # build the image for compiling Nansat
+    docker build . -t nansat:dev --target dev
+    # build the image for distributing Nansat
+    docker build . -t nansat:latest --target latest
+    # find the ide of the nansat:latest image (e.g. bb38976d03cf)
+    docker images
+    # tag the image (bb38976d03cf is the id of the nansat:latest image)
+    docker tag bb38976d03cf akorosov/nansat:latest
+    # authenticate on Docker Hub
+    docker login --username=yourhubusername --email=youremail@company.com
+    # push the image to Docker Hub
+    docker push akorosov/nansat:latest

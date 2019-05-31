@@ -1,11 +1,10 @@
-+---------+------------------------+---------------------------+---------------------------+------------+
-| Branch  | Travis CI              | AppVeyor Status           | Code Coverage             | Zenodo DOI |
-+---------+------------------------+---------------------------+---------------------------+------------+
-| Master  | |Build Status Master|  | |AppVeyor Status Master|  | |Coverage Status Master|  | |DOI|      |
-+---------+------------------------+---------------------------+---------------------------+------------+ 
-| Develop | |Build Status Develop| | |AppVeyor Status Develop| | |Coverage Status Develop| |            |
-+---------+------------------------+---------------------------+---------------------------+------------+
-
++---------+------------------------+---------------------------+------------+
+| Branch  | Travis CI              | Code Coverage             | Zenodo DOI |
++---------+------------------------+---------------------------+------------+
+| Master  | |Build Status Master|  | |Coverage Status Master|  | |DOI|      |
++---------+------------------------+---------------------------+------------+
+| Develop | |Build Status Develop| | |Coverage Status Develop| |            |
++---------+------------------------+---------------------------+------------+
 
 .. NOTE: include statements doesn't work with github README.rst - the first section here is repeated
 .. in docs/source/about.rst as well...
@@ -60,28 +59,36 @@ You will find information about contributing to Nansat at `Read the Docs`_.
 Installation
 ------------
 
-The easiest way to install Nansat on any platform is to use Anaconda_ (`download installer <https://conda.io/miniconda.html>`_).
+An easy way to install Nansat requirements on any platform is to use Anaconda_ (`download installer <https://conda.io/miniconda.html>`_).
 
 .. _Anaconda: http://docs.continuum.io/anaconda/index
 
 ::
 
-    # install Nansat and requirements from the conda-forge channel
-    conda create -n py3nansat -c conda-forge nansat
+    # create environment with key requirements
+    conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
+    # activate environment
+    source activate py3nansat
+    # install nansat
+    pip instal nansat
+    # launch python
+    python
 
-Activate and work in the nansat environment
--------------------------------------------
+Another option is to use Docker containers (`read about Docker <https://docs.docker.com/>`_).:
+
+::
+
+    # download image with everything pre-installed and launch ipython
+    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
+
+
+Example
+-------
 
 ::
 
     # download a test file
     wget https://github.com/nansencenter/nansat/raw/develop/nansat/tests/data/stere.tif
-
-    # activate the py3nansat environment
-    source activate py3nansat
-
-    # start python and work with Nansat
-    python
 
 .. code:: python
 
@@ -93,9 +100,6 @@ Activate and work in the nansat environment
 
     # see file content
     print n
-
-    # view file footpring
-    n.write_map('stere.footpring.png')
 
     # create RGB with auto-stretched histogram
     n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
@@ -116,7 +120,7 @@ Nansat is outfitted with unittests, which you can use to ensure that all functio
 
     # Run all tests including nansat_integration_tests with coverage
     cd <nansat_repository_folder>
-    nosetests -w . --with-coverage --cover-package=nansat    
+    nosetests -w . --with-coverage --cover-package=nansat
 
 Fore more information see `Read the Docs`_ or notebooks for `Nansat
 lectures <https://github.com/nansencenter/nansat-lectures/tree/master/notebooks>`__
@@ -136,17 +140,11 @@ Development is supported by the Research Council of Norway as a part of
 
 .. |Build Status Master| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=master
    :target: https://travis-ci.org/nansencenter/nansat/branches
-.. |AppVeyor Status Master| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/master
 .. |Coverage Status Master| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=master&service=github
    :target: https://coveralls.io/github/nansencenter/nansat?branch=master
-
 .. |Build Status Develop| image:: https://travis-ci.org/nansencenter/nansat.svg?branch=develop
    :target: https://travis-ci.org/nansencenter/nansat/branches
-.. |AppVeyor Status Develop| image:: https://ci.appveyor.com/api/projects/status/la50x7l2yy4d9ljr/branch/develop?svg=true
-   :target: https://ci.appveyor.com/project/akorosov/nansat/branch/develop
 .. |Coverage Status Develop| image:: https://coveralls.io/repos/nansencenter/nansat/badge.svg?branch=develop&service=github
    :target: https://coveralls.io/github/nansencenter/nansat?branch=develop
-
 .. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.59998.svg
    :target: https://doi.org/10.5281/zenodo.59998

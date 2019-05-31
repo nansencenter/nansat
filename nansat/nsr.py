@@ -1,4 +1,4 @@
-# Name:    domain.py
+# Name:    nsr.py
 # Purpose: Container of NSR class
 # Authors:      Anton Korosov
 # Created:      01.02.2014
@@ -17,6 +17,7 @@ import sys
 import osr
 
 from nansat.exceptions import NansatProjectionError
+
 
 class NSR(osr.SpatialReference, object):
     """Nansat Spatial Reference. Overrides constructor of osr.SpatialReference.
@@ -46,14 +47,8 @@ class NSR(osr.SpatialReference, object):
                 AUTHORITY["EPSG","9108"]],
             AUTHORITY["EPSG","4326"]]'
 
-    See Also
-    --------
-    [http://www.gdal.org/gdalwarp.html]
-    [http://trac.osgeo.org/proj/]
-    [http://spatialreference.org/]
-    [http://www.gdal.org/ogr/osr_tutorial.html]
-
     """
+
     def __init__(self, srs=0):
         """Create Spatial Reference System from input parameter"""
         if sys.version_info.major == 2:

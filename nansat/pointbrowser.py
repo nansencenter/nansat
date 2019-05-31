@@ -47,12 +47,12 @@ class PointBrowser():
 
     Note
     ----
-    self.fig        : pyplot Figure
-    self.data       : ndarray with data
-    self.ax         : axes
-    self.points     : plot with points
-    self.line       : plot with points
-    self.coordinates: container for recorded coordinates
+       - self.fig        : pyplot Figure
+       - self.data       : ndarray with data
+       - self.ax         : axes
+       - self.points     : plot with points
+       - self.line       : plot with points
+       - self.coordinates: container for recorded coordinates
 
     """
     # instance attributes
@@ -144,6 +144,11 @@ class PointBrowser():
         where x1,y1 is the first point in the first transect,
         and xn,yn the last point in the first transect.
         The inner x/y-arrays are also numpy.ndarrays
+
+        Returns
+        -------
+        points : array
+
         '''
         self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.ax.set_xlim([0, self.data.shape[1]])

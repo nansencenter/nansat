@@ -22,27 +22,30 @@ from nansat.exceptions import WrongMapperError
 
 
 class Mapper(VRT):
-
     """
     Mapping for the GTOPO30 (`<https://lta.cr.usgs.gov/GTOPO30>`_) and the GMTED2010
     (`<https://lta.cr.usgs.gov/GMTED2010>`_) global elevation models.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     filename : string
         The vrt filename, e.g., ``gtopo30.vrt``
     gdal_dataset : osgeo.gdal.Dataset
         The GDAL dataset returned by ``gdal.Open(filename)``
 
-    Either the name of a GTOPO30 DEM file or GMTED2010 tif file, or ``<path>/<dem>.vrt``. The latter
-    is an aggregation of the DEM-files available from the given DEM. The GTOPO30 vrt does not
-    contain the Antarctic, because this is in polarstereographic projection.
-
+    Example
+    -------
     You can create your own ``gtopo30.vrt`` file with gdal, e.g.:
 
     .. code-block:: bash
 
         gdalbuildvrt <dem>.vrt [E,W]*.DEM
+
+    Note
+    ----
+    Either the name of a GTOPO30 DEM file or GMTED2010 tif file, or ``<path>/<dem>.vrt``. The latter
+    is an aggregation of the DEM-files available from the given DEM. The GTOPO30 vrt does not
+    contain the Antarctic, because this is in polarstereographic projection.
 
     Remember to update this mapper by adding allowed filenames to the list of accepted filenames
     (accepted_names) if you create or apply new DEM datasets.

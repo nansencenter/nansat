@@ -9,8 +9,12 @@ The fastest way to install nansat:
 
 .. code-block:: bash
 
-	conda create -n nansat -c conda-forge nansat
-	source activate nansat
+    # create environment with key requirements
+    conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
+    # activate environment
+    source activate py3nansat
+    # install nansat
+    pip instal nansat
 
 Nansat is now installed.
 For more details and other methods of installing Nansat, see below.
@@ -30,11 +34,16 @@ Nansat requires the following packages:
 The following packages are optional:
 
 * `Scipy <http://scipy.org/>`_ 0.18.1
- * Some mappers will not work without scipy. E.g. *sentinel1_l1*
+
+  * Some mappers will not work without scipy. E.g. *sentinel1_l1*
+
 * `Matplotlib <http://matplotlib.org/>`_ >=2.1.1
- * matplotlib is required for Nansat methods *digitize_points()* and *crop_interactive()*
+
+  * matplotlib is required for Nansat methods *digitize_points()* and *crop_interactive()*
+
 * `Basemap <http://matplotlib.org/basemap/>`_ >=1.0.8
- * basemap is required in *write_domain_map()*
+
+  * basemap is required in *write_domain_map()*
 
 The most tricky to compile yourself is GDAL and Basemap. But one can find pre-built binaries
 available for different platforms. We recommend to install all dependencies with Conda, from the
@@ -53,19 +62,27 @@ Install dependencies from Anaconda
 This is the recommended approach for installing dependencies.
 
 * Download `Miniconda <https://conda.io/miniconda.html>`_ for your platform of choice.
-* Install Miniconda
- * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
-   Run this to access the conda installation.
- * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
-   directory as explained by the installer.
-* Run the following three commands:
- * *conda create -n nansat Python=3.6*
-  * Or use Python version 3.5 or 2.7 if you need those versions.
- * *source activate nansat*
-  * On windows you would ommit 'source' and just run *'activate nansat'*
- * *conda install --yes -c conda-forge pythesint numpy scipy=0.18.1 matplotlib basemap netcdf4
-   gdal pillow urllib3*
 
+* Install Miniconda
+
+  * When you install Miniconda on Windows, you will get a new app called "Anaconda Prompt".
+    Run this to access the conda installation.
+
+  * On Linux/OS X use a regular terminal and make sure PATH is set to contain the installation
+    directory as explained by the installer.
+
+* Run the following three commands:
+
+  * *conda create -n nansat Python=3.6*
+
+    * Or use Python version 3.5 or 2.7 if you need those versions.
+
+  * *source activate nansat*
+
+    * On windows you would ommit 'source' and just run *'activate nansat'*
+
+  * *conda install --yes -c conda-forge pythesint numpy scipy=0.18.1 matplotlib basemap netcdf4 gdal
+    pillow urllib3*
 
 Install Pre-built Binaries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -150,17 +167,18 @@ easily be done with
 
   pip install nose mock
 
+
 Use a self-provisioned Virtual Machine
 --------------------------------------
 
-Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration 
-for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>`_ that brings up and 
-provision a `VirtualBox <https://www.virtualbox.org/>`_ machine is provided in Nansat repository. To start 
-the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat 
+Another option to install Nansat in a controlled environment is to use a virtual machine. Configuration
+for `Vagrant <https://www.vagrantup.com/>`_ and `Ansible <https://www.ansible.com/>`_ that brings up and
+provision a `VirtualBox <https://www.virtualbox.org/>`_ machine is provided in Nansat repository. To start
+the machine you need to install Vagrant and VirtualBox on your computer; clone or download the nansat
 source code; and start the machine:
 
 ::
-  
+
   # download nansat source code
   git clone https://github.com/nansencenter/nansat.git
   cd nansat
@@ -176,3 +194,47 @@ That's it! The virtual machine will be started and all software will be installe
   source activate py3nansat
   python
 
+
+Use Docker
+----------
+Docker is a platform for developers and sysadmins to develop, deploy, and run applications with
+containers (`Get started with Docker <https://docs.docker.com/get-started/>`_). We have developed
+an image that containes compiled Nansat an a number of Python libraries needed for development
+and running of Nansat. A user can start using the production version of Nansat Docker image:
+
+::
+
+    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
+
+This will mound directory /path/to/data on your host to the directory /data in the container
+and launch IPython where Nansat is available.
+
+For developing Nansat you needs access to the code both from the container (to run it)
+and from the host (to edit it). For this purpose you should clone Nansat repository and
+do the following steps:
+1. Build pixelfunctions inplace
+
+::
+
+    docker run --rm -it -v `pwd`:/src nansat python setup.py build_ext --inplace
+
+2. Run container with mounting of the current directory into /src. In this case Python
+will use Nansat from /src/nansat (the directory shared between host and container):
+
+::
+
+    # launch Python with Nansat in container
+    docker run --rm -it -v `pwd`:/src nansat python
+
+    # ...or run nosetests
+    docker run --rm -it -v `pwd`:/src nansat nosetests nansat
+
+Alternatively you can run the script *build_containr.sh*. The script will build the image with
+Python libraries from Anaconda, compile the Nansat code inplace and create a
+container for running Nansat. You can then start container:
+
+::
+
+    docker start -i nansat
+    # and run nosetests:
+    (base) root@d1625f2ce873:~# nosetests nansat

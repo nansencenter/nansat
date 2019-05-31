@@ -40,19 +40,25 @@ How to report and handle a hotfix
 If a bug is relatively quick and easy to handle, we call it a hotfix. A hotfix is branched from master (by team members), and the following workflow applies:
 
 1. Branch from master into the hotfix specific branch (**hotfix<NNN>_<short-heading>**)
+
   a) Update the tests
   b) Fix the bug
   c) Increment micro version in ``setup.py``
   d) Commit to the hotfix branch
+
 2. If needed rebase the hotfix branch on top of master:
+
   a) Checkout the hotfix branch
   b) Use ``git rebase master``
   c) Fix conflicts if any
   d) Test the code
   e) Push your hotfix branch to GitHub. Note: You have to use 'git push -f' in order to rewrite the history on github. Rebase will not cause problems if only one person works with the hotfix branch.
+
 3. Go to `<https://github.com/nansencenter/nansat>`_ and add a pull request for the newly pushed
    hotfix branch and assign a reviewer
+
 4. Let the reviewer do the following:
+
   a) Wait for tests on Travis CI to pass
   b) Check the code
   c) Request changes or merge the pull request into master using 'Rebase and Merge' button in the online tool.
@@ -99,9 +105,12 @@ General conventions
    # Additional mapper/format specific links and information
 
 * Docstrings should follow the `Numpy style
-  <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt#docstring-standard>`_
-* Available headers are 'Parameters', 'Returns','Other parameters', 'Modifies', 'Crates', 'Raises',
-  'See also', 'Notes', 'References' and 'Examples'
+  <https://numpydoc.readthedocs.io/en/latest/>`_
+  , with an extensive example file here `example.py
+  <https://numpydoc.readthedocs.io/en/latest/example.html#example>`_
+* Valid headers for functions and classes are, in the following order, 'Parameters', 'Attributes' (only class),
+  'Returns' (only function), 'Yields', 'Other parameters', 'Raises', 'Warns', 'Warnings',
+  'See also', 'Notes', 'References' and 'Examples'.
 
 Example function with complete Docstring
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,10 +120,11 @@ Example function with complete Docstring
    def some_function(start = 0, stop, step = 1):
        """ Return evenly spaced values within a given interval.
 
-       | Values are generated within the half-open interval ''[start, stop)''
-         (in other words, the interval including 'start' but excluding 'stop').
-       | For integer arguments the function is equivalent to the Python built-in
-         'range '_ function, but returns a ndarray rather than a list.
+       Values are generated within the half-open interval ''[start, stop)''
+       (in other words, the interval including 'start' but excluding 'stop').
+
+       For integer arguments the function is equivalent to the Python built-in
+       'range '_ function, but returns a ndarray rather than a list.
 
        Parameters
        ----------
@@ -134,11 +144,6 @@ Example function with complete Docstring
 
            For floating point arguments, the length of the result is ''ceil((stop - start)/step)''. Because of floating point overflow, this rule may result in the last element of 'out' being greater than 'stop'.
 
-       Modifies
-       --------
-       self.vrt : VRT
-           Dataset RasterXSize and RasterYSaize are changed in the the current VRT dataset
-
        See Also
        --------
        linspace : Evenly spaced numbers with careful handling of endpoints
@@ -149,6 +154,7 @@ Example function with complete Docstring
        --------
        >>> np.arange(3)
        array([0, 1, 2])
+
        """
 
 Naming conventions

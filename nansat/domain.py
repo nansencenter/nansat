@@ -33,6 +33,7 @@ class Domain(object):
 
     A Domain object describes all attributes of geographical
     reference of a raster:
+
       * width and height (number of pixels)
       * pixel size (e.g. in decimal degrees or in meters)
       * relation between pixel/line coordinates and geographical
@@ -71,21 +72,26 @@ class Domain(object):
     reference of the grid.
 
     There are three ways to store geo-reference in a GDAL dataset:
+
       * Using GeoTransfrom to define linear relationship between raster
         pixel/line and geographical X/Y coordinates
       * Using GCPs (set of Ground Control Points) to define non-linear
         relationship between pixel/line and X/Y
       * Using Geolocation Array - full grids of X/Y coordinates for
         each pixel of a raster
+
     The relation between X/Y coordinates of the raster and latitude/longitude
     coordinates is defined by projection type and projection parameters.
     These pieces of information are therefore stored in Domain:
+
       * Type and parameters of projection +
+
         * GeoTransform, or
         * GCPs, or
         * GeolocationArrays
 
     Domain has methods for basic operations with georeference information:
+
       * creating georeference from input options;
       * fetching corner, border or full grids of X/Y coordinates;
       * making map of the georeferenced grid in a PNG or KML file;
@@ -103,10 +109,14 @@ class Domain(object):
     See Also
     ---------
     Nansat.reproject()
-    [http://www.gdal.org/gdalwarp.html]
-    [http://trac.osgeo.org/proj/]
-    [http://spatialreference.org/]
-    [http://www.gdal.org/ogr/osr_tutorial.html]
+
+    `<http://www.gdal.org/gdalwarp.html>`_
+
+    `<http://trac.osgeo.org/proj/>`_
+
+    `<http://spatialreference.org/>`_
+
+    `<http://www.gdal.org/osr_tutorial.html>`_
 
     """
 
@@ -497,7 +507,7 @@ class Domain(object):
 
         Returns
         --------
-        extentDic : dictionary
+        extentDict : dictionary
             has key ('te' or 'lle') and ('tr' or 'ts') and their values.
 
         Raises
@@ -522,12 +532,12 @@ class Domain(object):
 
         return extent_dict
 
-    def get_border(self, nPoints=10, fix_lon=True, **kwargs):
+    def get_border(self, n_points=10, fix_lon=True, **kwargs):
         """Generate two vectors with values of lat/lon for the border of domain
 
         Parameters
         -----------
-        nPoints : int, optional
+        n_points : int, optional
             Number of points on each border
         fix_lon : bool
             Convert longitudes to positive numbers when Domain crosses dateline?
@@ -538,7 +548,6 @@ class Domain(object):
             vectors with lon/lat values for each point at the border
 
         """
-        n_points = nPoints
         x_size, y_size = self.shape()[::-1]
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
@@ -577,7 +586,7 @@ class Domain(object):
         lon_vec, lat_vec = self.get_border(*args, **kwargs)
 
         ''' The following causes erratic geometry when using
-        WKTReader().read(n.get_border_wkt(nPoints=1000)) - only commented out
+        WKTReader().read(n.get_border_wkt(n_points=1000)) - only commented out
         now since this may cause other problems...
         '''
         warnings.warn("> 180 deg correction to longitudes - disabled..")
@@ -592,7 +601,7 @@ class Domain(object):
 
         Returns
         -------
-        OGR Geometry, type Polygon
+        OGR Geometry : Polygon
 
         """
 
@@ -603,7 +612,7 @@ class Domain(object):
 
         Returns
         -------
-        str, the Polygon border in GeoJson format
+        the Polygon border in GeoJson format : str
 
         """
         return ogr.CreateGeometryFromWkt(self.get_border_wkt(*args, **kwargs)).ExportToJson()
@@ -649,7 +658,7 @@ class Domain(object):
 
         Returns
         -------
-        str : 'PolygonFromText(PolygonWKT)'
+        'PolygonFromText(PolygonWKT)' : str
 
         """
 
@@ -769,6 +778,7 @@ class Domain(object):
         Returns
         --------
         resolution_x, resolution_y, raster_x_size, raster_y_size : float
+
         """
         resolution_x = tr_arr[0]
         resolution_y = -(tr_arr[1])
@@ -797,8 +807,10 @@ class Domain(object):
         colVector : lists
             X and Y coordinates in pixel/line or lon/lat  coordinate system
         DstToSrc : 0 or 1
-            0 - forward transform (pix/line => lon/lat)
-            1 - inverse transformation
+
+            - 0 - forward transform (pix/line => lon/lat)
+            - 1 - inverse transformation
+
         dstSRS : NSR
             destination spatial reference
 
