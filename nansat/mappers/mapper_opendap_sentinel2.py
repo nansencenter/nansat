@@ -40,7 +40,8 @@ class Mapper(Opendap):
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
-        self.dataset.SetMetadataItem('entry_title', str(self.ds.getncattr('product_id')))
+        self.dataset.SetMetadataItem('entry_title', str(self.ds.getncattr('title')))
+        self.dataset.SetMetadataItem('entry_id', str(self.ds.getncattr('DATATAKE_1_ID')))
         self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
         self.dataset.SetMetadataItem('ISO_topic_category',
                 pti.get_iso19115_topic_category('Imagery/Base Maps/Earth Cover')['iso_topic_category'])
