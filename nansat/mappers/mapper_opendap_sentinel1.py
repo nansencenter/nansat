@@ -41,14 +41,39 @@ class Mapper(Opendap):
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
+        layer_time_id, layer_date = Opendap.get_layer_datetime(None,
+                self.convert_dstime_datetimes(self.get_dataset_time()))
+        polarizations = [self.ds.polarisation[i:i+2] for i in range(0,len(self.ds.polarisation),2)]
+        for pol in polarizations:
+            dims = list(self.ds.variables['dn_%s' %pol].dimensions)
+            dims[dims.index(self.timeVarName)] = layer_time_id
+            src = [
+                    self.get_metaitem(filename, 'Amplitude_%s' %pol, dims)['src'],
+                    self.get_metaitem(filename, 'sigmaNought_%s' %pol, dims)['src']
+                ]
+            dst = {
+                    'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                    'PixelFunctionType': 'Sentinel1Calibration',
+                    'polarization': pol,
+                    'suffix': pol,
+                }
+            self.create_band(src, dst)
+            self.dataset.FlushCache()
+
         self._remove_geotransform()
         self._remove_geolocation()
         self.dataset.SetProjection('')
         self.dataset.SetGCPs(self.get_gcps(), NSR().wkt)
 
-        self.dataset.SetMetadataItem('entry_title', filename)
-        self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
-        self.dataset.SetMetadataItem('ISO_topic_category',
+        mditem = 'entry_title'
+        if not self.dataset.GetMetadataItem(mditem):
+            self.dataset.SetMetadataItem(mditem, filename)
+        mditem = 'data_center'
+        if not self.dataset.GetMetadataItem(mditem):
+            self.dataset.SetMetadataItem(mditem, json.dumps(pti.get_gcmd_provider('NO/MET')))
+        mditem = 'ISO_topic_category'
+        if not self.dataset.GetMetadataItem(mditem):
+            self.dataset.SetMetadataItem(mditem,
                 pti.get_iso19115_topic_category('Imagery/Base Maps/Earth Cover')['iso_topic_category'])
 
         mm = pti.get_gcmd_instrument('sar')
@@ -58,6 +83,12 @@ class Mapper(Opendap):
             ee = pti.get_gcmd_platform('sentinel-1b')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        # Times in opendap.py are wrong for S1...
+        self.dataset.SetMetadataItem('time_coverage_start',
+                self.dataset.GetMetadataItem('ACQUISITION_START_TIME'))
+        self.dataset.SetMetadataItem('time_coverage_end', 
+                self.dataset.GetMetadataItem('ACQUISITION_STOP_TIME'))
 
     @staticmethod
     def get_date(filename):
