@@ -260,6 +260,10 @@ class Opendap(VRT):
 
         self.create_bands(meta_dict)
 
+        # Copy metadata
+        for attr in self.ds.ncattrs():
+            self.dataset.SetMetadataItem(attr, self.ds.getncattr(attr))
+
         # set time
         time_res_sec = self.get_time_coverage_resolution()
         self.dataset.SetMetadataItem('time_coverage_start', str(layer_date))
