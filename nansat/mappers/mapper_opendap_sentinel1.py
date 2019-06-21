@@ -13,11 +13,19 @@ import numpy as np
 from netCDF4 import Dataset
 import gdal
 
+try:
+    import scipy
+except:
+    IMPORT_SCIPY = False
+else:
+    IMPORT_SCIPY = True
+
 import pythesint as pti
 
 from nansat.mappers.opendap import Opendap
 from nansat.vrt import VRT
 from nansat.nsr import NSR
+from nansat.tools import initial_bearing
 
 
 class Mapper(Opendap):
@@ -37,6 +45,10 @@ class Mapper(Opendap):
                  ds=None, bands=None, cachedir=None, *args, **kwargs):
 
         self.test_mapper(filename)
+
+        if not IMPORT_SCIPY:
+            raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
+
         timestamp = date if date else self.get_date(filename)
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
@@ -59,6 +71,56 @@ class Mapper(Opendap):
                 }
             self.create_band(src, dst)
             self.dataset.FlushCache()
+
+        # Add look direction band
+        pixel = self.ds['GCP_pixel_%s' %polarizations[0]][:].data
+        line = self.ds['GCP_line_%s' %polarizations[0]][:].data
+        lon = self.ds['GCP_longitude_%s' %polarizations[0]][:].data
+        lat = self.ds['GCP_latitude_%s' %polarizations[0]][:].data
+        lon = lon.reshape(np.unique(line[:].data).shape[0],
+                np.unique(pixel[:].data).shape[0])
+        lat = lat.reshape(np.unique(line[:].data).shape[0],
+                np.unique(pixel[:].data).shape[0])
+
+        """
+        TODO: Repetition from mapper_sentinel1_l1.py... Consider generalising
+        """
+        sat_heading = initial_bearing(lon[:-1, :], lat[:-1, :], lon[1:, :], lat[1:, :])
+        look_direction = scipy.ndimage.interpolation.zoom( np.mod(sat_heading + 90, 360),
+                (np.shape(lon)[0] / (np.shape(lon)[0]-1.), 1))
+
+        # Decompose, to avoid interpolation errors around 0 <-> 360
+        look_direction_u = np.sin(np.deg2rad(look_direction))
+        look_direction_v = np.cos(np.deg2rad(look_direction))
+        look_u_VRT = VRT.from_array(look_direction_u)
+        look_v_VRT = VRT.from_array(look_direction_v)
+        lookVRT = VRT.from_lonlat(lon, lat)
+        lookVRT.create_band([{'SourceFilename': look_u_VRT.filename,
+                               'SourceBand': 1},
+                              {'SourceFilename': look_v_VRT.filename,
+                               'SourceBand': 1}],
+                             {'PixelFunctionType': 'UVToDirectionTo'}
+                             )
+
+        # Blow up to full size
+        lookVRT = lookVRT.get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1)
+
+        # Store VRTs so that they are accessible later
+        self.band_vrts['look_u_VRT'] = look_u_VRT
+        self.band_vrts['look_v_VRT'] = look_v_VRT
+        self.band_vrts['lookVRT'] = lookVRT
+
+        src = {
+                'SourceFilename': self.band_vrts['lookVRT'].filename,
+                'SourceBand': 1
+            }
+        dst = {
+                'wkv': 'sensor_azimuth_angle',
+                'name': 'look_direction'
+            }
+        self.create_band(src, dst)
+        self.dataset.FlushCache()
+        """ End repetition """
 
         self._remove_geotransform()
         self._remove_geolocation()
