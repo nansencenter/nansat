@@ -294,7 +294,12 @@ class Opendap(VRT):
         meta_dict = []
         for var_name in var_names:
             # Get a list of variable dimensions
-            var_dimensions = list(self.ds.variables[var_name].dimensions)
+            try:
+                var_dimensions = list(self.ds.variables[var_name].dimensions)
+            except KeyError:
+                # variable does not exist, simply skip..
+                warnings.warn('Band %s does not exist - skipping...' %var_name)
+                continue
             # Get variable specific dimensions
             spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
             # Replace <time> dimension by index of requested time slice
