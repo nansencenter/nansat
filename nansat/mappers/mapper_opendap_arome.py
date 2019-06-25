@@ -45,16 +45,26 @@ class Mapper(Opendap, MapperArome):
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
         mm = pti.get_gcmd_instrument('Computer')
-        ee = pti.get_gcmd_platform('Earth Observation Satellites')
+        ee = pti.get_gcmd_platform('ecmwfifs')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
-        self.dataset.SetMetadataItem('Data Center', 'NO/MET')
-        self.dataset.SetMetadataItem('Entry Title', str(ds.getncattr('title')))
-        try:
-            # Skip the field if summary is missing in the ds
-            self.dataset.SetMetadataItem('summary', str(ds.getncattr('summary')))
-        except AttributeError:
-            pass
+
+        md_item = 'Data Center'
+        if not self.dataset.GetMetadataItem(md_item):
+            self.dataset.SetMetadataItem(md_item, 'NO/MET')
+        md_item = 'Entry Title'
+        if not self.dataset.GetMetadataItem(md_item):
+            self.dataset.SetMetadataItem(md_item, str(ds.getncattr('title')))
+        md_item = 'summary'
+        if not self.dataset.GetMetadataItem(md_item):
+            summary = """
+            AROME_Arctic is a convection-permitting atmosphere model covering parts of the Barents
+            Sea and the Nordic Arctic. It has horizontal resolution of 2.5 km and 65 vertical
+            levels. AROME_Arctic runs for 66 hours four times a day (00,06,12,18) with three-hourly
+            cycling for data assimilation. Boundary data is from ECMWF. Model code based on HARMONIE
+            cy40h1.1
+            """
+            self.dataset.SetMetadataItem(md_item, str(summary))
 
     @staticmethod
     def get_date(filename):
