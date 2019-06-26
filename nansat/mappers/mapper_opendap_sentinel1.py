@@ -72,19 +72,34 @@ class Mapper(Opendap):
             self.create_band(src, dst)
             self.dataset.FlushCache()
 
-        # Add look direction band
+        # Get GCP variables
         pixel = self.ds['GCP_pixel_%s' %polarizations[0]][:].data
         line = self.ds['GCP_line_%s' %polarizations[0]][:].data
         lon = self.ds['GCP_longitude_%s' %polarizations[0]][:].data
         lat = self.ds['GCP_latitude_%s' %polarizations[0]][:].data
+        inci = self.ds['GCP_incidenceAngle_%s' %polarizations[0]][:].data
         lon = lon.reshape(np.unique(line[:].data).shape[0],
                 np.unique(pixel[:].data).shape[0])
         lat = lat.reshape(np.unique(line[:].data).shape[0],
                 np.unique(pixel[:].data).shape[0])
+        inci = inci.reshape(np.unique(line[:].data).shape[0],
+                np.unique(pixel[:].data).shape[0])
+
+        # Add incidence angle band
+        inciVRT = VRT.from_array(inci)
+        inciVRT = inciVRT.get_resized_vrt(self.dataset.RasterXSize, self.dataset.RasterYSize, 1)
+        self.band_vrts['inciVRT'] = inciVRT
+        src = {'SourceFilename': self.band_vrts['inciVRT'].filename,
+               'SourceBand': 1}
+        dst = {'wkv': 'angle_of_incidence',
+               'name': 'incidence_angle'}
+        self.create_band(src, dst)
+        self.dataset.FlushCache()
 
         """
         TODO: Repetition from mapper_sentinel1_l1.py... Consider generalising
         """
+        # Add look direction band
         sat_heading = initial_bearing(lon[:-1, :], lat[:-1, :], lon[1:, :], lat[1:, :])
         look_direction = scipy.ndimage.interpolation.zoom( np.mod(sat_heading + 90, 360),
                 (np.shape(lon)[0] / (np.shape(lon)[0]-1.), 1))
