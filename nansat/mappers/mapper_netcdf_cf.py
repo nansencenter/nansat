@@ -207,7 +207,7 @@ class Mapper(VRT):
                         if key == 'time' and type(val) == np.datetime64:
                             # Select band directly from given timestamp, and
                             # break the for loop
-                            band_num = np.argmin(np.abs(self.times() - val)) + 1
+                            band_num = int(np.argmin(np.abs(self.times() - val)) + 1)
                             # indexing starts on one, not zero...
                             bdict = self._band_dict(fn, band_num, subds)
                             if bdict:
