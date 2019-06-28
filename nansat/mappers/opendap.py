@@ -246,10 +246,11 @@ class Opendap(VRT):
         ds_times = self.convert_dstime_datetimes(ds_time)
         layer_time_id, layer_date = Opendap.get_layer_datetime(date, ds_times)
 
-        if bands is None:
-            var_names = self.get_geospatial_variable_names()
-        else:
-            var_names = bands
+        var_names = self.get_geospatial_variable_names()
+        if bands:
+            # TODO: select variable names based on standard names instead of band names
+            #       - this means the variable must be looped, like in mapper_netcdf_cf.py
+            var_names = bands 
 
         # create VRT with correct lon/lat (geotransform)
         raster_x, raster_y = self.get_shape()
