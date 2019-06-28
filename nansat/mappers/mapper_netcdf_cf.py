@@ -327,14 +327,27 @@ class Mapper(VRT):
         return {'src': src, 'dst': dst}
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
-        #subfiles = self._get_sub_filenames_with_projection(gdal_dataset)
         try:
-            self._create_empty_from_subdatasets(gdal_dataset, gdal_metadata)
-        except NansatMissingProjectionError:
-            # this happens rarely - a special workaround is done in mapper_quikscat
-            warnings.warn('GDAL cannot determine the dataset projection - using Nansat ' \
-                    'spatial reference WKT, assuming a regular longitude/latitude grid')
-            self._create_empty_with_nansat_spatial_reference_WKT(gdal_dataset, gdal_metadata)
+            self._create_empty_from_projection_variable(gdal_dataset, gdal_metadata)
+        except KeyError:
+            try:
+                self._create_empty_from_subdatasets(gdal_dataset, gdal_metadata)
+            except NansatMissingProjectionError:
+                # this happens rarely - a special workaround is done in mapper_quikscat
+                warnings.warn('GDAL cannot determine the dataset projection - using Nansat ' \
+                        'spatial reference WKT, assuming a regular longitude/latitude grid')
+                self._create_empty_with_nansat_spatial_reference_WKT(gdal_dataset, gdal_metadata)
+
+    def _create_empty_from_projection_variable(self, gdal_dataset, gdal_metadata,
+            projection_variable='projection_lambert'):
+        ds = Dataset(self.input_filename)
+        subdataset = gdal.Open(self._get_sub_filenames(gdal_dataset)[0])
+        self._init_from_dataset_params(
+                    x_size = subdataset.RasterXSize,
+                    y_size = subdataset.RasterYSize,
+                    geo_transform = subdataset.GetGeoTransform(),
+                    projection = NSR(ds.variables[projection_variable].proj4).wkt,
+                    metadata = gdal_metadata)
 
     def _create_empty_from_subdatasets(self, gdal_dataset, metadata):
         """ Create empty vrt dataset with projection but no bands
