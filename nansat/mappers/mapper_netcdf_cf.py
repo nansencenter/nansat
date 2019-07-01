@@ -204,48 +204,6 @@ class Mapper(VRT):
         return self._band_dict(fn, band_num, subds, band=band,
                         band_metadata=band_metadata)
 
-       #     for i in range(subds.RasterCount):
-       #         band_num = i + 1
-       #         band = subds.GetRasterBand(band_num)
-       #         band_metadata = self._clean_band_metadata(band)
-       #         # Keep only desired bands (given in "bands" list)
-       #         try:
-       #             if bands:
-       #                 if 'standard_name' not in band_metadata.keys():
-       #                     raise ContinueI
-       #                 if not band_metadata['standard_name'] in bands:
-       #                     raise ContinueI
-       #         except ContinueI:
-       #             continue
-       #         # Keep only desired slices following "netcdf_dim" dictionary
-       #         try:
-       #             for key, val in list(netcdf_dim.items()):
-       #                 match = [s for s in band_metadata if key in s]
-       #                 if key == 'time' and type(val) == np.datetime64:
-       #                     # Select band directly from given timestamp, and
-       #                     # break the for loop
-       #                     band_num = int(np.argmin(np.abs(self.times() - val)) + 1)
-       #                     # indexing starts on one, not zero...
-       #                     bdict = self._band_dict(fn, band_num, subds)
-       #                     if bdict:
-       #                         metadictlist.append(bdict)
-       #                     raise BreakI
-       #                 if not match or not band_metadata[match[0]]==val:
-       #                     raise ContinueI
-       #                 else:
-       #                     band_metadata[key] = band_metadata.pop(match[0])
-       #         except ContinueI:
-       #             continue
-       #         except BreakI:
-       #             break
-
-       #         # append band with src and dst dictionaries
-       #         bdict = self._band_dict(fn, band_num, subds, band=band,
-       #                 band_metadata=band_metadata)
-       #         if bdict:
-       #             metadictlist.append(bdict)
-
-
     def _clean_band_metadata(self, band, remove = ['_Unsigned', 'ScaleRatio',
         'ScaleOffset', 'PixelFunctionType']):
 
