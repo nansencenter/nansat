@@ -17,6 +17,8 @@ from nansat.tools import parse_time
 
 from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 
+class ContinueI(Exception):
+    pass
 
 class Mapper(VRT):
     """
@@ -164,71 +166,85 @@ class Mapper(VRT):
             a dict with key name and value, where the key is, e.g.,
             "standard_name" or "metno_name", etc.
         '''
-
-        class ContinueI(Exception):
-            pass
-
-        class BreakI(Exception):
-            pass
-
         metadictlist = []
-        ds = Dataset(self.input_filename)
-        # Pop netcdf_dim item if the dimension is not in the dimension
-        # list of the given dataset
-        kpop = []
-        for key, val in list(netcdf_dim.items()):
-            if key not in ds.dimensions.keys():
-                kpop.append(key)
-        for key in kpop:
-            netcdf_dim.pop(key)
-
         for fn in self._get_sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
                 continue
-            subds = gdal.Open(fn)
-            for i in range(subds.RasterCount):
-                band_num = i + 1
-                band = subds.GetRasterBand(band_num)
-                band_metadata = self._clean_band_metadata(band)
-                # Keep only desired bands (given in "bands" list)
-                try:
-                    if bands:
-                        if 'standard_name' not in band_metadata.keys():
-                            raise ContinueI
-                        if not band_metadata['standard_name'] in bands:
-                            raise ContinueI
-                except ContinueI:
-                    continue
-                # Keep only desired slices following "netcdf_dim" dictionary
-                try:
-                    for key, val in list(netcdf_dim.items()):
-                        match = [s for s in band_metadata if key in s]
-                        if key == 'time' and type(val) == np.datetime64:
-                            # Select band directly from given timestamp, and
-                            # break the for loop
-                            band_num = int(np.argmin(np.abs(self.times() - val)) + 1)
-                            # indexing starts on one, not zero...
-                            bdict = self._band_dict(fn, band_num, subds)
-                            if bdict:
-                                metadictlist.append(bdict)
-                            raise BreakI
-                        if not match or not band_metadata[match[0]]==val:
-                            raise ContinueI
-                        else:
-                            band_metadata[key] = band_metadata.pop(match[0])
-                except ContinueI:
-                    continue
-                except BreakI:
-                    break
-
-                # append band with src and dst dictionaries
-                bdict = self._band_dict(fn, band_num, subds, band=band,
-                        band_metadata=band_metadata)
-                if bdict:
-                    metadictlist.append(bdict)
+            try:
+                metadictlist.append(self._get_band_from_subfile(fn, netcdf_dim=netcdf_dim, bands=bands))
+            except ContinueI:
+                continue
 
         return metadictlist
+        
+
+    def _get_band_from_subfile(self, fn, netcdf_dim={}, bands=[]):
+        nc_ds = Dataset(self.input_filename)
+        band_name = fn.split(':')[-1]
+        sub_band = nc_ds.variables[band_name]
+        dimension_names = [b.name for b in sub_band.get_dims()]
+        band_num = 1
+        for key, val in list(netcdf_dim.items()):
+            if key in dimension_names:
+                if key == 'time' and type(val) == np.datetime64:
+                    # Get band number from given timestamp
+                    band_num *= int(np.argmin(np.abs(self.times() - val)) + 1)
+                else:
+                    band_num *= val
+
+        subds = gdal.Open(fn)
+        band = subds.GetRasterBand(band_num)
+        band_metadata = self._clean_band_metadata(band)
+        if bands:
+            if 'standard_name' not in band_metadata.keys() or not band_metadata['standard_name'] \
+                    in bands:
+                raise ContinueI
+
+        return self._band_dict(fn, band_num, subds, band=band,
+                        band_metadata=band_metadata)
+
+       #     for i in range(subds.RasterCount):
+       #         band_num = i + 1
+       #         band = subds.GetRasterBand(band_num)
+       #         band_metadata = self._clean_band_metadata(band)
+       #         # Keep only desired bands (given in "bands" list)
+       #         try:
+       #             if bands:
+       #                 if 'standard_name' not in band_metadata.keys():
+       #                     raise ContinueI
+       #                 if not band_metadata['standard_name'] in bands:
+       #                     raise ContinueI
+       #         except ContinueI:
+       #             continue
+       #         # Keep only desired slices following "netcdf_dim" dictionary
+       #         try:
+       #             for key, val in list(netcdf_dim.items()):
+       #                 match = [s for s in band_metadata if key in s]
+       #                 if key == 'time' and type(val) == np.datetime64:
+       #                     # Select band directly from given timestamp, and
+       #                     # break the for loop
+       #                     band_num = int(np.argmin(np.abs(self.times() - val)) + 1)
+       #                     # indexing starts on one, not zero...
+       #                     bdict = self._band_dict(fn, band_num, subds)
+       #                     if bdict:
+       #                         metadictlist.append(bdict)
+       #                     raise BreakI
+       #                 if not match or not band_metadata[match[0]]==val:
+       #                     raise ContinueI
+       #                 else:
+       #                     band_metadata[key] = band_metadata.pop(match[0])
+       #         except ContinueI:
+       #             continue
+       #         except BreakI:
+       #             break
+
+       #         # append band with src and dst dictionaries
+       #         bdict = self._band_dict(fn, band_num, subds, band=band,
+       #                 band_metadata=band_metadata)
+       #         if bdict:
+       #             metadictlist.append(bdict)
+
 
     def _clean_band_metadata(self, band, remove = ['_Unsigned', 'ScaleRatio',
         'ScaleOffset', 'PixelFunctionType']):
