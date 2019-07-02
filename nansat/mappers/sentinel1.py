@@ -15,6 +15,7 @@ import pythesint as pti
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.tools import initial_bearing
+from nansat.exceptions import WrongMapperError
 
 class Sentinel1(VRT):
     """ Mapper class to access Sentinel-1 data with netCDF4 to work for both opendap streams and
@@ -25,6 +26,8 @@ class Sentinel1(VRT):
     def __init__(self, filename):
         if not IMPORT_SCIPY:
             raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
+        if not 'S1' in filename:
+            raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
 
         self.ds = Dataset(filename)
         self._remove_geotransform()
