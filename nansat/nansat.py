@@ -1607,6 +1607,8 @@ def _import_mappers(log_level=None):
         # scan through modules and load all modules that contain class Mapper
         for finder, name, ispkg in (pkgutil.iter_modules(mapper_package.__path__)):
             logger.debug('Loading mapper %s' % name)
+            # Only mappers containing 'mapper' in the module name should be returned
+            if not 'mapper' in name: continue
             loader = finder.find_module(name)
             # try to import mapper module
             module = loader.load_module(name)

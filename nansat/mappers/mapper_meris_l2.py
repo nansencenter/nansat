@@ -8,7 +8,7 @@ from dateutil.parser import parse
 
 from nansat.vrt import VRT
 from nansat.exceptions import WrongMapperError
-from envisat import Envisat
+from nansat.mappers.envisat import Envisat
 
 
 class Mapper(VRT, Envisat):
