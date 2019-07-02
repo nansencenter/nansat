@@ -241,27 +241,30 @@ class Mapper(VRT):
                         'value': nc_ds.variables[key][:].data[0],
                     }
 
-        band_number = 1
-        multiplier = 1
+        # Works in Python 2 and 3
+        class Context:
+            band_number = 1
+            multiplier = 1
+        #band_number = 1 # Only works in python 3
+        #multiplier = 1 # Only works in Python 3
         def get_band_number():
-            nonlocal band_number
-            nonlocal multiplier
-            nonlocal dimension_names
+            #nonlocal band_number # Only works in Python 3
+            #nonlocal multiplier # Only works in Python 3
             try:
                 name_dim0 = dimension_names.pop(0)
             except:
                 return
-            band_number += index4key[name_dim0]['index']*multiplier
-            multiplier *= index4key[name_dim0]['size']
+            Context.band_number += index4key[name_dim0]['index']*Context.multiplier
+            Context.multiplier *= index4key[name_dim0]['size']
             get_band_number()
 
         get_band_number()
 
         subds = gdal.Open(fn)
-        band = subds.GetRasterBand(band_number)
+        band = subds.GetRasterBand(Context.band_number)
         band_metadata = self._clean_band_metadata(band)
 
-        return self._band_dict(fn, band_number, subds, band=band,
+        return self._band_dict(fn, Context.band_number, subds, band=band,
                         band_metadata=band_metadata)
 
     def _clean_band_metadata(self, band, remove = ['_Unsigned', 'ScaleRatio',
