@@ -15,7 +15,7 @@ import pythesint as pti
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.tools import initial_bearing
-from nansat.exceptions import WrongMapperError
+from nansat.exceptions import WrongMapperError, NansatReadError
 
 class Sentinel1(VRT):
     """ Mapper class to access Sentinel-1 data with netCDF4 to work for both opendap streams and
