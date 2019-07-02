@@ -6,6 +6,7 @@
 
 import warnings, os, datetime
 import numpy as np
+import collections
 import gdal
 
 from dateutil.parser import parse
@@ -17,12 +18,30 @@ from nansat.tools import parse_time
 
 from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 
+def get_band_number(dimension_names, index4key):
+        band_number = 1
+        multiplier = 1
+        def the_band_number():
+            nonlocal band_number
+            nonlocal multiplier
+            try:
+                name_dim0 = dimension_names.pop(0)
+            except:
+                return
+            band_number += index4key[name_dim0]['index']*multiplier
+            multiplier *= index4key[name_dim0]['size']
+            the_band_number()
+
+        the_band_number()
+        return band_number
+
 class ContinueI(Exception):
     pass
 
 class Mapper(VRT):
     """
     """
+    input_filename = ''
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
 
@@ -158,7 +177,10 @@ class Mapper(VRT):
             Dictionary of desired slice of a multi-dimensional array. Since
             gdal only returns 2D bands, a multi-dimensional array (x,y,z) is
             split into z bands accompanied with metadata information about the
-            position of the slice along the z-axis.
+            position of the slice along the z-axis. The (key, value) pairs represent dimension name and
+            the desired value in that dimension (not the index), respectively. E.g., for a height
+            dimension of [10, 20, 30] m, netcdf_dim = {'height': 20} if you want to extract the
+            data from 20 m height.
         bands : list
             List of desired bands following NetCDF-CF standard names. NOTE:
             some datasets have other bands as well, i.e., of data not yet
@@ -182,26 +204,62 @@ class Mapper(VRT):
     def _get_band_from_subfile(self, fn, netcdf_dim={}, bands=[]):
         nc_ds = Dataset(self.input_filename)
         band_name = fn.split(':')[-1]
+        if bands:
+            variable = nc_ds.variables[band_name]
+            if 'standard_name' not in variable.ncattrs() or not variable.standard_name in bands:
+                raise ContinueI
         sub_band = nc_ds.variables[band_name]
         dimension_names = [b.name for b in sub_band.get_dims()]
-        band_num = 1
-        for key, val in list(netcdf_dim.items()):
-            if key in dimension_names:
+        dimension_names.reverse()
+        # Pop longitude and latitude
+        ind_lon = [i for i, s in enumerate(dimension_names) if 'lon' in s][0]
+        lon = dimension_names.pop(ind_lon)
+        assert 'lon' in lon
+        ind_lat = [i for i, s in enumerate(dimension_names) if 'lat' in s][0]
+        lat = dimension_names.pop(ind_lat)
+        assert 'lat' in lat
+        index4key = collections.OrderedDict()
+        for key in dimension_names:
+            if key in netcdf_dim.keys():
+                val = netcdf_dim[key]
                 if key == 'time' and type(val) == np.datetime64:
                     # Get band number from given timestamp
-                    band_num *= int(np.argmin(np.abs(self.times() - val)) + 1)
+                    index = int(np.argmin(np.abs(self.times() - val)))
                 else:
-                    band_num *= val
+                    index = int(np.argmin(np.abs(nc_ds.variables[key][:] - val)))
+                index4key[key] = {
+                        'index': index,
+                        'size': nc_ds.variables[key].get_dims()[0].size,
+                        'value': val,
+                    }
+            else:
+                index4key[key] = {
+                        'index': 0,
+                        'size': nc_ds.variables[key].get_dims()[0].size,
+                        'value': nc_ds.variables[key][:].data[0],
+                    }
+
+        band_number = 1
+        multiplier = 1
+        def get_band_number():
+            nonlocal band_number
+            nonlocal multiplier
+            nonlocal dimension_names
+            try:
+                name_dim0 = dimension_names.pop(0)
+            except:
+                return
+            band_number += index4key[name_dim0]['index']*multiplier
+            multiplier *= index4key[name_dim0]['size']
+            get_band_number()
+
+        get_band_number()
 
         subds = gdal.Open(fn)
-        band = subds.GetRasterBand(band_num)
+        band = subds.GetRasterBand(band_number)
         band_metadata = self._clean_band_metadata(band)
-        if bands:
-            if 'standard_name' not in band_metadata.keys() or not band_metadata['standard_name'] \
-                    in bands:
-                raise ContinueI
 
-        return self._band_dict(fn, band_num, subds, band=band,
+        return self._band_dict(fn, band_number, subds, band=band,
                         band_metadata=band_metadata)
 
     def _clean_band_metadata(self, band, remove = ['_Unsigned', 'ScaleRatio',
