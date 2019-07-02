@@ -211,13 +211,15 @@ class Mapper(VRT):
         sub_band = nc_ds.variables[band_name]
         dimension_names = [b.name for b in sub_band.get_dims()]
         dimension_names.reverse()
-        # Pop longitude and latitude
-        ind_lon = [i for i, s in enumerate(dimension_names) if 'lon' in s][0]
+        # Pop spatial dimensions (longitude and latitude, or x and y)
+        ind_lon = [i for i, s in enumerate(dimension_names) if 'lon' in s.lower() or 'x' in
+                s.lower()][0]
         lon = dimension_names.pop(ind_lon)
-        assert 'lon' in lon
-        ind_lat = [i for i, s in enumerate(dimension_names) if 'lat' in s][0]
+        assert 'lon' in lon.lower() or 'x' in lon.lower()
+        ind_lat = [i for i, s in enumerate(dimension_names) if 'lat' in s.lower() or 'y' in
+                s.lower()][0]
         lat = dimension_names.pop(ind_lat)
-        assert 'lat' in lat
+        assert 'lat' in lat.lower() or 'y' in lat.lower()
         index4key = collections.OrderedDict()
         for key in dimension_names:
             if key in netcdf_dim.keys():
