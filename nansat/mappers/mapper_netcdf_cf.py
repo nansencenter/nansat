@@ -18,23 +18,6 @@ from nansat.tools import parse_time
 
 from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 
-def get_band_number(dimension_names, index4key):
-        band_number = 1
-        multiplier = 1
-        def the_band_number():
-            nonlocal band_number
-            nonlocal multiplier
-            try:
-                name_dim0 = dimension_names.pop(0)
-            except:
-                return
-            band_number += index4key[name_dim0]['index']*multiplier
-            multiplier *= index4key[name_dim0]['size']
-            the_band_number()
-
-        the_band_number()
-        return band_number
-
 class ContinueI(Exception):
     pass
 
