@@ -24,10 +24,10 @@ class Sentinel1(VRT):
     timeVarName = 'time'
 
     def __init__(self, filename):
-        if not IMPORT_SCIPY:
-            raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
         if not 'S1' in filename:
             raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
+        if not IMPORT_SCIPY:
+            raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
 
         self.ds = Dataset(filename)
         self._remove_geotransform()
