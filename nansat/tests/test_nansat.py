@@ -33,6 +33,7 @@ else:
 
 from nansat import Nansat, Domain, NSR
 from nansat.tools import gdal
+import nansat.nansat
 
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError
 from nansat.tests.nansat_test_base import NansatTestBase
@@ -53,6 +54,11 @@ class NansatTest(NansatTestBase):
         self.assertIsInstance(n.logger, logging.Logger)
         self.assertEqual(n.name, os.path.split(self.test_file_gcps)[1])
         self.assertEqual(n.path, os.path.split(self.test_file_gcps)[0])
+
+    def test_that_only_mappers_with_mapper_in_the_module_name_are_imported(self):
+        mappers = nansat.nansat._import_mappers()
+        for mapper in mappers:
+            self.assertTrue('mapper' in mapper)
 
     def test_get_time_coverage_start_end(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)

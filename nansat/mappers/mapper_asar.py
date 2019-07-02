@@ -19,7 +19,7 @@ else:
 import pythesint as pti
 
 from nansat.vrt import VRT
-from envisat import Envisat
+from nansat.mappers.envisat import Envisat
 from nansat.domain import Domain
 from nansat.tools import initial_bearing
 from nansat.exceptions import WrongMapperError, NansatReadError

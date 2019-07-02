@@ -13,7 +13,7 @@ import glob
 import numpy as np
 
 from nansat.vrt import VRT
-from globcolour import Globcolour
+from nansat.mappers.globcolour import Globcolour
 from nansat.tools import gdal, ogr
 from nansat.exceptions import WrongMapperError
 
