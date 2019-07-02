@@ -18,7 +18,6 @@ class NetCDF_CF_Tests(unittest.TestCase):
         lat_sz = 30
         lon_sz = 20
         height_sz = 10
-        values = np.random.random_sample((lat_sz, lon_sz))
 
         # Set dimensions
         ds.createDimension('latitude', lat_sz)
@@ -76,8 +75,54 @@ class NetCDF_CF_Tests(unittest.TestCase):
         ds.close()
         os.close(fd) # Just in case - see https://www.logilab.org/blogentry/17873
 
+        fd, self.tmp_filename_xy = tempfile.mkstemp(suffix='.nc')
+        ds = Dataset(self.tmp_filename_xy, 'w')
+        y_sz = 30
+        x_sz = 20
+
+        # Set dimensions
+        ds.createDimension('y', y_sz)
+        ds.createDimension('x', x_sz)
+        ds.createDimension('time', 3)
+        # Set variables
+        # 1d "dimensional" variables i.e lats, times, etc.
+        times = ds.createVariable('time', 'i4', ('time'))
+        times.units = 'seconds since 1970-01-01 00:00'
+        times.standard_name = 'time'
+        times.long_name = 'time'
+        times[0] = np.ma.MaskedArray(data = 1560610800.0, mask =
+                False, fill_value = 1e+20)
+        times[1] = np.ma.MaskedArray(data = 1560621600.0, mask =
+                False, fill_value = 1e+20)
+        times[2] = np.ma.MaskedArray(data = 1560632400.0, mask =
+                False, fill_value = 1e+20)
+
+        ys = ds.createVariable('y', 'i4', ('y'))
+        ys[:] = np.linspace(0, 60, y_sz)
+
+        xs = ds.createVariable('x', 'i4', ('x'))
+        xs[:] = np.linspace(0, 20, x_sz)
+
+        # Spatial variables 2d and 3d
+        var2d = ds.createVariable('var2d', 'i4', ('y', 'x'))
+        var3d = ds.createVariable('var3d', 'i4', ('time', 'y', 'x'))
+        var3d.standard_name = 'x_wind'
+
+        ds.close()
+        os.close(fd) # Just in case - see https://www.logilab.org/blogentry/17873
+
     def tearDown(self):
         os.unlink(self.tmp_filename)
+
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
+    def test_with_xy_dims(self, mock_init):
+        mock_init.return_value = None
+        mm = Mapper()
+        mm.input_filename = self.tmp_filename_xy
+        fn = 'NETCDF:"' + self.tmp_filename + '":var3d'
+        bdict = mm._get_band_from_subfile(fn, 
+                bands=['x_wind'])
+        self.assertEqual(bdict['src']['SourceBand'], 1)
 
     @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
     def test_buggy_var(self, mock_init):
