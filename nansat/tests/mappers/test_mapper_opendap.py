@@ -64,11 +64,12 @@ class OpenDAPTests(unittest.TestCase):
             self.od.test_mapper(filename='http://not-in-base-urls.net/path/to/the/file.nc')
 
     def test_get_dataset(self):
-        self.od.filename = 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/' \
-                      'total_hs/2010/002/20100102000000-GLOBCURRENT-L4-CUReul_hs-ALT_' \
-                      'SUM-v02.0-fv01.0.nc'
-        ds1 = self.od.get_dataset(None)
-        self.assertIsInstance(ds1, Dataset)
+        # The following is dependent on an external resource and should not be tested...
+        #self.od.filename = 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/' \
+        #              'total_hs/2010/002/20100102000000-GLOBCURRENT-L4-CUReul_hs-ALT_' \
+        #              'SUM-v02.0-fv01.0.nc'
+        #ds1 = self.od.get_dataset(None)
+        #self.assertIsInstance(ds1, Dataset)
 
         wrong_filename = '/path/which/does/not/exist/file.nc'
         self.od.filename = wrong_filename
