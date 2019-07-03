@@ -195,9 +195,15 @@ class Mapper(VRT):
             variable = nc_ds.variables[band_name]
             if 'standard_name' not in variable.ncattrs() or not variable.standard_name in bands:
                 raise ContinueI
+            # TODO: consider to allow band name in addition or instead of standard_name in the band
+            # list kwarg
         sub_band = nc_ds.variables[band_name]
         dimension_names = [b.name for b in sub_band.get_dims()]
         dimension_names.reverse()
+        dim_sizes = {}
+        for dim in sub_band.get_dims():
+            dim_sizes[dim.name] = dim.size
+
         # Pop spatial dimensions (longitude and latitude, or x and y)
         for allowed in ALLOWED_SPATIAL_DIMENSIONS_X:
             try:
@@ -222,14 +228,12 @@ class Mapper(VRT):
                     index = int(np.argmin(np.abs(nc_ds.variables[key][:] - val)))
                 index4key[key] = {
                         'index': index,
-                        'size': nc_ds.variables[key].get_dims()[0].size,
-                        'value': val,
+                        'size': dim_sizes[key],
                     }
             else:
                 index4key[key] = {
                         'index': 0,
-                        'size': nc_ds.variables[key].get_dims()[0].size,
-                        'value': nc_ds.variables[key][:].data[0],
+                        'size': dim_sizes[key],
                     }
 
         # Works in Python 2 and 3
@@ -298,10 +302,12 @@ class Mapper(VRT):
                 # No timing information available for this band - it is
                 # probably a constant, such as land area fraction or similar.
                 # Then we don't need time for this band...
-                warnings.warn(
-                        '%s: %s - %s Continuing without time metadata for band %s'
-                        %(e.__repr__().split('(')[0], str(e), e.__doc__,
-                            band_metadata['NETCDF_VARNAME']))
+                # The following warning is not really understandable..
+                tttt = 0 # do nothing...
+                #warnings.warn(
+                #        '%s: %s - %s Continuing without time metadata for band %s'
+                #        %(e.__repr__().split('(')[0], str(e), e.__doc__,
+                #            band_metadata['NETCDF_VARNAME']))
 
         # Generate source metadata
         src = {'SourceFilename': subfilename, 'SourceBand': band_num}

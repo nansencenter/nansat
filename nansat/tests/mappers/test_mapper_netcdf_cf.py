@@ -25,6 +25,7 @@ class NetCDF_CF_Tests(unittest.TestCase):
         ds.createDimension('time', 3)
         ds.createDimension('pressure', 7)
         ds.createDimension('height', height_sz)
+        ds.createDimension('dimension_rgb', 3) # intentionally no variable added..
         # Set variables
         # 1d "dimensional" variables i.e lats, times, etc.
         times = ds.createVariable('time', 'i4', ('time'))
@@ -58,6 +59,8 @@ class NetCDF_CF_Tests(unittest.TestCase):
         # gdal should read this as several bands of shape (longitude,pressure)=(20, 7)
         buggy_var = ds.createVariable('buggy_var', 'f4', ('time', 'latitude', 'longitude', 'pressure'))
         buggy_var.standard_name = 'x_wind'
+        # A variable with a dimension that is not itself added as a variable
+        rgb_var = ds.createVariable('rgb_var', 'f4', ('dimension_rgb', 'latitude', 'longitude'))
 
         pressures = ds.createVariable('pressure', 'i4', ('pressure'))
         pressures.standard_name = 'air_pressure'
@@ -113,6 +116,15 @@ class NetCDF_CF_Tests(unittest.TestCase):
 
     def tearDown(self):
         os.unlink(self.tmp_filename)
+
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
+    def test_variable_with_a_dimension_that_is_not_itself_added_as_a_variable(self, mock_init):
+        mock_init.return_value = None
+        mm = Mapper()
+        mm.input_filename = self.tmp_filename
+        fn = 'NETCDF:"' + self.tmp_filename + '":rgb_var'
+        bdict = mm._get_band_from_subfile(fn)
+        self.assertEqual(bdict['src']['SourceBand'], 1)
 
     @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
     def test_with_xy_dims(self, mock_init):
