@@ -74,3 +74,5 @@ class NSRTest(unittest.TestCase):
     def test_dont_init_from_invalid(self):
         self.assertRaises(NansatProjectionError, NSR, -10)
         self.assertRaises(NansatProjectionError, NSR, 'some crap')
+        ss = osr.SpatialReference()
+        self.assertRaises(NansatProjectionError, NSR, ss)

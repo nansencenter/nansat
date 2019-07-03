@@ -20,7 +20,7 @@ import pythesint as pti
 
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
-from globcolour import Globcolour
+from nansat.mappers.globcolour import Globcolour
 
 
 class Mapper(VRT, Globcolour):

@@ -9,7 +9,7 @@ import json
 
 from nansat.vrt import VRT
 from nansat.exceptions import WrongMapperError
-from envisat import Envisat
+from nansat.mappers.envisat import Envisat
 
 import pythesint as pti
 

@@ -6,6 +6,7 @@
 
 import warnings, os, datetime
 import numpy as np
+import collections
 import gdal
 
 from dateutil.parser import parse
@@ -17,10 +18,17 @@ from nansat.tools import parse_time
 
 from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 
+class ContinueI(Exception):
+    pass
+
+# List of allowed spatial dimensions 
+ALLOWED_SPATIAL_DIMENSIONS_X = ['x', 'lon', 'numcells']
+ALLOWED_SPATIAL_DIMENSIONS_Y = ['y', 'lat', 'numrows']
 
 class Mapper(VRT):
     """
     """
+    input_filename = ''
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
 
@@ -156,7 +164,10 @@ class Mapper(VRT):
             Dictionary of desired slice of a multi-dimensional array. Since
             gdal only returns 2D bands, a multi-dimensional array (x,y,z) is
             split into z bands accompanied with metadata information about the
-            position of the slice along the z-axis.
+            position of the slice along the z-axis. The (key, value) pairs represent dimension name and
+            the desired value in that dimension (not the index), respectively. E.g., for a height
+            dimension of [10, 20, 30] m, netcdf_dim = {'height': 20} if you want to extract the
+            data from 20 m height.
         bands : list
             List of desired bands following NetCDF-CF standard names. NOTE:
             some datasets have other bands as well, i.e., of data not yet
@@ -164,71 +175,92 @@ class Mapper(VRT):
             a dict with key name and value, where the key is, e.g.,
             "standard_name" or "metno_name", etc.
         '''
-
-        class ContinueI(Exception):
-            pass
-
-        class BreakI(Exception):
-            pass
-
         metadictlist = []
-        ds = Dataset(self.input_filename)
-        # Pop netcdf_dim item if the dimension is not in the dimension
-        # list of the given dataset
-        kpop = []
-        for key, val in list(netcdf_dim.items()):
-            if key not in ds.dimensions.keys():
-                kpop.append(key)
-        for key in kpop:
-            netcdf_dim.pop(key)
-
         for fn in self._get_sub_filenames(gdal_dataset):
             if ('GEOLOCATION_X_DATASET' in fn or 'longitude' in fn or
                     'GEOLOCATION_Y_DATASET' in fn or 'latitude' in fn):
                 continue
-            subds = gdal.Open(fn)
-            for i in range(subds.RasterCount):
-                band_num = i + 1
-                band = subds.GetRasterBand(band_num)
-                band_metadata = self._clean_band_metadata(band)
-                # Keep only desired bands (given in "bands" list)
-                try:
-                    if bands:
-                        if 'standard_name' not in band_metadata.keys():
-                            raise ContinueI
-                        if not band_metadata['standard_name'] in bands:
-                            raise ContinueI
-                except ContinueI:
-                    continue
-                # Keep only desired slices following "netcdf_dim" dictionary
-                try:
-                    for key, val in list(netcdf_dim.items()):
-                        match = [s for s in band_metadata if key in s]
-                        if key == 'time' and type(val) == np.datetime64:
-                            # Select band directly from given timestamp, and
-                            # break the for loop
-                            band_num = int(np.argmin(np.abs(self.times() - val)) + 1)
-                            # indexing starts on one, not zero...
-                            bdict = self._band_dict(fn, band_num, subds)
-                            if bdict:
-                                metadictlist.append(bdict)
-                            raise BreakI
-                        if not match or not band_metadata[match[0]]==val:
-                            raise ContinueI
-                        else:
-                            band_metadata[key] = band_metadata.pop(match[0])
-                except ContinueI:
-                    continue
-                except BreakI:
-                    break
-
-                # append band with src and dst dictionaries
-                bdict = self._band_dict(fn, band_num, subds, band=band,
-                        band_metadata=band_metadata)
-                if bdict:
-                    metadictlist.append(bdict)
+            try:
+                metadictlist.append(self._get_band_from_subfile(fn, netcdf_dim=netcdf_dim, bands=bands))
+            except ContinueI:
+                continue
 
         return metadictlist
+        
+
+    def _get_band_from_subfile(self, fn, netcdf_dim={}, bands=[]):
+        nc_ds = Dataset(self.input_filename)
+        band_name = fn.split(':')[-1]
+        if bands:
+            variable = nc_ds.variables[band_name]
+            if 'standard_name' not in variable.ncattrs() or not variable.standard_name in bands:
+                raise ContinueI
+            # TODO: consider to allow band name in addition or instead of standard_name in the band
+            # list kwarg
+        sub_band = nc_ds.variables[band_name]
+        dimension_names = [b.name for b in sub_band.get_dims()]
+        dimension_names.reverse()
+        dim_sizes = {}
+        for dim in sub_band.get_dims():
+            dim_sizes[dim.name] = dim.size
+
+        # Pop spatial dimensions (longitude and latitude, or x and y)
+        for allowed in ALLOWED_SPATIAL_DIMENSIONS_X:
+            try:
+                ind_dim_x = [i for i, s in enumerate(dimension_names) if allowed in s.lower()][0]
+            except IndexError:
+                continue
+        dim_x = dimension_names.pop(ind_dim_x)
+        for allowed in ALLOWED_SPATIAL_DIMENSIONS_Y:
+            try:
+                ind_dim_y = [i for i, s in enumerate(dimension_names) if allowed in s.lower()][0]
+            except IndexError:
+                continue
+        dim_y = dimension_names.pop(ind_dim_y)
+        index4key = collections.OrderedDict()
+        for key in dimension_names:
+            if key in netcdf_dim.keys():
+                val = netcdf_dim[key]
+                if key == 'time' and type(val) == np.datetime64:
+                    # Get band number from given timestamp
+                    index = int(np.argmin(np.abs(self.times() - val)))
+                else:
+                    index = int(np.argmin(np.abs(nc_ds.variables[key][:] - val)))
+                index4key[key] = {
+                        'index': index,
+                        'size': dim_sizes[key],
+                    }
+            else:
+                index4key[key] = {
+                        'index': 0,
+                        'size': dim_sizes[key],
+                    }
+
+        # Works in Python 2 and 3
+        class Context:
+            band_number = 1
+            multiplier = 1
+        #band_number = 1 # Only works in python 3
+        #multiplier = 1 # Only works in Python 3
+        def get_band_number():
+            #nonlocal band_number # Only works in Python 3
+            #nonlocal multiplier # Only works in Python 3
+            try:
+                name_dim0 = dimension_names.pop(0)
+            except:
+                return
+            Context.band_number += index4key[name_dim0]['index']*Context.multiplier
+            Context.multiplier *= index4key[name_dim0]['size']
+            get_band_number()
+
+        get_band_number()
+
+        subds = gdal.Open(fn)
+        band = subds.GetRasterBand(Context.band_number)
+        band_metadata = self._clean_band_metadata(band)
+
+        return self._band_dict(fn, Context.band_number, subds, band=band,
+                        band_metadata=band_metadata)
 
     def _clean_band_metadata(self, band, remove = ['_Unsigned', 'ScaleRatio',
         'ScaleOffset', 'PixelFunctionType']):
@@ -270,10 +302,12 @@ class Mapper(VRT):
                 # No timing information available for this band - it is
                 # probably a constant, such as land area fraction or similar.
                 # Then we don't need time for this band...
-                warnings.warn(
-                        '%s: %s - %s Continuing without time metadata for band %s'
-                        %(e.__repr__().split('(')[0], str(e), e.__doc__,
-                            band_metadata['NETCDF_VARNAME']))
+                # The following warning is not really understandable..
+                tttt = 0 # do nothing...
+                #warnings.warn(
+                #        '%s: %s - %s Continuing without time metadata for band %s'
+                #        %(e.__repr__().split('(')[0], str(e), e.__doc__,
+                #            band_metadata['NETCDF_VARNAME']))
 
         # Generate source metadata
         src = {'SourceFilename': subfilename, 'SourceBand': band_num}
@@ -327,14 +361,27 @@ class Mapper(VRT):
         return {'src': src, 'dst': dst}
 
     def _create_empty(self, gdal_dataset, gdal_metadata):
-        #subfiles = self._get_sub_filenames_with_projection(gdal_dataset)
         try:
-            self._create_empty_from_subdatasets(gdal_dataset, gdal_metadata)
-        except NansatMissingProjectionError:
-            # this happens rarely - a special workaround is done in mapper_quikscat
-            warnings.warn('GDAL cannot determine the dataset projection - using Nansat ' \
-                    'spatial reference WKT, assuming a regular longitude/latitude grid')
-            self._create_empty_with_nansat_spatial_reference_WKT(gdal_dataset, gdal_metadata)
+            self._create_empty_from_projection_variable(gdal_dataset, gdal_metadata)
+        except KeyError:
+            try:
+                self._create_empty_from_subdatasets(gdal_dataset, gdal_metadata)
+            except NansatMissingProjectionError:
+                # this happens rarely - a special workaround is done in mapper_quikscat
+                warnings.warn('GDAL cannot determine the dataset projection - using Nansat ' \
+                        'spatial reference WKT, assuming a regular longitude/latitude grid')
+                self._create_empty_with_nansat_spatial_reference_WKT(gdal_dataset, gdal_metadata)
+
+    def _create_empty_from_projection_variable(self, gdal_dataset, gdal_metadata,
+            projection_variable='projection_lambert'):
+        ds = Dataset(self.input_filename)
+        subdataset = gdal.Open(self._get_sub_filenames(gdal_dataset)[0])
+        self._init_from_dataset_params(
+                    x_size = subdataset.RasterXSize,
+                    y_size = subdataset.RasterYSize,
+                    geo_transform = subdataset.GetGeoTransform(),
+                    projection = NSR(ds.variables[projection_variable].proj4).wkt,
+                    metadata = gdal_metadata)
 
     def _create_empty_from_subdatasets(self, gdal_dataset, metadata):
         """ Create empty vrt dataset with projection but no bands
