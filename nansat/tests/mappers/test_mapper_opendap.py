@@ -11,7 +11,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
-
+import sys
 import unittest
 from netCDF4 import Dataset
 import tempfile
@@ -78,8 +78,12 @@ class OpenDAPTests(unittest.TestCase):
     def test_get_dataset_which_does_not_exist(self):
         wrong_filename = '/path/which/does/not/exist/file.nc'
         self.od.filename = wrong_filename
-        with self.assertRaises(FileNotFoundError) as ve:
-            self.od.get_dataset(None)
+        if sys.version_info.major==2:
+            with self.assertRaises(IOError) as ve:
+                self.od.get_dataset(None)
+        else:
+            with self.assertRaises(FileNotFoundError) as ve:
+                self.od.get_dataset(None)
         self.assertEqual(ve.exception.errno, 2)
 
         with self.assertRaises(ValueError) as ve:
