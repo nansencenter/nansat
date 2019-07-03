@@ -79,10 +79,8 @@ class Opendap(VRT):
         if ds is None:
             try:
                 ds = Dataset(self.filename)
-            except:
+            except FileNotFoundError:
                 ds = Dataset(self.filename+'#fillmismatch')
-            else:
-                raise ValueError('Cannot open %s' % self.filename)
         elif type(ds) != Dataset:
             raise ValueError('Input ds is not netCDF.Dataset!')
 
