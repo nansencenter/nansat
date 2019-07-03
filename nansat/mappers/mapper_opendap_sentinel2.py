@@ -40,10 +40,18 @@ class Mapper(Opendap):
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
-        self.dataset.SetMetadataItem('entry_title', str(self.ds.getncattr('title')))
-        self.dataset.SetMetadataItem('entry_id', str(self.ds.getncattr('DATATAKE_1_ID')))
-        self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
-        self.dataset.SetMetadataItem('ISO_topic_category',
+        mditem = 'entry_title'
+        if not self.dataset.GetMetadataItem(mditem):
+            try:
+                self.dataset.SetMetadataItem(mditem, str(self.ds.getncattr('title')))
+            except AttributeError:
+                self.dataset.SetMetadataItem(mditem, filename)
+        mditem = 'data_center'
+        if not self.dataset.GetMetadataItem(mditem):
+            self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('NO/MET')))
+        mditem = 'ISO_topic_category'
+        if not self.dataset.GetMetadataItem(mditem):
+            self.dataset.SetMetadataItem(mditem,
                 pti.get_iso19115_topic_category('Imagery/Base Maps/Earth Cover')['iso_topic_category'])
 
         mm = pti.get_gcmd_instrument('multi-spectral')
