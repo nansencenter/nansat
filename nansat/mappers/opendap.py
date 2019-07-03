@@ -263,7 +263,7 @@ class Opendap(VRT):
 
         # Copy metadata
         for attr in self.ds.ncattrs():
-            self.dataset.SetMetadataItem(attr, self.ds.getncattr(attr))
+            self.dataset.SetMetadataItem(str(attr), str(self.ds.getncattr(attr)))
 
         # set time
         time_res_sec = self.get_time_coverage_resolution()
