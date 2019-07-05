@@ -56,6 +56,7 @@ class Mapper(Opendap, Sentinel1):
 
         Sentinel1.__init__(self, filename)
         self.add_calibrated_nrcs(filename)
+        self.add_nrcs_VV_from_HH(filename)
 
     def add_calibrated_nrcs(self, filename):
         layer_time_id, layer_date = Opendap.get_layer_datetime(None,
@@ -76,6 +77,26 @@ class Mapper(Opendap, Sentinel1):
                 }
             self.create_band(src, dst)
             self.dataset.FlushCache()
+
+    def add_nrcs_VV_from_HH(self, filename):
+        if not 'Amplitude_HH' in self.ds.variables.keys():
+            return
+        layer_time_id, layer_date = Opendap.get_layer_datetime(None,
+                self.convert_dstime_datetimes(self.get_dataset_time()))
+        dims = list(self.ds.variables['dn_HH'].dimensions)
+        dims[dims.index(self.timeVarName)] = layer_time_id
+        src = [
+                self.get_metaitem(filename, 'Amplitude_HH', dims)['src'],
+                self.get_metaitem(filename, 'sigmaNought_HH', dims)['src'],
+                {'SourceFilename': self.band_vrts['inciVRT'].filename, 'SourceBand': 1}
+            ]
+        dst = {
+                'wkv': 'surface_backwards_scattering_coefficient_of_radar_wave',
+                'PixelFunctionType': 'Sentinel1Sigma0HHToSigma0VV',
+                'polarization': 'VV',
+                'suffix': 'VV'}
+        self.create_band(src, dst)
+        self.dataset.FlushCache()
 
     @staticmethod
     def get_date(filename):
