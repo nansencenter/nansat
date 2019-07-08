@@ -18,6 +18,7 @@ import json
 import unittest
 import warnings
 import datetime
+import tempfile
 from xml.sax.saxutils import unescape
 from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 
@@ -320,6 +321,87 @@ class ExporterTest(NansatTestBase):
         n.export2thredds(self.tmp_filename, {'Bristol': {'type': '>i2'}},
                         time=datetime.datetime(2016, 1, 20),
                         rm_metadata=['description'])
+
+
+#class TestExporter__export2thredds(unittest.TestCase):
+class TestExporter__export2thredds(NansatTestBase):
+
+    def setUp(self):
+        super(TestExporter__export2thredds, self).setUp()
+        fd, self.tmp_ncfile = tempfile.mkstemp(suffix='.nc')
+        ds = Dataset(self.tmp_ncfile, 'w')
+        xsz = 739
+        ysz = 949
+        timesz = 3
+
+        # Set global metadat
+        ds.setncattr('Conventions', 'CF-1.6')
+
+        # Set dimensions
+        ds.createDimension('y', ysz)
+        ds.createDimension('x', xsz)
+        ds.createDimension('time', timesz)
+        # Set variables
+        # 1d "dimensional" variables i.e lats, times, etc.
+        times = ds.createVariable('time', 'i4', ('time'))
+        times.units = 'seconds since 1970-01-01 00:00'
+        times.standard_name = 'time'
+        times.long_name = 'time'
+        times[0] = np.ma.MaskedArray(data = 1560610800.0, mask =
+                False, fill_value = 1e+20)
+        times[1] = np.ma.MaskedArray(data = 1560621600.0, mask =
+                False, fill_value = 1e+20)
+        times[2] = np.ma.MaskedArray(data = 1560632400.0, mask =
+                False, fill_value = 1e+20)
+
+        xs = ds.createVariable('x', 'i4', ('x'))
+        xs[:] = np.linspace(278603.16, 2123603.2, xsz)
+
+        ys = ds.createVariable('y', 'i4', ('y'))
+        ys[:] = np.linspace(-897931.56, 1472068.4, ysz)
+
+        # Spatial variables 2d, 3d, and 4d
+        xwind = ds.createVariable('x_wind_10m', 'i4', ('time', 'y', 'x'))
+        xwind.standard_name = 'x_wind'
+        xwind[:,:,:] = np.ones((timesz,ysz,xsz))*9.
+        ywind = ds.createVariable('y_wind_10m', 'i4', ('time', 'y', 'x'))
+        ywind.standard_name = 'y_wind'
+        ywind[:,:,:] = np.ones((timesz,ysz,xsz))*10.
+
+        # Projection
+        proj = ds.createVariable('projection_lambert', 'f4', ())
+        proj.grid_mapping_name = 'lambert_conformal_conic'
+        proj.standard_parallel = np.array([ 77.5,  77.5])
+        proj.longitude_of_central_meridian = -25.0
+        proj.latitude_of_projection_origin = 77.5
+        proj.earth_radius = 6371000.0
+        proj.proj4 = '+proj=lcc +lat_0=77.5 +lon_0=-25 +lat_1=77.5 +lat_2=77.5 +no_defs +R=6.371e+06'
+
+        #crs = ds.createVariable('spatial_ref', 'i4')
+        #crs.spatial_ref='GEOGCS[PROJCS["unnamed",GEOGCS["unnamed ellipse",DATUM["unknown",SPHEROID["unnamed",6371000,0]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",77.5],PARAMETER["standard_parallel_2",77.5],PARAMETER["latitude_of_origin",77.5],PARAMETER["central_meridian",-25],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]]'
+
+        ds.close()
+        os.close(fd) # Just in case - see https://www.logilab.org/blogentry/17873
+
+        fd, self.filename_exported = tempfile.mkstemp(suffix='.nc')
+        os.close(fd)
+
+    def tearDown(self):
+        super(TestExporter__export2thredds, self).tearDown()
+        os.unlink(self.tmp_ncfile)
+        os.unlink(self.filename_exported)
+        pass
+
+    def test_example1(self):
+        n = Nansat(self.test_file_arctic) #self.tmp_ncfile)
+        res = n.export2thredds(self.filename_exported)
+        self.assertEqual(res, None)
+
+    def test_example2(self):
+        pass
+
+    def test_example3(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()

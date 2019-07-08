@@ -123,7 +123,7 @@ class Exporter(object):
 
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, filename, bands, metadata=None, mask_name=None, rm_metadata=None,
+    def export2thredds(self, filename, bands={}, metadata=None, mask_name=None, rm_metadata=None,
                        time=None, created=None):
         """ Export data into a netCDF formatted for THREDDS server
 
@@ -171,7 +171,7 @@ class Exporter(object):
 
         # export only the first band and add global metadata
 
-        >>> n.export2thredds(filename, ['L_469'], {'description': 'example'})
+        >>> n.export2thredds(filename, {'L_469': {}}, {'description': 'example'})
 
         # export several bands and modify type, scale and offset
 
@@ -182,6 +182,8 @@ class Exporter(object):
 
 
         """
+        if not bands:
+            bands = self.bands()
         if not isinstance(bands, dict):
             raise ValueError('<bands> must be dict!')
         if metadata is None:
