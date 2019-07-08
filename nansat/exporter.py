@@ -169,9 +169,9 @@ class Exporter(object):
 
         >>> n.export2thredds(filename)
 
-        # export only the first band and add global metadata
+        # export only one band and add global metadata
 
-        >>> n.export2thredds(filename, {'L_469': {}}, {'description': 'example'})
+        >>> n.export2thredds(filename, {'L_469': {'description': 'example'}})
 
         # export several bands and modify type, scale and offset
 
