@@ -11,7 +11,7 @@
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
-
+import sys
 import unittest
 from netCDF4 import Dataset
 import tempfile
@@ -63,23 +63,35 @@ class OpenDAPTests(unittest.TestCase):
         with self.assertRaises(WrongMapperError):
             self.od.test_mapper(filename='http://not-in-base-urls.net/path/to/the/file.nc')
 
-    def test_get_dataset(self):
-        # The following is dependent on an external resource and should not be tested...
-        #self.od.filename = 'http://www.ifremer.fr/opendap/cerdap1/globcurrent/v2.0/global_025_deg/' \
-        #              'total_hs/2010/002/20100102000000-GLOBCURRENT-L4-CUReul_hs-ALT_' \
-        #              'SUM-v02.0-fv01.0.nc'
-        #ds1 = self.od.get_dataset(None)
-        #self.assertIsInstance(ds1, Dataset)
+    """ Not sure how to test get_dataset.. 
+    
+    According toe the followingm, mocking C modules seems not to be possible.. Can that be the
+    reason the below doesn't work?
 
+    See https://stackoverflow.com/questions/192649/can-you-monkey-patch-methods-on-core-types-in-python/192857#192857
+    """
+    ##@patch('nansat.mappers.opendap.Dataset.__init__')
+    #@patch.object('nansat.mappers.opendap.Dataset', '__init__', return_value = None)
+    #def test_get_dataset(self, mock_dataset):
+    #    dd = Dataset()
+    #    self.od.filename = 'http://something.that.is/mocked'
+    #    ds1 = self.od.get_dataset(None)
+    #    self.assertIsInstance(ds1, Dataset)
+
+    def test_get_dataset_which_does_not_exist(self):
         wrong_filename = '/path/which/does/not/exist/file.nc'
         self.od.filename = wrong_filename
-        with self.assertRaises(ValueError) as ve:
-            self.od.get_dataset(None)
-            self.assertEqual(ve.args[0], 'Cannot open /path/which/does/not/exist/file.nc')
+        if sys.version_info.major==2:
+            with self.assertRaises(IOError) as ve:
+                self.od.get_dataset(None)
+        else:
+            with self.assertRaises(FileNotFoundError) as ve:
+                self.od.get_dataset(None)
+        self.assertEqual(ve.exception.errno, 2)
 
         with self.assertRaises(ValueError) as ve:
             self.od.get_dataset([])
-            self.assertEqual(ve.args[0], 'Input ds is not netCDF.Dataset!')
+        self.assertEqual(ve.exception.args[0], 'Input ds is not netCDF.Dataset!')
 
     def test_get_geospatial_variable_names(self):
         ds_vars = self.od.get_geospatial_variable_names()
@@ -109,7 +121,9 @@ class OpenDAPTests(unittest.TestCase):
         self.assertEqual(res_layer_date3, np.datetime64(date1))
         self.assertEqual(res_layer_num3, 2)
 
-    def test_metaitem(self):
+    @patch('nansat.mappers.opendap.gdal.Open')
+    def test_metaitem(self, mock_open):
+        mock_open.return_value = None
         self.od.ds.variables['var3d'].setncattr('test_attr', 'test_val')
         res1 = self.od.get_metaitem('https://file-url.nc', 'var3d', (0, 'y', 'x'))
         self.assertIsInstance(res1, dict)
@@ -123,7 +137,9 @@ class OpenDAPTests(unittest.TestCase):
         self.assertIn('test_attr', res1['dst'].keys())
         self.od.ds.variables['var3d'].delncattr('test_attr')
 
-    def test_get_metaitem_spec_attrs(self):
+    @patch('nansat.mappers.opendap.gdal.Open')
+    def test_get_metaitem_spec_attrs(self, mock_open):
+        mock_open.return_value = None
         test_cases = [
             {'key': 'offset', 'val': 'offset_value', 'meta_key': 'ScaleOffset'},
             {'key': 'add_offset', 'val': 'add_offset_value', 'meta_key': 'ScaleOffset'},
@@ -149,7 +165,9 @@ class OpenDAPTests(unittest.TestCase):
         res2 = list(filter(self.od._filter_dimensions, ['time', 'lat', 'lon']))
         self.assertEqual(len(res2), 0)
 
-    def test_create_metadict(self):
+    @patch('nansat.mappers.opendap.gdal.Open')
+    def test_create_metadict(self, mock_open):
+        mock_open.return_value = None
         res1 = self.od.create_metadict('test.nc', ['var4d'], 0)
         self.assertIsInstance(res1, list)
         self.assertEqual(len(res1), 10)
