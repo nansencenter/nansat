@@ -18,6 +18,8 @@ import unittest
 import datetime
 import warnings
 
+from mock import patch
+
 try:
     import matplotlib.pyplot as plt
     from matplotlib.colors import hex2color
@@ -50,6 +52,11 @@ class ToolsTest(unittest.TestCase):
         self.assertEqual(type(hex2color(c1)), tuple)
         self.assertEqual(type(hex2color(c2)), tuple)
 
+    @patch('nansat.tools.MATPLOTLIB_IS_INSTALLED', False)
+    def test_get_random_color__matplotlib_missing(self): 
+        with self.assertRaises(ImportError):
+            c0 = get_random_color()
+
     def test_parse_time(self):
         dt = parse_time('2016-01-19')
 
@@ -71,6 +78,15 @@ class ToolsTest(unittest.TestCase):
         i = Image.open(tmpfilename)
         i.verify()
         self.assertEqual(i.info['dpi'], (50, 50))
+
+    @patch('nansat.tools.BASEMAP_LIB_IS_INSTALLED', False)
+    def test_write_domain_map__basemap_missing(self):
+        plt.switch_backend('Agg')
+        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        border = d.get_border()
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
+        with self.assertRaises(ImportError):
+            write_domain_map(border, tmpfilename, labels=['Patch1'])
 
     @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
     def test_write_domain_map_dpi100(self):
