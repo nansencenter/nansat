@@ -18,6 +18,7 @@ import json
 import unittest
 import warnings
 import datetime
+from dateutil.parser import parse
 import tempfile
 from xml.sax.saxutils import unescape
 from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
@@ -336,6 +337,8 @@ class TestExporter__export2thredds(NansatTestBase):
 
         # Set global metadat
         ds.setncattr('Conventions', 'CF-1.6')
+        ds.setncattr('time_coverage_start', '2019-06-15T15:00:00.000000')
+        ds.setncattr('time_coverage_end', '2019-06-15T21:00:00.000000')
 
         # Set dimensions
         ds.createDimension('y', ysz)
@@ -392,8 +395,13 @@ class TestExporter__export2thredds(NansatTestBase):
         os.unlink(self.filename_exported)
         pass
 
+    def test_export_function_with_ds_from_setup(self):
+        n = Nansat(self.tmp_ncfile)
+        res = n.export(self.filename_exported)
+        self.assertEqual(res, None)
+
     def test_example1(self):
-        n = Nansat(self.test_file_arctic) #self.tmp_ncfile)
+        n = Nansat(self.tmp_ncfile)
         res = n.export2thredds(self.filename_exported)
         self.assertEqual(res, None)
 
