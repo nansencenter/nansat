@@ -63,14 +63,17 @@ class OpenDAPTests(unittest.TestCase):
         with self.assertRaises(WrongMapperError):
             self.od.test_mapper(filename='http://not-in-base-urls.net/path/to/the/file.nc')
 
-    """ Mocking C modules seems not to be possible..
+    """ Not sure how to test get_dataset.. 
+    
+    According toe the followingm, mocking C modules seems not to be possible.. Can that be the
+    reason the below doesn't work?
 
     See https://stackoverflow.com/questions/192649/can-you-monkey-patch-methods-on-core-types-in-python/192857#192857
     """
     ##@patch('nansat.mappers.opendap.Dataset.__init__')
     #@patch.object('nansat.mappers.opendap.Dataset', '__init__', return_value = None)
     #def test_get_dataset(self, mock_dataset):
-    #    dd = Dataset('hh')
+    #    dd = Dataset()
     #    self.od.filename = 'http://something.that.is/mocked'
     #    ds1 = self.od.get_dataset(None)
     #    self.assertIsInstance(ds1, Dataset)
