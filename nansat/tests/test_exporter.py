@@ -393,7 +393,6 @@ class TestExporter__export2thredds(NansatTestBase):
         super(TestExporter__export2thredds, self).tearDown()
         os.unlink(self.tmp_ncfile)
         os.unlink(self.filename_exported)
-        pass
 
     def test_export_function_with_ds_from_setup(self):
         n = Nansat(self.tmp_ncfile)
@@ -406,10 +405,18 @@ class TestExporter__export2thredds(NansatTestBase):
         self.assertEqual(res, None)
 
     def test_example2(self):
-        pass
+        n = Nansat(self.tmp_ncfile)
+        res = n.export2thredds(self.filename_exported, {'x_wind_10m': {'description': 'example'}})
+        self.assertEqual(res, None)
 
     def test_example3(self):
-        pass
+        n = Nansat(self.tmp_ncfile)
+        res = n.export2thredds(self.filename_exported, {
+            'x_wind_10m': {'type': '>i2', 'scale': 0.1, 'offset': 0}, 
+            'y_wind_10m': {'type': '>i2', 'scale': 0.1, 'offset': 0}
+        })
+        # TODO: test that the type, scale and offset are actually modified according to the input
+        self.assertEqual(res, None)
 
 if __name__ == "__main__":
     unittest.main()
