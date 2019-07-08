@@ -183,7 +183,10 @@ class Exporter(object):
 
         """
         if not bands:
-            bands = self.bands()
+            bands_dict = self.bands()
+            bands = {}
+            for band in bands_dict:
+                bands[bands_dict[band]['name']] = {}
         if not isinstance(bands, dict):
             raise ValueError('<bands> must be dict!')
         if metadata is None:
