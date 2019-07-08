@@ -21,8 +21,10 @@ except ImportError:
          You cannot access OC CCI data but
          Nansat will work.''')
 
-from nansat.vrt import VRT
+from osgeo import gdal
 
+from nansat.vrt import VRT
+from nansat.nsr import NSR
 from nansat.exceptions import WrongMapperError
 import sys
 
@@ -78,7 +80,7 @@ class Opendap(VRT):
             try:
                 ds = Dataset(self.filename)
             except:
-                raise ValueError('Cannot open %s' % self.filename)
+                ds = Dataset(self.filename+'#fillmismatch')
         elif type(ds) != Dataset:
             raise ValueError('Input ds is not netCDF.Dataset!')
 
@@ -154,10 +156,21 @@ class Opendap(VRT):
 
         # assemble dimensions string
         dims = ''.join(['[%s]' % dim for dim in var_dimensions])
+        sfname = '{url}?{var}.{var}{shape}'.format(url=url, var=var_name, shape=dims)
+        # For Sentinel-1, the source filename is not at the same format. Simple solution is to check
+        # if this is correct witha try-except but that may be too time consuming. Expecting
+        # discussion...
+        try:
+            ds = gdal.Open(sfname)
+        except RuntimeError:
+            sfname = '{url}?{var}{shape}'.format(url=url, var=var_name, shape=dims)
+        try:
+            ds = gdal.Open(sfname)
+        except RuntimeError:
+            raise
+
         meta_item = {
-            'src': {'SourceFilename': '{url}?{var}.{var}{shape}'.format(url=url,
-                                                                        var=var_name,
-                                                                        shape=dims),
+            'src': {'SourceFilename': sfname,
                     'SourceBand': 1},
             'dst': {'name': var_name,
                     'dataType': 6}
@@ -222,14 +235,21 @@ class Opendap(VRT):
         self.cachedir = cachedir
         self.ds = self.get_dataset(ds)
 
+        if 'projection' in self.ds.variables:
+            self.srcDSProjection = NSR(srs=self.ds.variables['projection'].proj4_string).wkt
+        elif 'UTM_projection' in self.ds.variables:
+            self.srcDSProjection = NSR(srs=self.ds.variables['UTM_projection'].proj4_string).wkt
+
         ds_time = self.get_dataset_time()
         ds_times = self.convert_dstime_datetimes(ds_time)
         layer_time_id, layer_date = Opendap.get_layer_datetime(date, ds_times)
 
-        if bands is None:
-            var_names = self.get_geospatial_variable_names()
-        else:
-            var_names = bands
+        var_names = self.get_geospatial_variable_names()
+        if bands:
+            # TODO: select variable names based on standard names instead of band names
+            #       - this means the variable must be looped, like in mapper_netcdf_cf.py
+            var_names = bands 
+
         # create VRT with correct lon/lat (geotransform)
         raster_x, raster_y = self.get_shape()
         geotransform = self.get_geotransform()
@@ -238,6 +258,10 @@ class Opendap(VRT):
         meta_dict = self.create_metadict(filename, var_names, layer_time_id)
 
         self.create_bands(meta_dict)
+
+        # Copy metadata
+        for attr in self.ds.ncattrs():
+            self.dataset.SetMetadataItem(str(attr), str(self.ds.getncattr(attr)))
 
         # set time
         time_res_sec = self.get_time_coverage_resolution()
@@ -269,7 +293,12 @@ class Opendap(VRT):
         meta_dict = []
         for var_name in var_names:
             # Get a list of variable dimensions
-            var_dimensions = list(self.ds.variables[var_name].dimensions)
+            try:
+                var_dimensions = list(self.ds.variables[var_name].dimensions)
+            except KeyError:
+                # variable does not exist, simply skip..
+                warnings.warn('Band %s does not exist - skipping...' %var_name)
+                continue
             # Get variable specific dimensions
             spec_dimensions = list(filter(self._filter_dimensions, var_dimensions))
             # Replace <time> dimension by index of requested time slice
@@ -311,7 +340,11 @@ class Opendap(VRT):
 
     def get_shape(self):
         """Get srcRasterXSize and srcRasterYSize from OpenDAP"""
-        return self.ds.variables[self.xName].size, self.ds.variables[self.yName].size
+        try:
+            sx, sy = self.ds.variables[self.xName].size, self.ds.variables[self.yName].size
+        except KeyError:
+            sx, sy = self.ds.dimensions[self.xName].size, self.ds.dimensions[self.yName].size
+        return sx, sy
 
     def get_geotransform(self):
         """Get first two values of X,Y variables and create geoTranform"""

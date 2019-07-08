@@ -22,6 +22,7 @@ class Sentinel1(VRT):
     local files.
     """
     timeVarName = 'time'
+    input_filename = ''
 
     def __init__(self, filename):
         if not 'S1' in filename:
@@ -29,7 +30,13 @@ class Sentinel1(VRT):
         if not IMPORT_SCIPY:
             raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
 
-        self.ds = Dataset(filename)
+        self.input_filename = filename
+        try:
+            self.ds = Dataset(filename)
+        except OSError:
+            self.ds = Dataset(filename+'#fillmismatch')
+            self.input_filename = filename+'#fillmismatch'
+
         self._remove_geotransform()
         self._remove_geolocation()
         self.dataset.SetProjection('')
