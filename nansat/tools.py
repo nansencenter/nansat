@@ -49,6 +49,19 @@ except:
     from osgeo import gdal, ogr, osr
 gdal.UseExceptions()
 
+NUMPY_TO_GDAL_TYPE_MAP = {
+        'uint8': 1, 
+        'int8': 1, 
+        'uint16': 2, 
+        'int16': 3, 
+        'uint32': 4, 
+        'int32': 5,
+        'float32': 6, 
+        'float64': 7, 
+        'complex64': 10, 
+        'complex128': 11
+    }
+
 def remove_keys(dict, keys):
     if keys is None:
         keys = []
