@@ -26,6 +26,7 @@ from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.node import Node
+from nansat.tools import NUMPY_TO_GDAL_TYPE_MAP 
 
 from nansat.exceptions import NansatGDALError
 
@@ -217,6 +218,10 @@ class Exporter(object):
             # catch None band error
             if array is None:
                 raise NansatGDALError('%s is None' % str(iband))
+            
+            # Cast to new type if given
+            if bands[iband].get('type',''):
+                array = np.array(array, dtype=bands[iband].get('type',''))
 
             # set type, scale and offset from input data or by default
             dstBands[iband] = {}
@@ -235,6 +240,8 @@ class Exporter(object):
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(band_id=iband)
+            if bands[iband].get('type',''):
+                bandMetadata['dataType'] = NUMPY_TO_GDAL_TYPE_MAP[array.dtype.name]
             data.add_band(array=array, parameters=bandMetadata)
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
@@ -325,9 +332,8 @@ class Exporter(object):
                 if '_FillValue' in band_metadata[inp_var_name]:
                     fill_value = band_metadata['_FillValue']
                 dimensions = ('time', ) + inp_var.dimensions
-                out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
-                                                band_metadata[inp_var_name]['type'],
-                                                dimensions, fill_value=fill_value)
+                out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name, inp_var.dtype,
+                        dimensions, fill_value=fill_value)
 
             # copy array from input data
             data = inp_var[:]
@@ -427,7 +433,7 @@ class Exporter(object):
         ncFile.createDimension('gcps', len(gcps))
         # make gcps variables and add data
         for i, var in enumerate(gcp_variables):
-            var = ncFile.createVariable(var, 'f4', ('gcps',))
+            var = ncFile.createVariable(var, gcp_values.dtype, ('gcps',))
             var[:] = gcp_values[i]
 
         # write data, close file
