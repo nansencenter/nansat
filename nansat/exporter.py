@@ -276,17 +276,17 @@ class Exporter(object):
         for dim_name in dim_names:
             nc_out.createDimension(dim_name, dim_shapes[dim_name])
 
+        # create value for time variable
+        td = time - datetime.datetime(1900, 1, 1)
+        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add time dimension
         nc_out.createDimension('time', 1)
-        out_var = nc_out.createVariable('time', '>f8',  ('time', ))
+        out_var = nc_out.createVariable('time', np.dtype(type(days)),  ('time', ))
         out_var.calendar = 'standard'
         out_var.long_name = 'time'
         out_var.standard_name = 'time'
         out_var.units = 'days since 1900-1-1 0:0:0 +0'
         out_var.axis = 'T'
-        # create value for time variable
-        td = time - datetime.datetime(1900, 1, 1)
-        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add date
         out_var[:] = days
 
@@ -316,7 +316,7 @@ class Exporter(object):
             # create simple x/y variables
             if inp_var_name in ['x', 'y', 'lon', 'lat']:
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
-                                                '>f4', inp_var.dimensions)
+                                                inp_var.dtype, inp_var.dimensions)
             # create data var
             elif inp_var_name in band_metadata:
                 fill_value = None
