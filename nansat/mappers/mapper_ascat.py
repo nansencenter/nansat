@@ -53,7 +53,7 @@ class Mapper(ScatterometryMapper):
         ds = Dataset(self.input_filename)
 
         # Get datetime object of epoch and time_units string
-        time_units = self._time_units(ds=ds)
+        time_units = self._time_reference(ds=ds)
 
         # Get all times - slight difference from NetCDF-CF mappers times method...
         times = ds.variables[self._timevarname(ds=ds)][:,0]

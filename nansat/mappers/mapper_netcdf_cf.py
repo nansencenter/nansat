@@ -95,7 +95,7 @@ class Mapper(VRT):
         ds = Dataset(self.input_filename)
 
         # Get datetime object of epoch and time_units string
-        time_units = self._time_units(ds=ds)
+        time_units = self._time_reference(ds=ds)
 
         # Get all times - consider caching to save time (see
         # nansat/mappers/opendap.py)
@@ -107,7 +107,15 @@ class Mapper(VRT):
 
         return tt
 
-    def _time_units(self, ds=None):
+    def _time_reference(self, ds=None):
+        """ Get the time reference of the dataset
+
+        Returns:
+        --------
+            (epoch, units) : tuple
+                The time epoch
+                Time since epoch in given units
+        """
         if not ds:
             ds = Dataset(self.input_filename)
         times = ds.variables[self._timevarname(ds=ds)]
@@ -136,16 +144,32 @@ class Mapper(VRT):
             ncvar = ds.variables[timevarname]
         return timevarname
 
-    def _time_count_to_np_datetime64(self, time_count, time_units=None):
-        if not time_units:
-            time_units = self._time_units()
-        if 'second' in time_units[1]:
-            tt = np.datetime64(time_units[0] +
-                    datetime.timedelta(seconds=float(time_count)))
-        elif 'hour' in time_units[1]:
-            tt = np.datetime64(time_units[0] + datetime.timedelta(hours=int(time_count)))
-        elif 'day' in time_units[1]:
-            tt = np.datetime64(time_units[0] + datetime.timedelta(days=int(time_count)))
+    def _time_count_to_np_datetime64(self, time_count, time_reference=None):
+        if not time_reference:
+            time_reference = self._time_reference()
+        time_count = np.float(time_count)
+        time_decimal = time_count - np.floor(time_count)
+        if 'second' in time_reference[1]:
+            tt = np.datetime64(time_reference[0] +
+                    datetime.timedelta(seconds=time_count))
+        elif 'minute' in time_reference[1]:
+            minutes = np.floor(time_count)
+            seconds = time_decimal*60
+            tt = np.datetime64(time_reference[0] + datetime.timedelta(minutes=minutes,
+                seconds=seconds))
+        elif 'hour' in time_reference[1]:
+            hours = np.floor(time_count)
+            minutes = np.floor(time_decimal*60)
+            seconds = (time_decimal*60 - minutes)*60
+            tt = np.datetime64(time_reference[0] + datetime.timedelta(hours=hours, minutes=minutes,
+                seconds=seconds))
+        elif 'day' in time_reference[1]:
+            days = np.floor(time_count)
+            hours = np.floor(time_decimal*24)
+            minutes = np.floor((time_decimal*24 - hours)*60)
+            seconds = ((time_decimal*24 - hours)*60 - minutes)*60
+            tt = np.datetime64(time_reference[0] + datetime.timedelta(days=days, hours=hours,
+                minutes=minutes, seconds=seconds))
         else:
             raise Exception('Check time units..')
         return tt
