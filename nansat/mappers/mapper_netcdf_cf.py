@@ -103,7 +103,7 @@ class Mapper(VRT):
 
         # Create numpy array of np.datetime64 times (provide epoch to save time)
         tt = np.array([self._time_count_to_np_datetime64(tn,
-            time_units=time_units) for tn in times])
+            time_reference=time_units) for tn in times])
 
         return tt
 
