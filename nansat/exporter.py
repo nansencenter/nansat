@@ -26,6 +26,7 @@ from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.node import Node
+from nansat.tools import NUMPY_TO_GDAL_TYPE_MAP 
 
 from nansat.exceptions import NansatGDALError
 
@@ -217,6 +218,10 @@ class Exporter(object):
             # catch None band error
             if array is None:
                 raise NansatGDALError('%s is None' % str(iband))
+            
+            # Cast to new type if given
+            if bands[iband].get('type',''):
+                array = np.array(array, dtype=bands[iband].get('type',''))
 
             # set type, scale and offset from input data or by default
             dstBands[iband] = {}
@@ -235,6 +240,8 @@ class Exporter(object):
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(band_id=iband)
+            if bands[iband].get('type',''):
+                bandMetadata['dataType'] = NUMPY_TO_GDAL_TYPE_MAP[array.dtype.name]
             data.add_band(array=array, parameters=bandMetadata)
         self.logger.debug('Bands for export: %s' % str(dstBands))
 
@@ -276,17 +283,17 @@ class Exporter(object):
         for dim_name in dim_names:
             nc_out.createDimension(dim_name, dim_shapes[dim_name])
 
+        # create value for time variable
+        td = time - datetime.datetime(1900, 1, 1)
+        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add time dimension
         nc_out.createDimension('time', 1)
-        out_var = nc_out.createVariable('time', '>f8',  ('time', ))
+        out_var = nc_out.createVariable('time', np.dtype(type(days)),  ('time', ))
         out_var.calendar = 'standard'
         out_var.long_name = 'time'
         out_var.standard_name = 'time'
         out_var.units = 'days since 1900-1-1 0:0:0 +0'
         out_var.axis = 'T'
-        # create value for time variable
-        td = time - datetime.datetime(1900, 1, 1)
-        days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add date
         out_var[:] = days
 
@@ -316,7 +323,7 @@ class Exporter(object):
             # create simple x/y variables
             if inp_var_name in ['x', 'y', 'lon', 'lat']:
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
-                                                '>f4', inp_var.dimensions)
+                                                inp_var.dtype, inp_var.dimensions)
             # create data var
             elif inp_var_name in band_metadata:
                 fill_value = None
@@ -325,9 +332,8 @@ class Exporter(object):
                 if '_FillValue' in band_metadata[inp_var_name]:
                     fill_value = band_metadata['_FillValue']
                 dimensions = ('time', ) + inp_var.dimensions
-                out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
-                                                band_metadata[inp_var_name]['type'],
-                                                dimensions, fill_value=fill_value)
+                out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name, inp_var.dtype,
+                        dimensions, fill_value=fill_value)
 
             # copy array from input data
             data = inp_var[:]
@@ -427,7 +433,7 @@ class Exporter(object):
         ncFile.createDimension('gcps', len(gcps))
         # make gcps variables and add data
         for i, var in enumerate(gcp_variables):
-            var = ncFile.createVariable(var, 'f4', ('gcps',))
+            var = ncFile.createVariable(var, gcp_values.dtype, ('gcps',))
             var[:] = gcp_values[i]
 
         # write data, close file

@@ -25,10 +25,14 @@ class Sentinel1(VRT):
     input_filename = ''
 
     def __init__(self, filename):
-        if not 'S1' in filename:
+        #if not 'S1A' in filename or not 'S1B' in filename:
+        #    raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
+        if not self.dataset.GetMetadataItem('SATELLITE_IDENTIFIER') or \
+                not self.dataset.GetMetadataItem('SATELLITE_IDENTIFIER').lower()=='sentinel-1':
             raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
         if not IMPORT_SCIPY:
             raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
+
 
         self.input_filename = filename
         try:
