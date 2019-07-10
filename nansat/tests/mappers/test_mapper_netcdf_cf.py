@@ -1,5 +1,6 @@
 import os
 import unittest
+import datetime
 import tempfile
 
 import numpy as np
@@ -116,6 +117,57 @@ class NetCDF_CF_Tests(unittest.TestCase):
 
     def tearDown(self):
         os.unlink(self.tmp_filename)
+
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper._time_reference')
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
+    def test_time_count_to_np_datetime64(self, mock_init, mock_units):
+        mock_init.return_value = None
+        tu = (datetime.datetime(1900, 1, 1, 0, 0), 'days since 1900-1-1 0:0:0 +0')
+        mock_units.return_value = tu
+        mm = Mapper()
+        time_count = '43648.22734953704'
+
+        # TEST DAYS
+        tt = mm._time_count_to_np_datetime64(time_count)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+
+        tt = mm._time_count_to_np_datetime64(time_count, time_reference=tu)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+
+        time_count = '43648'
+        tt = mm._time_count_to_np_datetime64(time_count)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+        self.assertEqual(tt, np.datetime64('2019-07-04'))
+
+        # TEST HOURS
+        tu = (datetime.datetime(1900, 1, 1, 0, 0), 'hours since 1900-1-1 0:0:0 +0')
+        tt = mm._time_count_to_np_datetime64(time_count, time_reference=tu)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+        self.assertEqual(tt, np.datetime64('1904-12-24T16:00:00.000000'))
+
+        time_count = '43648.22734953704'
+        tt = mm._time_count_to_np_datetime64(time_count, time_reference=tu)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+        self.assertEqual(tt, np.datetime64('1904-12-24T16:13:38.458333'))
+
+        # TEST MINUTES
+        tu = (datetime.datetime(1900, 1, 1, 0, 0), 'minutes since 1900-1-1 0:0:0 +0')
+        tt = mm._time_count_to_np_datetime64(time_count, time_reference=tu)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+        self.assertEqual(tt, np.datetime64('1900-01-31T07:28:13.640972'))
+
+        # TEST SECONDS
+        tu = (datetime.datetime(1900, 1, 1, 0, 0), 'seconds since 1900-1-1 0:0:0 +0')
+        tt = mm._time_count_to_np_datetime64(time_count, time_reference=tu)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+        self.assertEqual(tt, np.datetime64('1900-01-01T12:07:28.227350'))
 
     @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
     def test_variable_with_a_dimension_that_is_not_itself_added_as_a_variable(self, mock_init):
