@@ -113,8 +113,8 @@ class Mapper(VRT):
         Returns:
         --------
             (epoch, units) : tuple
-                The time epoch
-                Time since epoch in given units
+                Datetime.datetime object of the time epoch
+                String representation of time units and epoch
         """
         if not ds:
             ds = Dataset(self.input_filename)
