@@ -42,7 +42,7 @@ class Sentinel1(VRT):
             self.input_filename = filename+'#fillmismatch'
         try:
             lon = self.ds.variables['GCP_longitude_'+self.ds.polarisation[:2]]
-        except AttributeError:
+        except (AttributeError, KeyError):
             raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
 
         self._remove_geotransform()
