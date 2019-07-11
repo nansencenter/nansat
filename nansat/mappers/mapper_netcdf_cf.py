@@ -129,19 +129,14 @@ class Mapper(VRT):
     def _timevarname(self, ds=None):
         if not ds:
             ds = Dataset(self.input_filename)
-        timevarname = 'time'
-        try:
-            ncvar = ds.variables[timevarname]
-        except KeyError:
-            for var in ds.variables:
-                try:
-                    standard_name = ds.variables[var].standard_name
-                except:
-                    continue
-                if standard_name=='time':
-                    timevarname = var
-                    break
-            ncvar = ds.variables[timevarname]
+        timevarname = ''
+        std_name = 'time'
+        if not std_name in ds.variables.keys():
+            for key, var in ds.variables.items():
+                if 'standard_name' in var.ncattrs() and var.standard_name == std_name:
+                    timevarname = key
+        else:
+            timevarname = std_name
         return timevarname
 
     def _time_count_to_np_datetime64(self, time_count, time_reference=None):
