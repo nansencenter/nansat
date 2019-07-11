@@ -39,6 +39,7 @@ import gdal
 from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
+from nansat.tools import haversine
 from nansat.tests.nansat_test_base import NansatTestBase
 
 warnings.simplefilter("always", UserWarning)
@@ -398,16 +399,24 @@ class TestExporter__export2thredds(NansatTestBase):
         n = Nansat(self.tmp_ncfile)
         res = n.export(self.filename_exported)
         self.assertEqual(res, None)
+        resn = Nansat(self.filename_exported)
+        self.assertTrue(np.all(np.isfinite(resn[1])))
+        self.assertTrue(np.all(np.isfinite(resn[2])))
 
     def test_example1(self):
         n = Nansat(self.tmp_ncfile)
         res = n.export2thredds(self.filename_exported)
         self.assertEqual(res, None)
+        resn = Nansat(self.filename_exported)
+        self.assertTrue(np.all(np.isfinite(resn[1])))
+        self.assertTrue(np.all(np.isfinite(resn[2])))
 
     def test_example2(self):
         n = Nansat(self.tmp_ncfile)
         res = n.export2thredds(self.filename_exported, {'x_wind_10m': {'description': 'example'}})
         self.assertEqual(res, None)
+        resn = Nansat(self.filename_exported)
+        self.assertTrue(np.all(np.isfinite(resn[1])))
 
     def test_example3(self):
         n = Nansat(self.tmp_ncfile)
@@ -417,6 +426,24 @@ class TestExporter__export2thredds(NansatTestBase):
         })
         # TODO: test that the type, scale and offset are actually modified according to the input
         self.assertEqual(res, None)
+        resn = Nansat(self.filename_exported)
+        self.assertTrue(np.all(np.isfinite(resn[1])))
+        self.assertTrue(np.all(np.isfinite(resn[2])))
+
+    def test_reprojection_and_export2thredds(self):
+        n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
+        n2 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
+        n1.reproject(n2)
+        fd, tmpfilename = tempfile.mkstemp(suffix='.nc')
+        os.close(fd)
+        n1.export2thredds(tmpfilename, time=parse('2019-07-09T16:56:18.146231'))
+
+        n = Nansat(tmpfilename, mapper=self.default_mapper)
+        self.assertTrue(os.path.exists(tmpfilename))
+        self.assertTrue(np.any(np.isfinite(n[1])))
+
+        raise Exception('This should fail but does not yet... Need to change to another netcdf')
+
 
 if __name__ == "__main__":
     unittest.main()
