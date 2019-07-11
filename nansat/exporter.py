@@ -124,7 +124,7 @@ class Exporter(object):
 
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, filename, bands={}, metadata=None, mask_name=None, rm_metadata=None,
+    def export2thredds(self, filename, bands={}, metadata=None, mask_name=None, no_mask_value=64, rm_metadata=None,
                        time=None, created=None):
         """ Export data into a netCDF formatted for THREDDS server
 
@@ -148,10 +148,11 @@ class Exporter(object):
 
         metadata : dict
             Glbal metadata to add
-        mask_name: str
+        mask_name : str
             if data include a mask band: give the mask name.
-            Non-masked value is 64.
             if None: no mask is added
+        no_mask_value : int
+            Non-masked value is 64.
         rm_metadata : list
             unwanted metadata names which will be removed
         time : list with datetime objects
@@ -236,7 +237,7 @@ class Exporter(object):
 
             # mask values with np.nan
             if mask_name is not None and iband != mask_name:
-                array[mask != 64] = np.nan
+                array[mask != no_mask_value] = np.nan
 
             # add array to a temporary Nansat object
             bandMetadata = self.get_metadata(band_id=iband)
