@@ -87,10 +87,10 @@ class NetCDF_CF_Tests(unittest.TestCase):
         # Set dimensions
         ds.createDimension('y', y_sz)
         ds.createDimension('x', x_sz)
-        ds.createDimension('time', 3)
+        ds.createDimension('some_times', 3)
         # Set variables
         # 1d "dimensional" variables i.e lats, times, etc.
-        times = ds.createVariable('time', 'i4', ('time'))
+        times = ds.createVariable('some_times', 'i4', ('some_times'))
         times.units = 'seconds since 1970-01-01 00:00'
         times.standard_name = 'time'
         times.long_name = 'time'
@@ -109,14 +109,79 @@ class NetCDF_CF_Tests(unittest.TestCase):
 
         # Spatial variables 2d and 3d
         var2d = ds.createVariable('var2d', 'i4', ('y', 'x'))
-        var3d = ds.createVariable('var3d', 'i4', ('time', 'y', 'x'))
+        var3d = ds.createVariable('var3d', 'i4', ('some_times', 'y', 'x'))
         var3d.standard_name = 'x_wind'
+
+        ds.close()
+        os.close(fd) # Just in case - see https://www.logilab.org/blogentry/17873
+
+        fd, self.tmp_filename_no_time_var = tempfile.mkstemp(suffix='.nc')
+        ds = Dataset(self.tmp_filename_no_time_var, 'w')
+        y_sz = 30
+        x_sz = 20
+
+        # Set dimensions
+        ds.createDimension('y', y_sz)
+        ds.createDimension('x', x_sz)
+        # Set variables
+        # 1d "dimensional" variables i.e lats, times, etc.
+        ys = ds.createVariable('y', 'i4', ('y'))
+        ys.standard_name = 'projection_y_coordinate'
+        ys[:] = np.linspace(0, 60, y_sz)
+
+        xs = ds.createVariable('x', 'i4', ('x'))
+        xs.standard_name = 'projection_x_coordinate'
+        xs[:] = np.linspace(0, 20, x_sz)
+
+        # Spatial variables 2d and 3d
+        var2d = ds.createVariable('var2d', 'i4', ('y', 'x'))
+        var2d.standard_name = 'x_wind'
 
         ds.close()
         os.close(fd) # Just in case - see https://www.logilab.org/blogentry/17873
 
     def tearDown(self):
         os.unlink(self.tmp_filename)
+        os.unlink(self.tmp_filename_xy)
+        os.unlink(self.tmp_filename_no_time_var)
+
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
+    def test__timevarname(self, mock_init):
+        mock_init.return_value = None
+        mm = Mapper()
+        mm.input_filename = self.tmp_filename_no_time_var
+        timevar_name = mm._timevarname()
+        self.assertEqual(timevar_name, '')
+
+        mm = Mapper()
+        mm.input_filename = self.tmp_filename_xy
+        timevar_name = mm._timevarname()
+        self.assertEqual(timevar_name, 'some_times')
+
+        mm = Mapper()
+        mm.input_filename = self.tmp_filename
+        timevar_name = mm._timevarname()
+        self.assertEqual(timevar_name, 'time')
+        
+
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper._time_reference')
+    @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
+    def test_time_count_to_np_datetime64(self, mock_init, mock_units):
+        mock_init.return_value = None
+        tu = (datetime.datetime(1900, 1, 1, 0, 0), 'days since 1900-1-1 0:0:0 +0')
+        mock_units.return_value = tu
+        mm = Mapper()
+        time_count = '43648.22734953704'
+
+        # TEST DAYS
+        tt = mm._time_count_to_np_datetime64(time_count)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+
+        tt = mm._time_count_to_np_datetime64(time_count, time_reference=tu)
+        # Assert data type of tt is np.datetime64
+        self.assertEqual(type(tt), np.datetime64)
+        
 
     @patch('nansat.mappers.mapper_netcdf_cf.Mapper._time_reference')
     @patch('nansat.mappers.mapper_netcdf_cf.Mapper.__init__')
