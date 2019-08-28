@@ -24,7 +24,7 @@ class Sentinel1(VRT):
     timeVarName = 'time'
     input_filename = ''
 
-    def __init__(self, filename):
+    def __init__(self, filename, flip_gcp_line=False):
         #if not 'S1A' in filename or not 'S1B' in filename:
         #    raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
         if not self.dataset.GetMetadataItem('SATELLITE_IDENTIFIER') or \
@@ -48,7 +48,7 @@ class Sentinel1(VRT):
         self._remove_geotransform()
         self._remove_geolocation()
         self.dataset.SetProjection('')
-        self.dataset.SetGCPs(self.get_gcps(), NSR().wkt)
+        self.dataset.SetGCPs(self.get_gcps(flip_gcp_line=flip_gcp_line), NSR().wkt)
         self.add_incidence_angle_band()
         self.add_look_direction_band()
         self.set_gcmd_dif_keywords()
@@ -78,17 +78,31 @@ class Sentinel1(VRT):
         self.dataset.SetMetadataItem('time_coverage_end', 
         self.dataset.GetMetadataItem('ACQUISITION_STOP_TIME'))
 
-    def get_gcps(self):
+    def get_gcps(self, flip_gcp_line=False):
+        """ Get Ground Control Points for the dataset. 
 
-        lon = self.ds.variables['GCP_longitude_'+self.ds.polarisation[:2]]
-        lat = self.ds.variables['GCP_latitude_'+self.ds.polarisation[:2]]
-        line = self.ds.variables['GCP_line_'+self.ds.polarisation[:2]]
-        pixel = self.ds.variables['GCP_pixel_'+self.ds.polarisation[:2]]
+        Note that OPeNDAP streams and netCDF files are read differently by gdal. The OPeNDAP streams
+        are read by specifying the get parameters to the OPeNDAP url. The get parameters specify the
+        reference dimensions, e.g., x and y. Since these are specified, the raster data is correctly
+        referenced to the GCPs. However, when gdal reads a raster band from netCDF, it reads it
+        "blindly". This is risky, since the definition of origo may be different in gdal vs the
+        original data (e.g., first line starts in upper left corner or in lower left corner). For
+        Sentinel-1, the raster data is flipped in relation to the GCPs, so we need to flip the GCP
+        line vector as well.
+
+        """
+        lon = self.ds.variables['GCP_longitude_'+self.ds.polarisation[:2]][:]
+        lat = self.ds.variables['GCP_latitude_'+self.ds.polarisation[:2]][:]
+        line = self.ds.variables['GCP_line_'+self.ds.polarisation[:2]][:]
+        if flip_gcp_line:
+            # Flip line vector
+            line = self.ds.dimensions['y'].size - line
+        pixel = self.ds.variables['GCP_pixel_'+self.ds.polarisation[:2]][:]
 
         gcps = []
         for i0 in range(0, self.ds.dimensions['gcp_index'].size):
-            gcp = gdal.GCP(float(lon[i0].data), float(lat[i0].data), 0, float(pixel[i0].data),
-                    float(line[i0].data))
+            gcp = gdal.GCP(float(lon[i0]), float(lat[i0]), 0, float(pixel[i0]),
+                    float(line[i0]))
             gcps.append(gcp)
 
         return gcps

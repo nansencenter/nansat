@@ -5,11 +5,12 @@ class Mapper(Sentinel1, NetCDF_CF_Mapper):
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
         NetCDF_CF_Mapper.__init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs)
-        Sentinel1.__init__(self, filename)
+        Sentinel1.__init__(self, filename, flip_gcp_line=True)
         self.add_calibrated_nrcs()
         self.add_nrcs_VV_from_HH()
 
     def add_calibrated_nrcs(self):
+        layer_time_ind = 0
         polarizations = [self.ds.polarisation[i:i+2] for i in range(0,len(self.ds.polarisation),2)]
         for pol in polarizations:
             amp_fn = 'NETCDF:"' + self.input_filename + '":Amplitude_%s' %pol
