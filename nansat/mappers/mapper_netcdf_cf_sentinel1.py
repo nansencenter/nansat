@@ -10,7 +10,6 @@ class Mapper(Sentinel1, NetCDF_CF_Mapper):
         self.add_nrcs_VV_from_HH()
 
     def add_calibrated_nrcs(self):
-        layer_time_ind = 0
         polarizations = [self.ds.polarisation[i:i+2] for i in range(0,len(self.ds.polarisation),2)]
         for pol in polarizations:
             amp_fn = 'NETCDF:"' + self.input_filename + '":Amplitude_%s' %pol
