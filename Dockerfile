@@ -15,7 +15,7 @@ RUN apt-get update \
 &&  conda install -y \
     ipython \
     ipdb \
-    gdal \
+    gdal=2.4.2 \
     matplotlib \
     mock \
     netcdf4 \
