@@ -58,7 +58,7 @@ class Geolocation(object):
 
         self._init_data(x_vrt.filename, y_vrt.filename, **kwargs)
 
-    def _init_data(self, x_filename, y_filename, x_band=1, y_band=1, srs=NSR().wkt,
+    def _init_data(self, x_filename, y_filename, x_band=1, y_band=1, srs=None,
                                                 line_offset=0, line_step=1,
                                                 pixel_offset=0, pixel_step=1):
         """Init data of Geolocation object from input parameters
@@ -88,6 +88,8 @@ class Geolocation(object):
         Saves everything in self.data dict
 
         """
+        if srs is None:
+            srs = NSR().wkt
         self.data['SRS'] = srs
         self.data['X_DATASET'] = x_filename
         self.data['Y_DATASET'] = y_filename

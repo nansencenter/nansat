@@ -1393,7 +1393,7 @@ class VRT(object):
         return subsamp_vrt
 
     def transform_points(self, col_vector, row_vector, dst2src=0,
-                         dst_srs=NSR(), dst_ds=None, options=None):
+                         dst_srs=None, dst_ds=None, options=None):
         """Transform input pixel/line coordinates into lon/lat (or opposite)
 
         Parameters
@@ -1416,6 +1416,8 @@ class VRT(object):
             X and Y coordinates in degree of lat/lon
 
         """
+        if dst_srs is None:
+            dst_srs = NSR()
         # get source SRS (either Projection or GCPProjection or Metadata(GEOLOCATION)[SRS])
         src_wkt = self.get_projection()[0]
 
