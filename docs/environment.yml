@@ -3,7 +3,6 @@ dependencies:
   - gdal
   - mock
   - nbconvert
-  - nbsphinx
   - netcdf4
   - notebook
   - numpy
@@ -13,7 +12,9 @@ dependencies:
   - recommonmark
   - scipy
   - sphinx
-  - sphinx-autobuild
   - sphinx_rtd_theme 
+  - pip
   - pip:
+    - nbsphinx
     - pythesint
+    - sphinx-autobuild
