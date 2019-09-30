@@ -55,7 +55,7 @@ REQS                = [
                         "pythesint",
                         "urllib3",
                         "numpy",
-                        "gdal",
+                        "gdal<3.0",
                         "python-dateutil",
                     ]
 
