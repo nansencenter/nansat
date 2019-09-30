@@ -1,18 +1,19 @@
-channels:
-  - alevin
-  - conda-forge
 dependencies:
-  - conda=2
-  - sphinx>=1.4
+  - ipykernel
+  - gdal
+  - mock
+  - nbconvert
+  - nbsphinx
+  - netcdf4
+  - notebook
+  - numpy
+  - pandoc
+  - pip
+  - python-dateutil
+  - recommonmark
+  - scipy
+  - sphinx
   - sphinx-autobuild
   - sphinx_rtd_theme 
-  - recommonmark
-  - pandoc
-  - nbconvert
-  - ipykernel
-  - python-dateutil
-  - nansat>=1.0.4
-  - mock
-  - notebook
   - pip:
-    - nbsphinx
+    - pythesint
