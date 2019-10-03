@@ -1,5 +1,6 @@
 import json
 import numpy as np
+from dateutil.parser import parse
 try:
     import scipy
 except:
@@ -44,7 +45,7 @@ class Sentinel1(VRT):
         except (AttributeError, KeyError):
             raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
 
-        self.timeCalendarStart = parse(ds.variables[self.timeVarName].units, fuzzy=True)
+        self.timeCalendarStart = parse(self.ds.variables[self.timeVarName].units, fuzzy=True)
 
         self._remove_geotransform()
         self._remove_geolocation()
