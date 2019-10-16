@@ -1,4 +1,4 @@
-FROM nansat_base
+FROM akorosov/nansat_base
 
 LABEL maintainer="Anton Korosov <anton.korosov@nersc.no>"
 LABEL purpose="Nansat and other geospatial Python libs"
