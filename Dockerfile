@@ -9,9 +9,9 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update \
 &&  apt-get install -y --no-install-recommends \
     build-essential \
-    gcc \
-&&  conda config --add channels conda-forge \
-&&  conda update -y conda \
+    gcc
+
+RUN conda config --add channels conda-forge  \
 &&  conda install -y \
     ipython \
     ipdb \
@@ -35,15 +35,15 @@ RUN wget -nc -P /usr/share/MOD44W ftp://ftp.nersc.no/nansat/test_data/MOD44W.tgz
 &&  tar -xzf /usr/share/MOD44W/MOD44W.tgz -C /usr/share/MOD44W/ \
 &&  rm /usr/share/MOD44W/MOD44W.tgz
 
-RUN pip install coverage
+#RUN pip install coverage
 
-ENV MOD44WPATH=/usr/share/MOD44W/
+#ENV MOD44WPATH=/usr/share/MOD44W/
 
-COPY utilities /tmp/utilities
-COPY nansat /tmp/nansat
-COPY setup.py /tmp/
-WORKDIR /tmp
-RUN python setup.py install
+#COPY utilities /tmp/utilities
+#COPY nansat /tmp/nansat
+#COPY setup.py /tmp/
+#WORKDIR /tmp
+#RUN python setup.py install
 
-WORKDIR /src
+#WORKDIR /src
 
