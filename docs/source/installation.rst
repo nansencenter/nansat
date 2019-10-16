@@ -216,7 +216,7 @@ do the following steps:
 
 ::
 
-    docker run --rm -it -v `pwd`:/src nansat python setup.py build_ext --inplace
+    docker run --rm -it -v `pwd`:/src akorosov/nansat python setup.py build_ext --inplace
 
 2. Run container with mounting of the current directory into /src. In this case Python
 will use Nansat from /src/nansat (the directory shared between host and container):
@@ -224,10 +224,10 @@ will use Nansat from /src/nansat (the directory shared between host and containe
 ::
 
     # launch Python with Nansat in container
-    docker run --rm -it -v `pwd`:/src nansat python
+    docker run --rm -it -v `pwd`:/src akorosov/nansat python
 
     # ...or run nosetests
-    docker run --rm -it -v `pwd`:/src nansat nosetests nansat
+    docker run --rm -it -v `pwd`:/src akorosov/nansat nosetests nansat
 
 Alternatively you can run the script *build_containr.sh*. The script will build the image with
 Python libraries from Anaconda, compile the Nansat code inplace and create a
