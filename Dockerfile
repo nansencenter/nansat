@@ -35,6 +35,8 @@ RUN wget -nc -P /usr/share/MOD44W ftp://ftp.nersc.no/nansat/test_data/MOD44W.tgz
 &&  tar -xzf /usr/share/MOD44W/MOD44W.tgz -C /usr/share/MOD44W/ \
 &&  rm /usr/share/MOD44W/MOD44W.tgz
 
+RUN pip install coverage
+
 ENV MOD44WPATH=/usr/share/MOD44W/
 
 COPY utilities /tmp/utilities
