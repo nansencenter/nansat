@@ -31,6 +31,12 @@ RUN apt-get update \
 &&  pip install pythesint \
 &&  python -c 'import pythesint; pythesint.update_all_vocabularies()'
 
+RUN wget -nc -P /usr/share/MOD44W ftp://ftp.nersc.no/nansat/test_data/MOD44W.tgz \
+&&  tar -xzf /usr/share/MOD44W/MOD44W.tgz -C /usr/share/MOD44W/ \
+&&  rm /usr/share/MOD44W/MOD44W.tgz
+
+ENV MOD44WPATH=/usr/share/MOD44W/
+
 COPY utilities /tmp/utilities
 COPY nansat /tmp/nansat
 COPY setup.py /tmp/
