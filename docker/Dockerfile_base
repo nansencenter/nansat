@@ -12,7 +12,9 @@ RUN apt-get update \
     build-essential \
     gcc
 
-RUN conda config --add channels conda-forge  \
+RUN conda install setuptools \
+&&  conda update conda \
+&&  conda config --add channels conda-forge  \
 &&  conda install -y \
     ipython \
     ipdb \
