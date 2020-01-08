@@ -21,3 +21,5 @@ docs/_build/
 .vagrant
 provisioning/roles/andrewrothstein*
 provisioning/site.retry
+.vscode
+.devcontainer
