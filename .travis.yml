@@ -4,11 +4,18 @@ services:
   - docker
 
 install:
-  - docker build . -t nansat -f docker/Dockerfile_nansat
-  - pip install coveralls
+  - docker pull nansencenter/nansat_base:latest
 
+# The COVERALLS_REPO_TOKEN environment variable is defined in the Travis CI repository settings:
+# https://travis-ci.org/nansencenter/nansat/settings
 script:
-  - docker run --rm -v "$(pwd):/src" nansat coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test
-
-after_success:
-  - coveralls
+  - >
+    docker run --rm
+    -v "$(pwd):/src"
+    -e "COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN"
+    -e "TRAVIS=true"
+    -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID"
+    -e "TRAVIS_BRANCH=$TRAVIS_BRANCH"
+    -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
+    nansencenter/nansat_base:latest
+    bash -c "coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
