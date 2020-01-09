@@ -8,7 +8,7 @@ install:
   - pip install coveralls
 
 script:
-  - docker run --rm -it -v "$(pwd):/src" nansat coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test
+  - docker run --rm -v "$(pwd):/src" nansat coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test
 
 after_success:
   - coveralls
