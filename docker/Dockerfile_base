@@ -28,6 +28,8 @@ RUN conda install setuptools \
     python-dateutil \
     scipy \
     urllib3 \
+    coverage \
+    coveralls \
 &&  conda remove qt pyqt --force \
 &&  conda clean -a -y \
 &&  rm /opt/conda/pkgs/* -rf \
