@@ -3,19 +3,66 @@ language: python
 services:
   - docker
 
-install:
-  - docker pull nansencenter/nansat_base:latest
+before_install:
+  - '[[ -n "$TRAVIS_TAG" ]] && export DOCKER_TAG="$TRAVIS_TAG" || export DOCKER_TAG=tmp'
+  - '[[ -z "$DOCKER_ORG" ]] && export DOCKER_ORG="$DOCKER_USER" || true'
+  # Pull latest images so that we don't rebuild the existing layers
+  - docker pull ${DOCKER_USER}/nansat_base || true
+  - docker pull ${DOCKER_USER}/nansat || true
+  # Download the MOD44W land/water mask.
+  # This is not done in the Dockerfile in order to avoid leaving traces of the password in there
+  - touch ftp_key && chmod 600 ftp_key
+  - echo "$FTP_KEY" > ftp_key
+  - sftp -o 'StrictHostKeyChecking=no' -i ftp_key -P 5522 "${FTP_USER}@ftp.nersc.no:nansat/test_data/MOD44W.tgz"
+  - rm ftp_key
 
+install:
+  # Build the first stage as a separate image containing the dependencies for Nansat
+  - >
+    docker build .
+    --pull
+    --cache-from "${DOCKER_ORG}/nansat_base"
+    --target base
+    -t "${DOCKER_ORG}/nansat_base:${DOCKER_TAG}"
+  # Build the nansat image on top of the base image, using as cache the base image we just build,
+  # and the previously build images
+  - >
+    docker build .
+    --pull
+    --cache-from "${DOCKER_ORG}/nansat_base:${DOCKER_TAG}"
+    --cache-from "${DOCKER_ORG}/nansat_base"
+    --cache-from "${DOCKER_ORG}/nansat"
+    -t "${DOCKER_ORG}/nansat:${DOCKER_TAG}"
+
+# Run the tests on the installed nansat package
 # The COVERALLS_REPO_TOKEN environment variable is defined in the Travis CI repository settings:
 # https://travis-ci.org/nansencenter/nansat/settings
+# The GIT_* environment variable are necessary for coveralls, since we run it directly for the installed package
 script:
   - >
     docker run --rm
-    -v "$(pwd):/src"
     -e "COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN"
     -e "TRAVIS=true"
     -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID"
-    -e "TRAVIS_BRANCH=$TRAVIS_BRANCH"
     -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
-    nansencenter/nansat_base:latest
-    bash -c "coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
+    -e "TRAVIS_BRANCH=$TRAVIS_BRANCH"
+    -e "GIT_BRANCH=$TRAVIS_BRANCH"
+    -e "GIT_ID=$(git show -s --format='%H' HEAD)"
+    -e "GIT_AUTHOR_NAME=$(git show -s --format='%an' HEAD)"
+    -e "GIT_AUTHOR_EMAIL=$(git show -s --format='%ae' HEAD)"
+    -e "GIT_COMMITTER_NAME=$(git show -s --format='%cn' HEAD)"
+    -e "GIT_COMMITTER_EMAIL=$(git show -s --format='%ce' HEAD)"
+    -e "GIT_MESSAGE=$(git show -s --format='%B' HEAD)"
+    "${DOCKER_ORG}/nansat:${DOCKER_TAG}"
+    bash -c "source /opt/conda/bin/activate &&
+    cd /opt/conda/lib/python3.7/site-packages/nansat-*.egg &&
+    coverage run --source=nansat --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py /opt/conda/bin/nosetests nansat.tests &&
+    coveralls"
+
+# Push the built images to the Docker Hub if the build trigger was a tag
+deploy:
+  on:
+    tags: true
+  provider: script
+  skip_cleanup: true
+  script: /bin/bash scripts/docker_push.sh nansat_base nansat
