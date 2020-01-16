@@ -6,6 +6,17 @@ Nansat class. Download the prepared `MODIS 250M water-mask product
 <ftp://ftp.nersc.no/nansat/MOD44W.tgz>`_ from our server and add the path to the directory with this
 data to an environment variable named MOD44WPATH (e.g.  ``MOD44WPATH=/Data/sat/auxdata/mod44w``).
 
+Distance to the Nearest coast
+------------------------------
+
+To get inforamtion about distace to the nearest coastline within the domain of interest, you can use 
+``distance2coast`` method from the ``nanasat.toolbox``. Download NASA's Ocean 
+Biology Processing Group `0.1x0.1 degree Distance to the Nearest Coast product 
+<https://oceancolor.gsfc.nasa.gov/docs/distfromcoast/GMT_intermediate_coast_distance_01d.zip`_ and add the 
+path to the directory with this data to an environment variable named DIST2COAST
+(e.g. ``DIST2COAST=/path/to/file``). For more inforamtion about the product wisit `NASA's Ocean 
+Biology Processing Group <https://oceancolor.gsfc.nasa.gov/docs/distfromcoast/>`.
+
 Digital Elevation Models (DEMs)
 --------------------------------
 
