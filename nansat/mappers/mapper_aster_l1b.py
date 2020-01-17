@@ -10,7 +10,7 @@ import json
 
 import pythesint as pti
 
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from hdf4_mapper import HDF4Mapper

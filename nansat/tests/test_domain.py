@@ -21,7 +21,7 @@ from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.tests import nansat_test_data as ntd
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning

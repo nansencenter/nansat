@@ -7,7 +7,7 @@
 import os
 from datetime import datetime
 
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.domain import Domain
