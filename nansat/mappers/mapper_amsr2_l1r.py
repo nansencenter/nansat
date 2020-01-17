@@ -11,7 +11,7 @@ import json
 
 import pythesint as pti
 
-from nansat.tools import gdal, ogr, parse_time
+from nansat.utils import gdal, ogr, parse_time
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.nsr import NSR

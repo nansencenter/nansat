@@ -26,7 +26,7 @@ from nansat.mappers.sentinel1 import Sentinel1
 from nansat.mappers.opendap import Opendap
 from nansat.vrt import VRT
 from nansat.nsr import NSR
-from nansat.tools import initial_bearing
+from nansat.utils import initial_bearing
 
 
 class Mapper(Opendap, Sentinel1):

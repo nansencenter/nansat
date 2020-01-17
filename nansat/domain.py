@@ -22,7 +22,7 @@ from xml.etree.ElementTree import ElementTree
 
 import numpy as np
 
-from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
+from nansat.utils import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.exceptions import NansatProjectionError

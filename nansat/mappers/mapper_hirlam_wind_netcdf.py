@@ -6,7 +6,7 @@
 #               http://www.gnu.org/licenses/gpl-3.0.html
 import datetime
 
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 

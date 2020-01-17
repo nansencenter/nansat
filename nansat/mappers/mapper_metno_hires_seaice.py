@@ -24,7 +24,7 @@ except:
 
 from datetime import datetime, timedelta
 
-from nansat.tools import gdal, ogr, osr
+from nansat.utils import gdal, ogr, osr
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 

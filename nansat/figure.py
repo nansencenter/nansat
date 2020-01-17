@@ -36,7 +36,7 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-from nansat.tools import add_logger
+from nansat.utils import add_logger
 
 
 class Figure(object):

@@ -11,7 +11,7 @@ from dateutil.parser import parse
 import json
 import pythesint as pti
 
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.vrt import VRT
 from nansat.nsr import NSR
 from nansat.mappers.obpg import OBPGL2BaseClass

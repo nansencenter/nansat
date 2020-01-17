@@ -29,7 +29,7 @@ import numpy as np
 from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
-from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
+from nansat.utils import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
 
 from nansat.exceptions import NansatProjectionError
 
