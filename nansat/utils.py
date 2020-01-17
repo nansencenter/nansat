@@ -1,4 +1,4 @@
-# Name:    tools.py
+# Name:    utils.py
 # Purpose: collection of data and funcs used in NANSAT modules
 # Authors:      Asuka Yamakawa, Anton Korosov, Knut-Frode Dagestad,
 #               Morten W. Hansen, Alexander Myasoyedov,
