@@ -28,7 +28,7 @@ import json
 import pythesint as pti
 
 from nansat.vrt import VRT
-from nansat.tools import gdal, initial_bearing
+from nansat.utils import gdal, initial_bearing
 from nansat.exceptions import WrongMapperError, NansatReadError
 from nansat.nsr import NSR
 from nansat.node import Node

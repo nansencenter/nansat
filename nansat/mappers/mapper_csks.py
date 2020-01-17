@@ -10,7 +10,7 @@ from struct import unpack
 import numpy as np
 import os
 
-from nansat.tools import gdal, ogr, osr, parse_time
+from nansat.utils import gdal, ogr, osr, parse_time
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 

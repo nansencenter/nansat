@@ -14,7 +14,7 @@ from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.nsr import NSR
-from nansat.tools import parse_time
+from nansat.utils import parse_time
 
 from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 

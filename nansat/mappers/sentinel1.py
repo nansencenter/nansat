@@ -14,7 +14,7 @@ import pythesint as pti
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.tools import initial_bearing
+from nansat.utils import initial_bearing
 from nansat.exceptions import WrongMapperError, NansatReadError
 
 class Sentinel1(VRT):

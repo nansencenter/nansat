@@ -16,7 +16,7 @@ from netCDF4 import Dataset
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
 from nansat.vrt import VRT
-from nansat.tools import gdal, parse_time
+from nansat.utils import gdal, parse_time
 from nansat.exceptions import WrongMapperError
 
 # TODO: remove WrongMapperError

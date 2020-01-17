@@ -12,7 +12,7 @@
 #------------------------------------------------------------------------------
 import unittest
 from nansat import NSR
-from nansat.tools import osr
+from nansat.utils import osr
 
 from nansat.exceptions import NansatProjectionError
 

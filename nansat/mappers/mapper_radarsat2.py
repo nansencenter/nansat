@@ -26,7 +26,7 @@ from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
 from nansat.node import Node
-from nansat.tools import initial_bearing, gdal, ogr
+from nansat.utils import initial_bearing, gdal, ogr
 from nansat.exceptions import WrongMapperError, NansatReadError
 
 

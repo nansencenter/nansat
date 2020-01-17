@@ -26,7 +26,7 @@ from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.node import Node
-from nansat.tools import NUMPY_TO_GDAL_TYPE_MAP 
+from nansat.utils import NUMPY_TO_GDAL_TYPE_MAP 
 
 from nansat.exceptions import NansatGDALError
 
