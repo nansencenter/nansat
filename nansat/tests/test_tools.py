@@ -21,9 +21,16 @@ class ToolsTest(unittest.TestCase):
         self.d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
 
     @patch.dict(os.environ,{'DIST2COAST':'/path/dos/not/exist'})
-    def test_distance2coast_source_not_exists(self):
+    def test_distance2coast_source_not_exists_envvar(self):
         with self.assertRaises(IOError) as err:
             distance2coast(self.d)
+        self.assertEqual('Distance to the nearest coast product does not exist - '
+                         'see Nansat documentation to get it (the path is '
+                         '/path/dos/not/exist)', str(err.exception))
+
+    def test_distance2coast_source_not_exists_attribute(self):
+        with self.assertRaises(IOError) as err:
+            distance2coast(self.d, distance_src='/path/dos/not/exist')
         self.assertEqual('Distance to the nearest coast product does not exist - '
                          'see Nansat documentation to get it (the path is '
                          '/path/dos/not/exist)', str(err.exception))
