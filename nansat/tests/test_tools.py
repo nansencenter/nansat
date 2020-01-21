@@ -13,7 +13,7 @@ import os
 import unittest
 from nansat.domain import Domain
 from nansat.nansat import Nansat
-from nansat.tools import distance2coast
+from nansat.tools import distance2coast, register_colormaps
 from mock import patch
 import numpy as np
 
@@ -45,3 +45,8 @@ class ToolsTest(unittest.TestCase):
         MockNansat.return_value = self.n
         result = distance2coast(self.d)
         self.assertEqual(type(result), Nansat)
+
+    def test_warning(self):
+        register_colormaps()
+        with self.assertWarns(UserWarning) as w:
+            register_colormaps()
