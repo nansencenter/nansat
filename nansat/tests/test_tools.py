@@ -12,13 +12,18 @@
 import os
 import unittest
 from nansat.domain import Domain
+from nansat.nansat import Nansat
 from nansat.tools import distance2coast
 from mock import patch
+import numpy as np
 
 
 class ToolsTest(unittest.TestCase):
     def setUp(self):
-        self.d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
+        self.d = Domain(4326, "-te 25 70 35 72 -ts 100 100")
+        # define a test Nansat object
+        test_domain = Domain(4326, "-lle -180 -90 180 90 -ts 500 500")
+        self.n = Nansat.from_domain(test_domain, array=np.ones([500,500]))
 
     @patch.dict(os.environ,{'DIST2COAST':'/path/dos/not/exist'})
     def test_distance2coast_source_not_exists_envvar(self):
@@ -34,3 +39,9 @@ class ToolsTest(unittest.TestCase):
         self.assertEqual('Distance to the nearest coast product does not exist - '
                          'see Nansat documentation to get it (the path is '
                          '/path/dos/not/exist)', str(err.exception))
+
+    @patch('nansat.tools.Nansat')
+    def test_distance2coast_integration(self, MockNansat):
+        MockNansat.return_value = self.n
+        result = distance2coast(self.d)
+        self.assertEqual(type(result), Nansat)
