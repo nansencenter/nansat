@@ -14,6 +14,9 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+import os
+from nansat.nansat import Nansat
+
 
 def distance2coast(dst_domain, distance_src=None):
     """Method is estmating distance to the nearest coast (in km) for each pixcel in the 
@@ -35,23 +38,17 @@ def distance2coast(dst_domain, distance_src=None):
     See Also
     ---------
     `<https://oceancolor.gsfc.nasa.gov/docs/distfromcoast/>`_
-    `<http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water>`_
+    `<http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water>`
 
     """
     # Get path to theauxilary dataset predefined in enviromental variable 
     if not distance_src:
         distance_src = os.getenv('DIST2COAST')
-    try:
-        distance = Nansat(distance_src)
-    except TypeError:
-        # Raise an error if the enviromental variable does not exist
-        raise IOError('Distance to the nearest coast product is not specified. Add the path to the'
-                      'directory with this data to an environment variable named DIST2COAST or explisetly'
-                      'provide to the function as <distance_src>')
-    except OSError:
-        # Raise an error if the enviromental variable was incorectly defined
-        raise IOError('Distance to the nearest coast product does not exist - see Nansat'
+    # If path to the distance data source was not specified or directly provided raise an error
+    if os.path.exists(distance_src) is False:
+        raise IOError('Distance to the nearest coast product does not exist - see Nansat '
                       'documentation to get it (the path is % s)' % distance_src)
+    distance = Nansat(distance_src)
     # Reproject the source file on the domain of interest
-    distance.reproject(dst_domain, addmask=False)
+    distance.reproject(dst_domain, addmask=False)    
     return distance
