@@ -18,4 +18,4 @@ script:
     -e "TRAVIS_BRANCH=$TRAVIS_BRANCH"
     -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
     nansencenter/nansat_base:latest
-    bash -c "coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
+    bash -c "source /opt/conda/bin/activate && coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
