@@ -1,6 +1,6 @@
 # Name:    tools.py
-# Purpose: Collection of methods which use core Nansat classes for 
-#          scientific data analysis and visualization 
+# Purpose: Collection of methods which use core Nansat classes for
+#          scientific data analysis and visualization
 # Authors:      Artem Moiseev
 # Created:      17.01.2020
 # Copyright:    (c) NERSC 2020
@@ -15,17 +15,16 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 import os
-from nansat.nansat import Nansat
-from nansat import utils
 import warnings
-from nansat import utils
 import functools
 
+from nansat.nansat import Nansat
+from nansat import utils
 
 def distance2coast(dst_domain, distance_src=None):
-    """Method is estmating distance to the nearest coast (in km) for each pixcel in the 
+    """ Estimate distance to the nearest coast (in km) for each pixcel in the
     domain of interest. The method utilizes NASA's OBPG group Distance to the Nearest Coast
-    product: https://oceancolor.gsfc.nasa.gov/docs/distfromcoast/. The product is stored in GeoTiff 
+    product: https://oceancolor.gsfc.nasa.gov/docs/distfromcoast/. The product is stored in GeoTiff
     format with pixcelsize of 0.01x0.01 degree.
 
     Parameters
@@ -34,27 +33,27 @@ def distance2coast(dst_domain, distance_src=None):
         destination domain
     distance_src : str
         path to the NASA Distance to the Nearest coast GeoTIFF product
-    
+
     Returns
     --------
     distance : Nansat object with distance to the coast mask in current projection
-    
+
     See Also
     ---------
     `<https://oceancolor.gsfc.nasa.gov/docs/distfromcoast/>`_
     `<http://nansat.readthedocs.io/en/latest/source/features.html#differentiating-between-land-and-water>`
 
     """
-    # Get path to theauxilary dataset predefined in enviromental variable 
-    if not distance_src:
+    # Get path to the auxilary dataset predefined in enviromental variable
+    if distance_src is None:
         distance_src = os.getenv('DIST2COAST')
     # If path to the distance data source was not specified or directly provided raise an error
-    if os.path.exists(distance_src) is False:
+    if distance_src is None or not os.path.exists(distance_src):
         raise IOError('Distance to the nearest coast product does not exist - see Nansat '
                       'documentation to get it (the path is % s)' % distance_src)
     distance = Nansat(distance_src)
     # Reproject the source file on the domain of interest
-    distance.reproject(dst_domain, addmask=False)    
+    distance.reproject(dst_domain, addmask=False)
     return distance
 
 
@@ -110,7 +109,7 @@ def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_borde
                      p_alpha=0.5, padding=0., mer_labels=[False, False, False, False],
                      par_labels=[False, False, False, False], pltshow=False, labels=None):
     utils.write_domain_map(
-        border, out_filename, lon_vec=lon_vec, lat_vec=lat_vec, lon_border=lon_border, 
+        border, out_filename, lon_vec=lon_vec, lat_vec=lat_vec, lon_border=lon_border,
         lat_border=lat_border, figure_size=figure_size, dpi=dpi, projection=projection,
         resolution=resolution, continets_color=continets_color, meridians=meridians,
         parallels=parallels, p_color=p_color, p_line=p_line, p_alpha=p_alpha, padding=padding,
