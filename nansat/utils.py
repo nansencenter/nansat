@@ -50,15 +50,15 @@ except:
 gdal.UseExceptions()
 
 NUMPY_TO_GDAL_TYPE_MAP = {
-        'uint8': 1, 
-        'int8': 1, 
-        'uint16': 2, 
-        'int16': 3, 
-        'uint32': 4, 
+        'uint8': 1,
+        'int8': 1,
+        'uint16': 2,
+        'int16': 3,
+        'uint32': 4,
         'int32': 5,
-        'float32': 6, 
-        'float64': 7, 
-        'complex64': 10, 
+        'float32': 6,
+        'float64': 7,
+        'complex64': 10,
         'complex128': 11
     }
 
@@ -418,6 +418,104 @@ def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_borde
             plt.show()
         else:
             plt.close('all')
+
+def save_domain_map(domain,
+                    lon_border=10.,
+                    lat_border=10.,
+                    figure_size=(6, 6),
+                    dpi=50,
+                    projection='cyl',
+                    resolution='c',
+                    continets_color='coral',
+                    meridians=10,
+                    parallels=10,
+                    p_color='r',
+                    p_line='k',
+                    p_alpha=0.5,
+                    padding=0.,
+                    mer_labels=[False, False, False, False],
+                    par_labels=[False, False, False, False],
+                    pltshow=False,
+                    labels=None):
+    pass
+
+def show_domain_map(domain,
+                    lon_border=10.,
+                    lat_border=10.,
+                    figure_size=(6, 6),
+                    dpi=50,
+                    projection='cyl',
+                    resolution='c',
+                    continets_color='coral',
+                    meridians=10,
+                    parallels=10,
+                    p_color='r',
+                    p_line='k',
+                    p_alpha=0.5,
+                    padding=0.,
+                    mer_labels=[False, False, False, False],
+                    par_labels=[False, False, False, False],
+                    pltshow=False,
+                    labels=None):
+    pass
+
+def get_domain_map(domain,
+                    lon_border=10.,
+                    lat_border=10.,
+                    projection='cyl',
+                    resolution='c',
+                    continets_color='coral',
+                    meridians=10,
+                    parallels=10,
+                    p_color='r',
+                    p_line='k',
+                    p_alpha=0.5,
+                    padding=0.,
+                    mer_labels=[False, False, False, False],
+                    par_labels=[False, False, False, False],
+                    labels=None):
+        """Create a pyplot figure with Domain map
+
+        Use cartopy to create a map and add a semitransparent patch with Domain borders
+
+        Parameters
+        -----------
+        domain : Domain
+            the desired Domain to plot
+        lon_border : float
+            10, horisontal border around patch (degrees of longitude)
+        lat_border : float
+            10, vertical border around patch (degrees of latitude)
+        projection : string, one of Basemap projections
+            'cyl', projection of the map
+        resolution : string, resolution of the map
+            'c', crude
+            'l', low
+            'i', intermediate
+            'h', high
+            'f', full
+        continets_color : string or any matplotlib color representation
+            'coral', color of continets
+        meridians : int
+            10, number of meridians to draw
+        parallels : int
+            10, number of parallels to draw
+        p_color : string or any matplotlib color representation
+            'r', color of the Domain patch
+        p_line : string or any matplotlib color representation
+            'k', color of the Domain outline
+        p_alpha : float 0 - 1
+            0.5, transparency of Domain patch
+        padding : float
+            0., width of white padding around the map
+        mer_labels : list of 4 booleans
+            where to put meridian labels, see also Basemap.drawmeridians()
+        par_lables : list of 4 booleans
+            where to put parallel labels, see also Basemap.drawparallels()
+        labels : list of str
+            labels to print on top of patches
+
+        """)
 
 register_colormaps()
 
