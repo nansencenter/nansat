@@ -1,21 +1,54 @@
-language: python
-
+---
+language: shell
 services:
   - docker
 
-install:
-  - docker pull nansencenter/nansat_base:latest
+# Environment variables defined as part of the Travis CI repository configuration are:
+# - DOCKER_ORG: the docker hub organization (or user) to which the image will be pushed
+# - DOCKER_USER: the docker hub user used to log in to the docker hub
+# - DOCKER_PASS: the password of this user
 
-# The COVERALLS_REPO_TOKEN environment variable is defined in the Travis CI repository settings:
-# https://travis-ci.org/nansencenter/nansat/settings
-script:
-  - >
-    docker run --rm
-    -v "$(pwd):/src"
-    -e "COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN"
-    -e "TRAVIS=true"
-    -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID"
-    -e "TRAVIS_BRANCH=$TRAVIS_BRANCH"
-    -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
-    nansencenter/nansat_base:latest
-    bash -c "coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
+jobs:
+  include:
+    # Unit tests are run
+    - stage: 'Unit tests'
+      if: type = push
+      env:
+        - TESTING_IMAGE_NAME="${DOCKER_ORG}/nansat_base"
+      install:
+        - docker pull "${TESTING_IMAGE_NAME}"
+      # The COVERALLS_REPO_TOKEN environment variable is defined in the Travis CI repository settings:
+      # https://travis-ci.org/nansencenter/nansat/settings
+      script:
+        - >
+          docker run --rm
+          -v "$(pwd):/src"
+          -e "COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN"
+          -e "TRAVIS=true"
+          -e "TRAVIS_JOB_ID=$TRAVIS_JOB_ID"
+          -e "TRAVIS_BRANCH=$TRAVIS_BRANCH"
+          -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
+          "${TESTING_IMAGE_NAME}"
+          bash -c "source /opt/conda/bin/activate && coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
+
+    - stage: 'Build docker image'
+      if: type = pull_request OR tag IS present
+      env:
+        - IMAGE_NAME="${DOCKER_ORG}/nansat"
+        - DOCKER_TMP_TAG='tmp'
+      install:
+        - docker pull "${IMAGE_NAME}" || true
+      script:
+        - >
+          docker build .
+          --cache-from "${IMAGE_NAME}"
+          -t "${IMAGE_NAME}:${DOCKER_TMP_TAG}"
+        - docker run --rm "${IMAGE_NAME}:${DOCKER_TMP_TAG}" python -c 'import nansat'
+      before_deploy:
+        - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+      deploy:
+        provider: script
+        on:
+          tags: true
+        script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
+...
