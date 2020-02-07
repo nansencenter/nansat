@@ -14,10 +14,31 @@ import unittest
 from mock import patch, DEFAULT
 
 import numpy as np
+try:
+    import matplotlib.pyplot as plt
+    plt.switch_backend('Agg')
+except ImportError:
+    MATPLOTLIB_IS_INSTALLED = False
+else:
+    MATPLOTLIB_IS_INSTALLED = True
+try:
+    import cartopy
+except ImportError:
+    CARTOPY_IS_INSTALLED = False
+else:
+    CARTOPY_IS_INSTALLED = True
 
+import nansat
 from nansat.domain import Domain
+from nansat.figure import Image
 from nansat.nansat import Nansat as NANSAT
-from nansat.tools import distance2coast, register_colormaps
+from nansat.tests import nansat_test_data as ntd
+from nansat.tools import (distance2coast,
+                            register_colormaps,
+                            get_domain_map,
+                            show_domain_map,
+                            save_domain_map,
+                            get_domain_map)
 
 
 class ToolsTest(unittest.TestCase):
@@ -54,3 +75,24 @@ class ToolsTest(unittest.TestCase):
         register_colormaps()
         with self.assertWarns(UserWarning) as w:
             register_colormaps()
+
+    @unittest.skipUnless(CARTOPY_IS_INSTALLED, 'Cartopy is required')
+    def test_get_domain_map(self):
+        ax = get_domain_map(self.d)
+        self.assertIsInstance(ax, plt.Axes)
+
+    def test_get_domain_map_no_cartopy(self):
+        nansat.tools.CARTOPY_IS_INSTALLED = False
+        with self.assertRaises(ImportError) as err:
+            ax = get_domain_map(self.d)
+        self.assertIn('Cartopy is not installed', str(err.exception))
+        nansat.tools.CARTOPY_IS_INSTALLED = CARTOPY_IS_INSTALLED
+
+    @unittest.skipUnless(CARTOPY_IS_INSTALLED, 'Cartopy is required')
+    def test_save_domain_map(self):
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_save_map.png')
+        save_domain_map(self.d, tmpfilename)
+        self.assertTrue(os.path.exists(tmpfilename))
+        i = Image.open(tmpfilename)
+        i.verify()
+        self.assertEqual(i.info['dpi'], (100, 100))

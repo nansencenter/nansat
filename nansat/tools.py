@@ -1,7 +1,7 @@
 # Name:    tools.py
-# Purpose: Collection of methods which use core Nansat classes for
+# Purpose: Collection of functions which use core Nansat classes for
 #          scientific data analysis and visualization
-# Authors:      Artem Moiseev
+# Authors:      Artem Moiseev, Anton Korosov
 # Created:      17.01.2020
 # Copyright:    (c) NERSC 2020
 # Licence:
@@ -17,6 +17,20 @@
 import os
 import warnings
 import functools
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    MATPLOTLIB_IS_INSTALLED = False
+else:
+    MATPLOTLIB_IS_INSTALLED = True
+
+try:
+    import cartopy.crs as ccrs
+except ImportError:
+    CARTOPY_IS_INSTALLED = False
+else:
+    CARTOPY_IS_INSTALLED = True
 
 from nansat.nansat import Nansat
 from nansat import utils
@@ -56,6 +70,135 @@ def distance2coast(dst_domain, distance_src=None):
     distance.reproject(dst_domain, addmask=False)
     return distance
 
+def get_domain_map(domain,
+                   crs=None,
+                   lon_margin=10.,
+                   lat_margin=10.,
+                   lw=1,
+                   linestyle='b.-',
+                   fill_color='coral',
+                   fill_alpha=0.5,
+                   draw_gridlines=True,
+                   draw_labels=True,
+                   grid_lw=2,
+                   grid_color='gray',
+                   grid_alpha=0.5,
+                   grid_linestyle='--',
+                   **kwargs):
+    """
+    Create a pyplot figure axis with Domain map, Cartopy projection, coastlines
+
+    Parameters
+    -----------
+    domain : Domain
+        the desired Domain to plot
+    crs : cartopy CRS or None
+        projection of the map, cartopy.crs.PlateCaree by default
+    lon_margin : float
+        10, horisontal border around patch (degrees of longitude)
+    lat_margin : float
+        10, vertical border around patch (degrees of latitude)
+    linestyle : str
+        domain line style
+    lw : float
+        domain line width
+    fill_color : str
+        domain fill color
+    fill_alpha : float
+        domain fill transparency
+    draw_gridlines : bool
+        Add gridlines to the plot?
+    draw_labels : bool
+        Add labels to the plot?
+    grid_lw : float
+        gridlines line width
+    grid_color : str,
+        gridlines color
+    grid_alpha : float
+        gridlines transparency
+    grid_linestyle : str
+        gridlines style
+
+    Returns
+    -------
+    ax : pyplot/cartopy axes
+        Axes with the map and domain patch
+
+    """
+    if not CARTOPY_IS_INSTALLED:
+        raise ImportError(' Cartopy is not installed. Cannot use get_domain_map '
+                          ' Enable by: conda install -c conda-forge cartopy ')
+
+    if crs is None:
+        crs = ccrs.PlateCarree()
+
+    blon, blat = domain.get_border()
+
+    ax = plt.subplot(111, projection=crs)
+    ax.stock_img()
+    ax.coastlines()
+    ax.plot(blon, blat, linestyle,
+                        lw=lw,
+                        transform=ccrs.PlateCarree())
+    ax.fill(blon, blat, color=fill_color,
+                        alpha=fill_alpha,
+                        transform=crs)
+    plt.xlim([blon.min()-lon_margin, blon.max()+lon_margin])
+    plt.ylim([blat.min()-lat_margin, blat.max()+lat_margin])
+    if draw_gridlines:
+        gl = ax.gridlines(draw_labels=draw_labels,
+                          linewidth=grid_lw,
+                          color=grid_color,
+                          alpha=grid_alpha,
+                          linestyle=grid_linestyle,
+                          crs=crs)
+    return ax
+
+
+def show_domain_map(domain, **kwargs):
+    """ Show Domain map interactively
+
+    Parameters
+    ----------
+    domain : Domain
+        the Domain to show
+    **kwargs : dict
+        parameters for nansat.tools.get_domain_map
+
+    """
+    ax = get_domain_map(domain, **kwargs)
+    plt.show()
+
+def save_domain_map(domain,
+                    filename,
+                    figsize=(5,5),
+                    dpi=150,
+                    bbox_inches='tight',
+                    pad_inches=0,
+                    **kwargs):
+    """ Save Domain to PNG file
+
+    Parameters
+    ----------
+    domain : Domain
+        the Domain to show
+    filename : str
+        destination filename
+    figsize : (int, int)
+        size of the figure in inches
+    dpi : PNG resolution
+    bbox_inches : str or int
+        see pyplot.savefig
+    pad_inches : int
+        see pyplot.savefig
+    **kwargs : dict
+        parameters for nansat.tools.get_domain_map
+
+    """
+    plt.figure(figsize=figsize)
+    ax = get_domain_map(domain, **kwargs)
+    plt.savefig(filename, bbox_inches=bbox_inches, pad_inches=pad_inches)
+    plt.close()
 
 def deprecated(func):
     @functools.wraps(func)
@@ -100,17 +243,3 @@ def get_random_color(c0=None, minDist=100, low=0, high=255):
 @deprecated
 def parse_time(time_string):
     return utils.parse_time(time_string)
-
-
-@deprecated
-def write_domain_map(border, out_filename, lon_vec=None, lat_vec=None, lon_border=10.,
-                     lat_border=10., figure_size=(6, 6), dpi=50, projection='cyl', resolution='c',
-                     continets_color='coral',meridians=10, parallels=10, p_color='r', p_line='k',
-                     p_alpha=0.5, padding=0., mer_labels=[False, False, False, False],
-                     par_labels=[False, False, False, False], pltshow=False, labels=None):
-    utils.write_domain_map(
-        border, out_filename, lon_vec=lon_vec, lat_vec=lat_vec, lon_border=lon_border,
-        lat_border=lat_border, figure_size=figure_size, dpi=dpi, projection=projection,
-        resolution=resolution, continets_color=continets_color, meridians=meridians,
-        parallels=parallels, p_color=p_color, p_line=p_line, p_alpha=p_alpha, padding=padding,
-        mer_labels=mer_labels, par_labels=par_labels, pltshow=pltshow, labels=labels)
