@@ -47,8 +47,8 @@ jobs:
       before_deploy:
         - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
       deploy:
-        #provider: script
-        #on:
-        #  tags: true
-        #script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
+        provider: script
+        on:
+          tags: true
+        script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
 ...
