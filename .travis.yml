@@ -32,7 +32,7 @@ jobs:
           bash -c "source /opt/conda/bin/activate && coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
 
     - stage: 'Build docker image'
-      #if: type = pull_request OR tag IS present
+      if: type = pull_request OR tag IS present
       env:
         - IMAGE_NAME="${DOCKER_ORG}/nansat"
         - DOCKER_TMP_TAG='tmp'
