@@ -51,11 +51,12 @@ jobs:
           on:
             tags: true
           script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
-    - stage: 'deployment'
+    - stage: 'pypi deployment'
+      #if: type = pull_request OR tag IS present  ###uncomment this line in order to work for specific cases similar to docker push 
       deploy:
         - provider: pypi
-          user: ${test_pypi_USER}
-          password: ${test_pypi_PASS}
+          user: ${__token__}
+          password: ${PYPI_TOKEN}
           on:
             branch: master
 
