@@ -7,6 +7,7 @@ services:
 # - DOCKER_ORG: the docker hub organization (or user) to which the image will be pushed
 # - DOCKER_USER: the docker hub user used to log in to the docker hub
 # - DOCKER_PASS: the password of this user
+# - PYPI_TOKEN   the token assosiated to pypi account for deployment. More information can be found here: https://pypi.org/help/#apitoken
 
 jobs:
   include:
