@@ -52,11 +52,12 @@ jobs:
             tags: true
           script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
     - stage: 'pypi deployment'
-      #if: type = pull_request OR tag IS present  ###uncomment this line in order to work for specific cases similar to docker push 
+      #if: type = pull_request OR tag IS present  ###uncomment this line in order to work for specific cases similar to ""stage: 'Build docker image'"" 
       deploy:
         - provider: pypi
-          user: ${__token__}
-          password: ${PYPI_TOKEN}
+          user: "__token__"
+          password:
+            secure: ${PYPI_TOKEN}
           on:
             branch: master
 
