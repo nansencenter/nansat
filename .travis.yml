@@ -59,8 +59,8 @@ jobs:
           user: "__token__"
           password: "${PYPI_TOKEN}"
           on:
-            - tags: true
-            - branch: master
+            tags: true
+            
 
 
             
