@@ -58,7 +58,7 @@ jobs:
         - provider: pypi
           user: "__token__"
           password:
-            secure: ${PYPI_TOKEN}
+            secure: "${PYPI_TOKEN}"
           on:
             branch: master
 
