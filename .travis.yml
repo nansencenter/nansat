@@ -51,11 +51,12 @@ jobs:
           on:
             tags: true
           script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
+    - stage: 'deployment to PYPI'
         - provider: pypi
           user: ${test_pypi_USER}
           password: ${test_pypi_PASS}
           on:
             branch: master
 
-            
+
 ...
