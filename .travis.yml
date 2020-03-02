@@ -32,26 +32,26 @@ jobs:
           "${TESTING_IMAGE_NAME}"
           bash -c "source /opt/conda/bin/activate && coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
 
-    #- stage: 'Build docker image'
-    #  if: type = pull_request OR tag IS present
-    #  env:
-    #    - IMAGE_NAME="${DOCKER_ORG}/nansat"
-    #    - DOCKER_TMP_TAG='tmp'
-    #  install:
-    #    - docker pull "${IMAGE_NAME}" || true
-    #  script:
-    #    - >
-    #      docker build .
-    #      --cache-from "${IMAGE_NAME}"
-    #      -t "${IMAGE_NAME}:${DOCKER_TMP_TAG}"
-    #    - docker run --rm "${IMAGE_NAME}:${DOCKER_TMP_TAG}" python -c 'import nansat'
-    #  before_deploy:
-    #    - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-    #  deploy:
-    #    - provider: script
-    #      on:
-    #        tags: true
-    #      script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
+    - stage: 'Build docker image'
+      if: type = pull_request OR tag IS present
+      env:
+        - IMAGE_NAME="${DOCKER_ORG}/nansat"
+        - DOCKER_TMP_TAG='tmp'
+      install:
+        - docker pull "${IMAGE_NAME}" || true
+      script:
+        - >
+          docker build .
+          --cache-from "${IMAGE_NAME}"
+          -t "${IMAGE_NAME}:${DOCKER_TMP_TAG}"
+        - docker run --rm "${IMAGE_NAME}:${DOCKER_TMP_TAG}" python -c 'import nansat'
+      before_deploy:
+        - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+      deploy:
+        - provider: script
+          on:
+            tags: true
+          script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
     - stage: 'pypi deployment'
       if: tag IS present  
       deploy:
