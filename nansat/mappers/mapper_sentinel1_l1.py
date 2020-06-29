@@ -108,7 +108,7 @@ class Mapper(VRT):
         manifest_data = self.read_manifest_data(manifest_files[0])
 
         # very fast constructor without any bands only with some metadata and geolocation
-        self._init_empty(manifest_data, self.annotation_data)
+        self._init_empty(manifest_data, self.annotation_data,filename)
 
         # skip adding bands in the fast mode and RETURN
         if fast:
@@ -463,7 +463,7 @@ class Mapper(VRT):
 
         return data
 
-    def _init_empty(self, manifest_data, annotation_data):
+    def _init_empty(self, manifest_data, annotation_data,filename):
         """ Fast initialization from minimum of information
 
         Parameters
@@ -496,6 +496,8 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('ESA/EO')))
         self.dataset.SetMetadataItem('iso_topic_category', json.dumps(pti.get_iso19115_topic_category('Oceans')))
         self.dataset.SetMetadataItem('summary', platform_name + ' SAR data')
+
+        self.dataset.SetMetadataItem('entry_id', filename.split(".", -1)[0].split("/",-1)[-1])
         self.dataset.FlushCache()
 
     def correct_geolocation_data(self):
