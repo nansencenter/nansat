@@ -22,7 +22,6 @@ class Mapper(VRT):
     
     BAND_NAMES = ['direction', 'ersc', 'ertc', 'espc', 'etmp', 'maxv',
                   'minv', 'sprc', 'u', 'v', 'velo', 'vflg', 'xdst', 'ydst']
-    GRID_PX_SIZE = 1500 # Final raster px size in meters
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, GCP_COUNT=10, timestamp=None, **kwargs):
         filename_name = os.path.split(filename)[-1].split('.')[0]
@@ -37,8 +36,10 @@ class Mapper(VRT):
         # Define projection (depending on the HFR)
         if nc_dataset.getncattr('site') == 'TORU':
             proj4 = '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
+            GRID_PX_SIZE = 1500 # Final raster px size in meters
         elif nc_dataset.getncattr('site') == 'FRUH':
             proj4 = '+proj=utm +zone=34 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
+            GRID_PX_SIZE = 5000 # Final raster px size in meters
         else:
             raise WrongMapperError
 
