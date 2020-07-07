@@ -25,14 +25,11 @@ class Mapper(VRT):
 
     def __init__(self, filename, gdal_dataset, gdal_metadata, GCP_COUNT=10, timestamp=None, **kwargs):
         filename_name = os.path.split(filename)[-1].split('.')[0]
-        if not filename_name.startswith('RDLm_TORU'):
+        if not filename_name.startswith('RDLm_TORU') and not filename_name.startswith('RDLm_FRUH'):
             raise WrongMapperError
 
         # Import NetCDF4 dataset
         nc_dataset = Dataset(filename)
-        # Get x grid and y grid
-        x_grd, y_grd = self.create_linear_grid(nc_dataset['x'][:], nc_dataset['y'][:])
-        raster_x_size, raster_y_size = x_grd.shape
         # Define projection (depending on the HFR)
         if nc_dataset.getncattr('site') == 'TORU':
             proj4 = '+proj=utm +zone=32 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'
@@ -46,8 +43,11 @@ class Mapper(VRT):
         srs = osr.SpatialReference()
         srs.ImportFromProj4(proj4)
         projection = srs.ExportToWkt()
+        # Get x grid and y grid
+        x_grd, y_grd = self.create_linear_grid(nc_dataset['x'][:], nc_dataset['y'][:], GRID_PX_SIZE)
+        raster_x_size, raster_y_size = x_grd.shape
         # Define geotransform
-        geotransform = (x_grd.min(), self.GRID_PX_SIZE, 0.0, y_grd.max(), 0.0, self.GRID_PX_SIZE * -1)
+        geotransform = (x_grd.min(), GRID_PX_SIZE, 0.0, y_grd.max(), 0.0, GRID_PX_SIZE * -1)
         # Define x and y size
         self._init_from_dataset_params(raster_x_size, raster_y_size, geotransform, projection)
         # If required timestamp was not specified then extract date from filename and use first time
@@ -111,9 +111,9 @@ class Mapper(VRT):
         src_timestamp = datetime(int(year), int(month), int(day), 0, 0, 0)
         return src_timestamp
 
-    def create_linear_grid(self, x, y):
-        x_grd, y_grd = np.meshgrid(np.arange(x.min(), x.max(), self.GRID_PX_SIZE),
-                                   np.arange(y.max(), y.min(), self.GRID_PX_SIZE * -1))
+    def create_linear_grid(self, x, y, px_size):
+        x_grd, y_grd = np.meshgrid(np.arange(x.min(), x.max(), px_size),
+                                   np.arange(y.max(), y.min(), px_size * -1))
         return x_grd, y_grd
 
     def band2grid(self, src_grd, var, dst_grd):
