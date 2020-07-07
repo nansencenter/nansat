@@ -22,17 +22,17 @@ class Mapper(VRT):
     
     BAND_NAMES = ['direction', 'ersc', 'ertc', 'espc', 'etmp', 'maxv',
                   'minv', 'sprc', 'u', 'v', 'velo', 'vflg', 'xdst', 'ydst']
-
     SUPPORTED_LOCATIONS = ['RDLm_TORU', 'RDLm_FRUH', 'RDLm_BERL']
+
     def __init__(self, filename, gdal_dataset, gdal_metadata, GCP_COUNT=10, timestamp=None, **kwargs):
         filename_name = os.path.split(filename)[-1].split('.')[0]
         # Check if correct mapper
         correct_mapper = False 
         for location in self.SUPPORTED_LOCATIONS:
+            # If it matches with one of locateions break the loop and flag True
             if filename_name.startswith(location):
                 correct_mapper = True
                 break
-
         if not correct_mapper:
             raise WrongMapperError
 
