@@ -6,16 +6,16 @@
 #              under the terms of GNU General Public License, v.3
 #              http://www.gnu.org/licenses/gpl-3.0.html
 
-from nansat.vrt import VRT
-from nansat.exceptions import WrongMapperError
-from netCDF4 import Dataset, num2date
 import os
 from datetime import datetime, timedelta
-from osgeo import gdal, osr
-import numpy as np
-from scipy.interpolate import griddata
-import pythesint as pti
 import json
+from netCDF4 import Dataset, num2date
+import numpy as np
+from osgeo import gdal, osr
+import pythesint as pti
+from scipy.interpolate import griddata
+from nansat.vrt import VRT
+from nansat.exceptions import WrongMapperError
 
 
 class Mapper(VRT):
@@ -117,7 +117,7 @@ class Mapper(VRT):
             self.dataset.SetMetadataItem(key.split('#')[1], value)
 
     def date_from_filename(self, src):
-        filename = os.path.split(src)[-1].split('.')[0]
+        filename = os.path.splitext(os.path.basename(src))[0]
         year, month, day = filename.split('_')[-3:]
         src_timestamp = datetime(int(year), int(month), int(day), 0, 0, 0)
         return src_timestamp
