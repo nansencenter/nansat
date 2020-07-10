@@ -498,7 +498,7 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('ESA/EO')))
         self.dataset.SetMetadataItem('iso_topic_category', json.dumps(pti.get_iso19115_topic_category('Oceans')))
         self.dataset.SetMetadataItem('summary', platform_name + ' SAR data')
-        self.dataset.SetMetadataItem('entry_id', os.path.basename(filename).split('.')[0].upper())
+                self.dataset.SetMetadataItem('entry_id',  os.path.splitext(os.path.basename(filename))[0].upper())
         self.dataset.FlushCache()
 
     def correct_geolocation_data(self):
