@@ -7,6 +7,7 @@ services:
 # - DOCKER_ORG: the docker hub organization (or user) to which the image will be pushed
 # - DOCKER_USER: the docker hub user used to log in to the docker hub
 # - DOCKER_PASS: the password of this user
+# - PYPI_TOKEN   the token associated to pypi account for deployment. More information can be found here: https://pypi.org/help/#apitoken
 
 jobs:
   include:
@@ -14,7 +15,7 @@ jobs:
     - stage: 'Unit tests'
       if: type = push
       env:
-        - TESTING_IMAGE_NAME="${DOCKER_ORG}/nansat_base"
+        - TESTING_IMAGE_NAME="nansencenter/nansat_base"
       install:
         - docker pull "${TESTING_IMAGE_NAME}"
       # The COVERALLS_REPO_TOKEN environment variable is defined in the Travis CI repository settings:
@@ -47,8 +48,17 @@ jobs:
       before_deploy:
         - docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
       deploy:
-        provider: script
-        on:
-          tags: true
-        script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
+        - provider: script
+          on:
+            tags: true
+          script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}" latest
+
+    - stage: 'PyPI deployment'
+      if: tag IS present
+      deploy:
+        - provider: pypi
+          user: "__token__"
+          password: "${PYPI_TOKEN}"
+          on:
+            tags: true
 ...

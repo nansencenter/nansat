@@ -303,7 +303,7 @@ class Domain(object):
         \t\t\t\t<name>{name}</name>
         \t\t\t\t<Style>
         \t\t\t\t\t<LineStyle><color>ffffffff</color></LineStyle>
-        \t\t\t\t\t<PolyStyle><fill>0</fill>'
+        \t\t\t\t\t<PolyStyle><fill>0</fill></PolyStyle>
         \t\t\t\t</Style>
         \t\t\t\t<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>
         {coordinates}
