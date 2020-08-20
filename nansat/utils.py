@@ -23,14 +23,15 @@ from dateutil.parser import parse
 
 try:
     import matplotlib
-    if 'DISPLAY' not in os.environ:
-        matplotlib.use('Agg')
-    from matplotlib.colors import hex2color
-    from matplotlib import cm
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
 else:
     MATPLOTLIB_IS_INSTALLED = True
+    if 'DISPLAY' not in os.environ:
+        matplotlib.use('Agg')
+    from matplotlib.colors import LinearSegmentedColormap
+    from matplotlib.colors import hex2color
+    from matplotlib import cm
 
 import numpy as np
 
@@ -126,8 +127,8 @@ def register_colormaps():
             }
 
     if MATPLOTLIB_IS_INSTALLED:
-        cm.register_cmap(name='obpg', data=obpg, lut=256)
-        cm.register_cmap(name='ak01', data=ak01, lut=256)
+        cm.register_cmap(cmap=LinearSegmentedColormap('obpg', obpg, 256))
+        cm.register_cmap(cmap=LinearSegmentedColormap('ak01', ak01, 256))
 
 def initial_bearing(lon1, lat1, lon2, lat2):
         """Initial bearing when traversing from point1 (lon1, lat1)
