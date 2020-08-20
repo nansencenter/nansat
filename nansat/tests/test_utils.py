@@ -21,13 +21,15 @@ import warnings
 from mock import patch
 
 try:
-    from matplotlib.colors import hex2color
+    import matplotlib
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
 else:
     MATPLOTLIB_IS_INSTALLED = True
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import hex2color
 
-from nansat.utils import get_random_color, parse_time
+from nansat.utils import get_random_color, parse_time, register_colormaps
 from nansat.tests import nansat_test_data as ntd
 
 
@@ -57,3 +59,9 @@ class UtilsTest(unittest.TestCase):
         dt = parse_time('2016-01-19Z')
 
         self.assertEqual(type(dt), datetime.datetime)
+
+    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
+    def test_register_colormaps(self):
+        register_colormaps()
+        self.assertIn('obpg', plt.colormaps())
+        self.assertIn('ak01', plt.colormaps())
