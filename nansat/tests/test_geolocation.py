@@ -42,7 +42,7 @@ class GeolocationTest(unittest.TestCase):
         srs = osr.SpatialReference()
         status = srs.ImportFromWkt(ga.data['SRS'])
         self.assertEqual(status, 0)
-        self.assertEqual(srs.ExportToProj4(), '+proj=longlat +datum=WGS84 +no_defs')
+        self.assertEqual(srs.ExportToProj4().strip(), '+proj=longlat +datum=WGS84 +no_defs')
         self.assertEqual(ga.data['X_BAND'], '1')
         self.assertEqual(ga.data['Y_BAND'], '1')
         self.assertEqual(ga.x_vrt, x_vrt)
