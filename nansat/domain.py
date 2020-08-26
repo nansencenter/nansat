@@ -554,6 +554,8 @@ class Domain(object):
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
         col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
         lon, lat = self.transform_points(col_vec, row_vec)
+        lon = lon.round(decimals=4)
+        lat = lat.round(decimals=4)
 
         crosses_dateline = np.diff(lon).max() > 100 # arbitrary number, larger than a maximum step
         if crosses_dateline and fix_lon:
