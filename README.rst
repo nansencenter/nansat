@@ -66,7 +66,7 @@ An easy way to install Nansat requirements on any platform is to use Anaconda_ (
 ::
 
     # create environment with key requirements
-    conda create -y -n py3nansat gdal=2.4.2 numpy pillow netcdf4 scipy
+    conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
     # activate environment
     source activate py3nansat
     # install nansat
