@@ -15,6 +15,7 @@ import os
 
 import gdal
 import numpy as np
+import osr
 
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
@@ -38,11 +39,10 @@ class GeolocationTest(unittest.TestCase):
         self.assertEqual(ga.data['LINE_STEP'], '1')
         self.assertEqual(ga.data['PIXEL_OFFSET'], '0')
         self.assertEqual(ga.data['PIXEL_STEP'], '1')
-        self.assertEqual(ga.data['SRS'], 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",'
-                                         '6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUT'
-                                         'HORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORI'
-                                         'TY["EPSG","8901"]],UNIT["degree",0.0174532925199433'
-                                         ',AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
+        srs = osr.SpatialReference()
+        status = srs.ImportFromWkt(ga.data['SRS'])
+        self.assertEqual(status, 0)
+        self.assertEqual(srs.ExportToProj4(), '+proj=longlat +datum=WGS84 +no_defs')
         self.assertEqual(ga.data['X_BAND'], '1')
         self.assertEqual(ga.data['Y_BAND'], '1')
         self.assertEqual(ga.x_vrt, x_vrt)
