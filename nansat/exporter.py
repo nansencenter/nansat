@@ -26,7 +26,7 @@ from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.node import Node
-from nansat.utils import NUMPY_TO_GDAL_TYPE_MAP 
+from nansat.utils import NUMPY_TO_GDAL_TYPE_MAP
 
 from nansat.exceptions import NansatGDALError
 
@@ -124,8 +124,16 @@ class Exporter(object):
 
         self.logger.debug('Export - OK!')
 
-    def export2thredds(self, filename, bands={}, metadata=None, mask_name=None, no_mask_value=64, rm_metadata=None,
-                       time=None, created=None):
+    def export2thredds(self,
+        filename,
+        bands={},
+        metadata=None,
+        mask_name=None,
+        no_mask_value=64,
+        rm_metadata=None,
+        time=None,
+        created=None,
+        zlib=True):
         """ Export data into a netCDF formatted for THREDDS server
 
         Parameters
@@ -159,6 +167,8 @@ class Exporter(object):
             aqcuisition time of original data. That value will be in time dim
         created : datetime
             date of creation. Will be in metadata 'created'
+        zlib : bool
+            compress output netCDF files?
 
         Note
         ----
@@ -219,7 +229,7 @@ class Exporter(object):
             # catch None band error
             if array is None:
                 raise NansatGDALError('%s is None' % str(iband))
-            
+
             # Cast to new type if given
             if bands[iband].get('type',''):
                 array = np.array(array, dtype=bands[iband].get('type',''))
@@ -254,7 +264,8 @@ class Exporter(object):
         data.export(tmp_filename, rm_metadata=rm_metadata)
         del data
 
-        self._post_proc_thredds(tmp_filename, filename, bands, dstBands, time, global_metadata)
+        self._post_proc_thredds(
+            tmp_filename, filename, bands, dstBands, time, global_metadata, zlib)
 
     def _create_dimensions(self, nc_inp, nc_out, time):
         """Create space and time dimenstions in the destination file"""
@@ -300,8 +311,27 @@ class Exporter(object):
 
         return grid_mapping_name, grid_mapping_var_name
 
-    def _post_proc_thredds(self, tmp_filename, out_filename, bands, band_metadata, time, global_metadata):
-        """Post processing of file for THREDDS (add time variable and metadata)"""
+    def _post_proc_thredds(self,
+        tmp_filename, out_filename, bands, band_metadata, time, global_metadata, zlib):
+        """ Post processing of file for THREDDS (add time variable and metadata)
+
+        Parameters
+        ----------
+        tmp_filename : str
+            temporary filename
+        out_filename : str
+            output filename
+        bands : dict
+            extra netcdf-metadata for bands
+        band_metadata : dict
+            compulsory metadata for band generation (eg data type)
+        time : datetime
+            time of observation
+        global_metadata : dict
+            global netcdf-metadata
+        zlib : bool
+            compress data?
+        """
         # open files for input and output
         nc_inp = Dataset(tmp_filename, 'r')
         nc_out = Dataset(out_filename, 'w')
@@ -318,13 +348,13 @@ class Exporter(object):
             # create projection var
             if inp_var_name == grid_mapping_var_name:
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, grid_mapping_name,
-                                                inp_var.dtype.str, inp_var.dimensions)
+                                                inp_var.dtype.str, inp_var.dimensions, zlib=zlib)
                 continue
 
             # create simple x/y variables
             if inp_var_name in ['x', 'y', 'lon', 'lat']:
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name,
-                                                inp_var.dtype, inp_var.dimensions)
+                                                inp_var.dtype, inp_var.dimensions, zlib=zlib)
             # create data var
             elif inp_var_name in band_metadata:
                 fill_value = None
@@ -334,7 +364,7 @@ class Exporter(object):
                     fill_value = band_metadata['_FillValue']
                 dimensions = ('time', ) + inp_var.dimensions
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name, inp_var.dtype,
-                        dimensions, fill_value=fill_value)
+                        dimensions, fill_value=fill_value, zlib=zlib)
 
             # copy array from input data
             data = inp_var[:]
@@ -441,9 +471,32 @@ class Exporter(object):
         ncFile.close()
 
     @staticmethod
-    def _copy_nc_var(inp_var, nc_out, var_name, var_type, dimensions, fill_value=None):
-        """Create new NC variable, set name, type, dimensions and copy attributes"""
-        out_var = nc_out.createVariable(var_name, var_type, dimensions, fill_value=fill_value)
+    def _copy_nc_var(inp_var, nc_out, var_name, var_type, dimensions, fill_value=None, zlib=True):
+        """ Create new NC variable, set name, type, dimensions and copy attributes
+
+        Parameters
+        ----------
+        inp_var : netCDF4.Variable
+            variable in source file for creation in destination file
+        nc_out : netCDF4.Dataset
+            destination dataset
+        var_name : str
+            variable name
+        var_type : numpy.dtype
+            variable type
+        dimensions : tuple
+            variable dimentions
+        fill_value : None, int, float
+            _FillValue
+        zlib : bool
+            compress variable?
+
+        Returns
+        -------
+        out_var : netCDF4.Variable
+            Copied variable from the destination dataset
+        """
+        out_var = nc_out.createVariable(var_name, var_type, dimensions, fill_value=fill_value, zlib=zlib)
         for ncattr in inp_var.ncattrs():
             if str(ncattr) not in Exporter.UNWANTED_METADATA:
                 out_var.setncattr(str(ncattr), inp_var.getncattr(ncattr))
