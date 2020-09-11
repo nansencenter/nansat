@@ -126,7 +126,7 @@ class Exporter(object):
 
     def export2thredds(self,
         filename,
-        bands={},
+        bands=None,
         metadata=None,
         mask_name=None,
         no_mask_value=64,
@@ -216,11 +216,11 @@ class Exporter(object):
             mask = self[mask_name]
 
         # add required bands to data
-        dstBands = {}
-        srcBands = [self.bands()[b]['name'] for b in self.bands()]
+        dst_bands = {}
+        src_bands = [self.bands()[b]['name'] for b in self.bands()]
         for iband in bands:
             # skip non exiting bands
-            if iband not in srcBands:
+            if iband not in src_bands:
                 self.logger.error('%s is not found' % str(iband))
                 continue
 
@@ -235,26 +235,26 @@ class Exporter(object):
                 array = np.array(array, dtype=bands[iband].get('type',''))
 
             # set type, scale and offset from input data or by default
-            dstBands[iband] = {}
-            dstBands[iband]['type'] = bands[iband].get('type',
+            dst_bands[iband] = {}
+            dst_bands[iband]['type'] = bands[iband].get('type',
                                              array.dtype.str.replace('u', 'i'))
-            dstBands[iband]['scale'] = float(bands[iband].get('scale', 1.0))
-            dstBands[iband]['offset'] = float(bands[iband].get('offset', 0.0))
+            dst_bands[iband]['scale'] = float(bands[iband].get('scale', 1.0))
+            dst_bands[iband]['offset'] = float(bands[iband].get('offset', 0.0))
             if '_FillValue' in bands[iband]:
-                dstBands[iband]['_FillValue'] = np.array(
+                dst_bands[iband]['_FillValue'] = np.array(
                                             [bands[iband]['_FillValue']],
-                                            dtype=dstBands[iband]['type'])[0]
+                                            dtype=dst_bands[iband]['type'])[0]
 
             # mask values with np.nan
             if mask_name is not None and iband != mask_name:
                 array[mask != no_mask_value] = np.nan
 
             # add array to a temporary Nansat object
-            bandMetadata = self.get_metadata(band_id=iband)
+            band_metadata = self.get_metadata(band_id=iband)
             if bands[iband].get('type',''):
-                bandMetadata['dataType'] = NUMPY_TO_GDAL_TYPE_MAP[array.dtype.name]
-            data.add_band(array=array, parameters=bandMetadata)
-        self.logger.debug('Bands for export: %s' % str(dstBands))
+                band_metadata['dataType'] = NUMPY_TO_GDAL_TYPE_MAP[array.dtype.name]
+            data.add_band(array=array, parameters=band_metadata)
+        self.logger.debug('Bands for export: %s' % str(dst_bands))
 
         global_metadata = Exporter._set_global_metadata(created, data, metadata)
 
@@ -264,8 +264,9 @@ class Exporter(object):
         data.export(tmp_filename, rm_metadata=rm_metadata)
         del data
 
+        # convert temporary netCDF file into a netCDF file with time variable using netCDF4 lib
         self._post_proc_thredds(
-            tmp_filename, filename, bands, dstBands, time, global_metadata, zlib)
+            tmp_filename, filename, bands, dst_bands, time, global_metadata, zlib)
 
     def _create_dimensions(self, nc_inp, nc_out, time):
         """Create space and time dimenstions in the destination file"""
@@ -313,7 +314,7 @@ class Exporter(object):
 
     def _post_proc_thredds(self,
         tmp_filename, out_filename, bands, band_metadata, time, global_metadata, zlib):
-        """ Post processing of file for THREDDS (add time variable and metadata)
+        """ Convert temporary file into a netCDF file with time variable using netCDF4 lib
 
         Parameters
         ----------
@@ -416,8 +417,6 @@ class Exporter(object):
 
         # Delete the temprary netCDF file
         os.remove(tmp_filename)
-
-        return 0
 
     @staticmethod
     def _set_global_metadata(created, data, metadata):
