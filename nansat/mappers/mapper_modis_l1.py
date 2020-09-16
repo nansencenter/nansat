@@ -373,8 +373,8 @@ class Mapper(HDF4Mapper):
         lons = gdal.Open(lonSubdataset).ReadAsArray()
         lats = gdal.Open(latSubdataset).ReadAsArray()
         gcps = []
-        rows = range(0, lons.shape[0], lons.shape[0]/GCP_COUNT)
-        cols = range(0, lons.shape[1], lons.shape[1]/GCP_COUNT)
+        rows = range(0, lons.shape[0], int(lons.shape[0]/GCP_COUNT))
+        cols = range(0, lons.shape[1], int(lons.shape[1]/GCP_COUNT))
         factor = self.dataset.RasterYSize / lons.shape[0]
         for r in rows:
             for c in cols:
