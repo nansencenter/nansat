@@ -56,7 +56,7 @@ class NansatTest(NansatTestBase):
         self.assertEqual(n.path, os.path.split(self.test_file_gcps)[0])
 
     def test_that_only_mappers_with_mapper_in_the_module_name_are_imported(self):
-        mappers = nansat.nansat._import_mappers()
+        mappers = nansat.nansat.MapperCollector().collect_mappers()
         for mapper in mappers:
             self.assertTrue('mapper' in mapper)
 

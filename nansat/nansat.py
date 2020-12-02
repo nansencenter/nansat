@@ -1,5 +1,5 @@
 # Name:  nansat.py
-# Purpose: Container of Nansat class
+# Purpose: Container of Nansat and MapperCollector class
 # Authors:      Anton Korosov, Knut-Frode Dagestad, Morten W. Hansen, Artem Moiseev,
 #               Asuka Yamakawa, Alexander Myasoyedov,
 #               Dmitry Petrenko, Evgeny Morozov
@@ -22,6 +22,8 @@ import tempfile
 import datetime
 import pkgutil
 import warnings
+import importlib
+import site
 from xml.sax import saxutils
 
 import numpy as np
@@ -1115,7 +1117,7 @@ class Nansat(Domain, Exporter):
         # if nansat mappers were not imported yet
         global nansatMappers
         if nansatMappers is None:
-            nansatMappers = _import_mappers()
+            nansatMappers = MapperCollector().collect_mappers()
 
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdal_dataset, metadata = self._get_dataset_metadata()
@@ -1575,52 +1577,105 @@ class Nansat(Domain, Exporter):
         return pixVector[gpi], linVector[gpi]
 
 
-def _import_mappers(log_level=None):
-    """Import available mappers into a dictionary
+class MapperCollector:
+    """Class for searching and loading nansat mappers"""
 
-    Returns
-    --------
-    nansat_mappers : dict
-        key  : mapper name
-        value: class Mapper(VRT) from the mappers module
+    MAPPERS_NAME_START = 'nansat_mappers'
 
-    """
-    logger = add_logger('import_mappers', logLevel=log_level)
-    # import built-in mappers
-    import nansat.mappers
-    mapper_packages = [nansat.mappers]
+    def __init__(self, log_level=None):
+        # Accumulate specifications (dict with top level name and name of submodule with mappersß)
+        # for further import of the mappers. Specs are accumulated here: 
+        mapper_packages_spec = []     
+        # Add spec for built-in mappers provided with nansat
+        mapper_packages_spec.append({'package': 'nansat',       # Name of top-level pacakge
+                                     'mappers': 'mappers'})    # Name of submodule with mappers
+        # Harvest user mappers avaialble from other libraries  
+        mapper_packages_spec = self.harvest_extra_mappers(mapper_packages_spec)
+        # Import mapper packages in python
+        self.mapper_packages = self.import_packages(mapper_packages_spec)
 
-    # import user-defined mappers (if any)
-    try:
-        import nansat_mappers as nansat_mappers_pkg
-    except ImportError:
+    def harvest_extra_mappers(self, mapper_packages):
+        """Method for harvesting user-developed mappers from the system
+        
+        Parameters
+        ----------
+        mapper_packages: list
+            list for accumulation specs for each found mapper package
+        
+        Returns
+        -------
+        mapper_packages: list
+            updated list of mapper packages specs
+        """
+        # Get a path to the python site packages directory 
+        pacakges_src = site.getsitepackages()[0]
+        # Recurcively acquire a list of all avaialable paths in python site-pacakges 
+        packages_paths = glob.glob(os.path.join(pacakges_src, '**'), recursive=True)
+        # Parse all path to find nansat mapper packages
+        for src in packages_paths:
+            # Two last elements of the path is submodule name with nansat pacakges and top level 
+            # package name
+            top_package_name, subpackage_name = os.path.split(src)[-2:]
+            # Update the list of found packages every time when submodule name starts with 
+            # "nansat_mappers"
+            if subpackage_name.startswith(self.MAPPERS_NAME_START):
+                mapper_packages.append({'package': top_package_name, 'mappers': subpackage_name})
+        return mapper_packages
+
+    def _get_spec_from_path(sefl, target_path):
         pass
-    else:
-        logger.info('User defined mappers found in %s' % nansat_mappers_pkg.__path__)
-        mapper_packages = [nansat_mappers_pkg, nansat.mappers]
 
-    # create ordered dict for mappers
-    nansat_mappers = OrderedDict()
-    for mapper_package in mapper_packages:
-        logger.debug('From package: %s' % mapper_package.__path__)
-        # scan through modules and load all modules that contain class Mapper
-        for finder, name, ispkg in (pkgutil.iter_modules(mapper_package.__path__)):
-            logger.debug('Loading mapper %s' % name)
+    def import_packages(self, specs):
+        imported_packages = []   # accumulate imported modules here
+        for spec in specs:
+            # Happens if some nansat mapper module was mounted directly fo the site-pacakges and 
+            # not a part of other top-level package
+            if spec['package'] == 'site-packages':
+                package_to_import = spec['mappers']
+            # In case if nansat mappers are a part of another top-level package
+            else: 
+                package_to_import = '.'.join([spec['package'], spec['mappers']])
+                
+            imported_packages.append(importlib.import_module(package_to_import))
+
+        return imported_packages
+
+    def collect_mappers(self):
+        """Create a dictionary with available mappers
+
+        Paramters
+        ---------
+        mapper_packages: list
+            list of imported nansat mapper packages
+         
+        Returns
+        --------
+        nansat_mappers : dict
+            key: str, 
+                mapper name
+            value: nansat.Mapper
+                class Mapper(VRT) from the mappers module
+        """
+        # Create and ordered dict for acuumulating mappers
+        nansat_mappers = OrderedDict()
+        # Iterate through all imported modules with nansat mappers
+        for package in self.mapper_packages:
+            # Scan through all modules in the package and load modules taht contain class Mapper
+            for finder, name, ispkg in (pkgutil.iter_modules(package.__path__)):
             # Only mappers containing 'mapper' in the module name should be returned
-            if not 'mapper' in name: continue
-            loader = finder.find_module(name)
-            # try to import mapper module
-            module = loader.load_module(name)
-            # add the imported mapper to nansat_mappers
-            if hasattr(module, 'Mapper'):
-                nansat_mappers[name] = module.Mapper
+                if not 'mapper' in name: continue
+                loader = finder.find_module(name)
+                # try to import mapper module
+                module = loader.load_module(name)
+                # add the imported mapper to nansat_mappers
+                if hasattr(module, 'Mapper'):
+                    nansat_mappers[name] = module.Mapper
 
         # move netcdfcdf mapper to the end
         if 'mapper_netcdf_cf' in nansat_mappers:
             nansat_mappers['mapper_netcdf_cf'] = nansat_mappers.pop('mapper_netcdf_cf')
-
         # move generic_mapper to the end
         if 'mapper_generic' in nansat_mappers:
             nansat_mappers['mapper_generic'] = nansat_mappers.pop('mapper_generic')
-
-    return nansat_mappers
+        
+        return nansat_mappers
