@@ -30,10 +30,10 @@ try:
 except:
     from PIL import Image, ImageDraw, ImageFont
 
-import gdal
 import numpy as np
 
 from nansat import Figure, Nansat, Domain
+from nansat.utils import gdal
 from nansat.tests.nansat_test_base import NansatTestBase
 
 IS_CONDA = 'conda' in os.environ['PATH']
