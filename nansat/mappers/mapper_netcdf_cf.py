@@ -7,7 +7,7 @@
 import warnings, os, datetime
 import numpy as np
 import collections
-import gdal
+from nansat.utils import gdal
 
 from dateutil.parser import parse
 from netCDF4 import Dataset
