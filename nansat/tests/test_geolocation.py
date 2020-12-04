@@ -13,12 +13,11 @@
 import unittest
 import os
 
-import gdal
 import numpy as np
-import osr
 
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
+from nansat.utils import gdal, osr
 from nansat.tests import nansat_test_data as ntd
 
 class GeolocationTest(unittest.TestCase):

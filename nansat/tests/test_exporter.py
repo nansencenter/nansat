@@ -35,10 +35,10 @@ except ImportError:
 else:
     MATPLOTLIB_IS_INSTALLED = True
 
-import gdal
 from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
+from nansat.utils import gdal
 from nansat.tests.nansat_test_base import NansatTestBase
 
 warnings.simplefilter("always", UserWarning)
