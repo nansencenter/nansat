@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 
-import gdal, osr
+from nansat.utils import gdal, osr
 
 from nansat.nsr import NSR
 

@@ -19,7 +19,7 @@ import tempfile
 import datetime
 import warnings
 
-import gdal
+from nansat.utils import gdal
 import numpy as np
 
 from netCDF4 import Dataset
