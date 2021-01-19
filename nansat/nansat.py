@@ -1080,7 +1080,7 @@ class Nansat(Domain, Exporter):
         """Create VRT file in memory (VSI-file) with variable mapping
 
         If mappername is given only this mapper will be used,
-        else loop over all availble mappers in mapperList to get the
+        else loop over all available mappers in mapperList to get the
         matching one.
         In the loop :
             If the specific error appears the mapper is not used
