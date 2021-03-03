@@ -10,7 +10,7 @@ handlers:
     stream  : 'ext://sys.stdout'
 loggers:
   Nansat:
-    level: 'DEBUG'
+    level: 'INFO'
     handlers:
       - 'console'
 ...
