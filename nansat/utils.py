@@ -202,7 +202,7 @@ def add_logger(logName='', logLevel=None):
     if len(logger.handlers) == 0:
         logger.addHandler(logging.NullHandler())
         logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
-        logger.setLevel(int(os.environ['LOG_LEVEL']))
+    logger.setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger
 
