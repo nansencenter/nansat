@@ -196,26 +196,14 @@ def add_logger(logName='', logLevel=None):
     """
     if logLevel is not None:
         os.environ['LOG_LEVEL'] = str(logLevel)
-    # create (or take already existing) logger
-    # with default logging level WARNING
+
     logger = logging.getLogger(logName)
-    logger.setLevel(int(os.environ['LOG_LEVEL']))
 
-    # if logger already exits, default stream handler has been already added
-    # otherwise create and add a new handler
     if len(logger.handlers) == 0:
-        # create console handler and set level to debug
-        ch = logging.StreamHandler()
-        # create formatter
-        formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|'
-                                      '%(funcName)s|%(message)s',
-                                      datefmt='%I:%M:%S')
-        # add formatter to ch
-        ch.setFormatter(formatter)
-        # add ch to logger
-        logger.addHandler(ch)
+        logger.addHandler(logging.NullHandler())
+        logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
 
-    logger.handlers[0].setLevel(int(os.environ['LOG_LEVEL']))
+        logger.setLevel(int(os.environ['LOG_LEVEL']))
 
     return logger
 
