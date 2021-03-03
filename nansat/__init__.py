@@ -44,7 +44,7 @@ from nansat.figure import Figure
 
 __all__ = ['NSR', 'Domain', 'Nansat', 'Figure']
 
-#os.environ['LOG_LEVEL'] = '30'
+os.environ['LOG_LEVEL'] = '30'
 
 #down below is logging configurations
 DEFAULT_LOGGING_CONF_FILE = os.path.join(os.path.dirname(__file__), 'logging.yml')
