@@ -18,12 +18,15 @@ from __future__ import print_function, absolute_import, unicode_literals
 import sys
 import os
 from datetime import datetime, timedelta
+import logging
 
 from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 import nansat.mappers.mapper_generic as mg
 
+LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(mg.Mapper):
     """Create VRT with mapping of WKV for Met.no seaice"""
@@ -52,8 +55,7 @@ class Mapper(mg.Mapper):
             filename = (ice_folder_name + 'ice_conc_svalbard_' +
                         valid_time.strftime('%Y%m%d1500.nc'))
             if os.path.exists(filename):
-                print('Found file:')
-                print(filename)
+                LOGGER.info(f'Found file:{filename}')
                 gdal_dataset = gdal.Open(filename)
                 gdal_metadata = gdalDataset.GetMetadata()
                 mg.Mapper.__init__(self, filename, gdal_dataset, gdal_metadata)

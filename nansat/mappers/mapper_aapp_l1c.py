@@ -11,6 +11,7 @@ import sys
 import struct
 import datetime
 import warnings
+import logging
 
 from nansat.exceptions import WrongMapperError
 from nansat.geolocation import Geolocation
@@ -22,6 +23,8 @@ recordLength = 29808
 headerLength = recordLength
 imageOffset = headerLength + 1092
 
+LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for AVHRR L1C output from AAPP '''
@@ -60,7 +63,7 @@ class Mapper(VRT):
         missingScanLines = int(struct.unpack('<l', fp.read(4))[0])
         numCalibratedScanLines = int(struct.unpack('<l', fp.read(4))[0])
         if missingScanLines != 0:
-            print('WARNING: Missing scanlines: ' + str(missingScanLines))
+            LOGGER.warning(f"Missing scanlines: {missingScanLines}")
 
         fp.seek(88)
         dataFormatNum = int(struct.unpack('<l', fp.read(4))[0])
@@ -84,10 +87,10 @@ class Mapper(VRT):
             endsWith3A = False
 
         if startsWith3A != endsWith3A:
-            print('############################################')
-            print('WARNING: channel 3 switches ')
-            print('between daytime and nighttime (3A <-> 3B)')
-            print('###########################################')
+            LOGGER.warning('############################################')
+            LOGGER.warning('WARNING: channel 3 switches ')
+            LOGGER.warning('between daytime and nighttime (3A <-> 3B)')
+            LOGGER.warning('###########################################')
 
         ###########################
         # Make Geolocation Arrays

@@ -9,6 +9,7 @@ from __future__ import unicode_literals, absolute_import, division, print_functi
 import datetime
 import os.path
 import glob
+import logging
 
 import numpy as np
 
@@ -17,6 +18,9 @@ from nansat.vrt import VRT
 from nansat.nsr import NSR
 
 from nansat.exceptions import WrongMapperError
+
+LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT):
     ''' Mapper for Level-3 Standard Mapped Image from
@@ -85,7 +89,7 @@ class Mapper(VRT):
                 tmpGdalMetadata = tmpGdalDataset.GetMetadata()
                 simParameter = tmpGdalMetadata['Parameter']
             except:
-                print('No parameter: %s not a supported SMI file')
+                LOGGER.info(f"No parameter: {tmpGdalMetadata['Parameter']} not a supported SMI file")
                 continue
             else:
                 # set params of the similar file

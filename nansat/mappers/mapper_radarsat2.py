@@ -10,6 +10,7 @@ import zipfile
 import json
 from dateutil.parser import parse
 import logging
+
 import numpy as np
 try:
     import scipy.ndimage

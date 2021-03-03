@@ -9,6 +9,7 @@
 import datetime
 import os.path
 import glob
+import logging
 
 import numpy as np
 
@@ -16,6 +17,9 @@ from nansat.utils import gdal, ogr
 from nansat.vrt import VRT
 
 from nansat.exceptions import WrongMapperError
+
+LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT):
     ''' Mapper for Ocean Productivity website
@@ -43,7 +47,7 @@ class Mapper(VRT):
         except:
             raise WrongMapperError
 
-        print('Ocean Productivity website data')
+        LOGGER.info(f"Ocean Productivity website data")
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)

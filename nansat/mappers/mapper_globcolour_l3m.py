@@ -9,6 +9,7 @@ from __future__ import unicode_literals, print_function, division
 import datetime
 import os.path
 import glob
+import logging
 
 import numpy as np
 
@@ -17,6 +18,8 @@ from nansat.mappers.globcolour import Globcolour
 from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError
 
+LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT, Globcolour):
     """Mapper for GLOBCOLOR L3M products"""
@@ -25,7 +28,7 @@ class Mapper(VRT, Globcolour):
         ''' GLOBCOLOR L3M VRT '''
 
         try:
-            print("=>%s<=" % gdalMetadata['NC_GLOBAL#title'])
+            LOGGER.info(f"=>{gdalMetadata['NC_GLOBAL#title']}<=")
         except (TypeError, KeyError):
             raise WrongMapperError
 
@@ -35,15 +38,15 @@ class Mapper(VRT, Globcolour):
         # get list of similar (same date) files in the directory
         iDir, iFile = os.path.split(filename)
         iFileName, iFileExt = os.path.splitext(iFile)
-        print('idir:', iDir, iFile, iFileName[0:30], iFileExt[0:8])
+        LOGGER.info(f'idir: {iDir} {iFile} {iFileName[0:30]} {iFileExt[0:8]}')
 
         simFilesMask = os.path.join(iDir, iFileName[0:30] + '*.nc')
         simFiles = glob.glob(simFilesMask)
-        print('simFilesMask, simFiles', simFilesMask, simFiles)
+        LOGGER.info(f'simFilesMask:{simFilesMask}, simFiles:{simFiles}')
 
         metaDict = []
         for simFile in simFiles:
-            print('simFile', simFile)
+            LOGGER.info(f'simFile:{simFile}')
             # open file, get metadata and get parameter name
             simSupDataset = gdal.Open(simFile)
             simSubDatasets = simSupDataset.GetSubDatasets()
@@ -56,7 +59,7 @@ class Mapper(VRT, Globcolour):
                     simBandMetadata = simBand.GetMetadata()
                     simVarname = simBandMetadata['NETCDF_VARNAME']
                     # get WKV
-                    print('    simVarname', simVarname)
+                    LOGGER.info(f'    simVarname:{simVarname}')
                     if simVarname in self.varname2wkv:
                         simWKV = self.varname2wkv[simVarname]
                         break
@@ -93,17 +96,17 @@ class Mapper(VRT, Globcolour):
                                      (simWavelength, solarIrradiance)
                                      }
 
-            print('        metaEntry', metaEntry)
+            LOGGER.info(f'        metaEntry:{metaEntry}')
             metaDict.append(metaEntry)
             if metaEntry2 is not None:
-                print('        metaEntry2', metaEntry2)
+                LOGGER.info(f'        metaEntry2:{metaEntry2}')
                 metaDict.append(metaEntry2)
 
-        print('simSubDatasets', simValidSupDataset.GetSubDatasets())
+        LOGGER.info(f'simSubDatasets:{simValidSupDataset.GetSubDatasets()}')
         for simSubDataset in simValidSupDataset.GetSubDatasets():
-            print('simSubDataset', simSubDataset)
+            LOGGER.info(f'simSubDataset:{simSubDataset}')
             if '_flags ' in simSubDataset[1]:
-                print('    mask simSubDataset', simSubDataset[1])
+                LOGGER.info(f'    mask simSubDataset:{simSubDataset[1]}')
                 flags = gdal.Open(simSubDataset[0]).ReadAsArray()
                 mask = np.ones(flags.shape) * 64
                 mask[np.bitwise_and(flags, np.power(2, 0)) > 0] = 1

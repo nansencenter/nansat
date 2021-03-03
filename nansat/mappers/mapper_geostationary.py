@@ -9,11 +9,14 @@
 from datetime import datetime
 from numpy import array, arange
 import warnings
+import logging
 
 from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.node import Node
 
+LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 def arrays2LUTString(a, b):
     LUTString = ''
@@ -176,24 +179,24 @@ class Mapper(VRT):
 
         for sat in satDict:
             if sat['name'] == satellite:
-                print('This is ' + satellite)
+                LOGGER.info(f'This is {satellite}')
                 wavelengths = sat['wavelengths']
                 try:
                     scale = sat['scale']
                     offset = sat['offset']
                 except:
-                    print("No scale and offset found")
+                    LOGGER.info("No scale and offset found")
                     scale = None
                     offset = None
                 try:
                     LUT = sat['LUT']
                 except:
-                    print("No LUT found")
+                    LOGGER.info("No LUT found")
                     LUT = [""]*len(wavelengths)
                 try:
                     NODATA = sat['NODATA']
                 except:
-                    print("No NODATA values found")
+                    LOGGER.info("No NODATA values found")
                     NODATA = [""]*len(wavelengths)
 
         if wavelengths is None:
@@ -220,8 +223,7 @@ class Mapper(VRT):
             try:
                 gdal.Open(bandSource)
             except:
-                print('Warning: band missing for wavelength ' +
-                       str(wavelength) + 'nm')
+                LOGGER.warning(f"band missing for wavelength {wavelength} nm")
                 continue
             src = {'SourceFilename': bandSource, 'SourceBand': 1,
                    'LUT': LUT[i], 'NODATA': NODATA[i]}
