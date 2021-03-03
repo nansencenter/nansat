@@ -523,7 +523,7 @@ class Nansat(Domain, Exporter):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if do_print:
             # print to screeen
-            print(outString)
+            self.logger.info(outString)
         else:
             return outString
 
@@ -970,8 +970,8 @@ class Nansat(Domain, Exporter):
             outDataset.GetRasterBand(1).SetColorTable(colorTable)
         except:
             # Happens after reprojection, a possible bug?
-            print('Could not set color table')
-            print(colorTable)
+            self.logger.warning('Could not set color table %s' % colorTable)
+
         outDataset = None
         self.vrt.copyproj(filename)
 
@@ -1585,7 +1585,7 @@ def _import_mappers(log_level=None):
         value: class Mapper(VRT) from the mappers module
 
     """
-    logger = add_logger('import_mappers', logLevel=log_level)
+    logger = add_logger('Nansat', logLevel=log_level)
     # import built-in mappers
     import nansat.mappers
     mapper_packages = [nansat.mappers]
