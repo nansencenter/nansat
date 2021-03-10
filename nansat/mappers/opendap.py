@@ -251,7 +251,7 @@ class Opendap(VRT):
             var_names = bands
 
         # create VRT with correct lon/lat (geotransform)
-        raster_x, raster_y = self.get_shape
+        raster_x, raster_y = self.get_shape()
         geotransform = self.get_geotransform()
         self._init_from_dataset_params(int(raster_x), int(raster_y),
                                        geotransform, self.srcDSProjection)

@@ -194,7 +194,7 @@ class OpenDAPTests(unittest.TestCase):
         self.od.ds.delncattr('time_coverage_resolution')
 
     def test_get_shape(self):
-        res = self.od.get_shape
+        res = self.od.get_shape()
         self.assertIsInstance(res, tuple)
         self.assertEqual(len(res), 2)
         self.assertEqual(res[0], 20)
