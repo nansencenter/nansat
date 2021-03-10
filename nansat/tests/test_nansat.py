@@ -290,7 +290,7 @@ class NansatTest(NansatTestBase):
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(n.shape, (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
@@ -301,7 +301,7 @@ class NansatTest(NansatTestBase):
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(n.shape, (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
@@ -312,7 +312,7 @@ class NansatTest(NansatTestBase):
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(n.shape, (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
@@ -325,7 +325,7 @@ class NansatTest(NansatTestBase):
         tmpfilename = os.path.join(self.tmp_data_path, 'nansat_reproject_domain_span_entire_lons.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(n.shape, (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
@@ -337,7 +337,7 @@ class NansatTest(NansatTestBase):
                                    'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(n.shape, (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
@@ -348,7 +348,7 @@ class NansatTest(NansatTestBase):
                                    'nansat_reproject_domain.png')
         n.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n.shape(), (500, 500))
+        self.assertEqual(n.shape, (500, 500))
         self.assertEqual(type(n[1]), np.ndarray)
         self.assertTrue(n.has_band('swathmask'))
 
@@ -367,7 +367,7 @@ class NansatTest(NansatTestBase):
         """ Should add band and swath mask and return np.nan in areas out of swath """
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         d = Domain(4326, "-te 27 70 30 72 -ts 500 500")
-        n.add_band(np.ones(n.shape(), np.uint8))
+        n.add_band(np.ones(n.shape, np.uint8))
         n.reproject(d)
         b4 = n[4] # added, reprojected band
         b5 = n[5] # swathmask
@@ -398,7 +398,7 @@ class NansatTest(NansatTestBase):
                                    'nansat_reproject_stere.png')
         n1.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n1.shape(), n2.shape())
+        self.assertEqual(n1.shape, n2.shape)
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_reproject_gcps(self):
@@ -409,7 +409,7 @@ class NansatTest(NansatTestBase):
                                    'nansat_reproject_gcps.png')
         n1.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n1.shape(), n2.shape())
+        self.assertEqual(n1.shape, n2.shape)
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_reproject_gcps_on_repro_gcps(self):
@@ -421,7 +421,7 @@ class NansatTest(NansatTestBase):
                                    'nansat_reproject_gcps_on_repro_gcps.png')
         n1.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n1.shape(), n2.shape())
+        self.assertEqual(n1.shape, n2.shape)
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_reproject_gcps_resize(self):
@@ -433,16 +433,16 @@ class NansatTest(NansatTestBase):
                                    'nansat_reproject_gcps_resize.png')
         n1.write_figure(tmpfilename, 2, clim='hist')
 
-        self.assertEqual(n1.shape()[0], n2.shape()[0] * 2)
-        self.assertEqual(n1.shape()[1], n2.shape()[1] * 2)
+        self.assertEqual(n1.shape[0], n2.shape[0] * 2)
+        self.assertEqual(n1.shape[1], n2.shape[1] * 2)
         self.assertEqual(type(n1[1]), np.ndarray)
 
     def test_undo(self):
         n1 = Nansat(self.test_file_stere, log_level=40, mapper=self.default_mapper)
-        shape1 = n1.shape()
+        shape1 = n1.shape
         n1.resize(10)
         n1.undo()
-        shape2 = n1.shape()
+        shape2 = n1.shape
 
         self.assertEqual(shape1, shape2)
 
@@ -645,14 +645,14 @@ class NansatTest(NansatTestBase):
         n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(n1.shape, (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
         n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         ext = n1.crop(0, 0, 200, 200)
 
-        self.assertEqual(n1.shape(), (200, 200))
+        self.assertEqual(n1.shape, (200, 200))
         self.assertEqual(ext, (0, 0, 200, 200))
         self.assertEqual(type(n1[1]), np.ndarray)
 
@@ -673,7 +673,7 @@ class NansatTest(NansatTestBase):
         n1 = Nansat(self.test_file_complex, log_level=40, mapper=self.default_mapper)
         ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(n1.shape, (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
@@ -681,7 +681,7 @@ class NansatTest(NansatTestBase):
         n1 = Nansat(self.test_file_arctic, log_level=40, mapper=self.default_mapper)
         ext = n1.crop(10, 20, 50, 60)
 
-        self.assertEqual(n1.shape(), (60, 50))
+        self.assertEqual(n1.shape, (60, 50))
         self.assertEqual(ext, (10, 20, 50, 60))
         self.assertEqual(type(n1[1]), np.ndarray)
 
@@ -689,7 +689,7 @@ class NansatTest(NansatTestBase):
         n1 = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         ext = n1.crop_lonlat([28, 29], [70.5, 71])
 
-        self.assertEqual(n1.shape(), (111, 110))
+        self.assertEqual(n1.shape, (111, 110))
         self.assertEqual(ext, (31, 89, 110, 111))
         self.assertEqual(type(n1[1]), np.ndarray)
 
@@ -705,8 +705,8 @@ class NansatTest(NansatTestBase):
         if mod44path is not None and os.path.exists(mod44path + '/MOD44W.vrt'):
             wm = n1.watermask()[1]
             self.assertEqual(type(wm), np.ndarray)
-            self.assertEqual(wm.shape[0], n1.shape()[0])
-            self.assertEqual(wm.shape[1], n1.shape()[1])
+            self.assertEqual(wm.shape[0], n1.shape[0])
+            self.assertEqual(wm.shape[1], n1.shape[1])
 
     def test_watermask_fail_if_mod44path_is_wrong(self):
         """ Nansat.watermask should raise an IOError"""
@@ -774,14 +774,14 @@ class NansatTest(NansatTestBase):
         mock_digitize_points.return_value=[np.array([[10, 20], [10, 30]])]
         n = Nansat(self.test_file_arctic, log_level=40, mapper=self.default_mapper)
         n.crop_interactive()
-        self.assertEqual(n.shape(), (20, 10))
+        self.assertEqual(n.shape, (20, 10))
 
     def test_extend(self):
         n = Nansat(self.test_file_arctic, log_level=40, mapper=self.default_mapper)
-        nshape1 = n.shape()
+        nshape1 = n.shape
         n.extend(left=10, right=20, top=30, bottom=40)
         be = n[1]
-        self.assertEqual(n.shape(), (nshape1[0]+70, nshape1[1]+30))
+        self.assertEqual(n.shape, (nshape1[0]+70, nshape1[1]+30))
         self.assertIsInstance(be, np.ndarray)
 
     def test_open_no_mapper(self):

@@ -63,8 +63,8 @@ class OpenDAPTests(unittest.TestCase):
         with self.assertRaises(WrongMapperError):
             self.od.test_mapper(filename='http://not-in-base-urls.net/path/to/the/file.nc')
 
-    """ Not sure how to test get_dataset.. 
-    
+    """ Not sure how to test get_dataset..
+
     According toe the followingm, mocking C modules seems not to be possible.. Can that be the
     reason the below doesn't work?
 
@@ -194,7 +194,7 @@ class OpenDAPTests(unittest.TestCase):
         self.od.ds.delncattr('time_coverage_resolution')
 
     def test_get_shape(self):
-        res = self.od.get_shape()
+        res = self.od.get_shape
         self.assertIsInstance(res, tuple)
         self.assertEqual(len(res), 2)
         self.assertEqual(res[0], 20)
