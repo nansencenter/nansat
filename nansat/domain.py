@@ -16,6 +16,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import division, absolute_import
 
+import logging
 import re
 import warnings
 from xml.etree.ElementTree import ElementTree
@@ -27,6 +28,9 @@ from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning
+
+LOGGER = logging.getLogger("nansat."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Domain(object):
     """Container for geographical reference of a raster
@@ -225,7 +229,7 @@ class Domain(object):
         """
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
         wkt, src = self.vrt.get_projection()
-        out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
+        out_str = 'Domain:[%d x %d]\n' % self.shape[::-1]
         out_str += self.OUTPUT_SEPARATOR
         corners = self.get_corners()
         out_str += 'Projection(%s):\n' % src
@@ -549,7 +553,7 @@ class Domain(object):
             vectors with lon/lat values for each point at the border
 
         """
-        x_size, y_size = self.shape()[::-1]
+        x_size, y_size = self.shape[::-1]
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
         col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
@@ -854,6 +858,7 @@ class Domain(object):
         a = np.vstack((a, a[-1, :]))
         return a
 
+    @property
     def shape(self):
         """Return Numpy-like shape of Domain object (ySize, xSize)
 
@@ -864,6 +869,14 @@ class Domain(object):
 
         """
         return self.vrt.dataset.RasterYSize, self.vrt.dataset.RasterXSize
+
+    @shape.setter
+    def shape(self, dims):
+        y, x = dims.split(',')
+        self.vrt.dataset.RasterXSize = x
+        self.vrt.dataset.RasterYSize = y
+        LOGGER.debug(f"new self.vrt.dataset.RasterYSize:{self.vrt.dataset.RasterYSize}, "
+                     f"new self.vrt.dataset.RasterXSize:{self.vrt.dataset.RasterXSize}")
 
     def reproject_gcps(self, srs_string=''):
         """Reproject all GCPs to a new spatial reference system

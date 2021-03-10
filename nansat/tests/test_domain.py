@@ -111,20 +111,20 @@ class DomainTest(unittest.TestCase):
         self.assertTrue(nansat_warning_raised)
 
         self.assertEqual(type(d), Domain)
-        self.assertEqual(d.shape(), lat.shape)
+        self.assertEqual(d.shape, lat.shape)
 
     def test_init_from_lonlat(self):
         lat, lon = np.mgrid[-10:10:0.5, -20:20:2]
         d = Domain.from_lonlat(lon=lon, lat=lat)
         self.assertEqual(type(d), Domain)
-        self.assertEqual(d.shape(), lat.shape)
+        self.assertEqual(d.shape, lat.shape)
         self.assertEqual(len(d.vrt.dataset.GetGCPs()), 100)
 
     def test_init_from_lonlat_no_gcps(self):
         lat, lon = np.mgrid[-10:10:0.5, -20:20:2]
         d = Domain.from_lonlat(lon=lon, lat=lat, add_gcps=False)
         self.assertEqual(type(d), Domain)
-        self.assertEqual(d.shape(), lat.shape)
+        self.assertEqual(d.shape, lat.shape)
         self.assertEqual(len(d.vrt.dataset.GetGCPs()), 0)
 
     @patch.object(Domain, 'get_corners',
@@ -495,7 +495,7 @@ class DomainTest(unittest.TestCase):
 
     def test_shape(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        self.assertEqual(d.shape(), (500, 500))
+        self.assertEqual(d.shape, (500, 500))
 
     def test_reproject_gcps(self):
         ds = gdal.Open(self.test_file)

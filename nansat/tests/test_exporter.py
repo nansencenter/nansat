@@ -82,11 +82,11 @@ class ExporterTest(NansatTestBase):
     def test_export_netcdf(self):
         """ Test export and following import of data with bands containing np.nan values """
         n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
-        arrNoNaN = np.random.randn(n.shape()[0], n.shape()[1])
+        arrNoNaN = np.random.randn(n.shape[0], n.shape[1])
         n.add_band(arrNoNaN, {'name': 'testBandNoNaN'})
         arrWithNaN = arrNoNaN.copy()
-        arrWithNaN[int(n.shape()[0] / 2.) - 10:int(n.shape()[0] / 2 + 10),
-                   int(n.shape()[1] / 2.) - 10:int(n.shape()[1] / 2 + 10)] = np.nan
+        arrWithNaN[int(n.shape[0] / 2.) - 10:int(n.shape[0] / 2 + 10),
+                   int(n.shape[1] / 2.) - 10:int(n.shape[1] / 2 + 10)] = np.nan
         n.add_band(arrWithNaN, {'name': 'testBandWithNaN'})
         n.export(self.tmp_filename)
         exported = Nansat(self.tmp_filename, mapper=self.default_mapper)
@@ -187,7 +187,7 @@ class ExporterTest(NansatTestBase):
     def test_export_selected_bands(self):
         n = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         resfile = 'tmp.nc'
-        new_band = np.random.randn(n.shape()[0], n.shape()[1])
+        new_band = np.random.randn(n.shape[0], n.shape[1])
         n.add_band(new_band, {'name': 'newBand'})
         # Test with band numbers
         n.export(resfile, bands=[4, 2])
@@ -259,7 +259,7 @@ class ExporterTest(NansatTestBase):
     def test_dont_export2thredds_gcps(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
         n2 = Nansat.from_domain(n)
-        n.add_band(np.ones(n2.shape(), np.float32))
+        n.add_band(np.ones(n2.shape, np.float32))
         tmpfilename = os.path.join(self.tmp_data_path,
                                    'nansat_export2thredds.nc')
         with self.assertRaises(ValueError) as e:
@@ -275,7 +275,7 @@ class ExporterTest(NansatTestBase):
         d = Domain("+proj=latlong +datum=WGS84 +ellps=WGS84 +no_defs",
                    "-te 27 70 31 72 -ts 200 200")
         n = Nansat.from_domain(d)
-        n.add_band(np.ones(d.shape(), np.float32),
+        n.add_band(np.ones(d.shape, np.float32),
                    parameters={'name': 'L_469'})
         n.set_metadata('time_coverage_start', '2016-01-19')
 
