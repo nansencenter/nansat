@@ -378,7 +378,7 @@ class Nansat(Domain, Exporter):
 
     def _get_resize_shape(self, factor, width, height, dst_pixel_size):
         """Estimate new shape either from factor or destination width/height or pixel size"""
-        src_shape = np.array(self.shape(), np.float)
+        src_shape = np.array(self.shape, np.float)
         # estimate factor if either width or height is given and factor is not given
         if width is not None:
             factor = width / src_shape[1]
@@ -1377,7 +1377,7 @@ class Nansat(Domain, Exporter):
 
         """
         resized = False
-        if self.shape()[1] > maxwidth:
+        if self.shape[1] > maxwidth:
             factor = self.resize(width=1000)
             resized = True
         else:
@@ -1500,15 +1500,15 @@ class Nansat(Domain, Exporter):
 
         """
         x_offset, x_size = Nansat._fix_crop_offset_size(x_offset, x_size,
-                                                        self.shape()[1], allow_larger)
+                                                        self.shape[1], allow_larger)
         y_offset, y_size = Nansat._fix_crop_offset_size(y_offset, y_size,
-                                                        self.shape()[0], allow_larger)
+                                                        self.shape[0], allow_larger)
 
         extent = (int(x_offset), int(y_offset), int(x_size), int(y_size))
         self.logger.debug('x_offset: %d, y_offset: %d, x_size: %d, y_size: %d' % extent)
 
         # test if crop is larger or equal to image size
-        if x_offset == y_offset == 0 and (y_size, x_size) == self.shape():
+        if x_offset == y_offset == 0 and (y_size, x_size) == self.shape:
             self.logger.error(('WARNING! Cropping region is larger or equal to image!'))
             return extent
 
@@ -1540,8 +1540,8 @@ class Nansat(Domain, Exporter):
 
         """
         x_offset, y_offset = -left, -top
-        x_size = self.shape()[1] + left + right
-        y_size = self.shape()[0] + top + bottom
+        x_size = self.shape[1] + left + right
+        y_size = self.shape[0] + top + bottom
         self.crop(x_offset, y_offset, x_size, y_size, allow_larger=True)
 
     def _get_pix_lin_vectors(self, points, lonlat, cornersonly, smooth_radius):
@@ -1569,8 +1569,8 @@ class Nansat(Domain, Exporter):
         linVector = np.floor(linVector)
         gpi = ((pixVector >= (0 + smooth_radius)) *
                (linVector >= (0 + smooth_radius)) *
-               (pixVector < (self.shape()[1] - smooth_radius)) *
-               (linVector < (self.shape()[0] - smooth_radius)))
+               (pixVector < (self.shape[1] - smooth_radius)) *
+               (linVector < (self.shape[0] - smooth_radius)))
 
         return pixVector[gpi], linVector[gpi]
 
