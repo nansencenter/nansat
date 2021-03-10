@@ -1585,7 +1585,7 @@ def _import_mappers(log_level=None):
         value: class Mapper(VRT) from the mappers module
 
     """
-    logger = add_logger('Nansat', logLevel=log_level)
+    logger = add_logger("nansat.import_mappers", logLevel=log_level)
     # import built-in mappers
     import nansat.mappers
     mapper_packages = [nansat.mappers]
