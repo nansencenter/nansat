@@ -229,7 +229,7 @@ class Domain(object):
         """
         corners_temp = '\t (%6.2f, %6.2f)  (%6.2f, %6.2f)\n'
         wkt, src = self.vrt.get_projection()
-        out_str = 'Domain:[%d x %d]\n' % self.shape()[::-1]
+        out_str = 'Domain:[%d x %d]\n' % self.shape[::-1]
         out_str += self.OUTPUT_SEPARATOR
         corners = self.get_corners()
         out_str += 'Projection(%s):\n' % src
@@ -553,7 +553,7 @@ class Domain(object):
             vectors with lon/lat values for each point at the border
 
         """
-        x_size, y_size = self.shape()[::-1]
+        x_size, y_size = self.shape[::-1]
         x_rc_vec = Domain._get_row_col_vector(x_size, n_points)
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
         col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
