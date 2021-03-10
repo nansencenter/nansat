@@ -16,7 +16,7 @@ from nansat.exceptions import WrongMapperError
 from nansat.geolocation import Geolocation
 from nansat.vrt import VRT
 
-LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 satIDs = {4: 'NOAA-15', 2: 'NOAA-16', 6: 'NOAA-17', 7: 'NOAA-18', 8: 'NOAA-19',

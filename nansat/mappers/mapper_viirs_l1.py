@@ -24,7 +24,7 @@ from nansat.vrt import VRT
 from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError, NansatReadError
 
-LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT):

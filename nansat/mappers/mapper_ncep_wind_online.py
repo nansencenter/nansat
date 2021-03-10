@@ -26,7 +26,7 @@ from nansat.vrt import VRT
 from nansat.exceptions import WrongMapperError
 from nansat.nansat import Nansat
 
-LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 # Place to store downloads - this can be changed via the "outFolder" argument

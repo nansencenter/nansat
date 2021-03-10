@@ -23,7 +23,7 @@ recordLength = 29808
 headerLength = recordLength
 imageOffset = headerLength + 1092
 
-LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT):

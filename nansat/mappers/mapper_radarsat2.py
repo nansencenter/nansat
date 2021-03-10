@@ -28,7 +28,7 @@ from nansat.node import Node
 from nansat.utils import initial_bearing, gdal
 from nansat.exceptions import WrongMapperError, NansatReadError
 
-LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 

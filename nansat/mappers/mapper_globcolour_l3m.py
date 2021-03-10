@@ -18,7 +18,7 @@ from nansat.mappers.globcolour import Globcolour
 from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError
 
-LOGGER = logging.getLogger("Nansat."+__name__)
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT, Globcolour):
