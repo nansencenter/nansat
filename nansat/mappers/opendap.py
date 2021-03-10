@@ -248,10 +248,10 @@ class Opendap(VRT):
         if bands:
             # TODO: select variable names based on standard names instead of band names
             #       - this means the variable must be looped, like in mapper_netcdf_cf.py
-            var_names = bands 
+            var_names = bands
 
         # create VRT with correct lon/lat (geotransform)
-        raster_x, raster_y = self.get_shape()
+        raster_x, raster_y = self.get_shape
         geotransform = self.get_geotransform()
         self._init_from_dataset_params(int(raster_x), int(raster_y),
                                        geotransform, self.srcDSProjection)
