@@ -1,6 +1,6 @@
 #!/bin/bash
 # build container only with Python libraries in conda
-docker build . -t nansat
+docker build . -t nansat -f docker/Dockerfile_nansat
 
 # compile Nansat in current host directory
 docker run --rm -it -v `pwd`:/src nansat python setup.py build_ext --inplace

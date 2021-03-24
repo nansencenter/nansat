@@ -4,7 +4,7 @@ import datetime
 import tempfile
 
 import numpy as np
-import gdal
+from nansat.utils import gdal
 from netCDF4 import Dataset
 
 from nansat.mappers.mapper_netcdf_cf import Mapper

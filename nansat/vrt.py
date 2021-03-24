@@ -22,14 +22,12 @@ from random import choice
 import warnings
 import pythesint as pti
 
-import osr
-import gdal
 import numpy as np
 
 from nansat.node import Node
 from nansat.nsr import NSR
 from nansat.geolocation import Geolocation
-from nansat.tools import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys
+from nansat.utils import add_logger, numpy_to_gdal_type, gdal_type_to_offset, remove_keys, osr, gdal
 
 from nansat.exceptions import NansatProjectionError
 
@@ -1393,7 +1391,7 @@ class VRT(object):
         return subsamp_vrt
 
     def transform_points(self, col_vector, row_vector, dst2src=0,
-                         dst_srs=NSR(), dst_ds=None, options=None):
+                         dst_srs=None, dst_ds=None, options=None):
         """Transform input pixel/line coordinates into lon/lat (or opposite)
 
         Parameters
@@ -1416,6 +1414,8 @@ class VRT(object):
             X and Y coordinates in degree of lat/lon
 
         """
+        if dst_srs is None:
+            dst_srs = NSR()
         # get source SRS (either Projection or GCPProjection or Metadata(GEOLOCATION)[SRS])
         src_wkt = self.get_projection()[0]
 
@@ -1552,7 +1552,7 @@ class VRT(object):
             Source spatial reference system
         src_points : tuple of two or three N-D arrays
             Coordinates of points in the source spatial reference system. A tuple with (X, Y) or
-            (X, Y, Z) coordinates arrays. Each coordinate Each array can be a list, 1D, 2D, N-D
+            (X, Y, Z) coordinates arrays. Each array can be a list, 1D, 2D, N-D
             array.
         dst_srs : nansat.NSR
             Destination spatial reference
@@ -1560,16 +1560,23 @@ class VRT(object):
         Returns
         -------
         dst_points : tuple of two or three N-D arrays
-            Coordinates of points in the destination spatial reference system. A tuple with (X, Y) or
-            (X, Y, Z) coordinates arrays. Each coordinate Each array can be 1D, 2D, N-D
-            array. Shape of output arrays corrrrespond to shape of inputs.
+            Coordinates of points in the destination spatial reference system. A tuple with (X, Y)
+            or (X, Y, Z) coordinates arrays. Each array can be 1D, 2D, N-D.
+            Shape of output arrays corrrrespond to shape of inputs.
 
         """
         transformer = osr.CoordinateTransformation(src_srs, dst_srs)
         src_shape = np.array(src_points[0]).shape
+        if int(gdal.VersionInfo()[0]) >= 3 and src_srs.EPSGTreatsAsLatLong() == 1:
+            # swap input X/Y to lat/lon
+            src_points = list(src_points)
+            src_points[0], src_points[1] = src_points[1], src_points[0]
         src_points = list(zip(*[np.array(xyz).flatten() for xyz in src_points]))
         dst_points = transformer.TransformPoints(src_points)
         dst_x, dst_y, dst_z = np.array(list(zip(*dst_points)))
+        if int(gdal.VersionInfo()[0]) >= 3 and dst_srs.EPSGTreatsAsLatLong() == 1:
+            # swap output lat/lon to X/Y
+            dst_x, dst_y = dst_y, dst_x
         return dst_x.reshape(src_shape), dst_y.reshape(src_shape), dst_z.reshape(src_shape)
 
     def set_offset_size(self, axis, offset, size):

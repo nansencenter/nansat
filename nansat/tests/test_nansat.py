@@ -32,7 +32,7 @@ else:
     MATPLOTLIB_IS_INSTALLED = True
 
 from nansat import Nansat, Domain, NSR
-from nansat.tools import gdal
+from nansat.utils import gdal
 import nansat.nansat
 
 from nansat.exceptions import NansatGDALError, WrongMapperError, NansatReadError

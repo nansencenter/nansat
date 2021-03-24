@@ -7,21 +7,21 @@
 import warnings, os, datetime
 import numpy as np
 import collections
-import gdal
+from nansat.utils import gdal
 
 from dateutil.parser import parse
 from netCDF4 import Dataset
 
 from nansat.vrt import VRT
 from nansat.nsr import NSR
-from nansat.tools import parse_time
+from nansat.utils import parse_time
 
 from nansat.exceptions import WrongMapperError, NansatMissingProjectionError
 
 class ContinueI(Exception):
     pass
 
-# List of allowed spatial dimensions 
+# List of allowed spatial dimensions
 ALLOWED_SPATIAL_DIMENSIONS_X = ['x', 'lon', 'numcells']
 ALLOWED_SPATIAL_DIMENSIONS_Y = ['y', 'lat', 'numrows']
 
@@ -205,7 +205,7 @@ class Mapper(VRT):
                 continue
 
         return metadictlist
-        
+
 
     def _get_band_from_subfile(self, fn, netcdf_dim={}, bands=[]):
         nc_ds = Dataset(self.input_filename)
@@ -227,15 +227,15 @@ class Mapper(VRT):
         for allowed in ALLOWED_SPATIAL_DIMENSIONS_X:
             try:
                 ind_dim_x = [i for i, s in enumerate(dimension_names) if allowed in s.lower()][0]
+                dimension_names.pop(ind_dim_x)
             except IndexError:
                 continue
-        dim_x = dimension_names.pop(ind_dim_x)
         for allowed in ALLOWED_SPATIAL_DIMENSIONS_Y:
             try:
                 ind_dim_y = [i for i, s in enumerate(dimension_names) if allowed in s.lower()][0]
+                dimension_names.pop(ind_dim_y)
             except IndexError:
                 continue
-        dim_y = dimension_names.pop(ind_dim_y)
         index4key = collections.OrderedDict()
         for key in dimension_names:
             if key in netcdf_dim.keys():

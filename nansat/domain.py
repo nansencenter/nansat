@@ -22,7 +22,7 @@ from xml.etree.ElementTree import ElementTree
 
 import numpy as np
 
-from nansat.tools import add_logger, initial_bearing, haversine, gdal, osr, ogr
+from nansat.utils import add_logger, initial_bearing, haversine, gdal, osr, ogr
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.exceptions import NansatProjectionError
@@ -303,7 +303,7 @@ class Domain(object):
         \t\t\t\t<name>{name}</name>
         \t\t\t\t<Style>
         \t\t\t\t\t<LineStyle><color>ffffffff</color></LineStyle>
-        \t\t\t\t\t<PolyStyle><fill>0</fill>'
+        \t\t\t\t\t<PolyStyle><fill>0</fill></PolyStyle>
         \t\t\t\t</Style>
         \t\t\t\t<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>
         {coordinates}
@@ -370,7 +370,7 @@ class Domain(object):
                                           east=max(domain_lon), west=min(domain_lon))
             kml_file.write(self.KML_BASE.format(content=kml_content))
 
-    def get_geolocation_grids(self, stepSize=1, dstSRS=NSR()):
+    def get_geolocation_grids(self, stepSize=1, dst_srs=None):
         """Get longitude and latitude grids representing the full data grid
 
         If GEOLOCATION is not present in the self.vrt.dataset then grids
@@ -390,8 +390,9 @@ class Domain(object):
         latitude : numpy array
             grid with latitudes
         """
+        if dst_srs is None:
+            dst_srs = NSR()
         step_size = stepSize
-        dst_srs = dstSRS
         x_vec = list(range(0, self.vrt.dataset.RasterXSize, step_size))
         y_vec = list(range(0, self.vrt.dataset.RasterYSize, step_size))
         x_grid, y_grid = np.meshgrid(x_vec, y_vec)
@@ -404,13 +405,13 @@ class Domain(object):
         else:
             # generate lon,lat grids using GDAL Transformer
             lon_vec, lat_vec = self.transform_points(x_grid.flatten(), y_grid.flatten(),
-                                                     dstSRS=dst_srs)
+                                                     dst_srs=dst_srs)
             lon_arr = lon_vec.reshape(x_grid.shape)
             lat_arr = lat_vec.reshape(x_grid.shape)
 
         return lon_arr, lat_arr
 
-    def _convert_extentDic(self, dstSRS, extentDic):
+    def _convert_extentDic(self, dst_srs, extentDic):
         """Convert -lle option (lat/lon) to -te (proper coordinate system)
 
         Source SRS from LAT/LON projection and target SRS from dstWKT.
@@ -421,7 +422,7 @@ class Domain(object):
 
         Parameters
         -----------
-        dstSRS : NSR
+        dst_srs : NSR
             Destination Spatial Reference
         extentDic : dictionary
             dictionary with 'lle' key
@@ -432,7 +433,7 @@ class Domain(object):
             input dictionary + 'te' key and its values
 
         """
-        coorTrans = osr.CoordinateTransformation(NSR(), dstSRS)
+        coorTrans = osr.CoordinateTransformation(NSR(), dst_srs)
 
         # convert lat/lon given by 'lle' to the target coordinate system and
         # add key 'te' and the converted values to extentDic
@@ -553,6 +554,8 @@ class Domain(object):
         y_rc_vec = Domain._get_row_col_vector(y_size, n_points)
         col_vec, row_vec = Domain._compound_row_col_vectors(x_size, y_size, x_rc_vec, y_rc_vec)
         lon, lat = self.transform_points(col_vec, row_vec)
+        lon = lon.round(decimals=4)
+        lat = lat.round(decimals=4)
 
         crosses_dateline = np.diff(lon).max() > 100 # arbitrary number, larger than a maximum step
         if crosses_dateline and fix_lon:
@@ -799,7 +802,7 @@ class Domain(object):
 
         return resolution_x, resolution_y, raster_x_size, raster_y_size
 
-    def transform_points(self, colVector, rowVector, DstToSrc=0, dstSRS=NSR()):
+    def transform_points(self, colVector, rowVector, DstToSrc=0, dst_srs=None):
         """Transform given lists of X,Y coordinates into lon/lat or inverse
 
         Parameters
@@ -811,7 +814,7 @@ class Domain(object):
             - 0 - forward transform (pix/line => lon/lat)
             - 1 - inverse transformation
 
-        dstSRS : NSR
+        dst_srs : NSR
             destination spatial reference
 
         Returns
@@ -820,7 +823,9 @@ class Domain(object):
             X and Y coordinates in lon/lat or pixel/line coordinate system
 
         """
-        return self.vrt.transform_points(colVector, rowVector, dst2src=DstToSrc, dst_srs=dstSRS)
+        if dst_srs is None:
+            dst_srs = NSR()
+        return self.vrt.transform_points(colVector, rowVector, dst2src=DstToSrc, dst_srs=dst_srs)
 
     def azimuth_y(self, reductionFactor=1):
         """Calculate the angle of each pixel position vector with respect to

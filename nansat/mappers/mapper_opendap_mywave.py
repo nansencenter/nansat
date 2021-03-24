@@ -18,7 +18,9 @@ import os
 
 class Mapper(Opendap):
 
-    baseURLs = ['http://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive']
+    baseURLs = ['http://thredds.met.no/thredds/dodsC/fou-hi/mywavewam4archive', 
+                'https://thredds.met.no/thredds/dodsC/sea/mywavewam4/mywavewam4_be']
+
     timeVarName = 'time'
     xName = 'rlon'
     yName = 'rlat'

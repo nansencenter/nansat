@@ -42,12 +42,12 @@ CLASSIFIERS         = [
         'Topic :: Scientific/Engineering :: Information Analysis',
         'Topic :: Utilities'
     ]
-AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Aleksander Vines, Asuka Yamakawa")
+AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Aleksander Vines, Asuka Yamakawa, Artem Moiseev, Mohamed Babiker")
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["Linux", "OS X", "Windows"]
 MAJOR               = 1
-MINOR               = 2
-MICRO               = 1
+MINOR               = 4
+MICRO               = 4
 ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO) # Remember to remove "dev" when releasing
 REQS                = [

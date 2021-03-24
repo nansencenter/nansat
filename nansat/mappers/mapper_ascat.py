@@ -6,7 +6,7 @@ import pythesint as pti
 
 from netCDF4 import Dataset
 
-import gdal
+from nansat.utils import gdal
 
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation

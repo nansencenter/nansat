@@ -1,116 +1,98 @@
 #------------------------------------------------------------------------------
-# Name:         test_nansat.py
-# Purpose:      Test the Nansat class
-#
-# Author:       Morten Wergeland Hansen, Asuka Yamakawa
-# Modified: Morten Wergeland Hansen
-#
-# Created:      18.06.2014
-# Last modified:16.04.2015 10:48
+# Name:         test_tools.py
+# Purpose:      Test tools from nansat.tools
+# Author:       Artem Moiseev
+# Created:      17.01.2020
 # Copyright:    (c) NERSC
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
 #------------------------------------------------------------------------------
-from __future__ import unicode_literals, absolute_import
+
 import os
 import unittest
-import datetime
-import warnings
+from mock import patch, DEFAULT
 
-from mock import patch
-
+import numpy as np
 try:
     import matplotlib.pyplot as plt
-    from matplotlib.colors import hex2color
+    plt.switch_backend('Agg')
 except ImportError:
     MATPLOTLIB_IS_INSTALLED = False
 else:
     MATPLOTLIB_IS_INSTALLED = True
-
 try:
-    from mpl_toolkits.basemap import Basemap
+    import cartopy
 except ImportError:
-    BASEMAP_LIB_IS_INSTALLED = False
+    CARTOPY_IS_INSTALLED = False
 else:
-    BASEMAP_LIB_IS_INSTALLED = True
+    CARTOPY_IS_INSTALLED = True
 
-from nansat.figure import Image
+import nansat
 from nansat.domain import Domain
-from nansat.tools import get_random_color, parse_time, write_domain_map
+from nansat.figure import Image
+from nansat.nansat import Nansat as NANSAT
 from nansat.tests import nansat_test_data as ntd
+from nansat.tools import (distance2coast,
+                            register_colormaps,
+                            get_domain_map,
+                            show_domain_map,
+                            save_domain_map,
+                            get_domain_map)
+
 
 class ToolsTest(unittest.TestCase):
-    @unittest.skipUnless(MATPLOTLIB_IS_INSTALLED, 'Matplotlib is required')
-    def test_get_random_color(self):
-        ''' Should return HEX code of random color '''
-        c0 = get_random_color()
-        c1 = get_random_color(c0)
-        c2 = get_random_color(c1, 300)
+    def setUp(self):
+        self.d = Domain(4326, "-te 25 70 35 72 -ts 100 100")
+        # define a test Nansat object
+        test_domain = Domain(4326, "-lle -180 -90 180 90 -ts 500 500")
+        self.n = NANSAT.from_domain(test_domain, array=np.ones([500,500]))
 
-        self.assertEqual(type(hex2color(c0)), tuple)
-        self.assertEqual(type(hex2color(c1)), tuple)
-        self.assertEqual(type(hex2color(c2)), tuple)
+    @patch('nansat.tools.os.getenv')
+    def test_distance2coast_source_not_exists_envvar(self, mock_getenv):
+        mock_getenv.return_value='/path/dos/not/exist'
+        with self.assertRaises(IOError) as err:
+            distance2coast(self.d)
+        self.assertEqual('Distance to the nearest coast product does not exist - '
+                         'see Nansat documentation to get it (the path is '
+                         '/path/dos/not/exist)', str(err.exception))
 
-    @patch('nansat.tools.MATPLOTLIB_IS_INSTALLED', False)
-    def test_get_random_color__matplotlib_missing(self): 
-        with self.assertRaises(ImportError):
-            c0 = get_random_color()
+    def test_distance2coast_source_not_exists_attribute(self):
+        with self.assertRaises(IOError) as err:
+            distance2coast(self.d, distance_src='/path/dos/not/exist')
+        self.assertEqual('Distance to the nearest coast product does not exist - '
+                         'see Nansat documentation to get it (the path is '
+                         '/path/dos/not/exist)', str(err.exception))
 
-    def test_parse_time(self):
-        dt = parse_time('2016-01-19')
+    @patch.multiple('nansat.tools', Nansat=DEFAULT, os=DEFAULT)
+    def test_distance2coast_integration(self, Nansat, os):
+        Nansat.return_value = self.n
+        os.path.exists.return_value=True
+        result = distance2coast(self.d)
+        self.assertEqual(type(result), NANSAT)
 
-        self.assertEqual(type(dt), datetime.datetime)
+    def test_warning(self):
+        register_colormaps()
+        with self.assertWarns(UserWarning) as w:
+            register_colormaps()
 
-    def test_parse_time_incorrect(self):
-        dt = parse_time('2016-01-19Z')
+    @unittest.skipUnless(CARTOPY_IS_INSTALLED, 'Cartopy is required')
+    def test_get_domain_map(self):
+        ax = get_domain_map(self.d)
+        self.assertIsInstance(ax, plt.Axes)
 
-        self.assertEqual(type(dt), datetime.datetime)
+    def test_get_domain_map_no_cartopy(self):
+        nansat.tools.CARTOPY_IS_INSTALLED = False
+        with self.assertRaises(ImportError) as err:
+            ax = get_domain_map(self.d)
+        self.assertIn('Cartopy is not installed', str(err.exception))
+        nansat.tools.CARTOPY_IS_INSTALLED = CARTOPY_IS_INSTALLED
 
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_domain_map(self):
-        plt.switch_backend('Agg')
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        border = d.get_border()
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
-        write_domain_map(border, tmpfilename, labels=['Patch1'])
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()
-        self.assertEqual(i.info['dpi'], (50, 50))
-
-    @patch('nansat.tools.BASEMAP_LIB_IS_INSTALLED', False)
-    def test_write_domain_map__basemap_missing(self):
-        plt.switch_backend('Agg')
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        border = d.get_border()
-        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_write_map.png')
-        with self.assertRaises(ImportError):
-            write_domain_map(border, tmpfilename, labels=['Patch1'])
-
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_domain_map_dpi100(self):
-        plt.switch_backend('Agg')
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        border = d.get_border()
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'domain_write_map_dpi100.png')
-        write_domain_map(border, tmpfilename, dpi=100)
+    @unittest.skipUnless(CARTOPY_IS_INSTALLED, 'Cartopy is required')
+    def test_save_domain_map(self):
+        tmpfilename = os.path.join(ntd.tmp_data_path, 'domain_save_map.png')
+        save_domain_map(self.d, tmpfilename)
         self.assertTrue(os.path.exists(tmpfilename))
         i = Image.open(tmpfilename)
         i.verify()
         self.assertEqual(i.info['dpi'], (100, 100))
-
-    @unittest.skipUnless(BASEMAP_LIB_IS_INSTALLED, 'Basemap is required')
-    def test_write_domain_map_labels(self):
-        plt.switch_backend('Agg')
-        d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
-        border = d.get_border()
-        tmpfilename = os.path.join(ntd.tmp_data_path,
-                                   'domain_write_map_labels.png')
-        write_domain_map(border, tmpfilename,
-                    mer_labels=[False, False, False, True],
-                    par_labels=[True, False, False, False])
-        self.assertTrue(os.path.exists(tmpfilename))
-        i = Image.open(tmpfilename)
-        i.verify()

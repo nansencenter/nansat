@@ -12,7 +12,7 @@
 #------------------------------------------------------------------------------
 import unittest
 from nansat import NSR
-from nansat.tools import osr
+from nansat.utils import osr
 
 from nansat.exceptions import NansatProjectionError
 
@@ -58,14 +58,18 @@ class NSRTest(unittest.TestCase):
         self.assertTrue('longlat' in nsr.ExportToProj4())
 
     def test_init_from_wkt(self):
-        nsr = NSR(osr.SRS_WKT_WGS84)
+        nsr = NSR(
+        'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,'\
+        'AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,'\
+        'AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'\
+        'AXIS["Latitude",NORTH],AXIS["Longitude",EAST],AUTHORITY["EPSG","4326"]]')
 
         self.assertEqual(type(nsr), NSR)
         self.assertEqual(nsr.Validate(), 0)
         self.assertTrue('longlat' in nsr.ExportToProj4())
 
     def test_init_from_NSR(self):
-        nsr = NSR(NSR(osr.SRS_WKT_WGS84))
+        nsr = NSR(NSR(4326))
 
         self.assertEqual(type(nsr), NSR)
         self.assertEqual(nsr.Validate(), 0)

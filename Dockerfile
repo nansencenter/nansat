@@ -1,41 +1,19 @@
-FROM continuumio/miniconda3
-
-LABEL maintainer="Anton Korosov <anton.korosov@nersc.no>"
-LABEL purpose="Python libs for developing and running Nansat"
-
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/src
-
-RUN apt-get update \
-&&  apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-&&  conda config --add channels conda-forge \
-&&  conda update -y conda \
-&&  conda install -y \
-    ipython \
-    ipdb \
-    gdal \
-    matplotlib \
-    mock \
-    netcdf4 \
-    nose \
-    numpy \
-    pillow \
-    python-dateutil \
-    scipy \
-    urllib3 \
-&&  conda remove qt pyqt --force \
-&&  conda clean -a -y \
-&&  rm /opt/conda/pkgs/* -rf \
-&&  pip install pythesint \
-&&  python -c 'import pythesint; pythesint.update_all_vocabularies()'
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+# Necessary to access the BASE_IMAGE variable during the build
+ARG BASE_IMAGE
 
 COPY utilities /tmp/utilities
 COPY nansat /tmp/nansat
 COPY setup.py /tmp/
 WORKDIR /tmp
-RUN python setup.py install
+RUN apt update \
+&&  apt install -y --no-install-recommends g++ \
+&&  python setup.py install \
+&&  rm -rf /tmp/{utilities,nansat,setup.py} \
+&&  if [ -n "`echo $BASE_IMAGE | grep slim`" ];then apt remove -y gcc;fi \
+&&  apt autoremove -y \
+&&  apt clean \
+&&  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
-

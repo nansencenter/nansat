@@ -21,7 +21,7 @@ from mock import patch, PropertyMock, Mock, MagicMock, DEFAULT
 from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.domain import Domain
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.tests import nansat_test_data as ntd
 from nansat.exceptions import NansatProjectionError
 from nansat.warnings import NansatFutureWarning
@@ -480,7 +480,7 @@ class DomainTest(unittest.TestCase):
     def test_transform_points_dstsrs(self):
         d = Domain(4326, "-te 25 70 35 72 -ts 500 500")
         lon, lat = d.transform_points([1, 2, 3], [1, 2, 3],
-        dstSRS=NSR('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs'))
+        dst_srs=NSR('+proj=stere +datum=WGS84 +ellps=WGS84 +lat_0=75 +lon_0=10 +no_defs'))
         self.assertEqual(type(lon), np.ndarray)
         self.assertEqual(type(lat), np.ndarray)
 

@@ -40,8 +40,7 @@ from nansat.domain import Domain
 from nansat.exporter import Exporter
 from nansat.figure import Figure
 from nansat.vrt import VRT
-from nansat.tools import add_logger, gdal
-from nansat.tools import parse_time
+from nansat.utils import add_logger, gdal, parse_time
 from nansat.node import Node
 from nansat.pointbrowser import PointBrowser
 
@@ -1081,7 +1080,7 @@ class Nansat(Domain, Exporter):
         """Create VRT file in memory (VSI-file) with variable mapping
 
         If mappername is given only this mapper will be used,
-        else loop over all availble mappers in mapperList to get the
+        else loop over all available mappers in mapperList to get the
         matching one.
         In the loop :
             If the specific error appears the mapper is not used
@@ -1561,7 +1560,7 @@ class Nansat(Domain, Exporter):
         for pn in range(len(pix[1:])):
             px0, px1 = pix[pn], pix[pn+1]
             py0, py1 = lin[pn], lin[pn+1]
-            length = np.round(np.hypot(px1-px0, py0-py1))
+            length = int(np.round(np.hypot(px1-px0, py0-py1)))
             pixVector += list(np.linspace(px0, px1, length+1)[1:])
             linVector += list(np.linspace(py0, py1, length+1)[1:])
 

@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 import warnings
 
 import numpy as np
-import gdal
+from nansat.utils import gdal
 import pythesint as pti
 
 from nansat.node import Node
@@ -634,10 +634,10 @@ class VRTTest(NansatTestBase):
         vrt1 = VRT.from_lonlat(lon, lat)
         vrt1.reproject_gcps(str('+proj=cea'))
         self.assertIn('Cylindrical_Equal_Area', vrt1.dataset.GetGCPProjection())
-        self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPX, 0)
-        self.assertEqual(vrt1.dataset.GetGCPs()[0].GCPY, 1100285.5701634109)
-        self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPX, 556597.4539663679)
-        self.assertEqual(vrt1.dataset.GetGCPs()[-1].GCPY, 2096056.5506871857)
+        self.assertEqual(round(vrt1.dataset.GetGCPs()[0].GCPX), 0)
+        self.assertEqual(round(vrt1.dataset.GetGCPs()[0].GCPY), 1100286)
+        self.assertEqual(round(vrt1.dataset.GetGCPs()[-1].GCPX), 556597)
+        self.assertEqual(round(vrt1.dataset.GetGCPs()[-1].GCPY), 2096057)
 
 if __name__ == "__main__":
     unittest.main()

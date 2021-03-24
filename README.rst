@@ -70,7 +70,7 @@ An easy way to install Nansat requirements on any platform is to use Anaconda_ (
     # activate environment
     source activate py3nansat
     # install nansat
-    pip instal nansat
+    pip install nansat
     # launch python
     python
 
@@ -122,6 +122,7 @@ Nansat is outfitted with unittests, which you can use to ensure that all functio
     cd <nansat_repository_folder>
     nosetests -w . --with-coverage --cover-package=nansat
 
+Nansat works on both Python 2 and Python 3 but automatic testing on TravisCI is done for Python 3.7 only.
 Fore more information see `Read the Docs`_ or notebooks for `Nansat
 lectures <https://github.com/nansencenter/nansat-lectures/tree/master/notebooks>`__
 

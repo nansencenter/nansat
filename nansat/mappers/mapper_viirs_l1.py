@@ -19,7 +19,7 @@ else:
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.tools import gdal, ogr
+from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError, NansatReadError
 
 
