@@ -56,12 +56,6 @@ class Sentinel1(VRT):
         self.set_gcmd_dif_keywords()
 
     def set_gcmd_dif_keywords(self):
-        mditem = 'entry_title'
-        if not self.dataset.GetMetadataItem(mditem):
-            self.dataset.SetMetadataItem(mditem, self.input_filename)
-        mditem = 'data_center'
-        if not self.dataset.GetMetadataItem(mditem):
-            self.dataset.SetMetadataItem(mditem, json.dumps(pti.get_gcmd_provider('NO/MET')))
         mditem = 'ISO_topic_category'
         if not self.dataset.GetMetadataItem(mditem):
             self.dataset.SetMetadataItem(mditem,
