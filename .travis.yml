@@ -88,6 +88,7 @@ jobs:
       if: tag IS present
       deploy:
         - provider: pypi
+          edge: true
           user: "__token__"
           password: "${PYPI_TOKEN}"
           skip_existing: true
