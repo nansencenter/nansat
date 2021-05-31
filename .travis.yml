@@ -1,5 +1,7 @@
 ---
-language: shell
+language: python
+python:
+  - '3.7'
 services:
   - docker
 
@@ -88,6 +90,7 @@ jobs:
         - provider: pypi
           user: "__token__"
           password: "${PYPI_TOKEN}"
+          skip_existing: true
           on:
             tags: true
 ...
