@@ -33,6 +33,7 @@ jobs:
           -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
           "${BASE_IMAGE}"
           bash -c "apt update && apt install -y g++ &&
+          python setup.py sdist &&
           coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
       deploy:
         - provider: pypi
