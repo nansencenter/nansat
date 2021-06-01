@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import, unicode_literals
 import sys
-import osr
+from nansat.utils import osr
 
 from nansat.exceptions import NansatProjectionError
 
@@ -62,7 +62,7 @@ class NSR(osr.SpatialReference, object):
         status = 1
         if srs is 0:
             # generate default WGS84 SRS
-            status = self.ImportFromWkt(osr.SRS_WKT_WGS84)
+            status = self.ImportFromEPSG(4326)
         elif isinstance(srs, str_types):
             # parse as proj4 string
             status = self.ImportFromProj4(str(srs))
@@ -71,7 +71,6 @@ class NSR(osr.SpatialReference, object):
                 status = self.ImportFromWkt(str(srs))
             if status > 0:
                 raise NansatProjectionError('Proj4 or WKT (%s) is wrong' % srs)
-        # TODO: catch long in python 3
         elif isinstance(srs, int):
             # parse as EPSG code
             status = self.ImportFromEPSG(srs)

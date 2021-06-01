@@ -35,10 +35,10 @@ except ImportError:
 else:
     MATPLOTLIB_IS_INSTALLED = True
 
-import gdal
 from netCDF4 import Dataset
 
 from nansat import Nansat, Domain, NSR
+from nansat.utils import gdal
 from nansat.tests.nansat_test_base import NansatTestBase
 
 warnings.simplefilter("always", UserWarning)
@@ -234,9 +234,9 @@ class ExporterTest(NansatTestBase):
         g = gdal.Open(tmpfilename)
         metadata = g.GetMetadata_Dict()
 
-		# GDAL behaves differently:
-		# Windows: nc-attributes are accessible without 'NC_GLOBAL#' prefix
-		# Linux: nc-attributes are accessible only with 'NC_GLOBAL#' prefix
+        # GDAL behaves differently:
+        # Windows: nc-attributes are accessible without 'NC_GLOBAL#' prefix
+        # Linux: nc-attributes are accessible only with 'NC_GLOBAL#' prefix
         # OSX: ?
         # Therefore we have to add NC_GLOBAL# and test if such metadata exists
         nc_prefix = 'NC_GLOBAL#'
@@ -262,8 +262,9 @@ class ExporterTest(NansatTestBase):
         n.add_band(np.ones(n2.shape(), np.float32))
         tmpfilename = os.path.join(self.tmp_data_path,
                                    'nansat_export2thredds.nc')
-        self.assertRaises(ValueError, n2.export2thredds, tmpfilename,
-                          ['L_645'])
+        with self.assertRaises(ValueError) as e:
+            n2.export2thredds(tmpfilename)
+        self.assertIn('Cannot export dataset with GCPS', e.exception.args[0])
 
     def test_export2thredds_longlat_list(self):
         n = Nansat(self.test_file_gcps, log_level=40, mapper=self.default_mapper)
@@ -364,12 +365,16 @@ class TestExporter__export2thredds(NansatTestBase):
         ys[:] = np.linspace(-897931.56, 1472068.4, ysz)
 
         # Spatial variables 2d, 3d, and 4d
-        xwind = ds.createVariable('x_wind_10m', 'i4', ('time', 'y', 'x'))
+        xwind = ds.createVariable('x_wind_10m', 'f4', ('time', 'y', 'x'))
         xwind.standard_name = 'x_wind'
         xwind[:,:,:] = np.ones((timesz,ysz,xsz))*9.
-        ywind = ds.createVariable('y_wind_10m', 'i4', ('time', 'y', 'x'))
+        ywind = ds.createVariable('y_wind_10m', 'f4', ('time', 'y', 'x'))
         ywind.standard_name = 'y_wind'
         ywind[:,:,:] = np.ones((timesz,ysz,xsz))*10.
+        mask = ds.createVariable('mask', 'i4', ('time', 'y', 'x'))
+        mask.standard_name = 'mask'
+        mask[:,:,:] = np.zeros((timesz,ysz,xsz))
+        mask[:,:int(ysz/2),:int(xsz/2)] = 1
 
         # Projection
         proj = ds.createVariable('projection_lambert', 'f4', ())
@@ -394,15 +399,13 @@ class TestExporter__export2thredds(NansatTestBase):
         os.unlink(self.tmp_ncfile)
         os.unlink(self.filename_exported)
 
-    def test_export_function_with_ds_from_setup(self):
-        n = Nansat(self.tmp_ncfile)
-        res = n.export(self.filename_exported)
-        self.assertEqual(res, None)
-
     def test_example1(self):
         n = Nansat(self.tmp_ncfile)
-        res = n.export2thredds(self.filename_exported)
-        self.assertEqual(res, None)
+        n.export2thredds(self.filename_exported, mask_name='mask', no_mask_value=1)
+        self.assertTrue(os.path.exists(self.filename_exported))
+        ds = Dataset(self.filename_exported)
+        self.assertEqual(ds.variables['x_wind_10m'][0,0,0].data, 9)
+        self.assertTrue(np.isnan(ds.variables['x_wind_10m'][0,-1,0].data))
 
     def test_example2(self):
         n = Nansat(self.tmp_ncfile)
@@ -412,7 +415,7 @@ class TestExporter__export2thredds(NansatTestBase):
     def test_example3(self):
         n = Nansat(self.tmp_ncfile)
         res = n.export2thredds(self.filename_exported, {
-            'x_wind_10m': {'type': '>i2', 'scale': 0.1, 'offset': 0}, 
+            'x_wind_10m': {'type': '>i2', 'scale': 0.1, 'offset': 0},
             'y_wind_10m': {'type': '>i2', 'scale': 0.1, 'offset': 0}
         })
         # TODO: test that the type, scale and offset are actually modified according to the input

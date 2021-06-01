@@ -7,14 +7,13 @@ except:
 else:
     IMPORT_SCIPY = True
 
-import gdal
 from netCDF4 import Dataset
 
 import pythesint as pti
 
 from nansat.nsr import NSR
 from nansat.vrt import VRT
-from nansat.utils import initial_bearing
+from nansat.utils import initial_bearing, gdal
 from nansat.exceptions import WrongMapperError, NansatReadError
 
 class Sentinel1(VRT):

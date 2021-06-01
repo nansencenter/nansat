@@ -20,7 +20,7 @@ import xml.etree.ElementTree as ET
 import warnings
 
 import numpy as np
-import gdal
+from nansat.utils import gdal
 import pythesint as pti
 
 from nansat.node import Node

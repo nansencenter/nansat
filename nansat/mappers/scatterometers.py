@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 import pythesint as pti
 
-import gdal
+from nansat.utils import gdal
 
 from nansat.vrt import VRT
 from nansat.geolocation import Geolocation
