@@ -32,6 +32,8 @@ from nansat.utils import initial_bearing
 class Mapper(Opendap, Sentinel1):
 
     baseURLs = [
+            'https://nbstds.met.no/thredds/dodsC/NBS/S1A',
+            'https://nbstds.met.no/thredds/dodsC/NBS/S1B',
             'http://nbstds.met.no/thredds/dodsC/NBS/S1A',
             'http://nbstds.met.no/thredds/dodsC/NBS/S1B',
     ]
