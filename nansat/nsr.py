@@ -14,7 +14,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import, unicode_literals
 import sys
-import osr
+from nansat.utils import osr
 
 from nansat.exceptions import NansatProjectionError
 

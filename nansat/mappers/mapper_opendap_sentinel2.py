@@ -11,7 +11,7 @@ import warnings
 
 import numpy as np
 from netCDF4 import Dataset
-import gdal
+from nansat.utils import gdal
 
 import pythesint as pti
 

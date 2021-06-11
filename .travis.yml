@@ -1,5 +1,7 @@
 ---
-language: shell
+language: python
+python:
+  - '3.7'
 services:
   - docker
 
@@ -31,7 +33,15 @@ jobs:
           -e "TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
           "${BASE_IMAGE}"
           bash -c "apt update && apt install -y g++ &&
+          python setup.py sdist &&
           coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test && coveralls"
+      deploy:
+        - provider: pypi
+          user: "__token__"
+          password: "${PYPI_TOKEN}"
+          skip_existing: true
+          on:
+            tags: true
 
     - stage: 'Build docker images'
       name: 'Build standard image'
@@ -81,13 +91,4 @@ jobs:
           on:
             tags: true
           script: /bin/bash scripts/docker_push.sh "${TRAVIS_TAG}${DOCKER_TAG_SUFFIX}" "latest${DOCKER_TAG_SUFFIX}"
-
-    - stage: 'PyPI deployment'
-      if: tag IS present
-      deploy:
-        - provider: pypi
-          user: "__token__"
-          password: "${PYPI_TOKEN}"
-          on:
-            tags: true
 ...
