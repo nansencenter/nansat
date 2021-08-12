@@ -3,6 +3,8 @@ FROM ${BASE_IMAGE}
 # Necessary to access the BASE_IMAGE variable during the build
 ARG BASE_IMAGE
 
+ARG NANSAT_RELEASE
+
 COPY utilities /tmp/utilities
 COPY nansat /tmp/nansat
 COPY setup.py /tmp/
