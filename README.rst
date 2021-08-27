@@ -68,7 +68,7 @@ An easy way to install Nansat requirements on any platform is to use Anaconda_ (
     # create environment with key requirements
     conda create -y -n py3nansat gdal numpy pillow netcdf4 scipy
     # activate environment
-    source activate py3nansat
+    conda activate py3nansat
     # install nansat
     pip install nansat
     # launch python
@@ -99,7 +99,7 @@ Example
     n = Nansat('stere.tif')
 
     # see file content
-    print n
+    print(n)
 
     # create RGB with auto-stretched histogram
     n.write_figure('stere_rgb.png', [1,2,3], clim='hist')
