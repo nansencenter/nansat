@@ -8,7 +8,7 @@ doppler_installed = True
 try:
     from sardoppler.sardoppler import Doppler
 except Exception as e:
-    print e.message
+    print(e.message)
     doppler_installed = False
 
 class TestOpenIssues(unittest.TestCase):
