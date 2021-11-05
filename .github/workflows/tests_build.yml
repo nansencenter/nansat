@@ -41,9 +41,17 @@ jobs:
              bash -c "
              apt update && apt install -y g++ &&
              python setup.py sdist &&
-             coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test &&
-             coveralls"
+             coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test"
 
+      - name: 'Install Python 3.7'
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+
+      - name: 'Upload coverage to coveralls.io'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pip install coveralls && coveralls --service=github
 
   publish_python_package:
     name: Publish the Python package to PyPI
