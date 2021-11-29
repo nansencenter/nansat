@@ -59,7 +59,7 @@ class Mapper(VRT):
             subDataset = gdal.Open(filename)
             # choose the first dataset whith grid
             if (firstXSize == 0 and firstYSize == 0 and
-                    subDataset.RasterXSize > 1 and subDataset.RasterYSize > 1):
+                    subDataset.RasterXSize >= 1 and subDataset.RasterYSize >= 1):
                 firstXSize = subDataset.RasterXSize
                 firstYSize = subDataset.RasterYSize
                 firstSubDataset = subDataset
