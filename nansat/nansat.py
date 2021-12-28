@@ -378,7 +378,7 @@ class Nansat(Domain, Exporter):
 
     def _get_resize_shape(self, factor, width, height, dst_pixel_size):
         """Estimate new shape either from factor or destination width/height or pixel size"""
-        src_shape = np.array(self.shape(), np.float)
+        src_shape = np.array(self.shape(), float)
         # estimate factor if either width or height is given and factor is not given
         if width is not None:
             factor = width / src_shape[1]
@@ -387,7 +387,7 @@ class Nansat(Domain, Exporter):
 
         # estimate factor if pixelsize is given
         if dst_pixel_size is not None:
-            src_pixel_size = np.array(self.get_pixelsize_meters(), np.float)[::-1]
+            src_pixel_size = np.array(self.get_pixelsize_meters(), float)[::-1]
             factor = (src_pixel_size / float(dst_pixel_size)).mean()
 
         factor = float(factor)
