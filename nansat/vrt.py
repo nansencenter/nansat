@@ -1427,7 +1427,22 @@ class VRT(object):
                 options.append('METHOD=GCP_TPS')
 
         # create transformer
-        transformer = gdal.Transformer(self.dataset, dst_ds, options)
+        try:
+            transformer = gdal.Transformer(self.dataset, dst_ds, options)
+        except RuntimeError as error:
+            # an error sometimes happens with GDAL>3.1.2, this fixes it
+            src_method_option = 'SRC_METHOD=NO_GEOTRANSFORM'
+            if src_method_option in str(error):
+                warnings.warn(
+                    "The following error happened when creating a Transformer: " +
+                    str(error) +
+                    " Retrying with the suggested option.")
+                options.append(src_method_option)
+                transformer = gdal.Transformer(self.dataset, dst_ds, options)
+                del options[-1]
+            else:
+                raise
+
 
         # convert lists with X,Y coordinates to 2D numpy array
         xy = np.array([col_vector, row_vector]).transpose()
