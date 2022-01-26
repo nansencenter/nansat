@@ -142,7 +142,7 @@ class Mapper(VRT):
     def _time_count_to_np_datetime64(self, time_count, time_reference=None):
         if not time_reference:
             time_reference = self._time_reference()
-        time_count = np.float(time_count)
+        time_count = float(time_count)
         time_decimal = time_count - np.floor(time_count)
         if 'second' in time_reference[1]:
             tt = np.datetime64(time_reference[0] +

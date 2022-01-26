@@ -429,10 +429,10 @@ class Exporter(object):
                     'institution': Exporter.DEFAULT_INSTITUTE,
                     'source': Exporter.DEFAULT_SOURCE,
                     'creation_date': created,
-                    'northernmost_latitude': np.float(max_lat),
-                    'southernmost_latitude': np.float(min_lat),
-                    'westernmost_longitude': np.float(min_lon),
-                    'easternmost_longitude': np.float(max_lon),
+                    'northernmost_latitude': float(max_lat),
+                    'southernmost_latitude': float(min_lat),
+                    'westernmost_longitude': float(min_lon),
+                    'easternmost_longitude': float(max_lon),
                     'history': ' '}
         global_metadata.update(metadata)
 

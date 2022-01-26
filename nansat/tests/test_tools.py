@@ -95,4 +95,6 @@ class ToolsTest(unittest.TestCase):
         self.assertTrue(os.path.exists(tmpfilename))
         i = Image.open(tmpfilename)
         i.verify()
-        self.assertEqual(i.info['dpi'], (100, 100))
+        # with cartopy>=0.20.0, the dpi attribute is not
+        # always (100, 100)
+        self.assertEqual(tuple(np.round(i.info['dpi'], 1)), (100, 100))
