@@ -317,7 +317,7 @@ class Mapper(VRT):
             try:
                 band_metadata['time_iso_8601'] = self._time_count_to_np_datetime64(
                     band_metadata[timecountname])
-            except KeyError as e:
+            except (ValueError, KeyError) as e:
                 # No timing information available for this band - it is
                 # probably a constant, such as land area fraction or similar.
                 # Then we don't need time for this band...
