@@ -25,7 +25,7 @@ class Mapper(VRT, Globcolour):
         ''' GLOBCOLOR L3M VRT '''
 
         try:
-            print("=>%s<=" % gdalMetadata['NC_GLOBAL#title'])
+            x = "=>%s<=" % gdalMetadata['NC_GLOBAL#title']
         except (TypeError, KeyError):
             raise WrongMapperError
 
