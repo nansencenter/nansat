@@ -1122,7 +1122,7 @@ class Nansat(Domain, Exporter):
         tmp_vrt = None
 
         # TODO: There seems to be code repetition in this if-test - should be avoided...
-        if mappername is not '':
+        if mappername != '':
             # If a specific mapper is requested, we test only this one.
             # get the module name
             mappername = 'mapper_' + mappername.replace('mapper_', '').replace('.py', '').lower()
