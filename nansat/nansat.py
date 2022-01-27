@@ -1067,7 +1067,7 @@ class Nansat(Domain, Exporter):
             try:
                 gdal_dataset = gdal.Open(self.filename)
             except RuntimeError:
-                self.logger.error('GDAL could not open %s, trying to read with Nansat mappers...'
+                self.logger.debug('GDAL could not open %s, trying to read with Nansat mappers...'
                                   % self.filename)
         if gdal_dataset is not None:
             # get metadata from the GDAL dataset
