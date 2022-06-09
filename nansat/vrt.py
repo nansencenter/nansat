@@ -371,7 +371,7 @@ class VRT(object):
         array_shape = array.shape
         binary_file = self.filename.replace('.vrt', '.raw')
         ofile = gdal.VSIFOpenL(str(binary_file), str('wb'))
-        array_bytes = array.tostring()
+        array_bytes = array.tobytes()
         array = None
         batch_size = 0x20000000 # 512 MB
         for i in range(0,len(array_bytes),batch_size):
