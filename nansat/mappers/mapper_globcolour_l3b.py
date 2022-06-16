@@ -11,6 +11,7 @@ import datetime
 import json
 import tempfile
 import shutil
+import logging
 
 import numpy as np
 
@@ -22,6 +23,8 @@ from nansat.exceptions import WrongMapperError
 from nansat.vrt import VRT
 from nansat.mappers.globcolour import Globcolour
 
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT, Globcolour):
     ''' Create VRT with mapping of WKV for MERIS Level 2 (FR or RR)'''
@@ -73,7 +76,7 @@ class Mapper(VRT, Globcolour):
         self.band_vrts = {'mask': [], 'lonlat': []}
         mask = None
         for simFile in simFiles:
-            print('sim: ', simFile)
+            LOGGER.info(f'sim: {simFile}')
             # copy simFile to a temporary file
             tmpf = tempfile.mkstemp()
             shutil.copyfile(simFile, tmpf[1])

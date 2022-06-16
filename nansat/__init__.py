@@ -15,10 +15,14 @@
 # but WITHOUT ANY WARRANTY without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
+import logging.config
 import os
 import sys
+import os.path
 import warnings
 import importlib
+import yaml
+
 pixfun_module_name = 'nansat._pixfun_py{0}'.format(sys.version_info[0])
 
 # check if pixel functions were compiled using setup_tools

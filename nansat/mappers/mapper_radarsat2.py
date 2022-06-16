@@ -9,6 +9,7 @@ import os
 import zipfile
 import json
 from dateutil.parser import parse
+import logging
 
 import numpy as np
 try:
@@ -26,6 +27,9 @@ from nansat.domain import Domain
 from nansat.node import Node
 from nansat.utils import initial_bearing, gdal
 from nansat.exceptions import WrongMapperError, NansatReadError
+
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 
 class Mapper(VRT):
@@ -169,7 +173,7 @@ class Mapper(VRT):
             sat_heading = initial_bearing(lon[:, 1:], lat[:, 1:],
                                           lon[:, :-1], lat[:, :-1]) + 90
         else:
-            print('Can not decode pass direction: ' + str(passDirection))
+            LOGGER.warning(f'Can not decode pass direction: {passDirection}')
 
         # Calculate SAR look direction
         look_direction = sat_heading + antennaPointing

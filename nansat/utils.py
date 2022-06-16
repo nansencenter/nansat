@@ -16,7 +16,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 from __future__ import absolute_import
 
-import os
+import os, sys
 import warnings
 import logging
 from dateutil.parser import parse
@@ -178,7 +178,7 @@ def haversine(lon1, lat1, lon2, lat2):
 
 
 def add_logger(logName='', logLevel=None):
-    """ Creates and returns logger with default formatting for Nansat
+    """ Creates and returns logger with proper log levels
 
     Parameters
     -----------
@@ -205,11 +205,10 @@ def add_logger(logName='', logLevel=None):
     # otherwise create and add a new handler
     if len(logger.handlers) == 0:
         # create console handler and set level to debug
-        ch = logging.StreamHandler()
+        ch = logging.StreamHandler(sys.stdout)
         # create formatter
-        formatter = logging.Formatter('%(asctime)s|%(levelno)s|%(module)s|'
-                                      '%(funcName)s|%(message)s',
-                                      datefmt='%I:%M:%S')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(threadName)s - '
+                                      '%(levelname)s - %(message)s')
         # add formatter to ch
         ch.setFormatter(formatter)
         # add ch to logger

@@ -156,7 +156,7 @@ class Nansat(Domain, Exporter):
 
         self._init_empty(filename, log_level)
         # Create VRT object with mapping of variables
-        self.vrt = self._get_mapper(mapper, **kwargs)
+        self.vrt = self._get_mapper(mapper, log_level, **kwargs)
 
     def __getitem__(self, band_id):
         """Returns the band as a NumPy array, by overloading []
@@ -523,7 +523,7 @@ class Nansat(Domain, Exporter):
                 outString += '  %s: %s\n' % (i, bands[b][i])
         if do_print:
             # print to screeen
-            print(outString)
+            self.logger.info(outString)
         else:
             return outString
 
@@ -970,8 +970,8 @@ class Nansat(Domain, Exporter):
             outDataset.GetRasterBand(1).SetColorTable(colorTable)
         except:
             # Happens after reprojection, a possible bug?
-            print('Could not set color table')
-            print(colorTable)
+            self.logger.warning('Could not set color table %s' % colorTable)
+
         outDataset = None
         self.vrt.copyproj(filename)
 
@@ -1076,7 +1076,7 @@ class Nansat(Domain, Exporter):
         return gdal_dataset, metadata
 
 
-    def _get_mapper(self, mappername, **kwargs):
+    def _get_mapper(self, mappername, log_level, **kwargs):
         """Create VRT file in memory (VSI-file) with variable mapping
 
         If mappername is given only this mapper will be used,
@@ -1115,7 +1115,7 @@ class Nansat(Domain, Exporter):
         # if nansat mappers were not imported yet
         global nansatMappers
         if nansatMappers is None:
-            nansatMappers = _import_mappers()
+            nansatMappers = _import_mappers(log_level)
 
         # open GDAL dataset. It will be parsed to all mappers for testing
         gdal_dataset, metadata = self._get_dataset_metadata()
@@ -1585,7 +1585,7 @@ def _import_mappers(log_level=None):
         value: class Mapper(VRT) from the mappers module
 
     """
-    logger = add_logger('import_mappers', logLevel=log_level)
+    logger = add_logger("nansat.import_mappers", logLevel=log_level)
     # import built-in mappers
     import nansat.mappers
     mapper_packages = [nansat.mappers]

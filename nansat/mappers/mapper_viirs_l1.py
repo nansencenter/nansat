@@ -10,6 +10,8 @@ import os
 import glob
 from datetime import datetime, timedelta
 from math import ceil
+import logging
+
 try:
     from scipy.ndimage.filters import gaussian_filter
 except:
@@ -22,6 +24,8 @@ from nansat.vrt import VRT
 from nansat.utils import gdal, ogr
 from nansat.exceptions import WrongMapperError, NansatReadError
 
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 class Mapper(VRT):
     ''' VRT with mapping of WKV for VIIRS Level 1B '''
@@ -53,14 +57,14 @@ class Mapper(VRT):
         metaDict = []
         for ifile in ifiles:
             ifilename = os.path.split(ifile)[1]
-            print(ifilename)
+            LOGGER.info(f"{ifilename}")
             bNumber = int(ifilename[3:5])
-            print(bNumber)
+            LOGGER.info(f"{bNumber}")
             bWavelength = viirsWavelengths[bNumber]
-            print(bWavelength)
+            LOGGER.info(f"{bWavelength}")
             SourceFilename = ('HDF5:"%s"://All_Data/VIIRS-M%d-SDR_All/Radiance'
                               % (ifile, bNumber))
-            print(SourceFilename)
+            LOGGER.info(f"{SourceFilename}")
             metaEntry = {'src': {'SourceFilename': SourceFilename,
                          'SourceBand': 1},
                          'dst': {'wkv': 'toa_outgoing_spectral_radiance',

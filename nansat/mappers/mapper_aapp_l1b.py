@@ -10,10 +10,14 @@
 import sys
 import struct
 import datetime
+import logging
 
 from nansat.exceptions import WrongMapperError
 from nansat.geolocation import Geolocation
 from nansat.vrt import VRT
+
+LOGGER = logging.getLogger("nansat.mappers."+__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 satIDs = {4: 'NOAA-15', 2: 'NOAA-16', 6: 'NOAA-17', 7: 'NOAA-18', 8: 'NOAA-19',
           11: 'Metop-B (Metop-1)', 12: 'Metop-A (Metop-2)',
@@ -66,8 +70,7 @@ class Mapper(VRT):
         numCalibratedScanLines = int(struct.unpack('<H', fp.read(2))[0])
         missingScanLines = int(struct.unpack('<H', fp.read(2))[0])
         if missingScanLines != 0:
-            print('WARNING: Missing scanlines: ' + str(missingScanLines))
-
+            LOGGER.warning(f"Missing scanlines: {missingScanLines}")
         ##################
         # Read time
         ##################
