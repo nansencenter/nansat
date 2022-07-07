@@ -14,7 +14,7 @@ The fastest way to install nansat:
     # activate environment
     source activate py3nansat
     # install nansat
-    pip instal nansat
+    pip install nansat
 
 Nansat is now installed.
 For more details and other methods of installing Nansat, see below.
