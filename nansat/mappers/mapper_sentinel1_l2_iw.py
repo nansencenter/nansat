@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
-# Name:     mapper_sentinel1_iw_l2_odl.py
-# Purpose:  Mapper for Sentinel-1 IW L2 OCN products provided by ODL
+# Name:     mapper_sentinel1_iw_l2.py
+# Purpose:  Mapper for Sentinel-1 IW L2 OCN products with support of the RLV and OWI
 #
 # Author:       Artem Moiseev
 #
@@ -12,7 +12,7 @@
 
 import os
 import re   
-from datetime import datetime, timezone
+from datetime import datetime
 
 from nansat.vrt import VRT
 from nansat import Domain, NSR
