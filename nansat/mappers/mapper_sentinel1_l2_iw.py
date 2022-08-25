@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Name:     mapper_sentinel1_iw_l2.py
+# Name:     mapper_sentinel1_l2_iw.py
 # Purpose:  Mapper for Sentinel-1 IW L2 OCN products with support of the RLV and OWI
 #
 # Author:       Artem Moiseev
