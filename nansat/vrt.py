@@ -371,10 +371,16 @@ class VRT(object):
         array_shape = array.shape
         binary_file = self.filename.replace('.vrt', '.raw')
         ofile = gdal.VSIFOpenL(str(binary_file), str('wb'))
-        gdal.VSIFWriteL(array.tostring(), len(array.tostring()), 1, ofile)
-        gdal.VSIFCloseL(ofile)
+        array_bytes = array.tobytes()
         array = None
-
+        batch_size = 0x20000000 # 512 MB
+        for i in range(0,len(array_bytes),batch_size):
+            ind_start = i
+            ind_end   = min(i+batch_size,len(array_bytes))
+            gdal.VSIFWriteL(array_bytes[ind_start:ind_end],ind_end-ind_start,1,ofile)
+        gdal.VSIFCloseL(ofile)
+        array_bytes = None
+        
         # convert Numpy datatype to gdal datatype and pixel offset
         gdal_data_type = numpy_to_gdal_type[array_type]
         pixel_offset = gdal_type_to_offset[gdal_data_type]
