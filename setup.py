@@ -46,7 +46,7 @@ AUTHOR              = ("Anton Korosov, Morten W. Hansen, Kunt-Frode Dagestad, Al
 AUTHOR_EMAIL        = "nansat-dev@googlegroups.com"
 PLATFORMS           = ["Linux", "OS X", "Windows"]
 ISRELEASED          = True
-VERSION             = os.getenv('NANSAT_RELEASE', '1.5.2').lstrip('v')
+VERSION             = os.getenv('NANSAT_RELEASE', '1.5.3').lstrip('v')
 REQS                = [
                         "Pillow",
                         "pythesint",
