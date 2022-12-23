@@ -78,6 +78,8 @@ class ExporterTest(NansatTestBase):
         """Test that a band with nan-values is masked as expected,
         and with the FillValue specified by the user."""
         n = Nansat(self.test_file_arctic)
+        import ipdb
+        ipdb.set_trace()
         xx = n['Bootstrap'].astype(float)
         xx = np.ma.masked_where(
             xx == float(n.get_metadata(band_id='Bootstrap', key='_FillValue')), xx)
