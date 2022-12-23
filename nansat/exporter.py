@@ -18,6 +18,7 @@ import os
 import tempfile
 import datetime
 import warnings
+import importlib
 
 from nansat.utils import gdal
 import numpy as np
@@ -30,6 +31,11 @@ from nansat.utils import NUMPY_TO_GDAL_TYPE_MAP
 
 from nansat.exceptions import NansatGDALError
 
+try:
+    import xarray as xr
+except:
+    warnings.warn("'xarray' needs to be installed for Exporter.xr_export to work.")
+
 
 class Exporter(object):
     """Abstract class for export functions """
@@ -37,7 +43,73 @@ class Exporter(object):
     DEFAULT_SOURCE = 'satellite remote sensing'
 
     UNWANTED_METADATA = ['dataType', 'SourceFilename', 'SourceBand', '_Unsigned', 'FillValue',
-                                'time', '_FillValue', 'type', 'scale', 'offset']
+                         '_FillValue', 'type', 'scale', 'offset', 'NETCDF_VARNAME']
+
+    def xr_export(self, filename, bands=None, encoding=None):
+        """Export Nansat object into netCDF using xarray. Longitude
+        and latitude arrays will be used as coordinates (of the 2D
+        dataset). Note that ACDD and CF metadata should be added to
+        the Nansat object before exporting. This method only removes
+        the UNWANTED_METADATA and creates the NetCDF file with the
+        metadata provided in the Nansat object.
+
+        Parameters
+        ----------
+        filename : str
+            output file name
+        bands: list (default=None)
+            Specify band numbers to export.
+            If None, all bands are exported.
+        encoding: dict
+            Nested dictionary with variable names as keys and 
+            dictionaries of variable specific encodings as values,
+            e.g., {"my_variable": {
+                                    "dtype": "int16",
+                                    "scale_factor": 0.1,
+                                    "zlib": True,
+                                    "_FillValue": 9999,
+                                }, ...}
+            The h5netcdf engine supports both the NetCDF4-style
+            compression encoding parameters 
+            {"zlib": True, "complevel": 9} and the h5py ones
+            {"compression": "gzip", "compression_opts": 9}. This
+            allows using any compression plugin installed in the HDF5
+            library, e.g. LZF.
+
+        """
+        xr_installed = importlib.util.find_spec("xarray")
+        if xr_installed is None:
+            raise ModuleNotFoundError("Please install 'xarray'")
+        datavars = {}
+        lon, lat = self.get_geolocation_grids()
+        for band in self.bands().keys():
+            band_metadata = self.get_metadata(band_id=band)
+            # Clean up the use metadata
+            pop_keys = []
+            for key in band_metadata.keys():
+                if key in self.UNWANTED_METADATA:
+                    pop_keys.append(key)
+            for key in pop_keys:
+                band_metadata.pop(key)
+            if bands is not None:
+                if (not band in bands) and (not band_metadata["name"] in bands):
+                    continue
+            datavars[band_metadata["name"]] = xr.DataArray(
+                self[band],
+                dims = ["x", "y"],
+                attrs = band_metadata)
+        ds = xr.Dataset(
+                datavars,
+                coords = {"longitude": (["x", "y"], lon), "latitude": (["x", "y"], lat)},
+                attrs = self.get_metadata())
+        if encoding is None:
+            # Having a coordinate variable with a fill value applied
+            # violates the cf standard
+            encoding = {
+                "longitude": {"_FillValue": None},
+                "latitude": {"_FillValue": None}
+            }
+        ds.to_netcdf(filename, encoding=encoding)
 
     def export(self, filename='', bands=None, rm_metadata=None, add_geolocation=True,
                driver='netCDF', options=None, hardcopy=False):

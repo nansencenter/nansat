@@ -277,6 +277,7 @@ class Mapper(VRT):
         subds = gdal.Open(fn)
         band = subds.GetRasterBand(Context.band_number)
         band_metadata = self._clean_band_metadata(band)
+        band_metadata['_FillValue'] = band.GetNoDataValue()
 
         return self._band_dict(fn, Context.band_number, subds, band=band,
                         band_metadata=band_metadata)
