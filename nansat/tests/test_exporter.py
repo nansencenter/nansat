@@ -37,7 +37,7 @@ else:
 
 from netCDF4 import Dataset
 
-from nansat import Nansat, Domain, NSR
+from nansat import Nansat, Domain, NSR, exporter
 from nansat.utils import gdal
 from nansat.tests.nansat_test_base import NansatTestBase
 
@@ -45,6 +45,59 @@ warnings.simplefilter("always", UserWarning)
 
 
 class ExporterTest(NansatTestBase):
+
+    @patch('nansat.exporter.importlib.util.find_spec')
+    def test_xr_export__raises_module_not_found_error(self, mock_find_spec):
+        """Test that an error is raised if xarray is not installed."""
+        mock_find_spec.return_value = None
+        n = Nansat(self.test_file_arctic)
+        with self.assertRaises(ModuleNotFoundError) as e:
+            n.xr_export('test.nc')
+        self.assertEqual(str(e.exception), "Please install 'xarray'")
+
+    @patch.object(exporter.xr.Dataset, 'to_netcdf')
+    def test_xr_export__default(self, mock_to_netcdf):
+        """Test that the to_netcdf function is called for default
+        usage of xr_export."""
+        n = Nansat(self.test_file_arctic)
+        n.xr_export('test.nc')
+        mock_to_netcdf.assert_called_once_with('test.nc',
+            encoding={"longitude": {"_FillValue": None}, "latitude": {"_FillValue": None}})
+
+    def test_xr_export__one_band(self):
+        """Test that only a given band is exported."""
+        n = Nansat(self.test_file_arctic)
+        fd, tmp_ncfile = tempfile.mkstemp(suffix='.nc')
+        n.xr_export(tmp_ncfile, bands=['Bootstrap'])
+        ds = Dataset(tmp_ncfile)
+        self.assertEqual(list(ds.variables.keys()), ['Bootstrap', 'longitude', 'latitude'])
+        os.close(fd)
+        os.unlink(tmp_ncfile)
+
+    def test_xr_export__with_specific_encoding_and_nan_values(self):
+        """Test that a band with nan-values is masked as expected,
+        and with the FillValue specified by the user."""
+        n = Nansat(self.test_file_arctic)
+        xx = n['Bootstrap'].astype(float)
+        xx = np.ma.masked_where(
+            xx == float(n.get_metadata(band_id='Bootstrap', key='_FillValue')), xx)
+        xx.data[xx.mask] = np.nan
+        yy = xx.data
+        yy[2,:] = np.nan
+        n.add_band(yy, parameters={'name': 'test_band_with_nans'})
+        encoding = {
+                "longitude": {"_FillValue": None},
+                "latitude": {"_FillValue": None},
+                "test_band_with_nans": {"_FillValue": 999},
+            }
+
+        fd, tmp_ncfile = tempfile.mkstemp(suffix='.nc')
+        n.xr_export(tmp_ncfile, encoding=encoding)
+        ds = Dataset(tmp_ncfile)
+        # Check that original invalid/masked data equals 999
+        self.assertEqual(ds.variables['test_band_with_nans'][:].data[xx.mask][0], 999.)
+        # Check that data set to np.nan equals 999
+        self.assertEqual(ds.variables['test_band_with_nans'][:].data[2,0], 999.)
 
     def test_geolocation_of_exportedNC_vs_original(self):
         """ Lon/lat in original and exported file should coincide """
