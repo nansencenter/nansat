@@ -101,9 +101,6 @@ class Nansat(Domain, Exporter):
 
     """
 
-    FILL_VALUE = 9.96921e+36
-    ALT_FILL_VALUE = -10000.
-
     # instance attributes
     logger = None
     filename = None
@@ -265,10 +262,6 @@ class Nansat(Domain, Exporter):
         """Fill input array with fill value taen from input band metadata"""
         fill_value = float(band.GetMetadata()['_FillValue'])
         band_data[band_data == fill_value] = np.nan
-        # quick hack to avoid problem with wrong _FillValue - see issue
-        # #123
-        if fill_value == self.FILL_VALUE:
-            band_data[band_data == self.ALT_FILL_VALUE] = np.nan
 
         return band_data
 
