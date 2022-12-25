@@ -52,17 +52,17 @@ class ExporterTest(NansatTestBase):
         metadata, and that variable names are the same as the Nansat
         band names without appended numbers."""
         n = Nansat(self.test_file_arctic)
-        xx = n['Bootstrap'].astype(float)
-        xx = np.ma.masked_where(
-            xx == float(n.get_metadata(band_id='Bootstrap', key='_FillValue')), xx)
-        xx.data[xx.mask] = np.nan
-        yy = xx.data
-        yy[2,:] = np.nan
-        n.add_band(yy, parameters={'name': 'test_band_with_nans'})
+        aa = n['Bootstrap'].astype(float)
+        aa = np.ma.masked_where(
+            aa == float(n.get_metadata(band_id='Bootstrap', key='_FillValue')), aa)
+        aa.data[aa.mask] = np.nan
+        bb = aa.data.copy()
+        bb[2,:] = np.nan
+        n.add_band(bb, parameters={'name': 'test_band_with_nans'})
     
-        zz = np.zeros(yy.shape)
-        zz[np.isnan(yy)] = 1
-        sumnan = zz.sum()
+        cc = np.zeros(bb.shape)
+        cc[np.isnan(bb)] = 1
+        sumnan = cc.sum()
 
         # temp file for exported netcdf
         fd, tmp_ncfile = tempfile.mkstemp(suffix='.nc')
@@ -71,11 +71,12 @@ class ExporterTest(NansatTestBase):
         n.export(tmp_ncfile)
 
         ds = Dataset(tmp_ncfile)
-        # Check that the number of elements equal to np.nan is the same
-        xx = ds.variables['test_band_with_nans'][:]
-        yy = np.zeros(xx.shape)
-        yy[np.isnan(xx)] = 1
-        self.assertEqual(yy.sum(), sumnan)
+        # Check that the number of elements in bb and the new file
+        # equal to np.nan is the same when opened with netCDF4.Dataset:
+        dd = ds.variables['test_band_with_nans'][:]
+        ee = np.zeros(dd.shape)
+        ee[np.isnan(dd)] = 1
+        self.assertEqual(ee.sum(), sumnan)
 
         # Check that the global metadata attribute names are the same
         orig_metadata = list(n.get_metadata().keys())
@@ -86,6 +87,16 @@ class ExporterTest(NansatTestBase):
         # Check that variable names don't contain band numbers
         self.assertEqual(list(ds.variables.keys()), ['polar_stereographic', 'x', 'y',
             'UMass_AES', 'Bootstrap', 'Bristol', 'test_band_with_nans'])
+
+        # Open the tmp file using nansat, and check that the Bootstrap
+        # band from the tmp file is the same as the one in the original
+        n = Nansat(tmp_ncfile)
+        ff = n['Bootstrap']
+        ff = np.ma.masked_where(
+                ff == float(n.get_metadata(band_id='Bootstrap', key='_FillValue')), ff)
+        # This only works when the fill value (-10000) in arctic.nc is
+        # treated correctly (with python3.9 and GDAL3.4.1)
+        self.assertEqual(ff.mask[0,239], aa.mask[0,239])
 
         os.close(fd)
         os.unlink(tmp_ncfile)
