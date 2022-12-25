@@ -45,74 +45,8 @@ class Exporter(object):
     UNWANTED_METADATA = ['dataType', 'SourceFilename', 'SourceBand', '_Unsigned', 'FillValue',
                          '_FillValue', 'type', 'scale', 'offset', 'NETCDF_VARNAME']
 
-    def xr_export(self, filename, bands=None, encoding=None):
-        """Export Nansat object into netCDF using xarray. Longitude
-        and latitude arrays will be used as coordinates (of the 2D
-        dataset). Note that ACDD and CF metadata should be added to
-        the Nansat object before exporting. This method only removes
-        the UNWANTED_METADATA and creates the NetCDF file with the
-        metadata provided in the Nansat object.
-
-        Parameters
-        ----------
-        filename : str
-            output file name
-        bands: list (default=None)
-            Specify band numbers to export.
-            If None, all bands are exported.
-        encoding: dict
-            Nested dictionary with variable names as keys and 
-            dictionaries of variable specific encodings as values,
-            e.g., {"my_variable": {
-                                    "dtype": "int16",
-                                    "scale_factor": 0.1,
-                                    "zlib": True,
-                                    "_FillValue": 9999,
-                                }, ...}
-            The h5netcdf engine supports both the NetCDF4-style
-            compression encoding parameters 
-            {"zlib": True, "complevel": 9} and the h5py ones
-            {"compression": "gzip", "compression_opts": 9}. This
-            allows using any compression plugin installed in the HDF5
-            library, e.g. LZF.
-
-        """
-        xr_installed = importlib.util.find_spec("xarray")
-        if xr_installed is None:
-            raise ModuleNotFoundError("Please install 'xarray'")
-        datavars = {}
-        lon, lat = self.get_geolocation_grids()
-        for band in self.bands().keys():
-            band_metadata = self.get_metadata(band_id=band)
-            # Clean up the use metadata
-            pop_keys = []
-            for key in band_metadata.keys():
-                if key in self.UNWANTED_METADATA:
-                    pop_keys.append(key)
-            for key in pop_keys:
-                band_metadata.pop(key)
-            if bands is not None:
-                if (not band in bands) and (not band_metadata["name"] in bands):
-                    continue
-            datavars[band_metadata["name"]] = xr.DataArray(
-                self[band],
-                dims = ["x", "y"],
-                attrs = band_metadata)
-        ds = xr.Dataset(
-                datavars,
-                coords = {"longitude": (["x", "y"], lon), "latitude": (["x", "y"], lat)},
-                attrs = self.get_metadata())
-        if encoding is None:
-            # Having a coordinate variable with a fill value applied
-            # violates the cf standard
-            encoding = {
-                "longitude": {"_FillValue": None},
-                "latitude": {"_FillValue": None}
-            }
-        ds.to_netcdf(filename, encoding=encoding)
-
     def export(self, filename='', bands=None, rm_metadata=None, add_geolocation=True,
-               driver='netCDF', options=None, hardcopy=False):
+               driver='netCDF', options='FORMAT=NC4', hardcopy=False):
         """Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -129,7 +63,8 @@ class Exporter(object):
             add geolocation array datasets to exported file?
         driver : str
             Name of GDAL driver (format)
-        options : str or list
+        options : str or list (default: 'FORMAT=NC4' for NetCDF 4
+                  file format)
             GDAL export options in format of: 'OPT=VAL', or
             ['OPT1=VAL1', 'OP2='VAL2']
             See also http://www.gdal.org/frmt_netcdf.html
@@ -142,11 +77,6 @@ class Exporter(object):
 
         Notes
         ------
-        If number of bands is more than one, serial numbers are added at the end of each band name.
-        It is possible to fix it by changing line.4605 in GDAL/frmts/netcdf/netcdfdataset.cpp :
-        'if( nBands > 1 ) sprintf(szBandName,"%s%d",tmpMetadata,iBand);'
-        --> 'if( nBands > 1 ) sprintf(szBandName,"%s",tmpMetadata);'
-
         CreateCopy fails in case the band name has special characters,
         e.g. the slash in 'HH/VV'.
 
@@ -188,13 +118,71 @@ class Exporter(object):
             add_gcps = export_vrt.prepare_export_netcdf()
 
         # Create output file using GDAL
-        dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset, options=options)
+        dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset,
+                                                          options=options)
         del dataset
         # add GCPs into netCDF file as separate float variables
         if add_gcps:
             Exporter._add_gcps(filename, export_vrt.dataset.GetGCPs())
 
+        if driver=='netCDF':
+            # Rename variable names to get rid of the band numbers
+            self.rename_variables(filename)
+            # Rename attributes to get rid of "GDAL_" added by gdal
+            self.rename_attributes(filename)
+
         self.logger.debug('Export - OK!')
+
+    def rename_attributes(self, filename):
+        """ Rename global attributes to get rid of the "GDAL_"-string
+        added by gdal.
+        """
+        GDAL = "GDAL_"
+        del_attrs = []
+        rename_attrs = []
+        # Open new file to edit attribute names
+        ds = Dataset(filename, 'r+')
+        for attr in ds.ncattrs():
+            if GDAL in attr:
+                if attr.replace(GDAL, "") in ds.ncattrs():
+                    # Mark for deletion
+                    del_attrs.append(attr)
+                else:
+                    # Mark for renaming
+                    rename_attrs.append(attr)
+
+        # Delete repeated attributes..
+        for attr in del_attrs:
+            ds.delncattr(attr)
+        # Rename attributes:
+        for attr in rename_attrs:
+            ds.renameAttribute(attr, attr.replace(GDAL, ""))
+        ds.close()
+
+    def rename_variables(self, filename):
+        """ Rename variable names to reflect the name attribute of
+        the variable's metadata.
+
+        Parameters
+        ----------
+        filename : str
+            NetCDF file name
+        """
+        # Open new file to edit variable names
+        ds = Dataset(filename, 'r+')
+
+        # Decide which variables to rename
+        rename_vars = []
+        for var in ds.variables.keys():
+            if ('name' in ds.variables[var].ncattrs()) and (
+                    var != ds.variables[var].getncattr('name')):
+                rename_vars.append(var)
+
+        # Rename selected variables
+        for var in rename_vars:
+            ds.renameVariable(var, ds.variables[var].getncattr('name'))
+
+        ds.close()
 
     def export2thredds(self,
         filename,
