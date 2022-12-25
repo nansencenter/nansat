@@ -111,17 +111,6 @@ class ExporterTest(NansatTestBase):
                                                                    '"'}))
         self.assertIsInstance(dd, dict)
 
-    # Date format in the history could be version dependent
-    # - probably fine to skip this test..
-    def test_history_metadata(self):
-        orig = Nansat(self.test_file_gcps, mapper=self.default_mapper)
-        hh = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).isoformat()
-        orig.vrt.dataset.SetMetadataItem('history', hh)
-        orig.export(self.tmp_filename)
-        copy = Nansat(self.tmp_filename, mapper=self.default_mapper)
-        history = copy.get_metadata('history')
-        self.assertEqual(history, hh)
-
     def test_time_coverage_metadata_of_exported_equals_original(self):
         orig = Nansat(self.test_file_gcps, mapper=self.default_mapper)
         orig.set_metadata('time_coverage_start', '2010-01-02T08:49:02.347809')
