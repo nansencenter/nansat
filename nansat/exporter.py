@@ -133,7 +133,8 @@ class Exporter(object):
 
         self.logger.debug('Export - OK!')
 
-    def rename_attributes(self, filename):
+    @staticmethod
+    def rename_attributes(filename):
         """ Rename global attributes to get rid of the "GDAL_"-string
         added by gdal.
         """
@@ -159,7 +160,8 @@ class Exporter(object):
             ds.renameAttribute(attr, attr.replace(GDAL, ""))
         ds.close()
 
-    def rename_variables(self, filename):
+    @staticmethod
+    def rename_variables(filename):
         """ Rename variable names to reflect the name attribute of
         the variable's metadata.
 
