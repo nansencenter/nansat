@@ -41,8 +41,10 @@ class Mapper(VRT):
             raise WrongMapperError
 
         if 'NC_GLOBAL#GDAL_NANSAT_GCPY_000' in list(gdal_metadata.keys()) or \
-                'NC_GLOBAL#GDAL_NANSAT_GCPProjection' in list(gdal_metadata.keys()):
-            # Probably Nansat generated netcdf of swath data - see issue #192
+                'NC_GLOBAL#GDAL_NANSAT_GCPProjection' in list(gdal_metadata.keys()) or \
+                'NC_GLOBAL#NANSAT_GCPY_000' in list(gdal_metadata.keys()) or \
+                'NC_GLOBAL#NANSAT_GCPProjection' in list(gdal_metadata.keys()):
+            # Nansat generated netcdf of swath data is not standard CF
             raise WrongMapperError
 
         metadata = VRT._remove_strings_in_metadata_keys(gdal_metadata,
