@@ -143,14 +143,19 @@ class Exporter(object):
         rename_attrs = []
         # Open new file to edit attribute names
         ds = Dataset(filename, 'r+')
+        """ The netcdf driver adds the Conventions attribute with
+        value CF-1.5. This may be wrong, so it is better to use the
+        Conventions metadata from the Nansat object. Other attributes
+        added by gdal that are already present in Nansat, should also
+        be deleted."""
         for attr in ds.ncattrs():
             if GDAL in attr:
                 if attr.replace(GDAL, "") in ds.ncattrs():
-                    # Mark for deletion
-                    del_attrs.append(attr)
-                else:
-                    # Mark for renaming
-                    rename_attrs.append(attr)
+                    # Mark the attribute created by the netcdf driver
+                    # for deletion - ref above comment
+                    del_attrs.append(attr.replace(GDAL, ""))
+                # Mark for renaming
+                rename_attrs.append(attr)
 
         # Delete repeated attributes..
         for attr in del_attrs:
