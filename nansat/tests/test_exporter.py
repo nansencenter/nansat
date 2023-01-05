@@ -340,7 +340,7 @@ class ExporterTest(NansatTestBase):
         ncI = Dataset(tmpfilename, 'r')
         ncIVar = ncI.variables['L_469']
         self.assertTrue(ncIVar.grid_mapping in ncI.variables.keys())
-        self.assertEqual(ncIVar[:].dtype, np.int8)
+        self.assertEqual(ncIVar[:].dtype, np.uint8)
 
     def test_export_netcdf_complex_remove_meta(self):
         n = Nansat(self.test_file_complex, mapper=self.default_mapper)
