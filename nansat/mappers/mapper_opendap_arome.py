@@ -5,17 +5,19 @@
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
+import json
+import os
+import numpy as np
+import pythesint as pti
+
+from datetime import datetime
+from netCDF4 import Dataset
+from pyproj import CRS
 
 from nansat.mappers.mapper_arome import Mapper as MapperArome
 from nansat.mappers.opendap import Opendap
 from nansat.exceptions import WrongMapperError
 from nansat.nsr import NSR
-import pythesint as pti
-import os
-from datetime import datetime
-from netCDF4 import Dataset
-import numpy as np
-import json
 
 
 class Mapper(Opendap, MapperArome):
@@ -37,10 +39,24 @@ class Mapper(Opendap, MapperArome):
         timestamp = date if date else self.get_date(filename)
         ds = Dataset(filename)
 
+        shape=[]
+        for key in ds.dimensions.keys():
+            shape.append(ds.dimensions[key].size)
+
+        for var in ds.variables.keys():
+            if ds[var].shape==tuple(shape):
+                break
+
         try:
-            self.srcDSProjection = NSR(ds.variables['projection_lambert'].proj4)
+            grid_mapping = ds.variables[ds.variables[var].grid_mapping]
         except KeyError:
             raise WrongMapperError
+        grid_mapping_dict = {}
+        for index in grid_mapping.ncattrs():
+            grid_mapping_dict[index] = grid_mapping.getncattr(index)
+        crs = CRS.from_cf(grid_mapping_dict)
+
+        self.srcDSProjection = NSR(crs.to_proj4())
 
         self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
 
