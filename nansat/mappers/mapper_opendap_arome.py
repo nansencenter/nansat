@@ -35,6 +35,9 @@ class Mapper(Opendap, MapperArome):
     def __init__(self, filename, gdal_dataset, gdal_metadata, date=None,
                  ds=None, bands=None, cachedir=None, *args, **kwargs):
 
+        if bands is None:
+            bands = ['x_wind_10m', 'y_wind_10m']
+
         self.test_mapper(filename)
         timestamp = date if date else self.get_date(filename)
         ds = Dataset(filename)
