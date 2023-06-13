@@ -157,8 +157,9 @@ class Opendap(VRT):
         # assemble dimensions string
         dims = ''.join(['[%s]' % dim for dim in var_dimensions])
         sfname = '{url}?{var}.{var}{shape}'.format(url=url, var=var_name, shape=dims)
-        # For Sentinel-1, the source filename is not at the same format. Simple solution is to check
-        # if this is correct witha try-except but that may be too time consuming. Expecting
+        # For Sentinel-1, the source filename is not at the same
+        # format. Simple solution is to check if this is correct with
+        # a try-except but that may be too time consuming. Expecting
         # discussion...
         try:
             ds = gdal.Open(sfname)

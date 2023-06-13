@@ -12,15 +12,19 @@ import pythesint as pti
 
 from datetime import datetime
 from netCDF4 import Dataset
+from osgeo import gdal
 from pyproj import CRS
 
-from nansat.mappers.mapper_arome import Mapper as MapperArome
-from nansat.mappers.opendap import Opendap
 from nansat.exceptions import WrongMapperError
 from nansat.nsr import NSR
+from nansat.vrt import VRT
+
+from nansat.mappers.mapper_netcdf_cf import Mapper as MapperNCCF
+#from nansat.mappers.mapper_arome import Mapper as MapperArome
+from nansat.mappers.opendap import Opendap
 
 
-class Mapper(Opendap, MapperArome):
+class Mapper(MapperNCCF):
 
     baseURLs = ['http://thredds.met.no/thredds/catalog/arome25/catalog.html',
                 'https://thredds.met.no/thredds/dodsC/aromearcticarchive',
@@ -28,90 +32,151 @@ class Mapper(Opendap, MapperArome):
                 'https://thredds.met.no/thredds/dodsC/meps25epsarchive',
                 'http://thredds.met.no/thredds/dodsC/meps25epsarchive']
     timeVarName = 'time'
-    xName = 'x'
-    yName = 'y'
-    timeCalendarStart = '1970-01-01'
 
-    def __init__(self, filename, gdal_dataset, gdal_metadata, date=None,
+    def __init__(self, filename, gdal_dataset, gdal_metadata, netcdf_dim=None,
                  ds=None, bands=None, cachedir=None, *args, **kwargs):
 
-        if bands is None:
-            bands = ['x_wind_10m', 'y_wind_10m']
+        if netcdf_dim is None:
+            netcdf_dim = {}
+        
+        self.input_filename = filename
 
-        self.test_mapper(filename)
-        timestamp = date if date else self.get_date(filename)
-        ds = Dataset(filename)
-
-        shape=[]
-        for key in ds.dimensions.keys():
-            shape.append(ds.dimensions[key].size)
-
-        for var in ds.variables.keys():
-            if ds[var].shape==tuple(shape):
-                break
+        if gdal_dataset is None:
+            gdal_dataset = gdal.Open(filename)
 
         try:
-            grid_mapping = ds.variables[ds.variables[var].grid_mapping]
+            ds = Dataset(filename)
+        except OSError:
+            raise WrongMapperError
+
+        metadata = {}
+        for attr in ds.ncattrs():
+            metadata[attr] = ds.getncattr(attr)
+
+        if not 'arome' in metadata['title'].lower() and \
+                not 'meps' in metadata['title'].lower():
+            raise WrongMapperError
+
+        xsize = ds.dimensions['x'].size
+        ysize = ds.dimensions['y'].size
+
+        # Pick 10 meter height dimension only
+        height_dim = 'height7'
+        if height_dim not in ds.dimensions.keys():
+            raise WrongMapperError
+        if ds.dimensions[height_dim].size != 1:
+            raise WrongMapperError
+        if ds.variables['height7'][0].data != 10:
+            raise WrongMapperError
+        varnames = []
+        for var in ds.variables:
+            var_dimensions = ds.variables[var].dimensions
+            if var_dimensions == ('time', 'height7', 'y', 'x'):
+                varnames.append(var)
+
+        # Projection
+        try:
+            grid_mapping = ds.variables[ds.variables[varnames[0]].grid_mapping]
         except KeyError:
             raise WrongMapperError
+
         grid_mapping_dict = {}
         for index in grid_mapping.ncattrs():
             grid_mapping_dict[index] = grid_mapping.getncattr(index)
         crs = CRS.from_cf(grid_mapping_dict)
+        nsr = NSR(crs.to_proj4())
 
-        self.srcDSProjection = NSR(crs.to_proj4())
+        # Geotransform
+        xx = ds.variables['x'][0:2]
+        yy = ds.variables['y'][0:2]
+        gtrans = xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0]
 
-        self.create_vrt(filename, gdal_dataset, gdal_metadata, timestamp, ds, bands, cachedir)
+        self._init_from_dataset_params(xsize, ysize, gtrans, nsr.wkt)
+
+        meta_dict = []
+        if bands is None:
+            bands = varnames
+        for band in bands:
+            dimension_names, dim_sizes = self._get_dimension_info(band)
+            self._pop_spatial_dimensions(dimension_names)
+            index = self._get_index_of_dimensions(dimension_names, netcdf_dim, dim_sizes)
+            fn = self._get_sub_filename(filename, band, dim_sizes, index)
+            meta_dict.append(self.get_band_metadata_dict(fn, ds.variables[band]))
+
+        self.create_bands(meta_dict)
+
+        # Copy metadata
+        for key in metadata.keys():
+            self.dataset.SetMetadataItem(str(attr), str(metadata[key]))
 
         mm = pti.get_gcmd_instrument('Computer')
         ee = pti.get_gcmd_platform('ecmwfifs')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
-        md_item = 'Data Center'
-        if not self.dataset.GetMetadataItem(md_item):
-            self.dataset.SetMetadataItem(md_item, 'NO/MET')
-        md_item = 'Entry Title'
-        if not self.dataset.GetMetadataItem(md_item):
-            self.dataset.SetMetadataItem(md_item, str(ds.getncattr('title')))
-        md_item = 'summary'
-        if not self.dataset.GetMetadataItem(md_item):
-            summary = """
-            AROME_Arctic is a convection-permitting atmosphere model covering parts of the Barents
-            Sea and the Nordic Arctic. It has horizontal resolution of 2.5 km and 65 vertical
-            levels. AROME_Arctic runs for 66 hours four times a day (00,06,12,18) with three-hourly
-            cycling for data assimilation. Boundary data is from ECMWF. Model code based on HARMONIE
-            cy40h1.1
-            """
-            self.dataset.SetMetadataItem(md_item, str(summary))
+        #md_item = 'Data Center'
+        #if not self.dataset.GetMetadataItem(md_item):
+        #    self.dataset.SetMetadataItem(md_item, 'NO/MET')
+        #md_item = 'Entry Title'
+        #if not self.dataset.GetMetadataItem(md_item):
+        #    self.dataset.SetMetadataItem(md_item, str(ds.getncattr('title')))
+        #md_item = 'summary'
+        #if not self.dataset.GetMetadataItem(md_item):
+        #    summary = """
+        #    AROME_Arctic is a convection-permitting atmosphere model covering parts of the Barents
+        #    Sea and the Nordic Arctic. It has horizontal resolution of 2.5 km and 65 vertical
+        #    levels. AROME_Arctic runs for 66 hours four times a day (00,06,12,18) with three-hourly
+        #    cycling for data assimilation. Boundary data is from ECMWF. Model code based on HARMONIE
+        #    cy40h1.1
+        #    """
+        #    self.dataset.SetMetadataItem(md_item, str(summary))
+
+    def get_band_metadata_dict(self, fn, ncvar):
+        gds = gdal.Open(fn)
+        meta_item = {
+            'src': {'SourceFilename': fn, 'SourceBand': 1},
+            'dst': {'name': ncvar.name, 'dataType': 6}
+        }
+
+        for attr_key in ncvar.ncattrs():
+            attr_val = ncvar.getncattr(attr_key)
+            if attr_key in ['scale', 'scale_factor']:
+                meta_item['src']['ScaleRatio'] = attr_val
+            elif attr_key in ['offset', 'add_offset']:
+                meta_item['src']['ScaleOffset'] = attr_val
+            else:
+                meta_item['dst'][attr_key] = attr_val
+
+        return meta_item
+
+
+
+    @staticmethod
+    def _get_sub_filename(url, var, dim_sizes, index):
+        """ Opendap driver refers to subdatasets differently than the
+        standard way in vrt.py
+        """
+        shape = []
+        for item in dim_sizes.items():
+            if item[0] in index.keys():
+                shape.append(index[item[0]]['index'])
+            else:
+                shape.append(item[0])
+        # assemble dimensions string
+        gd_shape = ''.join(['[%s]' % dimsize for dimsize in shape])
+        return '{url}?{var}.{var}{shape}'.format(url=url, var=var, shape=gd_shape)
 
     @staticmethod
     def get_date(filename):
         """Extract date and time parameters from filename and return
-        it as a formatted string
-
-        Parameters
-        ----------
-
-        filename: str
-            nn
-
-        Returns
-        -------
-            str, YYYY-mm-ddThh:MMZ
-
-        Examples
-        --------
-            >>> Mapper.get_date('/path/to/arome_arctic_full_2_5km_20171030T21Z.nc')
-            '2017-10-30T21:00Z'
+        it as a datetime object.
         """
         _, filename = os.path.split(filename)
-        t = datetime.strptime(filename.split('_')[-1], '%Y%m%dT%HZ.nc')
-        return datetime.strftime(t, '%Y-%m-%dT%H:%MZ')
+        return datetime.strptime(filename.split('_')[-1], '%Y%m%dT%HZ.nc')
 
     def convert_dstime_datetimes(self, ds_time):
         """Convert time variable to np.datetime64"""
         ds_datetimes = np.array(
-            [(np.datetime64(self.timeCalendarStart).astype('M8[s]')
+            [(np.datetime64(self.epoch).astype('M8[s]')
               + np.timedelta64(int(sec), 's').astype('m8[s]')) for sec in ds_time]).astype('M8[s]')
         return ds_datetimes
