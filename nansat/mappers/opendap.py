@@ -211,7 +211,11 @@ class Opendap(VRT):
                 >>> Opendap._fix_encoding('asnes')
                 'asnes'
         """
-        return str(var.encode('ascii', 'ignore').decode())
+        if isinstance(var, str):
+            retval = str(var.encode('ascii', 'ignore').decode())
+        else:
+            retval = var
+        return retval
 
     def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         """ Create VRT

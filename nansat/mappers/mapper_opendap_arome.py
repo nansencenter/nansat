@@ -24,7 +24,7 @@ from nansat.mappers.mapper_netcdf_cf import Mapper as MapperNCCF
 from nansat.mappers.opendap import Opendap
 
 
-class Mapper(MapperNCCF):
+class Mapper(MapperNCCF, Opendap):
 
     baseURLs = ['http://thredds.met.no/thredds/catalog/arome25/catalog.html',
                 'https://thredds.met.no/thredds/dodsC/aromearcticarchive',
@@ -51,7 +51,7 @@ class Mapper(MapperNCCF):
 
         metadata = {}
         for attr in ds.ncattrs():
-            metadata[attr] = ds.getncattr(attr)
+            metadata[attr] = self._fix_encoding(ds.getncattr(attr))
 
         if not 'arome' in metadata['title'].lower() and \
                 not 'meps' in metadata['title'].lower():
@@ -97,6 +97,8 @@ class Mapper(MapperNCCF):
         if bands is None:
             bands = varnames
         for band in bands:
+            if band not in ds.variables.keys():
+                continue
             dimension_names, dim_sizes = self._get_dimension_info(band)
             self._pop_spatial_dimensions(dimension_names)
             index = self._get_index_of_dimensions(dimension_names, netcdf_dim, dim_sizes)
@@ -107,7 +109,7 @@ class Mapper(MapperNCCF):
 
         # Copy metadata
         for key in metadata.keys():
-            self.dataset.SetMetadataItem(str(attr), str(metadata[key]))
+            self.dataset.SetMetadataItem(str(key), str(metadata[key]))
 
         mm = pti.get_gcmd_instrument('Computer')
         ee = pti.get_gcmd_platform('ecmwfifs')
@@ -139,7 +141,7 @@ class Mapper(MapperNCCF):
         }
 
         for attr_key in ncvar.ncattrs():
-            attr_val = ncvar.getncattr(attr_key)
+            attr_val = self._fix_encoding(ncvar.getncattr(attr_key))
             if attr_key in ['scale', 'scale_factor']:
                 meta_item['src']['ScaleRatio'] = attr_val
             elif attr_key in ['offset', 'add_offset']:

@@ -331,8 +331,6 @@ class Mapper(VRT):
         """
         if netcdf_dim is None:
             netcdf_dim = {}
-        import pdb
-        pdb.set_trace() #check fn from file and from url
         band = fn.split(':')[-1]
         band_number = self._get_band_number(band, netcdf_dim)
 
