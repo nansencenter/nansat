@@ -53,8 +53,8 @@ class Mapper(MapperNCCF, Opendap):
         for attr in ds.ncattrs():
             metadata[attr] = self._fix_encoding(ds.getncattr(attr))
 
-        if not 'arome' in metadata['title'].lower() and \
-                not 'meps' in metadata['title'].lower():
+        if 'title' not in metadata.keys() or ('arome' not in metadata['title'].lower() and 'meps' \
+                not in metadata['title'].lower()):
             raise WrongMapperError
 
         xsize = ds.dimensions['x'].size

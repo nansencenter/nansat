@@ -443,7 +443,7 @@ class Mapper(VRT):
     def _create_empty(self, gdal_dataset, gdal_metadata):
         try:
             self._create_empty_from_projection_variable(gdal_dataset, gdal_metadata)
-        except KeyError:
+        except (KeyError, AttributeError):
             try:
                 self._create_empty_from_subdatasets(gdal_dataset, gdal_metadata)
             except NansatMissingProjectionError:
@@ -464,10 +464,8 @@ class Mapper(VRT):
         for var in ds.variables.keys():
             if ds[var].shape==tuple(shape):
                 break
-        try:
-            grid_mapping = ds.variables[ds.variables[var].grid_mapping]
-        except KeyError:
-            raise WrongMapperError
+
+        grid_mapping = ds.variables[ds.variables[var].grid_mapping]
 
         grid_mapping_dict = {}
         for index in grid_mapping.ncattrs():
