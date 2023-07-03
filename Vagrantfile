@@ -6,8 +6,8 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  config.vm.box = "ubuntu/trusty64"
-  config.vm.box_url = "https://atlas.hashicorp.com/ubuntu/trusty64"
+  config.vm.box = "ubuntu/bionic64"
+  #config.vm.box_url = "https://atlas.hashicorp.com/ubuntu/bionic64"
 
   config.vm.define "nansat", primary: true do |nansat|
   end
