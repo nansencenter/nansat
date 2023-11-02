@@ -48,10 +48,10 @@ jobs:
              python setup.py sdist &&
              coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test"
 
-      - name: 'Install Python 3.7'
+      - name: 'Install Python 3.11'
         uses: actions/setup-python@v4
         with:
-          python-version: '3.7'
+          python-version: '3.11'
 
       - name: 'Upload coverage to coveralls.io'
         env:
@@ -67,10 +67,10 @@ jobs:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.7
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: 3.11
 
       - name: Build package
         run: >
