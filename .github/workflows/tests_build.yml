@@ -13,6 +13,12 @@ jobs:
   tests:
     name: 'Run unit tests'
     runs-on: 'ubuntu-20.04'
+    strategy:
+      matrix:
+        python_version:
+          - '3.8'
+          - '3.9'
+          - '3.10'
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
@@ -36,7 +42,7 @@ jobs:
              -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
              -e "GITHUB_RUN_ID=$GITHUB_RUN_ID"
              -e "GITHUB_TOKEN=$GITHUB_TOKEN"
-             "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-slim"
+             "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-slim-python${{ matrix.python_version }}"
              bash -c "
              apt update && apt install -y g++ &&
              python setup.py sdist &&
