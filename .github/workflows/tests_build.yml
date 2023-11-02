@@ -94,7 +94,7 @@ jobs:
       matrix:
         tag_suffix:
           - ''
-          - 'slim'
+          - '-slim'
         version:
           - {'python': '3.7', 'latest': true}
           - {'python': '3.8', 'latest': false}
