@@ -15,6 +15,9 @@ jobs:
     runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
+        tag_suffix:
+          - ''
+          - '-slim'
         python_version:
           - '3.7'
           - '3.8'
@@ -44,7 +47,7 @@ jobs:
              -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
              -e "GITHUB_RUN_ID=$GITHUB_RUN_ID"
              -e "GITHUB_TOKEN=$GITHUB_TOKEN"
-             "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-slim-python${{ matrix.python_version }}"
+             "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}${{ matrix.tag_suffix }}-python${{ matrix.python_version }}"
              bash -c "
              apt update && apt install -y g++ &&
              python setup.py sdist &&
