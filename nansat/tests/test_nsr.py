@@ -28,7 +28,7 @@ class NSRTest(unittest.TestCase):
         nsr = NSR(None)
 
         self.assertEqual(type(nsr), NSR)
-        self.assertEqual(nsr.Validate(), 5)
+        self.assertRaises(RuntimeError, nsr.Validate)
 
     def test_init_from_0(self):
         nsr = NSR(0)
