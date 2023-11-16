@@ -11,89 +11,9 @@ env:
   BASE_IMAGE_NAME: "${{ secrets.DOCKER_ORG }}/nansat_base"
   BASE_IMAGE_TAG: '0.0.19'
 jobs:
-  tests:
-    name: 'Run unit tests'
+  tests_and_docker_build:
+    name: 'Run unit tests and build docker image'
     runs-on: 'ubuntu-20.04'
-    strategy:
-      matrix:
-        tag_suffix:
-          - ''
-          - '-slim'
-        python_version:
-          - '3.7'
-          - '3.8'
-          - '3.9'
-          - '3.10'
-          - '3.11'
-    steps:
-      - name: 'Checkout repository'
-        uses: actions/checkout@v4
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASS }}
-
-      - name: 'Run tests'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >
-             docker run --rm
-             -v "$(pwd):/src"
-             -e "GITHUB_ACTIONS=$GITHUB_ACTIONS"
-             -e "GITHUB_REF=$GITHUB_REF"
-             -e "GITHUB_SHA=$GITHUB_SHA"
-             -e "GITHUB_HEAD_REF=$GITHUB_HEAD_REF"
-             -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
-             -e "GITHUB_RUN_ID=$GITHUB_RUN_ID"
-             -e "GITHUB_TOKEN=$GITHUB_TOKEN"
-             "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}${{ matrix.tag_suffix }}-python${{ matrix.python_version }}"
-             bash -c "
-             apt update && apt install -y g++ &&
-             python setup.py sdist &&
-             coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test"
-
-      - name: 'Install Python 3.11'
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: 'Upload coverage to coveralls.io'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pip install coveralls && coveralls --service=github
-
-  publish_python_package:
-    name: Publish the Python package to PyPI
-    runs-on: 'ubuntu-20.04'
-    needs: 'tests'
-    if: github.event_name == 'release'
-    steps:
-      - name: 'Checkout repository'
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-
-      - name: Build package
-        run: NANSAT_RELEASE="${TAG}" python setup.py sdist
-        shell: bash
-
-      - name: Publish
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # Storing the PyPI URL in the repositories' secrets makes
-          # publishing to the test PyPI from forks easy
-          repository_url: ${{ secrets.PYPI_REPOSITORY_URL }}
-          password: ${{ secrets.PYPI_TOKEN }}
-
-
-  build_docker_images:
-    runs-on: 'ubuntu-20.04'
-    needs: 'tests'
     strategy:
       matrix:
         tag_suffix:
@@ -126,6 +46,35 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASS }}
 
+      - name: 'Run tests'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+             docker run --rm
+             -v "$(pwd):/src"
+             -e "GITHUB_ACTIONS=$GITHUB_ACTIONS"
+             -e "GITHUB_REF=$GITHUB_REF"
+             -e "GITHUB_SHA=$GITHUB_SHA"
+             -e "GITHUB_HEAD_REF=$GITHUB_HEAD_REF"
+             -e "GITHUB_REPOSITORY=$GITHUB_REPOSITORY"
+             -e "GITHUB_RUN_ID=$GITHUB_RUN_ID"
+             -e "GITHUB_TOKEN=$GITHUB_TOKEN"
+             "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}"
+             bash -c "
+             apt update && apt install -y g++ &&
+             python setup.py sdist &&
+             coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test"
+
+      - name: 'Install Python 3.11'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 'Upload coverage to coveralls.io'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pip install coveralls && coveralls --service=github
+
       - name: Build docker image
         uses: docker/build-push-action@v5
         with:
@@ -148,4 +97,30 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  publish_python_package:
+    name: Publish the Python package to PyPI
+    runs-on: 'ubuntu-20.04'
+    needs: 'tests_and_docker_build'
+    if: github.event_name == 'release'
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Build package
+        run: NANSAT_RELEASE="${TAG}" python setup.py sdist
+        shell: bash
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Storing the PyPI URL in the repositories' secrets makes
+          # publishing to the test PyPI from forks easy
+          repository_url: ${{ secrets.PYPI_REPOSITORY_URL }}
+          password: ${{ secrets.PYPI_TOKEN }}
 ...
