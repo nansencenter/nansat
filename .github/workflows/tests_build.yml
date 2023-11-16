@@ -6,6 +6,7 @@ on:
   release:
     types: [released]
 env:
+  TAG: "${{ github.ref_type == 'tag' && github.ref_name || 'tmp' }}"
   IMAGE_NAME: "${{ secrets.DOCKER_ORG }}/nansat"
   BASE_IMAGE_NAME: "${{ secrets.DOCKER_ORG }}/nansat_base"
   BASE_IMAGE_TAG: '0.0.19'
@@ -78,9 +79,7 @@ jobs:
           python-version: 3.11
 
       - name: Build package
-        run: >
-             NANSAT_RELEASE="${GITHUB_REF#refs/tags/}"
-             python setup.py sdist
+        run: NANSAT_RELEASE="${TAG}" python setup.py sdist
         shell: bash
 
       - name: Publish
@@ -110,16 +109,6 @@ jobs:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
 
-      - name: "Extract tag name"
-        id: get_version
-        run: |
-          if [[ $GITHUB_REF == refs/tags/* ]];then
-            TAG="${GITHUB_REF#refs/tags/}"
-          else
-            TAG='tmp'
-          fi
-          echo "VERSION=${TAG}" >> $GITHUB_OUTPUT
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -143,10 +132,10 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ env.BASE_IMAGE_TAG }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
-            NANSAT_RELEASE=${{ steps.get_version.outputs.VERSION }}
-          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+            NANSAT_RELEASE=${{ env.TAG }}
+          push: ${{ github.ref_type == 'tag' }}
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.VERSION }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
+            ${{ env.IMAGE_NAME }}:${{ env.TAG }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
             ${{ env.IMAGE_NAME }}:latest${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
             ${{ matrix.version.latest && format('latest{0}', matrix.tag_suffix) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
