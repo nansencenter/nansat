@@ -132,7 +132,7 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ env.BASE_IMAGE_TAG }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
-            NANSAT_RELEASE=${{ env.TAG }}
+            NANSAT_RELEASE=${{ env.TAG == 'tmp' && '0.0.0' || env.TAG }}
           push: ${{ github.ref_type == 'tag' }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.TAG }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
