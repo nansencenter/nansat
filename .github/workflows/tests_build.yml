@@ -7,8 +7,8 @@ on:
     types: [released]
 env:
   TAG: "${{ github.ref_type == 'tag' && github.ref_name || 'tmp' }}"
-  IMAGE_NAME: "${{ secrets.DOCKER_ORG }}/nansat"
-  BASE_IMAGE_NAME: "${{ secrets.DOCKER_ORG }}/nansat_base"
+  IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat"
+  BASE_IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat_base"
   BASE_IMAGE_TAG: '0.0.19'
 jobs:
   tests_and_docker_build:
@@ -43,7 +43,7 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USER }}
+          username: ${{ vars.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASS }}
 
       - name: 'Run tests'
@@ -119,8 +119,6 @@ jobs:
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # Storing the PyPI URL in the repositories' secrets makes
-          # publishing to the test PyPI from forks easy
-          repository_url: ${{ secrets.PYPI_REPOSITORY_URL }}
+          repository_url: ${{ vars.PYPI_REPOSITORY_URL }}
           password: ${{ secrets.PYPI_TOKEN }}
 ...
