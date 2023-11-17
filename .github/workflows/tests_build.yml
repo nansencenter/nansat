@@ -86,7 +86,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.TAG }}${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
             ${{ env.IMAGE_NAME }}:latest${{ matrix.tag_suffix }}-python${{ matrix.version.python }}
-            ${{ matrix.version.latest && format('latest{0}', matrix.tag_suffix) || '' }}
+            ${{ matrix.version.latest && format('{0}:latest{1}', env.IMAGE_NAME, matrix.tag_suffix) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
