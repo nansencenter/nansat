@@ -146,31 +146,30 @@ class Exporter(object):
         del_attrs = []
         rename_attrs = []
         # Open new file to edit attribute names
-        ds = Dataset(filename, 'r+')
-        """ The netcdf driver adds the Conventions attribute with
-        value CF-1.5. This in most cases wrong, so it is better to use
-        the Conventions metadata from the Nansat object. Other
-        attributes added by gdal that are already present in Nansat,
-        should also be deleted."""
-        for attr in ds.ncattrs():
-            if GDAL in attr:
-                if attr.replace(GDAL, "") in ds.ncattrs():
-                    # Mark the attribute created by the netcdf driver
-                    # for deletion - ref above comment
-                    del_attrs.append(attr.replace(GDAL, ""))
-                # Mark for renaming
-                rename_attrs.append(attr)
+        with Dataset(filename, 'r+') as ds:
+            """ The netcdf driver adds the Conventions attribute with
+            value CF-1.5. This in most cases wrong, so it is better to use
+            the Conventions metadata from the Nansat object. Other
+            attributes added by gdal that are already present in Nansat,
+            should also be deleted."""
+            for attr in ds.ncattrs():
+                if GDAL in attr:
+                    if attr.replace(GDAL, "") in ds.ncattrs():
+                        # Mark the attribute created by the netcdf driver
+                        # for deletion - ref above comment
+                        del_attrs.append(attr.replace(GDAL, ""))
+                    # Mark for renaming
+                    rename_attrs.append(attr)
 
-        # Delete repeated attributes..
-        for attr in del_attrs:
-            ds.delncattr(attr)
-        # Rename attributes:
-        for attr in rename_attrs:
-            ds.renameAttribute(attr, attr.replace(GDAL, ""))
-        # Correct the history
-        if history is not None:
-            ds.history = history
-        ds.close()
+            # Delete repeated attributes..
+            for attr in del_attrs:
+                ds.delncattr(attr)
+            # Rename attributes:
+            for attr in rename_attrs:
+                ds.renameAttribute(attr, attr.replace(GDAL, ""))
+            # Correct the history
+            if history is not None:
+                ds.history = history
 
     @staticmethod
     def rename_variables(filename):
@@ -183,20 +182,17 @@ class Exporter(object):
             NetCDF file name
         """
         # Open new file to edit variable names
-        ds = Dataset(filename, 'r+')
+        with Dataset(filename, 'r+') as ds:
+            # Decide which variables to rename
+            rename_vars = []
+            for var in ds.variables.keys():
+                if ('name' in ds.variables[var].ncattrs()) and (
+                        var != ds.variables[var].getncattr('name')):
+                    rename_vars.append(var)
 
-        # Decide which variables to rename
-        rename_vars = []
-        for var in ds.variables.keys():
-            if ('name' in ds.variables[var].ncattrs()) and (
-                    var != ds.variables[var].getncattr('name')):
-                rename_vars.append(var)
-
-        # Rename selected variables
-        for var in rename_vars:
-            ds.renameVariable(var, ds.variables[var].getncattr('name'))
-
-        ds.close()
+            # Rename selected variables
+            for var in rename_vars:
+                ds.renameVariable(var, ds.variables[var].getncattr('name'))
 
     def export2thredds(self,
         filename,
