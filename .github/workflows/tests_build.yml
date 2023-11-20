@@ -66,11 +66,13 @@ jobs:
              coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test"
 
       - name: 'Install Python 3.11'
+        if: ${{ matrix.version.latest }}
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: 'Upload coverage to coveralls.io'
+        if: ${{ matrix.version.latest }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pip install coveralls && coveralls --service=github
