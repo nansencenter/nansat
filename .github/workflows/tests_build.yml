@@ -57,7 +57,6 @@ jobs:
              -e "GITHUB_TOKEN=$GITHUB_TOKEN"
              "${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}-python${{ matrix.version.python }}"
              bash -c "
-             apt update && apt install -y g++ &&
              python setup.py sdist &&
              coverage run --omit=nansat/mappers/*,nansat/tests/*,nansat/nansatmap.py --source=nansat setup.py test"
 
