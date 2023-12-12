@@ -8,7 +8,7 @@ on:
 env:
   IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat"
   BASE_IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat_base"
-  BASE_IMAGE_TAG: '0.0.23'
+  BASE_IMAGE_TAG: '3.0.0'
 jobs:
   tests_and_docker_build:
     name: 'Run unit tests and build docker image'
