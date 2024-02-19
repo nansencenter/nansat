@@ -79,6 +79,10 @@ if os.name == 'nt':
     else:
         if 'gdal_i.lib' in files:
             extra_link_args = [path + '\gdal_i.lib']
+        elif 'gdal.lib' in files:
+            extra_link_args = [path + '\gdal.lib']
+        else:
+            extra_link_args = []
 else:
     extra_compile_args = ['-fPIC', '-Wall', '-Wno-long-long', '-pedantic', '-O3']
     extra_link_args = [] # not used currently
