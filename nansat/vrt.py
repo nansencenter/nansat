@@ -1729,7 +1729,8 @@ class VRT(object):
 
         # find DataType of source (if not given in src)
         if src['SourceBand'] > 0 and 'DataType' not in src:
-            raster_band = gdal.Open(src['SourceFilename']).GetRasterBand(src['SourceBand'])
+            ds = gdal.Open(src['SourceFilename'])
+            raster_band = ds.GetRasterBand(src['SourceBand'])
             src['DataType'] = raster_band.DataType
 
         if 'xSize' not in src or 'ySize' not in src:
