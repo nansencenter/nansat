@@ -775,8 +775,6 @@ class Figure(object):
                 draw.text((int(self.pilImgLegend.size[0] *
                                self.TITLE_LOCATION_X),
                            textHeight), line, fill=black, font=font)
-                text = draw.textsize(line, font=font)
-                textHeight += text[1]
 
     def create_pilImage(self, **kwargs):
         """self.create_pilImage is replaced from None to PIL image

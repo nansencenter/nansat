@@ -292,7 +292,9 @@ class VRT(object):
         VRT.__init__(self, gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, **kwargs)
         self.dataset.SetGCPs(gdal_dataset.GetGCPs(), gdal_dataset.GetGCPProjection())
         self.dataset.SetProjection(gdal_dataset.GetProjection())
-        self.dataset.SetGeoTransform(gdal_dataset.GetGeoTransform())
+        geotransform = gdal_dataset.GetGeoTransform(can_return_null=1)
+        if geotransform:
+            self.dataset.SetGeoTransform(geotransform)
         if geolocation is None:
             geolocation = Geolocation.from_dataset(gdal_dataset)
         self._add_geolocation(geolocation)
@@ -380,7 +382,7 @@ class VRT(object):
             gdal.VSIFWriteL(array_bytes[ind_start:ind_end],ind_end-ind_start,1,ofile)
         gdal.VSIFCloseL(ofile)
         array_bytes = None
-        
+
         # convert Numpy datatype to gdal datatype and pixel offset
         gdal_data_type = numpy_to_gdal_type[array_type]
         pixel_offset = gdal_type_to_offset[gdal_data_type]

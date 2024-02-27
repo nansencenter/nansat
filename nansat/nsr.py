@@ -15,6 +15,7 @@
 from __future__ import absolute_import, unicode_literals
 import sys
 from nansat.utils import osr
+osr.UseExceptions()
 
 from nansat.exceptions import NansatProjectionError
 
@@ -59,27 +60,30 @@ class NSR(osr.SpatialReference, object):
         osr.SpatialReference.__init__(self)
 
         # parse input parameters
-        status = 1
         if srs is 0:
             # generate default WGS84 SRS
-            status = self.ImportFromEPSG(4326)
+            self.ImportFromEPSG(4326)
         elif isinstance(srs, str_types):
             # parse as proj4 string
-            status = self.ImportFromProj4(str(srs))
-            if status > 0:
+            try:
+                self.ImportFromProj4(str(srs))
+            except RuntimeError:
                 # parse as WKT string
-                status = self.ImportFromWkt(str(srs))
-            if status > 0:
-                raise NansatProjectionError('Proj4 or WKT (%s) is wrong' % srs)
+                try:
+                    self.ImportFromWkt(str(srs))
+                except RuntimeError:
+                    raise NansatProjectionError('Proj4 or WKT (%s) is wrong' % srs)
         elif isinstance(srs, int):
             # parse as EPSG code
-            status = self.ImportFromEPSG(srs)
-            if status > 0:
+            try:
+                self.ImportFromEPSG(srs)
+            except RuntimeError:
                 raise NansatProjectionError('EPSG %d is wrong' % srs)
         elif type(srs) in [osr.SpatialReference, NSR]:
             # parse from input Spatial Reference
-            status = self.ImportFromWkt(srs.ExportToWkt())
-            if status > 0:
+            try:
+                self.ImportFromWkt(srs.ExportToWkt())
+            except RuntimeError:
                 raise NansatProjectionError('NSR %s is wrong' % srs)
 
     @property
