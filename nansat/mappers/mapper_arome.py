@@ -14,8 +14,7 @@ class Mapper(NetcdfCF):
             raise WrongMapperError
         if 'source' not in list(gdal_metadata.keys()):
             raise WrongMapperError
-        if not 'arome' in gdal_metadata['title'].lower() and \
-                not 'meps' in gdal_metadata['title'].lower():
+        if not 'arome' in gdal_metadata['title'].lower():
             raise WrongMapperError
     
         super(Mapper, self).__init__(filename, gdal_dataset, gdal_metadata, *args, **kwargs)

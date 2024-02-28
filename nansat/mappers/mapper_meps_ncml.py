@@ -31,7 +31,7 @@ class Mapper(NetcdfCF):
         import ipdb
         ipdb.set_trace()
 
-        super(Mapper, self).__init__(url, gdal_dataset, metadata, *args, **kwargs)
+        super(Mapper, self).__init__(url, gdal_dataset, gdal_metadata, *args, **kwargs)
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
