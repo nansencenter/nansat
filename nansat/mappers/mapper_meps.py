@@ -1,17 +1,13 @@
+import os
+import json
+
+import pythesint as pti
+
+from osgeo import gdal
 from pyproj import CRS
 from netCDF4 import Dataset
 
 from nansat.nsr import NSR
-
-import requests
-
-import xml.etree.ElementTree as ET
-
-from dateutil.parser import parse
-
-import json
-import pythesint as pti
-
 from nansat.mappers.mapper_netcdf_cf import Mapper as NetcdfCF
 from nansat.exceptions import WrongMapperError
 
@@ -29,19 +25,13 @@ class Mapper(NetcdfCF):
         if not 'meps' in gdal_metadata['title'].lower():
             raise WrongMapperError
 
-        self.input_filename = filename
-    
-        self._create_empty_from_projection_variable(gdal_dataset, gdal_metadata)
-
+        url = self._get_odap_url(filename, file_num)
+        gdal_dataset = gdal.Open(url)
+        metadata = gdal_dataset.GetMetadata()
         import ipdb
         ipdb.set_trace()
-        # Add bands with metadata and corresponding values to the empty VRT
-        self.create_bands(self._band_list(gdal_dataset, metadata, *args, **kwargs))
 
-        #self.dataset.SetMetadataItem('time_coverage_start', parse(
-        #    gdal_metadata['NC_GLOBAL#min_time'], ignoretz=True, fuzzy=True).isoformat())
-        #self.dataset.SetMetadataItem('time_coverage_end', parse(
-        #    gdal_metadata['NC_GLOBAL#max_time'], ignoretz=True, fuzzy=True).isoformat()))
+        super(Mapper, self).__init__(url, gdal_dataset, metadata, *args, **kwargs)
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
@@ -50,6 +40,11 @@ class Mapper(NetcdfCF):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+
+    def _get_odap_url(self, fn, file_num):
+        url = os.path.split(fn)[0] + "/member_%02d" % int(os.path.basename(fn)[8:11]) + "/meps_" + os.path.basename(fn).split("_")[2] + "_%02d_" % file_num + os.path.basename(fn).split("_")[3][:-2]
+        return url
 
 
     def _create_empty_from_projection_variable(self, gdal_dataset, gdal_metadata):
