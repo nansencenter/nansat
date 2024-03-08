@@ -217,6 +217,42 @@ class Opendap(VRT):
             retval = var
         return retval
 
+
+    def get_band_metadata_dict(self, fn, ncvar):
+        gds = gdal.Open(fn)
+        meta_item = {
+            'src': {'SourceFilename': fn, 'SourceBand': 1},
+            'dst': {'name': ncvar.name, 'dataType': 6}
+        }
+
+        for attr_key in ncvar.ncattrs():
+            attr_val = self._fix_encoding(ncvar.getncattr(attr_key))
+            if attr_key in ['scale', 'scale_factor']:
+                meta_item['src']['ScaleRatio'] = attr_val
+            elif attr_key in ['offset', 'add_offset']:
+                meta_item['src']['ScaleOffset'] = attr_val
+            else:
+                meta_item['dst'][attr_key] = attr_val
+
+        return meta_item
+
+
+    @staticmethod
+    def _get_sub_filename(url, var, dim_sizes, index):
+        """ Opendap driver refers to subdatasets differently than the
+        standard way in vrt.py
+        """
+        shape = []
+        for item in dim_sizes.items():
+            if item[0] in index.keys():
+                shape.append(index[item[0]]['index'])
+            else:
+                shape.append(item[0])
+        # assemble dimensions string
+        gd_shape = ''.join(['[%s]' % dimsize for dimsize in shape])
+        return '{url}?{var}.{var}{shape}'.format(url=url, var=var, shape=gd_shape)
+
+
     def create_vrt(self, filename, gdalDataset, gdalMetadata, date, ds, bands, cachedir):
         """ Create VRT
 

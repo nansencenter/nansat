@@ -12,13 +12,17 @@ class Mapper(NCMapper):
             raise WrongMapperError
 
         url = self._get_odap_url(ncml_url, file_num)
-        # Dette fungerer ikke fordi gdal ikke finner gds.GetSubDatasets() = []
-        # Men ncml-filen inneholder lustre-stier, så vi kan evt bruke de direkte,
-        # og lese som netcdf på ppi - men dette blir en workaround for MET. Opendap burde fungere...
 
         super(Mapper, self).__init__(url, gdal_dataset, gdal_metadata, *args, **kwargs)
 
 
-    def _get_odap_url(self, fn, file_num):
-        url = os.path.split(fn)[0] + "/member_%02d" % int(os.path.basename(fn)[8:11]) + "/meps_" + os.path.basename(fn).split("_")[2] + "_%02d_" % file_num + os.path.basename(fn).split("_")[3][:-2]
+    def _get_odap_url(self, fn, file_num=0):
+        """ Get the opendap url to file number 'file_num'. The
+        default file number is 0, and yields the forecast time.
+        """
+        url = (
+                "" + os.path.split(fn)[0] + "/member_%02d"
+                "/meps_" + os.path.basename(fn).split("_")[2] +
+                "_%02d_" + os.path.basename(fn).split("_")[3][:-2]
+            ) % (int(os.path.basename(fn)[8:11]), file_num)
         return url

@@ -53,8 +53,7 @@ class Mapper(MapperNCCF, Opendap):
         for attr in ds.ncattrs():
             metadata[attr] = self._fix_encoding(ds.getncattr(attr))
 
-        if 'title' not in metadata.keys() or ('arome' not in metadata['title'].lower() and 'meps' \
-                not in metadata['title'].lower()):
+        if 'title' not in metadata.keys() or 'arome' not in metadata['title'].lower():
             raise WrongMapperError
 
         xsize = ds.dimensions['x'].size
@@ -66,12 +65,13 @@ class Mapper(MapperNCCF, Opendap):
             raise WrongMapperError
         if ds.dimensions[height_dim].size != 1:
             raise WrongMapperError
-        if ds.variables['height7'][0].data != 10:
+        if ds.variables[height_dim][0].data != 10:
             raise WrongMapperError
+
         varnames = []
         for var in ds.variables:
             var_dimensions = ds.variables[var].dimensions
-            if var_dimensions == ('time', 'height7', 'y', 'x'):
+            if var_dimensions == ('time', height_dim, 'y', 'x'):
                 varnames.append(var)
 
         # Projection
@@ -115,58 +115,6 @@ class Mapper(MapperNCCF, Opendap):
         ee = pti.get_gcmd_platform('ecmwfifs')
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
-
-        #md_item = 'Data Center'
-        #if not self.dataset.GetMetadataItem(md_item):
-        #    self.dataset.SetMetadataItem(md_item, 'NO/MET')
-        #md_item = 'Entry Title'
-        #if not self.dataset.GetMetadataItem(md_item):
-        #    self.dataset.SetMetadataItem(md_item, str(ds.getncattr('title')))
-        #md_item = 'summary'
-        #if not self.dataset.GetMetadataItem(md_item):
-        #    summary = """
-        #    AROME_Arctic is a convection-permitting atmosphere model covering parts of the Barents
-        #    Sea and the Nordic Arctic. It has horizontal resolution of 2.5 km and 65 vertical
-        #    levels. AROME_Arctic runs for 66 hours four times a day (00,06,12,18) with three-hourly
-        #    cycling for data assimilation. Boundary data is from ECMWF. Model code based on HARMONIE
-        #    cy40h1.1
-        #    """
-        #    self.dataset.SetMetadataItem(md_item, str(summary))
-
-    def get_band_metadata_dict(self, fn, ncvar):
-        gds = gdal.Open(fn)
-        meta_item = {
-            'src': {'SourceFilename': fn, 'SourceBand': 1},
-            'dst': {'name': ncvar.name, 'dataType': 6}
-        }
-
-        for attr_key in ncvar.ncattrs():
-            attr_val = self._fix_encoding(ncvar.getncattr(attr_key))
-            if attr_key in ['scale', 'scale_factor']:
-                meta_item['src']['ScaleRatio'] = attr_val
-            elif attr_key in ['offset', 'add_offset']:
-                meta_item['src']['ScaleOffset'] = attr_val
-            else:
-                meta_item['dst'][attr_key] = attr_val
-
-        return meta_item
-
-
-
-    @staticmethod
-    def _get_sub_filename(url, var, dim_sizes, index):
-        """ Opendap driver refers to subdatasets differently than the
-        standard way in vrt.py
-        """
-        shape = []
-        for item in dim_sizes.items():
-            if item[0] in index.keys():
-                shape.append(index[item[0]]['index'])
-            else:
-                shape.append(item[0])
-        # assemble dimensions string
-        gd_shape = ''.join(['[%s]' % dimsize for dimsize in shape])
-        return '{url}?{var}.{var}{shape}'.format(url=url, var=var, shape=gd_shape)
 
     @staticmethod
     def get_date(filename):

@@ -261,8 +261,6 @@ class Mapper(VRT):
                     # Get band number from given timestamp
                     index = int(np.argmin(np.abs(self.times() - val)))
                 else:
-                    import pdb
-                    pdb.set_trace()
                     index = int(np.argmin(np.abs(ds.variables[key][:] - val)))
                 index4key[key] = {
                         'index': index,
