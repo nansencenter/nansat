@@ -18,6 +18,7 @@ import os
 import tempfile
 import datetime
 import warnings
+import importlib
 
 from nansat.utils import gdal
 import numpy as np
@@ -29,6 +30,11 @@ from nansat.node import Node
 from nansat.utils import NUMPY_TO_GDAL_TYPE_MAP
 
 from nansat.exceptions import NansatGDALError
+
+try:
+    import xarray as xr
+except:
+    warnings.warn("'xarray' needs to be installed for Exporter.xr_export to work.")
 
 
 class Exporter(object):
@@ -123,14 +129,18 @@ class Exporter(object):
             # Rename variable names to get rid of the band numbers
             self.rename_variables(filename)
             # Rename attributes to get rid of "GDAL_" added by gdal
-            self.rename_attributes(filename)
+            self.correct_attributes(filename, history=self.vrt.dataset.GetMetadata()['history'])
 
         self.logger.debug('Export - OK!')
 
     @staticmethod
-    def rename_attributes(filename):
+    def correct_attributes(filename, history=None):
         """ Rename global attributes to get rid of the "GDAL_"-string
-        added by gdal.
+        added by gdal, remove attributes added by gdal that are
+        already present in the Nansat object, and correct the history
+        attribute (the latter may be reduced in length because
+        gdal.GetDriverByName(driver).CreateCopy limits the string
+        lenght to 161 characters).
         """
         GDAL = "GDAL_"
         del_attrs = []
@@ -138,10 +148,10 @@ class Exporter(object):
         # Open new file to edit attribute names
         with Dataset(filename, 'r+') as ds:
             """ The netcdf driver adds the Conventions attribute with
-            value CF-1.5. This may be wrong, so it is better to use the
-            Conventions metadata from the Nansat object. Other attributes
-            added by gdal that are already present in Nansat, should also
-            be deleted."""
+            value CF-1.5. This in most cases wrong, so it is better to use
+            the Conventions metadata from the Nansat object. Other
+            attributes added by gdal that are already present in Nansat,
+            should also be deleted."""
             for attr in ds.ncattrs():
                 if GDAL in attr:
                     if attr.replace(GDAL, "") in ds.ncattrs():
@@ -157,6 +167,9 @@ class Exporter(object):
             # Rename attributes:
             for attr in rename_attrs:
                 ds.renameAttribute(attr, attr.replace(GDAL, ""))
+            # Correct the history
+            if history is not None:
+                ds.history = history
 
     @staticmethod
     def rename_variables(filename):

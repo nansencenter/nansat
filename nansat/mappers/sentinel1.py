@@ -69,10 +69,14 @@ class Sentinel1(VRT):
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
 
-        self.dataset.SetMetadataItem('time_coverage_start',
-                self.dataset.GetMetadataItem('ACQUISITION_START_TIME'))
-        self.dataset.SetMetadataItem('time_coverage_end', 
-        self.dataset.GetMetadataItem('ACQUISITION_STOP_TIME'))
+        tstart = self.dataset.GetMetadataItem('time_coverage_start') if \
+            self.dataset.GetMetadataItem('ACQUISITION_START_TIME') is None else \
+                self.dataset.GetMetadataItem('ACQUISITION_START_TIME')
+        tend = self.dataset.GetMetadataItem('time_coverage_end') if \
+            self.dataset.GetMetadataItem('ACQUISITION_STOP_TIME') is None else \
+                self.dataset.GetMetadataItem('ACQUISITION_STOP_TIME')
+        self.dataset.SetMetadataItem('time_coverage_start', tstart)
+        self.dataset.SetMetadataItem('time_coverage_end', tend)
 
     def get_gcps(self, flip_gcp_line=False):
         """ Get Ground Control Points for the dataset. 
