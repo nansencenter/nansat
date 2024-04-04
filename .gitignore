@@ -4,6 +4,7 @@ gidea/
 *.so
 *.o
 *.png
+!docs/source/images/*.png
 .project
 .pydevproject
 test_data/
