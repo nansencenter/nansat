@@ -11,7 +11,7 @@
 
 .. BEGIN REPETITION ===============================
 
-.. image:: https://www.nersc.no/sites/www.nersc.no/files/images/nansat_logo_transp.png
+.. image:: docs/source/images/nansat_logo_transp.png
    :align: right
    :width: 250px
    :target: https://github.com/nansencenter/nansat
