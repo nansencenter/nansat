@@ -1,7 +1,3 @@
-# Name:         mapper_arome.py
-# Purpose:      Nansat mapping for AROME-Arctic and MEPS (MetCoOp Ensemble
-#               Prediction System) data provided by MET.NO
-# Author:       Artem Moiseev
 # Licence:      This file is part of NANSAT. You can redistribute it or modify
 #               under the terms of GNU General Public License, v.3
 #               http://www.gnu.org/licenses/gpl-3.0.html
