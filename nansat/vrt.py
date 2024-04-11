@@ -1729,6 +1729,8 @@ class VRT(object):
 
         # find DataType of source (if not given in src)
         if src['SourceBand'] > 0 and 'DataType' not in src:
+            # prevent Python from releasing the dataset's handle
+            # prematurely
             ds = gdal.Open(src['SourceFilename'])
             raster_band = ds.GetRasterBand(src['SourceBand'])
             src['DataType'] = raster_band.DataType
