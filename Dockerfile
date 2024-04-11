@@ -11,7 +11,7 @@ COPY setup.py /tmp/
 WORKDIR /tmp
 RUN apt update \
 &&  apt install -y --no-install-recommends g++ \
-&&  python setup.py install \
+&&  pip install . \
 &&  rm -rf /tmp/{utilities,nansat,setup.py} \
 &&  apt autoremove -y \
 &&  apt clean \
