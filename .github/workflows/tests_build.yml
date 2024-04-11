@@ -113,7 +113,7 @@ jobs:
           python-version: 3.11
 
       - name: Build package
-        run: NANSAT_RELEASE="${TAG}" python setup.py sdist
+        run: NANSAT_RELEASE="${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}" python setup.py sdist
         shell: bash
 
       - name: Publish
