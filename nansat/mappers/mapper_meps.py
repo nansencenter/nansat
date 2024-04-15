@@ -94,3 +94,6 @@ class Mapper(NetcdfCF, Opendap):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        # Set input filename
+        self.dataset.SetMetadataItem('nc_file', self.input_filename)
