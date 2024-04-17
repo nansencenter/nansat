@@ -13,7 +13,8 @@ from nansat.mappers.opendap import Opendap
 
 class Mapper(NetcdfCF, Opendap):
 
-    def __init__(self, url, gdal_dataset, gdal_metadata, file_num=0, bands=None, *args, **kwargs):
+    def __init__(self, url, gdal_dataset, gdal_metadata, file_num=0, bands=None, *args,
+                 **kwargs):
 
         if not url.endswith(".nc"):
             raise WrongMapperError
@@ -25,10 +26,8 @@ class Mapper(NetcdfCF, Opendap):
 
         metadata = {}
         for attr in ds.ncattrs():
-            content = ds.getncattr(attr)
-            content.replace("æ", "ae")
-            content.replace("ø", "oe")
-            content.replace("å", "aa")
+            content = ds.getncattr(attr).replace("æ", "ae").replace("ø", "oe").replace("å",
+                                                                                       "aa")
             metadata[attr] = content
 
         if 'title' not in metadata.keys() or 'meps' not in metadata['title'].lower():
