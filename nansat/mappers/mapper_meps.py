@@ -30,7 +30,8 @@ class Mapper(NetcdfCF, Opendap):
         metadata = {}
         for attr in ds.ncattrs():
             content = ds.getncattr(attr)
-            content = content.replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
+            if isinstance(content, str):
+                content = content.replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
             metadata[attr] = content
 
         self.input_filename = url
