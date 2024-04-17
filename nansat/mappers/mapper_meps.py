@@ -25,7 +25,11 @@ class Mapper(NetcdfCF, Opendap):
 
         metadata = {}
         for attr in ds.ncattrs():
-            metadata[attr] = ds.getncattr(attr)
+            content = ds.getncattr(attr)
+            content.replace("æ", "ae")
+            content.replace("ø", "oe")
+            content.replace("å", "aa")
+            metadata[attr] = content
 
         if 'title' not in metadata.keys() or 'meps' not in metadata['title'].lower():
             raise WrongMapperError
