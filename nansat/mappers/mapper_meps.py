@@ -24,22 +24,22 @@ class Mapper(NetcdfCF, Opendap):
         except OSError:
             raise WrongMapperError
 
+        if "title" not in ds.ncattrs() or "meps" not in ds.getncattr("title").lower():
+            raise WrongMapperError
+
         metadata = {}
         for attr in ds.ncattrs():
-            content = ds.getncattr(attr).replace("æ", "ae").replace("ø", "oe").replace("å",
-                                                                                       "aa")
+            content = ds.getncattr(attr)
+            content = content.replace("æ", "ae").replace("ø", "oe").replace("å", "aa")
             metadata[attr] = content
-
-        if 'title' not in metadata.keys() or 'meps' not in metadata['title'].lower():
-            raise WrongMapperError
 
         self.input_filename = url
 
-        xsize = ds.dimensions['x'].size
-        ysize = ds.dimensions['y'].size
+        xsize = ds.dimensions["x"].size
+        ysize = ds.dimensions["y"].size
 
         # Pick 10 meter height dimension only
-        height_dim = 'height6'
+        height_dim = "height6"
         if height_dim not in ds.dimensions.keys():
             raise WrongMapperError
         if ds.dimensions[height_dim].size != 1:
@@ -50,7 +50,7 @@ class Mapper(NetcdfCF, Opendap):
         varnames = []
         for var in ds.variables:
             var_dimensions = ds.variables[var].dimensions
-            if var_dimensions == ('time', height_dim, 'y', 'x'):
+            if var_dimensions == ("time", height_dim, "y", "x"):
                 varnames.append(var)
 
         # Projection
@@ -66,8 +66,8 @@ class Mapper(NetcdfCF, Opendap):
         nsr = NSR(crs.to_proj4())
 
         # Geotransform
-        xx = ds.variables['x'][0:2]
-        yy = ds.variables['y'][0:2]
+        xx = ds.variables["x"][0:2]
+        yy = ds.variables["y"][0:2]
         gtrans = xx[0], xx[1]-xx[0], 0, yy[0], 0, yy[1]-yy[0]
 
         self._init_from_dataset_params(xsize, ysize, gtrans, nsr.wkt)
@@ -92,11 +92,11 @@ class Mapper(NetcdfCF, Opendap):
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
-        mm = pti.get_gcmd_instrument('computer')
-        ee = pti.get_gcmd_platform('models')
+        mm = pti.get_gcmd_instrument("computer")
+        ee = pti.get_gcmd_platform("models")
 
-        self.dataset.SetMetadataItem('instrument', json.dumps(mm))
-        self.dataset.SetMetadataItem('platform', json.dumps(ee))
+        self.dataset.SetMetadataItem("instrument", json.dumps(mm))
+        self.dataset.SetMetadataItem("platform", json.dumps(ee))
 
         # Set input filename
-        self.dataset.SetMetadataItem('nc_file', self.input_filename)
+        self.dataset.SetMetadataItem("nc_file", self.input_filename)
