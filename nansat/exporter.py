@@ -46,7 +46,7 @@ class Exporter(object):
                          '_FillValue', 'type', 'scale', 'offset', 'NETCDF_VARNAME']
 
     def export(self, filename='', bands=None, rm_metadata=None, add_geolocation=True,
-               driver='netCDF', options='FORMAT=NC4', hardcopy=False):
+               driver='netCDF', options='FORMAT=NC4', hardcopy=False, add_gcps=True):
         """Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -112,10 +112,11 @@ class Exporter(object):
         if self.filename == filename or hardcopy:
             export_vrt.hardcopy_bands()
 
-        if driver == 'GTiff':
-            add_gcps = export_vrt.prepare_export_gtiff()
-        else:
-            add_gcps = export_vrt.prepare_export_netcdf()
+        if add_gcps:
+            if driver == 'GTiff':
+                add_gcps = export_vrt.prepare_export_gtiff()
+            else:
+                add_gcps = export_vrt.prepare_export_netcdf()
 
         # Create output file using GDAL
         dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset,
