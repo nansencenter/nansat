@@ -1,4 +1,7 @@
 import json
+import pytz
+import datetime
+
 import pythesint as pti
 
 from osgeo import gdal
@@ -83,7 +86,13 @@ class Mapper(NetcdfCF, Opendap):
             self._pop_spatial_dimensions(dimension_names)
             index = self._get_index_of_dimensions(dimension_names, {}, dim_sizes)
             fn = self._get_sub_filename(url, band, dim_sizes, index)
-            meta_dict.append(self.get_band_metadata_dict(fn, ds.variables[band]))
+            band_metadata = self.get_band_metadata_dict(fn, ds.variables[band])
+            # Add time stamp to band metadata
+            tt = datetime.datetime.fromisoformat(str(self.times()[index["time"]["index"]]))
+            if tt.tzinfo is None:
+                tt = pytz.utc.localize(tt)
+            band_metadata["dst"]["time"] = tt.isoformat()
+            meta_dict.append(band_metadata)
 
         self.create_bands(meta_dict)
 
