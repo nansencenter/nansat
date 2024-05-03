@@ -15,6 +15,7 @@
 from __future__ import print_function, absolute_import, division
 
 import os
+import pytz
 import tempfile
 import datetime
 import warnings
@@ -130,7 +131,11 @@ class Exporter(object):
             # Rename variable names to get rid of the band numbers
             self.rename_variables(filename)
             # Rename attributes to get rid of "GDAL_" added by gdal
-            self.correct_attributes(filename, history=self.vrt.dataset.GetMetadata()['history'])
+            try:
+                history = self.vrt.dataset.GetMetadata()['history']
+            except KeyError:
+                history = None
+            self.correct_attributes(filename, history=history)
 
         self.logger.debug('Export - OK!')
 
@@ -368,7 +373,7 @@ class Exporter(object):
             nc_out.createDimension(dim_name, dim_shapes[dim_name])
 
         # create value for time variable
-        td = time - datetime.datetime(1900, 1, 1)
+        td = time - datetime.datetime(1900, 1, 1).replace(tzinfo=pytz.timezone("utc"))
         days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add time dimension
         nc_out.createDimension('time', 1)
