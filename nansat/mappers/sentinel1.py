@@ -107,13 +107,30 @@ class Sentinel1(VRT):
 
         return gcps
 
-    def add_incidence_angle_band(self):
+    def get_gcp_shape(self):
+        """Get GCP shape from GCP pixel and line data. Returns the
+        GCP y and x dimensions.
+        """
         # Get GCP variables
         pixel = self.ds['GCP_pixel_'+self.ds.polarisation[:2]][:].data
         line = self.ds['GCP_line_'+self.ds.polarisation[:2]][:].data
+        gcp_y = np.unique(line[:].data).shape[0]
+        gcp_x = np.unique(pixel[:].data).shape[0]
+        """ Uniqueness is not guaranteed at the correct grid - assert
+        that the gcp_index dimension divided by gcp_x and gcp_y
+        dimensions results in an integer.
+        """
+        if gcp_y*gcp_x != pixel.size:
+            gcp_y = gcp_y - pixel.size % gcp_y
+            gcp_x = gcp_x - pixel.size % gcp_x
+        assert gcp_y*gcp_x == pixel.size
+
+        return gcp_y, gcp_x
+
+    def add_incidence_angle_band(self):
+        gcp_y, gcp_x = self.get_gcp_shape()
         inci = self.ds['GCP_incidenceAngle_'+self.ds.polarisation[:2]][:].data
-        inci = inci.reshape(np.unique(line[:].data).shape[0],
-                np.unique(pixel[:].data).shape[0])
+        inci = inci.reshape(gcp_y, gcp_x)
 
         # Add incidence angle band
         inciVRT = VRT.from_array(inci)
@@ -128,14 +145,11 @@ class Sentinel1(VRT):
 
     def get_full_size_GCPs(self):
         # Get GCP variables
-        pixel = self.ds['GCP_pixel_' + self.ds.polarisation[:2]][:].data
-        line = self.ds['GCP_line_' + self.ds.polarisation[:2]][:].data
+        gcp_y, gcp_x = self.get_gcp_shape()
         lon = self.ds['GCP_longitude_' + self.ds.polarisation[:2]][:].data
+        lon = lon.reshape(gcp_y, gcp_x)
         lat = self.ds['GCP_latitude_' + self.ds.polarisation[:2]][:].data
-        lon = lon.reshape(np.unique(line[:].data).shape[0],
-                np.unique(pixel[:].data).shape[0])
-        lat = lat.reshape(np.unique(line[:].data).shape[0],
-                np.unique(pixel[:].data).shape[0])
+        lat = lat.reshape(gcp_y, gcp_x)
         return lon, lat
 
     def add_look_direction_band(self):
