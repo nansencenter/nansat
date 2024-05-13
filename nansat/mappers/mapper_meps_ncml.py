@@ -15,10 +15,14 @@ class Mapper(NCMapper):
         if not ncml_url.endswith(".ncml"):
             raise WrongMapperError
 
-        ds = netCDF4.Dataset(ncml_url)
-        time = netcdf_dim["time"]
-        dt = time - np.datetime64(
-            datetime.datetime.fromisoformat(ds.time_coverage_start.replace("Z", "+00:00")))
+        dt = 0
+        if netcdf_dim is not None and "time" in netcdf_dim.keys():
+            ds = netCDF4.Dataset(ncml_url)
+            time = netcdf_dim["time"]
+            dt = time - np.datetime64(
+                datetime.datetime.fromisoformat(ds.time_coverage_start.replace("Z", "+00:00")))
+            import ipdb
+            ipdb.set_trace()
         url = self._get_odap_url(ncml_url, np.round(dt))
 
         super(Mapper, self).__init__(url, gdal_dataset, gdal_metadata, *args, **kwargs)
