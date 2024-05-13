@@ -21,8 +21,6 @@ class Mapper(NCMapper):
             time = netcdf_dim["time"]
             dt = time - np.datetime64(
                 datetime.datetime.fromisoformat(ds.time_coverage_start.replace("Z", "+00:00")))
-            import ipdb
-            ipdb.set_trace()
         url = self._get_odap_url(ncml_url, np.round(dt))
 
         super(Mapper, self).__init__(url, gdal_dataset, gdal_metadata, *args, **kwargs)
