@@ -1,4 +1,5 @@
 import os
+import pytz
 import netCDF4
 import datetime
 
@@ -15,13 +16,14 @@ class Mapper(NCMapper):
         if not ncml_url.endswith(".ncml"):
             raise WrongMapperError
 
-        dt = 0
+        dt = datetime.timedelta(0)
         if netcdf_dim is not None and "time" in netcdf_dim.keys():
             ds = netCDF4.Dataset(ncml_url)
-            time = netcdf_dim["time"]
-            dt = time - np.datetime64(
-                datetime.datetime.fromisoformat(ds.time_coverage_start.replace("Z", "+00:00")))
-        url = self._get_odap_url(ncml_url, np.round(dt))
+            time = netcdf_dim["time"].astype(datetime.datetime).replace(
+                tzinfo=pytz.timezone("utc"))
+            dt = time - datetime.datetime.fromisoformat(ds.time_coverage_start.replace(
+                "Z", "+00:00"))
+        url = self._get_odap_url(ncml_url, np.round(dt.total_seconds()/3600))
 
         super(Mapper, self).__init__(url, gdal_dataset, gdal_metadata, *args, **kwargs)
 
