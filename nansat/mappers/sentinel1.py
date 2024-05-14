@@ -120,10 +120,15 @@ class Sentinel1(VRT):
         that the gcp_index dimension divided by gcp_x and gcp_y
         dimensions results in an integer.
         """
+        # test modulo fra -/+ gcp_x/4 til remainder=0
+        import ipdb
+        ipdb.set_trace()
+
         if gcp_y*gcp_x != pixel.size:
             gcp_y = gcp_y - pixel.size % gcp_y
             gcp_x = gcp_x - pixel.size % gcp_x
-        assert gcp_y*gcp_x == pixel.size
+        if gcp_y*gcp_x != pixel.size:
+            raise ValueError("GCP dimension mismatch")
 
         return gcp_y, gcp_x
 
