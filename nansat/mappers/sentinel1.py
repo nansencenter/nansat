@@ -120,8 +120,25 @@ class Sentinel1(VRT):
         that the gcp_index dimension divided by gcp_x and gcp_y
         dimensions results in an integer.
         """
-        def test(gcp_dim):
-            """ Test modulo from -/+ gcp_dim/4 until remainder=0
+        def test1(gcp_y, gcp_x):
+            """ Check if one of them is correct, then modify the
+            other. If that does not work, use test2 function.
+            """
+            if pixel.size % gcp_x != 0:
+                if pixel.size % gcp_y == 0:
+                    gcp_x = pixel.size/gcp_y
+            if pixel.size % gcp_y != 0:
+                if pixel.size % gcp_x == 0:
+                    gcp_y = pixel.size/gcp_x
+
+            if gcp_y*gcp_x != pixel.size:
+                gcp_x = test2(gcp_x)
+                gcp_y = test2(gcp_y)
+
+            return gcp_y, gcp_x
+
+        def test2(gcp_dim):
+            """Test modulo from -/+gcp_*/4 until remainder=0
             """
             if pixel.size % gcp_dim != 0:
                 for i in range(np.round(gcp_dim/4).astype("int")):
@@ -135,13 +152,12 @@ class Sentinel1(VRT):
                         break
             return gcp_dim
 
-        gcp_y = test(gcp_y)
-        gcp_x = test(gcp_x)
+        gcp_y, gcp_x = test1(gcp_y, gcp_x)
 
         if gcp_y*gcp_x != pixel.size:
             raise ValueError("GCP dimension mismatch")
 
-        return gcp_y, gcp_x
+        return int(gcp_y), int(gcp_x)
 
     def add_incidence_angle_band(self):
         gcp_y, gcp_x = self.get_gcp_shape()
