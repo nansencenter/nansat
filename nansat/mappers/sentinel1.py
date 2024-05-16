@@ -1,4 +1,5 @@
 import json
+import logging
 import numpy as np
 from dateutil.parser import parse
 try:
@@ -153,6 +154,9 @@ class Sentinel1(VRT):
             return gcp_dim
 
         gcp_y, gcp_x = test1(gcp_y, gcp_x)
+
+        logging.debug("GCPY size: %d" % gcp_y)
+        logging.debug("GCPX size: %d" % gcp_x)
 
         if gcp_y*gcp_x != pixel.size:
             raise ValueError("GCP dimension mismatch")
