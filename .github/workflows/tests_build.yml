@@ -82,7 +82,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ env.BASE_IMAGE_TAG }}-python${{ matrix.python_version }}
-            NANSAT_RELEASE=${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
           push: ${{ github.ref_type == 'tag' }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-python${{ matrix.python_version }}
