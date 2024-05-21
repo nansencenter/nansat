@@ -213,7 +213,6 @@ def run_setup(skip_compile):
 
     setup(
         name=NAME,
-        version=VERSION,
         maintainer=MAINTAINER,
         maintainer_email=MAINTAINER_EMAIL,
         description=DESCRIPTION,
@@ -237,6 +236,8 @@ def run_setup(skip_compile):
         cmdclass = {'install_scripts': my_install_scripts},
         install_requires=REQS,
         test_suite="nansat.tests",
+        use_scm_version=True,
+        setup_requires=['setuptools_scm'],
         **kw
     )
 
