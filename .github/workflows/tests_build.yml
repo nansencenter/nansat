@@ -4,7 +4,7 @@ on:
   push:
     branches: ['**']
   release:
-    types: [released]
+    types: [prereleased, released]
 env:
   IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat"
   BASE_IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat_base"
