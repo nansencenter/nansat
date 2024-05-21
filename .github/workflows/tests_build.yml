@@ -107,13 +107,8 @@ jobs:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-
       - name: Build package
-        run: NANSAT_RELEASE="${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}" python setup.py sdist
+        run: docker run --rm -v "$(pwd):/src" "$BASE_IMAGE_NAME" python setup.py sdist
         shell: bash
 
       - name: Publish
