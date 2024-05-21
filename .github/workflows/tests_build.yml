@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -106,6 +108,8 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build package
         run: docker run --rm -v "$(pwd):/src" "$BASE_IMAGE_NAME" python setup.py sdist
