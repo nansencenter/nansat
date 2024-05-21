@@ -4,7 +4,7 @@ on:
   push:
     branches: ['**']
   release:
-    types: [released]
+    types: [prereleased, released]
 env:
   IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat"
   BASE_IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat_base"
@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -80,7 +82,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ env.BASE_IMAGE_TAG }}-python${{ matrix.python_version }}
-            NANSAT_RELEASE=${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
           push: ${{ github.ref_type == 'tag' }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-python${{ matrix.python_version }}
@@ -106,14 +107,11 @@ jobs:
     steps:
       - name: 'Checkout repository'
         uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          fetch-depth: 0
 
       - name: Build package
-        run: NANSAT_RELEASE="${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}" python setup.py sdist
+        run: docker run --rm -v "$(pwd):/src" "$BASE_IMAGE_NAME" python setup.py sdist
         shell: bash
 
       - name: Publish

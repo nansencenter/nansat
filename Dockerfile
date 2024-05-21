@@ -5,14 +5,12 @@ ARG BASE_IMAGE
 
 ARG NANSAT_RELEASE
 
-COPY utilities /tmp/utilities
-COPY nansat /tmp/nansat
-COPY setup.py /tmp/
-WORKDIR /tmp
+COPY . /tmp/nansat/
+WORKDIR /tmp/nansat
 RUN apt update \
 &&  apt install -y --no-install-recommends g++ \
 &&  pip install . \
-&&  rm -rf /tmp/{utilities,nansat,setup.py} \
+&&  rm -rf /tmp/nansat \
 &&  apt autoremove -y \
 &&  apt clean \
 &&  rm -rf /var/lib/apt/lists/*
