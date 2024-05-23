@@ -111,7 +111,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build package
-        run: docker run --rm -v "$(pwd):/src" "$BASE_IMAGE_NAME" python -m build -s
+        run: docker run --rm -v "$(pwd):/src" "$BASE_IMAGE_NAME" bash -c "pip install build && python -m build -s"
         shell: bash
 
       - name: 'Deploy package to the Github release'
