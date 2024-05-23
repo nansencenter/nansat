@@ -13,7 +13,6 @@ from __future__ import print_function
 from subprocess import Popen
 import subprocess
 import sys
-import errno
 import os
 
 import_error_msg = "Nansat requires %s, which should be installed separately"
@@ -234,10 +233,6 @@ def run_setup(skip_compile):
                      'nansat_translate',
                      ]],
         cmdclass = {'install_scripts': my_install_scripts},
-        install_requires=REQS,
-        test_suite="nansat.tests",
-        use_scm_version=True,
-        setup_requires=['setuptools_scm'],
         **kw
     )
 
