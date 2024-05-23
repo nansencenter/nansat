@@ -114,7 +114,18 @@ jobs:
         run: docker run --rm -v "$(pwd):/src" "$BASE_IMAGE_NAME" python -m build -s
         shell: bash
 
-      - name: Publish
+      - name: 'Deploy package to the Github release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: 'dist/*'
+          file_glob: true
+          tag: ${{ github.ref }}
+
+      - name: Publish to pypi
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository_url: ${{ vars.PYPI_REPOSITORY_URL }}
