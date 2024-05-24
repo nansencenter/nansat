@@ -1,4 +1,4 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE=nansencenter/nansat_base
 FROM ${BASE_IMAGE}
 # Necessary to access the BASE_IMAGE variable during the build
 ARG BASE_IMAGE
