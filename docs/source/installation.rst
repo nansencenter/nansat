@@ -14,7 +14,7 @@ The fastest way to install nansat:
     # activate environment
     source activate py3nansat
     # install nansat
-    pip instal nansat
+    pip install nansat
 
 Nansat is now installed.
 For more details and other methods of installing Nansat, see below.
@@ -24,7 +24,7 @@ Requirements
 
 Nansat requires the following packages:
 
-* Python 2.7 or higher
+* Python 3.7 or higher
 * `Numpy <http://www.numpy.org/>`_ >=1.11.3
 * `GDAL <http://www.gdal.org>`_ >=2.2.3
 * `Pillow <https://python-pillow.github.io/>`_ >=4.0.0
@@ -37,7 +37,7 @@ The following packages are optional:
 
   * Some mappers will not work without scipy. E.g. *sentinel1_l1*
 
-* `Matplotlib <http://matplotlib.org/>`_ >=2.1.1
+* `Matplotlib <http://matplotlib.org/>`_ >=2.1.1,<3.9
 
   * matplotlib is required for Nansat methods *digitize_points()* and *crop_interactive()*
 
@@ -75,11 +75,9 @@ This is the recommended approach for installing dependencies.
 
   * *conda create -n nansat Python=3.6*
 
-    * Or use Python version 3.5 or 2.7 if you need those versions.
-
   * *source activate nansat*
 
-    * On windows you would ommit 'source' and just run *'activate nansat'*
+    * On windows you would omit 'source' and just run *'activate nansat'*
 
   * *conda install --yes -c conda-forge pythesint numpy scipy=0.18.1 matplotlib basemap netcdf4 gdal
     pillow urllib3*
@@ -92,13 +90,13 @@ following procedure can be used to install dependencies with *apt* and *pip*.
 
 .. code-block:: bash
 
-   sudo apt install virtualenv libgdal1-dev python-dev python-gdal python-numpy python-scipy \
-   python-matplotlib python-mpltoolkits.basemap python-requests
+   sudo apt install -y virtualenv libgdal-dev gdal-bin python3
    cd
-   virtualenv --no-site-packages nansat_env
+   virtualenv nansat_env
    source ~/nansat_env/bin/activate
-   export PYTHONPATH=/usr/lib/python2.7/dist-packages/
-   pip install pythesint pillow netcdf4 urllib3
+   pip install pythesint pillow netcdf4 urllib3 requests "gdal==$(gdal-config --version)" numpy \
+    scipy 'matplotlib<3.9' setuptools basemap
+
 
 Compile and Build Yourself
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -109,11 +107,24 @@ free to do so. If you need some aid, we would recommend you to look at how the c
 Installing Nansat
 -----------------
 
+Install with pip (preferred method)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run the following command:
+
+::
+
+  pip install nansat
+
+Nansat will then be added to your site-packages and can be used like any regular Python package.
+
+
 Install Nansat from source
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you want to install Nansat from source, you first need to install all requirements.
 Then proceed with one of the following methods
+
 
 Install from git repository
 """""""""""""""""""""""""""
@@ -123,19 +134,9 @@ git clone the master (most stable) or develop (cutting edge) branch, and install
 .. code-block:: bash
 
    git clone https://github.com/nansencenter/nansat.git
-   checkout master (or develop, or a specific tag or branch)
-   python setup.py install
-
-Nansat will then be added to your site-packages and can be used like any regular Python package.
-
-Install with pip
-""""""""""""""""
-
-Run the following command:
-
-::
-
-  pip install nansat
+   cd nansat
+   git checkout master (or a specific tag or branch)
+   pip install .
 
 Nansat will then be added to your site-packages and can be used like any regular Python package.
 
@@ -147,14 +148,14 @@ Nansat will then be added to your site-packages and can be used like any regular
   Also update the link to "simplest way to install Nansat" in basic info.
 
 Special install for Nansat Developers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""
 If you are working directly on the Nansat source, you need to install Nansat in the following way.
 
-Git clone the develop branch (or another branch you are working on), and do:
+Git clone the branch you are working on, and run the following command from the nansat directory:
 
 ::
 
-  python setup.py build_ext --inplace
+  pip install -e .
 
 The pixel functions C module is then compiled but no code is copied to site-packages and no linking
 is performed. Make sure to follow the `Nansat conventions <conventions.html>`_ if you want to
@@ -165,7 +166,7 @@ easily be done with
 
 ::
 
-  pip install nose mock
+  pip install mock
 
 
 Use a self-provisioned Virtual Machine
@@ -204,7 +205,7 @@ and running of Nansat. A user can start using the production version of Nansat D
 
 ::
 
-    docker run --rm -it -v /path/to/data:/data akorosov/nansat ipython
+    docker run --rm -it -v /path/to/data:/data nansencenter/nansat ipython
 
 This will mound directory /path/to/data on your host to the directory /data in the container
 and launch IPython where Nansat is available.
@@ -216,7 +217,7 @@ do the following steps:
 
 ::
 
-    docker run --rm -it -v `pwd`:/src akorosov/nansat python setup.py build_ext --inplace
+    docker run --rm -it -v `pwd`:/src nansencenter/nansat_base pip install -e .
 
 2. Run container with mounting of the current directory into /src. In this case Python
 will use Nansat from /src/nansat (the directory shared between host and container):
@@ -224,17 +225,17 @@ will use Nansat from /src/nansat (the directory shared between host and containe
 ::
 
     # launch Python with Nansat in container
-    docker run --rm -it -v `pwd`:/src akorosov/nansat python
+    docker run --rm -it -v `pwd`:/src nansencenter/nansat_base python
 
-    # ...or run nosetests
-    docker run --rm -it -v `pwd`:/src akorosov/nansat nosetests nansat
+    # ...or run tests
+    docker run --rm -it -v `pwd`:/src nansencenter/nansat_base python -m unittest discover nansat.tests
 
-Alternatively you can run the script *build_containr.sh*. The script will build the image with
+Alternatively you can run the script *build_container.sh*. The script will build the image with
 Python libraries from Anaconda, compile the Nansat code inplace and create a
 container for running Nansat. You can then start container:
 
 ::
 
     docker start -i nansat
-    # and run nosetests:
-    (base) root@d1625f2ce873:~# nosetests nansat
+    # and run tests:
+    (base) root@d1625f2ce873:~# python -m unittest discover nansat.tests
