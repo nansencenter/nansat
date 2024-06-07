@@ -497,9 +497,21 @@ class Mapper(VRT):
                     no_projection = False
                     break
         if no_projection:
-            raise NansatMissingProjectionError
-        # Initialise VRT with subdataset containing projection
-        self._init_from_gdal_dataset(sub, metadata=metadata)
+            sub_datasets = gdal_dataset.GetSubDatasets()
+            filenames = [f[0] for f in sub_datasets]
+            for _, filename in enumerate(filenames):
+                if 'longitude' in filename:
+                    xDatasetSource = filename
+                if 'latitude' in filename:
+                    yDatasetSource = filename
+            lon_dataset = gdal.Open(xDatasetSource)
+            lon = lon_dataset.GetRasterBand(1).ReadAsArray()
+            lat_dataset = gdal.Open(yDatasetSource)
+            lat = lat_dataset.GetRasterBand(1).ReadAsArray()
+            self._init_from_lonlat(lon, lat, add_gcps=False)
+        else:
+            # Initialise VRT with subdataset containing projection
+            self._init_from_gdal_dataset(sub, metadata=metadata)
 
     def _create_empty_with_nansat_spatial_reference_WKT(self, gdal_dataset, gdal_metadata):
         """ In this case, gdal cannot find the projection of any

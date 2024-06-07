@@ -60,7 +60,7 @@ class NSR(osr.SpatialReference, object):
         osr.SpatialReference.__init__(self)
 
         # parse input parameters
-        if srs is 0:
+        if srs == 0:
             # generate default WGS84 SRS
             self.ImportFromEPSG(4326)
         elif isinstance(srs, str_types):
