@@ -109,9 +109,7 @@ class Opendap(VRT):
         if os.path.exists(cachefile):
             ds_time = np.load(cachefile)[self.timeVarName]
         else:
-            warnings.warn('Time consuming loading time from OpenDAP...')
             ds_time = self.ds.variables[self.timeVarName][:]
-            warnings.warn('Loading time - OK!')
 
         if os.path.exists(cachefile):
             np.savez(cachefile, **{self.timeVarName: ds_time})

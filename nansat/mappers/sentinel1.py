@@ -1,4 +1,5 @@
 import json
+import logging
 import numpy as np
 from dateutil.parser import parse
 try:
@@ -107,13 +108,65 @@ class Sentinel1(VRT):
 
         return gcps
 
-    def add_incidence_angle_band(self):
+    def get_gcp_shape(self):
+        """Get GCP shape from GCP pixel and line data. Returns the
+        GCP y and x dimensions.
+        """
         # Get GCP variables
         pixel = self.ds['GCP_pixel_'+self.ds.polarisation[:2]][:].data
         line = self.ds['GCP_line_'+self.ds.polarisation[:2]][:].data
+        gcp_y = np.unique(line[:].data).shape[0]
+        gcp_x = np.unique(pixel[:].data).shape[0]
+        """ Uniqueness is not guaranteed at the correct grid - assert
+        that the gcp_index dimension divided by gcp_x and gcp_y
+        dimensions results in an integer.
+        """
+        def test1(gcp_y, gcp_x):
+            """ Check if one of them is correct, then modify the
+            other. If that does not work, use test2 function.
+            """
+            if pixel.size % gcp_x != 0:
+                if pixel.size % gcp_y == 0:
+                    gcp_x = pixel.size/gcp_y
+            if pixel.size % gcp_y != 0:
+                if pixel.size % gcp_x == 0:
+                    gcp_y = pixel.size/gcp_x
+
+            if gcp_y*gcp_x != pixel.size:
+                gcp_x = test2(gcp_x)
+                gcp_y = test2(gcp_y)
+
+            return gcp_y, gcp_x
+
+        def test2(gcp_dim):
+            """Test modulo from -/+gcp_*/4 until remainder=0
+            """
+            if pixel.size % gcp_dim != 0:
+                for i in range(np.round(gcp_dim/4).astype("int")):
+                    test_dim = gcp_dim - i
+                    if pixel.size % test_dim == 0:
+                        gcp_dim = test_dim
+                        break
+                    test_dim = gcp_dim + i
+                    if pixel.size % test_dim == 0:
+                        gcp_dim = test_dim
+                        break
+            return gcp_dim
+
+        gcp_y, gcp_x = test1(gcp_y, gcp_x)
+
+        logging.debug("GCPY size: %d" % gcp_y)
+        logging.debug("GCPX size: %d" % gcp_x)
+
+        if gcp_y*gcp_x != pixel.size:
+            raise ValueError("GCP dimension mismatch")
+
+        return int(gcp_y), int(gcp_x)
+
+    def add_incidence_angle_band(self):
+        gcp_y, gcp_x = self.get_gcp_shape()
         inci = self.ds['GCP_incidenceAngle_'+self.ds.polarisation[:2]][:].data
-        inci = inci.reshape(np.unique(line[:].data).shape[0],
-                np.unique(pixel[:].data).shape[0])
+        inci = inci.reshape(gcp_y, gcp_x)
 
         # Add incidence angle band
         inciVRT = VRT.from_array(inci)
@@ -128,14 +181,11 @@ class Sentinel1(VRT):
 
     def get_full_size_GCPs(self):
         # Get GCP variables
-        pixel = self.ds['GCP_pixel_' + self.ds.polarisation[:2]][:].data
-        line = self.ds['GCP_line_' + self.ds.polarisation[:2]][:].data
+        gcp_y, gcp_x = self.get_gcp_shape()
         lon = self.ds['GCP_longitude_' + self.ds.polarisation[:2]][:].data
+        lon = lon.reshape(gcp_y, gcp_x)
         lat = self.ds['GCP_latitude_' + self.ds.polarisation[:2]][:].data
-        lon = lon.reshape(np.unique(line[:].data).shape[0],
-                np.unique(pixel[:].data).shape[0])
-        lat = lat.reshape(np.unique(line[:].data).shape[0],
-                np.unique(pixel[:].data).shape[0])
+        lat = lat.reshape(gcp_y, gcp_x)
         return lon, lat
 
     def add_look_direction_band(self):

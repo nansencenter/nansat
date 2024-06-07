@@ -15,6 +15,7 @@
 from __future__ import print_function, absolute_import, division
 
 import os
+import pytz
 import tempfile
 import datetime
 import warnings
@@ -46,7 +47,7 @@ class Exporter(object):
                          '_FillValue', 'type', 'scale', 'offset', 'NETCDF_VARNAME']
 
     def export(self, filename='', bands=None, rm_metadata=None, add_geolocation=True,
-               driver='netCDF', options='FORMAT=NC4', hardcopy=False):
+               driver='netCDF', options='FORMAT=NC4', hardcopy=False, add_gcps=True):
         """Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -112,10 +113,11 @@ class Exporter(object):
         if self.filename == filename or hardcopy:
             export_vrt.hardcopy_bands()
 
-        if driver == 'GTiff':
-            add_gcps = export_vrt.prepare_export_gtiff()
-        else:
-            add_gcps = export_vrt.prepare_export_netcdf()
+        if add_gcps:
+            if driver == 'GTiff':
+                add_gcps = export_vrt.prepare_export_gtiff()
+            else:
+                add_gcps = export_vrt.prepare_export_netcdf()
 
         # Create output file using GDAL
         dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset,
@@ -129,7 +131,11 @@ class Exporter(object):
             # Rename variable names to get rid of the band numbers
             self.rename_variables(filename)
             # Rename attributes to get rid of "GDAL_" added by gdal
-            self.correct_attributes(filename, history=self.vrt.dataset.GetMetadata()['history'])
+            try:
+                history = self.vrt.dataset.GetMetadata()['history']
+            except KeyError:
+                history = None
+            self.correct_attributes(filename, history=history)
 
         self.logger.debug('Export - OK!')
 
@@ -367,7 +373,7 @@ class Exporter(object):
             nc_out.createDimension(dim_name, dim_shapes[dim_name])
 
         # create value for time variable
-        td = time - datetime.datetime(1900, 1, 1)
+        td = time - datetime.datetime(1900, 1, 1).replace(tzinfo=pytz.timezone("utc"))
         days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add time dimension
         nc_out.createDimension('time', 1)
