@@ -497,6 +497,7 @@ class Mapper(VRT):
                     no_projection = False
                     break
         if no_projection:
+            #raise NansatMissingProjectionError
             sub_datasets = gdal_dataset.GetSubDatasets()
             filenames = [f[0] for f in sub_datasets]
             for _, filename in enumerate(filenames):
@@ -504,6 +505,10 @@ class Mapper(VRT):
                     xDatasetSource = filename
                 if 'latitude' in filename:
                     yDatasetSource = filename
+            if not "xDatasetSource" in locals():
+                raise NansatMissingProjectionError
+            if not "yDatasetSource" in locals():
+                raise NansatMissingProjectionError
             lon_dataset = gdal.Open(xDatasetSource)
             lon = lon_dataset.GetRasterBand(1).ReadAsArray()
             lat_dataset = gdal.Open(yDatasetSource)
