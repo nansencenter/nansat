@@ -8,23 +8,21 @@ from nansat.exceptions import WrongMapperError
 
 class Mapper(NetcdfCF):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, filename, gdal_dataset, gdal_metadata, *args, **kwargs):
 
-        mm = args[2] # metadata
-        if not mm:
+        if not gdal_metadata:
             raise WrongMapperError
-        if 'NC_GLOBAL#source' not in list(mm.keys()):
+        if 'source' not in list(gdal_metadata.keys()):
             raise WrongMapperError
-        if not 'arome' in mm['NC_GLOBAL#source'].lower() and \
-                not 'meps' in mm['NC_GLOBAL#source'].lower():
+        if not 'arome' in gdal_metadata['title'].lower():
             raise WrongMapperError
     
-        super(Mapper, self).__init__(*args, **kwargs)
+        super(Mapper, self).__init__(filename, gdal_dataset, gdal_metadata, *args, **kwargs)
 
-        self.dataset.SetMetadataItem('time_coverage_start',
-                (parse(mm['NC_GLOBAL#min_time'], ignoretz=True, fuzzy=True).isoformat()))
-        self.dataset.SetMetadataItem('time_coverage_end',
-                (parse(mm['NC_GLOBAL#max_time'], ignoretz=True, fuzzy=True).isoformat()))
+        #self.dataset.SetMetadataItem('time_coverage_start', parse(
+        #    gdal_metadata['NC_GLOBAL#min_time'], ignoretz=True, fuzzy=True).isoformat())
+        #self.dataset.SetMetadataItem('time_coverage_end', parse(
+        #    gdal_metadata['NC_GLOBAL#max_time'], ignoretz=True, fuzzy=True).isoformat()))
 
         # Get dictionary describing the instrument and platform according to
         # the GCMD keywords
