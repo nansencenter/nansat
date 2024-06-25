@@ -437,7 +437,7 @@ class Exporter(object):
                 fill_value = None
                 if '_FillValue' in inp_var.ncattrs():
                     fill_value = inp_var._FillValue
-                if '_FillValue' in band_metadata[inp_var_name]:
+                elif '_FillValue' in band_metadata[inp_var_name]:
                     fill_value = band_metadata[inp_var_name]['_FillValue']
                 dimensions = ('time', ) + inp_var.dimensions
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name, inp_var.dtype,
