@@ -526,9 +526,9 @@ class Domain(object):
                 raise ValueError('<extent_dict> must contains exactly 2 parameters '
                                   '("-te" or "-lle") and ("-ts" or "-tr")')
             key, extent_dict = Domain._add_to_dict(extent_dict, option)
-            if key is 'te' or key is 'lle':
+            if key == 'te' or key == 'lle':
                 Domain._validate_te_lle(extent_dict[key])
-            elif key is 'ts' or key is 'tr':
+            elif key == 'ts' or key == 'tr':
                 Domain._validate_ts_tr(extent_dict[key])
 
         return extent_dict
