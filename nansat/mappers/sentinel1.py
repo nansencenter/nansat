@@ -157,9 +157,13 @@ class Sentinel1(VRT):
 
         logging.debug("GCPY size: %d" % gcp_y)
         logging.debug("GCPX size: %d" % gcp_x)
+        logging.debug("Pixel(s) size: %d" % pixel.size)
 
         if gcp_y*gcp_x != pixel.size:
-            raise ValueError("GCP dimension mismatch")
+            if gcp_y*gcp_x > pixel.size:
+                gcp_x, gcp_y = test1(gcp_x-1, gcp_y-1)
+            if gcp_y*gcp_x != pixel.size:
+                raise ValueError("GCP dimension mismatch")
 
         return int(gcp_y), int(gcp_x)
 
