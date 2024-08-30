@@ -88,6 +88,11 @@ class Mapper(VRT):
         # Set GCMD/DIF compatible metadata if available
         self._set_time_coverage_metadata(metadata)
 
+        # Add global metadata
+        metadata.pop("title_no", "")
+        metadata.pop("summary_no", "")
+        self.dataset.SetMetadata(metadata)
+
         # Then add remaining GCMD/DIF compatible metadata in inheriting mappers
 
     def times(self):
