@@ -8,7 +8,6 @@ gidea/
 .project
 .pydevproject
 test_data/
-test_data/
 build/
 dist/
 nansat.egg-info/
@@ -24,3 +23,4 @@ provisioning/roles/andrewrothstein*
 provisioning/site.retry
 .vscode
 .devcontainer
+.coverage
