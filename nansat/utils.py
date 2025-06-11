@@ -286,7 +286,7 @@ def parse_time(time_string):
 
     return time_value
 
-register_colormaps()
+#register_colormaps()
 
 numpy_to_gdal_type = {
     'uint8': 'Byte',
