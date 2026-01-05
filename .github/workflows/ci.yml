@@ -12,7 +12,7 @@ env:
 jobs:
   tests_and_docker_build:
     name: 'Run unit tests and build docker image'
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-24.04'
     env:
       latest: ${{ matrix.python_version == '3.11' && 'true' || '' }}
     strategy:
@@ -101,7 +101,7 @@ jobs:
 
   publish_python_package:
     name: Publish the Python package
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-24.04'
     needs: 'tests_and_docker_build'
     if: github.event_name == 'release'
     steps:
