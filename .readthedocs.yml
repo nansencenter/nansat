@@ -10,5 +10,8 @@ build:
       # add cloned repository to python importable paths
       - 'echo "$(pwd)" >> $(python -c "import sysconfig;print(sysconfig.get_paths()[\"purelib\"])")/workdir.pth'
 
+sphinx:
+  configuration: docs/conf.py
+
 conda:
   environment: docs/environment.yml
