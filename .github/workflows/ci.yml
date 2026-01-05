@@ -15,10 +15,10 @@ jobs:
     runs-on: 'ubuntu-24.04'
     env:
       latest: ${{ matrix.python_version == '3.11' && 'true' || '' }}
+      full_release: ${{ github.event_name == 'release' && github.event.action == 'released' && 'true' || '' }}
     strategy:
       matrix:
         python_version:
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
@@ -86,8 +86,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-python${{ matrix.python_version }}
             ${{ env.latest && format('{0}:{1}', env.IMAGE_NAME, github.ref_name) || '' }}
-            ${{ env.IMAGE_NAME }}:latest-python${{ matrix.python_version }}
-            ${{ env.latest && format('{0}:latest', env.IMAGE_NAME) || '' }}
+            ${{ env.full_release && format('{0}:latest-python{1}', env.IMAGE_NAME, matrix.python_version) || '' }}
+            ${{ env.full_release && env.latest && format('{0}:latest', env.IMAGE_NAME) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
