@@ -8,17 +8,17 @@ on:
 env:
   IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat"
   BASE_IMAGE_NAME: "${{ vars.DOCKER_ORG }}/nansat_base"
-  BASE_IMAGE_TAG: '3.0.0'
+  BASE_IMAGE_TAG: '3.0.2'
 jobs:
   tests_and_docker_build:
     name: 'Run unit tests and build docker image'
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-24.04'
     env:
       latest: ${{ matrix.python_version == '3.11' && 'true' || '' }}
+      full_release: ${{ github.event_name == 'release' && github.event.action == 'released' && 'true' || '' }}
     strategy:
       matrix:
         python_version:
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
@@ -86,8 +86,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ github.ref_name }}-python${{ matrix.python_version }}
             ${{ env.latest && format('{0}:{1}', env.IMAGE_NAME, github.ref_name) || '' }}
-            ${{ env.IMAGE_NAME }}:latest-python${{ matrix.python_version }}
-            ${{ env.latest && format('{0}:latest', env.IMAGE_NAME) || '' }}
+            ${{ env.full_release && format('{0}:latest-python{1}', env.IMAGE_NAME, matrix.python_version) || '' }}
+            ${{ env.full_release && env.latest && format('{0}:latest', env.IMAGE_NAME) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
 
@@ -101,7 +101,7 @@ jobs:
 
   publish_python_package:
     name: Publish the Python package
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-24.04'
     needs: 'tests_and_docker_build'
     if: github.event_name == 'release'
     steps:
