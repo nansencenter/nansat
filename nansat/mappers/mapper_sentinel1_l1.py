@@ -35,7 +35,7 @@ from nansat.node import Node
 
 
 class Mapper(VRT):
-    """ Create VRT with mapping of Sentinel-1 (A and B) stripmap mode (S1A_SM)
+    """ Create VRT with mapping of Sentinel-1 stripmap mode (S1A_SM)
 
     Parameters
     ----------
@@ -54,8 +54,8 @@ class Mapper(VRT):
     Creates self.dataset and populates it with S1 bands (when fast=False).
     """
     def __init__(self, filename, gdalDataset, gdalMetadata, fast=False, fixgcp=True, **kwargs):
-        if not os.path.split(filename.rstrip('/'))[1][:3] in ['S1A', 'S1B']:
-            raise WrongMapperError('%s: Not Sentinel 1A or 1B' %filename)
+        if not os.path.split(filename.rstrip('/'))[1][:3] in ['S1A', 'S1B', 'S1C', 'S1D']:
+            raise WrongMapperError('%s: Not Sentinel 1A, 1B, 1C or 1D' %filename)
 
         if not IMPORT_SCIPY:
             raise NansatReadError('Sentinel-1 data cannot be read because scipy is not installed')
@@ -492,7 +492,13 @@ class Mapper(VRT):
         self.dataset.SetMetadataItem('time_coverage_start', manifest_data['time_coverage_start'])
         self.dataset.SetMetadataItem('time_coverage_end', manifest_data['time_coverage_end'])
         platform_name = manifest_data['platform_family_name'] + manifest_data['platform_number']
-        self.dataset.SetMetadataItem('platform', json.dumps(pti.get_gcmd_platform(platform_name)))
+        try:
+            platform = pti.get_gcmd_platform(platform_name)
+        except IndexError:
+            if platform_name.lower() not in ['sentinel-1c', 'sentinel-1d']:
+                raise
+            platform = pti.get_gcmd_platform('sentinel-1')
+        self.dataset.SetMetadataItem('platform', json.dumps(platform))
         self.dataset.SetMetadataItem('instrument', json.dumps(pti.get_gcmd_instrument('SAR')))
         self.dataset.SetMetadataItem('entry_title', platform_name + ' SAR')
         self.dataset.SetMetadataItem('data_center', json.dumps(pti.get_gcmd_provider('ESA/EO')))
