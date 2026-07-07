@@ -70,9 +70,9 @@ class PointBrowser():
         if not MATPLOTLIB_IS_INSTALLED:
             raise ImportError(' Matplotlib is not installed ')
         if force_interactive and not matplotlib.is_interactive():
-            raise SystemError('''
-        Python is started with -pylab option, transect will not work.
-        Please restart python without -pylab.''')
+            plt.ion()
+            # raise SystemError("Python is started with -pylab option, transect will "
+            #                   "not work. Please restart python without -pylab.")
 
         self.fig = plt.figure()
         self.data = data
@@ -88,7 +88,7 @@ class PointBrowser():
         self.lines = [self.ax.plot([], [], self.fmt)[0]]
         self.coordinates = [[]]
 
-    def onclick(self, event):
+    def __call__(self, event):
         """ Process mouse onclick event
         Append coordinates of the click to self.coordinates, add point and 2D line to self.points
         If click is outside, nothing is done
@@ -100,6 +100,9 @@ class PointBrowser():
         event : matplotlib.mouse_event
 
         """
+        print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+                ('double' if event.dblclick else 'single', event.button,
+                 event.x, event.y, event.xdata, event.ydata))
         # ignore click outside image
         if event.xdata is None or event.ydata is None:
             return
@@ -150,7 +153,7 @@ class PointBrowser():
         points : array
 
         '''
-        self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        self.fig.canvas.mpl_connect('button_press_event', self)
         self.ax.set_xlim([0, self.data.shape[1]])
         self.ax.set_ylim([0, self.data.shape[0]])
         self.ax.invert_yaxis()
@@ -172,7 +175,8 @@ class PointBrowser():
         # collect data
         plt.show()
 
-        # convert list of lists of coordinates to list of arrays
-        points = self._convert_coordinates()
+        return self
+        # # convert list of lists of coordinates to list of arrays
+        # points = self._convert_coordinates()
 
-        return points
+        # return points

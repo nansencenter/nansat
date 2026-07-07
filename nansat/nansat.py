@@ -1241,7 +1241,7 @@ class Nansat(Domain, Exporter):
         Parameters
         ----------
         points : 2xN list or array, N (number of points) >= 1
-            coordinates [[x1, x2, y2], [y1, y2, y3]]
+            coordinates [[x1, x2, x3], [y1, y2, y3]]
         bands : list of int or string
             elements of the list are band number or band Name
         lonlat : bool
@@ -1416,7 +1416,7 @@ class Nansat(Domain, Exporter):
 
         Examples
         --------
-            >>> extent = n.crop(lonlim=[-10,10], latlim=[-20,20]) # crop for given lon/lat limits
+            >>> extent = n.crop([-10,10], [-20,20]) # crop for given lon/lat limits
 
         """
         # lon/lat lists for four corners

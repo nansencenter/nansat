@@ -15,9 +15,11 @@
 from __future__ import print_function, absolute_import, division
 
 import os
+import pytz
 import tempfile
 import datetime
 import warnings
+import importlib
 
 from nansat.utils import gdal
 import numpy as np
@@ -30,6 +32,11 @@ from nansat.utils import NUMPY_TO_GDAL_TYPE_MAP
 
 from nansat.exceptions import NansatGDALError
 
+try:
+    import xarray as xr
+except:
+    warnings.warn("'xarray' needs to be installed for Exporter.xr_export to work.")
+
 
 class Exporter(object):
     """Abstract class for export functions """
@@ -40,7 +47,7 @@ class Exporter(object):
                          '_FillValue', 'type', 'scale', 'offset', 'NETCDF_VARNAME']
 
     def export(self, filename='', bands=None, rm_metadata=None, add_geolocation=True,
-               driver='netCDF', options='FORMAT=NC4', hardcopy=False):
+               driver='netCDF', options='FORMAT=NC4', hardcopy=False, add_gcps=True):
         """Export Nansat object into netCDF or GTiff file
 
         Parameters
@@ -106,10 +113,11 @@ class Exporter(object):
         if self.filename == filename or hardcopy:
             export_vrt.hardcopy_bands()
 
-        if driver == 'GTiff':
-            add_gcps = export_vrt.prepare_export_gtiff()
-        else:
-            add_gcps = export_vrt.prepare_export_netcdf()
+        if add_gcps:
+            if driver == 'GTiff':
+                add_gcps = export_vrt.prepare_export_gtiff()
+            else:
+                add_gcps = export_vrt.prepare_export_netcdf()
 
         # Create output file using GDAL
         dataset = gdal.GetDriverByName(driver).CreateCopy(filename, export_vrt.dataset,
@@ -123,14 +131,22 @@ class Exporter(object):
             # Rename variable names to get rid of the band numbers
             self.rename_variables(filename)
             # Rename attributes to get rid of "GDAL_" added by gdal
-            self.rename_attributes(filename)
+            try:
+                history = self.vrt.dataset.GetMetadata()['history']
+            except KeyError:
+                history = None
+            self.correct_attributes(filename, history=history)
 
         self.logger.debug('Export - OK!')
 
     @staticmethod
-    def rename_attributes(filename):
+    def correct_attributes(filename, history=None):
         """ Rename global attributes to get rid of the "GDAL_"-string
-        added by gdal.
+        added by gdal, remove attributes added by gdal that are
+        already present in the Nansat object, and correct the history
+        attribute (the latter may be reduced in length because
+        gdal.GetDriverByName(driver).CreateCopy limits the string
+        lenght to 161 characters).
         """
         GDAL = "GDAL_"
         del_attrs = []
@@ -138,10 +154,10 @@ class Exporter(object):
         # Open new file to edit attribute names
         with Dataset(filename, 'r+') as ds:
             """ The netcdf driver adds the Conventions attribute with
-            value CF-1.5. This may be wrong, so it is better to use the
-            Conventions metadata from the Nansat object. Other attributes
-            added by gdal that are already present in Nansat, should also
-            be deleted."""
+            value CF-1.5. This in most cases wrong, so it is better to use
+            the Conventions metadata from the Nansat object. Other
+            attributes added by gdal that are already present in Nansat,
+            should also be deleted."""
             for attr in ds.ncattrs():
                 if GDAL in attr:
                     if attr.replace(GDAL, "") in ds.ncattrs():
@@ -157,6 +173,9 @@ class Exporter(object):
             # Rename attributes:
             for attr in rename_attrs:
                 ds.renameAttribute(attr, attr.replace(GDAL, ""))
+            # Correct the history
+            if history is not None:
+                ds.history = history
 
     @staticmethod
     def rename_variables(filename):
@@ -354,7 +373,7 @@ class Exporter(object):
             nc_out.createDimension(dim_name, dim_shapes[dim_name])
 
         # create value for time variable
-        td = time - datetime.datetime(1900, 1, 1)
+        td = time - datetime.datetime(1900, 1, 1).replace(tzinfo=pytz.timezone("utc"))
         days = td.days + (float(td.seconds) / 60.0 / 60.0 / 24.0)
         # add time dimension
         nc_out.createDimension('time', 1)
@@ -418,8 +437,8 @@ class Exporter(object):
                 fill_value = None
                 if '_FillValue' in inp_var.ncattrs():
                     fill_value = inp_var._FillValue
-                if '_FillValue' in band_metadata[inp_var_name]:
-                    fill_value = band_metadata['_FillValue']
+                elif '_FillValue' in band_metadata[inp_var_name]:
+                    fill_value = band_metadata[inp_var_name]['_FillValue']
                 dimensions = ('time', ) + inp_var.dimensions
                 out_var = Exporter._copy_nc_var(inp_var, nc_out, inp_var_name, inp_var.dtype,
                         dimensions, fill_value=fill_value, zlib=zlib)

@@ -18,6 +18,7 @@ else:
 
 import pythesint as pti
 
+from nansat.nsr import NSR
 from nansat.vrt import VRT
 from nansat.mappers.envisat import Envisat
 from nansat.domain import Domain
@@ -33,7 +34,7 @@ class Mapper(VRT, Envisat):
             http://envisat.esa.int/handbooks/asar/CNTR6-6-9.htm#eph.asar.asardf.asarrec.ASAR_Geo_Grid_ADSR
     '''
 
-    def __init__(self, filename, gdalDataset, gdalMetadata, **kwargs):
+    def __init__(self, filename, gdalDataset, gdalMetadata, step=1, **kwargs):
 
         '''
         Parameters
@@ -234,7 +235,7 @@ class Mapper(VRT, Envisat):
         # add bands with metadata and corresponding values to the empty VRT
         self.create_bands(metaDict)
 
-        # Add oribit and look information to metadata domain
+        # Add orbit and look information to metadata domain
         # ASAR is always right-looking
         self.dataset.SetMetadataItem('ANTENNA_POINTING', 'RIGHT')
         self.dataset.SetMetadataItem('ORBIT_DIRECTION',
@@ -291,3 +292,9 @@ class Mapper(VRT, Envisat):
 
         self.dataset.SetMetadataItem('instrument', json.dumps(mm))
         self.dataset.SetMetadataItem('platform', json.dumps(ee))
+
+        self.add_geolocation_from_ads(gdalDataset)
+
+        # Set projection
+        if self.dataset.GetProjection() == "":
+            self.dataset.SetProjection(NSR().wkt)
